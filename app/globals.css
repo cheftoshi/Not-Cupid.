@@ -1,106 +1,58 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,900;1,400;1,700&family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,900;1,400&family=Inter:wght@300;400&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-:root {
-  --bg:          #f7f4ee;
-  --bg-card:     #ffffff;
-  --bg-subtle:   #edeae2;
-  --bg-dark:     #1a1714;
-  --ink:         #1a1714;
-  --ink-muted:   #6b6760;
-  --ink-faint:   #b8b4ae;
-  --accent:      #e63946;
-  --accent-dim:  rgba(230, 57, 70, 0.07);
-  --accent-mid:  rgba(230, 57, 70, 0.18);
-  --gold:        #c9a84c;
-  --gold-dim:    rgba(201, 168, 76, 0.1);
-  --border:      rgba(26, 23, 20, 0.09);
-  --border-md:   rgba(26, 23, 20, 0.16);
-  --border-dark: rgba(26, 23, 20, 0.32);
-  --green:       #2d7a4f;
-  --red-err:     #c0392b;
+:root{
+  --bg:#f8f5ff;
+  --lav:#8b7fd4;
+  --lav-deep:#5b4fa0;
+  --lav-pale:#ede9ff;
+  --lav-mid:rgba(139,127,212,0.1);
+  --ink:#0e0c1a;
+  --ink2:#7a7590;
+  --ink3:#c8c4dc;
+  --border:rgba(14,12,26,0.07);
+  --border-md:rgba(14,12,26,0.13);
+  --green:#2d7a4f;
+  --red-err:#c0392b;
 }
 
-html { scroll-behavior: smooth; }
+html{scroll-behavior:smooth}
 
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Syne', sans-serif;
-  font-weight: 400;
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-.eyebrow {
-  font-family: 'DM Mono', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--accent);
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  font-weight:300;
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
 }
 
-.btn-primary {
-  background: var(--ink);
-  color: var(--bg);
-  border: none;
-  padding: 0.95rem 2.2rem;
-  font-family: 'Syne', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-  letter-spacing: 0.04em;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  text-transform: uppercase;
+.btn-primary{
+  background:var(--ink);color:var(--bg);border:none;
+  padding:.9rem 1.75rem;font-family:'DM Mono',monospace;
+  font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;
+  cursor:pointer;transition:all .15s;display:inline-block;
+  text-align:center;text-decoration:none;
 }
-.btn-primary:hover {
-  background: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(230, 57, 70, 0.25);
-}
-.btn-primary:disabled {
-  opacity: 0.28;
-  transform: none;
-  box-shadow: none;
-  cursor: not-allowed;
-}
+.btn-primary:hover{background:var(--lav)}
+.btn-primary:disabled{opacity:.28;cursor:not-allowed}
 
-.btn-ghost {
-  background: transparent;
-  color: var(--ink-muted);
-  border: 1.5px solid var(--border-md);
-  padding: 0.85rem 1.8rem;
-  font-family: 'DM Mono', monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: all 0.15s;
+.btn-ghost{
+  background:transparent;color:var(--ink2);
+  border:1px solid var(--border-md);padding:.85rem 1.75rem;
+  font-family:'DM Mono',monospace;font-size:.65rem;
+  letter-spacing:.14em;text-transform:uppercase;
+  cursor:pointer;transition:all .15s;display:inline-block;
+  text-align:center;text-decoration:none;
 }
-.btn-ghost:hover { border-color: var(--border-dark); color: var(--ink); }
+.btn-ghost:hover{border-color:var(--lav);color:var(--lav)}
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes ticker {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-@keyframes shake {
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes shake{
   0%,100%{transform:translateX(0)}
   20%{transform:translateX(-6px)}
   40%{transform:translateX(6px)}
