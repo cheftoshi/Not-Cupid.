@@ -9,9 +9,19 @@ export async function POST(req: NextRequest) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
-    await supabaseAdmin.from('otp_codes').upsert({
-      email, code: otp, expires_at: expiresAt, verified: false
-    }, { onConflict: 'email' })
+    console.log(`OTP for ${email}: ${otp}`)
+
+    const { error: dbError } = await supabaseAdmin
+      .from('otp_codes')
+      .upsert({ email, code: otp, expires_at: expiresAt, verified: false },
+        { onConflict: 'email' })
+
+    if (dbError) {
+      console.error('Supabase insert error:', JSON.stringify(dbError))
+      return NextResponse.json({ error: 'DB error', details: dbError.message }, { status: 500 })
+    }
+
+    console.log('OTP saved to DB successfully')
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -28,7 +38,7 @@ export async function POST(req: NextRequest) {
             <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
             <p style="font-size:.9rem;color:#7a7590;margin-bottom:1.5rem;line-height:1.65">Your verification code. Don't share it.</p>
             <div style="font-size:2.5rem;font-weight:700;letter-spacing:.3em;color:#0e0c1a;background:#ede9ff;padding:1.5rem;text-align:center;margin-bottom:1.5rem">${otp}</div>
-            <p style="font-size:.75rem;color:#c8c4dc;line-height:1.65">Expires in 15 minutes. If you didn't request this, ignore it.</p>
+            <p style="font-size:.75rem;color:#c8c4dc;line-height:1.65">Expires in 15 minutes.</p>
             <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.7rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">Boston only · notcupid.com</div>
           </div>
         `
