@@ -1,56 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,900;1,400;1,700&family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap');
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* New palette: crisp white + ink + coral */
-  --bg:          #f8f6f1;
+  --bg:          #f7f4ee;
   --bg-card:     #ffffff;
-  --bg-subtle:   #f0ede6;
-  --ink:         #1a1814;
+  --bg-subtle:   #edeae2;
+  --bg-dark:     #1a1714;
+  --ink:         #1a1714;
   --ink-muted:   #6b6760;
   --ink-faint:   #b8b4ae;
-  --accent:      #d94f3d;
-  --accent-dim:  rgba(217, 79, 61, 0.08);
-  --accent-mid:  rgba(217, 79, 61, 0.18);
-  --border:      rgba(26, 24, 20, 0.1);
-  --border-md:   rgba(26, 24, 20, 0.18);
-  --border-dark: rgba(26, 24, 20, 0.35);
+  --accent:      #e63946;
+  --accent-dim:  rgba(230, 57, 70, 0.07);
+  --accent-mid:  rgba(230, 57, 70, 0.18);
+  --gold:        #c9a84c;
+  --gold-dim:    rgba(201, 168, 76, 0.1);
+  --border:      rgba(26, 23, 20, 0.09);
+  --border-md:   rgba(26, 23, 20, 0.16);
+  --border-dark: rgba(26, 23, 20, 0.32);
   --green:       #2d7a4f;
   --red-err:     #c0392b;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 300;
+  font-family: 'Syne', sans-serif;
+  font-weight: 400;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Typography */
-.font-display {
-  font-family: 'Playfair Display', serif;
-}
-.font-mono {
-  font-family: 'DM Mono', monospace;
-}
-
-/* Utility */
 .eyebrow {
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--accent);
 }
@@ -60,24 +47,25 @@ body {
   color: var(--bg);
   border: none;
   padding: 0.95rem 2.2rem;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-radius: 2rem;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 0.25rem;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-  letter-spacing: 0.01em;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  letter-spacing: 0.04em;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  text-transform: uppercase;
 }
 .btn-primary:hover {
   background: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(217, 79, 61, 0.2);
+  box-shadow: 0 6px 20px rgba(230, 57, 70, 0.25);
 }
 .btn-primary:disabled {
-  opacity: 0.3;
+  opacity: 0.28;
   transform: none;
   box-shadow: none;
   cursor: not-allowed;
@@ -86,34 +74,36 @@ body {
 .btn-ghost {
   background: transparent;
   color: var(--ink-muted);
-  border: 1px solid var(--border-md);
-  padding: 0.9rem 1.8rem;
+  border: 1.5px solid var(--border-md);
+  padding: 0.85rem 1.8rem;
   font-family: 'DM Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-radius: 2rem;
+  border-radius: 0.25rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
-.btn-ghost:hover {
-  border-color: var(--border-dark);
-  color: var(--ink);
-}
+.btn-ghost:hover { border-color: var(--border-dark); color: var(--ink); }
 
-/* Animations */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 @keyframes ticker {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
-@keyframes pulse {
-  0%, 100% { opacity: 0.5; }
-  50%       { opacity: 1; }
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
 }
