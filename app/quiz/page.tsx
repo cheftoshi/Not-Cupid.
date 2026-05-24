@@ -39,6 +39,7 @@ export default function QuizPage() {
   const [scores, setScores] = useState<Record<string,number>>({})
   const [barsVisible, setBarsVisible] = useState(false)
   const [shake, setShake] = useState(false)
+  const [userId, setUserId] = useState<string>('')
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
@@ -128,7 +129,9 @@ export default function QuizPage() {
         setScreen('result')
         return
       }
-    } catch (err) { console.error('Failed to submit:', err) }
+  const data = await res.json()
+if (res.status === 409) { setScreen('result'); return }
+if (data.userId) setUserId(data.userId)
   }, [form])
 
   const advance = useCallback((ans: number) => {
@@ -412,7 +415,7 @@ export default function QuizPage() {
   const res = await fetch('/api/stripe-checkout', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ userId: 'guest', email: form.email })
+    body: JSON.stringify({ userId: userId || 'unknown', email: form.email })
   })
   const data = await res.json()
   if (data.url) window.location.href = data.url
