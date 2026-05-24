@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Nav from '@/components/Nav'
 import { QUESTIONS, DIMS, DIM_SHORT, validateZip, computeScores, pickArchetype, LOADING_STEPS } from '@/lib/quiz-data'
 import styles from './quiz.module.css'
@@ -40,6 +40,7 @@ export default function QuizPage() {
   const [barsVisible, setBarsVisible] = useState(false)
   const [shake, setShake] = useState(false)
   const [userId, setUserId] = useState<string>('')
+  const [userId, setUserId] = useRef<string>('')
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
