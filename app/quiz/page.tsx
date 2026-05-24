@@ -258,7 +258,11 @@ export default function QuizPage() {
                     <input className={styles.input} placeholder="02116" maxLength={5}
                       value={form.zip} onChange={e => handleZip(e.target.value)} />
                     {zipStatus === 'valid' && <span className={styles.zipOk}>✓ you're in</span>}
-                    {zipStatus === 'outofrange' && <span className={styles.zipBad}>outside range</span>}
+                   {zipStatus === 'outofrange' && (
+  <span className={styles.zipBad}>
+    outside range — <a href="/out-of-range" style={{color:'var(--lav)'}}>join waitlist</a>
+  </span>
+)}
                     {zipStatus === 'invalid' && <span className={styles.zipBad}>not in our area</span>}
                   </div>
                 </div>
