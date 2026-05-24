@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const BOSTON_SPOTS = [
-  'Trident Booksellers & Café on Newbury St',
+  'Trident Booksellers & Cafe on Newbury St',
   'Thinking Cup on Tremont St',
   'Render Coffee on Columbus Ave',
   'The Beehive in the South End',
-  'Area Four in Kendall Square'
-  'The Berkeley in Back bay',
+  'Area Four in Kendall Square',
+  'The Berkeley in Back Bay',
   'Broadsheet Coffee in Downtown Crossing',
   'George Howell Coffee at the Godfrey Hotel',
 ]
