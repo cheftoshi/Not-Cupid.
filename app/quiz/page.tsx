@@ -124,14 +124,10 @@ export default function QuizPage() {
           archetype: arch.name,
         })
       })
-        const data = await res.json()
-      if (res.status === 409) {
-        setScreen('result')
-        return
-      }
   const data = await res.json()
 if (res.status === 409) { setScreen('result'); return }
 if (data.userId) setUserId(data.userId)
+    } catch (err) { console.error('Failed to submit:', err) }
   }, [form])
 
   const advance = useCallback((ans: number) => {
