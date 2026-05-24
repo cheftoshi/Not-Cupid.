@@ -6,7 +6,7 @@ const BOSTON_SPOTS = [
   'Render Coffee on Columbus Ave',
   'The Beehive in the South End',
   'Area Four in Kendall Square'
-  'The Berkeley in Back bay,
+  'The Berkeley in Back bay',
   'Broadsheet Coffee in Downtown Crossing',
   'George Howell Coffee at the Godfrey Hotel',
 ]
