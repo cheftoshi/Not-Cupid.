@@ -40,7 +40,8 @@ export default function QuizPage() {
   const [barsVisible, setBarsVisible] = useState(false)
   const [shake, setShake] = useState(false)
   const [userId, setUserId] = useState<string>('')
-  const [userId, setUserId] = useRef<string>('')
+  const [userId, setUserId] = useState<string>('')
+const userIdRef = useRef<string>('')
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
