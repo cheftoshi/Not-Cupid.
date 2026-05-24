@@ -399,7 +399,15 @@ export default function QuizPage() {
                 <div className={styles.unlockPrice}>$0.99</div>
                 <p className={styles.unlockLabel}>full breakdown. all 6 scores. why you matched who you matched.</p>
               </div>
-              <button className="btn-primary" style={{flexShrink:0}}>unlock →</button>
+             <button className="btn-primary" style={{flexShrink:0}} onClick={async () => {
+  const res = await fetch('/api/stripe-checkout', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ userId: 'guest', email: form.email })
+  })
+  const data = await res.json()
+  if (data.url) window.location.href = data.url
+}}>unlock →</button>
             </div>
             <button className="btn-ghost"
               onClick={() => { setScreen('intro'); setAnswers([]); setCurrentQ(0); setOtp(['','','','','','']) }}
