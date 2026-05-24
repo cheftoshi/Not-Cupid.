@@ -174,7 +174,14 @@ if (data.userId) {
       setLoadingPct(Math.min(Math.round((step / LOADING_MSGS.length) * 100), 100))
       if (step >= LOADING_MSGS.length) {
         clearInterval(interval)
-        setTimeout(() => { setScreen('result'); setTimeout(() => setBarsVisible(true), 400) }, 600)
+      setTimeout(() => {
+  if (userId) {
+    window.location.href = `/dashboard?id=${userId}`
+  } else {
+    setScreen('result')
+    setTimeout(() => setBarsVisible(true), 400)
+  }
+}, 600)
       }
     }, 800)
     return () => clearInterval(interval)
