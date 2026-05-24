@@ -126,7 +126,12 @@ export default function QuizPage() {
       })
   const data = await res.json()
 if (res.status === 409) { setScreen('result'); return }
-if (data.userId) setUserId(data.userId)
+if (data.userId) {
+  setUserId(data.userId)
+  setTimeout(() => {
+    window.location.href = `/dashboard?id=${data.userId}`
+  }, 4000)
+}
     } catch (err) { console.error('Failed to submit:', err) }
   }, [form])
 
