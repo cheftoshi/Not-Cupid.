@@ -1,0 +1,37 @@
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 1.25rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(248, 246, 241, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.logo span {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-md);
+  padding: 0.35rem 0.75rem;
+  border-radius: 2rem;
+}
