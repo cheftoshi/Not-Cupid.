@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           from: 'NotCupid <match@notcupid.com>',
+          reply_to: 'surajchopra69@yahoo.com',
           to: [user1.email],
           subject: `${user2.name} — your NotCupid match is ready`,
           html: matchEmail(user1.name, user2.name, score, spot, matchId, user1.id)
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           from: 'NotCupid <match@notcupid.com>',
+          reply_to: 'surajchopra69@yahoo.com',
           to: [user2.email],
           subject: `${user1.name} — your NotCupid match is ready`,
           html: matchEmail(user2.name, user1.name, score, spot, matchId, user2.id)
