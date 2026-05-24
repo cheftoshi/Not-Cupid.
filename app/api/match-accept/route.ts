@@ -93,3 +93,43 @@ export async function GET(req: NextRequest) {
                   <p style="font-size:.75rem;color:#8b7fd4;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">It's a match ✦</p>
                   <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem">Both of you said yes. The rest is on you.</p>
                   <div style="background:#ede9ff;padding:1.5rem;margin-bottom:1.5rem">
+                    <p style="font-size:.65rem;color:#8b7fd4;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem">${user1.name}'s email</p>
+                    <p style="font-size:1.2rem;font-weight:700;color:#0e0c1a">${user1.email}</p>
+                  </div>
+                  <p style="font-size:.8rem;color:#7a7590;line-height:1.65;">Reach out. The algo did its part.</p>
+                  <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">Boston only · notcupid.com</div>
+                </div>
+              `
+            })
+          })
+        ])
+      }
+
+      return new NextResponse(`
+        <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
+          <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">It's a match. ✦</h1>
+          <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Both of you said yes. Check your email — we just sent their contact info.</p>
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>
+        </body></html>
+      `, { headers: { 'Content-Type': 'text/html' } })
+    }
+
+    return new NextResponse(`
+      <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
+        <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">You're in. ✓</h1>
+        <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">We've noted your interest. If they say yes too, you'll both get each other's email immediately.</p>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>
+      </body></html>
+    `, { headers: { 'Content-Type': 'text/html' } })
+
+  } catch (err) {
+    console.error('Match accept error:', err)
+    return new NextResponse(`
+      <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
+        <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">Something went wrong</h1>
+        <p style="color:#7a7590;margin-bottom:2rem">Please try again or contact us at match@notcupid.com</p>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>
+      </body></html>
+    `, { headers: { 'Content-Type': 'text/html' } })
+  }
+}
