@@ -109,7 +109,7 @@ export default function QuizPage() {
 
   const submitToDatabase = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>) => {
     try {
-      await fetch('/api/submit', {
+      const res = await fetch('/api/submit', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
           name: form.name, age: form.age, gender: form.gender, seeking: form.seek,
@@ -123,6 +123,11 @@ export default function QuizPage() {
           archetype: arch.name,
         })
       })
+        const data = await res.json()
+      if (res.status === 409) {
+        setScreen('result')
+        return
+      }
     } catch (err) { console.error('Failed to submit:', err) }
   }, [form])
 
