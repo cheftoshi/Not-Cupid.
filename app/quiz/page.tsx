@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Nav from '@/components/Nav'
-import { QUESTIONS, DIMS, DIM_SHORT, validateZip, computeScores, pickArchetype, LOADING_STEPS } from '@/lib/quiz-data'
+import { QUESTIONS, DIMS, DIM_SHORT, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
 import styles from './quiz.module.css'
 
 type Screen = 'intro' | 'verify' | 'quiz' | 'loading' | 'result'
@@ -39,8 +39,7 @@ export default function QuizPage() {
   const [scores, setScores] = useState<Record<string,number>>({})
   const [barsVisible, setBarsVisible] = useState(false)
   const [shake, setShake] = useState(false)
-  const [userId, setUserId] = useState<string>('')
-const userIdRef = useRef<string>('')
+  const userIdRef = useRef<string>('')
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
@@ -84,7 +83,9 @@ const userIdRef = useRef<string>('')
   }
 
   function handleOtpKey(e: React.KeyboardEvent, idx: number) {
-    if (e.key === 'Backspace' && !otp[idx] && idx > 0) document.getElementById(`otp-${idx-1}`)?.focus()
+    if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
+      document.getElementById(`otp-${idx-1}`)?.focus()
+    }
   }
 
   async function verifyOtp() {
@@ -125,14 +126,21 @@ const userIdRef = useRef<string>('')
           archetype: arch.name,
         })
       })
-  const data = await res.json()
-if (res.status === 409) { setScreen('result'); return }
-if (data.userId) {
-  setUserId(data.userId)
-  userIdRef.current = data.userId
-  window.location.href = `/dashboard?id=${data.userId}`
-}
-    } catch (err) { console.error('Failed to submit:', err) }
+      const data = await res.json()
+      if (res.status === 409) {
+        setScreen('result')
+        setTimeout(() => setBarsVisible(true), 400)
+        return
+      }
+      if (data.userId) {
+        userIdRef.current = data.userId
+        window.location.href = `/dashboard?id=${data.userId}`
+      }
+    } catch (err) {
+      console.error('Failed to submit:', err)
+      setScreen('result')
+      setTimeout(() => setBarsVisible(true), 400)
+    }
   }, [form])
 
   const advance = useCallback((ans: number) => {
@@ -174,12 +182,14 @@ if (data.userId) {
       setLoadingPct(Math.min(Math.round((step / LOADING_MSGS.length) * 100), 100))
       if (step >= LOADING_MSGS.length) {
         clearInterval(interval)
-    setTimeout(() => {
-  setScreen('result')
-  setTimeout(() => setBarsVisible(true), 400)
-}, 600)
+        setTimeout(() => {
+          if (!userIdRef.current) {
+            setScreen('result')
+            setTimeout(() => setBarsVisible(true), 400)
+          }
+        }, 2000)
       }
-    }, 600)
+    }, 800)
     return () => clearInterval(interval)
   }, [screen])
 
@@ -190,6 +200,7 @@ if (data.userId) {
   return (
     <>
       <Nav />
+
       {screen === 'intro' && (
         <div className={styles.screen}>
           <div className={styles.introWrap}>
@@ -198,12 +209,15 @@ if (data.userId) {
                 <span className={styles.sticker}>🚫 cupid</span>
                 <span className={styles.stickerGold}>✦ science</span>
               </div>
-              <h1 className={styles.introH1}>ok so<br />hear me<br /><em>out.</em></h1>
+              <h1 className={styles.introH1}>
+                ok so<br />hear me<br /><em>out.</em>
+              </h1>
               <p className={styles.introLede}>
                 what if instead of swiping on vibes you just... let an algorithm built on actual psychology do it?<br />
                 <span className={styles.introLedeSub}>yeah. that's the pitch.</span>
               </p>
             </div>
+
             <div className={styles.rulesBlock}>
               <p className={styles.rulesTitle}>here's the deal →</p>
               {[
@@ -218,6 +232,7 @@ if (data.userId) {
                 </div>
               ))}
             </div>
+
             <div className={styles.formBlock}>
               <p className={styles.formTitle}>let's go</p>
               <div className={styles.fieldGrid}>
@@ -249,6 +264,7 @@ if (data.userId) {
                     <option value="m">men</option>
                   </select>
                 </div>
+
                 <div className={`${styles.field} ${styles.fieldFull}`}>
                   <label className={styles.label}>match age range</label>
                   <div className={styles.ageRangeWrap}>
@@ -259,20 +275,18 @@ if (data.userId) {
                       value={form.ageMax} onChange={e => setForm(f=>({...f,ageMax:e.target.value}))} style={{flex:1}} />
                   </div>
                 </div>
+
                 <div className={`${styles.field} ${styles.fieldFull}`}>
                   <label className={styles.label}>zip code</label>
                   <div className={styles.zipWrap}>
                     <input className={styles.input} placeholder="02116" maxLength={5}
                       value={form.zip} onChange={e => handleZip(e.target.value)} />
                     {zipStatus === 'valid' && <span className={styles.zipOk}>✓ you're in</span>}
-                   {zipStatus === 'outofrange' && (
-  <span className={styles.zipBad}>
-    outside range — <a href="/out-of-range" style={{color:'var(--lav)'}}>join waitlist</a>
-  </span>
-)}
+                    {zipStatus === 'outofrange' && <span className={styles.zipBad}>outside range — <a href="/out-of-range" style={{color:'var(--lav)'}}>join waitlist</a></span>}
                     {zipStatus === 'invalid' && <span className={styles.zipBad}>not in our area</span>}
                   </div>
                 </div>
+
                 <div className={`${styles.field} ${styles.fieldFull}`}>
                   <label className={styles.label}>email — this is how we reach you</label>
                   <input className={styles.input} type="email" placeholder="you@email.com"
@@ -282,6 +296,7 @@ if (data.userId) {
                   )}
                 </div>
               </div>
+
               <button className="btn-primary" onClick={sendOtp}
                 disabled={!formValid || otpSending}
                 style={{width:'100%',justifyContent:'center',marginTop:'0.5rem'}}>
@@ -292,41 +307,61 @@ if (data.userId) {
           </div>
         </div>
       )}
+
       {screen === 'verify' && (
         <div className={styles.screen}>
           <div className={styles.verifyWrap}>
             <div className={styles.verifyTop}>
               <span className={styles.verifyEmoji}>📬</span>
               <h2 className={styles.verifyH2}>check your inbox.</h2>
-              <p className={styles.verifySub}>we sent a 6-digit code to<br /><strong>{form.email}</strong></p>
+              <p className={styles.verifySub}>
+                we sent a 6-digit code to<br />
+                <strong>{form.email}</strong>
+              </p>
               <p className={styles.verifyNote}>check spam if you don't see it in 60 seconds</p>
             </div>
+
             <div className={`${styles.otpRow} ${shake ? styles.shake : ''}`}>
               {otp.map((digit, i) => (
-                <input key={i} id={`otp-${i}`}
+                <input
+                  key={i}
+                  id={`otp-${i}`}
                   className={`${styles.otpBox} ${otpError ? styles.otpBoxError : ''}`}
-                  type="text" inputMode="numeric" maxLength={1} value={digit}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
                   onChange={e => handleOtpInput(e.target.value, i)}
-                  onKeyDown={e => handleOtpKey(e, i)} autoFocus={i === 0} />
+                  onKeyDown={e => handleOtpKey(e, i)}
+                  autoFocus={i === 0}
+                />
               ))}
             </div>
+
             {otpError && <p className={styles.otpError}>{otpError}</p>}
+
             <button className="btn-primary" onClick={verifyOtp}
               disabled={!otpComplete || otpVerifying}
               style={{width:'100%',justifyContent:'center'}}>
               {otpVerifying ? 'verifying...' : 'confirm code →'}
             </button>
+
             <div className={styles.resendRow}>
               {resendTimer > 0
                 ? <span className={styles.resendTimer}>resend in {resendTimer}s</span>
-                : <button className={styles.resendBtn} onClick={() => { sendOtp(); setOtp(['','','','','','']) }}>resend code</button>
+                : <button className={styles.resendBtn} onClick={() => { sendOtp(); setOtp(['','','','','','']) }}>
+                    resend code
+                  </button>
               }
               <span className={styles.resendDot}>·</span>
-              <button className={styles.resendBtn} onClick={() => setScreen('intro')}>wrong email?</button>
+              <button className={styles.resendBtn} onClick={() => setScreen('intro')}>
+                wrong email?
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {screen === 'quiz' && q && (
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
@@ -337,10 +372,13 @@ if (data.userId) {
                 <span className={styles.qCount}>{currentQ + 1}/{QUESTIONS.length}</span>
               </div>
             </div>
+
             <div className={styles.progressBar}>
               <div className={styles.progressFill} style={{width:`${progress}%`}} />
             </div>
+
             <p className={styles.qText}>{q.q}</p>
+
             <div className={styles.qOptions}>
               {q.opts.map((opt, i) => (
                 <button key={i}
@@ -351,6 +389,7 @@ if (data.userId) {
                 </button>
               ))}
             </div>
+
             <div className={styles.qNav}>
               <button className={styles.qSkip} onClick={skipQ}>skip this one</button>
               <button className="btn-primary" onClick={nextQ} disabled={selectedOpt === null}>
@@ -360,6 +399,7 @@ if (data.userId) {
           </div>
         </div>
       )}
+
       {screen === 'loading' && (
         <div className={styles.screen}>
           <div className={styles.loadingWrap}>
@@ -373,6 +413,7 @@ if (data.userId) {
           </div>
         </div>
       )}
+
       {screen === 'result' && archetype && (
         <div className={styles.screen}>
           <div className={styles.resultWrap}>
@@ -381,9 +422,11 @@ if (data.userId) {
               <h1 className={styles.resultH1}>you are<br /><em>{archetype.name}.</em></h1>
               <p className={styles.resultTag}>{archetype.tag}</p>
             </div>
+
             <div className={styles.resultDescCard}>
               <p className={styles.resultDesc}>{archetype.desc}</p>
             </div>
+
             <div className={styles.profileCard}>
               <div className={styles.profileHeader}>
                 <span className={styles.profileTitle}>your hexaco profile</span>
@@ -405,30 +448,15 @@ if (data.userId) {
                 })}
               </div>
             </div>
+
             <div className={styles.matchCard}>
               <div className={styles.matchBadge}>pool status: active 👀</div>
               <p className={styles.matchTitle}>you're in.</p>
-              <p className={styles.matchDesc}>the algorithm is watching the boston pool. the second someone compatible shows up — you'll get an email. one match. one spot in the city. show up.</p>
+              <p className={styles.matchDesc}>
+                the algorithm is watching the boston pool. the second someone compatible shows up you'll get an email. one match. one spot in the city. show up.
+              </p>
             </div>
-            <div className={styles.unlockCard}>
-              <div className={styles.unlockLeft}>
-                <div className={styles.unlockPrice}>$0.99</div>
-                <p className={styles.unlockLabel}>full breakdown. all 6 scores. why you matched who you matched.</p>
-              </div>
-            <button className="btn-primary" style={{flexShrink:0}} onClick={async () => {
-  if (!userId) {
-    alert('Please wait a moment and try again.')
-    return
-  }
-  const res = await fetch('/api/stripe-checkout', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ userId, email: form.email })
-  })
-  const data = await res.json()
-  if (data.url) window.location.href = data.url
-}}>unlock →</button>
-            </div>
+
             <button className="btn-ghost"
               onClick={() => { setScreen('intro'); setAnswers([]); setCurrentQ(0); setOtp(['','','','','','']) }}
               style={{marginTop:'1rem',width:'100%',justifyContent:'center'}}>
