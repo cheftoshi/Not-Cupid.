@@ -412,11 +412,15 @@ if (data.userId) {
                 <div className={styles.unlockPrice}>$0.99</div>
                 <p className={styles.unlockLabel}>full breakdown. all 6 scores. why you matched who you matched.</p>
               </div>
-             <button className="btn-primary" style={{flexShrink:0}} onClick={async () => {
+            <button className="btn-primary" style={{flexShrink:0}} onClick={async () => {
+  if (!userId) {
+    alert('Please wait a moment and try again.')
+    return
+  }
   const res = await fetch('/api/stripe-checkout', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ userId: userId || 'unknown', email: form.email })
+    body: JSON.stringify({ userId, email: form.email })
   })
   const data = await res.json()
   if (data.url) window.location.href = data.url
