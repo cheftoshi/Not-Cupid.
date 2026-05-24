@@ -9,8 +9,13 @@ function UnlockContent() {
   const [status, setStatus] = useState<'loading'|'success'|'error'>('loading')
 
   useEffect(() => {
-    const sessionId = params.get('session_id')
-    if (sessionId) setStatus('success')
+const sessionId = params.get('session_id')
+const userId = params.get('userId')
+if (sessionId && userId) {
+  window.location.href = `/dashboard?id=${userId}`
+} else if (sessionId) {
+  setStatus('success')
+}
     else setStatus('error')
   }, [params])
 
