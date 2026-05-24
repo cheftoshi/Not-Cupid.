@@ -128,9 +128,8 @@ export default function QuizPage() {
 if (res.status === 409) { setScreen('result'); return }
 if (data.userId) {
   setUserId(data.userId)
-  setTimeout(() => {
-    window.location.href = `/dashboard?id=${data.userId}`
-  }, 4000)
+  userIdRef.current = data.userId
+  window.location.href = `/dashboard?id=${data.userId}`
 }
     } catch (err) { console.error('Failed to submit:', err) }
   }, [form])
@@ -174,16 +173,12 @@ if (data.userId) {
       setLoadingPct(Math.min(Math.round((step / LOADING_MSGS.length) * 100), 100))
       if (step >= LOADING_MSGS.length) {
         clearInterval(interval)
-      setTimeout(() => {
-  if (userId) {
-    window.location.href = `/dashboard?id=${userId}`
-  } else {
-    setScreen('result')
-    setTimeout(() => setBarsVisible(true), 400)
-  }
+    setTimeout(() => {
+  setScreen('result')
+  setTimeout(() => setBarsVisible(true), 400)
 }, 600)
       }
-    }, 800)
+    }, 600)
     return () => clearInterval(interval)
   }, [screen])
 
