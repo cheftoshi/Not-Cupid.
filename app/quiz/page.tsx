@@ -128,7 +128,6 @@ export default function QuizPage() {
       })
       const data = await res.json()
 if (res.status === 409) {
-  // Already registered — fetch their existing profile by email
   const existing = await fetch(`/api/get-user-by-email?email=${encodeURIComponent(form.email)}`)
   const existingData = await existing.json()
   if (existingData.userId) {
