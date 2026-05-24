@@ -27,11 +27,13 @@ export async function POST(req: NextRequest) {
       }])
       .select().single()
 
-    if (error) {
-      console.error('Supabase error:', error)
-      return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
-    }
-
+if (error) {
+  console.error('Supabase error:', error)
+  if (error.code === '23505') {
+    return NextResponse.json({ error: 'already_registered' }, { status: 409 })
+  }
+  return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
+}
     fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
