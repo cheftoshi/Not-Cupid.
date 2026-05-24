@@ -3,10 +3,10 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'NotCupid — Boston\'s Smartest Dating Experiment',
-  description: 'Not a swipe app. One match. Real science. Boston only.',
+  description: 'The algo doesn\'t swipe. It decides. One match. No photos first. Boston only.',
   openGraph: {
     title: 'NotCupid',
-    description: 'Not a swipe app. One match. Real science. Boston only.',
+    description: 'The algo doesn\'t swipe. It decides.',
     url: 'https://notcupid.com',
     siteName: 'NotCupid',
   },
