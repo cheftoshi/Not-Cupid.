@@ -17,6 +17,7 @@ interface UserData {
   status: string
   hexaco_unlocked: boolean
   email: string
+  auto_rematch: boolean
 }
 
 interface MatchData {
@@ -107,7 +108,7 @@ function DashboardContent() {
               The algo is watching.
             </h2>
             <p style={{fontSize:'.82rem',color:'var(--ink2)',lineHeight:1.65}}>
-              You're in the Boston pool. The second someone compatible signs up, you'll both get an email. One match. Show up.
+              You're in the pool. The second someone compatible signs up, you'll both get an email. One match. Show up.
             </p>
           </>
         )}
@@ -165,6 +166,34 @@ function DashboardContent() {
           </button>
         </div>
       )}
+
+      <div style={{background:'#fff',border:'1.5px solid var(--border-md)',padding:'1.25rem 1.5rem',marginBottom:'1.25rem',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div>
+          <p style={{fontFamily:'DM Mono,monospace',fontSize:'.58rem',letterSpacing:'.1em',textTransform:'uppercase',color:'var(--ink)',fontWeight:500}}>Auto rematch</p>
+          <p style={{fontSize:'.75rem',color:'var(--ink2)',marginTop:'.25rem',lineHeight:1.5}}>If your match expires, automatically put you back in the pool.</p>
+        </div>
+        <button
+          onClick={async () => {
+            const newVal = !(user.auto_rematch ?? true)
+            await fetch('/api/rematch-opt-out', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ userId: user.id, optOut: !newVal })
+            })
+            setUser({...user, auto_rematch: newVal})
+          }}
+          style={{
+            background: (user.auto_rematch ?? true) ? 'var(--lav)' : 'rgba(14,12,26,0.13)',
+            color: (user.auto_rematch ?? true) ? '#fff' : 'var(--ink2)',
+            border: 'none', padding: '.5rem 1.25rem',
+            fontFamily: 'DM Mono,monospace', fontSize: '.6rem',
+            letterSpacing: '.1em', textTransform: 'uppercase',
+            cursor: 'pointer', flexShrink: 0, transition: 'all .15s'
+          }}
+        >
+          {(user.auto_rematch ?? true) ? 'ON' : 'OFF'}
+        </button>
+      </div>
 
       <div style={{textAlign:'center',marginTop:'2rem'}}>
         <a href="/quiz" style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',letterSpacing:'.12em',textTransform:'uppercase',color:'var(--ink3)',textDecoration:'none'}}>
