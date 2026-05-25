@@ -83,4 +83,5 @@ Built-in zip → coordinate lookup, validated against 50-mile radius from 02116 
 # Connect GitHub repo to Vercel
 # Set env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_KEY, TWILIO_*, STRIPE_*
 vercel --prod
+Last updated: May 24 2026
 ```
