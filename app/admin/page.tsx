@@ -8,7 +8,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/admin/dashboard')
+    fetch('/api/admin-stats')
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
   }, [])
