@@ -259,6 +259,7 @@ if (res.status === 409) {
                     <option value="">—</option>
                     <option value="m">man</option>
                     <option value="f">woman</option>
+                    <option value="b"></option>
                   </select>
                 </div>
                 <div className={styles.field}>
@@ -268,6 +269,7 @@ if (res.status === 409) {
                     <option value="">—</option>
                     <option value="f">women</option>
                     <option value="m">men</option>
+                    <option value="b">everyone</option>
                   </select>
                 </div>
 
