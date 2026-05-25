@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    // Find matches older than 48 hours still pending
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
 
     const { data: expiredMatches } = await supabaseAdmin
@@ -21,32 +20,42 @@ export async function GET(req: NextRequest) {
     const reshuffled = []
 
     for (const match of expiredMatches) {
-      // Mark match as expired
       await supabaseAdmin
         .from('matches')
         .update({ status: 'expired' })
         .eq('id', match.id)
 
-      // Put both users back in pool
-      await supabaseAdmin
-        .from('users')
-        .update({ status: 'waiting' })
-        .in('id', [match.user_1_id, match.user_2_id])
+      // Only put back users who haven't opted out
+      const { data: user1 } = await supabaseAdmin
+        .from('users').select('auto_rematch').eq('id', match.user_1_id).single()
+      const { data: user2 } = await supabaseAdmin
+        .from('users').select('auto_rematch').eq('id', match.user_2_id).single()
 
-      // Trigger rematching for both
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-      await Promise.all([
-        fetch(`${siteUrl}/api/match`, {
+      if (user1?.auto_rematch !== false) {
+        await supabaseAdmin
+          .from('users')
+          .update({ status: 'waiting' })
+          .eq('id', match.user_1_id)
+
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: match.user_1_id })
-        }),
-        fetch(`${siteUrl}/api/match`, {
+        })
+      }
+
+      if (user2?.auto_rematch !== false) {
+        await supabaseAdmin
+          .from('users')
+          .update({ status: 'waiting' })
+          .eq('id', match.user_2_id)
+
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: match.user_2_id })
         })
-      ])
+      }
 
       reshuffled.push(match.id)
     }
