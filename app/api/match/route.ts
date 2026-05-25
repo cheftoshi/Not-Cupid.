@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { haversine, ZIP_COORDS, MATCH_RADIUS_MILES } from '@/lib/quiz-data'
 
 const SCORE_THRESHOLD = 15
 
@@ -10,6 +11,26 @@ function compatibilityScore(a: any, b: any): number {
   const extro = Math.abs(a.score_extraversion - b.score_extraversion)
   const diff = (honesty * 2) + (openness * 1.5) + (agree * 1.5) + extro
   return Math.round(100 - (diff / 48) * 100)
+}
+
+function isWithinMatchRadius(zip1: string, zip2: string): boolean {
+  const c1 = ZIP_COORDS[zip1]
+  const c2 = ZIP_COORDS[zip2]
+  if (!c1 || !c2) return true
+  const dist = haversine(c1.lat, c1.lng, c2.lat, c2.lng)
+  return dist <= MATCH_RADIUS_MILES
+}
+
+function isGenderMatch(user: any, candidate: any): boolean {
+  const userSeeks = user.seeking
+  const candGender = candidate.gender
+  const candSeeks = candidate.seeking
+  const userGender = user.gender
+
+  const userWantsCand = userSeeks === 'b' || userSeeks === candGender
+  const candWantsUser = candSeeks === 'b' || candSeeks === userGender
+
+  return userWantsCand && candWantsUser
 }
 
 export async function POST(req: NextRequest) {
@@ -24,26 +45,30 @@ export async function POST(req: NextRequest) {
       .from('users')
       .select('*')
       .eq('status', 'waiting')
-      .eq('gender', user.seeking)
-      .eq('seeking', user.gender)
       .neq('id', userId)
 
     if (!pool || pool.length === 0) {
       return NextResponse.json({ matched: false, message: 'In the pool — watching for matches' })
     }
 
-    const ageCompatible = pool.filter((p: any) =>
+    const genderCompatible = pool.filter((p: any) => isGenderMatch(user, p))
+
+    const ageCompatible = genderCompatible.filter((p: any) =>
       user.age >= p.age_min &&
       user.age <= p.age_max &&
       p.age >= user.age_min &&
       p.age <= user.age_max
     )
 
-    if (ageCompatible.length === 0) {
-      return NextResponse.json({ matched: false, message: 'No age-compatible matches yet' })
+    const locationCompatible = ageCompatible.filter((p: any) =>
+      isWithinMatchRadius(user.zip, p.zip)
+    )
+
+    if (locationCompatible.length === 0) {
+      return NextResponse.json({ matched: false, message: 'No compatible matches nearby yet' })
     }
 
-    const scored = ageCompatible
+    const scored = locationCompatible
       .map((p: any) => ({ ...p, score: compatibilityScore(user, p) }))
       .sort((a: any, b: any) => b.score - a.score)
 
