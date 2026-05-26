@@ -3,24 +3,35 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json()
-    if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 })
+    const body = await req.json()
+
+    // Normalize email
+    const email = (body.email || '').trim().toLowerCase()
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email required' }, { status: 400 })
+    }
+
+    // Basic format check - catches obvious typos before we waste a Resend send
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+    }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
-
     console.log(`OTP for ${email}: ${otp}`)
 
     const { error: dbError } = await supabaseAdmin
       .from('otp_codes')
-      .upsert({ email, code: otp, expires_at: expiresAt, verified: false },
-        { onConflict: 'email' })
+      .upsert(
+        { email, code: otp, expires_at: expiresAt, verified: false },
+        { onConflict: 'email' }
+      )
 
     if (dbError) {
       console.error('Supabase insert error:', JSON.stringify(dbError))
       return NextResponse.json({ error: 'DB error', details: dbError.message }, { status: 500 })
     }
-
     console.log('OTP saved to DB successfully')
 
     const res = await fetch('https://api.resend.com/emails', {
