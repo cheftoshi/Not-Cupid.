@@ -1,9 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
+
+// Common domain typos → corrections
+const EMAIL_TYPOS: Record<string, string> = {
+  'gmal.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'gnail.com': 'gmail.com',
+  'gmai.com': 'gmail.com',
+  'gmail.cm': 'gmail.com',
+  'gmail.co': 'gmail.com',
+  'gmaill.com': 'gmail.com',
+  'outlook.fom': 'outlook.com',
+  'outlok.com': 'outlook.com',
+  'outloo.com': 'outlook.com',
+  'outlook.cm': 'outlook.com',
+  'outlook.co': 'outlook.com',
+  'yahoo.cm': 'yahoo.com',
+  'yahoo.co': 'yahoo.com',
+  'yaho.com': 'yahoo.com',
+  'yahooo.com': 'yahoo.com',
+  'hotmial.com': 'hotmail.com',
+  'hotmal.com': 'hotmail.com',
+  'hotmail.cm': 'hotmail.com',
+  'hotmail.co': 'hotmail.com',
+  'iclud.com': 'icloud.com',
+  'icloud.cm': 'icloud.com',
+  'icoud.com': 'icloud.com',
+  'me.cm': 'me.com',
+  'northeastern.com': 'northeastern.edu',
+  'harvard.com': 'harvard.edu',
+  'bu.com': 'bu.edu',
+  'mit.com': 'mit.edu',
+};
+
+function suggestEmailCorrection(email: string): string | null {
+  const at = email.lastIndexOf('@');
+  if (at < 0) return null;
+  const domain = email.slice(at + 1).toLowerCase().trim();
+  const correction = EMAIL_TYPOS[domain];
+  if (correction) {
+    return email.slice(0, at + 1) + correction;
+  }
+  return null;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +55,16 @@ export default function LoginPage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+
+  // Check for email typos as user types
+  useEffect(() => {
+    if (step !== 'email' || !email.includes('@')) {
+      setSuggestion(null);
+      return;
+    }
+    setSuggestion(suggestEmailCorrection(email));
+  }, [email, step]);
 
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -41,22 +94,37 @@ export default function LoginPage() {
       const res = await fetch('/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim() }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          code: code.trim(),
+        }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        if (data.needsQuiz) {
-          setError('no account with that email — take the quiz to sign up');
-        } else {
-          setError(data.error || 'invalid code');
-        }
+
+      // Happy path: new verify-otp returns 200 with redirect (handles both /profile and /quiz)
+      if (res.ok && data.redirect) {
+        router.push(data.redirect);
         return;
       }
-      router.push(data.redirect || '/profile');
+
+      // Legacy path: old verify-otp returned 404 + needsQuiz
+      if (data.needsQuiz) {
+        router.push('/quiz');
+        return;
+      }
+
+      setError(data.error || 'invalid code');
     } catch (err) {
       setError('something went wrong');
     } finally {
       setLoading(false);
+    }
+  }
+
+  function applySuggestion() {
+    if (suggestion) {
+      setEmail(suggestion);
+      setSuggestion(null);
     }
   }
 
@@ -69,7 +137,7 @@ export default function LoginPage() {
           welcome <span className={styles.titleAccent}>back.</span>
         </h1>
         <p className={styles.subtitle}>
-          {step === 'email' ? 'enter your email — we\'ll send a code →' : 'check your email for the code →'}
+          {step === 'email' ? "enter your email — we'll send a code →" : 'check your email for the code →'}
         </p>
 
         {step === 'email' ? (
@@ -79,12 +147,21 @@ export default function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@email.com"
                 required
                 autoFocus
                 className={styles.input}
               />
+              {suggestion && (
+                <div className={styles.suggestion}>
+                  did you mean{' '}
+                  <button type="button" onClick={applySuggestion} className={styles.suggestionButton}>
+                    {suggestion}
+                  </button>
+                  {' '}?
+                </div>
+              )}
             </div>
             {error && <div className={styles.error}>{error}</div>}
             <button type="submit" disabled={loading || !email} className={styles.button}>
@@ -99,7 +176,7 @@ export default function LoginPage() {
                 type="text"
                 inputMode="numeric"
                 value={code}
-                onChange={e => setCode(e.target.value)}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 placeholder="6 digit code"
                 required
                 autoFocus
@@ -108,12 +185,16 @@ export default function LoginPage() {
               />
             </div>
             {error && <div className={styles.error}>{error}</div>}
-            <button type="submit" disabled={loading || code.length < 4} className={styles.button}>
+            <button type="submit" disabled={loading || code.length !== 6} className={styles.button}>
               {loading ? 'verifying...' : 'verify →'}
             </button>
             <button
               type="button"
-              onClick={() => { setStep('email'); setCode(''); setError(''); }}
+              onClick={() => {
+                setStep('email');
+                setCode('');
+                setError('');
+              }}
               className={styles.linkButton}
             >
               ← use a different email
