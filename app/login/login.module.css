@@ -1,0 +1,191 @@
+.page {
+  min-height: 100vh;
+  background: #F5F3F8;
+  color: #0a0a0a;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  color: #0a0a0a;
+  margin-bottom: 3rem;
+  display: block;
+}
+
+.title {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 3rem;
+  font-weight: 400;
+  line-height: 1;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.titleAccent {
+  font-style: italic;
+  color: #A892D8;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: #6b6975;
+  margin: 0 0 2.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-bottom: 0.6rem;
+  color: #6b6975;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e1ec;
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #0a0a0a;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #0a0a0a;
+}
+
+.input::placeholder {
+  color: #b8b3c4;
+}
+
+.codeInput {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.error {
+  font-size: 0.875rem;
+  color: #c92a2a;
+  font-style: italic;
+  font-family: Georgia, ui-serif, serif;
+  background: #fff5f5;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ffd6d6;
+}
+
+.button {
+  background: #0a0a0a;
+  color: #fff;
+  border: none;
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.button:hover:not(:disabled) {
+  background: #2a2a2a;
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: #6b6975;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+  margin-top: 0.5rem;
+}
+
+.linkButton:hover {
+  color: #0a0a0a;
+}
+
+.divider {
+  text-align: center;
+  margin: 2.5rem 0;
+  position: relative;
+  color: #b8b3c4;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #e5e1ec;
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+.signupLink {
+  display: block;
+  text-align: center;
+  color: #0a0a0a;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-style: italic;
+  font-family: Georgia, ui-serif, serif;
+  padding: 1rem;
+  border: 1px dashed rgba(10,10,10,0.2);
+  border-radius: 12px;
+  transition: all 0.15s;
+}
+
+.signupLink:hover {
+  border-color: #0a0a0a;
+  background: #fff;
+}
+
+@media (max-width: 480px) {
+  .title { font-size: 2.25rem; }
+}
