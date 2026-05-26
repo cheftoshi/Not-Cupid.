@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function ProfilePage() {
   const user = await getCurrentUser();
   if (!user) redirect('/');
+  if (!user.archetype) redirect('/quiz');
 
   const firstName = (user.name || 'friend').split(' ')[0];
 
@@ -15,15 +16,17 @@ export default async function ProfilePage() {
     <div className={styles.page}>
       <div className={styles.container}>
         <nav className={styles.nav}>
-          <div className={styles.navBrand}>not<span>cupid.</span></div>
-          <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
-          <a href="/quiz" className={styles.navLink}>Quiz</a>
-          <a href="/dashboard" className={styles.navLink}>Matches</a>
+          <div className={styles.navBrand}>NOTCUPID</div>
+          <div className={styles.navLinks}>
+            <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
+            <a href="/dashboard" className={styles.navLink}>Matches</a>
+            <a href="/quiz" className={styles.navLink}>Retake quiz</a>
+          </div>
         </nav>
         <h1 className={styles.title}>
-          Hi <span className={styles.titleAccent}>{firstName}</span>.
+          hi <span className={styles.titleAccent}>{firstName.toLowerCase()}.</span>
         </h1>
-        <p className={styles.subtitle}>This is what your matches will see.</p>
+        <p className={styles.subtitle}>this is what your matches will see →</p>
         <ProfileForm initialUser={user} />
       </div>
     </div>
