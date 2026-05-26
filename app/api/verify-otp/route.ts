@@ -24,32 +24,26 @@ export async function POST(req: NextRequest) {
 
     await supabaseAdmin.from('otp_codes').update({ verified: true }).eq('email', email)
 
-    // Try to find existing user
-    let { data: user } = await supabaseAdmin
+    const { data: user } = await supabaseAdmin
       .from('users')
-      .select('id')
+      .select('id, archetype')
       .eq('email', email)
       .is('deleted_at', null)
       .single()
 
-    // If no user, auto-create with just email
     if (!user) {
-      const { data: newUser, error: createError } = await supabaseAdmin
-        .from('users')
-        .insert({ email, status: 'active' })
-        .select('id')
-        .single()
-
-      if (createError) {
-        console.error('Auto-create user failed:', createError)
-        return NextResponse.json({ error: 'Could not create account', detail: createError.message }, { status: 500 })
-      }
-      user = newUser
+      return NextResponse.json({
+        error: "No profile yet — take the quiz to sign up",
+        needsQuiz: true,
+      }, { status: 404 })
     }
 
     await createSession(user.id)
 
-    return NextResponse.json({ success: true, redirect: '/profile' })
+    return NextResponse.json({
+      success: true,
+      redirect: user.archetype ? '/profile' : '/quiz',
+    })
   } catch (err: any) {
     console.error('Verify OTP error:', err)
     return NextResponse.json({ error: 'Server error', detail: err.message }, { status: 500 })
