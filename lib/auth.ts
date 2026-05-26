@@ -17,11 +17,16 @@ export async function createSession(userId: string) {
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
-  await supabase.from('sessions').insert({
+  const { error } = await supabase.from('sessions').insert({
     token,
     user_id: userId,
     expires_at: expiresAt.toISOString(),
   });
+
+  if (error) {
+    console.error('createSession insert failed:', error);
+    throw new Error(`Session insert failed: ${error.message}`);
+  }
 
   cookies().set(COOKIE_NAME, token, {
     httpOnly: true,
