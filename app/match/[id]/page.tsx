@@ -1,0 +1,44 @@
+import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
+import ChatRoom from './chat-room';
+
+export const dynamic = 'force-dynamic';
+
+export default async function MatchPage({ params }: { params: { id: string } }) {
+  const user = await getCurrentUser();
+  if (!user) redirect('/');
+
+  const { data: match } = await supabaseAdmin
+    .from('matches')
+    .select('*')
+    .eq('id', params.id)
+    .single();
+
+  if (!match) redirect('/dashboard');
+  if (match.user_1_id !== user.id && match.user_2_id !== user.id) redirect('/dashboard');
+  if (!match.user_1_accepted || !match.user_2_accepted) redirect('/dashboard');
+
+  const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
+  const { data: otherUser } = await supabaseAdmin
+    .from('users')
+    .select('id, name, photo_url, archetype')
+    .eq('id', otherId)
+    .single();
+
+  const { data: messages } = await supabaseAdmin
+    .from('messages')
+    .select('*')
+    .eq('match_id', params.id)
+    .order('created_at', { ascending: true });
+
+  return (
+    <ChatRoom
+      matchId={params.id}
+      currentUserId={user.id}
+      otherUser={otherUser}
+      match={match}
+      initialMessages={messages || []}
+    />
+  );
+}
