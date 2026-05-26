@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import styles from './profile.module.css';
 
 export default function ProfileForm({ initialUser }: { initialUser: any }) {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
 
   const arrayToString = (arr: string[] | null | undefined) => arr?.join(', ') || '';
   const stringToArray = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
+
+  const needsQuiz = !user.archetype || !user.score_honesty;
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -29,10 +32,10 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
       }
       const data = await res.json();
       setUser(data.user);
-      setMessage('✓ Saved');
+      setMessage('✓ saved');
       setTimeout(() => setMessage(''), 3000);
     } catch (err: any) {
-      setMessage(err.message || 'Error saving');
+      setMessage(err.message || 'error saving');
     } finally {
       setSaving(false);
     }
@@ -53,24 +56,20 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
       }
       const data = await res.json();
       setUser({ ...user, photo_url: data.url });
-      setMessage('✓ Photo updated');
+      setMessage('✓ photo updated');
       setTimeout(() => setMessage(''), 3000);
     } catch (err: any) {
-      setMessage(err.message || 'Upload failed');
+      setMessage(err.message || 'upload failed');
     } finally {
       setUploadingPhoto(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm('Delete your account? This will end all active matches and cannot be undone.')) return;
-    if (!confirm('Really sure? Type-check: this will remove you from NotCupid permanently.')) return;
-    try {
-      await fetch('/api/profile/delete', { method: 'POST' });
-      router.push('/');
-    } catch {
-      setMessage('Delete failed');
-    }
+    if (!confirm('Delete your account? Active matches will end. This cannot be undone.')) return;
+    if (!confirm('Really sure? This removes you from NotCupid permanently.')) return;
+    await fetch('/api/profile/delete', { method: 'POST' });
+    router.push('/');
   }
 
   async function handleLogout() {
@@ -78,153 +77,157 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
     router.push('/');
   }
 
-  const inputClass = "w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-white transition";
-  const labelClass = "block text-sm mb-1 text-gray-300";
-
   return (
-    <form onSubmit={handleSave} className="space-y-8">
+    <form onSubmit={handleSave}>
+      {/* QUIZ NUDGE if not done */}
+      {needsQuiz && (
+        <div className={styles.quizBanner}>
+          <div className={styles.quizBannerText}>
+            Take the personality quiz to find your match — it's how the algo decides.
+          </div>
+          <a href="/quiz" className={styles.quizBannerButton}>Take the quiz</a>
+        </div>
+      )}
+
       {/* PHOTO */}
-      <section className="space-y-3">
-        <div className="flex items-center gap-4">
-          {user.photo_url ? (
-            <img src={user.photo_url} alt="Profile" className="w-28 h-28 rounded-full object-cover border-2 border-gray-700" />
-          ) : (
-            <div className="w-28 h-28 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center text-gray-500 text-sm">
-              No photo
-            </div>
-          )}
-          <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition font-medium">
-            {uploadingPhoto ? 'Uploading...' : 'Upload photo'}
-            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoUpload} disabled={uploadingPhoto} />
+      <div className={styles.section}>
+        <div className={styles.sectionLabel}>01 — Your face</div>
+        <div className={styles.photoSection}>
+          <div className={styles.photoFrame}>
+            {user.photo_url ? (
+              <img src={user.photo_url} alt="" className={styles.photo} />
+            ) : (
+              <div className={styles.photoPlaceholder}>no photo yet</div>
+            )}
+          </div>
+          <label className={styles.uploadButton}>
+            {uploadingPhoto ? 'uploading...' : (user.photo_url ? 'change photo' : 'upload photo')}
+            <input type="file" accept="image/jpeg,image/png,image/webp" className={styles.fileInput} onChange={handlePhotoUpload} disabled={uploadingPhoto} />
           </label>
         </div>
-      </section>
+      </div>
 
       {/* BASICS */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Basics</h2>
-        <div>
-          <label className={labelClass}>Name</label>
-          <input className={inputClass} type="text" value={user.name || ''} onChange={e => setUser({ ...user, name: e.target.value })} />
+      <div className={styles.section}>
+        <div className={styles.sectionLabel}>02 — The basics</div>
+        <div className={styles.field}>
+          <label className={styles.label}>Name</label>
+          <input className={styles.input} type="text" value={user.name || ''} onChange={e => setUser({ ...user, name: e.target.value })} placeholder="what to call you" />
         </div>
-        <div>
-          <label className={labelClass}>Email (locked)</label>
-          <input className={`${inputClass} opacity-50`} type="email" value={user.email || ''} disabled />
+        <div className={styles.field}>
+          <label className={styles.label}>Email</label>
+          <input className={styles.input} type="email" value={user.email || ''} disabled />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Age</label>
-            <input className={inputClass} type="number" min={18} max={100} value={user.age || ''} onChange={e => setUser({ ...user, age: parseInt(e.target.value) || null })} />
+        <div className={styles.row}>
+          <div className={styles.field}>
+            <label className={styles.label}>Age</label>
+            <input className={styles.input} type="number" min={18} max={100} value={user.age || ''} onChange={e => setUser({ ...user, age: parseInt(e.target.value) || null })} />
           </div>
-          <div>
-            <label className={labelClass}>Height (cm)</label>
-            <input className={inputClass} type="number" min={120} max={250} value={user.height_cm || ''} onChange={e => setUser({ ...user, height_cm: parseInt(e.target.value) || null })} />
+          <div className={styles.field}>
+            <label className={styles.label}>Height (cm)</label>
+            <input className={styles.input} type="number" min={120} max={250} value={user.height_cm || ''} onChange={e => setUser({ ...user, height_cm: parseInt(e.target.value) || null })} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Gender</label>
-            <select className={inputClass} value={user.gender || ''} onChange={e => setUser({ ...user, gender: e.target.value })}>
-              <option value="">Select</option>
+        <div className={styles.row}>
+          <div className={styles.field}>
+            <label className={styles.label}>Gender</label>
+            <select className={styles.select} value={user.gender || ''} onChange={e => setUser({ ...user, gender: e.target.value })}>
+              <option value="">—</option>
               <option value="m">Man</option>
               <option value="f">Woman</option>
               <option value="nb">Non-binary</option>
               <option value="o">Other</option>
             </select>
           </div>
-          <div>
-            <label className={labelClass}>Seeking</label>
-            <select className={inputClass} value={user.seeking || ''} onChange={e => setUser({ ...user, seeking: e.target.value })}>
-              <option value="">Select</option>
+          <div className={styles.field}>
+            <label className={styles.label}>Seeking</label>
+            <select className={styles.select} value={user.seeking || ''} onChange={e => setUser({ ...user, seeking: e.target.value })}>
+              <option value="">—</option>
               <option value="m">Men</option>
               <option value="f">Women</option>
-              <option value="both">Both</option>
+              <option value="both">Anyone</option>
             </select>
           </div>
         </div>
-        <div>
-          <label className={labelClass}>ZIP code</label>
-          <input className={inputClass} type="text" value={user.zip || ''} onChange={e => setUser({ ...user, zip: e.target.value })} />
+        <div className={styles.field}>
+          <label className={styles.label}>ZIP code</label>
+          <input className={styles.input} type="text" value={user.zip || ''} onChange={e => setUser({ ...user, zip: e.target.value })} />
         </div>
-      </section>
+      </div>
 
       {/* ABOUT */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">About You</h2>
-        <div>
-          <label className={labelClass}>Bio</label>
-          <textarea className={inputClass} value={user.bio || ''} onChange={e => setUser({ ...user, bio: e.target.value })} rows={4} maxLength={500} placeholder="Tell people what makes you, you." />
-          <div className="text-xs text-gray-500 mt-1">{(user.bio || '').length}/500</div>
+      <div className={styles.section}>
+        <div className={styles.sectionLabel}>03 — About you</div>
+        <div className={styles.field}>
+          <label className={styles.label}>Bio</label>
+          <textarea className={styles.textarea} value={user.bio || ''} onChange={e => setUser({ ...user, bio: e.target.value })} rows={4} maxLength={500} placeholder="The interesting stuff" />
+          <div className={styles.charCount}>{(user.bio || '').length}/500</div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Occupation</label>
-            <input className={inputClass} type="text" value={user.occupation || ''} onChange={e => setUser({ ...user, occupation: e.target.value })} placeholder="What you do" />
+        <div className={styles.row}>
+          <div className={styles.field}>
+            <label className={styles.label}>Occupation</label>
+            <input className={styles.input} type="text" value={user.occupation || ''} onChange={e => setUser({ ...user, occupation: e.target.value })} placeholder="what you do" />
           </div>
-          <div>
-            <label className={labelClass}>Education</label>
-            <input className={inputClass} type="text" value={user.education || ''} onChange={e => setUser({ ...user, education: e.target.value })} placeholder="Where you studied" />
-          </div>
-        </div>
-        <div>
-          <label className={labelClass}>Music (comma-separated)</label>
-          <input className={inputClass} type="text" value={arrayToString(user.music)} onChange={e => setUser({ ...user, music: stringToArray(e.target.value) })} placeholder="indie rock, jazz, taylor swift" />
-        </div>
-        <div>
-          <label className={labelClass}>Food (comma-separated)</label>
-          <input className={inputClass} type="text" value={arrayToString(user.food)} onChange={e => setUser({ ...user, food: stringToArray(e.target.value) })} placeholder="thai, pizza, sushi" />
-        </div>
-        <div>
-          <label className={labelClass}>Hobbies (comma-separated)</label>
-          <input className={inputClass} type="text" value={arrayToString(user.hobbies)} onChange={e => setUser({ ...user, hobbies: stringToArray(e.target.value) })} placeholder="hiking, photography, board games" />
-        </div>
-      </section>
-
-      {/* PREFERENCES */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Match Preferences</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Min age</label>
-            <input className={inputClass} type="number" min={18} max={100} value={user.age_min || ''} onChange={e => setUser({ ...user, age_min: parseInt(e.target.value) || null })} />
-          </div>
-          <div>
-            <label className={labelClass}>Max age</label>
-            <input className={inputClass} type="number" min={18} max={100} value={user.age_max || ''} onChange={e => setUser({ ...user, age_max: parseInt(e.target.value) || null })} />
+          <div className={styles.field}>
+            <label className={styles.label}>Education</label>
+            <input className={styles.input} type="text" value={user.education || ''} onChange={e => setUser({ ...user, education: e.target.value })} placeholder="where you studied" />
           </div>
         </div>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={user.auto_rematch || false} onChange={e => setUser({ ...user, auto_rematch: e.target.checked })} />
-          <span className="text-sm">Auto-rematch me when a match ends</span>
-        </label>
-      </section>
+        <div className={styles.field}>
+          <label className={styles.label}>Music you love</label>
+          <input className={styles.input} type="text" value={arrayToString(user.music)} onChange={e => setUser({ ...user, music: stringToArray(e.target.value) })} placeholder="indie rock, jazz, taylor swift" />
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Food you crave</label>
+          <input className={styles.input} type="text" value={arrayToString(user.food)} onChange={e => setUser({ ...user, food: stringToArray(e.target.value) })} placeholder="thai, pizza, sushi" />
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Hobbies & obsessions</label>
+          <input className={styles.input} type="text" value={arrayToString(user.hobbies)} onChange={e => setUser({ ...user, hobbies: stringToArray(e.target.value) })} placeholder="hiking, pottery, conspiracy theories" />
+        </div>
+      </div>
 
       {/* PERSONALITY */}
       {user.archetype && (
-        <section className="bg-gray-900 rounded-lg p-4">
-          <h2 className="text-sm uppercase tracking-wider text-gray-400 mb-1">Your Personality Type</h2>
-          <p className="text-2xl font-bold">{user.archetype}</p>
-        </section>
+        <div className={styles.personalityCard}>
+          <div className={styles.personalityLabel}>Your personality archetype</div>
+          <div className={styles.personalityType}>{user.archetype}</div>
+        </div>
       )}
 
+      {/* PREFERENCES */}
+      <div className={styles.section}>
+        <div className={styles.sectionLabel}>04 — Match preferences</div>
+        <div className={styles.row}>
+          <div className={styles.field}>
+            <label className={styles.label}>Min age</label>
+            <input className={styles.input} type="number" min={18} max={100} value={user.age_min || ''} onChange={e => setUser({ ...user, age_min: parseInt(e.target.value) || null })} />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Max age</label>
+            <input className={styles.input} type="number" min={18} max={100} value={user.age_max || ''} onChange={e => setUser({ ...user, age_max: parseInt(e.target.value) || null })} />
+          </div>
+        </div>
+        <label className={styles.checkbox}>
+          <input type="checkbox" checked={user.auto_rematch || false} onChange={e => setUser({ ...user, auto_rematch: e.target.checked })} />
+          <span>Auto-rematch me when a match ends</span>
+        </label>
+      </div>
+
       {/* SAVE BAR */}
-      <div className="flex items-center gap-4 sticky bottom-0 bg-black py-4 border-t border-gray-800 -mx-4 px-4">
-        <button type="submit" disabled={saving} className="bg-white text-black px-6 py-2 rounded-full font-medium disabled:opacity-50 hover:bg-gray-200 transition">
-          {saving ? 'Saving...' : 'Save changes'}
+      <div className={styles.saveBar}>
+        <button type="submit" disabled={saving} className={styles.saveButton}>
+          {saving ? 'saving...' : 'save changes'}
         </button>
-        {message && <span className="text-sm">{message}</span>}
+        {message && <span className={styles.message}>{message}</span>}
       </div>
 
       {/* ACCOUNT */}
-      <section className="border-t border-gray-800 pt-6 space-y-3">
-        <h2 className="text-lg font-semibold">Account</h2>
-        <button type="button" onClick={handleLogout} className="text-sm text-gray-400 hover:text-white block">
-          Log out
-        </button>
-        <button type="button" onClick={handleDelete} className="text-sm text-red-500 hover:text-red-400 block">
-          Delete account
-        </button>
-      </section>
+      <div className={styles.accountSection}>
+        <div className={styles.accountTitle}>Account</div>
+        <button type="button" onClick={handleLogout} className={styles.linkButton}>Log out</button>
+        <button type="button" onClick={handleDelete} className={`${styles.linkButton} ${styles.linkButtonDanger}`}>Delete account</button>
+      </div>
     </form>
   );
 }
