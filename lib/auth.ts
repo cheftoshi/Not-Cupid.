@@ -1,23 +1,15 @@
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
 import { randomBytes } from 'crypto';
+import { supabaseAdmin } from '@/lib/supabase';
 
 const COOKIE_NAME = 'nc_session';
 const SESSION_DAYS = 30;
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 export async function createSession(userId: string) {
-  const supabase = getSupabase();
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
-  const { error } = await supabase.from('sessions').insert({
+  const { error } = await supabaseAdmin.from('sessions').insert({
     token,
     user_id: userId,
     expires_at: expiresAt.toISOString(),
@@ -43,9 +35,7 @@ export async function getCurrentUser() {
   const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return null;
 
-  const supabase = getSupabase();
-
-  const { data: session } = await supabase
+  const { data: session } = await supabaseAdmin
     .from('sessions')
     .select('user_id, expires_at')
     .eq('token', token)
@@ -54,14 +44,13 @@ export async function getCurrentUser() {
   if (!session) return null;
   if (new Date(session.expires_at) < new Date()) return null;
 
-  // Update last_used_at (fire and forget)
-  supabase
+  supabaseAdmin
     .from('sessions')
     .update({ last_used_at: new Date().toISOString() })
     .eq('token', token)
     .then(() => {});
 
-  const { data: user } = await supabase
+  const { data: user } = await supabaseAdmin
     .from('users')
     .select('*')
     .eq('id', session.user_id)
@@ -75,8 +64,7 @@ export async function destroySession() {
   const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return;
 
-  const supabase = getSupabase();
-  await supabase.from('sessions').delete().eq('token', token);
+  await supabaseAdmin.from('sessions').delete().eq('token', token);
   cookies().delete(COOKIE_NAME);
 }
 
