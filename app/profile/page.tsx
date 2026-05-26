@@ -13,16 +13,15 @@ export default async function ProfilePage() {
   const firstName = (user.name || 'friend').split(' ')[0];
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <nav className={styles.nav}>
-          <div className={styles.navBrand}>NOTCUPID</div>
-          <div className={styles.navLinks}>
-            <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
-            <a href="/dashboard" className={styles.navLink}>Matches</a>
-            <a href="/quiz" className={styles.navLink}>Retake quiz</a>
-          </div>
-        </nav>
+   <nav className={styles.nav}>
+  <div className={styles.navBrand}>NOTCUPID</div>
+  <div className={styles.navLinks}>
+    <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
+    <a href="/profile/preview" className={styles.navLink}>Preview</a>
+    <a href="/dashboard" className={styles.navLink}>Matches</a>
+    <a href="/quiz" className={styles.navLink}>Retake quiz</a>
+  </div>
+</nav>
         <h1 className={styles.title}>
           hi <span className={styles.titleAccent}>{firstName.toLowerCase()}.</span>
         </h1>
