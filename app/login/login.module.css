@@ -189,3 +189,28 @@
 @media (max-width: 480px) {
   .title { font-size: 2.25rem; }
 }
+
+.suggestion {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #7a7590;
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+}
+
+.suggestionButton {
+  background: none;
+  border: none;
+  color: #A892D8;
+  font-style: italic;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+.suggestionButton:hover {
+  color: #8b7fd4;
+}
