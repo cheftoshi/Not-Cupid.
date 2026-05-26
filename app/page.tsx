@@ -23,6 +23,9 @@ export default function Home() {
             <a href="/quiz" className={styles.btnPri}>Take the quiz →</a>
             <a href="#how" className={styles.btnGhost}>How it works</a>
           </div>
+          <div style={{ marginTop: '0.875rem', fontSize: '0.8125rem', color: '#6b6975', fontStyle: 'italic', fontFamily: 'Georgia, ui-serif, serif' }}>
+            already signed up? <a href="/login" style={{ color: '#0a0a0a', fontStyle: 'normal', fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: '3px', fontWeight: 600 }}>log in →</a>
+          </div>
           <div className={styles.heroStatAside}>
             <div className={styles.asideNum}>24</div>
             <div className={styles.asideLabel}>Questions · 7 minutes</div>
@@ -122,12 +125,19 @@ export default function Home() {
         <div className={styles.ctaRight}>
           <a href="/quiz" className={styles.btnPri}>Start the quiz →</a>
           <a href="#how" className={styles.btnGhost}>See how it works</a>
+          <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: '#6b6975', fontStyle: 'italic', fontFamily: 'Georgia, ui-serif, serif', textAlign: 'center' }}>
+            been here before? <a href="/login" style={{ color: '#0a0a0a', fontStyle: 'normal', fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: '3px', fontWeight: 600 }}>log in →</a>
+          </div>
         </div>
       </div>
 
       <footer className={styles.footer}>
         <div className={styles.footerLogo}>NOT<span>CUPID</span></div>
-        <div className={styles.footerCopy}>Boston only · notcupid.com · 2025</div>
+        <div className={styles.footerCopy}>
+          Boston only · notcupid.com · 2025
+          <span style={{ margin: '0 0.5rem', opacity: 0.4 }}>·</span>
+          <a href="/login" style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '3px' }}>log in</a>
+        </div>
       </footer>
     </>
   )
