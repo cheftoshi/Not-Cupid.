@@ -1,0 +1,23 @@
+.endChatLink {
+  align-self: center;
+  margin: 2rem auto 0;
+  background: none;
+  border: none;
+  font-family: ui-monospace, monospace;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #b8b3c4;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  transition: color 0.15s;
+}
+
+.endChatLink:hover:not(:disabled) {
+  color: #c92a2a;
+}
+
+.endChatLink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
