@@ -5,55 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
 import CorpFooter from '@/components/corp-footer';
+import { suggestEmailCorrection } from '@/lib/email-typos';
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
   if (!raw.startsWith('/')) return null;
   if (raw.startsWith('//')) return null;
   return raw;
-}
-
-// Common domain typos → corrections
-const EMAIL_TYPOS: Record<string, string> = {
-  'gmal.com': 'gmail.com',
-  'gmial.com': 'gmail.com',
-  'gnail.com': 'gmail.com',
-  'gmai.com': 'gmail.com',
-  'gmail.cm': 'gmail.com',
-  'gmail.co': 'gmail.com',
-  'gmaill.com': 'gmail.com',
-  'outlook.fom': 'outlook.com',
-  'outlok.com': 'outlook.com',
-  'outloo.com': 'outlook.com',
-  'outlook.cm': 'outlook.com',
-  'outlook.co': 'outlook.com',
-  'yahoo.cm': 'yahoo.com',
-  'yahoo.co': 'yahoo.com',
-  'yaho.com': 'yahoo.com',
-  'yahooo.com': 'yahoo.com',
-  'hotmial.com': 'hotmail.com',
-  'hotmal.com': 'hotmail.com',
-  'hotmail.cm': 'hotmail.com',
-  'hotmail.co': 'hotmail.com',
-  'iclud.com': 'icloud.com',
-  'icloud.cm': 'icloud.com',
-  'icoud.com': 'icloud.com',
-  'me.cm': 'me.com',
-  'northeastern.com': 'northeastern.edu',
-  'harvard.com': 'harvard.edu',
-  'bu.com': 'bu.edu',
-  'mit.com': 'mit.edu',
-};
-
-function suggestEmailCorrection(email: string): string | null {
-  const at = email.lastIndexOf('@');
-  if (at < 0) return null;
-  const domain = email.slice(at + 1).toLowerCase().trim();
-  const correction = EMAIL_TYPOS[domain];
-  if (correction) {
-    return email.slice(0, at + 1) + correction;
-  }
-  return null;
 }
 
 export default function LoginPage() {

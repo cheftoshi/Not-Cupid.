@@ -91,7 +91,21 @@ export default function AdminClient() {
             🔄 Run rematch cron
           </a>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'1.5rem'}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem',marginBottom:'1.5rem'}}>
+          <button
+            onClick={async () => {
+              const res = await fetch('/api/admin/fix-email-typos')
+              const data = await res.json()
+              if ((data.count || 0) === 0) { alert('No typo\'d emails found. ✓'); return }
+              const sample = (data.candidates || []).slice(0, 6).map((c: any) => `  ${c.email} → ${c.suggestion}`).join('\n')
+              if (!confirm(`Found ${data.count} typo'd emails:\n\n${sample}${data.count > 6 ? `\n  …and ${data.count - 6} more` : ''}\n\nFix them all? (Already-blasted users will be re-queued.)`)) return
+              const fixRes = await fetch('/api/admin/fix-email-typos', { method: 'POST' })
+              const fixData = await fixRes.json()
+              alert(`Fixed ${fixData.fixed || 0} of ${fixData.targeted || 0}. Failed: ${fixData.failed || 0}${fixData.errors?.length ? '\n\n' + fixData.errors.slice(0,5).join('\n') : ''}`)
+            }}
+            style={{display:'block',background:'#c39418',color:'#fff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',border:'none',cursor:'pointer',textAlign:'center'}}>
+            ⚠ Fix email typos
+          </button>
           <button
             onClick={async () => {
               if (!confirm('Pull Resend send history and mark users who already received the blast?')) return

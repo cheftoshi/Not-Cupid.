@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import CorpFooter from '@/components/corp-footer'
+import { suggestEmailCorrection } from '@/lib/email-typos'
 import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
 import type { VibeKey } from '@/lib/quiz-data'
 import styles from './quiz.module.css'
@@ -393,6 +394,23 @@ if (res.status === 409) {
                   {form.email && !emailValid && (
                     <span className={styles.fieldError}>that doesn't look like an email</span>
                   )}
+                  {form.email.includes('@') && (() => {
+                    const suggestion = suggestEmailCorrection(form.email)
+                    if (!suggestion) return null
+                    return (
+                      <div style={{fontFamily:"'DM Mono', ui-monospace, monospace",fontSize:'.62rem',letterSpacing:'.06em',color:'#5b4fa0',marginTop:'.35rem'}}>
+                        did you mean{' '}
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, email: suggestion }))}
+                          style={{background:'rgba(139,127,212,0.15)',border:'1px solid rgba(139,127,212,0.4)',color:'#5b4fa0',padding:'.15rem .5rem',borderRadius:'4px',fontFamily:'inherit',fontSize:'inherit',cursor:'pointer'}}
+                        >
+                          {suggestion}
+                        </button>
+                        {' '}?
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
 
