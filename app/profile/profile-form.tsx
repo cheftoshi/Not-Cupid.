@@ -3,16 +3,20 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
+import ChipInput from './chip-input';
 
-export default function ProfileForm({ initialUser }: { initialUser: any }) {
+type Props = {
+  initialUser: any;
+  onSaved?: (user: any) => void;
+  onCancel?: () => void;
+};
+
+export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<any>(initialUser);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
-  const arrayToString = (arr: string[] | null | undefined) => arr?.join(', ') || '';
-  const stringToArray = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
 
   const needsQuiz = !user.archetype || !user.score_honesty;
 
@@ -33,7 +37,12 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
       const data = await res.json();
       setUser(data.user);
       setMessage('✓ saved');
-      setTimeout(() => setMessage(''), 3000);
+      if (onSaved) {
+        // Brief flash of confirmation, then back to the dashboard.
+        setTimeout(() => onSaved(data.user), 400);
+      } else {
+        setTimeout(() => setMessage(''), 3000);
+      }
     } catch (err: any) {
       setMessage(err.message || 'error saving');
     } finally {
@@ -79,7 +88,18 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
 
   return (
     <form onSubmit={handleSave}>
-      {/* QUIZ NUDGE if not done */}
+      <div className={styles.editTop}>
+        <div>
+          <div className={styles.editEyebrow}>edit profile</div>
+          <div className={styles.editTitle}>tune your <em>vibe.</em></div>
+        </div>
+        {onCancel && (
+          <button type="button" onClick={onCancel} className={styles.editClose} aria-label="back to dashboard">
+            ← back
+          </button>
+        )}
+      </div>
+
       {needsQuiz && (
         <div className={styles.quizBanner}>
           <div className={styles.quizBannerText}>
@@ -159,8 +179,15 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
       <div className={styles.section}>
         <div className={styles.sectionLabel}>03 — About you</div>
         <div className={styles.field}>
-          <label className={styles.label}>Bio</label>
-          <textarea className={styles.textarea} value={user.bio || ''} onChange={e => setUser({ ...user, bio: e.target.value })} rows={4} maxLength={500} placeholder="The interesting stuff" />
+          <label className={styles.label}>Bio · <span className={styles.labelHint}>the interesting stuff</span></label>
+          <textarea
+            className={`${styles.textarea} ${styles.textareaArt}`}
+            value={user.bio || ''}
+            onChange={e => setUser({ ...user, bio: e.target.value })}
+            rows={5}
+            maxLength={500}
+            placeholder="what's the most interesting thing about you that isn't obvious from a photo?"
+          />
           <div className={styles.charCount}>{(user.bio || '').length}/500</div>
         </div>
         <div className={styles.row}>
@@ -174,16 +201,16 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
           </div>
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Music you love</label>
-          <input className={styles.input} type="text" value={arrayToString(user.music)} onChange={e => setUser({ ...user, music: stringToArray(e.target.value) })} placeholder="indie rock, jazz, taylor swift" />
+          <label className={styles.label}>Music you love · <span className={styles.labelHint}>press enter or comma to add</span></label>
+          <ChipInput value={user.music || []} onChange={(arr) => setUser({ ...user, music: arr })} placeholder="indie rock, jazz, taylor swift" variant="lav" />
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Food you crave</label>
-          <input className={styles.input} type="text" value={arrayToString(user.food)} onChange={e => setUser({ ...user, food: stringToArray(e.target.value) })} placeholder="thai, pizza, sushi" />
+          <label className={styles.label}>Food you crave · <span className={styles.labelHint}>press enter or comma to add</span></label>
+          <ChipInput value={user.food || []} onChange={(arr) => setUser({ ...user, food: arr })} placeholder="thai, pizza, sushi" variant="accent" />
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Hobbies & obsessions</label>
-          <input className={styles.input} type="text" value={arrayToString(user.hobbies)} onChange={e => setUser({ ...user, hobbies: stringToArray(e.target.value) })} placeholder="hiking, pottery, conspiracy theories" />
+          <label className={styles.label}>Hobbies & obsessions · <span className={styles.labelHint}>press enter or comma to add</span></label>
+          <ChipInput value={user.hobbies || []} onChange={(arr) => setUser({ ...user, hobbies: arr })} placeholder="hiking, pottery, conspiracy theories" variant="mix" />
         </div>
       </div>
 
@@ -217,8 +244,13 @@ export default function ProfileForm({ initialUser }: { initialUser: any }) {
       {/* SAVE BAR */}
       <div className={styles.saveBar}>
         <button type="submit" disabled={saving} className={styles.saveButton}>
-          {saving ? 'saving...' : 'save changes'}
+          {saving ? 'saving...' : (onSaved ? 'save & done →' : 'save changes')}
         </button>
+        {onCancel && (
+          <button type="button" onClick={onCancel} className={styles.cancelButton} disabled={saving}>
+            cancel
+          </button>
+        )}
         {message && <span className={styles.message}>{message}</span>}
       </div>
 

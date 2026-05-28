@@ -1,0 +1,156 @@
+'use client';
+
+import Link from 'next/link';
+import styles from './profile.module.css';
+
+export default function ProfileDashboard({ user, onEdit, onLogout }: {
+  user: any;
+  onEdit: () => void;
+  onLogout: () => void;
+}) {
+  const firstName = (user.name || 'friend').split(' ')[0];
+  const heightFt = user.height_cm ? Math.floor(user.height_cm / 30.48) : null;
+  const heightIn = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : null;
+  const needsQuiz = !user.archetype || !user.score_honesty;
+
+  const tags: Array<{ label: string; items: string[]; variant: 'lav' | 'accent' }> = [
+    { label: 'Music', items: user.music || [], variant: 'lav' },
+    { label: 'Food', items: user.food || [], variant: 'accent' },
+    { label: 'Obsessions', items: user.hobbies || [], variant: 'lav' },
+  ];
+
+  const seekingLabel = user.seeking === 'm' ? 'men' : user.seeking === 'f' ? 'women' : user.seeking === 'both' ? 'anyone' : '—';
+  const genderLabel = user.gender === 'm' ? 'man' : user.gender === 'f' ? 'woman' : user.gender === 'nb' ? 'non-binary' : user.gender === 'o' ? 'other' : '—';
+
+  return (
+    <div className={styles.dash}>
+      {/* HERO */}
+      <div className={styles.dashHero}>
+        <div className={styles.dashHeroLeft}>
+          <div className={styles.dashGreet}>hi <em>{firstName.toLowerCase()}.</em></div>
+          <div className={styles.dashEyebrow}>your profile · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase()}</div>
+          {user.archetype && (
+            <div className={styles.dashArchetype}>
+              <span className={styles.dashArchetypeKick}>you are the</span>
+              <span className={styles.dashArchetypeName}>{user.archetype}</span>
+            </div>
+          )}
+        </div>
+        <div className={styles.dashHeroRight}>
+          <div className={styles.dashPhotoWrap}>
+            {user.photo_url ? (
+              <img src={user.photo_url} alt="" className={styles.dashPhoto} />
+            ) : (
+              <div className={styles.dashPhotoEmpty}>
+                <span>add a photo →</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {needsQuiz && (
+        <div className={styles.dashBanner}>
+          <span><em>finish the quiz</em> to unlock matching</span>
+          <Link href="/quiz" className={styles.dashBannerBtn}>take the quiz</Link>
+        </div>
+      )}
+
+      {/* QUICK STATS GRID */}
+      <div className={styles.dashStats}>
+        <Link href="/dashboard" className={styles.dashStatCard}>
+          <div className={styles.dashStatIcon}>💘</div>
+          <div className={styles.dashStatLabel}>your matches</div>
+          <div className={styles.dashStatHint}>view →</div>
+        </Link>
+        <Link href="/profile/preview" className={styles.dashStatCard}>
+          <div className={styles.dashStatIcon}>👁</div>
+          <div className={styles.dashStatLabel}>preview</div>
+          <div className={styles.dashStatHint}>what others see →</div>
+        </Link>
+        <button type="button" onClick={onEdit} className={`${styles.dashStatCard} ${styles.dashStatCardCta}`}>
+          <div className={styles.dashStatIcon}>✎</div>
+          <div className={styles.dashStatLabel}>edit profile</div>
+          <div className={styles.dashStatHint}>update →</div>
+        </button>
+      </div>
+
+      {/* BIO PULLQUOTE */}
+      {user.bio ? (
+        <div className={styles.dashBioCard}>
+          <div className={styles.dashSectionLabel}>about you</div>
+          <p className={styles.dashBio}>
+            <span className={styles.dashBioQuote}>“</span>
+            {user.bio}
+            <span className={styles.dashBioQuote}>”</span>
+          </p>
+        </div>
+      ) : (
+        <div className={styles.dashEmpty} onClick={onEdit}>
+          <div className={styles.dashSectionLabel}>about you</div>
+          <p className={styles.dashEmptyText}>no bio yet — <em>click to add one</em></p>
+        </div>
+      )}
+
+      {/* BASICS STRIP */}
+      <div className={styles.dashBasics}>
+        <div className={styles.dashSectionLabel}>the basics</div>
+        <div className={styles.dashBasicsGrid}>
+          {user.age && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>age</span><span className={styles.dashBasicV}>{user.age}</span></div>}
+          {user.height_cm && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>height</span><span className={styles.dashBasicV}>{heightFt}'{heightIn}"</span></div>}
+          {user.zip && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>zip</span><span className={styles.dashBasicV}>{user.zip}</span></div>}
+          {user.gender && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>identity</span><span className={styles.dashBasicV}>{genderLabel}</span></div>}
+          {user.seeking && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>seeking</span><span className={styles.dashBasicV}>{seekingLabel}</span></div>}
+          {user.occupation && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>work</span><span className={styles.dashBasicV}>{user.occupation}</span></div>}
+          {user.education && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>school</span><span className={styles.dashBasicV}>{user.education}</span></div>}
+        </div>
+      </div>
+
+      {/* VIBES (TAGS) */}
+      {tags.some(t => t.items.length > 0) && (
+        <div className={styles.dashVibes}>
+          <div className={styles.dashSectionLabel}>your vibes</div>
+          {tags.map(t => t.items.length > 0 && (
+            <div key={t.label} className={styles.dashTagRow}>
+              <div className={styles.dashTagHead}>{t.label.toLowerCase()}</div>
+              <div className={styles.dashTagList}>
+                {t.items.map((item, i) => (
+                  <span
+                    key={`${item}-${i}`}
+                    className={styles.dashTag}
+                    style={
+                      t.variant === 'lav'
+                        ? { background: 'rgba(139,127,212,0.13)', color: '#5b4fa0', borderColor: 'rgba(139,127,212,0.35)' }
+                        : { background: '#ede9ff', color: '#0e0c1a', borderColor: 'rgba(14,12,26,0.13)' }
+                    }
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MATCH PREFERENCES */}
+      <div className={styles.dashPrefs}>
+        <div className={styles.dashSectionLabel}>match preferences</div>
+        <div className={styles.dashPrefRow}>
+          <span>age range</span>
+          <span className={styles.dashPrefVal}>{user.age_min || '—'} → {user.age_max || '—'}</span>
+        </div>
+        <div className={styles.dashPrefRow}>
+          <span>auto-rematch</span>
+          <span className={styles.dashPrefVal}>{user.auto_rematch ? 'on' : 'off'}</span>
+        </div>
+      </div>
+
+      {/* ACCOUNT FOOTER */}
+      <div className={styles.dashFooter}>
+        <button type="button" onClick={onEdit} className={styles.dashEditBtn}>edit profile</button>
+        <button type="button" onClick={onLogout} className={styles.dashLogout}>log out</button>
+      </div>
+    </div>
+  );
+}

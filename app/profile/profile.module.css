@@ -314,3 +314,487 @@
   .row { grid-template-columns: 1fr; }
   .title { font-size: 2.5rem; }
 }
+
+/* =========================================================
+   DASHBOARD (read-only view)
+   ========================================================= */
+.dash { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.dashHero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: center;
+  padding: 1rem 0 1.5rem;
+}
+.dashHeroLeft { display: flex; flex-direction: column; gap: 1rem; }
+.dashEyebrow {
+  font-family: 'DM Mono', monospace, ui-monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+}
+.dashGreet {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: clamp(2.5rem, 6vw, 3.75rem);
+  line-height: 0.95;
+  color: #0a0a0a;
+  letter-spacing: -0.02em;
+}
+.dashGreet em {
+  font-style: italic;
+  color: #5b4fa0;
+  font-weight: 700;
+}
+
+.dashArchetype {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: #0a0a0a;
+  color: #fff;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  align-self: flex-start;
+  max-width: 320px;
+}
+.dashArchetypeKick {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.dashArchetypeName {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 1.4rem;
+}
+
+.dashPhotoWrap {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 12px 32px -8px rgba(91,79,160,0.25);
+  background: #ede9ff;
+}
+.dashPhoto { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dashPhotoEmpty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  cursor: pointer;
+}
+
+.dashBanner {
+  background: linear-gradient(135deg, #ede9ff 0%, #fff 100%);
+  border: 1px solid rgba(139,127,212,0.4);
+  border-radius: 14px;
+  padding: 1.1rem 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.dashBanner em {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-weight: 700;
+  color: #0a0a0a;
+}
+.dashBannerBtn {
+  background: #0a0a0a;
+  color: #fff;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.dashStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.dashStatCard {
+  background: #fff;
+  border: 1px solid #e5e1ec;
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.dashStatCard:hover {
+  border-color: #8b7fd4;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -8px rgba(91,79,160,0.2);
+}
+.dashStatCardCta {
+  background: #0a0a0a;
+  border-color: #0a0a0a;
+  color: #fff;
+}
+.dashStatCardCta:hover { background: #5b4fa0; border-color: #5b4fa0; }
+.dashStatIcon { font-size: 1.4rem; }
+.dashStatLabel {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 1rem;
+}
+.dashStatHint {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.dashSectionLabel {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dashSectionLabel::before {
+  content: '';
+  width: 1.5rem;
+  height: 1px;
+  background: #8b7fd4;
+}
+
+.dashBioCard {
+  background: #fff;
+  border: 1px solid #e5e1ec;
+  border-radius: 14px;
+  padding: 1.75rem 2rem;
+  position: relative;
+}
+.dashBio {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 1.25rem;
+  line-height: 1.55;
+  color: #0a0a0a;
+  font-style: italic;
+  margin: 0;
+  position: relative;
+}
+.dashBioQuote {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 2.5rem;
+  color: #8b7fd4;
+  line-height: 0;
+  vertical-align: -0.4em;
+  margin: 0 0.15em;
+  font-style: normal;
+}
+
+.dashEmpty {
+  background: #fff;
+  border: 1px dashed rgba(139,127,212,0.5);
+  border-radius: 14px;
+  padding: 1.5rem 2rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dashEmpty:hover { background: #fafaff; }
+.dashEmptyText {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 1rem;
+  color: #8b7fd4;
+  margin: 0;
+}
+.dashEmptyText em { font-style: italic; color: #5b4fa0; }
+
+.dashBasics {
+  background: #fff;
+  border: 1px solid #e5e1ec;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+}
+.dashBasicsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem 1.25rem;
+}
+.dashBasicItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-right: 1rem;
+  border-right: 1px solid rgba(139,127,212,0.15);
+}
+.dashBasicItem:last-child { border-right: none; }
+.dashBasicK {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+}
+.dashBasicV {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 1.1rem;
+  color: #0a0a0a;
+}
+
+.dashVibes {
+  background: #fff;
+  border: 1px solid #e5e1ec;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.dashTagRow { display: flex; flex-direction: column; gap: 0.6rem; }
+.dashTagHead {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b6975;
+}
+.dashTagList { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.dashTag {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.78rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.dashPrefs {
+  background: #fff;
+  border: 1px solid #e5e1ec;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+}
+.dashPrefRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(139,127,212,0.1);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: #6b6975;
+}
+.dashPrefRow:last-child { border-bottom: none; padding-bottom: 0; }
+.dashPrefVal {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: #0a0a0a;
+}
+
+.dashFooter {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding-top: 1rem;
+  flex-wrap: wrap;
+}
+.dashEditBtn {
+  background: #0a0a0a;
+  color: #fff;
+  border: none;
+  padding: 0.9rem 1.75rem;
+  border-radius: 999px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dashEditBtn:hover { background: #5b4fa0; }
+.dashLogout {
+  background: none;
+  border: none;
+  color: #8b7fd4;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.dashLogout:hover { color: #5b4fa0; }
+
+@media (max-width: 640px) {
+  .dashHero { grid-template-columns: 1fr; gap: 1.25rem; }
+  .dashHeroRight { order: -1; display: flex; justify-content: flex-start; }
+  .dashPhotoWrap { width: 96px; height: 96px; }
+  .dashStats { grid-template-columns: 1fr; }
+  .dashBioCard, .dashBasics, .dashVibes, .dashPrefs { padding: 1.25rem 1.25rem; }
+  .dashBasicItem { border-right: none; padding-right: 0; }
+  .dashBio { font-size: 1.1rem; }
+}
+
+/* =========================================================
+   EDIT TOP BAR
+   ========================================================= */
+.editTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.editEyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  margin-bottom: 0.4rem;
+}
+.editTitle {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 0.95;
+  color: #0a0a0a;
+  letter-spacing: -0.02em;
+}
+.editTitle em {
+  font-style: italic;
+  color: #5b4fa0;
+  font-weight: 700;
+}
+.editClose {
+  background: none;
+  border: 1px solid #e5e1ec;
+  color: #6b6975;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.editClose:hover { border-color: #8b7fd4; color: #5b4fa0; }
+
+.labelHint {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: #b8b3c4;
+  font-weight: 400;
+}
+
+.textareaArt {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  font-style: italic;
+}
+.textareaArt::placeholder {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  color: #c8c4dc;
+}
+
+.cancelButton {
+  background: none;
+  border: 1px solid #e5e1ec;
+  color: #6b6975;
+  padding: 0.9rem 1.5rem;
+  border-radius: 999px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cancelButton:hover:not(:disabled) { border-color: #8b7fd4; color: #5b4fa0; }
+.cancelButton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* =========================================================
+   CHIP INPUT
+   ========================================================= */
+.chipInput {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e1ec;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 48px;
+  align-items: center;
+  cursor: text;
+  transition: border-color 0.15s;
+}
+.chipInput:focus-within { border-color: #0a0a0a; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  border-radius: 999px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.chipX {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.5;
+  margin-left: 0.15rem;
+}
+.chipX:hover { opacity: 1; }
+
+.chipFieldInput {
+  flex: 1;
+  min-width: 80px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #0a0a0a;
+  padding: 0.2rem 0;
+}
+.chipFieldInput::placeholder { color: #b8b3c4; }
