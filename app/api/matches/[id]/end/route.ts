@@ -4,8 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-type Reason = 'went_on_date' | 'ghosted' | 'not_vibing' | 'user_ended'
-const VALID_REASONS: Reason[] = ['went_on_date', 'ghosted', 'not_vibing', 'user_ended']
+type Reason = 'ghosted' | 'not_vibing' | 'user_ended'
+const VALID_REASONS: Reason[] = ['ghosted', 'not_vibing', 'user_ended']
 
 const COOLDOWN_DAYS = 7
 const GHOST_REPORTS_BAN_THRESHOLD = 3
@@ -18,7 +18,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try { body = await req.json() } catch { /* end with no body is OK */ }
 
   const reason: Reason = VALID_REASONS.includes(body?.reason) ? body.reason : 'user_ended'
-  const feedback = body?.feedback as { rating?: number; would_again?: boolean; notes?: string } | undefined
 
   const matchId = params.id
 
@@ -70,17 +69,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     { user_a_id: aId, user_b_id: bId, match_id: matchId, outcome: reason },
     { onConflict: 'user_a_id,user_b_id' }
   )
-
-  // Reason-specific side effects
-  if (reason === 'went_on_date' && feedback?.rating != null) {
-    const rating = Math.max(1, Math.min(5, Math.round(feedback.rating)))
-    const notes = typeof feedback.notes === 'string' ? feedback.notes.slice(0, 2000) : null
-    const would_again = typeof feedback.would_again === 'boolean' ? feedback.would_again : null
-    await supabaseAdmin.from('date_feedback').upsert(
-      { match_id: matchId, user_id: user.id, rating, would_again, notes },
-      { onConflict: 'match_id,user_id' }
-    )
-  }
 
   if (reason === 'ghosted') {
     // Only count ghost reports if the match actually reached mutual acceptance —

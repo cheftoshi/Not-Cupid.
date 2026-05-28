@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './end-match-dialog.module.css';
 
-type Step = 'choose' | 'rate-date' | 'confirm-ghost' | 'confirm-not-vibing' | 'submitting' | 'done';
+type Step = 'choose' | 'confirm-ghost' | 'confirm-not-vibing' | 'submitting' | 'done';
 
 export default function EndMatchDialog({
   matchId,
@@ -21,25 +21,18 @@ export default function EndMatchDialog({
   const [step, setStep] = useState<Step>('choose');
   const [error, setError] = useState('');
 
-  const [rating, setRating] = useState<number>(0);
-  const [wouldAgain, setWouldAgain] = useState<boolean | null>(null);
-  const [notes, setNotes] = useState('');
-
-  async function submit(reason: 'went_on_date' | 'ghosted' | 'not_vibing', feedback?: any) {
+  async function submit(reason: 'ghosted' | 'not_vibing') {
     setStep('submitting');
     setError('');
     try {
       const res = await fetch(`/api/matches/${matchId}/end`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason, feedback }),
+        body: JSON.stringify({ reason }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'failed');
       setStep('done');
-      setTimeout(() => {
-        if (onEnded) onEnded();
-        router.refresh();
-      }, 900);
+      setTimeout(() => { if (onEnded) onEnded(); router.refresh(); }, 900);
     } catch (e: any) {
       setError(e.message || 'something went wrong');
       setStep('choose');
@@ -55,15 +48,7 @@ export default function EndMatchDialog({
           <>
             <div className={styles.endEyebrow}>end this match</div>
             <h2 className={styles.endTitle}>what happened with <em>{otherName}?</em></h2>
-            <p className={styles.endSub}>this helps us improve the algo — and protect everyone.</p>
-
-            <button onClick={() => setStep('rate-date')} className={styles.endOpt}>
-              <span className={styles.endOptIcon}>🍷</span>
-              <div className={styles.endOptBody}>
-                <div className={styles.endOptTitle}>we went on a date</div>
-                <div className={styles.endOptDesc}>tell us how it went</div>
-              </div>
-            </button>
+            <p className={styles.endSub}>this helps us protect everyone — and improve the algo.</p>
 
             <button onClick={() => setStep('confirm-ghost')} className={styles.endOpt}>
               <span className={styles.endOptIcon}>👻</span>
@@ -82,50 +67,6 @@ export default function EndMatchDialog({
             </button>
 
             {error && <div className={styles.endError}>{error}</div>}
-          </>
-        )}
-
-        {step === 'rate-date' && (
-          <>
-            <div className={styles.endEyebrow}>your date with {otherName}</div>
-            <h2 className={styles.endTitle}>how was it?</h2>
-            <div className={styles.endStars}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setRating(n)}
-                  className={`${styles.endStar} ${rating >= n ? styles.endStarOn : ''}`}
-                  aria-label={`${n} stars`}
-                >★</button>
-              ))}
-            </div>
-
-            <div className={styles.endRow}>
-              <span className={styles.endQ}>would you see them again?</span>
-              <div className={styles.endToggle}>
-                <button type="button" onClick={() => setWouldAgain(true)} className={`${styles.endChip} ${wouldAgain === true ? styles.endChipOn : ''}`}>yes</button>
-                <button type="button" onClick={() => setWouldAgain(false)} className={`${styles.endChip} ${wouldAgain === false ? styles.endChipOn : ''}`}>no</button>
-              </div>
-            </div>
-
-            <textarea
-              className={styles.endNotes}
-              placeholder="anything else? (private — just for us)"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              maxLength={1000}
-            />
-
-            <div className={styles.endActions}>
-              <button onClick={() => setStep('choose')} className={styles.endGhostBtn}>← back</button>
-              <button
-                onClick={() => submit('went_on_date', { rating, would_again: wouldAgain, notes: notes.trim() || undefined })}
-                disabled={rating === 0}
-                className={styles.endPrimaryBtn}
-              >submit & end →</button>
-            </div>
           </>
         )}
 
@@ -163,7 +104,7 @@ export default function EndMatchDialog({
 
         {step === 'done' && (
           <div className={styles.endStatus}>
-            <div style={{fontSize:'2.5rem',marginBottom:'.5rem'}}>✓</div>
+            <div style={{ fontSize: '2.5rem', marginBottom: '.5rem' }}>✓</div>
             done.
           </div>
         )}

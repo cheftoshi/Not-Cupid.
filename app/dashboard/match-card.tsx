@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 import EndMatchDialog from '@/components/end-match-dialog';
+import DateFeedbackDialog from '@/components/date-feedback-dialog';
 
 interface Props {
   match: any;
@@ -22,6 +23,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [endOpen, setEndOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const isUser1 = match.user_1_id === currentUserId;
   const myAccepted = isUser1 ? match.user_1_accepted : match.user_2_accepted;
@@ -175,10 +177,19 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
       )}
 
       {phase === 'active' && (
-        <div className={styles.actions}>
-          <a href={`/match/${match.id}`} className={styles.chatButton}>open chat →</a>
-          <button onClick={() => setEndOpen(true)} className={styles.endMatchBtn}>end match</button>
-        </div>
+        <>
+          <div className={styles.actions}>
+            <a href={`/match/${match.id}`} className={styles.chatButton}>open chat →</a>
+          </div>
+          <div className={styles.subActions}>
+            <button onClick={() => setFeedbackOpen(true)} className={styles.subBtnDate}>
+              🍷 we went on a date
+            </button>
+            <button onClick={() => setEndOpen(true)} className={styles.subBtnEnd}>
+              end match
+            </button>
+          </div>
+        </>
       )}
 
       {error && <div className={styles.error}>{error}</div>}
@@ -189,6 +200,15 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
           otherName={otherUser?.name || 'them'}
           onClose={() => setEndOpen(false)}
           onEnded={() => router.refresh()}
+        />
+      )}
+
+      {feedbackOpen && (
+        <DateFeedbackDialog
+          matchId={match.id}
+          otherName={otherUser?.name || 'them'}
+          onClose={() => setFeedbackOpen(false)}
+          onSubmitted={() => router.refresh()}
         />
       )}
     </div>
