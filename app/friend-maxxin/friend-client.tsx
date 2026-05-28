@@ -84,18 +84,6 @@ export default function FriendMaxxinClient({ authed, onWaitlist }: { authed: boo
           </div>
         </div>
 
-        <div className={styles.diffBox}>
-          <div className={styles.diffLabel}>not</div>
-          <div className={styles.diffList}>
-            <span>time left</span>
-            <span>·</span>
-            <span>nice to meet you</span>
-            <span>·</span>
-            <span>222</span>
-          </div>
-          <div className={styles.diffFooter}>we took what works and built the thing they didn't.</div>
-        </div>
-
         <div className={styles.ctaRow}>
           {joined ? (
             <div className={styles.joined}>
@@ -110,9 +98,14 @@ export default function FriendMaxxinClient({ authed, onWaitlist }: { authed: boo
       </section>
 
       <footer className={styles.foot}>
-        <span>two algos · one city</span>
-        <span>·</span>
-        <span>built in boston</span>
+        <div className={styles.footTop}>
+          <span>two algos · one city</span>
+          <span>·</span>
+          <span>built in boston</span>
+        </div>
+        <div className={styles.footCorp}>
+          © {new Date().getFullYear()} notcupid · a lemon labs property
+        </div>
       </footer>
     </main>
   );

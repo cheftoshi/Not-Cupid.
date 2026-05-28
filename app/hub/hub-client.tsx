@@ -98,7 +98,12 @@ export default function HubClient({
       </section>
 
       <footer className={styles.foot}>
-        <span>made with cynicism in boston</span><span>·</span><span>two algos. one city.</span>
+        <div className={styles.footTop}>
+          <span>made with cynicism in boston</span><span>·</span><span>two algos. one city.</span>
+        </div>
+        <div className={styles.footCorp}>
+          © {new Date().getFullYear()} notcupid · a lemon labs property
+        </div>
       </footer>
     </main>
   );

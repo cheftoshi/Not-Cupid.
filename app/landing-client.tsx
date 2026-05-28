@@ -101,9 +101,14 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       </section>
 
       <footer className={styles.landFoot}>
-        <span>two algos · one city</span>
-        <span>·</span>
-        <span>built in boston</span>
+        <div className={styles.landFootTop}>
+          <span>two algos · one city</span>
+          <span>·</span>
+          <span>built in boston</span>
+        </div>
+        <div className={styles.landFootCorp}>
+          © {new Date().getFullYear()} notcupid · a lemon labs property
+        </div>
       </footer>
     </main>
   )
