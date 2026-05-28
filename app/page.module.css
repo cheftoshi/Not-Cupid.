@@ -72,3 +72,55 @@
 .footerLogo{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;color:var(--ink)}
 .footerLogo span{color:var(--lav)}
 .footerCopy{font-family:'DM Mono',monospace;font-size:.52rem;letter-spacing:.1em;color:var(--ink3);text-transform:uppercase}
+
+/* ============================== mobile ============================== */
+@media (max-width: 768px) {
+  .hero{padding:3rem 1.25rem 3rem;min-height:auto}
+  .heroBgNum{font-size:48vw;top:-1rem;right:-.5rem}
+  .heroTag{margin-bottom:1.5rem;font-size:.5rem}
+  .heroTitleWrap{margin-bottom:2rem}
+  .heroH1Big{font-size:clamp(3rem,16vw,6rem)}
+  .heroH1Italic{font-size:clamp(2rem,10vw,3.5rem);margin-left:1.25rem}
+  .heroBottom{grid-template-columns:1fr;gap:1.75rem}
+  .heroStatAside{text-align:left;display:flex;align-items:baseline;gap:1rem}
+  .asideNum{font-size:3rem}
+  .asideLabel{margin-top:0}
+  .heroBtns{gap:.5rem}
+  .btnPri,.btnGhost{padding:1rem 1.5rem;font-size:.7rem}
+
+  .ticker{padding:.5rem 0}
+  .tickerItem{font-size:.78rem;padding:0 1.25rem;gap:.5rem}
+
+  .rules{grid-template-columns:1fr 1fr}
+  .rulesLabelCol{display:none}
+  .ruleBox{padding:1.5rem 1.25rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .ruleBox:nth-child(odd){border-right:1px solid var(--border)}
+  .ruleBox:nth-child(even){border-right:none}
+  .ruleBox:nth-last-child(-n+2){border-bottom:none}
+  .ruleNum{font-size:2rem;margin-bottom:.6rem}
+  .ruleTitle{font-size:.6rem;margin-bottom:.4rem}
+  .ruleBody{font-size:.72rem;line-height:1.55}
+
+  .mid{grid-template-columns:1fr}
+  .quizCol{border-right:none;border-bottom:1px solid var(--border)}
+  .quizHeader{padding:1.5rem 1.25rem 1rem}
+  .quizBody{padding:1.5rem 1.25rem 2rem}
+  .quizQ{font-size:1.15rem;margin-bottom:1.5rem;line-height:1.3}
+  .quizOpt{padding:.95rem 1rem;font-size:.78rem}
+  .manifestoCol{padding:2rem 1.25rem}
+  .manifestoQuote{font-size:1.15rem;margin-bottom:1.5rem;line-height:1.5}
+  .profileBlock{padding:1.25rem}
+  .profileName{font-size:1.1rem}
+  .dimName{width:90px;font-size:.48rem}
+
+  .cta{grid-template-columns:1fr;gap:1.5rem;padding:3rem 1.25rem}
+  .ctaRight{min-width:0}
+
+  .footer{padding:1.25rem;flex-direction:column;gap:.75rem;text-align:center}
+}
+
+@media (max-width: 400px) {
+  .heroH1Big{font-size:13vw}
+  .heroH1Italic{font-size:8vw;margin-left:1rem}
+  .heroBgNum{font-size:55vw}
+}
