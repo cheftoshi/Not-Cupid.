@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import styles from './page.module.css'
 
 type Stats = {
@@ -22,7 +23,6 @@ function relativeTime(iso: string | null): string {
 }
 
 export default function LandingClient({ stats }: { stats: Stats }) {
-  // Rotating live-feel stat ticker.
   const tickers: Array<{ k: string; v: string }> = []
   if (stats.poolCount > 0) tickers.push({ k: 'in the boston pool', v: stats.poolCount.toLocaleString() })
   if (stats.matchesThisWeek > 0) tickers.push({ k: 'mutual matches · last 7 days', v: stats.matchesThisWeek.toString() })
@@ -36,13 +36,10 @@ export default function LandingClient({ stats }: { stats: Stats }) {
     return () => clearInterval(id)
   }, [tickers.length])
 
-  // Subtle cursor-reactive accent on hero — moves a soft lavender bloom.
   const [coords, setCoords] = useState({ x: 50, y: 40 })
   useEffect(() => {
     function onMove(e: MouseEvent) {
-      const x = (e.clientX / window.innerWidth) * 100
-      const y = (e.clientY / window.innerHeight) * 100
-      setCoords({ x, y })
+      setCoords({ x: (e.clientX / window.innerWidth) * 100, y: (e.clientY / window.innerHeight) * 100 })
     }
     window.addEventListener('mousemove', onMove)
     return () => window.removeEventListener('mousemove', onMove)
@@ -55,38 +52,46 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       <div
         className={styles.landGlow}
         style={{
-          background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(139,127,212,0.30) 0%, rgba(139,127,212,0.10) 25%, transparent 55%)`,
+          background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(139,127,212,0.24) 0%, rgba(216,179,64,0.10) 30%, transparent 60%)`,
         }}
         aria-hidden
       />
       <div className={styles.landGrain} aria-hidden />
 
       <header className={styles.landTop}>
-        <div className={styles.landBrand}>
-          NOTCUPID<span className={styles.landBrandDot}>·</span>
-        </div>
+        <div className={styles.landBrand}>NOTCUPID<span className={styles.landBrandDot}>·</span></div>
         <a href="/login" className={styles.landNavBtn}>log in →</a>
       </header>
 
       <section className={styles.landHero}>
         <div className={styles.landEyebrow}>
           <span className={styles.landDot} />
-          boston · ma
+          boston · ma · two algos
         </div>
 
         <h1 className={styles.landH1}>
           Boston’s<br/>
-          <em>date experiment.</em>
+          <em>social experiment.</em>
         </h1>
 
         <p className={styles.landLede}>
-          one match. no swipes. no photos first.<br/>
-          built on personality, not lighting.
+          one algo for dates. one for friends.<br/>
+          neither swipes.
         </p>
 
-        <div className={styles.landCtaRow}>
-          <a href="/quiz" className={styles.landBtnPri}>sign up →</a>
-          <a href="/login" className={styles.landBtnGhost}>i have an account</a>
+        <div className={styles.landProducts}>
+          <Link href="/quiz" className={`${styles.landProd} ${styles.landProdLove}`}>
+            <div className={styles.landProdEye}><span className={styles.landProdDotLive} /> live</div>
+            <div className={styles.landProdName}>love <em>maxxin.</em></div>
+            <div className={styles.landProdDesc}>one date match. boston only. personality first.</div>
+            <div className={styles.landProdCta}>sign up →</div>
+          </Link>
+          <Link href="/friend-maxxin" className={`${styles.landProd} ${styles.landProdFriend}`}>
+            <div className={styles.landProdEye}><span className={styles.landProdDotSoon} /> soon</div>
+            <div className={styles.landProdName}>friend <em>maxxin.</em></div>
+            <div className={styles.landProdDesc}>3–4 platonic matches. shared chat. activities.</div>
+            <div className={styles.landProdCta}>read the pitch →</div>
+          </Link>
         </div>
 
         <div className={styles.landTicker} aria-live="polite">
@@ -96,9 +101,9 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       </section>
 
       <footer className={styles.landFoot}>
-        <span>made with cynicism in boston</span>
+        <span>two algos · one city</span>
         <span>·</span>
-        <span>the algo decides</span>
+        <span>built in boston</span>
       </footer>
     </main>
   )

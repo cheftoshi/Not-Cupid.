@@ -32,9 +32,9 @@ const SECURITY_HEADERS: Record<string, string> = {
 export function middleware(req: NextRequest) {
   const hasSession = req.cookies.has('nc_session')
 
-  // Logged-in users land in /profile instead of the marketing page.
+  // Logged-in users land in /hub (the love/friend chooser) instead of marketing.
   if (hasSession && req.nextUrl.pathname === '/') {
-    const res = NextResponse.redirect(new URL('/profile', req.url))
+    const res = NextResponse.redirect(new URL('/hub', req.url))
     applySecurityHeaders(res)
     return res
   }

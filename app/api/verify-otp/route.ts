@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      redirect: user.archetype ? '/profile' : '/quiz',
+      redirect: user.archetype ? '/hub' : '/quiz',
     })
   } catch (err: any) {
     console.error('Verify OTP error:', err)
