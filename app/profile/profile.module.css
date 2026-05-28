@@ -372,6 +372,36 @@
   font-style: italic;
   font-size: 1.4rem;
 }
+.dashArchetypeTag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  margin-top: 0.4rem;
+}
+.dashArchetypeDesc {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.75);
+  margin-top: 0.5rem;
+}
+.dashStatNum {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: #5b4fa0;
+}
+.dashStatNum strong {
+  font-family: 'DM Mono', monospace;
+  font-style: normal;
+  font-size: 1.1rem;
+  color: #0a0a0a;
+  font-weight: 700;
+}
+.dashStatCardCta .dashStatNum { color: rgba(255,255,255,0.7); }
+.dashStatCardCta .dashStatNum strong { color: #fff; }
 
 .dashPhotoWrap {
   width: 140px;

@@ -1,13 +1,21 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from './profile.module.css';
+import { ARCHETYPES } from '@/lib/quiz-data';
 
 export default function ProfileDashboard({ user, onEdit, onLogout }: {
   user: any;
   onEdit: () => void;
   onLogout: () => void;
 }) {
+  const [stats, setStats] = useState<{ total: number; accepted: number; active: number; pending: number } | null>(null);
+  useEffect(() => {
+    fetch('/api/profile/stats').then(r => r.ok ? r.json() : null).then(setStats).catch(() => {});
+  }, []);
+
+  const archetypeMeta = ARCHETYPES.find(a => a.name === user.archetype);
   const firstName = (user.name || 'friend').split(' ')[0];
   const heightFt = user.height_cm ? Math.floor(user.height_cm / 30.48) : null;
   const heightIn = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : null;
@@ -33,6 +41,8 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
             <div className={styles.dashArchetype}>
               <span className={styles.dashArchetypeKick}>you are the</span>
               <span className={styles.dashArchetypeName}>{user.archetype}</span>
+              {archetypeMeta?.tag && <span className={styles.dashArchetypeTag}>{archetypeMeta.tag}</span>}
+              {archetypeMeta?.desc && <span className={styles.dashArchetypeDesc}>{archetypeMeta.desc}</span>}
             </div>
           )}
         </div>
@@ -61,7 +71,15 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
         <Link href="/dashboard" className={styles.dashStatCard}>
           <div className={styles.dashStatIcon}>💘</div>
           <div className={styles.dashStatLabel}>your matches</div>
-          <div className={styles.dashStatHint}>view →</div>
+          {stats !== null ? (
+            <div className={styles.dashStatNum}>
+              {stats.active > 0
+                ? <><strong>{stats.active}</strong> active</>
+                : stats.pending > 0
+                  ? <><strong>{stats.pending}</strong> waiting on you</>
+                  : <>{stats.total} total →</>}
+            </div>
+          ) : <div className={styles.dashStatHint}>view →</div>}
         </Link>
         <Link href="/profile/preview" className={styles.dashStatCard}>
           <div className={styles.dashStatIcon}>👁</div>

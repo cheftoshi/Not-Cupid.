@@ -6,193 +6,282 @@
   padding: 1.5rem 1.5rem 4rem;
 }
 
-.container {
-  max-width: 560px;
-  margin: 0 auto;
-}
+.container { max-width: 620px; margin: 0 auto; }
 
 .banner {
   background: transparent;
-  border: 1px dashed rgba(10,10,10,0.25);
+  border: 1px dashed rgba(139,127,212,0.4);
   border-radius: 999px;
-  padding: 0.75rem 1.25rem;
-  margin-bottom: 1.5rem;
+  padding: 0.7rem 1.25rem;
+  margin-bottom: 1.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.8125rem;
+  font-size: 0.78rem;
   color: #6b6975;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+.banner em { font-family: Georgia, ui-serif, serif; font-style: italic; color: #5b4fa0; font-weight: 600; }
+.editLink { color: #5b4fa0; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; font-size: 0.78rem; }
 
-.banner em {
+/* ============== MAGAZINE ARTICLE ============== */
+.mag {
+  background: #fff;
+  border-radius: 18px;
+  padding: 2.5rem 2.25rem;
+  border: 1px solid #e5e1ec;
+  box-shadow: 0 24px 60px -32px rgba(91,79,160,0.25), 0 4px 12px -4px rgba(14,12,26,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* tiny corner decoration */
+.mag::before {
+  content: '';
+  position: absolute;
+  top: 1.25rem; right: 1.25rem;
+  width: 1.5rem; height: 1.5rem;
+  border-top: 1px solid #8b7fd4;
+  border-right: 1px solid #8b7fd4;
+  opacity: 0.5;
+}
+.mag::after {
+  content: '';
+  position: absolute;
+  bottom: 1.25rem; left: 1.25rem;
+  width: 1.5rem; height: 1.5rem;
+  border-bottom: 1px solid #8b7fd4;
+  border-left: 1px solid #8b7fd4;
+  opacity: 0.5;
+}
+
+/* COVER */
+.cover { margin-bottom: 1.5rem; }
+.coverEyebrow {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(139,127,212,0.2);
+}
+.coverName {
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
+  font-size: clamp(2.4rem, 7vw, 3.6rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  margin: 0;
   color: #0a0a0a;
-  font-weight: 600;
+}
+.coverAge { font-style: italic; font-weight: 400; color: #8b7fd4; }
+.coverMeta {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 0.85rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: #6b6975;
+  letter-spacing: 0.04em;
 }
 
-.editLink {
-  color: #0a0a0a;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  font-weight: 600;
-  font-size: 0.8125rem;
-}
-
-.card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 1.75rem;
-  border: 1px solid #e5e1ec;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-
+/* PHOTO */
 .photoWrap {
   width: 100%;
   aspect-ratio: 4/5;
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 1.5rem;
-  background: #f5f3f8;
+  margin-bottom: 1.75rem;
+  background: #ede9ff;
+  position: relative;
 }
-
-.photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.photoWrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 70%, rgba(14,12,26,0.08) 100%);
+  pointer-events: none;
 }
-
+.photo { width: 100%; height: 100%; object-fit: cover; display: block; }
 .photoEmpty {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #b8b3c4;
-  font-size: 0.875rem;
-  font-style: italic;
-}
-
-.name {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: #8b7fd4;
   font-family: Georgia, ui-serif, serif;
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.age {
   font-style: italic;
-  font-weight: 400;
-  color: #6b6975;
+  font-size: 1rem;
 }
 
-.meta {
-  display: flex;
-  gap: 1rem;
-  color: #6b6975;
-  font-size: 0.9375rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.archetype {
-  background: #0a0a0a;
+/* ARCHETYPE BAND */
+.archeBand {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1530 100%);
   color: #fff;
-  padding: 1.25rem 1.5rem;
-  border-radius: 14px;
-  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: 12px;
+  margin-bottom: 1.75rem;
+  position: relative;
 }
-
-.archetypeLabel {
-  font-size: 0.6rem;
+.archeKick {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  letter-spacing: 0.25em;
   opacity: 0.55;
   margin-bottom: 0.35rem;
-  font-weight: 600;
 }
-
-.archetypeName {
+.archeName {
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
-  font-size: 1.5rem;
-  line-height: 1.2;
+  font-size: 1.55rem;
+  line-height: 1.15;
+  margin-bottom: 0.6rem;
+}
+.archeTag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  margin-bottom: 0.85rem;
+}
+.archeDesc {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.78);
+  margin: 0;
 }
 
-.bio {
-  font-size: 1rem;
-  line-height: 1.6;
-  margin: 0 0 1.5rem;
+/* BIO BLOCK */
+.bioBlock {
+  position: relative;
+  padding: 0.5rem 0 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(139,127,212,0.2);
+}
+.bioQ, .bioQEnd {
+  font-family: Georgia, ui-serif, serif;
+  color: #8b7fd4;
+  font-size: 3rem;
+  line-height: 0;
+  vertical-align: -0.5em;
+  font-style: italic;
+}
+.bioQEnd { vertical-align: -0.4em; margin-left: 0.05em; }
+.bioText {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1.55;
   color: #0a0a0a;
+  margin: 0;
+  display: inline;
   white-space: pre-wrap;
 }
 
-.workEdu {
+/* WORK */
+.workRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.workItem {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: 0.2rem;
 }
-
-.workEduItem {
-  font-size: 0.9375rem;
-  color: #0a0a0a;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tagSection {
-  margin-bottom: 1.25rem;
-}
-
-.tagLabel {
-  font-size: 0.625rem;
-  text-transform: uppercase;
+.workK {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
   letter-spacing: 0.2em;
-  color: #6b6975;
-  margin-bottom: 0.6rem;
-  font-weight: 600;
+  text-transform: uppercase;
+  color: #8b7fd4;
+}
+.workV {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: #0a0a0a;
 }
 
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.tag {
-  background: #f5f3f8;
-  padding: 0.4rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  border: 1px solid #e5e1ec;
-}
-
-.footer {
-  margin-top: 2rem;
+/* VIBES */
+.vibeSection { margin-bottom: 1.5rem; }
+.vibeHead {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 0.9rem;
   text-align: center;
+  color: #8b7fd4;
+  margin: 1.25rem 0 1.25rem;
+  letter-spacing: 0.05em;
+}
+.vibeRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+.vibeLabel {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #6b6975;
+}
+.vibeTags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.vibeTag {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.78rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.02em;
 }
 
+/* COLOPHON */
+.colophon {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(139,127,212,0.2);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+}
+
+/* footer back btn */
+.footer { margin-top: 1.5rem; text-align: center; }
 .backButton {
   display: inline-block;
   background: #0a0a0a;
   color: #fff;
-  padding: 0.85rem 2rem;
+  padding: 0.85rem 1.75rem;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 0.6875rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-weight: 600;
+  transition: background 0.15s;
 }
+.backButton:hover { background: #5b4fa0; }
 
 @media (max-width: 600px) {
-  .name { font-size: 1.75rem; }
-  .card { padding: 1.25rem; }
+  .mag { padding: 1.75rem 1.4rem; }
+  .coverName { font-size: 2.2rem; }
+  .archeBand { padding: 1.25rem 1.4rem; }
+  .archeName { font-size: 1.3rem; }
+  .bioText { font-size: 1.02rem; }
+  .workRow { grid-template-columns: 1fr; gap: 0.75rem; }
 }

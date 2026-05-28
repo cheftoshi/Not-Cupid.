@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
+import { ARCHETYPES } from '@/lib/quiz-data';
 import Link from 'next/link';
 import styles from './preview.module.css';
 
@@ -12,16 +13,42 @@ export default async function ProfilePreviewPage() {
 
   const heightFt = user.height_cm ? Math.floor(user.height_cm / 30.48) : null;
   const heightIn = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : null;
+  const arche = ARCHETYPES.find((a) => a.name === user.archetype);
+
+  const tagRows: Array<{ label: string; items: string[]; variant: 'lav' | 'accent' }> = [
+    { label: 'sounds like', items: user.music || [], variant: 'lav' },
+    { label: 'tastes like', items: user.food || [], variant: 'accent' },
+    { label: 'obsessions', items: user.hobbies || [], variant: 'lav' },
+  ];
 
   return (
     <div className={styles.page}>
       <div className={styles.container}>
         <div className={styles.banner}>
           <span><em>preview mode</em> — this is what your matches see</span>
-          <Link href="/profile" className={styles.editLink}>← back to edit</Link>
+          <Link href="/profile" className={styles.editLink}>← back</Link>
         </div>
 
-        <div className={styles.card}>
+        <article className={styles.mag}>
+          {/* COVER */}
+          <header className={styles.cover}>
+            <div className={styles.coverEyebrow}>
+              <span>notcupid · issue {String(user.id || '').slice(0, 4).toUpperCase() || '0001'}</span>
+              <span>boston · ma</span>
+            </div>
+            <h1 className={styles.coverName}>
+              {user.name || 'No name yet'}
+              {user.age && <span className={styles.coverAge}>, {user.age}</span>}
+            </h1>
+            {(user.zip || user.height_cm) && (
+              <div className={styles.coverMeta}>
+                {user.zip && <span>📍 {user.zip}</span>}
+                {user.height_cm && <span>{heightFt}'{heightIn}"</span>}
+              </div>
+            )}
+          </header>
+
+          {/* PHOTO */}
           <div className={styles.photoWrap}>
             {user.photo_url ? (
               <img src={user.photo_url} alt="" className={styles.photo} />
@@ -30,64 +57,81 @@ export default async function ProfilePreviewPage() {
             )}
           </div>
 
-          <h1 className={styles.name}>
-            {user.name || 'No name yet'}
-            {user.age ? <span className={styles.age}>, {user.age}</span> : null}
-          </h1>
-
-          {(user.zip || user.height_cm) && (
-            <div className={styles.meta}>
-              {user.zip && <span>📍 {user.zip}</span>}
-              {user.height_cm && <span>{heightFt}'{heightIn}"</span>}
-            </div>
-          )}
-
+          {/* ARCHETYPE BAND */}
           {user.archetype && (
-            <div className={styles.archetype}>
-              <div className={styles.archetypeLabel}>personality type</div>
-              <div className={styles.archetypeName}>{user.archetype}</div>
-            </div>
+            <section className={styles.archeBand}>
+              <div className={styles.archeKick}>they are the</div>
+              <div className={styles.archeName}>{user.archetype}</div>
+              {arche?.tag && <div className={styles.archeTag}>{arche.tag}</div>}
+              {arche?.desc && <p className={styles.archeDesc}>{arche.desc}</p>}
+            </section>
           )}
 
-          {user.bio && <p className={styles.bio}>{user.bio}</p>}
+          {/* BIO PULLQUOTE */}
+          {user.bio && (
+            <section className={styles.bioBlock}>
+              <span className={styles.bioQ}>“</span>
+              <p className={styles.bioText}>{user.bio}</p>
+              <span className={styles.bioQEnd}>”</span>
+            </section>
+          )}
 
+          {/* WORK / EDU */}
           {(user.occupation || user.education) && (
-            <div className={styles.workEdu}>
-              {user.occupation && <div className={styles.workEduItem}><span>💼</span> {user.occupation}</div>}
-              {user.education && <div className={styles.workEduItem}><span>🎓</span> {user.education}</div>}
-            </div>
+            <section className={styles.workRow}>
+              {user.occupation && (
+                <div className={styles.workItem}>
+                  <span className={styles.workK}>does</span>
+                  <span className={styles.workV}>{user.occupation}</span>
+                </div>
+              )}
+              {user.education && (
+                <div className={styles.workItem}>
+                  <span className={styles.workK}>studied at</span>
+                  <span className={styles.workV}>{user.education}</span>
+                </div>
+              )}
+            </section>
           )}
 
-          {user.music && user.music.length > 0 && (
-            <div className={styles.tagSection}>
-              <div className={styles.tagLabel}>→ Music</div>
-              <div className={styles.tags}>
-                {user.music.map((m: string) => <span key={m} className={styles.tag}>{m}</span>)}
-              </div>
-            </div>
+          {/* VIBES */}
+          {tagRows.some((r) => r.items.length > 0) && (
+            <section className={styles.vibeSection}>
+              <div className={styles.vibeHead}>· vibes ·</div>
+              {tagRows.map(
+                (r) =>
+                  r.items.length > 0 && (
+                    <div key={r.label} className={styles.vibeRow}>
+                      <div className={styles.vibeLabel}>{r.label}</div>
+                      <div className={styles.vibeTags}>
+                        {r.items.map((v, i) => (
+                          <span
+                            key={`${v}-${i}`}
+                            className={styles.vibeTag}
+                            style={
+                              r.variant === 'lav'
+                                ? { background: 'rgba(139,127,212,0.13)', color: '#5b4fa0', borderColor: 'rgba(139,127,212,0.35)' }
+                                : { background: '#ede9ff', color: '#0e0c1a', borderColor: 'rgba(14,12,26,0.13)' }
+                            }
+                          >
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+              )}
+            </section>
           )}
 
-          {user.food && user.food.length > 0 && (
-            <div className={styles.tagSection}>
-              <div className={styles.tagLabel}>→ Food</div>
-              <div className={styles.tags}>
-                {user.food.map((f: string) => <span key={f} className={styles.tag}>{f}</span>)}
-              </div>
-            </div>
-          )}
-
-          {user.hobbies && user.hobbies.length > 0 && (
-            <div className={styles.tagSection}>
-              <div className={styles.tagLabel}>→ Hobbies & obsessions</div>
-              <div className={styles.tags}>
-                {user.hobbies.map((h: string) => <span key={h} className={styles.tag}>{h}</span>)}
-              </div>
-            </div>
-          )}
-        </div>
+          <footer className={styles.colophon}>
+            <span>notcupid.com</span>
+            <span>the algo decided.</span>
+          </footer>
+        </article>
 
         <div className={styles.footer}>
-          <Link href="/profile" className={styles.backButton}>back to edit</Link>
+          <Link href="/profile" className={styles.backButton}>back to dashboard →</Link>
         </div>
       </div>
     </div>
