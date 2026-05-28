@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { haversine, ZIP_COORDS, MATCH_RADIUS_MILES } from '@/lib/quiz-data'
-
-const SCORE_THRESHOLD = 15
-
-function compatibilityScore(a: any, b: any): number {
-  const honesty = Math.abs(a.score_honesty - b.score_honesty)
-  const openness = Math.abs(a.score_openness - b.score_openness)
-  const agree = Math.abs(a.score_agreeableness - b.score_agreeableness)
-  const extro = Math.abs(a.score_extraversion - b.score_extraversion)
-  const diff = (honesty * 2) + (openness * 1.5) + (agree * 1.5) + extro
-  return Math.round(100 - (diff / 48) * 100)
-}
+import { compatibilityScore, thresholdFor } from '@/lib/matching'
 
 function isWithinMatchRadius(zip1: string, zip2: string): boolean {
   const c1 = ZIP_COORDS[zip1]
@@ -76,8 +66,15 @@ export async function POST(req: NextRequest) {
       .sort((a: any, b: any) => b.score - a.score)
 
     const best = scored[0]
-    if (best.score < SCORE_THRESHOLD) {
-      return NextResponse.json({ matched: false, message: 'No strong matches yet' })
+    // Adaptive threshold: raises the bar for the over-represented gender so
+    // scarce candidates aren't paired with mediocre matches.
+    const minScore = thresholdFor(user, pool || [])
+    if (best.score < minScore) {
+      return NextResponse.json({
+        matched: false,
+        message: 'No strong matches yet',
+        debug: { topScore: best.score, requiredScore: minScore },
+      })
     }
 
     const { data: match } = await supabaseAdmin
