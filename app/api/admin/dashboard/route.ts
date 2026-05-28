@@ -16,13 +16,16 @@ export async function GET(req: NextRequest) {
     const totalUsers = users?.length ?? 0
     const totalMatches = matches?.length ?? 0
     const totalRevenue = (unlocks?.length ?? 0) * 0.99
-    // Booleans are the source of truth: two accept flows exist (email link sets
-    // status='both_accepted', in-app flow only flips the booleans), so status
-    // alone misses dashboard-accepted matches.
+    // Two accept/pass flows exist:
+    //   - email link sets status='both_accepted' / 'passed'
+    //   - in-app sets booleans / ended_reason but not status
+    // We compute from the union of signals so the stat reflects reality.
     const bothAccepted = matches?.filter(m => m.user_1_accepted && m.user_2_accepted).length ?? 0
-    const passed = matches?.filter(m => m.status === 'passed').length ?? 0
+    const passed = matches?.filter(
+      m => m.status === 'passed' || m.ended_reason === 'one_passed'
+    ).length ?? 0
     const pendingMatches = matches?.filter(
-      m => m.status === 'pending' && !(m.user_1_accepted && m.user_2_accepted)
+      m => m.status === 'pending' && !(m.user_1_accepted && m.user_2_accepted) && !m.ended_at
     ).length ?? 0
     const waiting = users?.filter(u => u.status === 'waiting').length ?? 0
     const matched = users?.filter(u => u.status === 'matched').length ?? 0
