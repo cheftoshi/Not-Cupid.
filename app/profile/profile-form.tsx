@@ -144,8 +144,43 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
             <input className={styles.input} type="number" min={18} max={100} value={user.age || ''} onChange={e => setUser({ ...user, age: parseInt(e.target.value) || null })} />
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Height (cm)</label>
-            <input className={styles.input} type="number" min={120} max={250} value={user.height_cm || ''} onChange={e => setUser({ ...user, height_cm: parseInt(e.target.value) || null })} />
+            <label className={styles.label}>Height</label>
+            <div className={styles.heightRow}>
+              <div className={styles.heightField}>
+                <input
+                  className={styles.input}
+                  type="number"
+                  min={3}
+                  max={8}
+                  placeholder="ft"
+                  value={user.height_cm ? Math.floor(user.height_cm / 30.48) : ''}
+                  onChange={(e) => {
+                    const ft = parseInt(e.target.value) || 0;
+                    const inches = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : 0;
+                    setUser({ ...user, height_cm: ft || inches ? Math.round((ft * 12 + inches) * 2.54) : null });
+                  }}
+                />
+                <span className={styles.heightUnit}>ft</span>
+              </div>
+              <div className={styles.heightField}>
+                <input
+                  className={styles.input}
+                  type="number"
+                  min={0}
+                  max={11}
+                  placeholder="in"
+                  value={user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : ''}
+                  onChange={(e) => {
+                    let inches = parseInt(e.target.value) || 0;
+                    if (inches > 11) inches = 11;
+                    if (inches < 0) inches = 0;
+                    const ft = user.height_cm ? Math.floor(user.height_cm / 30.48) : 0;
+                    setUser({ ...user, height_cm: ft || inches ? Math.round((ft * 12 + inches) * 2.54) : null });
+                  }}
+                />
+                <span className={styles.heightUnit}>in</span>
+              </div>
+            </div>
           </div>
         </div>
         <div className={styles.row}>

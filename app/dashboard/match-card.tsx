@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
+import EndMatchDialog from '@/components/end-match-dialog';
 
 interface Props {
   match: any;
@@ -20,14 +21,16 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [endOpen, setEndOpen] = useState(false);
 
   const isUser1 = match.user_1_id === currentUserId;
   const myAccepted = isUser1 ? match.user_1_accepted : match.user_2_accepted;
   const bothAccepted = match.user_1_accepted && match.user_2_accepted;
+  const matchEnded = match.status === 'ended' || !!match.ended_at;
   const expired = match.expires_at && new Date(match.expires_at) < new Date() && !bothAccepted;
 
   let phase: 'pending' | 'waiting' | 'active' | 'expired';
-  if (expired) phase = 'expired';
+  if (matchEnded || expired) phase = 'expired';
   else if (bothAccepted) phase = 'active';
   else if (myAccepted) phase = 'waiting';
   else phase = 'pending';
@@ -174,10 +177,20 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
       {phase === 'active' && (
         <div className={styles.actions}>
           <a href={`/match/${match.id}`} className={styles.chatButton}>open chat →</a>
+          <button onClick={() => setEndOpen(true)} className={styles.endMatchBtn}>end match</button>
         </div>
       )}
 
       {error && <div className={styles.error}>{error}</div>}
+
+      {endOpen && (
+        <EndMatchDialog
+          matchId={match.id}
+          otherName={otherUser?.name || 'them'}
+          onClose={() => setEndOpen(false)}
+          onEnded={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }

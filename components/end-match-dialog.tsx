@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from './chat.module.css';
+import styles from './end-match-dialog.module.css';
 
 type Step = 'choose' | 'rate-date' | 'confirm-ghost' | 'confirm-not-vibing' | 'submitting' | 'done';
 
@@ -10,16 +10,17 @@ export default function EndMatchDialog({
   matchId,
   otherName,
   onClose,
+  onEnded,
 }: {
   matchId: string;
   otherName: string;
   onClose: () => void;
+  onEnded?: () => void;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('choose');
   const [error, setError] = useState('');
 
-  // date feedback state
   const [rating, setRating] = useState<number>(0);
   const [wouldAgain, setWouldAgain] = useState<boolean | null>(null);
   const [notes, setNotes] = useState('');
@@ -35,7 +36,10 @@ export default function EndMatchDialog({
       });
       if (!res.ok) throw new Error((await res.json()).error || 'failed');
       setStep('done');
-      setTimeout(() => { router.push('/dashboard'); router.refresh(); }, 900);
+      setTimeout(() => {
+        if (onEnded) onEnded();
+        router.refresh();
+      }, 900);
     } catch (e: any) {
       setError(e.message || 'something went wrong');
       setStep('choose');
@@ -130,7 +134,7 @@ export default function EndMatchDialog({
             <div className={styles.endEyebrow}>report ghosting</div>
             <h2 className={styles.endTitle}>{otherName} ghosted you?</h2>
             <div className={styles.endWarn}>
-              <p>they'll be put in a <strong>{7}-day cooldown</strong>.</p>
+              <p>they'll be put in a <strong>7-day cooldown</strong>.</p>
               <p>after <strong>3 reports</strong>, they won't be matched again.</p>
               <p className={styles.endWarnNote}>only report if you both said yes and they stopped responding without explanation.</p>
             </div>
@@ -160,7 +164,7 @@ export default function EndMatchDialog({
         {step === 'done' && (
           <div className={styles.endStatus}>
             <div style={{fontSize:'2.5rem',marginBottom:'.5rem'}}>✓</div>
-            done. taking you back to the dashboard.
+            done.
           </div>
         )}
       </div>

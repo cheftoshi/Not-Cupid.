@@ -828,3 +828,20 @@
   padding: 0.2rem 0;
 }
 .chipFieldInput::placeholder { color: #b8b3c4; }
+
+/* height ft/in inputs */
+.heightRow { display: flex; gap: 0.5rem; }
+.heightField { position: relative; flex: 1; }
+.heightField .input { padding-right: 2.25rem; }
+.heightUnit {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b8b3c4;
+  pointer-events: none;
+}

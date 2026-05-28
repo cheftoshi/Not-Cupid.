@@ -228,6 +228,23 @@
 
 .acceptButton:hover:not(:disabled), .chatButton:hover { background: #2a2a2a; }
 
+.endMatchBtn {
+  background: transparent;
+  color: #6b6975;
+  border: 1px solid #e5e1ec;
+  padding: 1rem 1.25rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.endMatchBtn:hover { border-color: #c92a2a; color: #c92a2a; }
+
 .passButton {
   flex: 1;
   background: transparent;
