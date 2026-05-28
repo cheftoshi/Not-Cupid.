@@ -25,7 +25,12 @@ export async function POST(req: NextRequest) {
     score_openness,
     archetype,
     vibes,
+    relationship_style,
   } = body;
+
+  const VALID_RELATIONSHIP_STYLES = new Set([
+    'marriage_track', 'dink', 'enm_poly', 'casual', 'open',
+  ]);
 
   const updates: any = {
     score_honesty,
@@ -39,6 +44,9 @@ export async function POST(req: NextRequest) {
     pool_active: true,
   };
   if (vibes && typeof vibes === 'object') updates.vibes = vibes;
+  if (relationship_style && VALID_RELATIONSHIP_STYLES.has(relationship_style)) {
+    updates.relationship_style = relationship_style;
+  }
 
   const { error: updateErr } = await supabaseAdmin
     .from('users')

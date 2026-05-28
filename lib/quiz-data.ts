@@ -181,6 +181,35 @@ export const QUESTIONS: Question[] = [
   },
 ]
 
+// ─── Relationship style: the SHAPE of the relationship the user wants
+//     (marriage-track vs DINK vs ENM/poly vs casual). Stored on
+//     users.relationship_style — separate from the "future" vibe which
+//     is about timeline/seriousness. Single-select. Optional (nullable).
+export type RelationshipStyle = 'marriage_track' | 'dink' | 'enm_poly' | 'casual' | 'open'
+
+export const RELATIONSHIP_STYLES: Array<{
+  value: RelationshipStyle
+  short: string
+  label: string
+  desc: string
+}> = [
+  { value: 'marriage_track', short: 'marriage track', label: 'Marriage + kids in mind',
+    desc: 'building toward a traditional partnership' },
+  { value: 'dink',            short: 'DINK',          label: 'Long-term, no kids (DINK)',
+    desc: 'committed pair, two incomes, no children by choice' },
+  { value: 'enm_poly',        short: 'ENM / poly',    label: 'ENM / polyamorous',
+    desc: 'ethical non-monogamy, multiple partners by agreement' },
+  { value: 'casual',          short: 'casual',        label: 'Casual / right-now',
+    desc: 'dating without long-term expectations' },
+  { value: 'open',            short: 'open',          label: 'Open to anything',
+    desc: 'no strong preference yet' },
+]
+
+export function relationshipStyleLabel(v: string | null | undefined): string | null {
+  if (!v) return null
+  return RELATIONSHIP_STYLES.find((s) => s.value === v)?.short ?? null
+}
+
 // ─── Vibes: 6 additional questions covering lifestyle/compat dimensions
 //     that HEXACO doesn't capture (chronotype, date frequency, future scope,
 //     communication mode, social radius, risk attitude). Stored as

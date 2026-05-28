@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from './profile.module.css';
-import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
+import { ARCHETYPES, VIBE_HEADS, vibeLabel, relationshipStyleLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 
 export default function ProfileDashboard({ user, onEdit, onLogout }: {
@@ -120,6 +120,7 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
           {user.zip && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>zip</span><span className={styles.dashBasicV}>{user.zip}</span></div>}
           {user.gender && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>identity</span><span className={styles.dashBasicV}>{genderLabel}</span></div>}
           {user.seeking && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>seeking</span><span className={styles.dashBasicV}>{seekingLabel}</span></div>}
+          {user.relationship_style && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>style</span><span className={styles.dashBasicV}>{relationshipStyleLabel(user.relationship_style)}</span></div>}
           {user.occupation && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>work</span><span className={styles.dashBasicV}>{user.occupation}</span></div>}
           {user.education && <div className={styles.dashBasicItem}><span className={styles.dashBasicK}>school</span><span className={styles.dashBasicV}>{user.education}</span></div>}
         </div>

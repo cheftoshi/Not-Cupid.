@@ -21,9 +21,20 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const otherUserId = isUser1 ? match.user_2_id : match.user_1_id;
   const { data: otherUser } = await supabaseAdmin
     .from('users')
-    .select('name')
+    .select('name, bio')
     .eq('id', otherUserId)
     .single();
+
+  // Wall: don't sell an unlock for an empty profile (their bio is the
+  // single piece of paid content). Frontend should also gate this, but
+  // we guard server-side too so direct API hits can't bypass it.
+  const bio = (otherUser?.bio || '').trim();
+  if (!bio) {
+    return NextResponse.json(
+      { error: `${otherUser?.name || 'They'} hasn't written a bio yet — nothing to unlock.` },
+      { status: 422 }
+    );
+  }
 
   // Determine origin for redirect URLs
   const origin = req.headers.get('origin') || `https://${req.headers.get('host')}` || 'https://notcupid.com';

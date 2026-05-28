@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
-import { VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
+import { VIBE_HEADS, vibeLabel, relationshipStyleLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import { parseResponse } from '@/lib/fetch-helpers';
 
@@ -117,6 +117,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
       <div className={styles.matchMeta}>
         {otherUser.zip && <span>📍 {otherUser.zip}</span>}
         {match.compatibility_score && <span>{match.compatibility_score}% compatibility</span>}
+        {otherUser.relationship_style && <span>💞 {relationshipStyleLabel(otherUser.relationship_style)}</span>}
       </div>
 
       {otherUser.archetype && (
@@ -178,15 +179,27 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
           )}
         </div>
       ) : phase !== 'expired' && (
-        <div className={styles.lockedSection}>
-          <div className={styles.lockedTitle}>🔒 know them before you decide</div>
-          <p className={styles.lockedDescription}>
-            unlock their bio, music, food & hobbies — $2.99
-          </p>
-          <button onClick={handleUnlock} disabled={busy} className={styles.unlockButton}>
-            {busy ? 'loading...' : 'unlock for $2.99 →'}
-          </button>
-        </div>
+        (otherUser.bio || '').trim() ? (
+          <div className={styles.lockedSection}>
+            <div className={styles.lockedTitle}>🔒 know them before you decide</div>
+            <p className={styles.lockedDescription}>
+              unlock their bio, music, food & hobbies — $2.99
+            </p>
+            <button onClick={handleUnlock} disabled={busy} className={styles.unlockButton}>
+              {busy ? 'loading...' : 'unlock for $2.99 →'}
+            </button>
+          </div>
+        ) : (
+          <div className={styles.lockedSection}>
+            <div className={styles.lockedTitle}>🌱 not ready yet</div>
+            <p className={styles.lockedDescription}>
+              {(otherUser.name || 'they').split(' ')[0]} hasn't written a bio yet — there's nothing extra to unlock. check back soon.
+            </p>
+            <button disabled className={styles.unlockButton} style={{opacity:0.45,cursor:'not-allowed'}}>
+              profile incomplete
+            </button>
+          </div>
+        )
       )}
 
       {phase === 'pending' && (

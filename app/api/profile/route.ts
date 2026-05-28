@@ -19,8 +19,12 @@ export async function PUT(req: NextRequest) {
     'bio', 'height_cm', 'occupation', 'education',
     'music', 'food', 'hobbies', 'prompts',
     'age_min', 'age_max', 'auto_rematch',
-    'vibes',
+    'vibes', 'relationship_style',
   ];
+
+  const VALID_RELATIONSHIP_STYLES = new Set([
+    'marriage_track', 'dink', 'enm_poly', 'casual', 'open',
+  ]);
 
   const updates: Record<string, any> = {};
   for (const key of allowed) {
@@ -46,6 +50,9 @@ export async function PUT(req: NextRequest) {
   }
   if (updates.age_max != null && (updates.age_max < 18 || updates.age_max > 100)) {
     return NextResponse.json({ error: 'Invalid max age' }, { status: 400 });
+  }
+  if (updates.relationship_style != null && !VALID_RELATIONSHIP_STYLES.has(updates.relationship_style)) {
+    return NextResponse.json({ error: 'Invalid relationship style' }, { status: 400 });
   }
 
   const { data, error } = await supabaseAdmin

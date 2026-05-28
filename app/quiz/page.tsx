@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import CorpFooter from '@/components/corp-footer'
 import { suggestEmailCorrection } from '@/lib/email-typos'
-import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
-import type { VibeKey } from '@/lib/quiz-data'
+import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype, RELATIONSHIP_STYLES } from '@/lib/quiz-data'
+import type { VibeKey, RelationshipStyle } from '@/lib/quiz-data'
 import { parseResponse } from '@/lib/fetch-helpers'
 import styles from './quiz.module.css'
 
-type Screen = 'intro' | 'verify' | 'quiz' | 'vibes-intro' | 'vibes' | 'loading' | 'result'
+type Screen = 'intro' | 'verify' | 'quiz' | 'vibes-intro' | 'vibes' | 'style' | 'loading' | 'result'
 
 interface FormData {
   name: string; age: string; gender: string; seek: string
@@ -52,6 +52,7 @@ function QuizInner() {
   const [currentVibeQ, setCurrentVibeQ] = useState(0)
   const [vibeAnswers, setVibeAnswers] = useState<number[]>([])
   const [vibeSelected, setVibeSelected] = useState<number|null>(null)
+  const [relationshipStyle, setRelationshipStyle] = useState<RelationshipStyle | null>(null)
   const [loadingStep, setLoadingStep] = useState(0)
   const [loadingPct, setLoadingPct] = useState(0)
   const [archetype, setArchetype] = useState<ReturnType<typeof pickArchetype>|null>(null)
@@ -80,6 +81,7 @@ function QuizInner() {
             ageMin: String(data.user.age_min || 22),
             ageMax: String(data.user.age_max || 38),
           }))
+          if (data.user.relationship_style) setRelationshipStyle(data.user.relationship_style)
         }
         setRetakeReady(true)
         setScreen('quiz')
@@ -159,7 +161,7 @@ function QuizInner() {
     finally { setOtpVerifying(false) }
   }
 
-  const submitToDatabase = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>, vibeAns: number[]) => {
+  const submitToDatabase = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>, vibeAns: number[], style: RelationshipStyle | null) => {
     try {
       const vibes = vibesFromAnswers(vibeAns)
       const scorePayload = {
@@ -171,6 +173,7 @@ function QuizInner() {
         score_openness: finalScores['Openness'] ?? 0,
         archetype: arch.name,
         vibes,
+        relationship_style: style,
       }
 
       // Retake path: existing logged-in user → UPDATE row, don't re-insert.
@@ -239,16 +242,21 @@ if (res.status === 409) {
     setVibeAnswers(newAnswers)
     setVibeSelected(null)
     if (currentVibeQ + 1 >= VIBE_QUESTIONS.length) {
-      // All done — submit + go to loading.
-      setScreen('loading')
-      setLoadingStep(0)
-      setLoadingPct(0)
-      submitToDatabase(scores, archetype!, newAnswers)
+      // Vibes done — move to relationship-style picker before submit.
+      setScreen('style')
     } else { setCurrentVibeQ(q => q + 1) }
-  }, [vibeAnswers, currentVibeQ, submitToDatabase, scores, archetype])
+  }, [vibeAnswers, currentVibeQ])
 
   function nextVibe() { if (vibeSelected !== null) advanceVibe(vibeSelected) }
   function skipVibe() { advanceVibe(-1) }
+
+  const finishStyle = useCallback((chosen: RelationshipStyle | null) => {
+    setRelationshipStyle(chosen)
+    setScreen('loading')
+    setLoadingStep(0)
+    setLoadingPct(0)
+    submitToDatabase(scores, archetype!, vibeAnswers, chosen)
+  }, [scores, archetype, vibeAnswers, submitToDatabase])
 
   useEffect(() => {
     if (screen !== 'quiz') return
@@ -571,7 +579,47 @@ if (res.status === 409) {
             <div className={styles.qNav}>
               <button className={styles.qSkip} onClick={skipVibe}>skip this one</button>
               <button className="btn-primary" onClick={nextVibe} disabled={vibeSelected === null}>
-                {currentVibeQ + 1 === VIBE_QUESTIONS.length ? 'finish →' : 'next →'}
+                {currentVibeQ + 1 === VIBE_QUESTIONS.length ? 'next →' : 'next →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'style' && (
+        <div className={styles.screen}>
+          <div className={styles.quizWrap}>
+            <div className={styles.quizTop}>
+              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <div className={styles.qMeta}>
+                <span className={styles.qDim}>relationship style</span>
+                <span className={styles.qCount}>last one</span>
+              </div>
+            </div>
+
+            <p className={styles.qText}>What relationship shape are you looking for?</p>
+            <p style={{fontFamily:'Georgia,ui-serif,serif',fontStyle:'italic',color:'#7a7590',marginTop:'-0.5rem',marginBottom:'1.25rem',fontSize:'.85rem'}}>
+              Pick what fits — you can change this later in your profile.
+            </p>
+
+            <div className={styles.qOptions}>
+              {RELATIONSHIP_STYLES.map((s, i) => (
+                <button key={s.value}
+                  className={`${styles.qOpt} ${relationshipStyle === s.value ? styles.qOptSelected : ''}`}
+                  onClick={() => setRelationshipStyle(s.value)}>
+                  <span className={styles.qKey}>{String.fromCharCode(65+i)}</span>
+                  <span className={styles.qOptText}>
+                    <strong>{s.label}</strong>
+                    <span style={{display:'block',fontSize:'.72rem',color:'#7a7590',fontWeight:400,marginTop:'.2rem'}}>{s.desc}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={() => finishStyle(null)}>skip — decide later</button>
+              <button className="btn-primary" onClick={() => finishStyle(relationshipStyle)} disabled={relationshipStyle === null}>
+                finish →
               </button>
             </div>
           </div>

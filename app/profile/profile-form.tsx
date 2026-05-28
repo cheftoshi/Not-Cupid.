@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import ChipInput from './chip-input';
 import { parseResponse } from '@/lib/fetch-helpers';
+import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
 
 type Props = {
   initialUser: any;
@@ -212,6 +213,19 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
         <div className={styles.field}>
           <label className={styles.label}>ZIP code</label>
           <input className={styles.input} type="text" value={user.zip || ''} onChange={e => setUser({ ...user, zip: e.target.value })} />
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Relationship style · <span className={styles.labelHint}>what you're looking for</span></label>
+          <select
+            className={styles.select}
+            value={user.relationship_style || ''}
+            onChange={e => setUser({ ...user, relationship_style: e.target.value || null })}
+          >
+            <option value="">— pick one —</option>
+            {RELATIONSHIP_STYLES.map(s => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 

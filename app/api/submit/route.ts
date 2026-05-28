@@ -11,7 +11,12 @@ export async function POST(req: NextRequest) {
       score_agreeableness, score_conscientiousness, score_openness,
       archetype,
       vibes,
+      relationship_style,
     } = body
+
+    const VALID_RELATIONSHIP_STYLES = new Set([
+      'marriage_track', 'dink', 'enm_poly', 'casual', 'open',
+    ])
 
     if (!name || !age || !gender || !seeking || !zip || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -25,6 +30,9 @@ export async function POST(req: NextRequest) {
       archetype, status: 'waiting',
     }
     if (vibes && typeof vibes === 'object') insertRow.vibes = vibes
+    if (relationship_style && VALID_RELATIONSHIP_STYLES.has(relationship_style)) {
+      insertRow.relationship_style = relationship_style
+    }
 
     const { data, error } = await supabaseAdmin
       .from('users')
