@@ -3,6 +3,14 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // Hobby plan cap
+
+const BATCH_SIZE = 5         // parallel sends per batch
+const BATCH_DELAY_MS = 1100  // ~4.5 sends/sec — under Resend's free 2/sec tier when accounting for slack
+const MAX_RUN_MS = 55_000    // stop before Vercel kills us; safe to re-run
+const MAX_RETRIES = 2
+
+function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)) }
 
 function emailHtml(name: string, baseUrl: string) {
   const safeName = (name || 'there').split(' ')[0]
@@ -30,65 +38,117 @@ function emailHtml(name: string, baseUrl: string) {
   `
 }
 
+async function sendOne(
+  user: { id: string; name: string | null; email: string },
+  apiKey: string,
+  baseUrl: string,
+  retry = 0
+): Promise<{ ok: boolean; status?: number; err?: string }> {
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'NotCupid <match@notcupid.com>',
+        to: [user.email],
+        subject: 'the algo got smarter — retake the quiz',
+        html: emailHtml(user.name || '', baseUrl),
+      }),
+    })
+    if (res.ok) return { ok: true }
+    if (res.status === 429 && retry < MAX_RETRIES) {
+      await sleep(2000 * (retry + 1))
+      return sendOne(user, apiKey, baseUrl, retry + 1)
+    }
+    const text = await res.text().catch(() => '')
+    return { ok: false, status: res.status, err: text.slice(0, 120) }
+  } catch (e: any) {
+    return { ok: false, err: e.message }
+  }
+}
+
 export async function POST(req: NextRequest) {
   const admin = await getCurrentAdmin()
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const url = new URL(req.url)
   const dryRun = url.searchParams.get('dry') === '1'
+  // ?force=1 ignores quiz_blast_sent_at and re-emails everyone
+  const force = url.searchParams.get('force') === '1'
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com'
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'RESEND_API_KEY not set' }, { status: 500 })
 
-  const { data: users, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('users')
-    .select('id, name, email')
+    .select('id, name, email, quiz_blast_sent_at')
     .is('deleted_at', null)
+    .not('email', 'is', null)
 
+  if (!force) query = query.is('quiz_blast_sent_at', null)
+
+  const { data: users, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (dryRun) {
-    return NextResponse.json({ wouldSend: users?.length || 0, sample: users?.slice(0, 3).map(u => u.email) })
+    return NextResponse.json({
+      wouldSend: users?.length || 0,
+      sample: users?.slice(0, 3).map((u) => u.email),
+      mode: force ? 'force-all' : 'unsent-only',
+    })
   }
 
+  const start = Date.now()
   let sent = 0
   let failed = 0
   const errors: string[] = []
+  let processed = 0
 
-  for (const u of users || []) {
-    if (!u.email) continue
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'NotCupid <match@notcupid.com>',
-          to: [u.email],
-          subject: 'the algo got smarter — retake the quiz',
-          html: emailHtml(u.name || '', baseUrl),
-        }),
-      })
-      if (res.ok) sent++
-      else {
+  for (let i = 0; i < (users || []).length; i += BATCH_SIZE) {
+    if (Date.now() - start > MAX_RUN_MS) break
+
+    const batch = (users || []).slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(batch.map((u) => sendOne(u, apiKey, baseUrl)))
+
+    const sentIds: string[] = []
+    results.forEach((r, idx) => {
+      processed++
+      if (r.ok) {
+        sent++
+        sentIds.push(batch[idx].id)
+      } else {
         failed++
-        const detail = await res.text().catch(() => '')
-        errors.push(`${u.email}: ${res.status} ${detail.slice(0, 100)}`)
+        if (errors.length < 10) {
+          errors.push(`${batch[idx].email}: ${r.status ?? 'err'} ${r.err ?? ''}`.trim())
+        }
       }
-    } catch (e: any) {
-      failed++
-      errors.push(`${u.email}: ${e.message}`)
+    })
+
+    if (sentIds.length > 0) {
+      await supabaseAdmin
+        .from('users')
+        .update({ quiz_blast_sent_at: new Date().toISOString() })
+        .in('id', sentIds)
     }
+
+    if (i + BATCH_SIZE < (users || []).length) await sleep(BATCH_DELAY_MS)
   }
 
+  const remaining = (users?.length || 0) - processed
   return NextResponse.json({
     success: true,
-    totalUsers: users?.length || 0,
+    totalCandidates: users?.length || 0,
+    processed,
     sent,
     failed,
-    errors: errors.slice(0, 10),
+    remaining, // if > 0, just re-run the blast — idempotent
+    errors,
+    note: remaining > 0
+      ? `Time-limited stop — re-click the button to continue with the remaining ${remaining}.`
+      : undefined,
   })
 }

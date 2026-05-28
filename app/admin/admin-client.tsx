@@ -83,22 +83,37 @@ export default function AdminClient() {
           </div>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem',marginBottom:'1.5rem'}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'.75rem'}}>
           <a href="/api/admin/send-pending-matches" target="_blank" style={{display:'block',background:'#0e0c1a',color:'#f8f5ff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',textDecoration:'none',textAlign:'center'}}>
             📨 Send pending match emails
           </a>
           <a href="/api/cron/rematch" target="_blank" style={{display:'block',background:'#5b4fa0',color:'#f8f5ff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',textDecoration:'none',textAlign:'center'}}>
             🔄 Run rematch cron
           </a>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'1.5rem'}}>
           <button
             onClick={async () => {
-              if (!confirm('Send the "retake the quiz" email to ALL users? This is not reversible.')) return
+              if (!confirm('Pull Resend send history and mark users who already received the blast?')) return
+              const res = await fetch('/api/admin/import-blast-history', { method: 'POST' })
+              const data = await res.json()
+              alert(`Imported: marked ${data.marked || 0} users (found ${data.foundRecipients || 0} in Resend across ${data.pages || 0} pages). ${data.error ? '\nError: ' + data.error : ''}`)
+            }}
+            style={{display:'block',background:'#3a7a4f',color:'#fff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',border:'none',cursor:'pointer',textAlign:'center'}}>
+            ⤓ Import blast history from Resend
+          </button>
+          <button
+            onClick={async () => {
+              if (!confirm('Send quiz-retake blast to all UNSENT users? (Idempotent — already-sent users skipped.)')) return
               const res = await fetch('/api/admin/send-quiz-blast', { method: 'POST' })
               const data = await res.json()
-              alert(`Blast result: sent ${data.sent || 0} / ${data.totalUsers || 0}, failed ${data.failed || 0}`)
+              const note = data.remaining > 0
+                ? `\n\n${data.remaining} remaining. Click again to continue.`
+                : ''
+              alert(`Blast: sent ${data.sent || 0}, failed ${data.failed || 0}, candidates ${data.totalCandidates || 0}${note}`)
             }}
             style={{display:'block',background:'#8b7fd4',color:'#fff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',border:'none',cursor:'pointer',textAlign:'center'}}>
-            ✨ Send quiz-retake blast
+            ✨ Send quiz-retake blast (unsent only)
           </button>
         </div>
 
