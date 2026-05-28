@@ -44,20 +44,23 @@ export default function AdminClient() {
         </div>
 
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'1px',background:'rgba(14,12,26,0.1)',border:'1px solid rgba(14,12,26,0.1)',marginBottom:'1.5rem'}}>
-          {[
-            ['Total Users', s?.totalUsers, '👥'],
-            ['Total Matches', s?.totalMatches, '💘'],
-            ['Revenue', `$${s?.totalRevenue}`, '💰'],
-            ['Both Accepted', s?.bothAccepted, '✅'],
-            ['Pending', s?.pendingMatches, '⏳'],
-            ['Passed', s?.passed, '👋'],
-            ['Waiting', s?.waiting, '👀'],
-            ['M / F / Bi', `${s?.men} / ${s?.women} / ${s?.bi}`, '⚖️'],
-          ].map(([label, val, icon]) => (
-            <div key={label as string} style={{background:'#fff',padding:'1.25rem',textAlign:'center'}}>
+          {([
+            ['Total Users', s?.totalUsers, '👥', null],
+            ['Total Matches', s?.totalMatches, '💘', null],
+            ['Revenue', `$${s?.totalRevenue}`, '💰', null],
+            ['Both Accepted', s?.bothAccepted, '✅', null],
+            ['Pending', s?.pendingMatches, '⏳', null],
+            ['Passed', s?.passed, '👋', s?.passRate !== null && s?.passRate !== undefined ? `${s.passRate}% pass rate` : null],
+            ['Waiting', s?.waiting, '👀', null],
+            ['M / F / Bi', `${s?.men} / ${s?.women} / ${s?.bi}`, '⚖️', null],
+          ] as Array<[string, any, string, string | null]>).map(([label, val, icon, sub]) => (
+            <div key={label} style={{background:'#fff',padding:'1.25rem',textAlign:'center'}}>
               <div style={{fontSize:'1.5rem',marginBottom:'.25rem'}}>{icon}</div>
               <div style={{fontFamily:'Bebas Neue,sans-serif',fontSize:'2rem',color:'#0e0c1a',lineHeight:1}}>{val}</div>
               <div style={{fontFamily:'DM Mono,monospace',fontSize:'.48rem',letterSpacing:'.1em',textTransform:'uppercase',color:'#7a7590',marginTop:'.25rem'}}>{label}</div>
+              {sub && (
+                <div style={{fontFamily:'DM Mono,monospace',fontSize:'.45rem',letterSpacing:'.08em',textTransform:'uppercase',color:'#8b7fd4',marginTop:'.15rem'}}>{sub}</div>
+              )}
             </div>
           ))}
         </div>

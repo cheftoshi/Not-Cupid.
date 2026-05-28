@@ -54,8 +54,12 @@ export async function GET(req: NextRequest) {
       user1_accepted: m.user_1_accepted, user2_accepted: m.user_2_accepted, created_at: m.created_at
     }))
 
+    // Pass rate = passed / decided. Null when nothing decided yet (avoid 0/0).
+    const decided = bothAccepted + passed
+    const passRate = decided > 0 ? Math.round((passed / decided) * 100) : null
+
     return NextResponse.json({
-      stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), pendingMatches, bothAccepted, passed, waiting, matched, men, women, bi },
+      stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
       signupsPerDay: days,
       recentUsers,
       recentMatches,
