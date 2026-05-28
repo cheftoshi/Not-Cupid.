@@ -27,7 +27,13 @@ const MAX_WEIGHTED_DIFF =
   DIM_MAX_DIFF *
   (W.honesty + W.agreeableness + W.conscientiousness + W.emotionality + W.openness + W.extraversion);
 
-export function compatibilityScore(a: any, b: any): number {
+const HEXACO_WEIGHT = 0.8;
+const VIBES_WEIGHT = 0.2;
+
+const VIBE_KEYS = ['chronotype', 'date_freq', 'future', 'comm', 'social', 'risk'] as const;
+const VIBE_MAX_DIFF_PER_KEY = 3; // each key on a 1..4 scale → max |diff| = 3
+
+function hexacoSubscore(a: any, b: any): number {
   const dH = Math.abs((a.score_honesty ?? 0) - (b.score_honesty ?? 0));
   const dA = Math.abs((a.score_agreeableness ?? 0) - (b.score_agreeableness ?? 0));
   const dC = Math.abs((a.score_conscientiousness ?? 0) - (b.score_conscientiousness ?? 0));
@@ -43,7 +49,37 @@ export function compatibilityScore(a: any, b: any): number {
     dO * W.openness +
     dX * W.extraversion;
 
-  return Math.round(100 - (weighted / MAX_WEIGHTED_DIFF) * 100);
+  return 100 - (weighted / MAX_WEIGHTED_DIFF) * 100;
+}
+
+function vibesSubscore(a: any, b: any): number | null {
+  const av = a?.vibes;
+  const bv = b?.vibes;
+  if (!av || !bv || typeof av !== 'object' || typeof bv !== 'object') return null;
+
+  let totalDiff = 0;
+  let maxDiff = 0;
+  for (const k of VIBE_KEYS) {
+    const aVal = av[k];
+    const bVal = bv[k];
+    if (typeof aVal !== 'number' || typeof bVal !== 'number') continue;
+    totalDiff += Math.abs(aVal - bVal);
+    maxDiff += VIBE_MAX_DIFF_PER_KEY;
+  }
+  if (maxDiff === 0) return null;
+  return 100 - (totalDiff / maxDiff) * 100;
+}
+
+export function compatibilityScore(a: any, b: any): number {
+  const hexaco = hexacoSubscore(a, b);
+  const vibes = vibesSubscore(a, b);
+
+  // If either side hasn't filled the vibes quiz, fall back to pure HEXACO.
+  const blended = vibes === null
+    ? hexaco
+    : hexaco * HEXACO_WEIGHT + vibes * VIBES_WEIGHT;
+
+  return Math.round(blended);
 }
 
 /**

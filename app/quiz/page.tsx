@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Nav from '@/components/Nav'
-import { QUESTIONS, DIMS, DIM_SHORT, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
+import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, vibesFromAnswers, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
 import styles from './quiz.module.css'
 
-type Screen = 'intro' | 'verify' | 'quiz' | 'loading' | 'result'
+type Screen = 'intro' | 'verify' | 'quiz' | 'vibes-intro' | 'vibes' | 'loading' | 'result'
 
 interface FormData {
   name: string; age: string; gender: string; seek: string
@@ -33,6 +33,9 @@ export default function QuizPage() {
   const [currentQ, setCurrentQ] = useState(0)
   const [selectedOpt, setSelectedOpt] = useState<number|null>(null)
   const [answers, setAnswers] = useState<number[]>([])
+  const [currentVibeQ, setCurrentVibeQ] = useState(0)
+  const [vibeAnswers, setVibeAnswers] = useState<number[]>([])
+  const [vibeSelected, setVibeSelected] = useState<number|null>(null)
   const [loadingStep, setLoadingStep] = useState(0)
   const [loadingPct, setLoadingPct] = useState(0)
   const [archetype, setArchetype] = useState<ReturnType<typeof pickArchetype>|null>(null)
@@ -110,8 +113,9 @@ export default function QuizPage() {
     finally { setOtpVerifying(false) }
   }
 
-  const submitToDatabase = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>) => {
+  const submitToDatabase = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>, vibeAns: number[]) => {
     try {
+      const vibes = vibesFromAnswers(vibeAns)
       const res = await fetch('/api/submit', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
@@ -124,6 +128,7 @@ export default function QuizPage() {
           score_conscientiousness: finalScores['Conscientiousness'] ?? 0,
           score_openness: finalScores['Openness'] ?? 0,
           archetype: arch.name,
+          vibes,
         })
       })
       const data = await res.json()
@@ -154,19 +159,33 @@ if (res.status === 409) {
     setAnswers(newAnswers)
     setSelectedOpt(null)
     if (currentQ + 1 >= QUESTIONS.length) {
+      // HEXACO is done — move to the vibes mini-quiz.
       const finalScores = computeScores(newAnswers)
       const arch = pickArchetype(finalScores)
       setScores(finalScores)
       setArchetype(arch)
-      setScreen('loading')
-      setLoadingStep(0)
-      setLoadingPct(0)
-      submitToDatabase(finalScores, arch)
+      setScreen('vibes-intro')
     } else { setCurrentQ(q => q + 1) }
-  }, [answers, currentQ, submitToDatabase])
+  }, [answers, currentQ])
 
   function nextQ() { if (selectedOpt !== null) advance(selectedOpt) }
   function skipQ() { advance(-1) }
+
+  const advanceVibe = useCallback((ans: number) => {
+    const newAnswers = [...vibeAnswers, ans]
+    setVibeAnswers(newAnswers)
+    setVibeSelected(null)
+    if (currentVibeQ + 1 >= VIBE_QUESTIONS.length) {
+      // All done — submit + go to loading.
+      setScreen('loading')
+      setLoadingStep(0)
+      setLoadingPct(0)
+      submitToDatabase(scores, archetype!, newAnswers)
+    } else { setCurrentVibeQ(q => q + 1) }
+  }, [vibeAnswers, currentVibeQ, submitToDatabase, scores, archetype])
+
+  function nextVibe() { if (vibeSelected !== null) advanceVibe(vibeSelected) }
+  function skipVibe() { advanceVibe(-1) }
 
   useEffect(() => {
     if (screen !== 'quiz') return
@@ -178,6 +197,17 @@ if (res.status === 409) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [screen, selectedOpt, nextQ])
+
+  useEffect(() => {
+    if (screen !== 'vibes') return
+    function onKey(e: KeyboardEvent) {
+      const map: Record<string, number> = {a:0,b:1,c:2,d:3}
+      if (map[e.key.toLowerCase()] !== undefined) setVibeSelected(map[e.key.toLowerCase()])
+      if (e.key === 'Enter' && vibeSelected !== null) nextVibe()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [screen, vibeSelected, nextVibe])
 
   useEffect(() => {
     if (screen !== 'loading') return
@@ -402,6 +432,66 @@ if (res.status === 409) {
               <button className={styles.qSkip} onClick={skipQ}>skip this one</button>
               <button className="btn-primary" onClick={nextQ} disabled={selectedOpt === null}>
                 {currentQ + 1 === QUESTIONS.length ? 'finish →' : 'next →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'vibes-intro' && (
+        <div className={styles.screen}>
+          <div className={styles.introWrap}>
+            <div className={styles.introHero}>
+              <div className={styles.stickerRow}>
+                <span className={styles.stickerGold}>✦ part 2</span>
+              </div>
+              <h1 className={styles.introH1}>
+                now <em>the day-to-day.</em>
+              </h1>
+              <p className={styles.introLede}>
+                personality is half the story. how you actually <em>live</em> matters just as much.<br />
+                <span className={styles.introLedeSub}>6 quick ones. then we go.</span>
+              </p>
+            </div>
+            <button className="btn-primary" onClick={() => setScreen('vibes')} style={{width:'100%',justifyContent:'center'}}>
+              start →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {screen === 'vibes' && VIBE_QUESTIONS[currentVibeQ] && (
+        <div className={styles.screen}>
+          <div className={styles.quizWrap}>
+            <div className={styles.quizTop}>
+              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <div className={styles.qMeta}>
+                <span className={styles.qDim}>{VIBE_QUESTIONS[currentVibeQ].short}</span>
+                <span className={styles.qCount}>{currentVibeQ + 1}/{VIBE_QUESTIONS.length}</span>
+              </div>
+            </div>
+
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{width:`${(currentVibeQ / VIBE_QUESTIONS.length) * 100}%`}} />
+            </div>
+
+            <p className={styles.qText}>{VIBE_QUESTIONS[currentVibeQ].q}</p>
+
+            <div className={styles.qOptions}>
+              {VIBE_QUESTIONS[currentVibeQ].opts.map((opt, i) => (
+                <button key={i}
+                  className={`${styles.qOpt} ${vibeSelected === i ? styles.qOptSelected : ''}`}
+                  onClick={() => setVibeSelected(i)}>
+                  <span className={styles.qKey}>{String.fromCharCode(65+i)}</span>
+                  <span className={styles.qOptText}>{opt}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={skipVibe}>skip this one</button>
+              <button className="btn-primary" onClick={nextVibe} disabled={vibeSelected === null}>
+                {currentVibeQ + 1 === VIBE_QUESTIONS.length ? 'finish →' : 'next →'}
               </button>
             </div>
           </div>

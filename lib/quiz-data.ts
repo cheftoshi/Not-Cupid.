@@ -142,7 +142,109 @@ export const QUESTIONS: Question[] = [
     opts: ["Fully embraced. It's the point.", 'Aware of it. Selectively deploy.', 'I prefer "specific" to "weird."', "I'm not weird. I'm particular."],
     score: [4, 3, 2, 1],
   },
+  // ─── added Q4 per dim to bring HEXACO to 24 total ─────────────
+  {
+    dim: 'Honesty-Humility', short: 'Honesty',
+    q: 'A friend asks if their new haircut looks good. It does not. You:',
+    opts: ["Tell them. Kindly. They asked.", "Hint at it — 'interesting choice'.", 'Lie cleanly. Hair grows.', "Compliment something else and pivot."],
+    score: [4, 2, 1, 2],
+  },
+  {
+    dim: 'Emotionality', short: 'Emotionality',
+    q: "You're alone in the apartment and a floorboard creaks. You:",
+    opts: ["It's the radiator. I know my apartment.", "Pause, listen, move on.", "Phone in hand 'just in case'.", "I'm already googling the noise."],
+    score: [4, 3, 2, 1],
+  },
+  {
+    dim: 'Extraversion', short: 'Extraversion',
+    q: 'You arrive at a party where you know one person. They left to get a drink. You:',
+    opts: ['Find the kitchen, start a conversation.', 'Hover politely near the snacks.', 'Find them, fast.', "Step outside for 'air' and check the time."],
+    score: [4, 3, 2, 1],
+  },
+  {
+    dim: 'Agreeableness', short: 'Agreeableness',
+    q: 'The waiter forgets your order — twice. You:',
+    opts: ['Ask again, easy energy. People mess up.', "Subtle 'still waiting?' with a smile.", "Catch the manager's eye.", "Loudly tell my table about it."],
+    score: [4, 3, 2, 1],
+  },
+  {
+    dim: 'Conscientiousness', short: 'Conscientiousness',
+    q: "Your inbox right now:",
+    opts: ['Zero. I touch each email once.', 'Under fifty. Mostly handled.', "Three figures. I have a system, sort of.", 'Four-digit notification. Do not open.'],
+    score: [4, 3, 2, 1],
+  },
+  {
+    dim: 'Openness', short: 'Openness',
+    q: 'A friend invites you to an experimental theater piece. You haven\'t heard of it. You:',
+    opts: ['Already in. Worst case it\'s a story.', "Sure, if dinner happens after.", "Ask what it\'s 'about' first.", "Hard pass. I know what I like."],
+    score: [4, 3, 2, 1],
+  },
 ]
+
+// ─── Vibes: 6 additional questions covering lifestyle/compat dimensions
+//     that HEXACO doesn't capture (chronotype, date frequency, future scope,
+//     communication mode, social radius, risk attitude). Stored as
+//     user.vibes JSONB and factored into compatibilityScore at 20% weight.
+export type VibeKey = 'chronotype' | 'date_freq' | 'future' | 'comm' | 'social' | 'risk'
+
+export interface VibeQuestion {
+  key: VibeKey
+  short: string
+  q: string
+  opts: string[]
+  // Each option maps to a 1..4 position on the dimension's spectrum.
+  // Similarity (|a - b|) is computed across all 6 dimensions and inverted into a score.
+  score: number[]
+}
+
+export const VIBE_QUESTIONS: VibeQuestion[] = [
+  {
+    key: 'chronotype', short: 'Day rhythm',
+    q: 'When are you actually the best version of yourself?',
+    opts: ['7am, post-coffee, before the world.', 'Mid-morning to early afternoon.', 'Late afternoon golden hour.', 'After 10pm. Always.'],
+    score: [1, 2, 3, 4],
+  },
+  {
+    key: 'date_freq', short: 'How often',
+    q: "You're dating someone you like. How often do you want to see them?",
+    opts: ['Most days. I get attached.', '3–4 times a week feels right.', 'Once or twice. I like my space.', 'When it happens it happens.'],
+    score: [4, 3, 2, 1],
+  },
+  {
+    key: 'future', short: 'Where this is going',
+    q: 'Big-picture, what are you looking for?',
+    opts: ['Marriage + kids, eventually.', 'Long-term partner, kids are tbd.', "Serious but not 'plan-the-wedding' serious.", 'Something real for right now, no script.'],
+    score: [4, 3, 2, 1],
+  },
+  {
+    key: 'comm', short: 'Texting',
+    q: 'You\'re into someone. Your text frequency:',
+    opts: ['All-day banter, no question.', 'Steady check-ins, real conversations.', 'A few times a day, more in person.', 'I save it for when we see each other.'],
+    score: [4, 3, 2, 1],
+  },
+  {
+    key: 'social', short: 'Social radius',
+    q: 'Ideal Saturday night, honestly:',
+    opts: ['Packed bar with the whole crew.', 'Dinner with 4–6 people I love.', '1-on-1 with someone interesting.', 'Couch. Movie. Phone face-down.'],
+    score: [4, 3, 2, 1],
+  },
+  {
+    key: 'risk', short: 'How you move',
+    q: "Someone says 'let's just go.' No plan. You:",
+    opts: ["I'm grabbing my keys.", "Ok — where roughly though?", "Need a destination first.", "Pass. I'll see you when you're back."],
+    score: [4, 3, 2, 1],
+  },
+]
+
+export function vibesFromAnswers(answers: number[]): Record<VibeKey, number> {
+  const out: Partial<Record<VibeKey, number>> = {}
+  VIBE_QUESTIONS.forEach((q, i) => {
+    const idx = answers[i]
+    if (idx === undefined || idx < 0 || idx >= q.opts.length) return
+    out[q.key] = q.score[idx]
+  })
+  return out as Record<VibeKey, number>
+}
 
 export const ARCHETYPES = [
   {

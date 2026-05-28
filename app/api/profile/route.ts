@@ -19,6 +19,7 @@ export async function PUT(req: NextRequest) {
     'bio', 'height_cm', 'occupation', 'education',
     'music', 'food', 'hobbies', 'prompts',
     'age_min', 'age_max', 'auto_rematch',
+    'vibes',
   ];
 
   const updates: Record<string, any> = {};

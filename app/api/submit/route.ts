@@ -9,22 +9,26 @@ export async function POST(req: NextRequest) {
       age_min, age_max,
       score_honesty, score_emotionality, score_extraversion,
       score_agreeableness, score_conscientiousness, score_openness,
-      archetype
+      archetype,
+      vibes,
     } = body
 
     if (!name || !age || !gender || !seeking || !zip || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    const insertRow: any = {
+      name, age: parseInt(age), gender, seeking, zip, email,
+      age_min: age_min ?? 18, age_max: age_max ?? 99,
+      score_honesty, score_emotionality, score_extraversion,
+      score_agreeableness, score_conscientiousness, score_openness,
+      archetype, status: 'waiting',
+    }
+    if (vibes && typeof vibes === 'object') insertRow.vibes = vibes
+
     const { data, error } = await supabaseAdmin
       .from('users')
-      .insert([{
-        name, age: parseInt(age), gender, seeking, zip, email,
-        age_min: age_min ?? 18, age_max: age_max ?? 99,
-        score_honesty, score_emotionality, score_extraversion,
-        score_agreeableness, score_conscientiousness, score_openness,
-        archetype, status: 'waiting'
-      }])
+      .insert([insertRow])
       .select().single()
 
 if (error) {
