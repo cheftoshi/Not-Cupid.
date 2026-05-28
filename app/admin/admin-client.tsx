@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Nav from '@/components/Nav'
+import CorpFooter from '@/components/corp-footer'
 
 export default function AdminClient() {
   const [data, setData] = useState<any>(null)
@@ -166,6 +167,7 @@ export default function AdminClient() {
         </div>
 
       </div>
+      <CorpFooter />
     </>
   )
 }

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
+import CorpFooter from '@/components/corp-footer'
 
 function UnlockContent() {
   const params = useSearchParams()
@@ -77,6 +78,7 @@ export default function UnlockPage() {
       }>
         <UnlockContent />
       </Suspense>
+      <CorpFooter />
     </>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
+import CorpFooter from '@/components/corp-footer';
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
@@ -232,6 +233,7 @@ function LoginInner() {
           new here? take the quiz to sign up →
         </Link>
       </div>
+      <CorpFooter />
     </div>
   );
 }

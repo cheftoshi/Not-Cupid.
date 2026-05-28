@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
+import CorpFooter from '@/components/corp-footer'
 import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
 import type { VibeKey } from '@/lib/quiz-data'
 import styles from './quiz.module.css'
@@ -658,6 +659,8 @@ if (res.status === 409) {
           </div>
         </div>
       )}
+
+      <CorpFooter />
     </>
   )
 }

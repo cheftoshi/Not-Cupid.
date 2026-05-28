@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Nav from '@/components/Nav'
+import CorpFooter from '@/components/corp-footer'
 
 export default function OutOfRange() {
   const [email, setEmail] = useState('')
@@ -106,6 +107,7 @@ export default function OutOfRange() {
           </>
         )}
       </div>
+      <CorpFooter />
     </>
   )
 }

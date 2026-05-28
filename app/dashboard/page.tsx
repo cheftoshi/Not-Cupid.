@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import MatchCard from './match-card';
+import CorpFooter from '@/components/corp-footer';
 import styles from './dashboard.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -152,6 +153,7 @@ export default async function DashboardPage({
           </div>
         )}
       </div>
+      <CorpFooter />
     </div>
   );
 }
