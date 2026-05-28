@@ -1,11 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { verifyStripeSignature } from '@/lib/stripe-webhook'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text()
+
+    // Verify Stripe signature BEFORE parsing or trusting any data.
+    const verifyResult = verifyStripeSignature({
+      rawBody: body,
+      signatureHeader: req.headers.get('stripe-signature'),
+      secret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    })
+    if (!verifyResult.ok) {
+      console.error('Stripe webhook signature invalid:', verifyResult.reason)
+      return NextResponse.json({ error: 'invalid signature' }, { status: 400 })
+    }
+
     const event = JSON.parse(body)
-    console.log('Webhook received:', event.type)
+    console.log('Webhook received:', event.type, event.id)
+
+    // Idempotency: short-circuit if we've already processed this event.
+    if (event.id) {
+      const { data: seen } = await supabaseAdmin
+        .from('stripe_events')
+        .select('event_id')
+        .eq('event_id', event.id)
+        .maybeSingle()
+      if (seen) {
+        console.log('Duplicate Stripe event, skipping:', event.id)
+        return NextResponse.json({ received: true, duplicate: true })
+      }
+      await supabaseAdmin
+        .from('stripe_events')
+        .insert({ event_id: event.id, type: event.type })
+        .then(() => {})
+    }
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object

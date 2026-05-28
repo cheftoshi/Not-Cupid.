@@ -1,36 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { verifyMatchToken } from '@/lib/match-tokens'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const matchId = searchParams.get('matchId')
-    const userId = searchParams.get('userId')
+function escapeHtml(str: string): string {
+  return str.replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c] as string))
+}
 
-    if (!matchId || !userId) {
-      return new NextResponse(`
-        <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
-          <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">Invalid link</h1>
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>
-        </body></html>
-      `, { headers: { 'Content-Type': 'text/html' } })
-    }
+function htmlPage(title: string, body: string, status = 200): NextResponse {
+  return new NextResponse(
+    `<html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
+      <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">${title}</h1>
+      ${body}
+    </body></html>`,
+    { status, headers: { 'Content-Type': 'text/html' } }
+  )
+}
+
+function invalidLink() {
+  return htmlPage(
+    'Invalid or expired link',
+    `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">This link is no longer valid. If you think this is a mistake, contact match@notcupid.com.</p>
+     <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>`,
+    400
+  )
+}
+
+function parseParams(req: NextRequest, body?: URLSearchParams) {
+  const url = new URL(req.url)
+  const matchId = body?.get('matchId') || url.searchParams.get('matchId')
+  const userId = body?.get('userId') || url.searchParams.get('userId')
+  const token = body?.get('token') || url.searchParams.get('token')
+  return { matchId, userId, token }
+}
+
+export async function GET(req: NextRequest) {
+  const { matchId, userId, token } = parseParams(req)
+  if (!matchId || !userId || !token) return invalidLink()
+  if (!verifyMatchToken({ matchId, userId, action: 'accept', token })) return invalidLink()
+
+  // Render a confirmation page. No DB mutation here — email-link prefetchers
+  // (Gmail / Outlook / antivirus) only GET, so they won't accidentally accept.
+  const mId = escapeHtml(matchId)
+  const uId = escapeHtml(userId)
+  const tk = escapeHtml(token)
+  return new NextResponse(`
+    <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
+      <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
+      <h1 style="font-size:1.8rem;color:#0e0c1a;margin-bottom:1rem">Confirm: yes, I'm interested</h1>
+      <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Click below to confirm. If your match also says yes, you'll both get each other's email immediately.</p>
+      <form method="POST" action="/api/match-accept" style="display:inline-block">
+        <input type="hidden" name="matchId" value="${mId}" />
+        <input type="hidden" name="userId" value="${uId}" />
+        <input type="hidden" name="token" value="${tk}" />
+        <button type="submit" style="background:#0e0c1a;color:#f8f5ff;padding:1rem 2rem;font-family:monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;border:none;cursor:pointer">Yes, confirm →</button>
+      </form>
+      <p style="margin-top:2rem"><a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4;font-size:.75rem">← back to NotCupid</a></p>
+    </body></html>
+  `, { headers: { 'Content-Type': 'text/html' } })
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = new URLSearchParams(await req.text())
+    const { matchId, userId, token } = parseParams(req, body)
+    if (!matchId || !userId || !token) return invalidLink()
+    if (!verifyMatchToken({ matchId, userId, action: 'accept', token })) return invalidLink()
 
     const { data: match } = await supabaseAdmin
       .from('matches').select('*').eq('id', matchId).single()
 
-    if (!match) {
-      return new NextResponse(`
-        <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
-          <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">Match not found</h1>
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>
-        </body></html>
-      `, { headers: { 'Content-Type': 'text/html' } })
-    }
+    if (!match) return htmlPage('Match not found', `<a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>`, 404)
 
     const isUser1 = match.user_1_id === userId
+    const isUser2 = match.user_2_id === userId
+    if (!isUser1 && !isUser2) return invalidLink()
+
     const updateField = isUser1 ? 'user_1_accepted' : 'user_2_accepted'
     const otherAccepted = isUser1 ? match.user_2_accepted : match.user_1_accepted
 
@@ -105,31 +153,25 @@ export async function GET(req: NextRequest) {
         ])
       }
 
-      return new NextResponse(`
-        <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
-          <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">It's a match. ✦</h1>
-          <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Both of you said yes. Check your email — we just sent their contact info.</p>
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>
-        </body></html>
-      `, { headers: { 'Content-Type': 'text/html' } })
+      return htmlPage(
+        "It's a match. ✦",
+        `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Both of you said yes. Check your email — we just sent their contact info.</p>
+         <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
+      )
     }
 
-    return new NextResponse(`
-      <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
-        <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">You're in. ✓</h1>
-        <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">We've noted your interest. If they say yes too, you'll both get each other's email immediately.</p>
-        <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>
-      </body></html>
-    `, { headers: { 'Content-Type': 'text/html' } })
-
+    return htmlPage(
+      "You're in. ✓",
+      `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">We've noted your interest. If they say yes too, you'll both get each other's email immediately.</p>
+       <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
+    )
   } catch (err) {
     console.error('Match accept error:', err)
-    return new NextResponse(`
-      <html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
-        <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">Something went wrong</h1>
-        <p style="color:#7a7590;margin-bottom:2rem">Please try again or contact us at match@notcupid.com</p>
-        <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>
-      </body></html>
-    `, { headers: { 'Content-Type': 'text/html' } })
+    return htmlPage(
+      'Something went wrong',
+      `<p style="color:#7a7590;margin-bottom:2rem">Please try again or contact us at match@notcupid.com</p>
+       <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>`,
+      500
+    )
   }
 }

@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getCurrentAdmin } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  // Allow either: (a) Vercel cron with CRON_SECRET, or (b) authenticated admin manual trigger
+  const cronSecret = process.env.CRON_SECRET
+  const authHeader = req.headers.get('authorization') || ''
+  const isVercelCron = !!cronSecret && authHeader === `Bearer ${cronSecret}`
+
+  if (!isVercelCron) {
+    const admin = await getCurrentAdmin()
+    if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   try {
     const nowIso = new Date().toISOString()
 

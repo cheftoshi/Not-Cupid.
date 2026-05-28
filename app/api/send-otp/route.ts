@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomInt } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,9 +19,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    // Rate limit by email and IP to prevent email-bombing.
+    // 3 sends per email per 10 min, 10 sends per IP per 10 min.
+    const ip = getClientIp(req)
+    const emailLimit = await rateLimit({ key: `otp_send_email:${email}`, windowSec: 600, maxAttempts: 3, blockSec: 600 })
+    if (!emailLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many codes sent. Try again in ${emailLimit.retryAfterSec}s.` },
+        { status: 429, headers: { 'Retry-After': String(emailLimit.retryAfterSec) } }
+      )
+    }
+    const ipLimit = await rateLimit({ key: `otp_send_ip:${ip}`, windowSec: 600, maxAttempts: 10, blockSec: 600 })
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many requests. Try again in ${ipLimit.retryAfterSec}s.` },
+        { status: 429, headers: { 'Retry-After': String(ipLimit.retryAfterSec) } }
+      )
+    }
+
+    // Cryptographically secure 6-digit OTP (Math.random is predictable).
+    const otp = randomInt(0, 1_000_000).toString().padStart(6, '0')
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
-    console.log(`OTP for ${email}: ${otp}`)
+    // Never log the OTP — Vercel logs are accessible to anyone with project access.
 
     const { error: dbError } = await supabaseAdmin
       .from('otp_codes')

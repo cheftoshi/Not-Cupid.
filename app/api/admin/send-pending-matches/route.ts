@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getCurrentAdmin } from '@/lib/admin'
+import { signMatchToken } from '@/lib/match-tokens'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,8 +18,10 @@ const BOSTON_SPOTS = [
 
 function matchEmail(name: string, otherName: string, score: number, spot: string, matchId: string, userId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
-  const acceptUrl = `${baseUrl}/api/match-accept?matchId=${matchId}&userId=${userId}`
-  const passUrl = `${baseUrl}/api/match-pass?matchId=${matchId}&userId=${userId}`
+  const acceptToken = signMatchToken({ matchId, userId, action: 'accept' })
+  const passToken = signMatchToken({ matchId, userId, action: 'pass' })
+  const acceptUrl = `${baseUrl}/api/match-accept?matchId=${matchId}&userId=${userId}&token=${acceptToken}`
+  const passUrl = `${baseUrl}/api/match-pass?matchId=${matchId}&userId=${userId}&token=${passToken}`
   return `
     <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f8f5ff;">
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
@@ -50,6 +54,9 @@ function matchEmail(name: string, otherName: string, score: number, spot: string
 }
 
 export async function GET(req: NextRequest) {
+  const admin = await getCurrentAdmin()
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   try {
     const { data: matches } = await supabaseAdmin
       .from('matches').select('*').eq('status', 'pending')

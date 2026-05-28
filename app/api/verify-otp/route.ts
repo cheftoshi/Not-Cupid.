@@ -1,21 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createSession } from '@/lib/auth'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    
+
     // Normalize inputs
     const email = (body.email || '').trim().toLowerCase()
     const code = (body.code || '').toString().trim().replace(/\s+/g, '')
-    
+
     if (!email || !code) {
       return NextResponse.json({ error: 'Missing email or code' }, { status: 400 })
     }
 
     if (!/^\d{6}$/.test(code)) {
       return NextResponse.json({ error: 'Code must be 6 digits' }, { status: 400 })
+    }
+
+    // Brute-force protection: 6 verify attempts per email per 15 min, then 15-min lockout.
+    // Also IP-level so a single attacker can't sweep many emails.
+    const ip = getClientIp(req)
+    const emailLimit = await rateLimit({ key: `otp_verify_email:${email}`, windowSec: 900, maxAttempts: 6, blockSec: 900 })
+    if (!emailLimit.ok) {
+      return NextResponse.json(
+        { error: 'Too many incorrect attempts. Request a new code.' },
+        { status: 429, headers: { 'Retry-After': String(emailLimit.retryAfterSec) } }
+      )
+    }
+    const ipLimit = await rateLimit({ key: `otp_verify_ip:${ip}`, windowSec: 900, maxAttempts: 30, blockSec: 900 })
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { error: 'Too many requests. Try again later.' },
+        { status: 429, headers: { 'Retry-After': String(ipLimit.retryAfterSec) } }
+      )
     }
 
     // Look for matching unverified code (use limit instead of single to avoid throws)

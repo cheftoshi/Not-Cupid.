@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { signMatchToken } from '@/lib/match-tokens'
 
 const BOSTON_SPOTS = [
   'Trident Booksellers & Cafe on Newbury St',
@@ -13,8 +14,10 @@ const BOSTON_SPOTS = [
 
 function matchEmail(name: string, otherName: string, score: number, spot: string, matchId: string, userId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
-  const acceptUrl = `${baseUrl}/api/match-accept?matchId=${matchId}&userId=${userId}`
-  const passUrl = `${baseUrl}/api/match-pass?matchId=${matchId}&userId=${userId}`
+  const acceptToken = signMatchToken({ matchId, userId, action: 'accept' })
+  const passToken = signMatchToken({ matchId, userId, action: 'pass' })
+  const acceptUrl = `${baseUrl}/api/match-accept?matchId=${matchId}&userId=${userId}&token=${acceptToken}`
+  const passUrl = `${baseUrl}/api/match-pass?matchId=${matchId}&userId=${userId}&token=${passToken}`
 
   return `
     <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f8f5ff;">

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getCurrentAdmin } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  const admin = await getCurrentAdmin()
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   try {
     const { data: users } = await supabaseAdmin.from('users').select('*').order('created_at', { ascending: false })
     const { data: matches } = await supabaseAdmin.from('matches').select('*').order('created_at', { ascending: false })

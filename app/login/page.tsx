@@ -1,9 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
+
+function safeNextPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/')) return null;
+  if (raw.startsWith('//')) return null;
+  return raw;
+}
 
 // Common domain typos → corrections
 const EMAIL_TYPOS: Record<string, string> = {
@@ -50,6 +57,8 @@ function suggestEmailCorrection(email: string): string | null {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get('next'));
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -103,7 +112,12 @@ export default function LoginPage() {
 
       // Happy path: new verify-otp returns 200 with redirect (handles both /profile and /quiz)
       if (res.ok && data.redirect) {
-        router.push(data.redirect);
+        // Prefer ?next= if the user came from a gated page (e.g. /admin) and has an account
+        if (nextPath && !data.needsQuiz) {
+          router.push(nextPath);
+        } else {
+          router.push(data.redirect);
+        }
         return;
       }
 
