@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { verifyMatchToken } from '@/lib/match-tokens'
+import { verifyMatchToken, signMatchToken } from '@/lib/match-tokens'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,14 +39,35 @@ function parseParams(req: NextRequest, body?: URLSearchParams) {
 
 export async function GET(req: NextRequest) {
   const { matchId, userId, token } = parseParams(req)
-  if (!matchId || !userId || !token) {
-    console.warn('[match-pass] 400 missing params', {
-      hasMatch: !!matchId, hasUser: !!userId, hasToken: !!token,
+  if (!matchId || !userId) {
+    console.warn('[match-pass] 400 missing required ids', {
+      hasMatch: !!matchId, hasUser: !!userId,
       ua: req.headers.get('user-agent')?.slice(0, 80),
     })
     return invalidLink()
   }
-  if (!verifyMatchToken({ matchId, userId, action: 'pass', token })) {
+
+  let workingToken = token
+  if (!workingToken) {
+    const { data: match } = await supabaseAdmin
+      .from('matches')
+      .select('user_1_id, user_2_id, status')
+      .eq('id', matchId)
+      .maybeSingle()
+
+    const terminal = !match || (match.status && ['ended', 'passed', 'expired'].includes(match.status))
+    const isParty = match && (match.user_1_id === userId || match.user_2_id === userId)
+
+    if (terminal || !isParty) {
+      console.warn('[match-pass] 400 legacy link not recoverable', {
+        matchId: String(matchId).slice(0, 8),
+        ua: req.headers.get('user-agent')?.slice(0, 80),
+      })
+      return invalidLink()
+    }
+    workingToken = signMatchToken({ matchId, userId, action: 'pass' })
+    console.log('[match-pass] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
+  } else if (!verifyMatchToken({ matchId, userId, action: 'pass', token: workingToken })) {
     console.warn('[match-pass] 400 bad token', {
       matchId: String(matchId).slice(0, 8), ua: req.headers.get('user-agent')?.slice(0, 80),
     })
@@ -55,7 +76,7 @@ export async function GET(req: NextRequest) {
 
   const mId = escapeHtml(matchId)
   const uId = escapeHtml(userId)
-  const tk = escapeHtml(token)
+  const tk = escapeHtml(workingToken)
   return new NextResponse(`
     <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>

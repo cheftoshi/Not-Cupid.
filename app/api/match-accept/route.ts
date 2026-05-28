@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { verifyMatchToken } from '@/lib/match-tokens'
+import { verifyMatchToken, signMatchToken } from '@/lib/match-tokens'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,25 +39,51 @@ function parseParams(req: NextRequest, body?: URLSearchParams) {
 
 export async function GET(req: NextRequest) {
   const { matchId, userId, token } = parseParams(req)
-  if (!matchId || !userId || !token) {
-    console.warn('[match-accept] 400 missing params', {
-      hasMatch: !!matchId, hasUser: !!userId, hasToken: !!token,
+  if (!matchId || !userId) {
+    console.warn('[match-accept] 400 missing required ids', {
+      hasMatch: !!matchId, hasUser: !!userId,
       ua: req.headers.get('user-agent')?.slice(0, 80),
     })
     return invalidLink()
   }
-  if (!verifyMatchToken({ matchId, userId, action: 'accept', token })) {
+
+  // Backward compat: legacy emails (sent pre-signed-token deploy) don't have a token.
+  // If the matchId+userId pair maps to a real, non-terminal match the user is on,
+  // we generate a fresh token here so they can complete the action. The POST still
+  // requires a valid token, so state mutation is unchanged.
+  let workingToken = token
+  if (!workingToken) {
+    const { data: match } = await supabaseAdmin
+      .from('matches')
+      .select('user_1_id, user_2_id, status')
+      .eq('id', matchId)
+      .maybeSingle()
+
+    const terminal = !match || (match.status && ['ended', 'passed', 'expired'].includes(match.status))
+    const isParty = match && (match.user_1_id === userId || match.user_2_id === userId)
+
+    if (terminal || !isParty) {
+      console.warn('[match-accept] 400 legacy link not recoverable', {
+        matchId: String(matchId).slice(0, 8),
+        ua: req.headers.get('user-agent')?.slice(0, 80),
+      })
+      return invalidLink()
+    }
+    workingToken = signMatchToken({ matchId, userId, action: 'accept' })
+    console.log('[match-accept] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
+  } else if (!verifyMatchToken({ matchId, userId, action: 'accept', token: workingToken })) {
     console.warn('[match-accept] 400 bad token', {
       matchId: String(matchId).slice(0, 8), ua: req.headers.get('user-agent')?.slice(0, 80),
     })
     return invalidLink()
   }
+  const token_for_form = workingToken
 
   // Render a confirmation page. No DB mutation here — email-link prefetchers
   // (Gmail / Outlook / antivirus) only GET, so they won't accidentally accept.
   const mId = escapeHtml(matchId)
   const uId = escapeHtml(userId)
-  const tk = escapeHtml(token)
+  const tk = escapeHtml(token_for_form)
   return new NextResponse(`
     <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
