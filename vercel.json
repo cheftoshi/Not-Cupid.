@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/rematch",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/expiring-soon",
+      "schedule": "15 * * * *"
     }
   ]
 }

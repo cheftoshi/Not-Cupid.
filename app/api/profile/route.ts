@@ -20,6 +20,7 @@ export async function PUT(req: NextRequest) {
     'music', 'food', 'hobbies', 'prompts',
     'age_min', 'age_max', 'auto_rematch',
     'vibes', 'relationship_style',
+    'email_notifications',
   ];
 
   const VALID_RELATIONSHIP_STYLES = new Set([
@@ -53,6 +54,18 @@ export async function PUT(req: NextRequest) {
   }
   if (updates.relationship_style != null && !VALID_RELATIONSHIP_STYLES.has(updates.relationship_style)) {
     return NextResponse.json({ error: 'Invalid relationship style' }, { status: 400 });
+  }
+
+  // email_notifications and pool_active are coupled: turning emails off
+  // pulls you from the matching pool (you can't be notified of matches);
+  // turning them back on puts you back in.
+  if (typeof updates.email_notifications === 'boolean') {
+    updates.pool_active = updates.email_notifications;
+    if (updates.email_notifications === false) {
+      updates.notifications_paused_at = new Date().toISOString();
+    } else {
+      updates.notifications_paused_at = null;
+    }
   }
 
   const { data, error } = await supabaseAdmin

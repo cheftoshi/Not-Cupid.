@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomInt } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
+import { renderEmail, sendEmail, infoCard } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,31 +56,20 @@ export async function POST(req: NextRequest) {
     }
     console.log('OTP saved to DB successfully')
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'NotCupid <match@notcupid.com>',
-        to: [email],
-        subject: 'Your NotCupid verification code',
-        html: `
-          <div style="font-family:monospace;max-width:480px;margin:0 auto;padding:2rem;background:#f8f5ff;">
-            <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
-            <p style="font-size:.9rem;color:#7a7590;margin-bottom:1.5rem;line-height:1.65">Your verification code. Don't share it.</p>
-            <div style="font-size:2.5rem;font-weight:700;letter-spacing:.3em;color:#0e0c1a;background:#ede9ff;padding:1.5rem;text-align:center;margin-bottom:1.5rem">${otp}</div>
-            <p style="font-size:.75rem;color:#c8c4dc;line-height:1.65">Expires in 15 minutes.</p>
-            <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.7rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">Boston only · notcupid.com</div>
-          </div>
-        `
-      })
+    const html = renderEmail({
+      preheader: `Your NotCupid verification code is ${otp}. Expires in 15 minutes.`,
+      eyebrow: 'verification code',
+      headline: 'Tap in.',
+      bodyHtml: `
+        <p style="margin:0 0 8px 0;">Use this code to log in. Don't share it with anyone.</p>
+        ${infoCard({ big: otp, sub: 'expires in 15 minutes' })}
+        <p style="margin:8px 0 0 0;font-size:13px;">If you didn't ask for this, just ignore the email — nothing happens.</p>
+      `,
+      footerNote: 'one-time code, never asked for over chat.',
     })
 
-    if (!res.ok) {
-      const err = await res.json()
-      console.error('Resend error:', err)
+    const sent = await sendEmail({ to: email, subject: 'Your NotCupid code', html })
+    if (!sent.ok) {
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
     }
 

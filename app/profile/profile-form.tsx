@@ -293,6 +293,19 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           <input type="checkbox" checked={user.auto_rematch || false} onChange={e => setUser({ ...user, auto_rematch: e.target.checked })} />
           <span>Auto-rematch me when a match ends</span>
         </label>
+        <label className={styles.checkbox}>
+          <input
+            type="checkbox"
+            checked={user.email_notifications !== false}
+            onChange={e => setUser({ ...user, email_notifications: e.target.checked })}
+          />
+          <span>
+            Email me about new matches and messages
+            <span style={{display:'block',fontSize:'.7rem',color:'#7a7590',marginTop:'.25rem',fontStyle:'italic'}}>
+              Turning this off also pauses you from the matching pool — NotCupid has no in-app notifications.
+            </span>
+          </span>
+        </label>
       </div>
 
       {/* SAVE BAR */}

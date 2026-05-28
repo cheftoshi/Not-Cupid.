@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { verifyMatchToken, signMatchToken } from '@/lib/match-tokens'
+import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -168,57 +169,42 @@ export async function POST(req: NextRequest) {
           .update({ status: 'both_accepted' })
           .eq('id', matchId)
 
+        const itsAMatchHtml = (otherName: string, otherEmail: string, recipientId: string) => renderEmail({
+          preheader: `Both of you said yes. ${otherName.split(' ')[0]}'s email is inside — reach out.`,
+          eyebrow: "it's a match ✦",
+          headline: `${otherName.split(' ')[0]} said yes too.`,
+          bodyHtml: `
+            <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you.</p>
+
+            ${infoCard({
+              eyebrow: `${otherName}'s email`,
+              big: otherEmail,
+            })}
+
+            <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
+            <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
+              <li>Pick a time within the next 7 days. Momentum is everything.</li>
+              <li>The first message should be a real one, not "hey." You both already passed the hard part.</li>
+              <li>If it lands, come back and tell us how it went.</li>
+            </ul>
+
+            ${button({ href: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`, label: 'Back to NotCupid →' })}
+          `,
+          recipientId,
+          footerNote: 'mutual yes. you earned this one.',
+        })
+
         await Promise.all([
-          fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: 'NotCupid <match@notcupid.com>',
-              to: [user1.email],
-              subject: `${user2.name} said yes — here's their email`,
-              html: `
-                <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f8f5ff;">
-                  <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
-                  <p style="font-size:.75rem;color:#8b7fd4;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">It's a match ✦</p>
-                  <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem">Both of you said yes. The rest is on you.</p>
-                  <div style="background:#ede9ff;padding:1.5rem;margin-bottom:1.5rem">
-                    <p style="font-size:.65rem;color:#8b7fd4;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem">${user2.name}'s email</p>
-                    <p style="font-size:1.2rem;font-weight:700;color:#0e0c1a">${user2.email}</p>
-                  </div>
-                  <p style="font-size:.8rem;color:#7a7590;line-height:1.65;">Reach out. The algo did its part.</p>
-                  <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">Boston only · notcupid.com</div>
-                </div>
-              `
-            })
+          sendEmail({
+            to: user1.email,
+            subject: `${user2.name.split(' ')[0]} said yes — here's their email`,
+            html: itsAMatchHtml(user2.name, user2.email, user1.id),
           }),
-          fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: 'NotCupid <match@notcupid.com>',
-              to: [user2.email],
-              subject: `${user1.name} said yes — here's their email`,
-              html: `
-                <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f8f5ff;">
-                  <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
-                  <p style="font-size:.75rem;color:#8b7fd4;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">It's a match ✦</p>
-                  <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem">Both of you said yes. The rest is on you.</p>
-                  <div style="background:#ede9ff;padding:1.5rem;margin-bottom:1.5rem">
-                    <p style="font-size:.65rem;color:#8b7fd4;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem">${user1.name}'s email</p>
-                    <p style="font-size:1.2rem;font-weight:700;color:#0e0c1a">${user1.email}</p>
-                  </div>
-                  <p style="font-size:.8rem;color:#7a7590;line-height:1.65;">Reach out. The algo did its part.</p>
-                  <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">Boston only · notcupid.com</div>
-                </div>
-              `
-            })
-          })
+          sendEmail({
+            to: user2.email,
+            subject: `${user1.name.split(' ')[0]} said yes — here's their email`,
+            html: itsAMatchHtml(user1.name, user1.email, user2.id),
+          }),
         ])
       }
 

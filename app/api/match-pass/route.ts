@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { verifyMatchToken, signMatchToken } from '@/lib/match-tokens'
+import { renderEmail, sendEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -153,30 +154,20 @@ export async function POST(req: NextRequest) {
       .from('users').select('*').eq('id', userId).single()
 
     if (user) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'NotCupid <match@notcupid.com>',
-          to: [user.email],
-          subject: 'You passed — back in the pool',
-          html: `
-            <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f8f5ff;">
-              <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
-              <p style="font-size:.75rem;color:#8b7fd4;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">noted.</p>
-              <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem">You passed on ${other?.name ?? 'your match'}. No hard feelings.</p>
-              <p style="font-size:.88rem;color:#7a7590;line-height:1.75;margin-bottom:1.5rem">
-                You're back in the Boston pool. The algorithm is already looking for your next match. We'll email you when we find one.
-              </p>
-              <div style="padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">
-                Boston only · notcupid.com · the algo decided
-              </div>
-            </div>
-          `
-        })
+      await sendEmail({
+        to: user.email,
+        subject: 'You passed — back in the pool',
+        html: renderEmail({
+          preheader: 'No hard feelings. You\'re back in the Boston pool and the algo is already looking.',
+          eyebrow: 'noted.',
+          headline: `You passed on ${other?.name?.split(' ')[0] ?? 'your match'}.`,
+          bodyHtml: `
+            <p style="margin:0 0 12px 0;">No hard feelings — better an honest "not it" than a wasted coffee.</p>
+            <p style="margin:0;">You're back in the Boston pool. The algo's already looking for your next one; we'll email when we find them.</p>
+          `,
+          recipientId: user.id,
+          footerNote: 'one match at a time. quality over chaos.',
+        }),
       })
     }
 
