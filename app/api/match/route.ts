@@ -66,10 +66,15 @@ export async function POST(req: NextRequest) {
       .sort((a: any, b: any) => b.score - a.score)
 
     const best = scored[0]
-    // Adaptive threshold: raises the bar for the over-represented gender so
-    // scarce candidates aren't paired with mediocre matches.
     const minScore = thresholdFor(user, pool || [])
     if (best.score < minScore) {
+      console.warn('[match] rejected (threshold)', {
+        userId: String(userId).slice(0, 8),
+        gender: user.gender,
+        topScore: best.score,
+        requiredScore: minScore,
+        poolSize: pool?.length || 0,
+      })
       return NextResponse.json({
         matched: false,
         message: 'No strong matches yet',

@@ -39,8 +39,19 @@ function parseParams(req: NextRequest, body?: URLSearchParams) {
 
 export async function GET(req: NextRequest) {
   const { matchId, userId, token } = parseParams(req)
-  if (!matchId || !userId || !token) return invalidLink()
-  if (!verifyMatchToken({ matchId, userId, action: 'pass', token })) return invalidLink()
+  if (!matchId || !userId || !token) {
+    console.warn('[match-pass] 400 missing params', {
+      hasMatch: !!matchId, hasUser: !!userId, hasToken: !!token,
+      ua: req.headers.get('user-agent')?.slice(0, 80),
+    })
+    return invalidLink()
+  }
+  if (!verifyMatchToken({ matchId, userId, action: 'pass', token })) {
+    console.warn('[match-pass] 400 bad token', {
+      matchId: String(matchId).slice(0, 8), ua: req.headers.get('user-agent')?.slice(0, 80),
+    })
+    return invalidLink()
+  }
 
   const mId = escapeHtml(matchId)
   const uId = escapeHtml(userId)
