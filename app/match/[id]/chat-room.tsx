@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import styles from './chat.module.css';
+import EndMatchDialog from './end-match-dialog';
 
 interface Props {
   matchId: string;
@@ -24,9 +25,11 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const [messages, setMessages] = useState<any[]>(initialMessages);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const chatExpired = !!(match.chat_expires_at && new Date(match.chat_expires_at) < new Date());
+  const matchEnded = match.status === 'ended' || !!match.ended_at;
   const status = chatExpired
     ? 'chat ended'
     : match.chat_expires_at
@@ -98,7 +101,18 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
         ) : (
           <div className={styles.headerPhotoEmpty} />
         )}
+        {!matchEnded && (
+          <button onClick={() => setEndOpen(true)} className={styles.endBtn} aria-label="end match">end</button>
+        )}
       </header>
+
+      {endOpen && (
+        <EndMatchDialog
+          matchId={matchId}
+          otherName={otherUser?.name || 'them'}
+          onClose={() => setEndOpen(false)}
+        />
+      )}
 
       <div className={styles.messages} ref={scrollRef}>
         {messages.length === 0 ? (

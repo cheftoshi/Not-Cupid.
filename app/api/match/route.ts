@@ -41,11 +41,14 @@ export async function POST(req: NextRequest) {
       .from('users').select('*').eq('id', userId).single()
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
+    const nowIso = new Date().toISOString()
     const { data: pool } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('status', 'waiting')
       .neq('id', userId)
+      .is('matching_disabled_at', null)
+      .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`)
 
     if (!pool || pool.length === 0) {
       return NextResponse.json({ matched: false, message: 'In the pool — watching for matches' })
