@@ -21,9 +21,15 @@ export default function AdminClient() {
       .catch((e) => { setError(e.message); setLoading(false) })
 
     fetch('/api/admin/date-feedback')
-      .then((r) => r.ok ? parseResponse<any>(r) : null)
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await parseResponse<any>(r).catch(() => ({}))
+          return { __error: body?.error || `HTTP ${r.status}`, items: [], stats: null }
+        }
+        return parseResponse<any>(r)
+      })
       .then(setFeedback)
-      .catch(() => {})
+      .catch((e) => setFeedback({ __error: e?.message || 'network error', items: [], stats: null }))
   }, [])
 
   if (loading) return (
@@ -227,7 +233,13 @@ export default function AdminClient() {
             <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#7a7590'}}>loading…</p>
           )}
 
-          {feedback && feedback.items?.length === 0 && (
+          {feedback?.__error && (
+            <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#d94f3d'}}>
+              couldn’t load: {feedback.__error}
+            </p>
+          )}
+
+          {feedback && !feedback.__error && feedback.items?.length === 0 && (
             <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#7a7590'}}>no date feedback yet</p>
           )}
 
