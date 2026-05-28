@@ -30,12 +30,16 @@ export async function POST(req: NextRequest) {
     const { data: user } = await supabaseAdmin
       .from('users').select('*').eq('id', userId).single()
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (user.pool_active === false) {
+      return NextResponse.json({ matched: false, message: 'Waiting for the next pool wave' })
+    }
 
     const nowIso = new Date().toISOString()
     const { data: pool } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('status', 'waiting')
+      .eq('pool_active', true)
       .neq('id', userId)
       .is('matching_disabled_at', null)
       .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`)
