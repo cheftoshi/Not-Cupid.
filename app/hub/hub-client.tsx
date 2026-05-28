@@ -67,7 +67,8 @@ export default function HubClient({
           </p>
           <div className={styles.cardSpec}>
             <div><span className={styles.specK}>quiz</span><span className={styles.specV}>30 questions</span></div>
-            <div><span className={styles.specK}>pool</span><span className={styles.specV}>boston · 25mi</span></div>
+            <div><span className={styles.specK}>pool</span><span className={styles.specV}>boston · 75mi</span></div>
+            <div><span className={styles.specK}>match</span><span className={styles.specV}>within 25mi</span></div>
             <div><span className={styles.specK}>style</span><span className={styles.specV}>one at a time</span></div>
           </div>
           <div className={styles.cardCta}>open love maxxin →</div>
