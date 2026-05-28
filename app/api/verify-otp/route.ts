@@ -104,9 +104,13 @@ export async function POST(req: NextRequest) {
 
     await createSession(user.id)
 
+    // Existing user. If they've completed the quiz → /hub. If they
+    // signed up but never finished the quiz → /quiz?retake=1 so the
+    // retake flow updates their row instead of trying to insert a
+    // duplicate via /api/submit.
     return NextResponse.json({
       success: true,
-      redirect: user.archetype ? '/hub' : '/quiz',
+      redirect: user.archetype ? '/hub' : '/quiz?retake=1',
     })
   } catch (err: any) {
     console.error('Verify OTP error:', err)

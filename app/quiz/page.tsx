@@ -147,7 +147,16 @@ function QuizInner() {
       })
       const data = await parseResponse<any>(res)
       if (data.success) {
-        setScreen('quiz')
+        // Brand-new email → continue the signup quiz here.
+        // Existing account → honor the server's redirect (either /hub if
+        // they finished the quiz before, or /quiz?retake=1 if they didn't).
+        // This avoids re-running the quiz and hitting a duplicate-email
+        // 409 at /api/submit.
+        if (data.needsQuiz) {
+          setScreen('quiz')
+        } else {
+          window.location.href = data.redirect || '/hub'
+        }
       } else {
         setOtpError(data.error === 'Code expired' ? 'Code expired. Request a new one.' : 'Wrong code. Try again.')
         setShake(true)

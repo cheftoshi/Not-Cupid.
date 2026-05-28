@@ -40,10 +40,14 @@ export async function POST(req: NextRequest) {
       .select().single()
 
 if (error) {
-  console.error('Supabase error:', error)
   if (error.code === '23505') {
+    // Expected, handled case — client looks up the existing user and
+    // redirects to their dashboard. Logged as warn (not error) so real
+    // failures stand out in Vercel logs.
+    console.warn('Submit: duplicate email, redirecting to existing account', { email })
     return NextResponse.json({ error: 'already_registered' }, { status: 409 })
   }
+  console.error('Submit: supabase error:', error)
   return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
 }
     fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
