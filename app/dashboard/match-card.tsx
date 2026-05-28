@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
+import { VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
+import type { VibeKey } from '@/lib/quiz-data';
 
 interface Props {
   match: any;
@@ -126,6 +128,29 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
       {isUnlocked ? (
         <div className={styles.unlockedContent}>
           {otherUser.bio && <p className={styles.matchBio}>{otherUser.bio}</p>}
+
+          {otherUser.vibes && typeof otherUser.vibes === 'object' && Object.keys(otherUser.vibes).length > 0 && (
+            <div className={styles.tagSection}>
+              <div className={styles.tagLabel}>→ Their rhythm</div>
+              <div className={styles.tags}>
+                {(Object.keys(VIBE_HEADS) as VibeKey[]).map((k) => {
+                  const label = vibeLabel(k, otherUser.vibes[k]);
+                  if (!label) return null;
+                  return (
+                    <span
+                      key={k}
+                      className={styles.tag}
+                      style={{ background: 'rgba(139,127,212,0.13)', color: '#5b4fa0', borderColor: 'rgba(139,127,212,0.35)' }}
+                    >
+                      <span style={{ opacity: 0.55, marginRight: '0.4rem', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{VIBE_HEADS[k]}</span>
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {otherUser.music?.length > 0 && (
             <div className={styles.tagSection}>
               <div className={styles.tagLabel}>→ Music</div>
