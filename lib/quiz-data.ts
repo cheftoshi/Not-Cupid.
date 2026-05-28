@@ -246,6 +246,60 @@ export function vibesFromAnswers(answers: number[]): Record<VibeKey, number> {
   return out as Record<VibeKey, number>
 }
 
+// Human-readable label per (key, score 1..4) for display on results / profile.
+export const VIBE_LABELS: Record<VibeKey, Record<number, string>> = {
+  chronotype: {
+    1: 'morning person',
+    2: 'mid-day energy',
+    3: 'afternoon peak',
+    4: 'night owl',
+  },
+  date_freq: {
+    1: 'whenever it happens',
+    2: 'weekly-ish',
+    3: '3–4x a week',
+    4: 'most days',
+  },
+  future: {
+    1: 'real for right now',
+    2: 'serious, no script',
+    3: 'long-term partner',
+    4: 'marriage + kids',
+  },
+  comm: {
+    1: 'mostly in person',
+    2: 'a few daily texts',
+    3: 'steady check-ins',
+    4: 'all-day banter',
+  },
+  social: {
+    1: 'homebody',
+    2: '1-on-1 person',
+    3: 'small dinners',
+    4: 'big-crew nights',
+  },
+  risk: {
+    1: 'needs the plan',
+    2: 'destination first',
+    3: 'rough plan works',
+    4: 'spontaneous',
+  },
+}
+
+export const VIBE_HEADS: Record<VibeKey, string> = {
+  chronotype: 'rhythm',
+  date_freq: 'how often',
+  future: 'looking for',
+  comm: 'texting',
+  social: 'social',
+  risk: 'how you move',
+}
+
+export function vibeLabel(key: VibeKey, score: number | undefined): string | null {
+  if (score === undefined || score === null) return null
+  return VIBE_LABELS[key]?.[score] ?? null
+}
+
 export const ARCHETYPES = [
   {
     name: 'The Curious Realist',

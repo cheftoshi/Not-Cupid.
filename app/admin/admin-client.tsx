@@ -82,13 +82,23 @@ export default function AdminClient() {
           </div>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'1.5rem'}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem',marginBottom:'1.5rem'}}>
           <a href="/api/admin/send-pending-matches" target="_blank" style={{display:'block',background:'#0e0c1a',color:'#f8f5ff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',textDecoration:'none',textAlign:'center'}}>
             📨 Send pending match emails
           </a>
           <a href="/api/cron/rematch" target="_blank" style={{display:'block',background:'#5b4fa0',color:'#f8f5ff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',textDecoration:'none',textAlign:'center'}}>
             🔄 Run rematch cron
           </a>
+          <button
+            onClick={async () => {
+              if (!confirm('Send the "retake the quiz" email to ALL users? This is not reversible.')) return
+              const res = await fetch('/api/admin/send-quiz-blast', { method: 'POST' })
+              const data = await res.json()
+              alert(`Blast result: sent ${data.sent || 0} / ${data.totalUsers || 0}, failed ${data.failed || 0}`)
+            }}
+            style={{display:'block',background:'#8b7fd4',color:'#fff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',border:'none',cursor:'pointer',textAlign:'center'}}>
+            ✨ Send quiz-retake blast
+          </button>
         </div>
 
         <div style={{background:'#fff',border:'1px solid rgba(14,12,26,0.1)',padding:'1.5rem',marginBottom:'1.5rem'}}>

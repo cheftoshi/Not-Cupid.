@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
-import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, vibesFromAnswers, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
+import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
+import type { VibeKey } from '@/lib/quiz-data'
 import styles from './quiz.module.css'
 
 type Screen = 'intro' | 'verify' | 'quiz' | 'vibes-intro' | 'vibes' | 'loading' | 'result'
@@ -22,7 +24,18 @@ const LOADING_MSGS = [
 ]
 
 export default function QuizPage() {
+  return (
+    <Suspense fallback={null}>
+      <QuizInner />
+    </Suspense>
+  )
+}
+
+function QuizInner() {
+  const searchParams = useSearchParams()
+  const isRetake = searchParams.get('retake') === '1'
   const [screen, setScreen] = useState<Screen>('intro')
+  const [retakeReady, setRetakeReady] = useState(false)
   const [form, setForm] = useState<FormData>({ name:'', age:'', gender:'', seek:'', zip:'', email:'', ageMin:'22', ageMax:'38' })
   const [zipStatus, setZipStatus] = useState<'idle'|'valid'|'invalid'|'outofrange'>('idle')
   const [otp, setOtp] = useState(['','','','','',''])
@@ -43,6 +56,36 @@ export default function QuizPage() {
   const [barsVisible, setBarsVisible] = useState(false)
   const [shake, setShake] = useState(false)
   const userIdRef = useRef<string>('')
+
+  // Retake flow: if user is authenticated, skip intro + verify and go straight to quiz.
+  useEffect(() => {
+    if (!isRetake || retakeReady) return
+    (async () => {
+      const res = await fetch('/api/profile')
+      if (res.ok) {
+        const data = await res.json()
+        // Hydrate the form so submit has the user's existing details
+        if (data?.user) {
+          setForm((f) => ({
+            ...f,
+            name: data.user.name || '',
+            age: String(data.user.age || ''),
+            gender: data.user.gender || '',
+            seek: data.user.seeking || '',
+            zip: data.user.zip || '',
+            email: data.user.email || '',
+            ageMin: String(data.user.age_min || 22),
+            ageMax: String(data.user.age_max || 38),
+          }))
+        }
+        setRetakeReady(true)
+        setScreen('quiz')
+      } else {
+        // Not logged in — send them to login with return path
+        window.location.href = '/login?next=' + encodeURIComponent('/quiz?retake=1')
+      }
+    })()
+  }, [isRetake, retakeReady])
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
@@ -116,19 +159,36 @@ export default function QuizPage() {
   const submitToDatabase = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>, vibeAns: number[]) => {
     try {
       const vibes = vibesFromAnswers(vibeAns)
+      const scorePayload = {
+        score_honesty: finalScores['Honesty-Humility'] ?? 0,
+        score_emotionality: finalScores['Emotionality'] ?? 0,
+        score_extraversion: finalScores['Extraversion'] ?? 0,
+        score_agreeableness: finalScores['Agreeableness'] ?? 0,
+        score_conscientiousness: finalScores['Conscientiousness'] ?? 0,
+        score_openness: finalScores['Openness'] ?? 0,
+        archetype: arch.name,
+        vibes,
+      }
+
+      // Retake path: existing logged-in user → UPDATE row, don't re-insert.
+      if (isRetake) {
+        const res = await fetch('/api/quiz/update', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(scorePayload),
+        })
+        if (res.ok) {
+          window.location.href = '/dashboard'
+          return
+        }
+        // Fall through to result screen on error
+      }
+
       const res = await fetch('/api/submit', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
           name: form.name, age: form.age, gender: form.gender, seeking: form.seek,
           zip: form.zip, email: form.email, age_min: parseInt(form.ageMin), age_max: parseInt(form.ageMax),
-          score_honesty: finalScores['Honesty-Humility'] ?? 0,
-          score_emotionality: finalScores['Emotionality'] ?? 0,
-          score_extraversion: finalScores['Extraversion'] ?? 0,
-          score_agreeableness: finalScores['Agreeableness'] ?? 0,
-          score_conscientiousness: finalScores['Conscientiousness'] ?? 0,
-          score_openness: finalScores['Openness'] ?? 0,
-          archetype: arch.name,
-          vibes,
+          ...scorePayload,
         })
       })
       const data = await res.json()
@@ -152,7 +212,7 @@ if (res.status === 409) {
       setScreen('result')
       setTimeout(() => setBarsVisible(true), 400)
     }
-  }, [form])
+  }, [form, isRetake])
 
   const advance = useCallback((ans: number) => {
     const newAnswers = [...answers, ans]
@@ -546,6 +606,41 @@ if (res.status === 409) {
                 })}
               </div>
             </div>
+
+            {vibeAnswers.length > 0 && (
+              <div className={styles.profileCard}>
+                <div className={styles.profileHeader}>
+                  <span className={styles.profileTitle}>your vibes</span>
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'.4rem'}}>
+                  {VIBE_QUESTIONS.map((vq, i) => {
+                    const idx = vibeAnswers[i]
+                    if (idx === undefined || idx < 0) return null
+                    const score = vq.score[idx]
+                    const label = vibeLabel(vq.key as VibeKey, score)
+                    if (!label) return null
+                    return (
+                      <span
+                        key={vq.key}
+                        style={{
+                          background:'rgba(139,127,212,0.13)',
+                          color:'#5b4fa0',
+                          border:'1px solid rgba(139,127,212,0.35)',
+                          borderRadius:'999px',
+                          padding:'.4rem .9rem',
+                          fontFamily:"'DM Mono', ui-monospace, monospace",
+                          fontSize:'.72rem',
+                          letterSpacing:'.04em',
+                        }}
+                      >
+                        <span style={{opacity:.6,marginRight:'.4rem',fontSize:'.6rem',textTransform:'uppercase',letterSpacing:'.12em'}}>{VIBE_HEADS[vq.key as VibeKey]}</span>
+                        {label}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className={styles.matchCard}>
               <div className={styles.matchBadge}>pool status: active 👀</div>

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { ARCHETYPES } from '@/lib/quiz-data';
+import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
+import type { VibeKey } from '@/lib/quiz-data';
 import Link from 'next/link';
 import styles from './preview.module.css';
 
@@ -91,6 +92,31 @@ export default async function ProfilePreviewPage() {
                   <span className={styles.workV}>{user.education}</span>
                 </div>
               )}
+            </section>
+          )}
+
+          {/* RHYTHM (lifestyle vibes) */}
+          {user.vibes && typeof user.vibes === 'object' && Object.keys(user.vibes).length > 0 && (
+            <section className={styles.vibeSection}>
+              <div className={styles.vibeHead}>· their rhythm ·</div>
+              <div className={styles.vibeRow}>
+                <div className={styles.vibeTags}>
+                  {(Object.keys(VIBE_HEADS) as VibeKey[]).map((k) => {
+                    const label = vibeLabel(k, user.vibes[k]);
+                    if (!label) return null;
+                    return (
+                      <span
+                        key={k}
+                        className={styles.vibeTag}
+                        style={{ background: 'rgba(139,127,212,0.13)', color: '#5b4fa0', borderColor: 'rgba(139,127,212,0.35)' }}
+                      >
+                        <span style={{ opacity: 0.55, marginRight: '0.4rem', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{VIBE_HEADS[k]}</span>
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
             </section>
           )}
 

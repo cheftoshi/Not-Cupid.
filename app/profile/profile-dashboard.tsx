@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from './profile.module.css';
-import { ARCHETYPES } from '@/lib/quiz-data';
+import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
+import type { VibeKey } from '@/lib/quiz-data';
 
 export default function ProfileDashboard({ user, onEdit, onLogout }: {
   user: any;
@@ -124,7 +125,45 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
         </div>
       </div>
 
-      {/* VIBES (TAGS) */}
+      {/* QUIZ VIBES (lifestyle compat dimensions) */}
+      {user.vibes && typeof user.vibes === 'object' && Object.keys(user.vibes).length > 0 && (
+        <div className={styles.dashVibes}>
+          <div className={styles.dashSectionLabel}>your rhythm</div>
+          <div className={styles.dashTagList}>
+            {(Object.keys(VIBE_HEADS) as VibeKey[]).map((k) => {
+              const score = user.vibes[k];
+              const label = vibeLabel(k, score);
+              if (!label) return null;
+              return (
+                <span
+                  key={k}
+                  className={styles.dashTag}
+                  style={{ background: 'rgba(139,127,212,0.13)', color: '#5b4fa0', borderColor: 'rgba(139,127,212,0.35)' }}
+                >
+                  <span style={{ opacity: 0.55, marginRight: '0.4rem', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{VIBE_HEADS[k]}</span>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+          {Object.keys(user.vibes).length < 6 && (
+            <p style={{fontFamily:"Georgia,ui-serif,serif",fontStyle:"italic",fontSize:".82rem",color:"#8b7fd4",marginTop:".75rem"}}>
+              <a href="/quiz?retake=1" style={{color:"#5b4fa0",textDecoration:"underline",textUnderlineOffset:"3px"}}>finish the vibes section →</a>
+            </p>
+          )}
+        </div>
+      )}
+
+      {!user.vibes && (
+        <div className={styles.dashEmpty} onClick={() => (window.location.href = '/quiz?retake=1')}>
+          <div className={styles.dashSectionLabel}>your rhythm</div>
+          <p className={styles.dashEmptyText}>
+            we upgraded the algo — <em>take the new 6-question vibes round</em> to get re-matched.
+          </p>
+        </div>
+      )}
+
+      {/* INTEREST TAGS (music / food / hobbies) */}
       {tags.some(t => t.items.length > 0) && (
         <div className={styles.dashVibes}>
           <div className={styles.dashSectionLabel}>your vibes</div>
