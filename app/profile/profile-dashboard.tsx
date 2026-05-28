@@ -63,7 +63,7 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
       {needsQuiz && (
         <div className={styles.dashBanner}>
           <span><em>finish the quiz</em> to unlock matching</span>
-          <Link href="/quiz" className={styles.dashBannerBtn}>take the quiz</Link>
+          <Link href="/quiz?retake=1" className={styles.dashBannerBtn}>take the quiz</Link>
         </div>
       )}
 

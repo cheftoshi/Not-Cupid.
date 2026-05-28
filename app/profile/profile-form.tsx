@@ -105,7 +105,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           <div className={styles.quizBannerText}>
             Take the personality quiz to find your match — it's how the algo decides.
           </div>
-          <a href="/quiz" className={styles.quizBannerButton}>Take the quiz</a>
+          <a href="/quiz?retake=1" className={styles.quizBannerButton}>Take the quiz</a>
         </div>
       )}
 

@@ -85,7 +85,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
         </p>
 
         <div className={styles.landCtaRow}>
-          <a href="/quiz" className={styles.landBtnPri}>take the quiz →</a>
+          <a href="/quiz" className={styles.landBtnPri}>sign up →</a>
           <a href="/login" className={styles.landBtnGhost}>i have an account</a>
         </div>
 

@@ -19,7 +19,7 @@ export default async function ProfilePage() {
             <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
             <a href="/profile/preview" className={styles.navLink}>Preview</a>
             <a href="/dashboard" className={styles.navLink}>Matches</a>
-            <a href="/quiz" className={styles.navLink}>Retake quiz</a>
+            <a href="/quiz?retake=1" className={styles.navLink}>Retake quiz</a>
           </div>
         </nav>
         <ProfileShell initialUser={user} />

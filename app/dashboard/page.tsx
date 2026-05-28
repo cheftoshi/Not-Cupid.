@@ -106,7 +106,7 @@ export default async function DashboardPage({
             <a href="/profile" className={styles.navLink}>Profile</a>
             <a href="/profile/preview" className={styles.navLink}>Preview</a>
             <a href="/dashboard" className={`${styles.navLink} ${styles.navLinkActive}`}>Matches</a>
-            <a href="/quiz" className={styles.navLink}>Retake quiz</a>
+            <a href="/quiz?retake=1" className={styles.navLink}>Retake quiz</a>
           </div>
         </nav>
 
