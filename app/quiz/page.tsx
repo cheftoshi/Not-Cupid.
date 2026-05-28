@@ -7,6 +7,7 @@ import CorpFooter from '@/components/corp-footer'
 import { suggestEmailCorrection } from '@/lib/email-typos'
 import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
 import type { VibeKey } from '@/lib/quiz-data'
+import { parseResponse } from '@/lib/fetch-helpers'
 import styles from './quiz.module.css'
 
 type Screen = 'intro' | 'verify' | 'quiz' | 'vibes-intro' | 'vibes' | 'loading' | 'result'
@@ -65,7 +66,7 @@ function QuizInner() {
     (async () => {
       const res = await fetch('/api/profile')
       if (res.ok) {
-        const data = await res.json()
+        const data = await parseResponse<any>(res)
         // Hydrate the form so submit has the user's existing details
         if (data?.user) {
           setForm((f) => ({
@@ -144,7 +145,7 @@ function QuizInner() {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: form.email, code: otp.join('') })
       })
-      const data = await res.json()
+      const data = await parseResponse<any>(res)
       if (data.success) {
         setScreen('quiz')
       } else {
@@ -193,10 +194,10 @@ function QuizInner() {
           ...scorePayload,
         })
       })
-      const data = await res.json()
+      const data = await parseResponse<any>(res)
 if (res.status === 409) {
   const existing = await fetch(`/api/get-user-by-email?email=${encodeURIComponent(form.email)}`)
-  const existingData = await existing.json()
+  const existingData = await parseResponse<any>(existing)
   if (existingData.userId) {
     window.location.href = `/dashboard?id=${existingData.userId}`
   } else {

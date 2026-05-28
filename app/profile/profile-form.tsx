@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import ChipInput from './chip-input';
+import { parseResponse } from '@/lib/fetch-helpers';
 
 type Props = {
   initialUser: any;
@@ -31,10 +32,10 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
         body: JSON.stringify(user),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await parseResponse<any>(res);
         throw new Error(err.error || 'Save failed');
       }
-      const data = await res.json();
+      const data = await parseResponse<any>(res);
       setUser(data.user);
       setMessage('✓ saved');
       if (onSaved) {
@@ -53,17 +54,21 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Vercel serverless functions cap request bodies at 4.5MB; multipart adds
+    // overhead, so reject anything above ~4MB client-side with a real message.
+    if (file.size > 4 * 1024 * 1024) {
+      setMessage('photo must be under 4MB');
+      e.target.value = '';
+      return;
+    }
     setUploadingPhoto(true);
     setMessage('');
     try {
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch('/api/profile/photo', { method: 'POST', body: formData });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Upload failed');
-      }
-      const data = await res.json();
+      const data = await parseResponse<any>(res);
+      if (!res.ok) throw new Error(data.error || 'upload failed');
       setUser({ ...user, photo_url: data.url });
       setMessage('✓ photo updated');
       setTimeout(() => setMessage(''), 3000);

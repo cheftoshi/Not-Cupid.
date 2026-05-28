@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react'
 import Nav from '@/components/Nav'
 import CorpFooter from '@/components/corp-footer'
+import { parseResponse } from '@/lib/fetch-helpers'
 
 export default function AdminClient() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<any>(null)
 
   useEffect(() => {
     fetch('/api/admin-stats')
@@ -17,6 +19,11 @@ export default function AdminClient() {
       })
       .then((d) => { setData(d); setLoading(false) })
       .catch((e) => { setError(e.message); setLoading(false) })
+
+    fetch('/api/admin/date-feedback')
+      .then((r) => r.ok ? parseResponse<any>(r) : null)
+      .then(setFeedback)
+      .catch(() => {})
   }, [])
 
   if (loading) return (
@@ -95,12 +102,12 @@ export default function AdminClient() {
           <button
             onClick={async () => {
               const res = await fetch('/api/admin/fix-email-typos')
-              const data = await res.json()
+              const data = await parseResponse<any>(res)
               if ((data.count || 0) === 0) { alert('No typo\'d emails found. ✓'); return }
               const sample = (data.candidates || []).slice(0, 6).map((c: any) => `  ${c.email} → ${c.suggestion}`).join('\n')
               if (!confirm(`Found ${data.count} typo'd emails:\n\n${sample}${data.count > 6 ? `\n  …and ${data.count - 6} more` : ''}\n\nFix them all? (Already-blasted users will be re-queued.)`)) return
               const fixRes = await fetch('/api/admin/fix-email-typos', { method: 'POST' })
-              const fixData = await fixRes.json()
+              const fixData = await parseResponse<any>(fixRes)
               alert(`Fixed ${fixData.fixed || 0} of ${fixData.targeted || 0}. Failed: ${fixData.failed || 0}${fixData.errors?.length ? '\n\n' + fixData.errors.slice(0,5).join('\n') : ''}`)
             }}
             style={{display:'block',background:'#c39418',color:'#fff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',border:'none',cursor:'pointer',textAlign:'center'}}>
@@ -110,7 +117,7 @@ export default function AdminClient() {
             onClick={async () => {
               if (!confirm('Pull Resend send history and mark users who already received the blast?')) return
               const res = await fetch('/api/admin/import-blast-history', { method: 'POST' })
-              const data = await res.json()
+              const data = await parseResponse<any>(res)
               alert(`Imported: marked ${data.marked || 0} users (found ${data.foundRecipients || 0} in Resend across ${data.pages || 0} pages). ${data.error ? '\nError: ' + data.error : ''}`)
             }}
             style={{display:'block',background:'#3a7a4f',color:'#fff',padding:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.12em',textTransform:'uppercase',border:'none',cursor:'pointer',textAlign:'center'}}>
@@ -120,7 +127,7 @@ export default function AdminClient() {
             onClick={async () => {
               if (!confirm('Send quiz-retake blast to all UNSENT users? (Idempotent — already-sent users skipped.)')) return
               const res = await fetch('/api/admin/send-quiz-blast', { method: 'POST' })
-              const data = await res.json()
+              const data = await parseResponse<any>(res)
               const note = data.remaining > 0
                 ? `\n\n${data.remaining} remaining. Click again to continue.`
                 : ''
@@ -193,6 +200,75 @@ export default function AdminClient() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* DATE FEEDBACK */}
+        <div style={{background:'#fff',border:'1px solid rgba(14,12,26,0.1)',padding:'1.5rem',marginTop:'1.5rem'}}>
+          <p style={{fontFamily:'DM Mono,monospace',fontSize:'.58rem',letterSpacing:'.15em',textTransform:'uppercase',color:'#0e0c1a',marginBottom:'1rem',fontWeight:500}}>Date feedback</p>
+
+          {feedback?.stats && feedback.stats.total > 0 && (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'1px',background:'rgba(14,12,26,0.1)',border:'1px solid rgba(14,12,26,0.1)',marginBottom:'1rem'}}>
+              {([
+                ['Responses', feedback.stats.total, '📝'],
+                ['Avg rating', feedback.stats.avgRating !== null ? `${feedback.stats.avgRating} / 5` : '—', '⭐'],
+                ['Would do again', feedback.stats.wouldAgainPct !== null ? `${feedback.stats.wouldAgainPct}%` : '—', '🔁'],
+                ['Yes / No', `${feedback.stats.wouldAgainYes} / ${feedback.stats.wouldAgainNo}`, '⚖️'],
+              ] as Array<[string, any, string]>).map(([label, val, icon]) => (
+                <div key={label} style={{background:'#fff',padding:'1rem',textAlign:'center'}}>
+                  <div style={{fontSize:'1.25rem',marginBottom:'.25rem'}}>{icon}</div>
+                  <div style={{fontFamily:'Bebas Neue,sans-serif',fontSize:'1.6rem',color:'#0e0c1a',lineHeight:1}}>{val}</div>
+                  <div style={{fontFamily:'DM Mono,monospace',fontSize:'.48rem',letterSpacing:'.1em',textTransform:'uppercase',color:'#7a7590',marginTop:'.25rem'}}>{label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!feedback && (
+            <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#7a7590'}}>loading…</p>
+          )}
+
+          {feedback && feedback.items?.length === 0 && (
+            <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#7a7590'}}>no date feedback yet</p>
+          )}
+
+          {feedback?.items?.length > 0 && (
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:'.7rem',fontFamily:'DM Mono,monospace'}}>
+                <thead>
+                  <tr style={{borderBottom:'1px solid rgba(14,12,26,0.1)'}}>
+                    {['Rating','Again?','Reviewer','About','Notes','Match %','Submitted'].map(h => (
+                      <th key={h} style={{textAlign:'left',padding:'.5rem .75rem',color:'#7a7590',letterSpacing:'.08em',textTransform:'uppercase',fontSize:'.48rem',fontWeight:400}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedback.items.map((f: any) => (
+                    <tr key={f.id} style={{borderBottom:'1px solid rgba(14,12,26,0.05)',verticalAlign:'top'}}>
+                      <td style={{padding:'.5rem .75rem',color:'#c39418',fontWeight:700,whiteSpace:'nowrap'}}>{'★'.repeat(f.rating)}{'☆'.repeat(5 - f.rating)}</td>
+                      <td style={{padding:'.5rem .75rem'}}>
+                        {f.would_again === true && <span style={{background:'#d4edda',color:'#155724',padding:'.2rem .5rem',fontSize:'.48rem',letterSpacing:'.08em',textTransform:'uppercase'}}>yes</span>}
+                        {f.would_again === false && <span style={{background:'#f8d7da',color:'#721c24',padding:'.2rem .5rem',fontSize:'.48rem',letterSpacing:'.08em',textTransform:'uppercase'}}>no</span>}
+                        {f.would_again === null && <span style={{color:'#c8c4dc'}}>—</span>}
+                      </td>
+                      <td style={{padding:'.5rem .75rem',color:'#0e0c1a',fontWeight:500}}>
+                        {f.reviewer?.name || '—'}
+                        {f.reviewer?.email && <div style={{color:'#7a7590',fontSize:'.55rem',fontWeight:400}}>{f.reviewer.email}</div>}
+                      </td>
+                      <td style={{padding:'.5rem .75rem',color:'#0e0c1a'}}>
+                        {f.rated_user?.name || '—'}
+                        {f.rated_user?.email && <div style={{color:'#7a7590',fontSize:'.55rem'}}>{f.rated_user.email}</div>}
+                      </td>
+                      <td style={{padding:'.5rem .75rem',color:'#0e0c1a',maxWidth:'320px',whiteSpace:'normal',fontStyle:f.notes?'italic':'normal'}}>
+                        {f.notes ? `"${f.notes}"` : <span style={{color:'#c8c4dc',fontStyle:'normal'}}>—</span>}
+                      </td>
+                      <td style={{padding:'.5rem .75rem',color:'#8b7fd4',fontWeight:700,whiteSpace:'nowrap'}}>{f.match?.score != null ? `${f.match.score}%` : '—'}</td>
+                      <td style={{padding:'.5rem .75rem',color:'#c8c4dc',whiteSpace:'nowrap'}}>{f.created_at?.split('T')[0]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
       </div>

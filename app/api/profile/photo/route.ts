@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
-const MAX_SIZE = 5 * 1024 * 1024;
+// Vercel serverless functions cap request bodies at 4.5MB; multipart adds
+// overhead, so the practical ceiling is ~4MB.
+const MAX_SIZE = 4 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export async function POST(req: NextRequest) {
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Must be JPEG, PNG, or WebP' }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'Max 5MB' }, { status: 400 });
+    return NextResponse.json({ error: 'photo must be under 4MB' }, { status: 400 });
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     });
 
   if (uploadError) {
-    console.error('Photo upload failed:', uploadError);
+    console.error('Photo upload failed:', { userId: user.id, error: uploadError });
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 

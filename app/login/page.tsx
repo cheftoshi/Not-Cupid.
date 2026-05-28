@@ -6,6 +6,7 @@ import Link from 'next/link';
 import styles from './login.module.css';
 import CorpFooter from '@/components/corp-footer';
 import { suggestEmailCorrection } from '@/lib/email-typos';
+import { parseResponse } from '@/lib/fetch-helpers';
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
@@ -52,7 +53,7 @@ function LoginInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
-      const data = await res.json();
+      const data = await parseResponse<any>(res);
       if (!res.ok) throw new Error(data.error || 'Could not send code');
       setStep('code');
     } catch (err: any) {
@@ -75,7 +76,7 @@ function LoginInner() {
           code: code.trim(),
         }),
       });
-      const data = await res.json();
+      const data = await parseResponse<any>(res);
 
       // Happy path: new verify-otp returns 200 with redirect (handles both /profile and /quiz)
       if (res.ok && data.redirect) {

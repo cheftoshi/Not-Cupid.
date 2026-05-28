@@ -7,6 +7,7 @@ import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
 import { VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
+import { parseResponse } from '@/lib/fetch-helpers';
 
 interface Props {
   match: any;
@@ -47,7 +48,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
     try {
       const res = await fetch(`/api/matches/${match.id}/accept`, { method: 'POST' });
       if (!res.ok) {
-        const d = await res.json();
+        const d = await parseResponse<any>(res);
         throw new Error(d.error || 'Failed to accept');
       }
       router.refresh();
@@ -64,7 +65,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
     try {
       const res = await fetch(`/api/matches/${match.id}/pass`, { method: 'POST' });
       if (!res.ok) {
-        const d = await res.json();
+        const d = await parseResponse<any>(res);
         throw new Error(d.error || 'Failed to pass');
       }
       router.refresh();
@@ -79,7 +80,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
     setBusy(true); setError('');
     try {
       const res = await fetch(`/api/matches/${match.id}/unlock-checkout`, { method: 'POST' });
-      const d = await res.json();
+      const d = await parseResponse<any>(res);
       if (!res.ok || !d.url) throw new Error(d.error || 'Could not start checkout');
       window.location.href = d.url;
     } catch (e: any) {

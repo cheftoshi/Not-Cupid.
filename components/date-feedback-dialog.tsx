@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { parseResponse } from '@/lib/fetch-helpers';
 import styles from './end-match-dialog.module.css';
 
 type Step = 'rate' | 'submitting' | 'done';
@@ -38,7 +39,7 @@ export default function DateFeedbackDialog({
           notes: notes.trim() || undefined,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'failed');
+      if (!res.ok) throw new Error((await parseResponse<any>(res)).error || 'failed');
       setStep('done');
       setTimeout(() => { if (onSubmitted) onSubmitted(); router.refresh(); }, 1100);
     } catch (e: any) {

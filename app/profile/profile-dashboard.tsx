@@ -52,9 +52,9 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
             {user.photo_url ? (
               <img src={user.photo_url} alt="" className={styles.dashPhoto} />
             ) : (
-              <div className={styles.dashPhotoEmpty}>
+              <button type="button" onClick={onEdit} className={styles.dashPhotoEmpty} aria-label="Add a photo">
                 <span>add a photo →</span>
-              </div>
+              </button>
             )}
           </div>
         </div>

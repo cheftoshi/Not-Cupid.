@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { parseResponse } from '@/lib/fetch-helpers';
 import styles from './end-match-dialog.module.css';
 
 type Step = 'choose' | 'confirm-ghost' | 'confirm-not-vibing' | 'submitting' | 'done';
@@ -30,7 +31,7 @@ export default function EndMatchDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'failed');
+      if (!res.ok) throw new Error((await parseResponse<any>(res)).error || 'failed');
       setStep('done');
       setTimeout(() => { if (onEnded) onEnded(); router.refresh(); }, 900);
     } catch (e: any) {

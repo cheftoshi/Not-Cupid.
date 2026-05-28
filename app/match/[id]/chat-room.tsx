@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { parseResponse } from '@/lib/fetch-helpers';
 import styles from './chat.module.css';
 
 interface Props {
@@ -42,7 +43,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
       try {
         const res = await fetch(`/api/messages?match_id=${matchId}`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await parseResponse<any>(res);
           setMessages(data.messages || []);
         }
       } catch {}
@@ -73,7 +74,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
       });
       if (!res.ok) throw new Error('Send failed');
       const refresh = await fetch(`/api/messages?match_id=${matchId}`);
-      const data = await refresh.json();
+      const data = await parseResponse<any>(refresh);
       setMessages(data.messages || []);
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));

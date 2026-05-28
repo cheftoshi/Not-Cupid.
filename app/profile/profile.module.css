@@ -422,7 +422,11 @@
   text-transform: uppercase;
   color: #8b7fd4;
   cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
+.dashPhotoEmpty:hover { color: #5b4fa0; }
 
 .dashBanner {
   background: linear-gradient(135deg, #ede9ff 0%, #fff 100%);
