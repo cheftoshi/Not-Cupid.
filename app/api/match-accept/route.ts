@@ -29,6 +29,23 @@ function invalidLink() {
   )
 }
 
+function endedMatchPage(reason?: string) {
+  const detail = reason === 'passed'
+    ? 'one of you passed on this one.'
+    : reason === 'expired'
+    ? "this match expired before both of you said yes."
+    : reason === 'ended'
+    ? 'this match has been ended.'
+    : 'this match is closed.'
+  return htmlPage(
+    'This match has ended',
+    `<p style="color:#7a7590;line-height:1.65;margin-bottom:1.5rem">${detail}</p>
+     <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">log in to see your current matches.</p>
+     <a href="${process.env.NEXT_PUBLIC_SITE_URL}/login" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;display:inline-block">go to dashboard →</a>`,
+    410 /* Gone — semantically correct: match used to exist, doesn't now */
+  )
+}
+
 function parseParams(req: NextRequest, body?: URLSearchParams) {
   const url = new URL(req.url)
   const matchId = body?.get('matchId') || url.searchParams.get('matchId')
@@ -47,35 +64,46 @@ export async function GET(req: NextRequest) {
     return invalidLink()
   }
 
-  // Backward compat: legacy emails (sent pre-signed-token deploy) don't have a token.
-  // If the matchId+userId pair maps to a real, non-terminal match the user is on,
-  // we generate a fresh token here so they can complete the action. The POST still
-  // requires a valid token, so state mutation is unchanged.
+  // Token: either provided (new email) or absent (legacy email — mint a fresh one).
   let workingToken = token
-  if (!workingToken) {
-    const { data: match } = await supabaseAdmin
-      .from('matches')
-      .select('user_1_id, user_2_id, status')
-      .eq('id', matchId)
-      .maybeSingle()
-
-    const terminal = !match || (match.status && ['ended', 'passed', 'expired'].includes(match.status))
-    const isParty = match && (match.user_1_id === userId || match.user_2_id === userId)
-
-    if (terminal || !isParty) {
-      console.warn('[match-accept] 400 legacy link not recoverable', {
-        matchId: String(matchId).slice(0, 8),
-        ua: req.headers.get('user-agent')?.slice(0, 80),
-      })
-      return invalidLink()
-    }
-    workingToken = signMatchToken({ matchId, userId, action: 'accept' })
-    console.log('[match-accept] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
-  } else if (!verifyMatchToken({ matchId, userId, action: 'accept', token: workingToken })) {
+  if (workingToken && !verifyMatchToken({ matchId, userId, action: 'accept', token: workingToken })) {
     console.warn('[match-accept] 400 bad token', {
       matchId: String(matchId).slice(0, 8), ua: req.headers.get('user-agent')?.slice(0, 80),
     })
     return invalidLink()
+  }
+
+  // Validate the underlying match (existence, party, non-terminal).
+  // We check this for BOTH legacy and tokenized links so a stale email doesn't
+  // route a real user to a meaningless confirm screen.
+  const { data: match } = await supabaseAdmin
+    .from('matches')
+    .select('user_1_id, user_2_id, status')
+    .eq('id', matchId)
+    .maybeSingle()
+
+  if (!match || (match.user_1_id !== userId && match.user_2_id !== userId)) {
+    console.warn('[match-accept] 400 link not recoverable', {
+      matchId: String(matchId).slice(0, 8),
+      reason: !match ? 'no_match' : 'not_party',
+      legacy: !token,
+      ua: req.headers.get('user-agent')?.slice(0, 80),
+    })
+    return invalidLink()
+  }
+
+  if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
+    console.log('[match-accept] link points to ended match', {
+      matchId: String(matchId).slice(0, 8),
+      status: match.status,
+      legacy: !token,
+    })
+    return endedMatchPage(match.status)
+  }
+
+  if (!workingToken) {
+    workingToken = signMatchToken({ matchId, userId, action: 'accept' })
+    console.log('[match-accept] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
   }
   const token_for_form = workingToken
 
@@ -115,6 +143,10 @@ export async function POST(req: NextRequest) {
     const isUser1 = match.user_1_id === userId
     const isUser2 = match.user_2_id === userId
     if (!isUser1 && !isUser2) return invalidLink()
+
+    if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
+      return endedMatchPage(match.status)
+    }
 
     const updateField = isUser1 ? 'user_1_accepted' : 'user_2_accepted'
     const otherAccepted = isUser1 ? match.user_2_accepted : match.user_1_accepted

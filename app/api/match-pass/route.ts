@@ -29,6 +29,23 @@ function invalidLink() {
   )
 }
 
+function endedMatchPage(reason?: string) {
+  const detail = reason === 'passed'
+    ? 'this match was already passed on.'
+    : reason === 'expired'
+    ? 'this match expired.'
+    : reason === 'ended'
+    ? 'this match has been ended.'
+    : 'this match is closed.'
+  return htmlPage(
+    'This match has ended',
+    `<p style="color:#7a7590;line-height:1.65;margin-bottom:1.5rem">${detail}</p>
+     <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">log in to see your current matches.</p>
+     <a href="${process.env.NEXT_PUBLIC_SITE_URL}/login" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;display:inline-block">go to dashboard →</a>`,
+    410
+  )
+}
+
 function parseParams(req: NextRequest, body?: URLSearchParams) {
   const url = new URL(req.url)
   const matchId = body?.get('matchId') || url.searchParams.get('matchId')
@@ -48,30 +65,36 @@ export async function GET(req: NextRequest) {
   }
 
   let workingToken = token
-  if (!workingToken) {
-    const { data: match } = await supabaseAdmin
-      .from('matches')
-      .select('user_1_id, user_2_id, status')
-      .eq('id', matchId)
-      .maybeSingle()
-
-    const terminal = !match || (match.status && ['ended', 'passed', 'expired'].includes(match.status))
-    const isParty = match && (match.user_1_id === userId || match.user_2_id === userId)
-
-    if (terminal || !isParty) {
-      console.warn('[match-pass] 400 legacy link not recoverable', {
-        matchId: String(matchId).slice(0, 8),
-        ua: req.headers.get('user-agent')?.slice(0, 80),
-      })
-      return invalidLink()
-    }
-    workingToken = signMatchToken({ matchId, userId, action: 'pass' })
-    console.log('[match-pass] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
-  } else if (!verifyMatchToken({ matchId, userId, action: 'pass', token: workingToken })) {
+  if (workingToken && !verifyMatchToken({ matchId, userId, action: 'pass', token: workingToken })) {
     console.warn('[match-pass] 400 bad token', {
       matchId: String(matchId).slice(0, 8), ua: req.headers.get('user-agent')?.slice(0, 80),
     })
     return invalidLink()
+  }
+
+  const { data: match } = await supabaseAdmin
+    .from('matches')
+    .select('user_1_id, user_2_id, status')
+    .eq('id', matchId)
+    .maybeSingle()
+
+  if (!match || (match.user_1_id !== userId && match.user_2_id !== userId)) {
+    console.warn('[match-pass] 400 link not recoverable', {
+      matchId: String(matchId).slice(0, 8),
+      reason: !match ? 'no_match' : 'not_party',
+      legacy: !token,
+      ua: req.headers.get('user-agent')?.slice(0, 80),
+    })
+    return invalidLink()
+  }
+
+  if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
+    return endedMatchPage(match.status)
+  }
+
+  if (!workingToken) {
+    workingToken = signMatchToken({ matchId, userId, action: 'pass' })
+    console.log('[match-pass] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
   }
 
   const mId = escapeHtml(matchId)
@@ -107,6 +130,10 @@ export async function POST(req: NextRequest) {
     const isUser1 = match.user_1_id === userId
     const isUser2 = match.user_2_id === userId
     if (!isUser1 && !isUser2) return invalidLink()
+
+    if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
+      return endedMatchPage(match.status)
+    }
 
     await supabaseAdmin
       .from('matches')
