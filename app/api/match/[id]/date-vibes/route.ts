@@ -1,0 +1,153 @@
+// /api/match/[id]/date-vibes
+//
+// GET — return the full state of the date-vibes session for the
+//       current user on this match: their saved interests, partner's
+//       saved interests (so we can hint at overlap), the filtered deck
+//       of activities they HAVEN'T swiped on yet, and the list of
+//       mutual-yes matches so far.
+//
+// PUT — save the current user's interest selections for this match.
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
+import {
+  CURATED_ACTIVITIES,
+  filterDeck,
+  INTEREST_OPTIONS,
+  type Activity,
+  type Interest,
+} from '@/lib/activities';
+import { fetchLiveActivities } from '@/lib/ticketmaster';
+
+export const dynamic = 'force-dynamic';
+
+const VALID_INTERESTS = new Set(INTEREST_OPTIONS.map((o) => o.value));
+
+async function loadMatchOrError(matchId: string, userId: string) {
+  const { data: match } = await supabaseAdmin
+    .from('matches')
+    .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status')
+    .eq('id', matchId)
+    .single();
+  if (!match) return { error: NextResponse.json({ error: 'Match not found' }, { status: 404 }) };
+  if (match.user_1_id !== userId && match.user_2_id !== userId) {
+    return { error: NextResponse.json({ error: 'Not your match' }, { status: 403 }) };
+  }
+  if (!match.user_1_accepted || !match.user_2_accepted) {
+    return { error: NextResponse.json({ error: 'Date vibes unlock once both accept' }, { status: 400 }) };
+  }
+  return {
+    match,
+    partnerId: match.user_1_id === userId ? match.user_2_id : match.user_1_id,
+  };
+}
+
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const loaded = await loadMatchOrError(params.id, user.id);
+  if (loaded.error) return loaded.error;
+  const { partnerId } = loaded;
+
+  // Pull both users' saved interests (one query covers both rows).
+  const { data: vibes } = await supabaseAdmin
+    .from('match_date_vibes')
+    .select('user_id, interests')
+    .eq('match_id', params.id)
+    .in('user_id', [user.id, partnerId]);
+
+  const myRow = (vibes ?? []).find((v: any) => v.user_id === user.id);
+  const partnerRow = (vibes ?? []).find((v: any) => v.user_id === partnerId);
+  const myInterests: Interest[] = (myRow?.interests ?? []) as Interest[];
+  const partnerInterests: Interest[] = (partnerRow?.interests ?? []) as Interest[];
+
+  // Pull this user's swipes — for filtering the deck and counting.
+  const { data: swipes } = await supabaseAdmin
+    .from('activity_swipes')
+    .select('activity_id, decision, user_id')
+    .eq('match_id', params.id);
+
+  const mySwipedIds = new Set((swipes ?? []).filter((s: any) => s.user_id === user.id).map((s: any) => s.activity_id));
+
+  // Compute mutual-yes matches (both users said yes on same activity_id).
+  const yesByActivity = new Map<string, Set<string>>();
+  for (const s of swipes ?? []) {
+    if (s.decision !== 'yes') continue;
+    if (!yesByActivity.has(s.activity_id)) yesByActivity.set(s.activity_id, new Set());
+    yesByActivity.get(s.activity_id)!.add(s.user_id);
+  }
+  const mutualIds = new Set<string>();
+  for (const [aid, users] of yesByActivity) {
+    if (users.has(user.id) && users.has(partnerId)) mutualIds.add(aid);
+  }
+
+  // Live events (only attempted if TICKETMASTER_API_KEY is set; otherwise []).
+  let live: Activity[] = [];
+  try {
+    live = await fetchLiveActivities({ city: 'Boston', size: 30 });
+  } catch (e) {
+    console.warn('date-vibes: live fetch failed', e);
+  }
+
+  const fullPool: Activity[] = [...CURATED_ACTIVITIES, ...live];
+
+  // Filter by interest overlap, then drop already-swiped from the user's deck.
+  const filtered = filterDeck(fullPool, myInterests, partnerInterests);
+  const deck = filtered.filter((a) => !mySwipedIds.has(a.id));
+
+  // Mutual matches — hydrate full Activity objects.
+  const byId = new Map(fullPool.map((a) => [a.id, a]));
+  const mutualMatches = Array.from(mutualIds)
+    .map((id) => byId.get(id))
+    .filter((a): a is Activity => !!a);
+
+  return NextResponse.json({
+    myInterests,
+    partnerInterests,
+    deck,
+    mutualMatches,
+    counts: {
+      deck: deck.length,
+      mutual: mutualMatches.length,
+      partnerHasPicked: partnerInterests.length > 0,
+      iPicked: myInterests.length > 0,
+    },
+  });
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const loaded = await loadMatchOrError(params.id, user.id);
+  if (loaded.error) return loaded.error;
+
+  const body = await req.json().catch(() => ({}));
+  const raw = Array.isArray(body?.interests) ? body.interests : [];
+  const cleaned: string[] = Array.from(new Set(
+    raw.filter((v: any) => typeof v === 'string' && VALID_INTERESTS.has(v))
+  ));
+  if (cleaned.length > 8) {
+    return NextResponse.json({ error: 'Pick at most 8 interests' }, { status: 400 });
+  }
+
+  const { error } = await supabaseAdmin
+    .from('match_date_vibes')
+    .upsert(
+      {
+        match_id: params.id,
+        user_id: user.id,
+        interests: cleaned,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'match_id,user_id' }
+    );
+
+  if (error) {
+    console.error('date-vibes PUT error', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, interests: cleaned });
+}

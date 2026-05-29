@@ -219,6 +219,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
         <>
           <div className={styles.actions}>
             <a href={`/match/${match.id}`} className={styles.chatButton}>open chat →</a>
+            <a href={`/match/${match.id}/date-vibes`} className={styles.chatButton} style={{background:'#8b7fd4'}}>✦ date vibes →</a>
           </div>
           <div className={styles.subActions}>
             <button onClick={() => setFeedbackOpen(true)} className={styles.subBtnDate}>
