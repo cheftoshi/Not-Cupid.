@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { haversine, ZIP_COORDS, MATCH_RADIUS_MILES } from '@/lib/quiz-data'
 import { compatibilityScore, thresholdFor } from '@/lib/matching'
+import { intentOf, intentCompatible } from '@/lib/pools'
 
 function isWithinMatchRadius(zip1: string, zip2: string): boolean {
   const c1 = ZIP_COORDS[zip1]
@@ -69,22 +70,33 @@ export async function POST(req: NextRequest) {
       .map((p: any) => ({ ...p, score: compatibilityScore(user, p) }))
       .sort((a: any, b: any) => b.score - a.score)
 
-    const best = scored[0]
     const minScore = thresholdFor(user, pool || [])
-    if (best.score < minScore) {
+    const clearing = scored.filter((p: any) => p.score >= minScore)
+
+    if (clearing.length === 0) {
       console.warn('[match] rejected (threshold)', {
         userId: String(userId).slice(0, 8),
         gender: user.gender,
-        topScore: best.score,
+        topScore: scored[0]?.score ?? null,
         requiredScore: minScore,
         poolSize: pool?.length || 0,
       })
       return NextResponse.json({
         matched: false,
         message: 'No strong matches yet',
-        debug: { topScore: best.score, requiredScore: minScore },
+        debug: { topScore: scored[0]?.score ?? null, requiredScore: minScore },
       })
     }
+
+    // Intent prioritization (prioritize, don't constrain): among candidates
+    // that clear the threshold, prefer the best one whose relationship intent
+    // is compatible (same bucket, or either side is 'open'). If none of the
+    // clearing candidates is intent-compatible, fall back to the best overall
+    // so a thin segment never blocks a match. `clearing` is already sorted by
+    // score desc, so [0] of each subset is its top-scorer.
+    const userIntent = intentOf(user)
+    const sameIntent = clearing.filter((p: any) => intentCompatible(userIntent, intentOf(p)))
+    const best = (sameIntent.length > 0 ? sameIntent : clearing)[0]
 
     const { data: match } = await supabaseAdmin
       .from('matches')

@@ -11,6 +11,7 @@ export default function AdminClient() {
   const [error, setError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<any>(null)
   const [liveEvents, setLiveEvents] = useState<any>(null)
+  const [pools, setPools] = useState<any>(null)
 
   useEffect(() => {
     fetch('/api/admin-stats')
@@ -33,6 +34,17 @@ export default function AdminClient() {
       .catch((e) => setFeedback({ __error: e?.message || 'network error', items: [], stats: null }))
 
     refreshLiveEvents()
+
+    fetch('/api/admin/pools')
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await parseResponse<any>(r).catch(() => ({}))
+          return { __error: body?.error || `HTTP ${r.status}` }
+        }
+        return parseResponse<any>(r)
+      })
+      .then(setPools)
+      .catch((e) => setPools({ __error: e?.message || 'network error' }))
   }, [])
 
   async function refreshLiveEvents() {
@@ -113,6 +125,93 @@ export default function AdminClient() {
               )}
             </div>
           ))}
+        </div>
+
+        {/* DATING POOL SEGMENTS */}
+        <div style={{background:'#fff',border:'1px solid rgba(14,12,26,0.1)',padding:'1.5rem',marginBottom:'1.5rem'}}>
+          <p style={{fontFamily:'DM Mono,monospace',fontSize:'.58rem',letterSpacing:'.15em',textTransform:'uppercase',color:'#0e0c1a',marginBottom:'1rem',fontWeight:500}}>Dating pool — live segments</p>
+
+          {!pools && <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#7a7590'}}>loading…</p>}
+          {pools?.__error && <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#d94f3d'}}>couldn’t load: {pools.__error}</p>}
+
+          {pools && !pools.__error && (
+            <>
+              {/* summary chips */}
+              <div style={{display:'flex',gap:'1rem',flexWrap:'wrap',marginBottom:'1.25rem',fontFamily:'DM Mono,monospace',fontSize:'.55rem',letterSpacing:'.06em',color:'#7a7590'}}>
+                <span>Active: <strong style={{color:'#0e0c1a'}}>{pools.summary?.active ?? 0}</strong></span>
+                <span>·</span>
+                <span>In a match: <strong style={{color:'#0e0c1a'}}>{pools.summary?.matched ?? 0}</strong></span>
+                <span>·</span>
+                <span>Cooldown: <strong style={{color:'#c39418'}}>{pools.summary?.cooldown ?? 0}</strong></span>
+                <span>·</span>
+                <span>Banned: <strong style={{color:'#d94f3d'}}>{pools.summary?.banned ?? 0}</strong></span>
+              </div>
+
+              {/* intent × tier grid */}
+              <div style={{overflowX:'auto',marginBottom:'1rem'}}>
+                <table style={{borderCollapse:'collapse',fontFamily:'DM Mono,monospace',fontSize:'.62rem'}}>
+                  <thead>
+                    <tr>
+                      <th style={{padding:'.4rem .8rem',textAlign:'left',color:'#7a7590',fontSize:'.48rem',letterSpacing:'.1em',textTransform:'uppercase',fontWeight:400}}>intent ↓ / tier →</th>
+                      {(pools.tiers || []).map((t: string) => (
+                        <th key={t} style={{padding:'.4rem .8rem',color:'#8b7fd4',fontSize:'.52rem',letterSpacing:'.1em',textTransform:'uppercase'}}>{t}</th>
+                      ))}
+                      <th style={{padding:'.4rem .8rem',color:'#0e0c1a',fontSize:'.52rem',letterSpacing:'.1em',textTransform:'uppercase'}}>total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(pools.intents || []).map((intent: string) => {
+                      const row = pools.grid?.[intent] || {}
+                      const rowTotal = (pools.tiers || []).reduce((sum: number, t: string) => sum + (row[t] || 0), 0)
+                      return (
+                        <tr key={intent} style={{borderTop:'1px solid rgba(14,12,26,0.06)'}}>
+                          <td style={{padding:'.45rem .8rem',color:'#0e0c1a',fontWeight:500,textTransform:'capitalize'}}>{intent}</td>
+                          {(pools.tiers || []).map((t: string) => (
+                            <td key={t} style={{padding:'.45rem .8rem',textAlign:'center',color:(row[t]||0)>0?'#0e0c1a':'#c8c4dc'}}>{row[t] || 0}</td>
+                          ))}
+                          <td style={{padding:'.45rem .8rem',textAlign:'center',color:'#8b7fd4',fontWeight:700}}>{rowTotal}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+                <p style={{fontFamily:'Georgia,serif',fontStyle:'italic',fontSize:'.7rem',color:'#7a7590',marginTop:'.6rem'}}>
+                  Tier A = active in last 2 days · B = within a week · next = queued for the next wave. Matcher prefers same-intent, falls back across.
+                </p>
+              </div>
+
+              {/* penalty box */}
+              {(pools.penalty?.cooldown?.length > 0 || pools.penalty?.banned?.length > 0) && (
+                <div style={{borderTop:'1px solid rgba(14,12,26,0.08)',paddingTop:'1rem'}}>
+                  <div style={{fontFamily:'DM Mono,monospace',fontSize:'.5rem',letterSpacing:'.16em',textTransform:'uppercase',color:'#d94f3d',marginBottom:'.6rem'}}>faulty actors</div>
+
+                  {pools.penalty.cooldown.length > 0 && (
+                    <div style={{marginBottom:'.75rem'}}>
+                      <div style={{fontFamily:'DM Mono,monospace',fontSize:'.5rem',color:'#c39418',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:'.4rem'}}>cooldown ({pools.penalty.cooldown.length}) — auto-releases</div>
+                      {pools.penalty.cooldown.map((u: any) => (
+                        <div key={u.id} style={{display:'flex',justifyContent:'space-between',gap:'1rem',padding:'.3rem .6rem',background:'#fdf8ec',borderRadius:4,marginBottom:'.2rem',fontFamily:'DM Mono,monospace',fontSize:'.58rem'}}>
+                          <span style={{color:'#0e0c1a'}}>{u.name} <span style={{color:'#7a7590'}}>· {u.email}</span></span>
+                          <span style={{color:'#7a7590',whiteSpace:'nowrap'}}>{u.ghostReports} ghosts · until {u.cooldownUntil?.split('T')[0]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {pools.penalty.banned.length > 0 && (
+                    <div>
+                      <div style={{fontFamily:'DM Mono,monospace',fontSize:'.5rem',color:'#d94f3d',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:'.4rem'}}>banned ({pools.penalty.banned.length}) — permanent</div>
+                      {pools.penalty.banned.map((u: any) => (
+                        <div key={u.id} style={{display:'flex',justifyContent:'space-between',gap:'1rem',padding:'.3rem .6rem',background:'#fef4f4',borderRadius:4,marginBottom:'.2rem',fontFamily:'DM Mono,monospace',fontSize:'.58rem'}}>
+                          <span style={{color:'#0e0c1a'}}>{u.name} <span style={{color:'#7a7590'}}>· {u.email}</span></span>
+                          <span style={{color:'#d94f3d',whiteSpace:'nowrap'}}>{u.ghostReports} ghost reports</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div style={{background:'#fff',border:'1px solid rgba(14,12,26,0.1)',padding:'1.5rem',marginBottom:'1.5rem'}}>

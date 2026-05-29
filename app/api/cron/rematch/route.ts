@@ -72,6 +72,28 @@ export async function GET(req: NextRequest) {
 
     console.log(`Pool rotation: ejected ${toEject.length}, woke ${wakeIds.length} (${men.length}m / ${women.length}f / ${otherGender.length}o)`)
 
+    // ============== 0c) Auto-release expired cooldowns ==============
+    // A user whose matching_cooldown_until has passed (and who isn't banned
+    // or currently matched) automatically rejoins the active pool. We clear
+    // the cooldown timestamp so we don't reprocess them next run, and queue
+    // them for a fresh rematch attempt below.
+    const { data: cooledDown } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .not('matching_cooldown_until', 'is', null)
+      .lt('matching_cooldown_until', nowIso)
+      .is('matching_disabled_at', null)
+      .neq('status', 'matched')
+
+    const releasedIds = (cooledDown || []).map((u: any) => u.id)
+    if (releasedIds.length > 0) {
+      await supabaseAdmin
+        .from('users')
+        .update({ matching_cooldown_until: null, status: 'waiting', pool_active: true })
+        .in('id', releasedIds)
+    }
+    console.log(`Cooldown auto-release: ${releasedIds.length}`)
+
     // ============== 1) Auto-end active chats whose timer expired ==============
     const { data: expiredChats } = await supabaseAdmin
       .from('matches')
@@ -128,6 +150,9 @@ export async function GET(req: NextRequest) {
       await consider((m as any).user_1_id)
       await consider((m as any).user_2_id)
     }
+    // Freshly cooldown-released users are eligible by construction
+    // (cooldown cleared, not banned, not matched) — add them directly.
+    for (const id of releasedIds) toRematch.add(id)
 
     if (toRematch.size === 0) {
       return NextResponse.json({
@@ -137,6 +162,7 @@ export async function GET(req: NextRequest) {
         rematched: 0,
         poolEjected: toEject.length,
         poolWaked: wakeIds.length,
+        cooldownReleased: releasedIds.length,
       })
     }
 
@@ -190,6 +216,7 @@ export async function GET(req: NextRequest) {
       priorityGender,
       poolEjected: toEject.length,
       poolWaked: wakeIds.length,
+      cooldownReleased: releasedIds.length,
     })
   } catch (err) {
     console.error('Rematch cron error:', err)
