@@ -25,7 +25,9 @@ export async function POST() {
 
   const { error } = await supabaseAdmin
     .from('users')
-    .update({ match_radius: next, status: 'waiting', pool_active: true })
+    // Clear the nudge flag — if the wider radius is also thin, they can be
+    // nudged again after the cooldown.
+    .update({ match_radius: next, status: 'waiting', pool_active: true, radius_nudge_sent_at: null })
     .eq('id', user.id);
 
   if (error) {

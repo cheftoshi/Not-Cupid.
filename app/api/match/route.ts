@@ -1,8 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { zipDistanceMiles, DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data'
+import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data'
 import { compatibilityScore, thresholdFor } from '@/lib/matching'
 import { intentOf, intentCompatible } from '@/lib/pools'
+import { renderEmail, sendEmail, button, C } from '@/lib/email'
+
+const RADIUS_NUDGE_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000
+
+// Compatible people exist but all sit beyond the user's radius → email them
+// to widen their search. Deduped (3-day cooldown) and gated on opt-out.
+async function maybeSendRadiusNudge(user: any, compatibleCount: number) {
+  if (compatibleCount === 0) return // no gender/age-compatible people at all — widening won't help
+  if (user.email_notifications === false) return
+  const radius = user.match_radius ?? DEFAULT_MATCH_RADIUS
+  if (radius >= MAX_MATCH_RADIUS) return // already as wide as it goes
+  const last = user.radius_nudge_sent_at ? new Date(user.radius_nudge_sent_at).getTime() : 0
+  if (Date.now() - last < RADIUS_NUDGE_COOLDOWN_MS) return
+  if (!user.email) return
+
+  // Mark first so a slow/failed send can't spam on the next cron tick.
+  await supabaseAdmin.from('users').update({ radius_nudge_sent_at: new Date().toISOString() }).eq('id', user.id)
+
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com'
+  const html = renderEmail({
+    preheader: `Your area's quiet at ${radius}mi — widen your search to meet more people.`,
+    eyebrow: 'your pool is thin',
+    headline: 'Quiet within your range right now.',
+    bodyHtml: `
+      <p style="margin:0 0 16px 0;">There are people who could be a fit — they're just sitting a little past your ${radius}-mile range. Widen your search and the algorithm can reach them on the next run.</p>
+      ${button({ href: `${base}/dashboard`, label: 'Widen my search →' })}
+      <p style="margin:16px 0 0 0;font-size:13px;color:${C.muted};">One tap on your dashboard bumps it out in 15-mile steps, up to 75. You can always tighten it back.</p>
+    `,
+    recipientId: user.id,
+    footerNote: 'good matches are worth a few extra miles.',
+  })
+  await sendEmail({
+    to: user.email,
+    subject: `it's quiet within ${radius}mi — widen your search?`,
+    html,
+  }).catch(() => {})
+}
 
 // A candidate is in range if within the SEARCHER's radius. Unknown coords
 // (null) pass through, same as before.
@@ -64,6 +101,9 @@ export async function POST(req: NextRequest) {
     )
 
     if (locationCompatible.length === 0) {
+      // Compatible people exist but all beyond the radius → nudge to widen.
+      // Awaited so the dedup write lands; the email send itself is swallowed.
+      await maybeSendRadiusNudge(user, ageCompatible.length)
       return NextResponse.json({ matched: false, message: 'No compatible matches nearby yet' })
     }
 
