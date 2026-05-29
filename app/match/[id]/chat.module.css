@@ -46,15 +46,59 @@
   white-space: nowrap;
 }
 
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+  flex-wrap: wrap;
+}
+.headerArch {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #5b4fa0;
+  background: #ede9ff;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+}
 .headerStatus {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: #8b7fd4;
-  margin-top: 0.2rem;
 }
 .headerStatusExpired { color: #c92a2a; }
+
+/* ============= ALGO NARRATOR ============= */
+.narrator {
+  align-self: center;
+  max-width: 90%;
+  text-align: center;
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #7a7590;
+  background: rgba(139,127,212,0.08);
+  border: 1px solid rgba(139,127,212,0.2);
+  border-radius: 14px;
+  padding: 0.7rem 1.1rem;
+  margin: 0 auto 0.75rem;
+}
+.narrator strong { color: #5b4fa0; font-style: normal; }
+.narratorMark {
+  display: block;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-style: normal;
+  font-size: 0.5rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  margin-bottom: 0.35rem;
+}
 
 .headerPhoto {
   width: 42px;
@@ -86,13 +130,68 @@
 
 .empty {
   text-align: center;
-  color: #8b7fd4;
+  padding: 1.5rem 1rem 0;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.emptyTitle {
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
-  font-size: 1rem;
-  padding: 3.5rem 1.25rem;
-  margin: auto;
-  line-height: 1.55;
+  font-size: 1.6rem;
+  color: #0a0a0a;
+  line-height: 1.1;
+}
+.emptySub {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+  margin: 0.6rem 0 1.1rem;
+}
+.starters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+  max-width: 360px;
+}
+.starter {
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  text-align: left;
+  color: #0a0a0a;
+  background: #fff;
+  border: 1px solid rgba(139,127,212,0.3);
+  border-radius: 14px;
+  padding: 0.7rem 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.starter:hover {
+  border-color: #8b7fd4;
+  background: #faf8ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -10px rgba(91,79,160,0.35);
+}
+.starter:active { transform: translateY(0); }
+
+/* ============= NUDGE (the gentle roast) ============= */
+.nudge {
+  margin: 0 1rem;
+  background: #fdf8ec;
+  border: 1px solid rgba(195,148,24,0.4);
+  color: #8a6d1a;
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  text-align: center;
 }
 
 .bubble {
