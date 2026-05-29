@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import MatchCard from './match-card';
+import ExpandRadiusButton from './expand-radius-button';
 import CorpFooter from '@/components/corp-footer';
+import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
 import styles from './dashboard.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -124,6 +126,11 @@ export default async function DashboardPage({
             otherUser={otherUser}
             currentUserId={user.id}
             isUnlocked={isUnlocked}
+            distanceMi={(() => { const d = zipDistanceMiles(user.zip, otherUser.zip); return d == null ? null : Math.round(d); })()}
+            beyondRadius={(() => {
+              const d = zipDistanceMiles(user.zip, otherUser.zip);
+              return d != null && d > (user.match_radius ?? DEFAULT_MATCH_RADIUS);
+            })()}
           />
         ) : (
           <div className={styles.emptyState}>
@@ -133,6 +140,7 @@ export default async function DashboardPage({
               the algorithm re-runs every 20 minutes, scanning the pool for your person.
               your next match can land any minute — we&apos;ll email you the moment it does.
             </p>
+            <ExpandRadiusButton radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} />
           </div>
         )}
 

@@ -375,7 +375,12 @@ export const LOADING_STEPS = LOADING_MSGS
 
 export const BOSTON_CENTER = { lat: 42.3601, lng: -71.0589 }
 export const SIGNUP_RADIUS_MILES = 75
-export const MATCH_RADIUS_MILES = 25
+// Default match radius. Users start tight (15mi) and can widen in 15mi steps
+// up to the signup cap (75mi) when their pool is thin.
+export const MATCH_RADIUS_MILES = 15
+export const DEFAULT_MATCH_RADIUS = 15
+export const MAX_MATCH_RADIUS = 75
+export const RADIUS_STEP = 15
 
 export function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8
@@ -383,6 +388,15 @@ export function haversine(lat1: number, lon1: number, lat2: number, lon2: number
   const dLon = (lon2 - lon1) * Math.PI / 180
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+}
+
+// Distance in miles between two ZIPs, or null if either is unknown.
+export function zipDistanceMiles(zip1: string | null | undefined, zip2: string | null | undefined): number | null {
+  if (!zip1 || !zip2) return null
+  const c1 = ZIP_COORDS[zip1]
+  const c2 = ZIP_COORDS[zip2]
+  if (!c1 || !c2) return null
+  return haversine(c1.lat, c1.lng, c2.lat, c2.lng)
 }
 
 export const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {

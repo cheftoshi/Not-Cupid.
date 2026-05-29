@@ -14,6 +14,8 @@ interface Props {
   otherUser: any;
   currentUserId: string;
   isUnlocked: boolean;
+  distanceMi?: number | null;
+  beyondRadius?: boolean;
 }
 
 function hoursUntil(iso: string): number {
@@ -21,7 +23,7 @@ function hoursUntil(iso: string): number {
   return Math.max(0, Math.round(ms / 1000 / 60 / 60));
 }
 
-export default function MatchCard({ match, otherUser, currentUserId, isUnlocked }: Props) {
+export default function MatchCard({ match, otherUser, currentUserId, isUnlocked, distanceMi, beyondRadius }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -115,10 +117,15 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
       </h2>
 
       <div className={styles.matchMeta}>
-        {otherUser.zip && <span>📍 {otherUser.zip}</span>}
+        {otherUser.zip && <span>📍 {otherUser.zip}{distanceMi != null ? ` · ~${distanceMi} mi` : ''}</span>}
         {match.compatibility_score && <span>{match.compatibility_score}% compatibility</span>}
         {otherUser.relationship_style && <span>💞 {relationshipStyleLabel(otherUser.relationship_style)}</span>}
       </div>
+      {beyondRadius && (
+        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: '#d2530f', margin: '0 0 1rem', lineHeight: 1.45 }}>
+          heads up — this one&apos;s a bit past your usual range, surfaced because the local pool was thin.
+        </div>
+      )}
 
       {otherUser.archetype && (
         <div className={styles.archetypeCard}>

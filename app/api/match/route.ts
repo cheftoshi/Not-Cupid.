@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { haversine, ZIP_COORDS, MATCH_RADIUS_MILES } from '@/lib/quiz-data'
+import { zipDistanceMiles, DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data'
 import { compatibilityScore, thresholdFor } from '@/lib/matching'
 import { intentOf, intentCompatible } from '@/lib/pools'
 
-function isWithinMatchRadius(zip1: string, zip2: string): boolean {
-  const c1 = ZIP_COORDS[zip1]
-  const c2 = ZIP_COORDS[zip2]
-  if (!c1 || !c2) return true
-  const dist = haversine(c1.lat, c1.lng, c2.lat, c2.lng)
-  return dist <= MATCH_RADIUS_MILES
+// A candidate is in range if within the SEARCHER's radius. Unknown coords
+// (null) pass through, same as before.
+function isWithinMatchRadius(zip1: string, zip2: string, radiusMiles: number): boolean {
+  const dist = zipDistanceMiles(zip1, zip2)
+  if (dist === null) return true
+  return dist <= radiusMiles
 }
 
 function isGenderMatch(user: any, candidate: any): boolean {
@@ -58,8 +58,9 @@ export async function POST(req: NextRequest) {
       p.age <= user.age_max
     )
 
+    const radiusMiles = user.match_radius ?? DEFAULT_MATCH_RADIUS
     const locationCompatible = ageCompatible.filter((p: any) =>
-      isWithinMatchRadius(user.zip, p.zip)
+      isWithinMatchRadius(user.zip, p.zip, radiusMiles)
     )
 
     if (locationCompatible.length === 0) {
