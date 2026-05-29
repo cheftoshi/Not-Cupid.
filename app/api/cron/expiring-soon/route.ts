@@ -6,18 +6,17 @@ import { signMatchToken } from '@/lib/match-tokens';
 
 export const dynamic = 'force-dynamic';
 
-// Window: a match enters this cron's range when its expires_at is within
-// the next WINDOW_MAX_HOURS. We send a single "X hours left" reminder to
-// whichever side hasn't accepted, and `expiring_reminder_sent_at` prevents
-// double-sends.
+// Window: a match enters this cron's range when its expires_at is between
+// WINDOW_MIN_HOURS and WINDOW_MAX_HOURS from now. We send a single
+// "X hours left" reminder to whichever side hasn't accepted, and
+// `expiring_reminder_sent_at` prevents double-sends.
 //
-// Cadence: Vercel Hobby only allows DAILY crons, so this runs once a day
-// (vercel.json: "0 13 * * *"). The window is therefore ~26h — wide enough
-// that every match expiring before tomorrow's run gets exactly one
-// reminder. On Pro you could tighten this back to a few hours and run the
-// cron hourly for a more precise "4 hours left" nudge.
-const WINDOW_MIN_HOURS = 0;
-const WINDOW_MAX_HOURS = 26;
+// Cadence: on Vercel Pro this runs HOURLY (vercel.json: "0 * * * *"), so a
+// tight 3-6h window gives an accurate "~4 hours left" nudge — a match
+// passes through the band over a few hourly ticks and gets exactly one
+// reminder. (On Hobby this had to widen to ~26h with a daily run.)
+const WINDOW_MIN_HOURS = 3;
+const WINDOW_MAX_HOURS = 6;
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;

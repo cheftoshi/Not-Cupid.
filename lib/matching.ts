@@ -94,19 +94,37 @@ export function compatibilityScore(a: any, b: any): number {
 export function thresholdFor(
   user: { gender?: string | null },
   pool: Array<{ gender?: string | null }>,
-  opts?: { base?: number; strict?: number; overrepRatio?: number; minPoolForRebalance?: number }
+  opts?: {
+    base?: number;
+    strict?: number;
+    overrepRatio?: number;
+    minPoolForRebalance?: number;
+    waitDays?: number;
+  }
 ): number {
   const base = opts?.base ?? 50;
   const strict = opts?.strict ?? 65;
   const overrepRatio = opts?.overrepRatio ?? 0.55;
   const minPool = opts?.minPoolForRebalance ?? 10;
 
-  if (!user.gender || (user.gender !== 'm' && user.gender !== 'f')) return base;
+  // Gender-balance bar (existing behavior).
+  let threshold = base;
+  if (user.gender === 'm' || user.gender === 'f') {
+    const binary = pool.filter((p) => p.gender === 'm' || p.gender === 'f');
+    if (binary.length >= minPool) {
+      const same = binary.filter((p) => p.gender === user.gender).length;
+      const ratio = same / binary.length;
+      if (ratio >= overrepRatio) threshold = strict;
+    }
+  }
 
-  const binary = pool.filter((p) => p.gender === 'm' || p.gender === 'f');
-  if (binary.length < minPool) return base;
-
-  const same = binary.filter((p) => p.gender === user.gender).length;
-  const ratio = same / binary.length;
-  return ratio >= overrepRatio ? strict : base;
+  // Wait-time decay: the longer someone has sat unmatched, the more we relax
+  // the bar so they don't rot in the pool. ~1.5 pts/day, capped, with a hard
+  // floor so match quality never fully collapses. Pairs with continuous
+  // matching — fresh users keep a high bar, long-waiters gradually loosen.
+  const waitDays = opts?.waitDays ?? 0;
+  const FLOOR = 35;
+  const MAX_DECAY = 18;
+  const decay = Math.min(Math.max(waitDays, 0) * 1.5, MAX_DECAY);
+  return Math.max(FLOOR, threshold - decay);
 }

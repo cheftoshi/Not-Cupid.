@@ -70,7 +70,23 @@ export async function POST(req: NextRequest) {
       .map((p: any) => ({ ...p, score: compatibilityScore(user, p) }))
       .sort((a: any, b: any) => b.score - a.score)
 
-    const minScore = thresholdFor(user, pool || [])
+    // How long has this user been waiting? Since their most recent ended
+    // match, or signup if they've never matched. Feeds the wait-time decay
+    // so long-waiters get a gradually easier bar.
+    const { data: lastEnded } = await supabaseAdmin
+      .from('matches')
+      .select('ended_at')
+      .or(`user_1_id.eq.${userId},user_2_id.eq.${userId}`)
+      .not('ended_at', 'is', null)
+      .order('ended_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const waitStartMs = lastEnded?.ended_at
+      ? new Date(lastEnded.ended_at).getTime()
+      : new Date(user.created_at).getTime()
+    const waitDays = Math.max(0, (Date.now() - waitStartMs) / 86_400_000)
+
+    const minScore = thresholdFor(user, pool || [], { waitDays })
     const clearing = scored.filter((p: any) => p.score >= minScore)
 
     if (clearing.length === 0) {
