@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { verifyMatchToken, signMatchToken } from '@/lib/match-tokens'
-import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email'
+import { acceptMatch } from '@/lib/match-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -136,88 +136,28 @@ export async function POST(req: NextRequest) {
     if (!matchId || !userId || !token) return invalidLink()
     if (!verifyMatchToken({ matchId, userId, action: 'accept', token })) return invalidLink()
 
-    const { data: match } = await supabaseAdmin
-      .from('matches').select('*').eq('id', matchId).single()
+    // Shared activation — identical to the in-app accept path.
+    const result = await acceptMatch(matchId, userId)
 
-    if (!match) return htmlPage('Match not found', `<a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#2563ff">Back to NotCupid →</a>`, 404)
-
-    const isUser1 = match.user_1_id === userId
-    const isUser2 = match.user_2_id === userId
-    if (!isUser1 && !isUser2) return invalidLink()
-
-    if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
-      return endedMatchPage(match.status)
+    if (!result.ok) {
+      if (result.reason === 'ended') return endedMatchPage()
+      if (result.reason === 'not_found') {
+        return htmlPage('Match not found', `<a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#2563ff">Back to NotCupid →</a>`, 404)
+      }
+      return invalidLink()
     }
 
-    const updateField = isUser1 ? 'user_1_accepted' : 'user_2_accepted'
-    const otherAccepted = isUser1 ? match.user_2_accepted : match.user_1_accepted
-
-    await supabaseAdmin
-      .from('matches')
-      .update({ [updateField]: true })
-      .eq('id', matchId)
-
-    if (otherAccepted) {
-      const { data: user1 } = await supabaseAdmin
-        .from('users').select('*').eq('id', match.user_1_id).single()
-      const { data: user2 } = await supabaseAdmin
-        .from('users').select('*').eq('id', match.user_2_id).single()
-
-      if (user1 && user2) {
-        await supabaseAdmin
-          .from('matches')
-          .update({ status: 'both_accepted' })
-          .eq('id', matchId)
-
-        const itsAMatchHtml = (otherName: string, otherEmail: string, recipientId: string) => renderEmail({
-          preheader: `Both of you said yes. ${otherName.split(' ')[0]}'s email is inside — reach out.`,
-          eyebrow: "it's a match ✦",
-          headline: `${otherName.split(' ')[0]} said yes too.`,
-          bodyHtml: `
-            <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you.</p>
-
-            ${infoCard({
-              eyebrow: `${otherName}'s email`,
-              big: otherEmail,
-            })}
-
-            <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
-            <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
-              <li>Pick a time within the next 7 days. Momentum is everything.</li>
-              <li>The first message should be a real one, not "hey." You both already passed the hard part.</li>
-              <li>If it lands, come back and tell us how it went.</li>
-            </ul>
-
-            ${button({ href: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`, label: 'Back to NotCupid →' })}
-          `,
-          recipientId,
-          footerNote: 'mutual yes. you earned this one.',
-        })
-
-        await Promise.all([
-          sendEmail({
-            to: user1.email,
-            subject: `${user2.name.split(' ')[0]} said yes — here's their email`,
-            html: itsAMatchHtml(user2.name, user2.email, user1.id),
-          }),
-          sendEmail({
-            to: user2.email,
-            subject: `${user1.name.split(' ')[0]} said yes — here's their email`,
-            html: itsAMatchHtml(user1.name, user1.email, user2.id),
-          }),
-        ])
-      }
-
+    if (result.mutual) {
       return htmlPage(
         "It's a match. ✦",
-        `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Both of you said yes. Check your email — we just sent their contact info.</p>
+        `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Both of you said yes. Check your email — we just sent their contact info, and the chat's open in the app.</p>
          <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f6f6f6;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
       )
     }
 
     return htmlPage(
       "You're in. ✓",
-      `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">We've noted your interest. If they say yes too, you'll both get each other's email immediately.</p>
+      `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">We've noted your interest and let them know. If they say yes too, you'll both get each other's email immediately.</p>
        <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f6f6f6;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
     )
   } catch (err) {
