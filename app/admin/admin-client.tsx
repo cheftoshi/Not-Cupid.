@@ -13,6 +13,7 @@ export default function AdminClient() {
   const [feedback, setFeedback] = useState<any>(null)
   const [liveEvents, setLiveEvents] = useState<any>(null)
   const [pools, setPools] = useState<any>(null)
+  const [health, setHealth] = useState<any>(null)
   const [waveBusy, setWaveBusy] = useState(false)
 
   useEffect(() => {
@@ -37,6 +38,17 @@ export default function AdminClient() {
 
     refreshLiveEvents()
     refreshPools()
+
+    fetch('/api/admin/pool-health')
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await parseResponse<any>(r).catch(() => ({}))
+          return { __error: body?.error || `HTTP ${r.status}` }
+        }
+        return parseResponse<any>(r)
+      })
+      .then(setHealth)
+      .catch((e) => setHealth({ __error: e?.message || 'network error' }))
   }, [])
 
   async function refreshPools() {
@@ -144,6 +156,7 @@ export default function AdminClient() {
             </div>
             <nav className={s.nav}>
               <a href="#pool" className={s.navLink}>Pool</a>
+              <a href="#health" className={s.navLink}>Health</a>
               <a href="#ops" className={s.navLink}>Ops</a>
               <a href="#signups" className={s.navLink}>Signups</a>
               <a href="#matches" className={s.navLink}>Matches</a>
@@ -242,6 +255,101 @@ export default function AdminClient() {
                     )}
                   </div>
                 )}
+              </>
+            )}
+          </div>
+
+          {/* ── POOL HEALTH ── */}
+          <div className={s.card} id="health">
+            <div className={s.cardHead}><p className={s.cardTitle}>Pool health — <b>the saturation read</b></p></div>
+
+            {!health && <p className={s.note}>loading…</p>}
+            {health?.__error && <p className={s.noteErr}>couldn’t load: {health.__error}</p>}
+
+            {health && !health.__error && (
+              <>
+                {/* funnel */}
+                <div className={s.funnel}>
+                  {([
+                    ['signed up', health.funnel?.signups],
+                    ['quiz done', health.funnel?.quizComplete],
+                    ['in pool', health.funnel?.inPool],
+                    ['matched', health.funnel?.matched],
+                    ['both accepted', health.funnel?.everBothAccepted],
+                  ] as Array<[string, number]>).map(([label, val], i, arr) => (
+                    <div key={label} className={s.funnelStep}>
+                      <div className={s.funnelVal}>{val ?? 0}</div>
+                      <div className={s.funnelLabel}>{label}</div>
+                      {i < arr.length - 1 && <span className={s.funnelArrow}>→</span>}
+                    </div>
+                  ))}
+                </div>
+
+                {/* headline metrics */}
+                <div className={s.healthRow}>
+                  <div className={s.healthMetric}>
+                    <div className={s.healthBig} style={{ color: convColor(health.conversion?.conversionPct) }}>
+                      {health.conversion?.conversionPct != null ? `${health.conversion.conversionPct}%` : '—'}
+                    </div>
+                    <div className={s.healthLabel}>match → both accept</div>
+                    <div className={s.healthSub}>{health.conversion?.bothAccepted ?? 0} of {(health.conversion?.created ?? 0) - (health.conversion?.pending ?? 0)} decided</div>
+                  </div>
+                  <div className={s.healthMetric}>
+                    <div className={s.healthBig}>{health.wait?.medianDays ?? 0}<span className={s.healthUnit}>d</span></div>
+                    <div className={s.healthLabel}>median wait</div>
+                    <div className={s.healthSub}>p75 {health.wait?.p75Days ?? 0}d · max {health.wait?.maxDays ?? 0}d</div>
+                  </div>
+                  <div className={s.healthMetric}>
+                    <div className={s.healthBig} style={{ color: (health.skew?.skewPct ?? 0) >= 65 ? '#d94f3d' : '#0e0c1a' }}>
+                      {health.skew?.skewPct != null ? `${health.skew.skewPct}%` : '—'}
+                    </div>
+                    <div className={s.healthLabel}>pool skew{health.skew?.skewToward ? ` · ${health.skew.skewToward}` : ''}</div>
+                    <div className={s.healthSub}>{health.skew?.m ?? 0}m / {health.skew?.f ?? 0}f / {health.skew?.other ?? 0}o</div>
+                  </div>
+                  <div className={s.healthMetric}>
+                    <div className={s.healthBig}>{health.wait?.activeWaiting ?? 0}</div>
+                    <div className={s.healthLabel}>waiting now</div>
+                    <div className={s.healthSub}>{health.conversion?.pending ?? 0} matches pending</div>
+                  </div>
+                </div>
+
+                {/* outcome breakdown */}
+                <div className={s.chips} style={{ marginTop: '1rem' }}>
+                  <span className={s.chip}>Created <b>{health.conversion?.created ?? 0}</b></span>
+                  <span className={s.chip}>Both accepted <b>{health.conversion?.bothAccepted ?? 0}</b></span>
+                  <span className={s.chip}>Pending <b>{health.conversion?.pending ?? 0}</b></span>
+                  <span className={s.chip}>Passed <b>{health.conversion?.passed ?? 0}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>Expired <b>{health.conversion?.expired ?? 0}</b></span>
+                  <span className={`${s.chip} ${s.chipRed}`}>Ghosted <b>{health.conversion?.ghosted ?? 0}</b></span>
+                </div>
+
+                {/* two-up: stagnant + black holes */}
+                <div className={s.healthLists}>
+                  <div>
+                    <div className={`${s.penaltyKind} ${s.penaltyKindRed}`}>stagnant residue ({health.stagnant?.length ?? 0})</div>
+                    <p className={s.healthHint}>in pool, matched 3+ times, never a mutual yes — the people the pool keeps failing.</p>
+                    {(health.stagnant?.length ?? 0) === 0
+                      ? <p className={s.note}>none — pool is converting.</p>
+                      : health.stagnant.map((u: any) => (
+                        <div key={u.id} className={`${s.penaltyRow} ${s.penaltyRowRed}`}>
+                          <span><span className={s.penaltyName}>{u.name}</span> <span className={s.penaltyEmail}>· {u.email}</span></span>
+                          <span className={s.penaltyMeta}>{u.matches} matches · {u.accepts} they accepted</span>
+                        </div>
+                      ))}
+                  </div>
+                  <div>
+                    <div className={`${s.penaltyKind} ${s.penaltyKindGold}`}>low acceptance ({health.blackHoles?.length ?? 0})</div>
+                    <p className={s.healthHint}>in pool, lowest personal accept rate — chronic passers who burn match cycles.</p>
+                    {(health.blackHoles?.length ?? 0) === 0
+                      ? <p className={s.note}>not enough data yet.</p>
+                      : health.blackHoles.map((u: any) => (
+                        <div key={u.id} className={`${s.penaltyRow} ${s.penaltyRowGold}`}>
+                          <span><span className={s.penaltyName}>{u.name}</span> <span className={s.penaltyEmail}>· {u.email}</span></span>
+                          <span className={s.penaltyMeta}>{u.acceptRate}% accept · {u.matches} matches</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -464,6 +572,14 @@ export default function AdminClient() {
       <CorpFooter />
     </>
   )
+}
+
+// Color the conversion metric: green healthy, gold so-so, red poor.
+function convColor(pct: number | null | undefined): string {
+  if (pct == null) return '#0e0c1a'
+  if (pct >= 50) return '#2d7a4f'
+  if (pct >= 30) return '#c39418'
+  return '#d94f3d'
 }
 
 // ── Heatmap sub-component ──────────────────────────────────────────

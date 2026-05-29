@@ -252,6 +252,54 @@
   letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none;
 }
 
+/* ── Pool health ────────────────────────────────────────────────── */
+.funnel {
+  display: flex; align-items: stretch; gap: 0; flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.funnelStep {
+  position: relative; flex: 1; min-width: 88px; text-align: center;
+  padding: 0.75rem 1.25rem 0.75rem 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.funnelVal { font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; color: #0e0c1a; line-height: 1; }
+.funnelLabel {
+  font-family: 'DM Mono', monospace; font-size: 0.46rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #7a7590; margin-top: 0.3rem;
+}
+.funnelArrow {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  color: #c8c4dc; font-size: 1rem;
+}
+
+.healthRow {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: rgba(14,12,26,0.08); border: 1px solid rgba(14,12,26,0.08);
+  border-radius: 12px; overflow: hidden;
+}
+.healthMetric { background: #fff; padding: 1.1rem 0.75rem; text-align: center; }
+.healthBig { font-family: 'Bebas Neue', sans-serif; font-size: 2.3rem; line-height: 1; color: #0e0c1a; }
+.healthUnit { font-size: 1rem; color: #c8c4dc; margin-left: 1px; }
+.healthLabel {
+  font-family: 'DM Mono', monospace; font-size: 0.46rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #7a7590; margin-top: 0.35rem;
+}
+.healthSub { font-family: 'DM Mono', monospace; font-size: 0.46rem; color: #8b7fd4; margin-top: 0.15rem; }
+
+.healthLists {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+  margin-top: 1.25rem; padding-top: 1.1rem; border-top: 1px solid rgba(14,12,26,0.08);
+}
+.healthHint {
+  font-family: Georgia, serif; font-style: italic; font-size: 0.7rem;
+  color: #7a7590; margin: 0 0 0.6rem;
+}
+
+@media (max-width: 720px) {
+  .healthRow { grid-template-columns: repeat(2, 1fr); }
+  .healthLists { grid-template-columns: 1fr; }
+}
+
 .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8f5ff; }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
