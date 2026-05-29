@@ -130,7 +130,8 @@ export default async function DashboardPage({
             <div className={styles.emptyIcon}>✦</div>
             <h2 className={styles.emptyTitle}>in the queue.</h2>
             <p className={styles.emptyText}>
-              the algorithm is working. your next match drops within 24 hours.
+              the algorithm re-runs every 20 minutes, scanning the pool for your person.
+              your next match can land any minute — we&apos;ll email you the moment it does.
             </p>
           </div>
         )}
