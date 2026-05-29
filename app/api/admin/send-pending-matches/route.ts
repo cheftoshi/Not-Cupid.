@@ -23,19 +23,19 @@ function matchEmail(name: string, otherName: string, score: number, spot: string
   const acceptUrl = `${baseUrl}/api/match-accept?matchId=${matchId}&userId=${userId}&token=${acceptToken}`
   const passUrl = `${baseUrl}/api/match-pass?matchId=${matchId}&userId=${userId}&token=${passToken}`
   return `
-    <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f8f5ff;">
+    <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f6f6f6;">
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
-      <p style="font-size:.75rem;color:#8b7fd4;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">The algorithm has spoken</p>
+      <p style="font-size:.75rem;color:#2563ff;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">The algorithm has spoken</p>
       <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem;line-height:1.5">Hey ${name} — we found your match.</p>
-      <div style="background:#ede9ff;padding:1.5rem;margin-bottom:1.5rem">
+      <div style="background:#e8edff;padding:1.5rem;margin-bottom:1.5rem">
         <p style="font-size:.72rem;color:#7a7590;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Compatibility score</p>
-        <p style="font-size:2.5rem;font-weight:700;color:#8b7fd4;line-height:1">${score}<span style="font-size:1rem;color:#c8c4dc">%</span></p>
+        <p style="font-size:2.5rem;font-weight:700;color:#2563ff;line-height:1">${score}<span style="font-size:1rem;color:#c8c4dc">%</span></p>
       </div>
       <p style="font-size:.88rem;color:#7a7590;line-height:1.75;margin-bottom:1.5rem">
         Your match is <strong style="color:#0e0c1a">${otherName}</strong>. Based on six dimensions of your personality, the algorithm thinks you two are worth meeting.
       </p>
       <div style="background:#fff;border:1px solid #c8c4dc;padding:1.25rem;margin-bottom:1.5rem">
-        <p style="font-size:.65rem;color:#8b7fd4;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem">Suggested first spot</p>
+        <p style="font-size:.65rem;color:#2563ff;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem">Suggested first spot</p>
         <p style="font-size:.9rem;color:#0e0c1a;font-weight:500">${spot}</p>
       </div>
       <p style="font-size:.85rem;color:#0e0c1a;font-weight:500;margin-bottom:1rem">Are you interested in meeting ${otherName}?</p>
@@ -43,10 +43,10 @@ function matchEmail(name: string, otherName: string, score: number, spot: string
         If both of you say yes — you'll get each other's email. If either passes, you go back in the pool.
       </p>
       <div style="display:flex;gap:1rem;margin-bottom:2rem">
-        <a href="${acceptUrl}" style="flex:1;display:block;background:#0e0c1a;color:#f8f5ff;padding:1rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;text-align:center">Yes, I'm interested →</a>
+        <a href="${acceptUrl}" style="flex:1;display:block;background:#0e0c1a;color:#f6f6f6;padding:1rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;text-align:center">Yes, I'm interested →</a>
         <a href="${passUrl}" style="flex:1;display:block;background:transparent;color:#7a7590;border:1px solid #c8c4dc;padding:1rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;text-align:center">Pass on this one</a>
       </div>
-      <div style="padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">
+      <div style="padding-top:1.5rem;border-top:1px solid #e8edff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">
         Boston only · notcupid.com · the algo decided
       </div>
     </div>

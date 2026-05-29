@@ -421,7 +421,7 @@ export default function AdminClient() {
                       <td className={s.tMuted}>{u.gender === 'm' ? '♂' : u.gender === 'f' ? '♀' : '⚡'}</td>
                       <td className={s.tMuted}>{u.seeking === 'm' ? '♂' : u.seeking === 'f' ? '♀' : '⚡'}</td>
                       <td className={s.tMuted}>{u.zip}</td>
-                      <td><span className={s.badge} style={{ background: u.status === 'matched' ? '#ede9ff' : '#f0ede6', color: u.status === 'matched' ? '#5b4fa0' : '#7a7590' }}>{u.status}</span></td>
+                      <td><span className={s.badge} style={{ background: u.status === 'matched' ? '#e8edff' : '#f0ede6', color: u.status === 'matched' ? '#1b46c9' : '#7a7590' }}>{u.status}</span></td>
                       <td className={s.tFaint}>{u.created_at?.split('T')[0]}</td>
                     </tr>
                   ))}
@@ -444,8 +444,8 @@ export default function AdminClient() {
                       <td className={s.tScore}>{m.score}%</td>
                       <td>
                         <span className={s.badge} style={{
-                          background: m.status === 'both_accepted' ? '#d4edda' : m.status === 'passed' ? '#f8d7da' : '#ede9ff',
-                          color: m.status === 'both_accepted' ? '#155724' : m.status === 'passed' ? '#721c24' : '#5b4fa0',
+                          background: m.status === 'both_accepted' ? '#d4edda' : m.status === 'passed' ? '#f8d7da' : '#e8edff',
+                          color: m.status === 'both_accepted' ? '#155724' : m.status === 'passed' ? '#721c24' : '#1b46c9',
                         }}>{m.status}</span>
                       </td>
                       <td style={{ color: m.user1_accepted ? '#2d7a4f' : '#c8c4dc' }}>{m.user1_accepted ? '✓ yes' : '– pending'}</td>
@@ -492,7 +492,7 @@ export default function AdminClient() {
                   <tbody>
                     {feedback.items.map((f: any) => (
                       <tr key={f.id}>
-                        <td style={{ color: '#c39418', fontWeight: 700, whiteSpace: 'nowrap' }}>{'★'.repeat(f.rating)}{'☆'.repeat(5 - f.rating)}</td>
+                        <td style={{ color: '#d2530f', fontWeight: 700, whiteSpace: 'nowrap' }}>{'★'.repeat(f.rating)}{'☆'.repeat(5 - f.rating)}</td>
                         <td>
                           {f.would_again === true && <span className={s.badge} style={{ background: '#d4edda', color: '#155724' }}>yes</span>}
                           {f.would_again === false && <span className={s.badge} style={{ background: '#f8d7da', color: '#721c24' }}>no</span>}
@@ -578,7 +578,7 @@ export default function AdminClient() {
 function convColor(pct: number | null | undefined): string {
   if (pct == null) return '#0e0c1a'
   if (pct >= 50) return '#2d7a4f'
-  if (pct >= 30) return '#c39418'
+  if (pct >= 30) return '#d2530f'
   return '#d94f3d'
 }
 
@@ -601,9 +601,9 @@ function PoolHeatmap({ pools }: { pools: any }) {
     const t = count / max
     const op = 0.14 + t * 0.76
     return {
-      background: `rgba(139,127,212,${op.toFixed(2)})`,
+      background: `rgba(37,99,255,${op.toFixed(2)})`,
       color: t > 0.5 ? '#fff' : '#0e0c1a',
-      borderColor: 'rgba(139,127,212,0.25)',
+      borderColor: 'rgba(37,99,255,0.25)',
     }
   }
 

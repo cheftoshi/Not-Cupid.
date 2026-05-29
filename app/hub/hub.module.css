@@ -1,7 +1,7 @@
 .hub {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(180deg, #faf8ff 0%, #f3eeff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
   color: #0a0a0a;
   display: flex;
   flex-direction: column;
@@ -25,15 +25,15 @@
   font-family: 'Bebas Neue', sans-serif;
   font-size: 1.05rem; letter-spacing: 0.18em; color: #0a0a0a;
 }
-.brandDot { color: #8b7fd4; margin: 0 0.35rem; font-weight: 700; }
+.brandDot { color: #2563ff; margin: 0 0.35rem; font-weight: 700; }
 .logout {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
-  color: #8b7fd4; text-decoration: none;
-  padding: 0.45rem 0.95rem; border: 1px solid rgba(139,127,212,0.35); border-radius: 999px;
+  color: #2563ff; text-decoration: none;
+  padding: 0.45rem 0.95rem; border: 1px solid rgba(37,99,255,0.35); border-radius: 999px;
   transition: all .15s;
 }
-.logout:hover { background: #ede9ff; color: #5b4fa0; }
+.logout:hover { background: #e8edff; color: #1b46c9; }
 
 .intro {
   position: relative; z-index: 5;
@@ -41,10 +41,10 @@
 }
 .eyebrow {
   font-family: 'DM Mono', ui-monospace, monospace;
-  font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; color: #8b7fd4;
+  font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; color: #2563ff;
   margin: 0 0 1rem;
 }
-.eyebrow em { font-family: Georgia, ui-serif, serif; font-style: italic; color: #5b4fa0; font-weight: 600; text-transform: none; letter-spacing: 0.02em; }
+.eyebrow em { font-family: Georgia, ui-serif, serif; font-style: italic; color: #1b46c9; font-weight: 600; text-transform: none; letter-spacing: 0.02em; }
 
 .h1 {
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
@@ -68,20 +68,20 @@
 .card {
   background: rgba(255,255,255,0.7);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(139,127,212,0.3);
+  border: 1px solid rgba(37,99,255,0.3);
   border-radius: 22px;
   padding: 2rem;
   display: flex; flex-direction: column;
   text-decoration: none; color: inherit;
   transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
-.card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -16px rgba(91,79,160,0.25); }
+.card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -16px rgba(27,70,201,0.25); }
 
-.cardLove { border-color: rgba(91,79,160,0.4); }
-.cardLove:hover { border-color: #5b4fa0; }
+.cardLove { border-color: rgba(27,70,201,0.4); }
+.cardLove:hover { border-color: #1b46c9; }
 
-.cardFriend { border-color: rgba(216,179,64,0.45); background: linear-gradient(180deg, rgba(255,250,235,0.7) 0%, rgba(255,255,255,0.7) 100%); }
-.cardFriend:hover { border-color: #d8b340; }
+.cardFriend { border-color: rgba(255,106,31,0.45); background: linear-gradient(180deg, rgba(255,250,235,0.7) 0%, rgba(255,255,255,0.7) 100%); }
+.cardFriend:hover { border-color: #ff6a1f; }
 
 .cardEyebrow {
   font-family: 'DM Mono', ui-monospace, monospace;
@@ -92,7 +92,7 @@
 }
 .dotLive, .dotSoon { width: 7px; height: 7px; border-radius: 50%; }
 .dotLive { background: #2d7a4f; box-shadow: 0 0 0 0 rgba(45,122,79,0.6); animation: pulseLive 2.2s infinite; }
-.dotSoon { background: #d8b340; }
+.dotSoon { background: #ff6a1f; }
 @keyframes pulseLive { 0%,100% { box-shadow: 0 0 0 0 rgba(45,122,79,.6); } 50% { box-shadow: 0 0 0 7px rgba(45,122,79,0); } }
 
 .cardH2 {
@@ -104,11 +104,11 @@
 .cardH2 em {
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic; font-weight: 400;
-  background: linear-gradient(135deg, #5b4fa0 0%, #8b7fd4 100%);
+  background: linear-gradient(135deg, #1b46c9 0%, #2563ff 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .cardFriend .cardH2 em {
-  background: linear-gradient(135deg, #c39418 0%, #d8b340 100%);
+  background: linear-gradient(135deg, #d2530f 0%, #ff6a1f 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
@@ -121,13 +121,13 @@
 .cardSpec {
   display: flex; flex-direction: column; gap: 0.55rem;
   margin-bottom: 1.5rem; padding: 1rem 0;
-  border-top: 1px dashed rgba(139,127,212,0.25);
-  border-bottom: 1px dashed rgba(139,127,212,0.25);
+  border-top: 1px dashed rgba(37,99,255,0.25);
+  border-bottom: 1px dashed rgba(37,99,255,0.25);
 }
 .cardSpec > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
 .specK {
   font-family: 'DM Mono', ui-monospace, monospace;
-  font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: #8b7fd4;
+  font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: #2563ff;
 }
 .specV {
   font-family: Georgia, ui-serif, serif;
@@ -143,7 +143,7 @@
   font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600;
   text-align: center;
 }
-.card:hover .cardCta { background: #5b4fa0; }
+.card:hover .cardCta { background: #1b46c9; }
 
 .cardCtaFriend {
   margin-top: auto;
@@ -155,7 +155,7 @@
   cursor: pointer; transition: background .15s;
   width: 100%;
 }
-.cardCtaFriend:hover:not(:disabled) { background: #c39418; }
+.cardCtaFriend:hover:not(:disabled) { background: #d2530f; }
 .cardCtaFriend:disabled { opacity: .55; cursor: not-allowed; }
 
 .cardCtaJoined {
@@ -163,7 +163,7 @@
   background: linear-gradient(135deg, #fff8e1 0%, #fffdf7 100%);
   color: #8a6700;
   padding: 0.95rem 1.5rem;
-  border: 1px solid rgba(216,179,64,0.5);
+  border: 1px solid rgba(255,106,31,0.5);
   border-radius: 999px;
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600;
@@ -174,9 +174,9 @@
   margin-top: 0.75rem; text-align: center;
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase;
-  color: #8b7fd4; text-decoration: none;
+  color: #2563ff; text-decoration: none;
 }
-.cardSub:hover { color: #5b4fa0; text-decoration: underline; text-underline-offset: 3px; }
+.cardSub:hover { color: #1b46c9; text-decoration: underline; text-underline-offset: 3px; }
 
 .foot {
   position: relative; z-index: 5;

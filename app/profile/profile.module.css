@@ -191,11 +191,11 @@
 .galleryRemove:hover { background: #d94f3d; }
 .galleryAdd {
   width: 92px; height: 92px; border-radius: 12px; border: 1.5px dashed #c8c4dc;
-  background: #faf9ff; color: #8b7fd4; cursor: pointer; display: flex;
+  background: #faf9ff; color: #2563ff; cursor: pointer; display: flex;
   align-items: center; justify-content: center; font-size: 0.7rem;
   text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
 }
-.galleryAdd:hover { border-color: #8b7fd4; background: #f3f0ff; }
+.galleryAdd:hover { border-color: #2563ff; background: #f3f0ff; }
 
 .field { margin-bottom: 1.5rem; }
 
@@ -362,7 +362,7 @@
   font-size: 0.6rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
 }
 .dashGreet {
   font-family: Georgia, ui-serif, serif;
@@ -374,7 +374,7 @@
 }
 .dashGreet em {
   font-style: italic;
-  color: #5b4fa0;
+  color: #1b46c9;
   font-weight: 700;
 }
 
@@ -406,7 +406,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
   margin-top: 0.4rem;
 }
 .dashArchetypeDesc {
@@ -420,7 +420,7 @@
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 0.85rem;
-  color: #5b4fa0;
+  color: #1b46c9;
 }
 .dashStatNum strong {
   font-family: 'DM Mono', monospace;
@@ -438,8 +438,8 @@
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid #fff;
-  box-shadow: 0 12px 32px -8px rgba(91,79,160,0.25);
-  background: #ede9ff;
+  box-shadow: 0 12px 32px -8px rgba(27,70,201,0.25);
+  background: #e8edff;
 }
 .dashPhoto { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dashPhotoEmpty {
@@ -449,17 +449,17 @@
   font-size: 0.6rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
   cursor: pointer;
   background: transparent;
   border: none;
   padding: 0;
 }
-.dashPhotoEmpty:hover { color: #5b4fa0; }
+.dashPhotoEmpty:hover { color: #1b46c9; }
 
 .dashBanner {
-  background: linear-gradient(135deg, #ede9ff 0%, #fff 100%);
-  border: 1px solid rgba(139,127,212,0.4);
+  background: linear-gradient(135deg, #e8edff 0%, #fff 100%);
+  border: 1px solid rgba(37,99,255,0.4);
   border-radius: 14px;
   padding: 1.1rem 1.4rem;
   display: flex;
@@ -508,16 +508,16 @@
   gap: 0.4rem;
 }
 .dashStatCard:hover {
-  border-color: #8b7fd4;
+  border-color: #2563ff;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px -8px rgba(91,79,160,0.2);
+  box-shadow: 0 8px 20px -8px rgba(27,70,201,0.2);
 }
 .dashStatCardCta {
   background: #0a0a0a;
   border-color: #0a0a0a;
   color: #fff;
 }
-.dashStatCardCta:hover { background: #5b4fa0; border-color: #5b4fa0; }
+.dashStatCardCta:hover { background: #1b46c9; border-color: #1b46c9; }
 .dashStatIcon { font-size: 1.4rem; }
 .dashStatLabel {
   font-family: Georgia, ui-serif, serif;
@@ -537,7 +537,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -547,7 +547,7 @@
   content: '';
   width: 1.5rem;
   height: 1px;
-  background: #8b7fd4;
+  background: #2563ff;
 }
 
 .dashBioCard {
@@ -569,7 +569,7 @@
 .dashBioQuote {
   font-family: Georgia, ui-serif, serif;
   font-size: 2.5rem;
-  color: #8b7fd4;
+  color: #2563ff;
   line-height: 0;
   vertical-align: -0.4em;
   margin: 0 0.15em;
@@ -578,7 +578,7 @@
 
 .dashEmpty {
   background: #fff;
-  border: 1px dashed rgba(139,127,212,0.5);
+  border: 1px dashed rgba(37,99,255,0.5);
   border-radius: 14px;
   padding: 1.5rem 2rem;
   cursor: pointer;
@@ -588,10 +588,10 @@
 .dashEmptyText {
   font-family: Georgia, ui-serif, serif;
   font-size: 1rem;
-  color: #8b7fd4;
+  color: #2563ff;
   margin: 0;
 }
-.dashEmptyText em { font-style: italic; color: #5b4fa0; }
+.dashEmptyText em { font-style: italic; color: #1b46c9; }
 
 .dashBasics {
   background: #fff;
@@ -609,7 +609,7 @@
   flex-direction: column;
   gap: 0.2rem;
   padding-right: 1rem;
-  border-right: 1px solid rgba(139,127,212,0.15);
+  border-right: 1px solid rgba(37,99,255,0.15);
 }
 .dashBasicItem:last-child { border-right: none; }
 .dashBasicK {
@@ -617,7 +617,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
 }
 .dashBasicV {
   font-family: Georgia, ui-serif, serif;
@@ -664,7 +664,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(139,127,212,0.1);
+  border-bottom: 1px solid rgba(37,99,255,0.1);
   font-family: 'DM Mono', monospace;
   font-size: 0.7rem;
   color: #6b6975;
@@ -698,18 +698,18 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.dashEditBtn:hover { background: #5b4fa0; }
+.dashEditBtn:hover { background: #1b46c9; }
 .dashLogout {
   background: none;
   border: none;
-  color: #8b7fd4;
+  color: #2563ff;
   cursor: pointer;
   font-family: inherit;
   font-size: 0.85rem;
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.dashLogout:hover { color: #5b4fa0; }
+.dashLogout:hover { color: #1b46c9; }
 
 @media (max-width: 640px) {
   .dashHero { grid-template-columns: 1fr; gap: 1.25rem; }
@@ -737,7 +737,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
   margin-bottom: 0.4rem;
 }
 .editTitle {
@@ -750,7 +750,7 @@
 }
 .editTitle em {
   font-style: italic;
-  color: #5b4fa0;
+  color: #1b46c9;
   font-weight: 700;
 }
 .editClose {
@@ -766,7 +766,7 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.editClose:hover { border-color: #8b7fd4; color: #5b4fa0; }
+.editClose:hover { border-color: #2563ff; color: #1b46c9; }
 
 .labelHint {
   font-family: Georgia, ui-serif, serif;
@@ -802,7 +802,7 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.cancelButton:hover:not(:disabled) { border-color: #8b7fd4; color: #5b4fa0; }
+.cancelButton:hover:not(:disabled) { border-color: #2563ff; color: #1b46c9; }
 .cancelButton:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* =========================================================

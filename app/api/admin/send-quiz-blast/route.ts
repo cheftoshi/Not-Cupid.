@@ -15,9 +15,9 @@ function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)) }
 function emailHtml(name: string, baseUrl: string) {
   const safeName = (name || 'there').split(' ')[0]
   return `
-    <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f8f5ff;">
+    <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f6f6f6;">
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
-      <p style="font-size:.75rem;color:#8b7fd4;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">we upgraded the algorithm.</p>
+      <p style="font-size:.75rem;color:#2563ff;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">we upgraded the algorithm.</p>
       <p style="font-size:1.15rem;color:#0e0c1a;font-weight:500;margin-bottom:1.25rem;line-height:1.5">
         hey ${safeName}, the algo got smarter. take the new quiz to get a better match.
       </p>
@@ -29,9 +29,9 @@ function emailHtml(name: string, baseUrl: string) {
         five minutes. you'll get re-matched the moment you finish.
       </p>
       <div style="margin-bottom:2rem">
-        <a href="${baseUrl}/quiz?retake=1" style="display:inline-block;background:#0e0c1a;color:#f8f5ff;padding:1rem 1.75rem;font-family:monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none">retake the quiz →</a>
+        <a href="${baseUrl}/quiz?retake=1" style="display:inline-block;background:#0e0c1a;color:#f6f6f6;padding:1rem 1.75rem;font-family:monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none">retake the quiz →</a>
       </div>
-      <div style="padding-top:1.5rem;border-top:1px solid #ede9ff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">
+      <div style="padding-top:1.5rem;border-top:1px solid #e8edff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">
         boston only · notcupid.com · the algo got upgraded
       </div>
     </div>

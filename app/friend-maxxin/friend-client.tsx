@@ -36,7 +36,7 @@ export default function FriendMaxxinClient({ authed, onWaitlist }: { authed: boo
     <main className={styles.page}>
       <div
         className={styles.glow}
-        style={{ background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(216,179,64,0.30) 0%, rgba(216,179,64,0.10) 30%, transparent 55%)` }}
+        style={{ background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(255,106,31,0.30) 0%, rgba(255,106,31,0.10) 30%, transparent 55%)` }}
         aria-hidden
       />
       <div className={styles.grain} aria-hidden />

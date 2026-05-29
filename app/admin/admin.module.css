@@ -1,14 +1,14 @@
 /* Admin "Mission Control" design system.
-   Brand tokens: ink #0e0c1a, paper #f8f5ff, lav #8b7fd4, lavDeep #5b4fa0,
-   lavSoft #ede9ff, muted #7a7590, mutedSoft #c8c4dc, gold #c39418,
+   Brand tokens: ink #0e0c1a, paper #f6f6f6, lav #2563ff, lavDeep #1b46c9,
+   lavSoft #e8edff, muted #7a7590, mutedSoft #c8c4dc, gold #d2530f,
    green #3a7a4f, red #d94f3d. */
 
 .page {
   min-height: 100vh;
-  background: #f8f5ff;
+  background: #f6f6f6;
   background-image:
-    radial-gradient(circle at 12% 8%, rgba(139,127,212,0.10), transparent 42%),
-    radial-gradient(circle at 88% 4%, rgba(195,148,24,0.06), transparent 38%);
+    radial-gradient(circle at 12% 8%, rgba(37,99,255,0.10), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(255,106,31,0.06), transparent 38%);
   padding-bottom: 5rem;
 }
 
@@ -38,7 +38,7 @@
   font-size: 0.52rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
 }
 .title {
   font-family: 'Bebas Neue', sans-serif;
@@ -60,7 +60,7 @@
   border-radius: 999px;
   transition: all 0.15s;
 }
-.navLink:hover { color: #0e0c1a; background: rgba(139,127,212,0.14); }
+.navLink:hover { color: #0e0c1a; background: rgba(37,99,255,0.14); }
 
 .wrap { max-width: 1040px; margin: 0 auto; padding: 1.75rem 1.5rem 0; }
 
@@ -90,7 +90,7 @@
 }
 .kpiSub {
   font-family: 'DM Mono', monospace; font-size: 0.44rem; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #8b7fd4; margin-top: 0.15rem;
+  text-transform: uppercase; color: #2563ff; margin-top: 0.15rem;
 }
 
 /* ── Card ───────────────────────────────────────────────────────── */
@@ -110,7 +110,7 @@
   font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.16em;
   text-transform: uppercase; color: #0e0c1a; font-weight: 500; margin: 0;
 }
-.cardTitle b { color: #8b7fd4; font-weight: 500; }
+.cardTitle b { color: #2563ff; font-weight: 500; }
 
 /* ── Chips / summary ────────────────────────────────────────────── */
 .chips {
@@ -118,11 +118,11 @@
 }
 .chip {
   font-family: 'DM Mono', monospace; font-size: 0.56rem; letter-spacing: 0.05em;
-  color: #7a7590; background: #f8f5ff; border: 1px solid rgba(14,12,26,0.07);
+  color: #7a7590; background: #f6f6f6; border: 1px solid rgba(14,12,26,0.07);
   padding: 0.4rem 0.7rem; border-radius: 999px;
 }
 .chip b { color: #0e0c1a; font-weight: 700; }
-.chipGold b { color: #c39418; }
+.chipGold b { color: #d2530f; }
 .chipRed b { color: #d94f3d; }
 
 /* ── Heatmap grid (intent × tier) ───────────────────────────────── */
@@ -133,16 +133,16 @@
 }
 .heatColHead, .heatRowHead {
   font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase;
-  color: #8b7fd4; padding: 0.3rem 0.7rem; font-weight: 600;
+  color: #2563ff; padding: 0.3rem 0.7rem; font-weight: 600;
 }
 .heatRowHead { text-align: left; color: #0e0c1a; text-transform: capitalize; font-size: 0.66rem; }
 .heatCell {
   width: 58px; height: 42px; text-align: center; border-radius: 8px;
   font-size: 0.8rem; color: #0e0c1a; font-weight: 700;
-  border: 1px solid rgba(139,127,212,0.18);
+  border: 1px solid rgba(37,99,255,0.18);
 }
 .heatTotal {
-  font-size: 0.8rem; color: #8b7fd4; font-weight: 700; text-align: center;
+  font-size: 0.8rem; color: #2563ff; font-weight: 700; text-align: center;
   padding: 0 0.6rem;
 }
 .heatNote {
@@ -156,14 +156,14 @@
   font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.12em;
   text-transform: uppercase; margin-bottom: 0.5rem;
 }
-.penaltyKindGold { color: #c39418; }
+.penaltyKindGold { color: #d2530f; }
 .penaltyKindRed { color: #d94f3d; }
 .penaltyRow {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.3rem;
   font-family: 'DM Mono', monospace; font-size: 0.6rem;
 }
-.penaltyRowGold { background: #fdf8ec; }
+.penaltyRowGold { background: #fff1e8; }
 .penaltyRowRed { background: #fef4f4; }
 .penaltyName { color: #0e0c1a; }
 .penaltyEmail { color: #7a7590; }
@@ -179,18 +179,18 @@
   text-align: center; display: inline-block; transition: all 0.15s; white-space: nowrap;
 }
 .btn:hover { transform: translateY(-1px); }
-.btnInk { background: #0e0c1a; color: #f8f5ff; }
-.btnLav { background: #8b7fd4; color: #fff; }
-.btnDeep { background: #5b4fa0; color: #fff; }
-.btnGold { background: #c39418; color: #fff; }
+.btnInk { background: #0e0c1a; color: #f6f6f6; }
+.btnLav { background: #2563ff; color: #fff; }
+.btnDeep { background: #1b46c9; color: #fff; }
+.btnGold { background: #d2530f; color: #fff; }
 .btnGreen { background: #3a7a4f; color: #fff; }
 .btnGhost { background: transparent; color: #7a7590; border-color: rgba(14,12,26,0.14); }
 .btnGhost:hover { color: #0e0c1a; border-color: rgba(14,12,26,0.3); }
 .btnTiny {
   font-size: 0.5rem; padding: 0.3rem 0.55rem; letter-spacing: 0.1em;
 }
-.btnRelease { background: transparent; color: #c39418; border-color: rgba(195,148,24,0.45); }
-.btnRelease:hover { background: #c39418; color: #fff; }
+.btnRelease { background: transparent; color: #d2530f; border-color: rgba(255,106,31,0.45); }
+.btnRelease:hover { background: #d2530f; color: #fff; }
 .btnLift { background: transparent; color: #2d7a4f; border-color: rgba(45,122,79,0.45); }
 .btnLift:hover { background: #2d7a4f; color: #fff; }
 .btnHide { background: transparent; color: #d94f3d; border-color: rgba(217,79,61,0.4); }
@@ -205,7 +205,7 @@
 .barCol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .barNum { font-family: 'DM Mono', monospace; font-size: 0.5rem; color: #7a7590; }
 .barFill {
-  width: 100%; background: linear-gradient(180deg, #8b7fd4, #5b4fa0);
+  width: 100%; background: linear-gradient(180deg, #2563ff, #1b46c9);
   min-height: 4px; border-radius: 3px 3px 0 0;
 }
 .barDay { font-family: 'DM Mono', monospace; font-size: 0.42rem; color: #c8c4dc; text-align: center; }
@@ -222,7 +222,7 @@
 .tName { color: #0e0c1a; font-weight: 500; }
 .tMuted { color: #7a7590; }
 .tFaint { color: #c8c4dc; }
-.tScore { color: #8b7fd4; font-weight: 700; }
+.tScore { color: #2563ff; font-weight: 700; }
 
 .badge {
   padding: 0.2rem 0.5rem; font-size: 0.48rem; letter-spacing: 0.08em;
@@ -236,10 +236,10 @@
 /* ── Live events ────────────────────────────────────────────────── */
 .sourceLabel {
   font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.16em;
-  text-transform: uppercase; color: #8b7fd4; margin-bottom: 0.5rem;
+  text-transform: uppercase; color: #2563ff; margin-bottom: 0.5rem;
 }
 .eventRow {
-  display: flex; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #f8f5ff;
+  display: flex; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #f6f6f6;
   border: 1px solid rgba(14,12,26,0.05); border-radius: 8px; align-items: flex-start;
   margin-bottom: 0.4rem;
 }
@@ -248,7 +248,7 @@
 .eventMeta { font-family: 'DM Mono', monospace; font-size: 0.55rem; color: #7a7590; margin-top: 2px; letter-spacing: 0.04em; }
 .eventRight { display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end; }
 .eventLink {
-  font-family: 'DM Mono', monospace; font-size: 0.5rem; color: #5b4fa0;
+  font-family: 'DM Mono', monospace; font-size: 0.5rem; color: #1b46c9;
   letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none;
 }
 
@@ -284,7 +284,7 @@
   font-family: 'DM Mono', monospace; font-size: 0.46rem; letter-spacing: 0.1em;
   text-transform: uppercase; color: #7a7590; margin-top: 0.35rem;
 }
-.healthSub { font-family: 'DM Mono', monospace; font-size: 0.46rem; color: #8b7fd4; margin-top: 0.15rem; }
+.healthSub { font-family: 'DM Mono', monospace; font-size: 0.46rem; color: #2563ff; margin-top: 0.15rem; }
 
 .healthLists {
   display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
@@ -300,7 +300,7 @@
   .healthLists { grid-template-columns: 1fr; }
 }
 
-.center { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8f5ff; }
+.center { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f6f6f6; }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 720px) {

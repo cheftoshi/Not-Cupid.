@@ -150,7 +150,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
                     <span
                       key={k}
                       className={styles.tag}
-                      style={{ background: 'rgba(139,127,212,0.13)', color: '#5b4fa0', borderColor: 'rgba(139,127,212,0.35)' }}
+                      style={{ background: 'rgba(37,99,255,0.13)', color: '#1b46c9', borderColor: 'rgba(37,99,255,0.35)' }}
                     >
                       <span style={{ opacity: 0.55, marginRight: '0.4rem', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{VIBE_HEADS[k]}</span>
                       {label}
@@ -227,7 +227,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
         <>
           <div className={styles.actions}>
             <a href={`/match/${match.id}`} className={styles.chatButton}>open chat →</a>
-            <a href={`/match/${match.id}/date-vibes`} className={styles.chatButton} style={{background:'#8b7fd4'}}>✦ date vibes →</a>
+            <a href={`/match/${match.id}/date-vibes`} className={styles.chatButton} style={{background:'#2563ff'}}>✦ date vibes →</a>
           </div>
           <div className={styles.subActions}>
             <button onClick={() => setFeedbackOpen(true)} className={styles.subBtnDate}>

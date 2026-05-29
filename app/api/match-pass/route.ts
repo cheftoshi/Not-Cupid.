@@ -13,7 +13,7 @@ function escapeHtml(str: string): string {
 
 function htmlPage(title: string, body: string, status = 200): NextResponse {
   return new NextResponse(
-    `<html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
+    `<html><body style="font-family:monospace;max-width:480px;margin:4rem auto;padding:2rem;background:#f6f6f6;text-align:center;">
       <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">${title}</h1>
       ${body}
     </body></html>`,
@@ -25,7 +25,7 @@ function invalidLink() {
   return htmlPage(
     'Invalid or expired link',
     `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">This link is no longer valid. If you think this is a mistake, contact match@notcupid.com.</p>
-     <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4">Back to NotCupid →</a>`,
+     <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#2563ff">Back to NotCupid →</a>`,
     400
   )
 }
@@ -42,7 +42,7 @@ function endedMatchPage(reason?: string) {
     'This match has ended',
     `<p style="color:#7a7590;line-height:1.65;margin-bottom:1.5rem">${detail}</p>
      <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">log in to see your current matches.</p>
-     <a href="${process.env.NEXT_PUBLIC_SITE_URL}/login" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;display:inline-block">go to dashboard →</a>`,
+     <a href="${process.env.NEXT_PUBLIC_SITE_URL}/login" style="background:#0e0c1a;color:#f6f6f6;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;display:inline-block">go to dashboard →</a>`,
     410
   )
 }
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
   const uId = escapeHtml(userId)
   const tk = escapeHtml(workingToken)
   return new NextResponse(`
-    <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f8f5ff;text-align:center;">
+    <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f6f6f6;text-align:center;">
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
       <h1 style="font-size:1.8rem;color:#0e0c1a;margin-bottom:1rem">Confirm: pass on this match</h1>
       <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Click below to confirm. You'll go back in the Boston pool and we'll find you another match.</p>
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
         <input type="hidden" name="token" value="${tk}" />
         <button type="submit" style="background:transparent;color:#0e0c1a;border:1px solid #c8c4dc;padding:1rem 2rem;font-family:monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer">Pass on this one →</button>
       </form>
-      <p style="margin-top:2rem"><a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#8b7fd4;font-size:.75rem">← back to NotCupid</a></p>
+      <p style="margin-top:2rem"><a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#2563ff;font-size:.75rem">← back to NotCupid</a></p>
     </body></html>
   `, { headers: { 'Content-Type': 'text/html' } })
 }
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
     return htmlPage(
       'Passed. 👋',
       `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">No hard feelings. You're back in the Boston pool — we'll email you when the algorithm finds your next match.</p>
-       <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f8f5ff;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
+       <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f6f6f6;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
     )
   } catch (err) {
     console.error('Match pass error:', err)

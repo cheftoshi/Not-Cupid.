@@ -10,7 +10,7 @@
 
 .banner {
   background: transparent;
-  border: 1px dashed rgba(139,127,212,0.4);
+  border: 1px dashed rgba(37,99,255,0.4);
   border-radius: 999px;
   padding: 0.7rem 1.25rem;
   margin-bottom: 1.75rem;
@@ -22,8 +22,8 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.banner em { font-family: Georgia, ui-serif, serif; font-style: italic; color: #5b4fa0; font-weight: 600; }
-.editLink { color: #5b4fa0; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; font-size: 0.78rem; }
+.banner em { font-family: Georgia, ui-serif, serif; font-style: italic; color: #1b46c9; font-weight: 600; }
+.editLink { color: #1b46c9; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; font-size: 0.78rem; }
 
 /* ============== MAGAZINE ARTICLE ============== */
 .mag {
@@ -31,7 +31,7 @@
   border-radius: 18px;
   padding: 2.5rem 2.25rem;
   border: 1px solid #e5e1ec;
-  box-shadow: 0 24px 60px -32px rgba(91,79,160,0.25), 0 4px 12px -4px rgba(14,12,26,0.05);
+  box-shadow: 0 24px 60px -32px rgba(27,70,201,0.25), 0 4px 12px -4px rgba(14,12,26,0.05);
   position: relative;
   overflow: hidden;
 }
@@ -42,8 +42,8 @@
   position: absolute;
   top: 1.25rem; right: 1.25rem;
   width: 1.5rem; height: 1.5rem;
-  border-top: 1px solid #8b7fd4;
-  border-right: 1px solid #8b7fd4;
+  border-top: 1px solid #2563ff;
+  border-right: 1px solid #2563ff;
   opacity: 0.5;
 }
 .mag::after {
@@ -51,8 +51,8 @@
   position: absolute;
   bottom: 1.25rem; left: 1.25rem;
   width: 1.5rem; height: 1.5rem;
-  border-bottom: 1px solid #8b7fd4;
-  border-left: 1px solid #8b7fd4;
+  border-bottom: 1px solid #2563ff;
+  border-left: 1px solid #2563ff;
   opacity: 0.5;
 }
 
@@ -65,10 +65,10 @@
   font-size: 0.55rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(139,127,212,0.2);
+  border-bottom: 1px solid rgba(37,99,255,0.2);
 }
 .coverName {
   font-family: Georgia, ui-serif, serif;
@@ -80,7 +80,7 @@
   margin: 0;
   color: #0a0a0a;
 }
-.coverAge { font-style: italic; font-weight: 400; color: #8b7fd4; }
+.coverAge { font-style: italic; font-weight: 400; color: #2563ff; }
 .coverMeta {
   display: flex;
   gap: 1.25rem;
@@ -98,7 +98,7 @@
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 1.75rem;
-  background: #ede9ff;
+  background: #e8edff;
   position: relative;
 }
 .photoWrap::after {
@@ -139,7 +139,7 @@
 
 /* ARCHETYPE BAND */
 .archeBand {
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1530 100%);
+  background: linear-gradient(135deg, #0a0a0a 0%, #0a1633 100%);
   color: #fff;
   padding: 1.5rem 1.75rem;
   border-radius: 12px;
@@ -166,7 +166,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
   margin-bottom: 0.85rem;
 }
 .archeDesc {
@@ -182,11 +182,11 @@
   position: relative;
   padding: 0.5rem 0 1.5rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(139,127,212,0.2);
+  border-bottom: 1px solid rgba(37,99,255,0.2);
 }
 .bioQ, .bioQEnd {
   font-family: Georgia, ui-serif, serif;
-  color: #8b7fd4;
+  color: #2563ff;
   font-size: 3rem;
   line-height: 0;
   vertical-align: -0.5em;
@@ -221,7 +221,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
 }
 .workV {
   font-family: Georgia, ui-serif, serif;
@@ -237,7 +237,7 @@
   font-style: italic;
   font-size: 0.9rem;
   text-align: center;
-  color: #8b7fd4;
+  color: #2563ff;
   margin: 1.25rem 0 1.25rem;
   letter-spacing: 0.05em;
 }
@@ -270,12 +270,12 @@
   justify-content: space-between;
   margin-top: 2rem;
   padding-top: 1.25rem;
-  border-top: 1px solid rgba(139,127,212,0.2);
+  border-top: 1px solid rgba(37,99,255,0.2);
   font-family: 'DM Mono', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
 }
 
 /* footer back btn */
@@ -294,7 +294,7 @@
   font-weight: 600;
   transition: background 0.15s;
 }
-.backButton:hover { background: #5b4fa0; }
+.backButton:hover { background: #1b46c9; }
 
 @media (max-width: 600px) {
   .mag { padding: 1.75rem 1.4rem; }

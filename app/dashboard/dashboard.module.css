@@ -264,7 +264,7 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.subBtnDate:hover { border-color: #8b7fd4; color: #5b4fa0; background: #fafaff; }
+.subBtnDate:hover { border-color: #2563ff; color: #1b46c9; background: #fafaff; }
 .subBtnEnd:hover { border-color: #c92a2a; color: #c92a2a; }
 
 .passButton {

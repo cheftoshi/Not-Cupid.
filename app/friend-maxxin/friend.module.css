@@ -24,15 +24,15 @@
   font-family: 'Bebas Neue', sans-serif;
   font-size: 1.05rem; letter-spacing: 0.18em; color: #0a0a0a; text-decoration: none;
 }
-.brandDot { color: #d8b340; margin: 0 0.35rem; font-weight: 700; }
+.brandDot { color: #ff6a1f; margin: 0 0.35rem; font-weight: 700; }
 .back {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
-  color: #c39418; text-decoration: none;
-  padding: 0.45rem 0.95rem; border: 1px solid rgba(216,179,64,0.45); border-radius: 999px;
+  color: #d2530f; text-decoration: none;
+  padding: 0.45rem 0.95rem; border: 1px solid rgba(255,106,31,0.45); border-radius: 999px;
   transition: all .15s;
 }
-.back:hover { background: rgba(216,179,64,0.12); color: #8a6700; }
+.back:hover { background: rgba(255,106,31,0.12); color: #8a6700; }
 
 .hero {
   position: relative; z-index: 5;
@@ -44,18 +44,18 @@
 
 .eyebrow {
   font-family: 'DM Mono', ui-monospace, monospace;
-  font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; color: #c39418;
+  font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; color: #d2530f;
   margin-bottom: 2rem;
   display: inline-flex; align-items: center; gap: 0.6rem;
 }
 .dot {
-  width: 7px; height: 7px; border-radius: 50%; background: #d8b340;
-  box-shadow: 0 0 0 0 rgba(216,179,64,0.6);
+  width: 7px; height: 7px; border-radius: 50%; background: #ff6a1f;
+  box-shadow: 0 0 0 0 rgba(255,106,31,0.6);
   animation: pulse 2.4s infinite;
 }
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(216,179,64,0.6); }
-  50%      { box-shadow: 0 0 0 8px rgba(216,179,64,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,106,31,0.6); }
+  50%      { box-shadow: 0 0 0 8px rgba(255,106,31,0); }
 }
 
 .h1 {
@@ -67,7 +67,7 @@
 }
 .h1 em {
   font-style: italic; font-weight: 400;
-  background: linear-gradient(135deg, #c39418 0%, #d8b340 100%);
+  background: linear-gradient(135deg, #d2530f 0%, #ff6a1f 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
@@ -86,7 +86,7 @@
 .spec {
   background: rgba(255,255,255,0.65);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(216,179,64,0.35);
+  border: 1px solid rgba(255,106,31,0.35);
   border-radius: 14px;
   padding: 1.25rem 1rem;
   text-align: left;
@@ -95,7 +95,7 @@
 }
 .specN {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 2.4rem; color: #c39418; line-height: 0.85; letter-spacing: 0.01em;
+  font-size: 2.4rem; color: #d2530f; line-height: 0.85; letter-spacing: 0.01em;
 }
 .specL {
   font-family: 'DM Mono', ui-monospace, monospace;
@@ -108,7 +108,7 @@
 
 .diffBox {
   background: rgba(255,255,255,0.55);
-  border: 1px dashed rgba(216,179,64,0.5);
+  border: 1px dashed rgba(255,106,31,0.5);
   border-radius: 14px;
   padding: 1rem 1.25rem;
   margin-bottom: 2.5rem;
@@ -143,13 +143,13 @@
   font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600;
   cursor: pointer; transition: all .18s;
 }
-.cta:hover:not(:disabled) { background: #c39418; transform: translateY(-2px); box-shadow: 0 12px 32px -10px rgba(195,148,24,0.5); }
+.cta:hover:not(:disabled) { background: #d2530f; transform: translateY(-2px); box-shadow: 0 12px 32px -10px rgba(255,106,31,0.5); }
 .cta:disabled { opacity: .55; cursor: not-allowed; }
 
 .joined {
   padding: 1.1rem 1.5rem;
   background: linear-gradient(135deg, #fff8e1 0%, #fffdf7 100%);
-  border: 1px solid rgba(216,179,64,0.5);
+  border: 1px solid rgba(255,106,31,0.5);
   border-radius: 999px;
   font-family: Georgia, ui-serif, serif;
   font-style: italic; font-size: 0.95rem; color: #8a6700;

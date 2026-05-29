@@ -49,14 +49,14 @@ export default async function DateVibesPage({ params }: { params: { id: string }
 
 function LockedScreen({ reason }: { reason: string }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#f8f5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+    <main style={{ minHeight: '100vh', background: '#f6f6f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ maxWidth: 480, background: '#fff', padding: '2.5rem', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14 }}>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#8b7fd4', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
+        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
           locked
         </div>
         <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, color: '#0e0c1a', margin: '0 0 16px 0' }}>Not yet.</h1>
         <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', lineHeight: 1.65 }}>{reason}</p>
-        <a href="/dashboard" style={{ display: 'inline-block', marginTop: 18, fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#5b4fa0', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        <a href="/dashboard" style={{ display: 'inline-block', marginTop: 18, fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           ← back to dashboard
         </a>
       </div>

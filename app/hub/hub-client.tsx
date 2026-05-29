@@ -39,7 +39,7 @@ export default function HubClient({
       <div
         className={styles.glow}
         style={{
-          background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(139,127,212,0.22) 0%, rgba(216,179,64,0.10) 35%, transparent 60%)`,
+          background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(37,99,255,0.22) 0%, rgba(255,106,31,0.10) 35%, transparent 60%)`,
         }}
         aria-hidden
       />

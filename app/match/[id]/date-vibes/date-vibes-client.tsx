@@ -385,7 +385,7 @@ function Deck({
 
 function ActivityCard({ card }: { card: Activity }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 12px 32px -16px rgba(91,79,160,0.25)' }}>
+    <div style={{ background: '#fff', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 12px 32px -16px rgba(27,70,201,0.25)' }}>
       {card.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={card.imageUrl} alt="" style={{ width: '100%', height: 240, objectFit: 'cover', display: 'block' }} />
