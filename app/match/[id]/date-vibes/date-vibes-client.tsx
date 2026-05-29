@@ -15,8 +15,17 @@ interface ServerState {
   partnerInterests: Interest[];
   deck: Activity[];
   mutualMatches: Activity[];
+  dateNumber: number;
+  datesLogged: number;
   counts: { deck: number; mutual: number; partnerHasPicked: boolean; iPicked: boolean };
 }
+
+// Date-meter copy per tier.
+const TIER_COPY: Record<number, { label: string; tagline: string }> = {
+  1: { label: 'the warm-up', tagline: 'keep it light & public — coffee, a walk, a museum.' },
+  2: { label: 'getting closer', tagline: 'go longer — dinner, a show, something you do together.' },
+  3: { label: 'the one that counts', tagline: 'go deeper — cook in, a day trip, the kind of date you remember.' },
+};
 
 export default function DateVibesClient({ matchId, currentUserId, partnerName }: Props) {
   const [state, setState] = useState<ServerState | null>(null);
@@ -107,9 +116,11 @@ export default function DateVibesClient({ matchId, currentUserId, partnerName }:
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#f8f5ff', padding: '2rem 1.25rem 4rem' }}>
+    <main style={{ minHeight: '100vh', background: '#f6f6f6', padding: '2rem 1.25rem 4rem' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <Header partnerName={partnerName} matchId={matchId} />
+
+        {state && <DateMeter dateNumber={state.dateNumber || 1} />}
 
         {state && state.mutualMatches.length > 0 && (
           <MutualMatches matches={state.mutualMatches} partnerName={partnerName} />
@@ -148,16 +159,61 @@ export default function DateVibesClient({ matchId, currentUserId, partnerName }:
   );
 }
 
+// ─── Date meter ────────────────────────────────────────────────────────
+// Visual 1 → 2 → 3 progression. Current date is highlighted; the tagline
+// explains what tier of activities is unlocked. Escalates toward "the one
+// that counts" — the goal being they're off the app by date 3.
+function DateMeter({ dateNumber }: { dateNumber: number }) {
+  const copy = TIER_COPY[dateNumber] || TIER_COPY[1];
+  return (
+    <div style={{
+      background: '#fff', border: '1px solid rgba(11,11,11,0.08)', borderRadius: 16,
+      padding: '18px 20px', marginBottom: 20,
+      boxShadow: '0 1px 2px rgba(11,11,11,0.03)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 12 }}>
+        {[1, 2, 3].map((n, i) => {
+          const done = n < dateNumber;
+          const active = n === dateNumber;
+          const dotBg = done ? '#1b46c9' : active ? '#2563ff' : '#e8edff';
+          const dotColor = done || active ? '#fff' : '#9aa0b4';
+          return (
+            <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < 2 ? 1 : '0 0 auto' }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: '50%', background: dotBg, color: dotColor,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 600,
+                flexShrink: 0,
+                boxShadow: active ? '0 0 0 4px rgba(37,99,255,0.15)' : 'none',
+                transition: 'all 0.2s',
+              }}>{done ? '✓' : n}</div>
+              {i < 2 && (
+                <div style={{ flex: 1, height: 2, background: n < dateNumber ? '#1b46c9' : '#e8edff', margin: '0 6px' }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', marginBottom: 4 }}>
+        date {dateNumber} · {copy.label}
+      </div>
+      <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 14, color: '#6b6b76', lineHeight: 1.45 }}>
+        {copy.tagline}
+      </div>
+    </div>
+  );
+}
+
 // ─── Header ──────────────────────────────────────────────────────────────
 function Header({ partnerName, matchId }: { partnerName: string; matchId: string }) {
   const first = partnerName.split(' ')[0];
   return (
     <div style={{ marginBottom: 24 }}>
-      <a href={`/match/${matchId}`} style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#5b4fa0', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>
+      <a href={`/match/${matchId}`} style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>
         ← back to chat with {first}
       </a>
       <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 36, color: '#0e0c1a', margin: '14px 0 6px 0', lineHeight: 1.1 }}>
-        Date vibes <span style={{ color: '#8b7fd4' }}>·</span> you &amp; {first}
+        Date vibes <span style={{ color: '#2563ff' }}>·</span> you &amp; {first}
       </h1>
       <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
         Swipe through things you'd actually do together. When you both swipe ✓ on the same thing, it's locked in as a "we both want this." No one sees the other's no's.
@@ -170,8 +226,8 @@ function Header({ partnerName, matchId }: { partnerName: string; matchId: string
 function MutualMatches({ matches, partnerName }: { matches: Activity[]; partnerName: string }) {
   const first = partnerName.split(' ')[0];
   return (
-    <div style={{ background: 'linear-gradient(135deg, #ede9ff, #fff)', border: '1px solid rgba(139,127,212,0.4)', borderRadius: 14, padding: 18, marginBottom: 24 }}>
-      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#5b4fa0', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>
+    <div style={{ background: 'linear-gradient(135deg, #e8edff, #fff)', border: '1px solid rgba(37,99,255,0.4)', borderRadius: 14, padding: 18, marginBottom: 24 }}>
+      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>
         ✦ you both want this {matches.length > 1 ? `(${matches.length})` : ''}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -184,7 +240,7 @@ function MutualMatches({ matches, partnerName }: { matches: Activity[]; partnerN
               </div>
             </div>
             {a.url && (
-              <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#5b4fa0', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#1b46c9', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                 tickets →
               </a>
             )}
@@ -213,7 +269,7 @@ function Picker({
   const partnerHas = new Set(partnerInterests);
   return (
     <div style={{ background: '#fff', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14, padding: 24 }}>
-      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#8b7fd4', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
+      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
         pick your interests
       </div>
       <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: '#0e0c1a', margin: '0 0 8px 0', lineHeight: 1.2 }}>
@@ -222,7 +278,7 @@ function Picker({
       <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 13, marginTop: 0, marginBottom: 18, lineHeight: 1.5 }}>
         We'll use both of your picks to filter the activity deck.
         {partnerInterests.length > 0
-          ? <> {first} has already picked {partnerInterests.length}. The <span style={{ color: '#5b4fa0' }}>⋆</span> shows overlap.</>
+          ? <> {first} has already picked {partnerInterests.length}. The <span style={{ color: '#1b46c9' }}>⋆</span> shows overlap.</>
           : <> {first} hasn't picked yet — that's fine, the deck still works.</>
         }
       </p>
@@ -237,7 +293,7 @@ function Picker({
               onClick={() => onToggle(opt.value)}
               style={{
                 background: on ? '#0e0c1a' : '#fff',
-                color: on ? '#f8f5ff' : '#0e0c1a',
+                color: on ? '#f6f6f6' : '#0e0c1a',
                 border: `1px solid ${on ? '#0e0c1a' : 'rgba(14,12,26,0.13)'}`,
                 padding: '10px 16px',
                 fontFamily: 'system-ui, sans-serif',
@@ -248,7 +304,7 @@ function Picker({
                 transition: 'all 0.15s',
               }}
             >
-              {opt.label}{overlap && <span style={{ marginLeft: 6, color: on ? '#c8c4dc' : '#5b4fa0' }}>⋆</span>}
+              {opt.label}{overlap && <span style={{ marginLeft: 6, color: on ? '#c8c4dc' : '#1b46c9' }}>⋆</span>}
             </button>
           );
         })}
@@ -259,7 +315,7 @@ function Picker({
         disabled={saving || picked.length === 0}
         style={{
           background: '#0e0c1a',
-          color: '#f8f5ff',
+          color: '#f6f6f6',
           border: 'none',
           padding: '14px 28px',
           fontFamily: 'DM Mono, monospace',
@@ -309,7 +365,7 @@ function Deck({
         <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#7a7590', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           {remaining} left in deck
         </div>
-        <button type="button" onClick={onChangeInterests} style={{ background: 'transparent', border: 'none', fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#5b4fa0', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+        <button type="button" onClick={onChangeInterests} style={{ background: 'transparent', border: 'none', fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#1b46c9', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
           edit interests
         </button>
       </div>
@@ -337,7 +393,7 @@ function ActivityCard({ card }: { card: Activity }) {
       )}
       <div style={{ padding: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#8b7fd4', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#2563ff', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
             {card.category}{sourceBadge(card.source)}
           </span>
           {card.whenLabel && (
@@ -352,12 +408,12 @@ function ActivityCard({ card }: { card: Activity }) {
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {card.venue && (
-            <span style={{ background: '#ede9ff', color: '#5b4fa0', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
+            <span style={{ background: '#e8edff', color: '#1b46c9', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
               📍 {card.venue}
             </span>
           )}
           {card.tags.map((t) => (
-            <span key={t} style={{ background: '#f8f5ff', color: '#7a7590', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
+            <span key={t} style={{ background: '#f6f6f6', color: '#7a7590', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
               {t}
             </span>
           ))}
@@ -371,9 +427,9 @@ function CelebrateModal({ activity, partnerName, onClose }: { activity: Activity
   const first = partnerName.split(' ')[0];
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,12,26,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }} onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: 28, textAlign: 'center', border: '2px solid #8b7fd4' }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: 28, textAlign: 'center', border: '2px solid #2563ff' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 44, marginBottom: 8 }}>✦</div>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#5b4fa0', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
+        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
           you both said yes
         </div>
         <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: '#0e0c1a', margin: '0 0 12px 0', lineHeight: 1.2 }}>
@@ -399,7 +455,7 @@ function sourceBadge(source: Activity['source']): string {
 
 function CenteredMsg({ text, tone }: { text: string; tone?: 'error' }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#f8f5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+    <main style={{ minHeight: '100vh', background: '#f6f6f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 12, color: tone === 'error' ? '#d94f3d' : '#7a7590', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{text}</p>
     </main>
   );
@@ -408,7 +464,7 @@ function CenteredMsg({ text, tone }: { text: string; tone?: 'error' }) {
 // ─── Inline button styles (shared) ───────────────────────────────────────
 const btnPrimary: React.CSSProperties = {
   background: '#0e0c1a',
-  color: '#f8f5ff',
+  color: '#f6f6f6',
   border: 'none',
   padding: '16px 24px',
   fontFamily: 'DM Mono, monospace',

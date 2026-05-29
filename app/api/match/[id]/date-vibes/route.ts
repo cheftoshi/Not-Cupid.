@@ -100,8 +100,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const fullPool: Activity[] = [...CURATED_ACTIVITIES, ...live];
 
-  // Filter by interest overlap, then drop already-swiped from the user's deck.
-  const filtered = filterDeck(fullPool, myInterests, partnerInterests);
+  // Date number = how many distinct dates this couple has logged via the
+  // "we went on a date" flow, +1, capped at 3. Drives which tier of
+  // activities is unlocked. Date 1 = light, date 3 = the one that counts.
+  const { data: feedback } = await supabaseAdmin
+    .from('date_feedback')
+    .select('created_at')
+    .eq('match_id', params.id);
+  const distinctDates = new Set(
+    (feedback ?? []).map((f: any) => (f.created_at || '').slice(0, 10)).filter(Boolean)
+  ).size;
+  const dateNumber = Math.min(3, distinctDates + 1) as 1 | 2 | 3;
+
+  // Filter by tier (date progression) + interest overlap, then drop swiped.
+  const filtered = filterDeck(fullPool, myInterests, partnerInterests, dateNumber);
   const deck = filtered.filter((a) => !mySwipedIds.has(a.id));
 
   // Mutual matches — hydrate full Activity objects.
@@ -115,6 +127,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     partnerInterests,
     deck,
     mutualMatches,
+    dateNumber,
+    datesLogged: distinctDates,
     counts: {
       deck: deck.length,
       mutual: mutualMatches.length,

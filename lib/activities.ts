@@ -43,6 +43,7 @@ export interface Activity {
   url?: string;                // ticket / info link
   imageUrl?: string;
   whenLabel?: string;          // 'Fri Jun 6 · 7pm' (live events) or null for curated
+  tier?: 1 | 2 | 3;            // date-progression tier (see activityTier)
 }
 
 // ─── The curated Boston deck ──────────────────────────────────────────────
@@ -193,16 +194,80 @@ export const CURATED_ACTIVITIES: Activity[] = [
     tags: ['art', 'outdoor'], venue: 'pick any neighborhood' },
 ];
 
-// Filter the deck for a given user pair.
-// Strategy: include any activity that matches AT LEAST ONE interest from
-// the union of both users' picks. If either user picked nothing, all
-// activities qualify (no over-filtering on first run).
+// ─── Date-progression tiers ────────────────────────────────────────────
+// 1 = first date (light, public, low-pressure — coffee, walks, museums)
+// 2 = getting closer (involved — dinner, shows, an activity together)
+// 3 = the one that counts (intimate / adventurous — cook, day trips, late
+//     jazz). The goal: by date 3 they're off the app and into a real thing.
+const ACTIVITY_TIER: Record<string, 1 | 2 | 3> = {
+  // tier 1 — keep it light
+  'curated:north-end-cannoli': 1,
+  'curated:walk-esplanade': 1,
+  'curated:arnold-arboretum': 1,
+  'curated:swan-boats': 1,
+  'curated:castle-island': 1,
+  'curated:mfa-first-friday': 1,
+  'curated:isabella-stewart-gardner': 1,
+  'curated:harvard-bookstore': 1,
+  'curated:trident-bookstore-brunch': 1,
+  'curated:lamplighter-coffee': 1,
+  'curated:roastery-tasting': 1,
+  'curated:question-game-park': 1,
+  'curated:diy-photo-walk': 1,
+  // tier 2 — getting closer
+  'curated:dim-sum-chinatown': 2,
+  'curated:tasting-eataly': 2,
+  'curated:smoke-shop-bbq': 2,
+  'curated:little-donkey': 2,
+  'curated:harborwalk': 2,
+  'curated:brattle-double-feature': 2,
+  'curated:improv-asylum': 2,
+  'curated:tea-room': 2,
+  'curated:board-game-cafe': 2,
+  'curated:topgolf-night': 2,
+  'curated:axe-throwing': 2,
+  'curated:duckpin-bowling': 2,
+  'curated:sinclair-show': 2,
+  'curated:silvertone-bar': 2,
+  // tier 3 — the one that counts
+  'curated:blue-hills-hike': 3,
+  'curated:kayak-charles': 3,
+  'curated:salem-day-trip': 3,
+  'curated:walden-pond': 3,
+  'curated:wally-cafe-jazz': 3,
+};
+
+const CATEGORY_TIER_FALLBACK: Record<ActivityCategory, 1 | 2 | 3> = {
+  cozy: 1,
+  outdoor: 1,
+  cultural: 2,
+  food: 2,
+  adventurous: 3,
+};
+
+// Effective tier for any activity (curated override → category fallback).
+// Live events (Ticketmaster/Yelp/Calendar) have no explicit tier, so they
+// slot in by category.
+export function activityTier(a: Activity): 1 | 2 | 3 {
+  return a.tier ?? ACTIVITY_TIER[a.id] ?? CATEGORY_TIER_FALLBACK[a.category] ?? 1;
+}
+
+// Filter the deck for a given user pair on a given date number.
+// - Interest gate: include activities matching at least one interest from
+//   the union of both picks (no over-filtering when nobody has picked).
+// - Tier gate: only activities at or below the current date tier, so the
+//   menu escalates as the couple progresses (date 1 = tier 1 only, date 3
+//   unlocks everything including the intimate options).
 export function filterDeck(
   deck: Activity[],
   userInterests: Interest[],
   partnerInterests: Interest[],
+  maxTier: 1 | 2 | 3 = 3,
 ): Activity[] {
   const union = new Set<Interest>([...(userInterests || []), ...(partnerInterests || [])]);
-  if (union.size === 0) return [...deck];
-  return deck.filter((a) => a.tags.some((t) => union.has(t)));
+  return deck.filter((a) => {
+    if (activityTier(a) > maxTier) return false;
+    if (union.size === 0) return true;
+    return a.tags.some((t) => union.has(t));
+  });
 }
