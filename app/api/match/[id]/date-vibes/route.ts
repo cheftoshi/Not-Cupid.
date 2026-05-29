@@ -31,7 +31,7 @@ type LoadResult =
 async function loadMatchOrError(matchId: string, userId: string): Promise<LoadResult> {
   const { data: match } = await supabaseAdmin
     .from('matches')
-    .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status')
+    .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, created_at')
     .eq('id', matchId)
     .single();
   if (!match) return { ok: false, error: NextResponse.json({ error: 'Match not found' }, { status: 404 }) };
@@ -100,17 +100,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const fullPool: Activity[] = [...CURATED_ACTIVITIES, ...live];
 
-  // Date number = how many distinct dates this couple has logged via the
-  // "we went on a date" flow, +1, capped at 3. Drives which tier of
-  // activities is unlocked. Date 1 = light, date 3 = the one that counts.
-  const { data: feedback } = await supabaseAdmin
-    .from('date_feedback')
-    .select('created_at')
-    .eq('match_id', params.id);
-  const distinctDates = new Set(
-    (feedback ?? []).map((f: any) => (f.created_at || '').slice(0, 10)).filter(Boolean)
-  ).size;
-  const dateNumber = Math.min(3, distinctDates + 1) as 1 | 2 | 3;
+  // Auto-ascending date tier — NO reliance on the user pressing "we went on
+  // a date" (that was unreliable). The tone escalates passively on two
+  // self-driving signals:
+  //   • time: +1 tier per week the match has been alive
+  //   • intent: +1 tier per activity they've BOTH said yes to (a planned date)
+  // So a fresh match opens on tier 1 (light/public), and naturally climbs to
+  // the intimate "date 3" options as the connection ages and they agree on
+  // things — even if they never touch the feature again.
+  const matchAgeDays = loaded.match.created_at
+    ? (Date.now() - new Date(loaded.match.created_at).getTime()) / 86_400_000
+    : 0;
+  const dateNumber = Math.min(3, 1 + mutualIds.size + Math.floor(matchAgeDays / 7)) as 1 | 2 | 3;
 
   // Filter by tier (date progression) + interest overlap, then drop swiped.
   const filtered = filterDeck(fullPool, myInterests, partnerInterests, dateNumber);
@@ -128,7 +129,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     deck,
     mutualMatches,
     dateNumber,
-    datesLogged: distinctDates,
     counts: {
       deck: deck.length,
       mutual: mutualMatches.length,

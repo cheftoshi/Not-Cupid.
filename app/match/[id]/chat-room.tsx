@@ -12,8 +12,8 @@ interface Props {
   initialMessages: any[];
 }
 
-function timeLeft(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now();
+function timeLeft(iso: string, nowMs: number): string {
+  const ms = new Date(iso).getTime() - nowMs;
   if (ms <= 0) return 'expired';
   const h = Math.floor(ms / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
@@ -63,6 +63,10 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const [sending, setSending] = useState(false);
   const [heyWarned, setHeyWarned] = useState(false);
   const [nudge, setNudge] = useState<string | null>(null);
+  // Live match status — seeded from the server, refreshed by the poll, so the
+  // header stays accurate (countdown ticking, or "ended" if they bailed).
+  const [liveMatch, setLiveMatch] = useState<any>(match);
+  const [now, setNow] = useState(() => Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -72,11 +76,19 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const firstName = (otherUser?.name || 'them').split(' ')[0];
   const score = match?.compatibility_score ?? null;
 
-  const chatExpired = !!(match.chat_expires_at && new Date(match.chat_expires_at) < new Date());
+  // Tick a clock so the countdown re-renders live (every 30s is plenty).
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const ended = !!liveMatch?.ended_at;
+  const expiredByTimer = !!(liveMatch?.chat_expires_at && new Date(liveMatch.chat_expires_at).getTime() < now);
+  const chatExpired = ended || expiredByTimer;
   const status = chatExpired
     ? 'chat ended'
-    : match.chat_expires_at
-    ? timeLeft(match.chat_expires_at)
+    : liveMatch?.chat_expires_at
+    ? timeLeft(liveMatch.chat_expires_at, now)
     : 'active';
 
   useEffect(() => {
@@ -90,6 +102,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
         if (res.ok) {
           const data = await parseResponse<any>(res);
           setMessages(data.messages || []);
+          if (data.match) setLiveMatch((prev: any) => ({ ...prev, ...data.match }));
         }
       } catch {}
     }, 3000);

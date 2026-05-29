@@ -16,7 +16,6 @@ interface ServerState {
   deck: Activity[];
   mutualMatches: Activity[];
   dateNumber: number;
-  datesLogged: number;
   counts: { deck: number; mutual: number; partnerHasPicked: boolean; iPicked: boolean };
 }
 

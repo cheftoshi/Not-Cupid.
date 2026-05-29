@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   const { data: match } = await supabaseAdmin
     .from('matches')
-    .select('user_1_id, user_2_id')
+    .select('user_1_id, user_2_id, chat_expires_at, ended_at, ended_reason, status')
     .eq('id', matchId)
     .single();
 
@@ -28,7 +28,17 @@ export async function GET(req: NextRequest) {
     .eq('match_id', matchId)
     .order('created_at', { ascending: true });
 
-  return NextResponse.json({ messages: messages || [] });
+  // Return live match status alongside messages so the chat header can
+  // auto-update (countdown ticking, or "ended" if the other person bailed).
+  return NextResponse.json({
+    messages: messages || [],
+    match: {
+      chat_expires_at: match.chat_expires_at,
+      ended_at: match.ended_at,
+      ended_reason: match.ended_reason,
+      status: match.status,
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {

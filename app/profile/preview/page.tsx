@@ -59,6 +59,15 @@ export default async function ProfilePreviewPage() {
             )}
           </div>
 
+          {/* GALLERY — the extra photos a match unlocks for $2.99 */}
+          {Array.isArray(user.gallery) && user.gallery.length > 0 && (
+            <div className={styles.galleryGrid}>
+              {user.gallery.map((url: string) => (
+                <img key={url} src={url} alt="" className={styles.galleryThumb} />
+              ))}
+            </div>
+          )}
+
           {/* ARCHETYPE BAND */}
           {user.archetype && (
             <section className={styles.archeBand}>
