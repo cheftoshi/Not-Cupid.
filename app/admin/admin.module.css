@@ -1,0 +1,263 @@
+/* Admin "Mission Control" design system.
+   Brand tokens: ink #0e0c1a, paper #f8f5ff, lav #8b7fd4, lavDeep #5b4fa0,
+   lavSoft #ede9ff, muted #7a7590, mutedSoft #c8c4dc, gold #c39418,
+   green #3a7a4f, red #d94f3d. */
+
+.page {
+  min-height: 100vh;
+  background: #f8f5ff;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(139,127,212,0.10), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(195,148,24,0.06), transparent 38%);
+  padding-bottom: 5rem;
+}
+
+/* ── Sticky top bar ─────────────────────────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(248,245,255,0.85);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid rgba(14,12,26,0.08);
+}
+.topbarInner {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0.9rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.brandRow { display: flex; align-items: baseline; gap: 0.8rem; }
+.kicker {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b7fd4;
+}
+.title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.9rem;
+  line-height: 0.9;
+  color: #0e0c1a;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+.nav { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.navLink {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7a7590;
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  transition: all 0.15s;
+}
+.navLink:hover { color: #0e0c1a; background: rgba(139,127,212,0.14); }
+
+.wrap { max-width: 1040px; margin: 0 auto; padding: 1.75rem 1.5rem 0; }
+
+/* ── KPI row ────────────────────────────────────────────────────── */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: rgba(14,12,26,0.08);
+  border: 1px solid rgba(14,12,26,0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.kpi {
+  background: #fff;
+  padding: 1.15rem 1rem;
+  text-align: center;
+  transition: background 0.15s;
+}
+.kpi:hover { background: #fdfcff; }
+.kpiIcon { font-size: 1.25rem; margin-bottom: 0.2rem; }
+.kpiVal { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #0e0c1a; line-height: 1; }
+.kpiLabel {
+  font-family: 'DM Mono', monospace; font-size: 0.46rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #7a7590; margin-top: 0.3rem;
+}
+.kpiSub {
+  font-family: 'DM Mono', monospace; font-size: 0.44rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #8b7fd4; margin-top: 0.15rem;
+}
+
+/* ── Card ───────────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1px solid rgba(14,12,26,0.08);
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 2px rgba(14,12,26,0.03);
+}
+.cardHead {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem;
+}
+.cardTitle {
+  font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: #0e0c1a; font-weight: 500; margin: 0;
+}
+.cardTitle b { color: #8b7fd4; font-weight: 500; }
+
+/* ── Chips / summary ────────────────────────────────────────────── */
+.chips {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.2rem;
+}
+.chip {
+  font-family: 'DM Mono', monospace; font-size: 0.56rem; letter-spacing: 0.05em;
+  color: #7a7590; background: #f8f5ff; border: 1px solid rgba(14,12,26,0.07);
+  padding: 0.4rem 0.7rem; border-radius: 999px;
+}
+.chip b { color: #0e0c1a; font-weight: 700; }
+.chipGold b { color: #c39418; }
+.chipRed b { color: #d94f3d; }
+
+/* ── Heatmap grid (intent × tier) ───────────────────────────────── */
+.heat { border-collapse: separate; border-spacing: 4px; font-family: 'DM Mono', monospace; }
+.heatCorner {
+  font-size: 0.46rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #7a7590; text-align: left; padding: 0.3rem 0.5rem; font-weight: 400;
+}
+.heatColHead, .heatRowHead {
+  font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: #8b7fd4; padding: 0.3rem 0.7rem; font-weight: 600;
+}
+.heatRowHead { text-align: left; color: #0e0c1a; text-transform: capitalize; font-size: 0.66rem; }
+.heatCell {
+  width: 58px; height: 42px; text-align: center; border-radius: 8px;
+  font-size: 0.8rem; color: #0e0c1a; font-weight: 700;
+  border: 1px solid rgba(139,127,212,0.18);
+}
+.heatTotal {
+  font-size: 0.8rem; color: #8b7fd4; font-weight: 700; text-align: center;
+  padding: 0 0.6rem;
+}
+.heatNote {
+  font-family: Georgia, serif; font-style: italic; font-size: 0.72rem;
+  color: #7a7590; margin: 0.7rem 0 0;
+}
+
+/* ── Penalty box ────────────────────────────────────────────────── */
+.penalty { border-top: 1px solid rgba(14,12,26,0.08); padding-top: 1.1rem; margin-top: 1.1rem; }
+.penaltyKind {
+  font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 0.5rem;
+}
+.penaltyKindGold { color: #c39418; }
+.penaltyKindRed { color: #d94f3d; }
+.penaltyRow {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.3rem;
+  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+}
+.penaltyRowGold { background: #fdf8ec; }
+.penaltyRowRed { background: #fef4f4; }
+.penaltyName { color: #0e0c1a; }
+.penaltyEmail { color: #7a7590; }
+.penaltyMeta { color: #7a7590; white-space: nowrap; font-size: 0.55rem; }
+.penaltyMetaRed { color: #d94f3d; }
+.penaltyRight { display: flex; align-items: center; gap: 0.6rem; }
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+.btn {
+  font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.55rem 0.9rem; border-radius: 8px;
+  cursor: pointer; border: 1px solid transparent; text-decoration: none;
+  text-align: center; display: inline-block; transition: all 0.15s; white-space: nowrap;
+}
+.btn:hover { transform: translateY(-1px); }
+.btnInk { background: #0e0c1a; color: #f8f5ff; }
+.btnLav { background: #8b7fd4; color: #fff; }
+.btnDeep { background: #5b4fa0; color: #fff; }
+.btnGold { background: #c39418; color: #fff; }
+.btnGreen { background: #3a7a4f; color: #fff; }
+.btnGhost { background: transparent; color: #7a7590; border-color: rgba(14,12,26,0.14); }
+.btnGhost:hover { color: #0e0c1a; border-color: rgba(14,12,26,0.3); }
+.btnTiny {
+  font-size: 0.5rem; padding: 0.3rem 0.55rem; letter-spacing: 0.1em;
+}
+.btnRelease { background: transparent; color: #c39418; border-color: rgba(195,148,24,0.45); }
+.btnRelease:hover { background: #c39418; color: #fff; }
+.btnLift { background: transparent; color: #2d7a4f; border-color: rgba(45,122,79,0.45); }
+.btnLift:hover { background: #2d7a4f; color: #fff; }
+.btnHide { background: transparent; color: #d94f3d; border-color: rgba(217,79,61,0.4); }
+.btnHide:hover { background: #d94f3d; color: #fff; }
+
+.actionsGrid { display: grid; gap: 0.75rem; }
+.actions2 { grid-template-columns: 1fr 1fr; }
+.actions3 { grid-template-columns: repeat(3, 1fr); }
+
+/* ── Signups bar chart ──────────────────────────────────────────── */
+.bars { display: flex; gap: 8px; align-items: flex-end; height: 84px; }
+.barCol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.barNum { font-family: 'DM Mono', monospace; font-size: 0.5rem; color: #7a7590; }
+.barFill {
+  width: 100%; background: linear-gradient(180deg, #8b7fd4, #5b4fa0);
+  min-height: 4px; border-radius: 3px 3px 0 0;
+}
+.barDay { font-family: 'DM Mono', monospace; font-size: 0.42rem; color: #c8c4dc; text-align: center; }
+
+/* ── Tables ─────────────────────────────────────────────────────── */
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.7rem; font-family: 'DM Mono', monospace; }
+.table th {
+  text-align: left; padding: 0.5rem 0.75rem; color: #7a7590; letter-spacing: 0.08em;
+  text-transform: uppercase; font-size: 0.46rem; font-weight: 400;
+  border-bottom: 1px solid rgba(14,12,26,0.1);
+}
+.table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(14,12,26,0.05); vertical-align: top; }
+.tName { color: #0e0c1a; font-weight: 500; }
+.tMuted { color: #7a7590; }
+.tFaint { color: #c8c4dc; }
+.tScore { color: #8b7fd4; font-weight: 700; }
+
+.badge {
+  padding: 0.2rem 0.5rem; font-size: 0.48rem; letter-spacing: 0.08em;
+  text-transform: uppercase; border-radius: 4px; font-family: 'DM Mono', monospace;
+}
+
+/* ── Notes ──────────────────────────────────────────────────────── */
+.note { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: #7a7590; }
+.noteErr { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: #d94f3d; }
+
+/* ── Live events ────────────────────────────────────────────────── */
+.sourceLabel {
+  font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: #8b7fd4; margin-bottom: 0.5rem;
+}
+.eventRow {
+  display: flex; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #f8f5ff;
+  border: 1px solid rgba(14,12,26,0.05); border-radius: 8px; align-items: flex-start;
+  margin-bottom: 0.4rem;
+}
+.eventImg { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.eventTitle { font-family: Georgia, serif; font-size: 0.85rem; color: #0e0c1a; font-weight: 500; }
+.eventMeta { font-family: 'DM Mono', monospace; font-size: 0.55rem; color: #7a7590; margin-top: 2px; letter-spacing: 0.04em; }
+.eventRight { display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end; }
+.eventLink {
+  font-family: 'DM Mono', monospace; font-size: 0.5rem; color: #5b4fa0;
+  letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none;
+}
+
+.center { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8f5ff; }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .actions3 { grid-template-columns: 1fr; }
+  .actions2 { grid-template-columns: 1fr; }
+  .title { font-size: 1.5rem; }
+}
