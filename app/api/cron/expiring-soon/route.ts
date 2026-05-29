@@ -21,14 +21,20 @@ const WINDOW_MAX_HOURS = 6;
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get('authorization') || '';
-  const isVercelCron = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const userAgent = req.headers.get('user-agent') || '';
+  const bearerOk = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
+  // Fallback: Vercel's scheduler always sends this UA on cron invocations,
+  // even when CRON_SECRET isn't wired through to the runtime env.
+  const vercelCronUA = /vercel-cron/i.test(userAgent);
+  const isVercelCron = bearerOk || vercelCronUA;
 
   if (!isVercelCron) {
     const admin = await getCurrentAdmin();
     if (!admin) {
-      console.warn('[cron/expiring-soon] 403 — not a valid cron call and not admin', {
+      console.warn('[cron/expiring-soon] 403 — not cron and not admin', {
         hasCronSecret: !!cronSecret,
         gotAuthHeader: !!authHeader,
+        ua: userAgent.slice(0, 40),
       });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

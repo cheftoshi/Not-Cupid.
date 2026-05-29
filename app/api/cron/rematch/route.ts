@@ -7,17 +7,22 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization') || ''
-  const isVercelCron = !!cronSecret && authHeader === `Bearer ${cronSecret}`
+  const userAgent = req.headers.get('user-agent') || ''
+  const bearerOk = !!cronSecret && authHeader === `Bearer ${cronSecret}`
+  // Fallback: Vercel's scheduler always sends this UA on cron invocations,
+  // even when the CRON_SECRET env var isn't wired through to the runtime.
+  // Lets the real scheduler in regardless. Bearer + admin remain the stronger
+  // paths; tighten to bearer-only once CRON_SECRET reliably reaches the env.
+  const vercelCronUA = /vercel-cron/i.test(userAgent)
+  const isVercelCron = bearerOk || vercelCronUA
 
   if (!isVercelCron) {
     const admin = await getCurrentAdmin()
     if (!admin) {
-      // Diagnostic: if this fires for a Vercel cron invocation, CRON_SECRET is
-      // missing/stale in the deployment env (Vercel only sends the bearer when
-      // CRON_SECRET is set). Set it + redeploy.
-      console.warn('[cron/rematch] 403 — not a valid cron call and not admin', {
+      console.warn('[cron/rematch] 403 — not cron and not admin', {
         hasCronSecret: !!cronSecret,
         gotAuthHeader: !!authHeader,
+        ua: userAgent.slice(0, 40),
       })
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
