@@ -24,20 +24,25 @@ export const dynamic = 'force-dynamic';
 
 const VALID_INTERESTS = new Set(INTEREST_OPTIONS.map((o) => o.value));
 
-async function loadMatchOrError(matchId: string, userId: string) {
+type LoadResult =
+  | { ok: false; error: NextResponse }
+  | { ok: true; match: any; partnerId: string };
+
+async function loadMatchOrError(matchId: string, userId: string): Promise<LoadResult> {
   const { data: match } = await supabaseAdmin
     .from('matches')
     .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status')
     .eq('id', matchId)
     .single();
-  if (!match) return { error: NextResponse.json({ error: 'Match not found' }, { status: 404 }) };
+  if (!match) return { ok: false, error: NextResponse.json({ error: 'Match not found' }, { status: 404 }) };
   if (match.user_1_id !== userId && match.user_2_id !== userId) {
-    return { error: NextResponse.json({ error: 'Not your match' }, { status: 403 }) };
+    return { ok: false, error: NextResponse.json({ error: 'Not your match' }, { status: 403 }) };
   }
   if (!match.user_1_accepted || !match.user_2_accepted) {
-    return { error: NextResponse.json({ error: 'Date vibes unlock once both accept' }, { status: 400 }) };
+    return { ok: false, error: NextResponse.json({ error: 'Date vibes unlock once both accept' }, { status: 400 }) };
   }
   return {
+    ok: true,
     match,
     partnerId: match.user_1_id === userId ? match.user_2_id : match.user_1_id,
   };
@@ -48,7 +53,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const loaded = await loadMatchOrError(params.id, user.id);
-  if (loaded.error) return loaded.error;
+  if (!loaded.ok) return loaded.error;
   const { partnerId } = loaded;
 
   // Pull both users' saved interests (one query covers both rows).
@@ -124,7 +129,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const loaded = await loadMatchOrError(params.id, user.id);
-  if (loaded.error) return loaded.error;
+  if (!loaded.ok) return loaded.error;
 
   const body = await req.json().catch(() => ({}));
   const raw = Array.isArray(body?.interests) ? body.interests : [];
