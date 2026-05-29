@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: #F5F3F8;
+  background: #f6f6f6;
   color: #0a0a0a;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 1.5rem 1.5rem 4rem;
@@ -191,11 +191,11 @@
 .galleryRemove:hover { background: #d94f3d; }
 .galleryAdd {
   width: 92px; height: 92px; border-radius: 12px; border: 1.5px dashed #c8c4dc;
-  background: #faf9ff; color: #2563ff; cursor: pointer; display: flex;
+  background: #fafafa; color: #2563ff; cursor: pointer; display: flex;
   align-items: center; justify-content: center; font-size: 0.7rem;
   text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
 }
-.galleryAdd:hover { border-color: #2563ff; background: #f3f0ff; }
+.galleryAdd:hover { border-color: #2563ff; background: #eef2ff; }
 
 .field { margin-bottom: 1.5rem; }
 
@@ -277,7 +277,7 @@
 .saveBar {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(to top, #F5F3F8 80%, rgba(245,243,248,0));
+  background: linear-gradient(to top, #f6f6f6 80%, rgba(246,246,246,0));
   padding: 1.5rem 0 1rem;
   display: flex;
   align-items: center;

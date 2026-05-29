@@ -597,7 +597,7 @@ function PoolHeatmap({ pools }: { pools: any }) {
   }
 
   const cellStyle = (count: number) => {
-    if (count === 0) return { background: '#faf9ff', color: '#c8c4dc', borderColor: 'rgba(14,12,26,0.05)' }
+    if (count === 0) return { background: '#fafafa', color: '#c8c4dc', borderColor: 'rgba(14,12,26,0.05)' }
     const t = count / max
     const op = 0.14 + t * 0.76
     return {

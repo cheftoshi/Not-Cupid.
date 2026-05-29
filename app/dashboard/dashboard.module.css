@@ -1,9 +1,11 @@
 .page {
   min-height: 100vh;
-  background: #F5F3F8;
+  display: flex;
+  flex-direction: column;
+  background: #f6f6f6;
   color: #0a0a0a;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 1.5rem 1.5rem 4rem;
+  padding: 1.5rem 1.5rem 0;
 }
 
 .container { max-width: 720px; margin: 0 auto; }
@@ -33,7 +35,7 @@
   letter-spacing: -0.02em;
 }
 
-.titleAccent { font-weight: 700; color: #A892D8; }
+.titleAccent { font-weight: 700; color: #2563ff; }
 
 .subtitle {
   font-size: 0.875rem;
@@ -72,7 +74,7 @@
   font-size: 0.75rem;
   font-style: italic;
   font-family: Georgia, ui-serif, serif;
-  color: #A892D8;
+  color: #2563ff;
 }
 
 .photoWrap {
@@ -81,7 +83,7 @@
   border-radius: 14px;
   overflow: hidden;
   margin-bottom: 1.5rem;
-  background: #f5f3f8;
+  background: #f6f6f6;
 }
 
 .photo { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -167,7 +169,7 @@
 
 .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .tag {
-  background: #f5f3f8;
+  background: #f6f6f6;
   padding: 0.4rem 0.85rem;
   border-radius: 999px;
   font-size: 0.8125rem;
@@ -175,8 +177,8 @@
 }
 
 .lockedSection {
-  background: linear-gradient(135deg, #F5F3F8 0%, #EDE9F4 100%);
-  border: 1.5px dashed #A892D8;
+  background: linear-gradient(135deg, #f6f6f6 0%, #ececf2 100%);
+  border: 1.5px dashed #2563ff;
   border-radius: 14px;
   padding: 1.5rem;
   text-align: center;
@@ -197,7 +199,7 @@
 }
 
 .unlockButton {
-  background: #A892D8;
+  background: #2563ff;
   color: #fff;
   border: none;
   padding: 0.85rem 1.75rem;
@@ -209,10 +211,10 @@
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
-  box-shadow: 0 4px 12px rgba(168,146,216,0.3);
+  box-shadow: 0 4px 12px rgba(37,99,255,0.3);
 }
 
-.unlockButton:hover:not(:disabled) { background: #9678D0; transform: translateY(-1px); }
+.unlockButton:hover:not(:disabled) { background: #1b46c9; transform: translateY(-1px); }
 .unlockButton:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .actions {
@@ -287,7 +289,7 @@
 .acceptButton:disabled, .passButton:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .statusBox {
-  background: #f5f3f8;
+  background: #f6f6f6;
   padding: 1rem 1.25rem;
   border-radius: 12px;
   font-size: 0.875rem;
@@ -320,7 +322,7 @@
 
 .emptyIcon {
   font-size: 3rem;
-  color: #A892D8;
+  color: #2563ff;
   margin-bottom: 1rem;
 }
 

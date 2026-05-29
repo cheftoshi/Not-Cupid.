@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
           }).join('')
 
           const emailHtml = `
-            <div style="max-width:560px;margin:0 auto;padding:2.5rem 1.5rem;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f3f8;color:#0a0a0a">
+            <div style="max-width:560px;margin:0 auto;padding:2.5rem 1.5rem;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f6f6f6;color:#0a0a0a">
               <div style="background:#fff;padding:2.5rem 2rem;border-radius:4px">
                 <div style="font-family:monospace;font-size:.6875rem;text-transform:uppercase;letter-spacing:.18em;color:#7a7590;margin-bottom:1.5rem">
                   notcupid · personality results
