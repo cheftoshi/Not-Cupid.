@@ -129,6 +129,14 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
 
       {isUnlocked ? (
         <div className={styles.unlockedContent}>
+          {Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0 && (
+            <div className={styles.galleryRow}>
+              {otherUser.gallery.map((url: string) => (
+                <img key={url} src={url} alt="" className={styles.galleryPhoto} />
+              ))}
+            </div>
+          )}
+
           {otherUser.bio && <p className={styles.matchBio}>{otherUser.bio}</p>}
 
           {otherUser.vibes && typeof otherUser.vibes === 'object' && Object.keys(otherUser.vibes).length > 0 && (
@@ -179,11 +187,11 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
           )}
         </div>
       ) : phase !== 'expired' && (
-        (otherUser.bio || '').trim() ? (
+        ((otherUser.bio || '').trim() || (Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0)) ? (
           <div className={styles.lockedSection}>
             <div className={styles.lockedTitle}>🔒 know them before you decide</div>
             <p className={styles.lockedDescription}>
-              unlock their bio, music, food & hobbies — $2.99
+              unlock their photos, bio, music, food & hobbies — $2.99
             </p>
             <button onClick={handleUnlock} disabled={busy} className={styles.unlockButton}>
               {busy ? 'loading...' : 'unlock for $2.99 →'}
@@ -193,7 +201,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked 
           <div className={styles.lockedSection}>
             <div className={styles.lockedTitle}>🌱 not ready yet</div>
             <p className={styles.lockedDescription}>
-              {(otherUser.name || 'they').split(' ')[0]} hasn't written a bio yet — there's nothing extra to unlock. check back soon.
+              {(otherUser.name || 'they').split(' ')[0]} hasn't set up their profile yet — there's nothing extra to unlock. check back soon.
             </p>
             <button disabled className={styles.unlockButton} style={{opacity:0.45,cursor:'not-allowed'}}>
               profile incomplete

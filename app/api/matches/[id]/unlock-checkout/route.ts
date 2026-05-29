@@ -21,17 +21,18 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const otherUserId = isUser1 ? match.user_2_id : match.user_1_id;
   const { data: otherUser } = await supabaseAdmin
     .from('users')
-    .select('name, bio')
+    .select('name, bio, gallery')
     .eq('id', otherUserId)
     .single();
 
-  // Wall: don't sell an unlock for an empty profile (their bio is the
-  // single piece of paid content). Frontend should also gate this, but
-  // we guard server-side too so direct API hits can't bypass it.
-  const bio = (otherUser?.bio || '').trim();
-  if (!bio) {
+  // Wall: don't sell an unlock when there's no paid content to reveal.
+  // Paid content = bio OR gallery photos. Frontend gates this too, but we
+  // guard server-side so direct API hits can't bypass it.
+  const hasBio = !!(otherUser?.bio || '').trim();
+  const hasGallery = Array.isArray(otherUser?.gallery) && otherUser!.gallery.length > 0;
+  if (!hasBio && !hasGallery) {
     return NextResponse.json(
-      { error: `${otherUser?.name || 'They'} hasn't written a bio yet — nothing to unlock.` },
+      { error: `${otherUser?.name || 'They'} hasn't set up their profile yet — nothing to unlock.` },
       { status: 422 }
     );
   }

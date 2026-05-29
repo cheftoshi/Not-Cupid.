@@ -19,8 +19,10 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const needsQuiz = !user.archetype || !user.score_honesty;
+  const gallery: string[] = Array.isArray(user.gallery) ? user.gallery : [];
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +82,49 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
     }
   }
 
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      setMessage('photo must be under 4MB');
+      e.target.value = '';
+      return;
+    }
+    setUploadingGallery(true);
+    setMessage('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/profile/gallery', { method: 'POST', body: formData });
+      const data = await parseResponse<any>(res);
+      if (!res.ok) throw new Error(data.error || 'upload failed');
+      setUser({ ...user, gallery: data.gallery });
+      setMessage('✓ photo added');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err: any) {
+      setMessage(err.message || 'upload failed');
+    } finally {
+      setUploadingGallery(false);
+      e.target.value = '';
+    }
+  }
+
+  async function handleGalleryRemove(url: string) {
+    setMessage('');
+    try {
+      const res = await fetch('/api/profile/gallery', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await parseResponse<any>(res);
+      if (!res.ok) throw new Error(data.error || 'remove failed');
+      setUser({ ...user, gallery: data.gallery });
+    } catch (err: any) {
+      setMessage(err.message || 'remove failed');
+    }
+  }
+
   async function handleDelete() {
     if (!confirm('Delete your account? Active matches will end. This cannot be undone.')) return;
     if (!confirm('Really sure? This removes you from NotCupid permanently.')) return;
@@ -130,6 +175,27 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
             {uploadingPhoto ? 'uploading...' : (user.photo_url ? 'change photo' : 'upload photo')}
             <input type="file" accept="image/jpeg,image/png,image/webp" className={styles.fileInput} onChange={handlePhotoUpload} disabled={uploadingPhoto} />
           </label>
+        </div>
+
+        {/* GALLERY — up to 3 extra photos, revealed with the $2.99 unlock */}
+        <div className={styles.galleryBlock}>
+          <div className={styles.galleryHead}>
+            <span className={styles.galleryTitle}>more photos · <span className={styles.galleryHint}>{gallery.length}/3 — unlocked by your match for $2.99</span></span>
+          </div>
+          <div className={styles.galleryGrid}>
+            {gallery.map((url) => (
+              <div key={url} className={styles.galleryItem}>
+                <img src={url} alt="" className={styles.galleryImg} />
+                <button type="button" className={styles.galleryRemove} onClick={() => handleGalleryRemove(url)} aria-label="Remove photo">×</button>
+              </div>
+            ))}
+            {gallery.length < 3 && (
+              <label className={styles.galleryAdd}>
+                {uploadingGallery ? '…' : '+ add'}
+                <input type="file" accept="image/jpeg,image/png,image/webp" className={styles.fileInput} onChange={handleGalleryUpload} disabled={uploadingGallery} />
+              </label>
+            )}
+          </div>
         </div>
       </div>
 
