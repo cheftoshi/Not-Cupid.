@@ -11,7 +11,16 @@ export async function GET(req: NextRequest) {
 
   if (!isVercelCron) {
     const admin = await getCurrentAdmin()
-    if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!admin) {
+      // Diagnostic: if this fires for a Vercel cron invocation, CRON_SECRET is
+      // missing/stale in the deployment env (Vercel only sends the bearer when
+      // CRON_SECRET is set). Set it + redeploy.
+      console.warn('[cron/rematch] 403 — not a valid cron call and not admin', {
+        hasCronSecret: !!cronSecret,
+        gotAuthHeader: !!authHeader,
+      })
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
   }
 
   try {

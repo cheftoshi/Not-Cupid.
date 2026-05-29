@@ -25,7 +25,13 @@ export async function GET(req: NextRequest) {
 
   if (!isVercelCron) {
     const admin = await getCurrentAdmin();
-    if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!admin) {
+      console.warn('[cron/expiring-soon] 403 — not a valid cron call and not admin', {
+        hasCronSecret: !!cronSecret,
+        gotAuthHeader: !!authHeader,
+      });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
   }
 
   try {
