@@ -19,6 +19,7 @@ import {
   type Interest,
 } from '@/lib/activities';
 import { fetchAllLiveActivities } from '@/lib/live-events';
+import { metroOf } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,9 +92,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   // Live events from all enabled external sources (Ticketmaster + Yelp +
   // Boston Calendar). Each source no-ops gracefully if its API key isn't
   // set. The aggregator also filters out admin-blacklisted items.
+  // Location-aware: pull events for the couple's metro (read off the
+  // current user's zip — both sides are in the same 25mi cluster, so same
+  // metro). Falls back to Boston if the zip isn't mapped.
+  const metro = metroOf(user.zip) ?? 'boston';
   let live: Activity[] = [];
   try {
-    live = await fetchAllLiveActivities();
+    live = await fetchAllLiveActivities(metro);
   } catch (e) {
     console.warn('date-vibes: live fetch failed', e);
   }

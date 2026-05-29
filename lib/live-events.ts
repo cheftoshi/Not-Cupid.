@@ -11,12 +11,19 @@ import type { Activity } from './activities';
 import { fetchLiveActivities as fetchTicketmaster } from './ticketmaster';
 import { fetchYelpActivities } from './yelp';
 import { fetchBostonCalendarActivities } from './boston-calendar';
+import { METRO_CENTERS, type Metro } from './quiz-data';
 
-export async function fetchAllLiveActivities(): Promise<Activity[]> {
+// Pull live events for a given metro (defaults to Boston). Ticketmaster +
+// Yelp are queried for that metro's city; Boston Calendar (a Boston-only
+// RSS feed) is only included for the Boston metro.
+export async function fetchAllLiveActivities(metro: Metro = 'boston'): Promise<Activity[]> {
+  const center = METRO_CENTERS[metro] || METRO_CENTERS.boston;
+  const yelpLocation = `${center.city}, ${center.state}`;
+
   const [tm, yelp, cal, blacklist] = await Promise.all([
-    safe(fetchTicketmaster({ city: 'Boston', size: 50 })),
-    safe(fetchYelpActivities({ city: 'Boston, MA', perCategory: 6 })),
-    safe(fetchBostonCalendarActivities()),
+    safe(fetchTicketmaster({ city: center.city, metro, size: 50 })),
+    safe(fetchYelpActivities({ city: yelpLocation, perCategory: 6 })),
+    safe(metro === 'boston' ? fetchBostonCalendarActivities() : Promise.resolve([])),
     loadBlacklist(),
   ]);
 

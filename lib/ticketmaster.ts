@@ -27,10 +27,24 @@ const CACHE_MIN = 60;
 // starts re-cache, which is fine (at most a few fresh fetches per day).
 const cache = new Map<string, { at: number; data: Activity[] }>();
 
-// ─── Trusted venue whitelist ─────────────────────────────────────────────
-// Substring match (case-insensitive) — TM venue names like "House of Blues
-// Boston" should match "house of blues". Edit freely; venues you want to
-// allow at scale should live here, one-offs should go through admin hide.
+// ─── Trusted venue whitelists, per metro ─────────────────────────────────
+// Substring match (case-insensitive). Each metro has its own curated list so
+// expansion cities (Worcester, Providence) get quality venues too. A metro
+// with no list falls back to classification-only gating (still filtered by
+// status/window/completeness), so events still flow.
+const TRUSTED_VENUES_BY_METRO: Record<string, string[]> = {
+  worcester: [
+    'hanover theatre', 'the palladium', 'mechanics hall', 'dcu center',
+    'polar park', 'electric haze', 'off the rails', 'white eagle',
+    'the raven', 'worcester palladium',
+  ],
+  providence: [
+    'providence performing arts', 'ppac', 'the strand', 'fete music',
+    'dunkin donuts center', 'amica mutual pavilion', 'the met', 'alchemy',
+    "lupo's", 'roger williams', 'columbus theatre', 'as220',
+  ],
+}
+
 const TRUSTED_VENUES = [
   // Big arenas / theaters
   'td garden',
@@ -89,6 +103,7 @@ const MAX_DAYS_OUT = 60;
 
 interface FetchOpts {
   city?: string;
+  metro?: string;
   radiusMiles?: number;
   size?: number;
 }
@@ -100,6 +115,8 @@ export async function fetchLiveActivities(opts: FetchOpts = {}): Promise<Activit
   const city = opts.city || 'Boston';
   const radius = opts.radiusMiles || 25;
   const size = Math.min(opts.size || 50, 200);
+  // Pick the venue whitelist for this metro; fall back to the Boston list.
+  const venueList = (opts.metro && TRUSTED_VENUES_BY_METRO[opts.metro]) || TRUSTED_VENUES;
 
   const cacheKey = `${city}|${radius}|${size}`;
   const cached = cache.get(cacheKey);
@@ -131,7 +148,7 @@ export async function fetchLiveActivities(opts: FetchOpts = {}): Promise<Activit
     const events: any[] = json?._embedded?.events || [];
 
     const mapped: Activity[] = events
-      .map((e) => toActivity(e))
+      .map((e) => toActivity(e, venueList))
       .filter((a): a is Activity => a !== null);
 
     cache.set(cacheKey, { at: Date.now(), data: mapped });
@@ -142,7 +159,7 @@ export async function fetchLiveActivities(opts: FetchOpts = {}): Promise<Activit
   }
 }
 
-function toActivity(e: any): Activity | null {
+function toActivity(e: any, venueList: string[]): Activity | null {
   const id = e?.id;
   const title = e?.name as string | undefined;
   if (!id || !title) return null;
@@ -161,7 +178,7 @@ function toActivity(e: any): Activity | null {
   const venue = e?._embedded?.venues?.[0]?.name as string | undefined;
   if (!venue) return null;
   const venueLower = venue.toLowerCase();
-  const matchesTrustedVenue = TRUSTED_VENUES.some((t) => venueLower.includes(t));
+  const matchesTrustedVenue = venueList.some((t) => venueLower.includes(t));
   if (!matchesTrustedVenue) return null;
 
   // Image required.

@@ -885,10 +885,10 @@ export function validateZip(zip: string): 'valid'|'invalid'|'outofrange'|'incomp
 // clusters (they can't cross-match Boston). This labels which cluster a
 // user sits in — for admin analytics now, and regional pool-balancing
 // later. It changes NO matching behavior on its own (dormant).
-export const METRO_CENTERS: Record<string, { label: string; lat: number; lng: number }> = {
-  boston:     { label: 'Boston',     lat: 42.3601, lng: -71.0589 },
-  worcester:  { label: 'Worcester',  lat: 42.2626, lng: -71.8023 },
-  providence: { label: 'Providence', lat: 41.8240, lng: -71.4128 },
+export const METRO_CENTERS: Record<string, { label: string; city: string; state: string; lat: number; lng: number }> = {
+  boston:     { label: 'Boston',     city: 'Boston',     state: 'MA', lat: 42.3601, lng: -71.0589 },
+  worcester:  { label: 'Worcester',  city: 'Worcester',  state: 'MA', lat: 42.2626, lng: -71.8023 },
+  providence: { label: 'Providence', city: 'Providence', state: 'RI', lat: 41.8240, lng: -71.4128 },
 }
 
 export type Metro = keyof typeof METRO_CENTERS
