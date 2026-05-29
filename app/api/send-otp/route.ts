@@ -30,7 +30,10 @@ export async function POST(req: NextRequest) {
         { status: 429, headers: { 'Retry-After': String(emailLimit.retryAfterSec) } }
       )
     }
-    const ipLimit = await rateLimit({ key: `otp_send_ip:${ip}`, windowSec: 600, maxAttempts: 10, blockSec: 600 })
+    // Per-IP cap is loose (shared mobile/CGNAT IPs route many real users
+    // through one address — common during a launch surge). The per-email
+    // cap above is the real abuse guard.
+    const ipLimit = await rateLimit({ key: `otp_send_ip:${ip}`, windowSec: 600, maxAttempts: 40, blockSec: 600 })
     if (!ipLimit.ok) {
       return NextResponse.json(
         { error: `Too many requests. Try again in ${ipLimit.retryAfterSec}s.` },
