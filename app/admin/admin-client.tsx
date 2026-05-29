@@ -213,6 +213,16 @@ export default function AdminClient() {
                   <span className={`${s.chip} ${s.chipRed}`}>Banned <b>{pools.summary?.banned ?? 0}</b></span>
                 </div>
 
+                {pools.byMetro && (
+                  <div className={s.chips} style={{ marginTop: '-0.5rem' }}>
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7a7590', alignSelf: 'center' }}>area pools ·</span>
+                    {Object.entries(pools.metroLabels || {}).map(([k, label]: any) => (
+                      <span key={k} className={s.chip}>{label} <b>{pools.byMetro[k] ?? 0}</b></span>
+                    ))}
+                    {pools.byMetro.other > 0 && <span className={s.chip}>other <b>{pools.byMetro.other}</b></span>}
+                  </div>
+                )}
+
                 <PoolHeatmap pools={pools} />
 
                 <p className={s.heatNote}>

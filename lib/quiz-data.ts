@@ -879,6 +879,35 @@ export function validateZip(zip: string): 'valid'|'invalid'|'outofrange'|'incomp
   return dist <= SIGNUP_RADIUS_MILES ? 'valid' : 'outofrange'
 }
 
+// ─── Metros (area pools) ───────────────────────────────────────────────
+// The 75mi signup radius already pulls in Worcester (~40mi) and Providence
+// (~50mi), and the 25mi MATCH radius already isolates them into separate
+// clusters (they can't cross-match Boston). This labels which cluster a
+// user sits in — for admin analytics now, and regional pool-balancing
+// later. It changes NO matching behavior on its own (dormant).
+export const METRO_CENTERS: Record<string, { label: string; lat: number; lng: number }> = {
+  boston:     { label: 'Boston',     lat: 42.3601, lng: -71.0589 },
+  worcester:  { label: 'Worcester',  lat: 42.2626, lng: -71.8023 },
+  providence: { label: 'Providence', lat: 41.8240, lng: -71.4128 },
+}
+
+export type Metro = keyof typeof METRO_CENTERS
+
+// Nearest metro to a zip, or null if the zip is unknown / beyond range of
+// every metro center.
+export function metroOf(zip: string | null | undefined): Metro | null {
+  if (!zip) return null
+  const c = ZIP_COORDS[zip]
+  if (!c) return null
+  let best: Metro | null = null
+  let bestDist = Infinity
+  for (const [key, m] of Object.entries(METRO_CENTERS)) {
+    const d = haversine(c.lat, c.lng, m.lat, m.lng)
+    if (d < bestDist) { bestDist = d; best = key as Metro }
+  }
+  return bestDist <= SIGNUP_RADIUS_MILES ? best : null
+}
+
 export function computeScores(answers: number[]): Record<Dimension, number> {
   const scores: Record<string, number> = {}
   DIMS.forEach(d => (scores[d] = 0))

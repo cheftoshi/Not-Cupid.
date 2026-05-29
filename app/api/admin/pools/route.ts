@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/admin';
 import { supabaseAdmin } from '@/lib/supabase';
 import { computeSegment, INTENTS, TIERS, type Intent, type Tier } from '@/lib/pools';
+import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export async function GET() {
     const [{ data: users }, { data: sessions }] = await Promise.all([
       supabaseAdmin
         .from('users')
-        .select('id, name, email, gender, status, pool_active, relationship_style, vibes, matching_cooldown_until, matching_disabled_at, ghost_reports_received')
+        .select('id, name, email, gender, status, pool_active, zip, relationship_style, vibes, matching_cooldown_until, matching_disabled_at, ghost_reports_received')
         .is('deleted_at', null),
       supabaseAdmin
         .from('sessions')
@@ -54,8 +55,15 @@ export async function GET() {
     let matched = 0;
     let activeTotal = 0;
 
+    // Per-metro tally (area pools) — active + matched users by nearest metro.
+    const byMetro: Record<string, number> = { boston: 0, worcester: 0, providence: 0, other: 0 };
+
     for (const u of users ?? []) {
       const seg = computeSegment(u, lastSeen.get(u.id) ?? null, now);
+      if (seg.kind === 'active' || seg.kind === 'matched') {
+        const m = metroOf(u.zip);
+        byMetro[m ?? 'other']++;
+      }
       switch (seg.kind) {
         case 'active':
           grid[seg.intent!][seg.tier!]++;
@@ -87,6 +95,8 @@ export async function GET() {
       grid,
       intents: INTENTS,
       tiers: TIERS,
+      byMetro,
+      metroLabels: Object.fromEntries(Object.entries(METRO_CENTERS).map(([k, v]) => [k, v.label])),
       penalty: { cooldown, banned },
       summary: {
         total: users?.length ?? 0,
