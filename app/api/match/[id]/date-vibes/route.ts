@@ -22,7 +22,7 @@ import { fetchAllLiveActivities } from '@/lib/live-events';
 
 export const dynamic = 'force-dynamic';
 
-const VALID_INTERESTS = new Set(INTEREST_OPTIONS.map((o) => o.value));
+const VALID_INTERESTS = new Set<string>(INTEREST_OPTIONS.map((o) => o.value));
 
 type LoadResult =
   | { ok: false; error: NextResponse }
