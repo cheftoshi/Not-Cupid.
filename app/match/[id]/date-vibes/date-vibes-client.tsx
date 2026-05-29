@@ -338,7 +338,7 @@ function ActivityCard({ card }: { card: Activity }) {
       <div style={{ padding: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#8b7fd4', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
-            {card.category}{card.source === 'ticketmaster' ? ' · live' : ''}
+            {card.category}{sourceBadge(card.source)}
           </span>
           {card.whenLabel && (
             <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#0e0c1a', fontWeight: 600 }}>{card.whenLabel}</span>
@@ -386,6 +386,15 @@ function CelebrateModal({ activity, partnerName, onClose }: { activity: Activity
       </div>
     </div>
   );
+}
+
+function sourceBadge(source: Activity['source']): string {
+  switch (source) {
+    case 'ticketmaster':    return ' · live';
+    case 'yelp':            return ' · trending';
+    case 'boston-calendar': return " · editor's pick";
+    default:                return '';
+  }
 }
 
 function CenteredMsg({ text, tone }: { text: string; tone?: 'error' }) {

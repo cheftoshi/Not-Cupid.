@@ -1,41 +1,96 @@
 // Live local events via Ticketmaster Discovery API.
 //
-// Why Ticketmaster: their public Discovery API has a generous free tier
-// (5000 req/day) and good coverage of music, sports, theater, comedy,
-// family — exactly the categories we need. Eventbrite shut their search
-// API to the public years ago; SeatGeek is similar but smaller catalog.
-//
 // To enable: get a free API key at https://developer.ticketmaster.com/
-// and set TICKETMASTER_API_KEY in Vercel env vars. If unset, this module
-// returns [] and the date-vibes deck falls back to curated-only — the
-// rest of the feature still works fine.
+// and set TICKETMASTER_API_KEY in Vercel env vars. Without it, this
+// module returns [] and the date-vibes deck falls back to curated-only.
 //
-// Caching: the deck route can be hit many times per session. We cache the
-// fetched events in module memory keyed by (lat/lng/radius/segment) for
-// CACHE_MIN minutes. Serverless cold starts re-cache, which is fine — at
-// most a few fresh fetches per day per region.
+// Quality controls (applied here so junk never reaches the user):
+//   1. Venue whitelist — only events at known good Boston venues qualify.
+//      Match is case-insensitive substring against the venue name so
+//      "House of Blues Boston" matches "House of Blues" entry.
+//   2. Classification gate — Music, Arts & Theatre, Comedy, Sports only.
+//      No Family, Misc, Undefined. Wrestling/monster trucks slip in only
+//      if they're at a whitelisted venue AND a kept classification — at
+//      which point the admin blacklist handles it.
+//   3. Status gate — only 'onsale' events. Auto-drops canceled,
+//      postponed, rescheduled, offsale.
+//   4. Time window — events 3 to 60 days out. Filters out day-of (no time
+//      to plan a date) and too-far-future (uncertain).
+//   5. Completeness — must have an image, a venue name, and a title.
 
 import type { Activity, ActivityCategory, Interest } from './activities';
 
 const TM_ENDPOINT = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const CACHE_MIN = 60;
 
+// In-memory cache keyed by query. Per-instance only — serverless cold
+// starts re-cache, which is fine (at most a few fresh fetches per day).
 const cache = new Map<string, { at: number; data: Activity[] }>();
 
-// Map Ticketmaster's broad classification (segment) names → our
-// (category, tags) tuple. Activities not in this map are skipped.
+// ─── Trusted venue whitelist ─────────────────────────────────────────────
+// Substring match (case-insensitive) — TM venue names like "House of Blues
+// Boston" should match "house of blues". Edit freely; venues you want to
+// allow at scale should live here, one-offs should go through admin hide.
+const TRUSTED_VENUES = [
+  // Big arenas / theaters
+  'td garden',
+  'fenway park',
+  'gillette stadium',
+  'agganis arena',
+  'mgm music hall',
+  'boch center',
+  'wang theatre',
+  'shubert theatre',
+  'symphony hall',
+  'jordan hall',
+  'berklee performance',
+  // Mid-size music
+  'house of blues',
+  'the sinclair',
+  'paradise rock club',
+  'royale',
+  'big night live',
+  'roadrunner',
+  'brighton music hall',
+  'crystal ballroom',
+  'cafe 939',
+  'city winery',
+  'the lilypad',
+  'the middle east',
+  'wally\'s cafe',
+  'the beehive',
+  // Comedy
+  'wilbur theatre',
+  'improv asylum',
+  'improvboston',
+  'the comedy studio',
+  'laugh boston',
+  // Film
+  'coolidge corner theatre',
+  'brattle theatre',
+  // Sports (covered above for arenas; teams handled via classification)
+];
+
+const KEPT_CLASSIFICATIONS = new Set([
+  'Music',
+  'Arts & Theatre',
+  'Sports',
+]);
+
+// Map TM segment → our category/tag tuple.
 const SEGMENT_MAP: Record<string, { category: ActivityCategory; tags: Interest[] }> = {
-  Music:       { category: 'cultural',    tags: ['music'] },
-  Sports:      { category: 'adventurous', tags: ['sports'] },
-  'Arts & Theatre': { category: 'cultural', tags: ['theater', 'art'] },
-  Film:        { category: 'cozy',        tags: ['films'] },
-  Miscellaneous: { category: 'cultural',  tags: [] },
+  'Music':          { category: 'cultural',    tags: ['music'] },
+  'Arts & Theatre': { category: 'cultural',    tags: ['theater', 'art'] },
+  'Sports':         { category: 'adventurous', tags: ['sports'] },
 };
 
+const MIN_DAYS_OUT = 3;
+const MAX_DAYS_OUT = 60;
+
 interface FetchOpts {
-  city?: string;        // default 'Boston'
-  radiusMiles?: number; // default 25
-  size?: number;        // default 30
+  city?: string;
+  radiusMiles?: number;
+  size?: number;
 }
 
 export async function fetchLiveActivities(opts: FetchOpts = {}): Promise<Activity[]> {
@@ -44,13 +99,17 @@ export async function fetchLiveActivities(opts: FetchOpts = {}): Promise<Activit
 
   const city = opts.city || 'Boston';
   const radius = opts.radiusMiles || 25;
-  const size = Math.min(opts.size || 30, 50);
+  const size = Math.min(opts.size || 50, 200);
 
   const cacheKey = `${city}|${radius}|${size}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_MIN * 60_000) {
     return cached.data;
   }
+
+  const now = new Date();
+  const startWindow = new Date(now.getTime() + MIN_DAYS_OUT * 86400_000);
+  const endWindow = new Date(now.getTime() + MAX_DAYS_OUT * 86400_000);
 
   const url = new URL(TM_ENDPOINT);
   url.searchParams.set('apikey', apiKey);
@@ -59,10 +118,8 @@ export async function fetchLiveActivities(opts: FetchOpts = {}): Promise<Activit
   url.searchParams.set('unit', 'miles');
   url.searchParams.set('size', String(size));
   url.searchParams.set('sort', 'date,asc');
-  // Only events in the next 60 days (anything further is hard to plan a date around)
-  const end = new Date();
-  end.setDate(end.getDate() + 60);
-  url.searchParams.set('endDateTime', end.toISOString().slice(0, 19) + 'Z');
+  url.searchParams.set('startDateTime', startWindow.toISOString().slice(0, 19) + 'Z');
+  url.searchParams.set('endDateTime', endWindow.toISOString().slice(0, 19) + 'Z');
 
   try {
     const res = await fetch(url.toString(), { cache: 'no-store' });
@@ -87,54 +144,68 @@ export async function fetchLiveActivities(opts: FetchOpts = {}): Promise<Activit
 
 function toActivity(e: any): Activity | null {
   const id = e?.id;
-  if (!id) return null;
+  const title = e?.name as string | undefined;
+  if (!id || !title) return null;
 
+  // Status gate — only events still actually purchasable.
+  const statusCode = e?.dates?.status?.code as string | undefined;
+  if (statusCode && statusCode !== 'onsale') return null;
+
+  // Classification gate.
   const segmentName = e?.classifications?.[0]?.segment?.name as string | undefined;
-  const meta = segmentName ? SEGMENT_MAP[segmentName] : undefined;
+  if (!segmentName || !KEPT_CLASSIFICATIONS.has(segmentName)) return null;
+  const meta = SEGMENT_MAP[segmentName];
   if (!meta) return null;
 
-  const title = e?.name as string | undefined;
-  if (!title) return null;
-
+  // Venue whitelist (only for whitelisted-venue events).
   const venue = e?._embedded?.venues?.[0]?.name as string | undefined;
+  if (!venue) return null;
+  const venueLower = venue.toLowerCase();
+  const matchesTrustedVenue = TRUSTED_VENUES.some((t) => venueLower.includes(t));
+  if (!matchesTrustedVenue) return null;
+
+  // Image required.
+  const imageUrl = pickImage(e?.images);
+  if (!imageUrl) return null;
+
   const url = e?.url as string | undefined;
-  const img = pickImage(e?.images);
   const whenLabel = formatWhen(e?.dates);
 
-  // Tags: combine the segment-derived tags with any genre/sub-genre Ticketmaster
-  // provides (e.g. comedy as a music sub-genre), mapped to our Interest vocab.
+  // Tag enrichment from genre/subGenre.
   const tags = new Set<Interest>(meta.tags);
   const genre = e?.classifications?.[0]?.genre?.name as string | undefined;
-  if (genre) {
-    const lg = genre.toLowerCase();
+  const subGenre = e?.classifications?.[0]?.subGenre?.name as string | undefined;
+  for (const g of [genre, subGenre]) {
+    if (!g) continue;
+    const lg = g.toLowerCase();
     if (lg.includes('comedy')) tags.add('comedy');
-    if (lg.includes('jazz') || lg.includes('rock') || lg.includes('pop') || lg.includes('hip')) tags.add('music');
+    if (lg.includes('jazz') || lg.includes('rock') || lg.includes('pop') || lg.includes('hip') || lg.includes('country') || lg.includes('classical')) tags.add('music');
+    if (lg.includes('film') || lg.includes('cinema')) tags.add('films');
   }
 
   return {
     id: `live:tm:${id}`,
     source: 'ticketmaster',
     title,
-    blurb: venue ? `${segmentName} · ${venue}` : segmentName!,
+    blurb: `${segmentName} · ${venue}`,
     category: meta.category,
     tags: Array.from(tags) as Interest[],
     venue,
     url,
-    imageUrl: img,
+    imageUrl,
     whenLabel,
   };
 }
 
 function pickImage(images: any[] | undefined): string | undefined {
   if (!Array.isArray(images) || images.length === 0) return undefined;
-  // Prefer a 16:9 medium-sized image; fallback to first.
   const wide = images.find((i: any) => i?.ratio === '16_9' && i?.width >= 640 && i?.width <= 1200);
   return (wide?.url || images[0]?.url) as string | undefined;
 }
 
 function formatWhen(dates: any): string | undefined {
-  const local = dates?.start?.localDate as string | undefined; // 'YYYY-MM-DD'
-  const localTime = dates?.start?.localTime as string | undefined; // 'HH:MM:SS'
+  const local = dates?.start?.localDate as string | undefined;
+  const localTime = dates?.start?.localTime as string | undefined;
   if (!local) return undefined;
   const [y, m, d] = local.split('-').map(Number);
   if (!y || !m || !d) return local;

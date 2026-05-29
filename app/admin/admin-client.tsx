@@ -10,6 +10,7 @@ export default function AdminClient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<any>(null)
+  const [liveEvents, setLiveEvents] = useState<any>(null)
 
   useEffect(() => {
     fetch('/api/admin-stats')
@@ -30,7 +31,42 @@ export default function AdminClient() {
       })
       .then(setFeedback)
       .catch((e) => setFeedback({ __error: e?.message || 'network error', items: [], stats: null }))
+
+    refreshLiveEvents()
   }, [])
+
+  async function refreshLiveEvents() {
+    try {
+      const r = await fetch('/api/admin/live-events')
+      if (!r.ok) {
+        const body = await parseResponse<any>(r).catch(() => ({}))
+        setLiveEvents({ __error: body?.error || `HTTP ${r.status}`, grouped: {}, counts: {}, blacklist: [] })
+        return
+      }
+      setLiveEvents(await parseResponse<any>(r))
+    } catch (e: any) {
+      setLiveEvents({ __error: e?.message || 'network error', grouped: {}, counts: {}, blacklist: [] })
+    }
+  }
+
+  async function hideEvent(activityId: string) {
+    if (!confirm('Hide this event from the date-vibes deck? You can unhide it later.')) return
+    await fetch('/api/admin/live-events/hide', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activityId }),
+    })
+    refreshLiveEvents()
+  }
+
+  async function unhideEvent(activityId: string) {
+    await fetch('/api/admin/live-events/hide', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activityId }),
+    })
+    refreshLiveEvents()
+  }
 
   if (loading) return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#f8f5ff'}}>
@@ -280,6 +316,79 @@ export default function AdminClient() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+
+        {/* LIVE EVENTS QUEUE */}
+        <div style={{background:'#fff',border:'1px solid rgba(14,12,26,0.1)',padding:'1.5rem',marginTop:'1.5rem'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:'1rem',flexWrap:'wrap',gap:'.5rem'}}>
+            <p style={{fontFamily:'DM Mono,monospace',fontSize:'.58rem',letterSpacing:'.15em',textTransform:'uppercase',color:'#0e0c1a',margin:0,fontWeight:500}}>Live events queue — what users will see</p>
+            <button onClick={refreshLiveEvents} style={{background:'transparent',border:'1px solid rgba(14,12,26,0.13)',padding:'.4rem .8rem',fontFamily:'DM Mono,monospace',fontSize:'.55rem',letterSpacing:'.12em',textTransform:'uppercase',cursor:'pointer'}}>refresh</button>
+          </div>
+
+          {!liveEvents && (
+            <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#7a7590'}}>loading…</p>
+          )}
+          {liveEvents?.__error && (
+            <p style={{fontFamily:'DM Mono,monospace',fontSize:'.6rem',color:'#d94f3d'}}>couldn’t load: {liveEvents.__error}</p>
+          )}
+
+          {liveEvents && !liveEvents.__error && (
+            <>
+              <div style={{display:'flex',gap:'.5rem',flexWrap:'wrap',marginBottom:'1rem',fontFamily:'DM Mono,monospace',fontSize:'.55rem',letterSpacing:'.08em',color:'#7a7590'}}>
+                <span>Ticketmaster: <strong style={{color:'#0e0c1a'}}>{liveEvents.counts?.ticketmaster ?? 0}</strong></span>
+                <span>·</span>
+                <span>Yelp: <strong style={{color:'#0e0c1a'}}>{liveEvents.counts?.yelp ?? 0}</strong></span>
+                <span>·</span>
+                <span>Boston Calendar: <strong style={{color:'#0e0c1a'}}>{liveEvents.counts?.['boston-calendar'] ?? 0}</strong></span>
+                <span>·</span>
+                <span>Hidden: <strong style={{color:'#d94f3d'}}>{liveEvents.blacklist?.length ?? 0}</strong></span>
+              </div>
+
+              {Object.entries(liveEvents.grouped || {}).map(([source, items]: any) => (
+                items.length > 0 && (
+                  <div key={source} style={{marginBottom:'1.25rem'}}>
+                    <div style={{fontFamily:'DM Mono,monospace',fontSize:'.5rem',letterSpacing:'.16em',textTransform:'uppercase',color:'#8b7fd4',marginBottom:'.5rem'}}>{source} ({items.length})</div>
+                    <div style={{display:'flex',flexDirection:'column',gap:'.4rem'}}>
+                      {items.map((it: any) => (
+                        <div key={it.id} style={{display:'flex',gap:'.75rem',padding:'.5rem .75rem',background:'#f8f5ff',border:'1px solid rgba(14,12,26,0.05)',borderRadius:6,alignItems:'flex-start'}}>
+                          {it.imageUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={it.imageUrl} alt="" style={{width:60,height:60,objectFit:'cover',borderRadius:4,flexShrink:0}} />
+                          )}
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontFamily:'Georgia,serif',fontSize:'.85rem',color:'#0e0c1a',fontWeight:500}}>{it.title}</div>
+                            <div style={{fontFamily:'DM Mono,monospace',fontSize:'.55rem',color:'#7a7590',marginTop:2,letterSpacing:'.04em'}}>
+                              {[it.category, it.venue, it.whenLabel].filter(Boolean).join(' · ')}
+                            </div>
+                          </div>
+                          <div style={{display:'flex',flexDirection:'column',gap:'.25rem',alignItems:'flex-end'}}>
+                            {it.url && (
+                              <a href={it.url} target="_blank" rel="noopener noreferrer" style={{fontFamily:'DM Mono,monospace',fontSize:'.5rem',color:'#5b4fa0',letterSpacing:'.1em',textTransform:'uppercase',textDecoration:'none'}}>view ↗</a>
+                            )}
+                            <button onClick={() => hideEvent(it.id)} style={{background:'transparent',border:'1px solid rgba(217,79,61,0.4)',color:'#d94f3d',padding:'.2rem .5rem',fontFamily:'DM Mono,monospace',fontSize:'.5rem',letterSpacing:'.1em',textTransform:'uppercase',cursor:'pointer',whiteSpace:'nowrap'}}>hide</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              ))}
+
+              {liveEvents.blacklist?.length > 0 && (
+                <div style={{marginTop:'1rem',paddingTop:'1rem',borderTop:'1px solid rgba(14,12,26,0.08)'}}>
+                  <div style={{fontFamily:'DM Mono,monospace',fontSize:'.5rem',letterSpacing:'.16em',textTransform:'uppercase',color:'#d94f3d',marginBottom:'.5rem'}}>hidden ({liveEvents.blacklist.length})</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:'.25rem'}}>
+                    {liveEvents.blacklist.map((b: any) => (
+                      <div key={b.activity_id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'.3rem .6rem',background:'#fef4f4',borderRadius:4,fontFamily:'DM Mono,monospace',fontSize:'.55rem',color:'#7a7590'}}>
+                        <span style={{fontFamily:'monospace',fontSize:'.6rem',color:'#0e0c1a'}}>{b.activity_id}</span>
+                        <button onClick={() => unhideEvent(b.activity_id)} style={{background:'transparent',border:'1px solid rgba(14,12,26,0.13)',color:'#7a7590',padding:'.15rem .4rem',fontFamily:'DM Mono,monospace',fontSize:'.48rem',letterSpacing:'.1em',textTransform:'uppercase',cursor:'pointer'}}>unhide</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 

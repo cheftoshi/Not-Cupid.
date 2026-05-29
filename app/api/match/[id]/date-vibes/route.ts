@@ -18,7 +18,7 @@ import {
   type Activity,
   type Interest,
 } from '@/lib/activities';
-import { fetchLiveActivities } from '@/lib/ticketmaster';
+import { fetchAllLiveActivities } from '@/lib/live-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,10 +83,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if (users.has(user.id) && users.has(partnerId)) mutualIds.add(aid);
   }
 
-  // Live events (only attempted if TICKETMASTER_API_KEY is set; otherwise []).
+  // Live events from all enabled external sources (Ticketmaster + Yelp +
+  // Boston Calendar). Each source no-ops gracefully if its API key isn't
+  // set. The aggregator also filters out admin-blacklisted items.
   let live: Activity[] = [];
   try {
-    live = await fetchLiveActivities({ city: 'Boston', size: 30 });
+    live = await fetchAllLiveActivities();
   } catch (e) {
     console.warn('date-vibes: live fetch failed', e);
   }

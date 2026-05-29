@@ -30,9 +30,11 @@ export type Interest = typeof INTEREST_OPTIONS[number]['value'];
 
 export const CATEGORIES: ActivityCategory[] = ['food', 'outdoor', 'cultural', 'cozy', 'adventurous'];
 
+export type ActivitySource = 'curated' | 'ticketmaster' | 'yelp' | 'boston-calendar';
+
 export interface Activity {
-  id: string;                  // 'curated:walk-esplanade' or 'live:ticketmaster:<eventId>'
-  source: 'curated' | 'ticketmaster';
+  id: string;                  // 'curated:<slug>' / 'live:tm:<id>' / 'live:yelp:<id>' / 'live:cal:<id>'
+  source: ActivitySource;
   title: string;
   blurb: string;
   category: ActivityCategory;
