@@ -19,16 +19,18 @@ const FROM = 'NotCupid <match@notcupid.com>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
 
 // ─── Brand tokens (kept here so design tweaks live in one file) ──────────
+// Brand Kit v1 palette. `lav*` keys kept as names (used throughout the
+// templates) but now hold brand blue so every email shifts in one place.
 export const C = {
-  ink:        '#0e0c1a', // primary text / buttons
-  paper:      '#f8f5ff', // page background
+  ink:        '#0b0b0b', // primary text / buttons
+  paper:      '#f6f6f6', // page background
   card:       '#ffffff',
-  lav:        '#8b7fd4', // accent
-  lavSoft:    '#ede9ff', // accent fill
-  lavDeep:    '#5b4fa0',
-  muted:      '#7a7590',
-  mutedSoft:  '#c8c4dc',
-  border:     'rgba(14,12,26,0.08)',
+  lav:        '#2563ff', // brand blue — accent
+  lavSoft:    '#e8edff', // accent fill
+  lavDeep:    '#1b46c9',
+  muted:      '#6b6b76',
+  mutedSoft:  '#cbcbd4',
+  border:     'rgba(11,11,11,0.08)',
 };
 
 // ─── Unsubscribe link signing (HMAC; same shape as match-tokens) ─────────

@@ -52,7 +52,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       <div
         className={styles.landGlow}
         style={{
-          background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(139,127,212,0.24) 0%, rgba(216,179,64,0.10) 30%, transparent 60%)`,
+          background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(37,99,255,0.22) 0%, rgba(255,106,31,0.10) 32%, transparent 62%)`,
         }}
         aria-hidden
       />
@@ -66,17 +66,17 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       <section className={styles.landHero}>
         <div className={styles.landEyebrow}>
           <span className={styles.landDot} />
-          boston · ma · two algos
+          boston · ma · a social experiment
         </div>
 
         <h1 className={styles.landH1}>
-          Boston’s<br/>
-          <em>social experiment.</em>
+          Meet people.<br/>
+          <em>Not profiles.</em>
         </h1>
 
         <p className={styles.landLede}>
-          one algo for dates. one for friends.<br/>
-          neither swipes.
+          a social experiment in real-life connection.<br/>
+          real people, real conversations — no endless swiping.
         </p>
 
         <div className={styles.landProducts}>

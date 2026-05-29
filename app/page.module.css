@@ -5,7 +5,7 @@
 .land {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(180deg, #faf8ff 0%, #f3eeff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
   color: #0a0a0a;
   display: flex;
   flex-direction: column;
@@ -50,7 +50,7 @@
   color: #0a0a0a;
 }
 .landBrandDot {
-  color: #8b7fd4;
+  color: #2563ff;
   margin: 0 0.35rem;
   font-weight: 700;
 }
@@ -60,14 +60,14 @@
   font-size: 0.62rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #5b4fa0;
+  color: #1b46c9;
   text-decoration: none;
   padding: 0.5rem 1rem;
-  border: 1px solid rgba(139,127,212,0.4);
+  border: 1px solid rgba(37,99,255,0.4);
   border-radius: 999px;
   transition: all 0.15s;
 }
-.landNavBtn:hover { background: #ede9ff; border-color: #8b7fd4; }
+.landNavBtn:hover { background: #e8edff; border-color: #2563ff; }
 
 /* ============= HERO ============= */
 .landHero {
@@ -90,7 +90,7 @@
   font-size: 0.6rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: #8b7fd4;
+  color: #2563ff;
   margin-bottom: 2.5rem;
   display: inline-flex;
   align-items: center;
@@ -102,13 +102,13 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #8b7fd4;
-  box-shadow: 0 0 0 0 rgba(139,127,212,0.6);
+  background: #2563ff;
+  box-shadow: 0 0 0 0 rgba(37,99,255,0.6);
   animation: pulse 2.4s infinite;
 }
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139,127,212,0.6); }
-  50%      { box-shadow: 0 0 0 8px rgba(139,127,212,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,255,0.6); }
+  50%      { box-shadow: 0 0 0 8px rgba(37,99,255,0); }
 }
 
 .landH1 {
@@ -124,7 +124,7 @@
 .landH1 em {
   font-style: italic;
   font-weight: 400;
-  background: linear-gradient(135deg, #5b4fa0 0%, #8b7fd4 100%);
+  background: linear-gradient(135deg, #1b46c9 0%, #2563ff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -155,7 +155,7 @@
 .landProd {
   background: rgba(255,255,255,0.7);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(139,127,212,0.3);
+  border: 1px solid rgba(37,99,255,0.3);
   border-radius: 18px;
   padding: 1.5rem 1.5rem 1.25rem;
   text-decoration: none;
@@ -166,14 +166,14 @@
   gap: 0.6rem;
   transition: transform .2s, border-color .2s, box-shadow .2s;
 }
-.landProd:hover { transform: translateY(-4px); box-shadow: 0 18px 38px -16px rgba(91,79,160,0.28); }
-.landProdLove { border-color: rgba(91,79,160,0.4); }
-.landProdLove:hover { border-color: #5b4fa0; }
+.landProd:hover { transform: translateY(-4px); box-shadow: 0 18px 38px -16px rgba(27,70,201,0.28); }
+.landProdLove { border-color: rgba(27,70,201,0.4); }
+.landProdLove:hover { border-color: #1b46c9; }
 .landProdFriend {
-  border-color: rgba(216,179,64,0.45);
-  background: linear-gradient(180deg, rgba(255,250,235,0.75) 0%, rgba(255,255,255,0.65) 100%);
+  border-color: rgba(255,106,31,0.45);
+  background: linear-gradient(180deg, rgba(255,245,238,0.75) 0%, rgba(255,255,255,0.65) 100%);
 }
-.landProdFriend:hover { border-color: #d8b340; }
+.landProdFriend:hover { border-color: #ff6a1f; }
 
 .landProdEye {
   font-family: 'DM Mono', ui-monospace, monospace;
@@ -186,7 +186,7 @@
   box-shadow: 0 0 0 0 rgba(45,122,79,0.6);
   animation: pulseLive 2.2s infinite;
 }
-.landProdDotSoon { width: 6px; height: 6px; border-radius: 50%; background: #d8b340; }
+.landProdDotSoon { width: 6px; height: 6px; border-radius: 50%; background: #ff6a1f; }
 @keyframes pulseLive { 0%,100% { box-shadow: 0 0 0 0 rgba(45,122,79,.6); } 50% { box-shadow: 0 0 0 6px rgba(45,122,79,0); } }
 
 .landProdName {
@@ -196,11 +196,11 @@
 .landProdName em {
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic; font-weight: 400;
-  background: linear-gradient(135deg, #5b4fa0 0%, #8b7fd4 100%);
+  background: linear-gradient(135deg, #1b46c9 0%, #2563ff 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .landProdFriend .landProdName em {
-  background: linear-gradient(135deg, #c39418 0%, #d8b340 100%);
+  background: linear-gradient(135deg, #d2530f 0%, #ff6a1f 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
@@ -213,10 +213,10 @@
 .landProdCta {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600;
-  color: #5b4fa0;
+  color: #1b46c9;
   margin-top: 0.3rem;
 }
-.landProdFriend .landProdCta { color: #c39418; }
+.landProdFriend .landProdCta { color: #d2530f; }
 
 /* ============= CTA (kept for compat) ============= */
 .landCtaRow {
@@ -243,14 +243,14 @@
   position: relative;
 }
 .landBtnPri:hover {
-  background: #5b4fa0;
+  background: #1b46c9;
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px -10px rgba(91,79,160,0.55);
+  box-shadow: 0 12px 32px -10px rgba(27,70,201,0.55);
 }
 
 .landBtnGhost {
   background: transparent;
-  color: #5b4fa0;
+  color: #1b46c9;
   padding: 1.05rem 2rem;
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.7rem;
@@ -259,10 +259,10 @@
   font-weight: 600;
   border-radius: 999px;
   text-decoration: none;
-  border: 1px solid rgba(139,127,212,0.45);
+  border: 1px solid rgba(37,99,255,0.45);
   transition: all 0.15s;
 }
-.landBtnGhost:hover { background: rgba(139,127,212,0.1); border-color: #5b4fa0; }
+.landBtnGhost:hover { background: rgba(37,99,255,0.1); border-color: #1b46c9; }
 
 /* ============= TICKER ============= */
 .landTicker {
@@ -272,7 +272,7 @@
   padding: 0.7rem 1.25rem;
   background: rgba(255,255,255,0.7);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(139,127,212,0.25);
+  border: 1px solid rgba(37,99,255,0.25);
   border-radius: 999px;
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.7rem;
