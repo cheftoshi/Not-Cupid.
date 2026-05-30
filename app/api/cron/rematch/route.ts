@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
+import { releaseBalanceHolds } from '@/lib/balance'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,6 +109,18 @@ export async function GET(req: NextRequest) {
     }
     console.log(`Cooldown auto-release: ${releasedIds.length}`)
 
+    // ============== 0d) Gender-balance hold release ==============
+    // Release intake-gated users as the scarce side grows (room under the
+    // ceiling) or after the 3-day anti-churn cap. Released users go straight
+    // into the rematch set below so they get a match attempt this run.
+    let balanceReleased: string[] = []
+    try {
+      balanceReleased = await releaseBalanceHolds()
+    } catch (e) {
+      console.error('Balance hold release failed:', e)
+    }
+    console.log(`Balance-hold release: ${balanceReleased.length}`)
+
     // ============== 1) Auto-end active chats whose timer expired ==============
     // Close chats that have gone silent past their (sliding) 24h window.
     // Keyed on both-accepted + chat_expires_at, not status='active' (matches
@@ -173,6 +186,8 @@ export async function GET(req: NextRequest) {
     // Freshly cooldown-released users are eligible by construction
     // (cooldown cleared, not banned, not matched) — add them directly.
     for (const id of releasedIds) toRematch.add(id)
+    // Balance-released users likewise want a match attempt this run.
+    for (const id of balanceReleased) toRematch.add(id)
 
     if (toRematch.size === 0) {
       return NextResponse.json({

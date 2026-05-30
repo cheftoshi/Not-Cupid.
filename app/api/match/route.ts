@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data'
 import { compatibilityScore, thresholdFor } from '@/lib/matching'
-import { intentOf, intentCompatible } from '@/lib/pools'
+import { intentOf, intentCompatible, equityBonus } from '@/lib/pools'
 import { renderEmail, sendEmail, button, C } from '@/lib/email'
 
 const RADIUS_NUDGE_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000
@@ -151,9 +151,19 @@ export async function POST(req: NextRequest) {
     // clearing candidates is intent-compatible, fall back to the best overall
     // so a thin segment never blocks a match. `clearing` is already sorted by
     // score desc, so [0] of each subset is its top-scorer.
+    // Equity rotation: among threshold-clearing candidates, rank by
+    // (compatibility + a small under-served bonus) so the same high-scorers
+    // don't monopolize the scarce side. Compatibility still dominates; this
+    // only tips near-ties toward people who haven't matched recently.
+    const nowMs = Date.now()
+    const rank = (arr: any[]) =>
+      arr
+        .map((p: any) => ({ ...p, eff: p.score + equityBonus(p.last_matched_at, nowMs) }))
+        .sort((a: any, b: any) => b.eff - a.eff)
+
     const userIntent = intentOf(user)
-    const sameIntent = clearing.filter((p: any) => intentCompatible(userIntent, intentOf(p)))
-    const best = (sameIntent.length > 0 ? sameIntent : clearing)[0]
+    const sameIntent = rank(clearing.filter((p: any) => intentCompatible(userIntent, intentOf(p))))
+    const best = (sameIntent.length > 0 ? sameIntent : rank(clearing))[0]
 
     const { data: match } = await supabaseAdmin
       .from('matches')
@@ -165,8 +175,9 @@ export async function POST(req: NextRequest) {
       }])
       .select().single()
 
-    await supabaseAdmin.from('users').update({ status: 'matched' }).eq('id', userId)
-    await supabaseAdmin.from('users').update({ status: 'matched' }).eq('id', best.id)
+    const matchedAt = new Date().toISOString()
+    await supabaseAdmin.from('users').update({ status: 'matched', last_matched_at: matchedAt }).eq('id', userId)
+    await supabaseAdmin.from('users').update({ status: 'matched', last_matched_at: matchedAt }).eq('id', best.id)
 
     await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-match`, {
       method: 'POST',

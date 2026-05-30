@@ -128,3 +128,43 @@ for (const [m, f] of [[70, 30], [70, 45], [70, 60], [70, 70]]) {
   console.log(`  70M + ${f}F → ${matches.length} matches, ${matchedM}/${m} men matched (${Math.round(matchedM / m * 100)}%), ${m - matchedM} men waiting`);
 }
 console.log('');
+
+// ── Equity rotation validation ──────────────────────────────────────────
+// Over repeated match cycles in a skewed pool, does equity weighting give
+// MORE distinct men a shot than always picking the top score?
+function equityBonusSim(lastRound, cur) {
+  if (lastRound == null) return 8;
+  const gap = cur - lastRound;
+  if (gap >= 3) return 8; if (gap >= 1) return 4; return 0;
+}
+function multiRound(fracMale, rounds, useEquity) {
+  const users = buildPool(200, fracMale);
+  users.forEach((u) => (u.lastRound = null));
+  const everMatchedMen = new Set();
+  for (let r = 0; r < rounds; r++) {
+    users.forEach((u) => (u.matched = false));
+    const mC = users.filter((u) => u.gender === 'm').length, fC = users.filter((u) => u.gender === 'f').length;
+    const pri = fC <= mC ? 'f' : 'm';
+    const order = [...users].sort((a, b) => (a.gender === pri ? 0 : 1) - (b.gender === pri ? 0 : 1));
+    for (const u of order) {
+      if (u.matched) continue;
+      const cands = users.filter((p) => !p.matched && p.id !== u.id && p.gender === u.seeking);
+      if (!cands.length) continue;
+      const min = thresholdFor(u, users);
+      const clearing = cands.map((p) => ({ p, raw: compatibilityScore(u, p) })).filter((x) => x.raw >= min);
+      if (!clearing.length) continue;
+      clearing.sort((a, b) => (b.raw + (useEquity ? equityBonusSim(b.p.lastRound, r) : 0)) - (a.raw + (useEquity ? equityBonusSim(a.p.lastRound, r) : 0)));
+      const best = clearing[0];
+      u.matched = true; best.p.matched = true; u.lastRound = r; best.p.lastRound = r;
+      if (u.gender === 'm') everMatchedMen.add(u.id);
+      if (best.p.gender === 'm') everMatchedMen.add(best.p.id);
+    }
+  }
+  return everMatchedMen.size;
+}
+console.log('='.repeat(64));
+console.log('Equity rotation: distinct men who got >=1 match over 6 cycles (70/30)');
+console.log('='.repeat(64));
+console.log(`  top-score only:   ${multiRound(0.7, 6, false)} distinct men (of 140) ever matched`);
+console.log(`  equity-weighted:  ${multiRound(0.7, 6, true)} distinct men (of 140) ever matched`);
+console.log('');

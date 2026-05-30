@@ -85,3 +85,30 @@ export function computeSegment(user: any, lastSessionAt: Date | null, now: Date)
 
 export const INTENTS: Intent[] = ['serious', 'casual', 'enm', 'open'];
 export const TIERS: Tier[] = ['A', 'B', 'next'];
+
+// ─── Gender-balance intake gating ──────────────────────────────────────────
+// Keep each metro's ACTIVE pool from skewing so hard that one side piles up
+// unmatched. The over-represented gender may hold at most BALANCE_CEILING of
+// the active pool; excess new signups go on a soft hold and release as the
+// scarce side joins. Tiny pools are exempt so we don't gate a brand-new metro.
+export const BALANCE_CEILING = 0.62;          // max active fraction for the over-rep gender
+export const BALANCE_MIN_POOL = 8;            // don't gate metros smaller than this
+export const MAX_BALANCE_HOLD_DAYS = 3;       // never hold anyone longer than this (anti-churn)
+
+// Given the scarce side's active count, the max over-rep count the ceiling
+// allows. e.g. ceiling 0.62 → at most ~1.63 men per woman.
+export function maxOverrep(scarceCount: number): number {
+  return Math.floor(scarceCount * (BALANCE_CEILING / (1 - BALANCE_CEILING)));
+}
+
+// Equity rotation: a small additive bonus (on the 0-100 score scale) for
+// candidates who haven't matched recently, so the same high-scorers don't
+// monopolize the scarce side. Compatibility still dominates; this only tips
+// near-ties toward the under-served.
+export function equityBonus(lastMatchedAt: string | null | undefined, nowMs: number): number {
+  if (!lastMatchedAt) return 8; // never matched → give them a shot
+  const days = (nowMs - new Date(lastMatchedAt).getTime()) / 86_400_000;
+  if (days >= 14) return 8;
+  if (days >= 3) return 4;
+  return 0;
+}

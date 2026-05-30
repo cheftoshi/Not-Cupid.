@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { metroOf } from '@/lib/quiz-data'
+import { metroGenderCounts, shouldHoldForBalance } from '@/lib/balance'
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,11 +52,33 @@ if (error) {
   console.error('Submit: supabase error:', error)
   return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
 }
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: data.id })
-    }).catch(err => console.error('Match trigger error:', err))
+    // Gender-balance intake gate: if this signup would push their metro's
+    // active pool past the ratio ceiling, hold them in a soft "early access"
+    // state (pool_active=false) instead of matching. The cron releases them
+    // as the scarce side joins, or after a 3-day cap. They just see the normal
+    // positive "in the queue" state — no negative messaging.
+    let held = false
+    try {
+      const counts = await metroGenderCounts()
+      const metro = metroOf(data.zip) ?? 'unknown'
+      if (shouldHoldForBalance(counts[metro], data.gender)) {
+        await supabaseAdmin
+          .from('users')
+          .update({ pool_active: false, balance_hold_at: new Date().toISOString() })
+          .eq('id', data.id)
+        held = true
+      }
+    } catch (e) {
+      console.error('Submit: balance gate check failed (matching anyway):', e)
+    }
+
+    if (!held) {
+      fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: data.id })
+      }).catch(err => console.error('Match trigger error:', err))
+    }
 
     return NextResponse.json({ success: true, userId: data.id })
   } catch (err) {
