@@ -80,20 +80,6 @@ export default async function DashboardPage({
     isUnlocked = !!unlock;
   }
 
-  // Monthly match count — only matches that actually ACTIVATED (both
-  // accepted) count toward the 8. Pending matches that expired from
-  // inactivity, or that someone passed, don't burn a slot.
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const { count: monthlyCount } = await supabaseAdmin
-    .from('matches')
-    .select('id', { count: 'exact', head: true })
-    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-    .eq('user_1_accepted', true)
-    .eq('user_2_accepted', true)
-    .gte('created_at', startOfMonth.toISOString());
 
   // History (ended matches)
   const { data: historyMatches } = await supabaseAdmin
@@ -121,7 +107,7 @@ export default async function DashboardPage({
           your <span className={styles.titleAccent}>matches.</span>
         </h1>
         <p className={styles.subtitle}>
-          {monthlyCount || 0} / 8 used this month · one match at a time →
+          one match at a time · the algorithm sets the pace →
         </p>
 
         {currentMatch && otherUser ? (
