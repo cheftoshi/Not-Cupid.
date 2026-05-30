@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import MatchCard from './match-card';
+import MatchReveal from './match-reveal';
 import ExpandRadiusButton from './expand-radius-button';
 import DashboardExtras from './dashboard-extras';
 import CorpFooter from '@/components/corp-footer';
@@ -121,6 +122,15 @@ export default async function DashboardPage({
         <p className={styles.subtitle}>
           one match at a time · the algorithm sets the pace →
         </p>
+
+        {currentMatch && otherUser && !currentMatch.ended_at && (
+          <MatchReveal
+            matchId={currentMatch.id}
+            name={otherUser.name || 'your match'}
+            score={currentMatch.compatibility_score ?? null}
+            archetype={otherUser.archetype}
+          />
+        )}
 
         {currentMatch && otherUser ? (
           <MatchCard

@@ -51,6 +51,7 @@
   border: 1px solid #e5e1ec;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   margin-bottom: 2rem;
+  animation: ncCardIn 0.5s cubic-bezier(.2,.7,.2,1) both;
 }
 
 .matchHeader {
@@ -241,10 +242,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.1s ease;
 }
 
 .acceptButton:hover:not(:disabled), .chatButton:hover { background: #2a2a2a; }
+.acceptButton:active:not(:disabled), .chatButton:active { transform: scale(0.97); }
+.unlockButton:active:not(:disabled), .passButton:active:not(:disabled) { transform: scale(0.97); }
 
 .subActions {
   display: flex;
