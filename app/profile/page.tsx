@@ -15,7 +15,7 @@ export default async function ProfilePage() {
     <div className={styles.page}>
       <div className={styles.container}>
         <nav className={styles.nav}>
-          <div className={styles.navBrand}>NOTCUPID</div>
+          <a href="/hub" className={styles.navBrand} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>NOTCUPID</a>
           <div className={styles.navLinks}>
             <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
             <a href="/profile/preview" className={styles.navLink}>Preview</a>
