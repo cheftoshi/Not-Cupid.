@@ -14,6 +14,7 @@ export default function AdminClient() {
   const [liveEvents, setLiveEvents] = useState<any>(null)
   const [pools, setPools] = useState<any>(null)
   const [health, setHealth] = useState<any>(null)
+  const [appFeedback, setAppFeedback] = useState<any>(null)
   const [waveBusy, setWaveBusy] = useState(false)
 
   useEffect(() => {
@@ -49,6 +50,17 @@ export default function AdminClient() {
       })
       .then(setHealth)
       .catch((e) => setHealth({ __error: e?.message || 'network error' }))
+
+    fetch('/api/admin/feedback')
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await parseResponse<any>(r).catch(() => ({}))
+          return { __error: body?.error || `HTTP ${r.status}`, items: [] }
+        }
+        return parseResponse<any>(r)
+      })
+      .then(setAppFeedback)
+      .catch((e) => setAppFeedback({ __error: e?.message || 'network error', items: [] }))
   }, [])
 
   async function refreshPools() {
@@ -160,7 +172,8 @@ export default function AdminClient() {
               <a href="#ops" className={s.navLink}>Ops</a>
               <a href="#signups" className={s.navLink}>Signups</a>
               <a href="#matches" className={s.navLink}>Matches</a>
-              <a href="#feedback" className={s.navLink}>Feedback</a>
+              <a href="#feedback" className={s.navLink}>Dates</a>
+              <a href="#app-feedback" className={s.navLink}>Feedback</a>
               <a href="#events" className={s.navLink}>Events</a>
             </nav>
           </div>
@@ -517,6 +530,28 @@ export default function AdminClient() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+
+          {/* ── APP FEEDBACK ── */}
+          <div className={s.card} id="app-feedback">
+            <div className={s.cardHead}><p className={s.cardTitle}>App feedback — <b>what users are telling you</b></p></div>
+
+            {!appFeedback && <p className={s.note}>loading…</p>}
+            {appFeedback?.__error && <p className={s.noteErr}>couldn’t load: {appFeedback.__error}</p>}
+            {appFeedback && !appFeedback.__error && appFeedback.items?.length === 0 && <p className={s.note}>no feedback yet</p>}
+
+            {appFeedback?.items?.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {appFeedback.items.map((f: any) => (
+                  <div key={f.id} style={{ background: '#f8f5ff', border: '1px solid rgba(14,12,26,0.06)', borderRadius: 8, padding: '0.7rem 0.9rem' }}>
+                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '0.9rem', color: '#0e0c1a', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
+                    <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', letterSpacing: '0.08em', color: '#7a7590', marginTop: '0.5rem', textTransform: 'uppercase' }}>
+                      {f.user ? `${f.user.name || 'user'} · ${f.user.email}` : 'anonymous'} · {f.created_at?.split('T')[0]}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
