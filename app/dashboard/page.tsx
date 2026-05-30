@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import MatchCard from './match-card';
 import ExpandRadiusButton from './expand-radius-button';
+import DashboardExtras from './dashboard-extras';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
 import styles from './dashboard.module.css';
@@ -90,6 +91,15 @@ export default async function DashboardPage({
     .order('ended_at', { ascending: false })
     .limit(10);
 
+  // Names of past matches (we show who, not why it ended).
+  const historyOtherIds = Array.from(new Set(
+    (historyMatches ?? []).map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
+  ));
+  const { data: historyOthers } = historyOtherIds.length
+    ? await supabaseAdmin.from('users').select('id, name').in('id', historyOtherIds)
+    : { data: [] as any[] };
+  const historyNameById = new Map((historyOthers ?? []).map((u: any) => [u.id, u.name]));
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -138,32 +148,24 @@ export default async function DashboardPage({
           <div className={styles.history}>
             <h2 className={styles.historyTitle}>past matches</h2>
             <div className={styles.historyList}>
-              {historyMatches.map((m: any) => (
-                <div key={m.id} className={styles.historyItem}>
-                  <span className={styles.historyDate}>
-                    {new Date(m.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                  <span className={styles.historyOutcome}>
-                    {formatOutcome(m.ended_reason)}
-                  </span>
-                </div>
-              ))}
+              {historyMatches.map((m: any) => {
+                const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
+                const name = historyNameById.get(otherId) || 'a match';
+                return (
+                  <div key={m.id} className={styles.historyItem}>
+                    <span className={styles.historyDate}>
+                      {new Date(m.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className={styles.historyOutcome}>{name}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
       </div>
+      <DashboardExtras />
       <CorpFooter />
     </div>
   );
-}
-
-function formatOutcome(reason: string | null): string {
-  switch (reason) {
-    case 'expired': return 'expired without acceptance';
-    case 'one_passed': return 'one of you passed';
-    case 'mutual_pass': return 'both passed';
-    case 'completed': return 'completed';
-    case 'user_deleted': return 'account deleted';
-    default: return 'ended';
-  }
 }
