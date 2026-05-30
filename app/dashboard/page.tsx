@@ -104,7 +104,7 @@ export default async function DashboardPage({
     <div className={styles.page}>
       <div className={styles.container}>
         <nav className={styles.nav}>
-          <div className={styles.navBrand}>NOTCUPID</div>
+          <a href="/hub" className={styles.navBrand} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>NOTCUPID</a>
           <div className={styles.navLinks}>
             <a href="/profile" className={styles.navLink}>Profile</a>
             <a href="/profile/preview" className={styles.navLink}>Preview</a>
@@ -112,6 +112,8 @@ export default async function DashboardPage({
             <a href="/quiz?retake=1" className={styles.navLink}>Retake quiz</a>
           </div>
         </nav>
+
+        <DashboardExtras />
 
         <h1 className={styles.title}>
           your <span className={styles.titleAccent}>matches.</span>
@@ -164,7 +166,6 @@ export default async function DashboardPage({
           </div>
         )}
       </div>
-      <DashboardExtras />
       <CorpFooter />
     </div>
   );

@@ -27,13 +27,12 @@ export default function DashboardExtras() {
 
   return (
     <>
-      <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', alignItems: 'center', padding: '2rem 1rem 0' }}>
-        <button onClick={openWhatsNew} style={linkBtn}>
+      <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'flex-end', alignItems: 'center', margin: '-2rem 0 2.5rem', flexWrap: 'wrap' }}>
+        <button onClick={openWhatsNew} style={pillBtn(hasNew)}>
           ✦ what&apos;s new
           {hasNew && <span style={dot} aria-label="new" />}
         </button>
-        <span style={{ color: '#cbcbd4' }}>·</span>
-        <button onClick={() => setOpen('feedback')} style={linkBtn}>💬 send feedback</button>
+        <button onClick={() => setOpen('feedback')} style={pillBtn(false)}>💬 feedback</button>
       </div>
 
       {open === 'whatsnew' && <WhatsNewModal onClose={() => setOpen(null)} />}
@@ -143,10 +142,15 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
   );
 }
 
-const linkBtn: React.CSSProperties = {
-  background: 'transparent', border: 'none', cursor: 'pointer', position: 'relative',
-  fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6b76',
-};
+function pillBtn(highlight: boolean): React.CSSProperties {
+  return {
+    background: highlight ? '#e8edff' : '#fff',
+    border: `1px solid ${highlight ? 'rgba(37,99,255,0.35)' : 'rgba(11,11,11,0.12)'}`,
+    cursor: 'pointer', position: 'relative', borderRadius: 999, padding: '0.45rem 0.9rem',
+    fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
+    color: highlight ? '#1b46c9' : '#6b6b76',
+  };
+}
 const dot: React.CSSProperties = {
   display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#ff6a1f', marginLeft: 6, verticalAlign: 'middle',
 };
