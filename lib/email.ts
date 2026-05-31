@@ -154,6 +154,13 @@ export function renderEmail(args: RenderArgs): string {
             <div style="border-top:1px solid ${C.border};padding-top:18px;font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.mutedSoft};letter-spacing:0.12em;text-transform:uppercase;">
               ${args.footerNote ? `<div style="margin-bottom:8px;color:${C.muted};text-transform:none;letter-spacing:0;font-family:Georgia,serif;font-style:italic;font-size:12px;">${args.footerNote}</div>` : ''}
               Boston · notcupid.com · the algo decided
+              <div style="margin-top:10px;">
+                <a href="https://instagram.com/notcupidapp" style="color:${C.lav};text-decoration:none;letter-spacing:0.12em;">instagram</a>
+                &nbsp;·&nbsp;
+                <a href="https://tiktok.com/@notcupid11" style="color:${C.lav};text-decoration:none;letter-spacing:0.12em;">tiktok</a>
+                &nbsp;·&nbsp;
+                <a href="https://x.com/notcupidapp" style="color:${C.lav};text-decoration:none;letter-spacing:0.12em;">x</a>
+              </div>
               ${unsubBlock}
             </div>
           </td>

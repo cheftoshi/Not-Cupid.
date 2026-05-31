@@ -21,22 +21,29 @@ export default function CorpFooter() {
       >
         NOT<span style={{ color: '#ff6a1f' }}>CUPID</span>
       </div>
-      <div style={{ marginBottom: '0.7rem' }}>
-        <a
-          href="https://instagram.com/notcupidapp"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontFamily: "'DM Mono', ui-monospace, monospace",
-            fontSize: '0.6rem',
-            letterSpacing: '0.14em',
-            textTransform: 'lowercase',
-            color: '#2563ff',
-            textDecoration: 'none',
-          }}
-        >
-          ↗ @notcupidapp
-        </a>
+      <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1.1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {[
+          { label: 'instagram', handle: '@notcupidapp', href: 'https://instagram.com/notcupidapp' },
+          { label: 'tiktok', handle: '@notcupid11', href: 'https://tiktok.com/@notcupid11' },
+          { label: 'x', handle: '@notcupidapp', href: 'https://x.com/notcupidapp' },
+        ].map((s) => (
+          <a
+            key={s.label}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: "'DM Mono', ui-monospace, monospace",
+              fontSize: '0.6rem',
+              letterSpacing: '0.14em',
+              textTransform: 'lowercase',
+              color: '#2563ff',
+              textDecoration: 'none',
+            }}
+          >
+            ↗ {s.label}
+          </a>
+        ))}
       </div>
       <div
         style={{
