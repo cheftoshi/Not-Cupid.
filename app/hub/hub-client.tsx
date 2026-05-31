@@ -77,15 +77,15 @@ export default function HubClient({
 
         {/* FRIEND MAXXIN */}
         <div className={`${styles.card} ${styles.cardFriend}`}>
-          <div className={styles.cardEyebrow}><span className={styles.dotSoon} />soon</div>
+          <div className={styles.cardEyebrow}><span className={styles.dotLive} />live</div>
           <h2 className={styles.cardH2}>friend <em>maxxin.</em></h2>
           <p className={styles.cardDesc}>
-            three to four platonic matches. shared interests, planned activities.
-            a real circle, not a swipe deck.
+            up to 5 platonic matches. shared interests, a group chat, a city
+            full of plans. a real crew, not a swipe deck.
           </p>
           <div className={styles.cardSpec}>
-            <div><span className={styles.specK}>matches</span><span className={styles.specV}>3–4 max</span></div>
-            <div><span className={styles.specK}>pool</span><span className={styles.specV}>shared chat</span></div>
+            <div><span className={styles.specK}>matches</span><span className={styles.specV}>5 max</span></div>
+            <div><span className={styles.specK}>pool</span><span className={styles.specV}>group chat</span></div>
             <div><span className={styles.specK}>style</span><span className={styles.specV}>activity-led</span></div>
           </div>
           {joined ? (
