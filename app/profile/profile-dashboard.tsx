@@ -198,10 +198,6 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
           <span>age range</span>
           <span className={styles.dashPrefVal}>{user.age_min || '—'} → {user.age_max || '—'}</span>
         </div>
-        <div className={styles.dashPrefRow}>
-          <span>auto-rematch</span>
-          <span className={styles.dashPrefVal}>{user.auto_rematch ? 'on' : 'off'}</span>
-        </div>
       </div>
 
       {/* ACCOUNT FOOTER */}

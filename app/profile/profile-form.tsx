@@ -356,10 +356,6 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           </div>
         </div>
         <label className={styles.checkbox}>
-          <input type="checkbox" checked={user.auto_rematch || false} onChange={e => setUser({ ...user, auto_rematch: e.target.checked })} />
-          <span>Auto-rematch me when a match ends</span>
-        </label>
-        <label className={styles.checkbox}>
           <input
             type="checkbox"
             checked={user.email_notifications !== false}
