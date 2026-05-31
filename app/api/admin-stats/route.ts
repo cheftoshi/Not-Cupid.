@@ -15,6 +15,14 @@ export async function GET(req: NextRequest) {
     // For the conversion funnel: which matches have ≥1 message, and which users gave date feedback.
     const { data: msgRows } = await supabaseAdmin.from('messages').select('match_id')
     const { data: feedbackRows } = await supabaseAdmin.from('date_feedback').select('user_id')
+    // Web traffic (last 7 days) for the in-admin flow view. Wrapped so a missing
+    // page_views table (migration not run yet) doesn't break the whole dashboard.
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    let pageViews: any[] | null = null
+    try {
+      const r = await supabaseAdmin.from('page_views').select('path, anon_id, created_at').gte('created_at', sevenDaysAgo)
+      pageViews = r.data ?? []
+    } catch { pageViews = null }
 
     const totalUsers = users?.length ?? 0
     const totalMatches = matches?.length ?? 0
@@ -98,10 +106,39 @@ export async function GET(req: NextRequest) {
       stage('Went on a date', countIn(datedUserIds)),
     ]
 
+    // ───────────── Web traffic (last 7 days) ─────────────
+    let traffic: any = null
+    if (pageViews) {
+      const pathCounts: Record<string, number> = {}
+      const sessions = new Set<string>()
+      const viewsByDay: Record<string, number> = {}
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i)
+        viewsByDay[d.toISOString().split('T')[0]] = 0
+      }
+      pageViews.forEach((v: any) => {
+        pathCounts[v.path] = (pathCounts[v.path] || 0) + 1
+        if (v.anon_id) sessions.add(v.anon_id)
+        const day = v.created_at?.split('T')[0]
+        if (day && viewsByDay[day] !== undefined) viewsByDay[day]++
+      })
+      const topPaths = Object.entries(pathCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 12)
+        .map(([path, count]) => ({ path, count }))
+      traffic = {
+        totalViews: pageViews.length,
+        uniqueSessions: sessions.size,
+        topPaths,
+        viewsByDay,
+      }
+    }
+
     return NextResponse.json({
       stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
       signupsPerDay: days,
       funnel,
+      traffic,
       recentUsers,
       recentMatches,
     })

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import PageTracker from '@/components/page-tracker'
 
 export const metadata: Metadata = {
   title: 'NotCupid — Boston\'s Social Experiment',
@@ -27,7 +28,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>{children}<PageTracker /></body>
     </html>
   )
 }

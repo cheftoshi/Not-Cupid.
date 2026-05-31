@@ -182,6 +182,7 @@ export default function AdminClient() {
             </div>
             <nav className={s.nav}>
               <a href="#funnel" className={s.navLink}>Funnel</a>
+              <a href="#traffic" className={s.navLink}>Traffic</a>
               <a href="#pool" className={s.navLink}>Pool</a>
               <a href="#health" className={s.navLink}>Health</a>
               <a href="#ops" className={s.navLink}>Ops</a>
@@ -243,6 +244,51 @@ export default function AdminClient() {
                   );
                 })}
               </div>
+            )}
+          </div>
+
+          {/* ── WEB TRAFFIC (pageview flow, last 7 days) ── */}
+          <div className={s.card} id="traffic">
+            <div className={s.cardHead}>
+              <p className={s.cardTitle}>Web traffic — <b>last 7 days</b></p>
+            </div>
+            {!data?.traffic ? (
+              <p className={s.note}>no traffic data yet — run the page_views migration, then give it a few visits.</p>
+            ) : (
+              <>
+                <div className={s.chips}>
+                  <span className={s.chip}>Pageviews <b>{data.traffic.totalViews}</b></span>
+                  <span className={s.chip}>Unique sessions <b>{data.traffic.uniqueSessions}</b></span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', height: 60, margin: '0.75rem 0 1.25rem' }}>
+                  {Object.entries(data.traffic.viewsByDay).map(([day, count]: any) => {
+                    const max = Math.max(...Object.values(data.traffic.viewsByDay) as number[], 1);
+                    const pct = (count / max) * 100;
+                    return (
+                      <div key={day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', color: '#7a7590' }}>{count}</div>
+                        <div style={{ width: '100%', background: '#2563ff', height: `${Math.max(pct, 4)}%`, minHeight: 3, borderRadius: '2px 2px 0 0' }} />
+                        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.42rem', color: '#a8a3b8' }}>{day.slice(5)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7a7590', marginBottom: '0.5rem' }}>top pages</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {data.traffic.topPaths.map((p: any) => {
+                    const max = data.traffic.topPaths[0]?.count || 1;
+                    return (
+                      <div key={p.path} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                        <span style={{ width: 200, flexShrink: 0, fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', color: '#0e0c1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.path}</span>
+                        <div style={{ flex: 1, background: 'rgba(37,99,255,0.1)', borderRadius: 5, height: 18 }}>
+                          <div style={{ width: `${Math.round((p.count / max) * 100)}%`, height: '100%', background: 'linear-gradient(90deg,#2563ff,#1b46c9)', borderRadius: 5, minWidth: 3 }} />
+                        </div>
+                        <span style={{ width: 40, textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', color: '#7a7590' }}>{p.count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
 
