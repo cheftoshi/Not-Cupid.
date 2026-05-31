@@ -51,8 +51,8 @@ export default function HubClient({
       </header>
 
       <section className={styles.intro}>
-        <p className={styles.eyebrow}>hi <em>{firstName.toLowerCase()}</em></p>
-        <h1 className={styles.h1}>where to today?</h1>
+        <p className={styles.eyebrow}>hi <em className={styles.eyebrowName}>{firstName.toLowerCase()}</em></p>
+        <h1 className={styles.h1}>what&apos;s the vibe today?</h1>
         <p className={styles.lede}>two algorithms. one boston. pick a vibe.</p>
       </section>
 
