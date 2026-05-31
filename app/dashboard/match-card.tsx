@@ -91,6 +91,30 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
     }
   }
 
+  if (phase === 'expired') {
+    const first = (otherUser?.name || 'that match').split(' ')[0];
+    return (
+      <div className={styles.matchCard}>
+        <div className={styles.matchHeader}>
+          <span className={styles.phaseLabel}>match expired</span>
+        </div>
+        <h2 className={styles.matchName} style={{ marginBottom: '0.6rem' }}>{first} got away.</h2>
+        <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.95rem', lineHeight: 1.55, margin: '0 0 1.25rem' }}>
+          this one timed out before you both locked in. it happens — and you&apos;re already back in line.
+        </p>
+        <div style={{ background: 'linear-gradient(135deg,#e8edff,#fff)', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.25rem' }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.4rem' }}>✦ you&apos;re back in the pool</div>
+          <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.9rem', color: '#0a0a0a', lineHeight: 1.5 }}>
+            the algorithm re-runs every 20 minutes — your next match is already cooking.
+          </div>
+        </div>
+        <div className={styles.actions}>
+          <a href="/dashboard" className={styles.chatButton}>see who&apos;s next →</a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.matchCard}>
       <div className={styles.matchHeader}>
