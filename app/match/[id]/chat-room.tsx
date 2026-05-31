@@ -87,8 +87,13 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const ended = !!liveMatch?.ended_at;
   const expiredByTimer = !!(liveMatch?.chat_expires_at && new Date(liveMatch.chat_expires_at).getTime() < now);
   const chatExpired = ended || expiredByTimer;
+  // Pending = matched but not yet mutually accepted. Sending a message here
+  // auto-accepts (server-side), which opens the chat — so we prompt for it.
+  const pendingAccept = !chatExpired && liveMatch?.status !== 'both_accepted' && !liveMatch?.chat_expires_at;
   const status = chatExpired
     ? 'chat ended'
+    : pendingAccept
+    ? 'say hi to connect'
     : liveMatch?.chat_expires_at
     ? timeLeft(liveMatch.chat_expires_at, now)
     : 'active';
@@ -243,7 +248,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={chatExpired ? 'chat ended' : placeholder}
+          placeholder={chatExpired ? 'chat ended' : pendingAccept ? `say hi — your message connects you with ${firstName}` : placeholder}
           disabled={chatExpired || sending}
           maxLength={2000}
           className={styles.input}

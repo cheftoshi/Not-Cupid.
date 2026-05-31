@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       user_2_id: candidateId,
       compatibility_score: score,
       status: 'pending',
-      expires_at: new Date(nowMs + 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(nowMs + 72 * 60 * 60 * 1000).toISOString(), // 72h accept window
     }])
     .select()
     .single();

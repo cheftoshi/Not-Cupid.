@@ -204,10 +204,10 @@ export async function POST(req: NextRequest) {
         user_2_id: best.id,
         compatibility_score: best.score,
         status: 'pending',
-        // Unaccepted matches expire 24h after creation (accepted chats get
+        // Unaccepted matches expire 72h after creation (accepted chats get
         // their own 36h inactivity window). Drives the card countdown + the
         // "accept window closing" reminder consistently.
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
       }])
       .select().single()
 

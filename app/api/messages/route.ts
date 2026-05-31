@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { acceptMatch } from '@/lib/match-actions';
+import { renderEmail, sendEmail, button } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
+
+const MESSAGE_EMAIL_THROTTLE_MS = 60 * 60 * 1000; // one new-message email per hour per match
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -63,23 +67,34 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
-  if (match.user_1_id !== user.id && match.user_2_id !== user.id) {
-    return NextResponse.json({ error: 'Not your match' }, { status: 403 });
+  const isU1 = match.user_1_id === user.id;
+  const isU2 = match.user_2_id === user.id;
+  if (!isU1 && !isU2) return NextResponse.json({ error: 'Not your match' }, { status: 403 });
+  if (match.ended_at || ['ended', 'passed', 'expired'].includes(match.status)) {
+    return NextResponse.json({ error: 'This match has ended.' }, { status: 400 });
   }
-  if (!match.user_1_accepted || !match.user_2_accepted) {
-    return NextResponse.json({ error: 'Match not active' }, { status: 400 });
+
+  const bothBefore = !!(match.user_1_accepted && match.user_2_accepted);
+
+  // Sending a message counts as accepting. If the sender hasn't accepted yet,
+  // this auto-accepts them — which activates the chat the moment both sides
+  // have (the picker already pre-accepted). So an opener / first reply starts
+  // the conversation without a separate "accept" tap.
+  let mutualNow = bothBefore;
+  if (!bothBefore) {
+    const acc = await acceptMatch(match_id, user.id);
+    if (acc.ok && acc.mutual) mutualNow = true;
   }
-  if (match.chat_expires_at && new Date(match.chat_expires_at) < new Date()) {
+
+  // Only an already-active chat can be stale-closed; a pending opener has no
+  // window yet, and a just-activated one is fresh.
+  if (bothBefore && match.chat_expires_at && new Date(match.chat_expires_at) < new Date()) {
     return NextResponse.json({ error: 'Chat expired' }, { status: 400 });
   }
 
   const { data: message, error } = await supabaseAdmin
     .from('messages')
-    .insert({
-      match_id,
-      sender_id: user.id,
-      body: body.trim(),
-    })
+    .insert({ match_id, sender_id: user.id, body: body.trim() })
     .select()
     .single();
 
@@ -88,16 +103,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Slide the inactivity window forward: an active chat never expires; it
-  // only closes after 24h of silence (the rematch cron sweeps stale ones).
-  await supabaseAdmin
-    .from('matches')
-    .update({ chat_expires_at: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString() })
-    .eq('id', match_id);
+  // Slide the inactivity window forward on an active chat (it never expires
+  // while people are talking). A pending opener has no window until mutual.
+  if (mutualNow) {
+    await supabaseAdmin
+      .from('matches')
+      .update({ chat_expires_at: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString() })
+      .eq('id', match_id);
+  }
 
-  // Per product call: chat stays in-app, no email-on-message. The
-  // match_notifications throttle table is left in the schema in case we
-  // re-enable later; it's currently unused.
+  // Activity email to the recipient (throttled 1/hr per match). Skipped when
+  // this message just activated the match — acceptMatch already sent the
+  // "it's a match" email in that case, so we don't double up.
+  if (bothBefore) {
+    notifyNewMessage(match_id, isU1 ? match.user_2_id : match.user_1_id, user.id).catch((e) =>
+      console.error('notifyNewMessage failed', e)
+    );
+  }
 
   return NextResponse.json({ message });
+}
+
+async function notifyNewMessage(matchId: string, recipientId: string, senderId: string) {
+  const { data: recipient } = await supabaseAdmin
+    .from('users').select('email, email_notifications').eq('id', recipientId).single();
+  if (!recipient?.email || recipient.email_notifications === false) return;
+
+  const { data: throttle } = await supabaseAdmin
+    .from('match_notifications')
+    .select('last_message_email_at')
+    .eq('match_id', matchId).eq('recipient_id', recipientId)
+    .maybeSingle();
+  if (
+    throttle?.last_message_email_at &&
+    Date.now() - new Date(throttle.last_message_email_at).getTime() < MESSAGE_EMAIL_THROTTLE_MS
+  ) return;
+
+  const { data: sender } = await supabaseAdmin.from('users').select('name').eq('id', senderId).single();
+  const senderName = (sender?.name || 'Your match').split(' ')[0];
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
+
+  await sendEmail({
+    to: recipient.email,
+    subject: `${senderName} sent you a message`,
+    html: renderEmail({
+      preheader: `${senderName} just messaged you on NotCupid.`,
+      eyebrow: 'new message',
+      headline: `${senderName} sent you a message.`,
+      bodyHtml: `<p style="margin:0 0 18px 0;">Don't leave them hanging — the chat goes quiet after 36h of silence.</p>${button({ href: `${base}/match/${matchId}`, label: 'Open the chat →' })}`,
+    }),
+  });
+
+  await supabaseAdmin.from('match_notifications').upsert(
+    { match_id: matchId, recipient_id: recipientId, last_message_email_at: new Date().toISOString() },
+    { onConflict: 'match_id,recipient_id' }
+  );
 }
