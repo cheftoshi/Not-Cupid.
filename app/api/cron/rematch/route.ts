@@ -201,54 +201,22 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // ============== 4) Determine priority order ==============
-    // The under-represented gender goes first so they aren't out-competed by
-    // earlier loop iterations claiming the best opposite-side candidates.
-    const { data: poolPeek } = await supabaseAdmin
-      .from('users')
-      .select('gender')
-      .eq('status', 'waiting')
-      .is('matching_disabled_at', null)
-
-    const mCount = poolPeek?.filter((p: any) => p.gender === 'm').length || 0
-    const fCount = poolPeek?.filter((p: any) => p.gender === 'f').length || 0
-    const priorityGender = fCount <= mCount ? 'f' : 'm'
-
-    const { data: rematchUsers } = await supabaseAdmin
-      .from('users')
-      .select('id, gender')
-      .in('id', Array.from(toRematch))
-
-    const ordered = (rematchUsers || []).slice().sort((a: any, b: any) => {
-      const aPri = a.gender === priorityGender ? 0 : 1
-      const bPri = b.gender === priorityGender ? 0 : 1
-      return aPri - bPri
-    })
-
-    // ============== 5) Set waiting + trigger /api/match per user, in order ==============
-    let matched = 0
-    for (const u of ordered) {
-      await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', u.id)
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: u.id }),
-        })
-        const j = await res.json().catch(() => ({}))
-        if (j?.matched) matched++
-      } catch (e) {
-        console.warn('[cron] match call failed for', u.id, e)
-      }
+    // ============== 4) Return eligible users to the choosable pool ==========
+    // Roster-first: no auto-assigning a single match here. Set everyone whose
+    // match ended/expired (plus cooldown/balance releases) back to 'waiting'
+    // so they reappear in the pool and get a fresh roster on their next
+    // dashboard visit. Match creation happens when a user actively picks.
+    let returnedToPool = 0
+    for (const uid of toRematch) {
+      await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', uid)
+      returnedToPool++
     }
 
     return NextResponse.json({
       success: true,
       chatsExpired: expiredChats?.length || 0,
       pendingExpired: expiredPending?.length || 0,
-      rematchAttempted: ordered.length,
-      rematched: matched,
-      priorityGender,
+      returnedToPool,
       poolEjected: toEject.length,
       poolWaked: wakeIds.length,
       cooldownReleased: releasedIds.length,
