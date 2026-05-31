@@ -12,6 +12,31 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email';
 
+// Lazily expire a user's timed-out pending matches and return both parties to
+// the pool. The cron does this every 20 min, but roster/pick call this on
+// demand so a just-timed-out user can immediately pick again (no 20-min limbo
+// where their status is still 'matched'). Idempotent.
+export async function releaseTimedOutMatches(userId: string): Promise<void> {
+  const nowMs = Date.now();
+  const { data: matches } = await supabaseAdmin
+    .from('matches')
+    .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, status')
+    .or(`user_1_id.eq.${userId},user_2_id.eq.${userId}`)
+    .is('ended_at', null)
+    .neq('status', 'expired');
+  for (const m of matches ?? []) {
+    const both = m.user_1_accepted && m.user_2_accepted;
+    if (both) continue;
+    if (!m.expires_at || new Date(m.expires_at).getTime() >= nowMs) continue;
+    // Timed out without a mutual accept → expire it and free both parties.
+    await supabaseAdmin
+      .from('matches')
+      .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
+      .eq('id', m.id);
+    await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [m.user_1_id, m.user_2_id]);
+  }
+}
+
 // Chat expires after this much SILENCE. Each new message slides it forward
 // (see /api/messages). An active conversation therefore never expires.
 export const CHAT_INACTIVITY_MS = 36 * 60 * 60 * 1000;

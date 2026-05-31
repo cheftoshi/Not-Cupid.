@@ -35,12 +35,8 @@ export async function POST() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Fire a fresh match attempt with the wider radius (don't block the response).
-  fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: user.id }),
-  }).catch((e) => console.error('expand-radius: match trigger failed', e));
+  // Roster-first: no auto-match here. The dashboard reloads after expanding
+  // and the wider radius simply produces a fresh roster (GET /api/match/roster).
 
   return NextResponse.json({ radius: next, maxed: next >= MAX_MATCH_RADIUS });
 }

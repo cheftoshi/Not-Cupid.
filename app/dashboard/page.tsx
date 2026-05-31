@@ -50,7 +50,7 @@ export default async function DashboardPage({
   }
 
   // Get current (non-ended) match
-  const { data: currentMatch } = await supabaseAdmin
+  const { data: rawMatch } = await supabaseAdmin
     .from('matches')
     .select('*')
     .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
@@ -58,6 +58,17 @@ export default async function DashboardPage({
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  // A match is "live" (shows the match card) only if it's both-accepted, OR
+  // still within its accept window. A pending match that timed out (expires_at
+  // passed, not yet swept by the cron) is NOT live — we fall through to the
+  // roster so the user can pick again instead of staring at a dead card.
+  const matchBothAccepted = !!(rawMatch && rawMatch.user_1_accepted && rawMatch.user_2_accepted);
+  const terminalStatus = !!(rawMatch && ['expired', 'passed', 'ended'].includes(rawMatch.status));
+  const matchTimedOut = !!(
+    rawMatch && rawMatch.expires_at && new Date(rawMatch.expires_at) < new Date() && !matchBothAccepted
+  );
+  const currentMatch = rawMatch && !terminalStatus && !matchTimedOut ? rawMatch : null;
 
   let otherUser = null;
   let isUnlocked = false;

@@ -12,7 +12,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { compatibilityScore, isGenderMatch, isWithinRadius } from '@/lib/matching';
 import { intentOf } from '@/lib/pools';
-import { acceptMatch } from '@/lib/match-actions';
+import { acceptMatch, releaseTimedOutMatches } from '@/lib/match-actions';
 import { DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
@@ -27,16 +27,23 @@ export async function POST(req: NextRequest) {
   }
   if (candidateId === user.id) return NextResponse.json({ error: 'Cannot pick yourself' }, { status: 400 });
 
-  // Caller must not already have an open match.
-  const { data: openMatch } = await supabaseAdmin
+  // Free the caller's own timed-out matches first (returns them to 'waiting'),
+  // then block only if they still have a genuinely LIVE match.
+  await releaseTimedOutMatches(user.id);
+
+  const { data: openMatches } = await supabaseAdmin
     .from('matches')
-    .select('id')
+    .select('user_1_accepted, user_2_accepted, expires_at')
     .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
     .is('ended_at', null)
-    .neq('status', 'expired')
-    .limit(1)
-    .maybeSingle();
-  if (openMatch) {
+    .neq('status', 'expired');
+  const nowCheck = Date.now();
+  const hasLive = (openMatches ?? []).some((m: any) => {
+    const both = m.user_1_accepted && m.user_2_accepted;
+    if (both) return true;
+    return !m.expires_at || new Date(m.expires_at).getTime() >= nowCheck;
+  });
+  if (hasLive) {
     return NextResponse.json({ error: 'You already have an active match.' }, { status: 409 });
   }
 
