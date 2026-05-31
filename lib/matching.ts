@@ -11,8 +11,7 @@
  * (4 questions × 4 points each).
  */
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS } from './quiz-data';
-import { intentOf, intentCompatible } from './pools';
-import { equityBonus } from './balance';
+import { intentOf, intentCompatible, equityBonus } from './pools';
 
 const W = {
   honesty: 2.0,
