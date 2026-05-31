@@ -635,6 +635,43 @@
   flex-direction: column;
   gap: 1.25rem;
 }
+
+/* HEXACO personality bars */
+.hexacoList { display: flex; flex-direction: column; gap: 0.7rem; }
+.hexacoRow { display: flex; align-items: center; gap: 0.85rem; }
+.hexacoLabel {
+  flex: 0 0 8.5rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b6975;
+}
+.hexacoTrack {
+  flex: 1;
+  height: 7px;
+  background: #e8edff;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.hexacoFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563ff, #1b46c9);
+}
+.hexacoPct {
+  flex: 0 0 1.8rem;
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: #2563ff;
+  font-weight: 600;
+}
+@media (max-width: 520px) {
+  .hexacoLabel { flex-basis: 6.5rem; font-size: 0.52rem; }
+}
+
 .dashTagRow { display: flex; flex-direction: column; gap: 0.6rem; }
 .dashTagHead {
   font-family: 'DM Mono', monospace;

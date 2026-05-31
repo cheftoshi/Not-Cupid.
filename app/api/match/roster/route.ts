@@ -30,6 +30,11 @@ const ROSTER_SIZE = 5;
 // show empty slots.
 const ROSTER_SIZE_SCARCE = 8;
 
+// Roster snapshot rotates at most every 12h. Within that window the same
+// people show (minus any who got taken, with fresh backfill), so the roster
+// feels stable instead of reshuffling on every reload.
+const ROSTER_TTL_MS = 12 * 60 * 60 * 1000;
+
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -98,17 +103,57 @@ export async function GET() {
   const { ranked } = rankCandidates(user, freshPool, { waitDays });
   // Bigger roster for women seeking men/anyone (scarce side); 5 otherwise.
   const size = user.gender === 'f' && user.seeking !== 'f' ? ROSTER_SIZE_SCARCE : ROSTER_SIZE;
-  const roster = ranked.slice(0, size).map((c) => ({
-    id: c.user.id,
-    name: c.user.name,
-    age: c.user.age,
-    photo_url: c.user.photo_url,
-    archetype: c.user.archetype,
-    // Privacy: never expose the exact ZIP. Show the metro label only.
-    metro: metroLabel(c.user.zip),
-    relationship_style: c.user.relationship_style,
-    score: c.score,
-  }));
+
+  // Map of currently-eligible candidates by id (for snapshot validation +
+  // hydration). Anyone in the prior snapshot who's since been taken / matched /
+  // dropped out simply won't be in here and gets filtered out.
+  const eligibleById = new Map(ranked.map((c) => [c.user.id, c]));
+
+  // Decide the ordered list of candidate ids for this roster.
+  const snapshot: string[] = Array.isArray(user.roster_snapshot) ? user.roster_snapshot : [];
+  const refreshedAt = user.roster_refreshed_at ? new Date(user.roster_refreshed_at).getTime() : 0;
+  const snapshotFresh = refreshedAt > 0 && Date.now() - refreshedAt < ROSTER_TTL_MS;
+
+  let orderedIds: string[];
+  let persist = false;
+
+  if (snapshotFresh) {
+    // Keep the snapshot's still-eligible members in their original order, then
+    // backfill from the live ranking to keep the roster full when people drop.
+    const kept = snapshot.filter((id) => eligibleById.has(id));
+    const keptSet = new Set(kept);
+    const backfill = ranked.map((c) => c.user.id).filter((id) => !keptSet.has(id));
+    orderedIds = [...kept, ...backfill].slice(0, size);
+    // Only re-persist if the membership actually changed (backfill kicked in).
+    if (kept.length < Math.min(snapshot.length, size)) persist = true;
+  } else {
+    // Stale or no snapshot → recompute fresh and persist with a new timestamp.
+    orderedIds = ranked.slice(0, size).map((c) => c.user.id);
+    persist = true;
+  }
+
+  const roster = orderedIds
+    .map((id) => eligibleById.get(id))
+    .filter((c): c is NonNullable<typeof c> => !!c)
+    .map((c) => ({
+      id: c.user.id,
+      name: c.user.name,
+      age: c.user.age,
+      photo_url: c.user.photo_url,
+      archetype: c.user.archetype,
+      // Privacy: never expose the exact ZIP. Show the metro label only.
+      metro: metroLabel(c.user.zip),
+      relationship_style: c.user.relationship_style,
+      score: c.score,
+    }));
+
+  if (persist) {
+    // Fresh recompute resets the 12h clock; a backfill-only change keeps the
+    // existing clock so the rotation cadence stays honest.
+    const updates: Record<string, any> = { roster_snapshot: roster.map((r) => r.id) };
+    if (!snapshotFresh) updates.roster_refreshed_at = new Date().toISOString();
+    await supabaseAdmin.from('users').update(updates).eq('id', user.id);
+  }
 
   return NextResponse.json({ roster });
 }

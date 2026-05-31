@@ -31,6 +31,19 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
   const seekingLabel = user.seeking === 'm' ? 'men' : user.seeking === 'f' ? 'women' : user.seeking === 'both' ? 'anyone' : '—';
   const genderLabel = user.gender === 'm' ? 'man' : user.gender === 'f' ? 'woman' : user.gender === 'nb' ? 'non-binary' : user.gender === 'o' ? 'other' : '—';
 
+  // HEXACO dimension bars — raw scores are 0–16 (4 questions × 4pts). Show as
+  // a percentage fill so users see their personality breakdown, not just the
+  // archetype label.
+  const HEXACO_MAX = 16;
+  const hexaco: Array<{ label: string; score: number }> = [
+    { label: 'Honesty', score: user.score_honesty },
+    { label: 'Emotionality', score: user.score_emotionality },
+    { label: 'Extraversion', score: user.score_extraversion },
+    { label: 'Agreeableness', score: user.score_agreeableness },
+    { label: 'Conscientiousness', score: user.score_conscientiousness },
+    { label: 'Openness', score: user.score_openness },
+  ].filter((d) => typeof d.score === 'number');
+
   return (
     <div className={styles.dash}>
       {/* HERO */}
@@ -161,6 +174,27 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
           <p className={styles.dashEmptyText}>
             we upgraded the algo — <em>take the new 6-question vibes round</em> to get re-matched.
           </p>
+        </div>
+      )}
+
+      {/* HEXACO PERSONALITY BARS */}
+      {hexaco.length > 0 && (
+        <div className={styles.dashVibes}>
+          <div className={styles.dashSectionLabel}>your personality</div>
+          <div className={styles.hexacoList}>
+            {hexaco.map((d) => {
+              const pct = Math.round((d.score / HEXACO_MAX) * 100);
+              return (
+                <div key={d.label} className={styles.hexacoRow}>
+                  <span className={styles.hexacoLabel}>{d.label}</span>
+                  <span className={styles.hexacoTrack}>
+                    <span className={styles.hexacoFill} style={{ width: `${pct}%` }} />
+                  </span>
+                  <span className={styles.hexacoPct}>{pct}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
