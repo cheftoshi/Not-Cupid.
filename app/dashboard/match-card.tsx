@@ -216,7 +216,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
             </div>
           )}
         </div>
-      ) : phase !== 'expired' && (
+      ) : (
         ((otherUser.bio || '').trim() || (Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0)) ? (
           <div className={styles.lockedSection}>
             <div className={styles.lockedTitle}>🔒 know them before you decide</div>
