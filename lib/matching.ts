@@ -10,6 +10,9 @@
  * Per the existing data model, each dimension's max raw score is ~16 points
  * (4 questions × 4 points each).
  */
+import { zipDistanceMiles, DEFAULT_MATCH_RADIUS } from './quiz-data';
+import { intentOf, intentCompatible } from './pools';
+import { equityBonus } from './balance';
 
 const W = {
   honesty: 2.0,
@@ -127,4 +130,68 @@ export function thresholdFor(
   const MAX_DECAY = 18;
   const decay = Math.min(Math.max(waitDays, 0) * 1.5, MAX_DECAY);
   return Math.max(FLOOR, threshold - decay);
+}
+
+// ─── Shared candidate eligibility + ranking ──────────────────────────────────
+// One place that turns a raw waiting-pool into ranked, eligible candidates —
+// used by BOTH the single auto-match (/api/match → ranked[0]) and the curated
+// roster (/api/match/roster → ranked.slice(0,N)), so they always agree.
+
+export function isGenderMatch(user: any, candidate: any): boolean {
+  const userWantsCand = user.seeking === 'b' || user.seeking === candidate.gender;
+  const candWantsUser = candidate.seeking === 'b' || candidate.seeking === user.gender;
+  return userWantsCand && candWantsUser;
+}
+
+export function isWithinRadius(zip1: string, zip2: string, radiusMiles: number): boolean {
+  const dist = zipDistanceMiles(zip1, zip2);
+  if (dist === null) return true; // unknown coords pass through, same as the matcher
+  return dist <= radiusMiles;
+}
+
+export interface RankedCandidate {
+  user: any;
+  score: number;
+  eff: number; // score + equity bonus (the ranking key)
+}
+
+export interface RankResult {
+  ranked: RankedCandidate[];
+  minScore: number;
+}
+
+// Pure: user + raw waiting pool → ranked eligible candidates. Mirrors the
+// /api/match filter chain exactly: gender → age → radius → ENM cluster →
+// score threshold (with wait decay) → equity rank, same-intent floated first.
+export function rankCandidates(
+  user: any,
+  pool: any[],
+  opts: { waitDays?: number; nowMs?: number },
+): RankResult {
+  const nowMs = opts.nowMs ?? Date.now();
+  const radiusMiles = user.match_radius ?? DEFAULT_MATCH_RADIUS;
+
+  const genderCompatible = pool.filter((p) => isGenderMatch(user, p));
+  const ageCompatible = genderCompatible.filter(
+    (p) => user.age >= p.age_min && user.age <= p.age_max && p.age >= user.age_min && p.age <= user.age_max,
+  );
+  const locationCompatible = ageCompatible.filter((p) => isWithinRadius(user.zip, p.zip, radiusMiles));
+
+  const uIntent = intentOf(user);
+  const clusterCompatible = locationCompatible.filter((p) => {
+    const pIntent = intentOf(p);
+    if (uIntent === 'enm' || pIntent === 'enm') return uIntent === 'enm' && pIntent === 'enm';
+    return true;
+  });
+
+  const minScore = thresholdFor(user, pool, { waitDays: opts.waitDays });
+  const clearing = clusterCompatible
+    .map((p) => ({ user: p, score: compatibilityScore(user, p) }))
+    .filter((c) => c.score >= minScore)
+    .map((c) => ({ ...c, eff: c.score + equityBonus(c.user.last_matched_at, nowMs) }));
+
+  const sameIntent = clearing.filter((c) => intentCompatible(uIntent, intentOf(c.user))).sort((a, b) => b.eff - a.eff);
+  const rest = clearing.filter((c) => !intentCompatible(uIntent, intentOf(c.user))).sort((a, b) => b.eff - a.eff);
+
+  return { ranked: [...sameIntent, ...rest], minScore };
 }
