@@ -272,6 +272,24 @@
 .subBtnDate:hover { border-color: #2563ff; color: #1b46c9; background: #fafaff; }
 .subBtnEnd:hover { border-color: #c92a2a; color: #c92a2a; }
 
+.reportLink {
+  display: block;
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.55rem;
+  background: transparent;
+  border: none;
+  color: #c8c4dc;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.reportLink:hover { color: #c0392b; }
+
 .passButton {
   flex: 1;
   background: transparent;

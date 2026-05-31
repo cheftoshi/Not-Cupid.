@@ -44,6 +44,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
   const [error, setError] = useState('');
   const [endOpen, setEndOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const isUser1 = match.user_1_id === currentUserId;
   const myAccepted = isUser1 ? match.user_1_accepted : match.user_2_accepted;
@@ -284,6 +285,9 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
               end match
             </button>
           </div>
+          <button onClick={() => setReportOpen(true)} className={styles.reportLink}>
+            🛡️ report or block {(otherUser?.name || 'them').split(' ')[0]}
+          </button>
         </>
       )}
 
@@ -304,6 +308,16 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
           otherName={otherUser?.name || 'them'}
           onClose={() => setFeedbackOpen(false)}
           onSubmitted={() => router.refresh()}
+        />
+      )}
+
+      {reportOpen && (
+        <ReportDialog
+          reportedId={(otherUser as any)?.id}
+          matchId={match.id}
+          otherName={otherUser?.name || 'them'}
+          onClose={() => setReportOpen(false)}
+          onDone={() => router.refresh()}
         />
       )}
     </div>
