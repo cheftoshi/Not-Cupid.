@@ -72,15 +72,12 @@ if (error) {
       console.error('Submit: balance gate check failed (matching anyway):', e)
     }
 
-    if (!held) {
-      fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: data.id })
-      }).catch(err => console.error('Match trigger error:', err))
-    }
+    // Roster-first: we no longer auto-assign a single match on signup. Unless
+    // they were balance-held (pool_active=false), the user lands on the
+    // dashboard and picks from their top ~5 (GET /api/match/roster → /pick).
+    // The `held` flag still controls pool_active above; nothing to trigger here.
 
-    return NextResponse.json({ success: true, userId: data.id })
+    return NextResponse.json({ success: true, userId: data.id, held })
   } catch (err) {
     console.error('Submit error:', err)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
