@@ -188,6 +188,7 @@ export default function AdminClient() {
               <a href="#matches" className={s.navLink}>Matches</a>
               <a href="#feedback" className={s.navLink}>Dates</a>
               <a href="#app-feedback" className={s.navLink}>Feedback</a>
+              <a href="#reports" className={s.navLink}>Reports</a>
               <a href="#events" className={s.navLink}>Events</a>
             </nav>
           </div>
@@ -564,6 +565,42 @@ export default function AdminClient() {
                     <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', letterSpacing: '0.08em', color: '#7a7590', marginTop: '0.5rem', textTransform: 'uppercase' }}>
                       {f.user ? `${f.user.name || 'user'} · ${f.user.email}` : 'anonymous'} · {f.created_at?.split('T')[0]}
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── REPORTS / MODERATION ── */}
+          <div className={s.card} id="reports">
+            <div className={s.cardHead}><p className={s.cardTitle}>Reports — <b>safety moderation</b></p></div>
+            {!reports && <p className={s.note}>loading…</p>}
+            {reports?.__error && <p className={s.noteErr}>couldn’t load: {reports.__error}</p>}
+            {reports && !reports.__error && reports.items?.length === 0 && <p className={s.note}>no reports — clean so far ✓</p>}
+            {reports?.items?.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {reports.items.map((r: any) => (
+                  <div key={r.id} style={{ background: '#fff1e8', border: '1px solid rgba(210,83,15,0.25)', borderRadius: 8, padding: '0.7rem 0.9rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
+                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', color: '#0e0c1a', fontWeight: 600, textTransform: 'capitalize' }}>
+                        {(r.reason || '').replace(/_/g, ' ')}
+                        {r.reported?.reportCount > 1 && <span style={{ color: '#c0392b', marginLeft: 6 }}>×{r.reported.reportCount}</span>}
+                      </div>
+                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', color: '#7a7590' }}>{r.created_at?.split('T')[0]}</div>
+                    </div>
+                    {r.detail && <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.85rem', color: '#0e0c1a', margin: '0.4rem 0', lineHeight: 1.5 }}>“{r.detail}”</div>}
+                    <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.55rem', color: '#7a7590', marginTop: '0.4rem' }}>
+                      <strong style={{ color: '#c0392b' }}>reported:</strong> {r.reported?.name || '—'} ({r.reported?.email || '—'}){r.reported?.is_blocked ? ' · BLOCKED' : ''}
+                      {'  ·  '}<strong>by:</strong> {r.reporter?.name || '—'}
+                    </div>
+                    {r.reported && (
+                      <button
+                        onClick={() => moderate(r.reported.id, r.reported.is_blocked ? 'unblock' : 'block')}
+                        style={{ marginTop: '0.5rem', background: r.reported.is_blocked ? 'transparent' : '#c0392b', color: r.reported.is_blocked ? '#7a7590' : '#fff', border: r.reported.is_blocked ? '1px solid rgba(14,12,26,0.13)' : 'none', borderRadius: 8, padding: '0.4rem 0.8rem', fontFamily: 'DM Mono, monospace', fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                      >
+                        {r.reported.is_blocked ? 'unblock' : 'block user'}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
