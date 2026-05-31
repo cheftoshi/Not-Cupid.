@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { recordUnlock } from '@/lib/record-unlock'
 import { verifyStripeSignature } from '@/lib/stripe-webhook'
 
 export const dynamic = 'force-dynamic'
@@ -44,20 +45,18 @@ export async function POST(req: NextRequest) {
       const userId = session.metadata?.userId
       const paymentIntent = session.payment_intent
 
-      // ============== Handle $2.99 match unlock ==============
+      // ============== Handle match unlock ($0.99 HEXACO / $1.99 profile) ==============
       if (session.metadata?.type === 'match_unlock') {
-        const { error } = await supabaseAdmin.from('match_unlocks').upsert(
-          {
-            user_id: session.metadata.user_id,
-            match_id: session.metadata.match_id,
-            unlocked_user_id: session.metadata.unlocked_user_id,
-            amount_cents: 299,
-            stripe_payment_id: paymentIntent,
-          },
-          { onConflict: 'user_id,match_id' }
-        )
+        const tier = session.metadata?.unlock_tier === 'hexaco' ? 'hexaco' : 'profile'
+        const error = await recordUnlock({
+          userId: session.metadata.user_id,
+          matchId: session.metadata.match_id,
+          unlockedUserId: session.metadata.unlocked_user_id,
+          tier,
+          paymentId: paymentIntent,
+        })
         if (error) console.error('Match unlock insert error:', error)
-        else console.log('Match unlock recorded')
+        else console.log(`Match unlock recorded (${tier})`)
         return NextResponse.json({ received: true })
       }
       // ============== End match unlock ==============

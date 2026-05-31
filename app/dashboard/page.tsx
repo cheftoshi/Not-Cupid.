@@ -8,6 +8,7 @@ import DashboardExtras from './dashboard-extras';
 import Wordmark from '@/components/wordmark';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
+import { recordUnlock } from '@/lib/record-unlock';
 import styles from './dashboard.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -34,16 +35,13 @@ export default async function DashboardPage({
         session.metadata?.user_id === user.id &&
         session.metadata?.type === 'match_unlock'
       ) {
-        await supabaseAdmin.from('match_unlocks').upsert(
-          {
-            user_id: user.id,
-            match_id: session.metadata.match_id,
-            unlocked_user_id: session.metadata.unlocked_user_id,
-            amount_cents: 299,
-            stripe_payment_id: session.payment_intent,
-          },
-          { onConflict: 'user_id,match_id' }
-        );
+        await recordUnlock({
+          userId: user.id,
+          matchId: session.metadata.match_id,
+          unlockedUserId: session.metadata.unlocked_user_id,
+          tier: session.metadata.unlock_tier === 'hexaco' ? 'hexaco' : 'profile',
+          paymentId: session.payment_intent,
+        });
       }
     } catch (e) {
       console.error('Unlock verification failed:', e);
@@ -73,6 +71,8 @@ export default async function DashboardPage({
 
   let otherUser = null;
   let isUnlocked = false;
+  let hexacoUnlocked = false;
+  let profileUnlocked = false;
 
   if (currentMatch) {
     const otherId =
@@ -87,11 +87,13 @@ export default async function DashboardPage({
 
     const { data: unlock } = await supabaseAdmin
       .from('match_unlocks')
-      .select('id')
+      .select('hexaco_unlocked, profile_unlocked')
       .eq('user_id', user.id)
       .eq('match_id', currentMatch.id)
       .maybeSingle();
-    isUnlocked = !!unlock;
+    profileUnlocked = !!unlock?.profile_unlocked;
+    hexacoUnlocked = !!unlock?.hexaco_unlocked || profileUnlocked;
+    isUnlocked = profileUnlocked; // back-compat for any consumer still reading it
   }
 
 
@@ -150,6 +152,8 @@ export default async function DashboardPage({
             otherUser={otherUser}
             currentUserId={user.id}
             isUnlocked={isUnlocked}
+            hexacoUnlocked={hexacoUnlocked}
+            profileUnlocked={profileUnlocked}
             distanceMi={(() => { const d = zipDistanceMiles(user.zip, otherUser.zip); return d == null ? null : Math.round(d); })()}
             beyondRadius={(() => {
               const d = zipDistanceMiles(user.zip, otherUser.zip);

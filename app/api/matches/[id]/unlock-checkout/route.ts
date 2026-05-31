@@ -6,6 +6,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Which tier: 'hexaco' ($0.99, personality bars) or 'profile' ($1.99, full profile).
+  let tier: 'hexaco' | 'profile' = 'profile';
+  try {
+    const b = await req.json();
+    if (b?.tier === 'hexaco') tier = 'hexaco';
+  } catch { /* default profile */ }
+
   const { data: match } = await supabaseAdmin
     .from('matches')
     .select('*')
@@ -21,21 +28,34 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const otherUserId = isUser1 ? match.user_2_id : match.user_1_id;
   const { data: otherUser } = await supabaseAdmin
     .from('users')
-    .select('name, bio, gallery')
+    .select('name, bio, gallery, score_honesty')
     .eq('id', otherUserId)
     .single();
 
-  // Wall: don't sell an unlock when there's no paid content to reveal.
-  // Paid content = bio OR gallery photos. Frontend gates this too, but we
-  // guard server-side so direct API hits can't bypass it.
-  const hasBio = !!(otherUser?.bio || '').trim();
-  const hasGallery = Array.isArray(otherUser?.gallery) && otherUser!.gallery.length > 0;
-  if (!hasBio && !hasGallery) {
+  if (tier === 'profile') {
+    // Wall: don't sell the full-profile unlock when there's nothing extra to
+    // reveal. Paid profile content = bio OR gallery photos. Frontend gates this
+    // too; guard server-side so direct API hits can't bypass it.
+    const hasBio = !!(otherUser?.bio || '').trim();
+    const hasGallery = Array.isArray(otherUser?.gallery) && otherUser!.gallery.length > 0;
+    if (!hasBio && !hasGallery) {
+      return NextResponse.json(
+        { error: `${otherUser?.name || 'They'} hasn't set up their profile yet — nothing to unlock.` },
+        { status: 422 }
+      );
+    }
+  } else if (typeof otherUser?.score_honesty !== 'number') {
+    // HEXACO tier needs personality scores to exist.
     return NextResponse.json(
-      { error: `${otherUser?.name || 'They'} hasn't set up their profile yet — nothing to unlock.` },
+      { error: `${otherUser?.name || 'They'} hasn't finished the quiz yet — no personality profile to unlock.` },
       { status: 422 }
     );
   }
+
+  const amount = tier === 'hexaco' ? '99' : '199';
+  const productName = tier === 'hexaco'
+    ? `${otherUser?.name || 'Match'}'s HEXACO personality`
+    : `Unlock ${otherUser?.name || 'match'}'s full profile`;
 
   // Determine origin for redirect URLs
   const origin = req.headers.get('origin') || `https://${req.headers.get('host')}` || 'https://notcupid.com';
@@ -46,14 +66,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   body.append('mode', 'payment');
   body.append('line_items[0][quantity]', '1');
   body.append('line_items[0][price_data][currency]', 'usd');
-  body.append('line_items[0][price_data][product_data][name]', `Unlock ${otherUser?.name || 'match'}'s profile`);
-  body.append('line_items[0][price_data][unit_amount]', '299');
+  body.append('line_items[0][price_data][product_data][name]', productName);
+  body.append('line_items[0][price_data][unit_amount]', amount);
   body.append('success_url', `${origin}/dashboard?unlock_session={CHECKOUT_SESSION_ID}`);
   body.append('cancel_url', `${origin}/dashboard`);
   body.append('metadata[user_id]', user.id);
   body.append('metadata[match_id]', match.id);
   body.append('metadata[unlocked_user_id]', otherUserId);
   body.append('metadata[type]', 'match_unlock');
+  body.append('metadata[unlock_tier]', tier);
 
   const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',

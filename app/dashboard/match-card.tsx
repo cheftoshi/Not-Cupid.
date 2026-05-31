@@ -29,16 +29,20 @@ interface Props {
   otherUser: any;
   currentUserId: string;
   isUnlocked: boolean;
+  hexacoUnlocked?: boolean;
+  profileUnlocked?: boolean;
   distanceMi?: number | null;
   beyondRadius?: boolean;
 }
+
+const HEXACO_MAX = 16;
 
 function hoursUntil(iso: string): number {
   const ms = new Date(iso).getTime() - Date.now();
   return Math.max(0, Math.round(ms / 1000 / 60 / 60));
 }
 
-export default function MatchCard({ match, otherUser, currentUserId, isUnlocked, distanceMi, beyondRadius }: Props) {
+export default function MatchCard({ match, otherUser, currentUserId, isUnlocked, hexacoUnlocked, profileUnlocked, distanceMi, beyondRadius }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -60,6 +64,23 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
 
   const expiresIn = match.expires_at ? hoursUntil(match.expires_at) : null;
   const showPhoto = phase === 'active';
+
+  // Two-tier reveal. $1.99 profile is a superset (also shows HEXACO). Fall back
+  // to the legacy single `isUnlocked` flag if the new props aren't passed.
+  const showProfile = profileUnlocked ?? isUnlocked;
+  const showHexaco = (hexacoUnlocked || profileUnlocked) ?? isUnlocked;
+  const hasScores = typeof otherUser.score_honesty === 'number';
+  const hasProfileContent =
+    !!(otherUser.bio || '').trim() ||
+    (Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0);
+  const hexacoBars: Array<[string, number]> = ([
+    ['Honesty', otherUser.score_honesty],
+    ['Emotionality', otherUser.score_emotionality],
+    ['Extraversion', otherUser.score_extraversion],
+    ['Agreeableness', otherUser.score_agreeableness],
+    ['Conscientiousness', otherUser.score_conscientiousness],
+    ['Openness', otherUser.score_openness],
+  ] as Array<[string, any]>).filter(([, s]) => typeof s === 'number');
 
   async function handleAccept() {
     setBusy(true); setError('');
@@ -94,10 +115,14 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
     }
   }
 
-  async function handleUnlock() {
+  async function handleUnlock(tier: 'hexaco' | 'profile') {
     setBusy(true); setError('');
     try {
-      const res = await fetch(`/api/matches/${match.id}/unlock-checkout`, { method: 'POST' });
+      const res = await fetch(`/api/matches/${match.id}/unlock-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      });
       const d = await parseResponse<any>(res);
       if (!res.ok || !d.url) throw new Error(d.error || 'Could not start checkout');
       window.location.href = d.url;
@@ -175,7 +200,28 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
         </div>
       )}
 
-      {isUnlocked ? (
+      {/* HEXACO bars — unlocked by the $0.99 tier (or included in $1.99 profile) */}
+      {showHexaco && hexacoBars.length > 0 && (
+        <div className={styles.tagSection}>
+          <div className={styles.tagLabel}>→ Their HEXACO</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.4rem' }}>
+            {hexacoBars.map(([label, score]) => {
+              const pct = Math.round((score / HEXACO_MAX) * 100);
+              return (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6975', width: 120, flexShrink: 0 }}>{label}</span>
+                  <span style={{ flex: 1, height: 4, background: 'rgba(37,99,255,0.15)', borderRadius: 999, overflow: 'hidden' }}>
+                    <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: '#2563ff', borderRadius: 999 }} />
+                  </span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: '#1b46c9', width: 26, textAlign: 'right' }}>{pct}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {showProfile ? (
         <div className={styles.unlockedContent}>
           {Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0 && (
             <div className={styles.galleryRow}>
@@ -235,21 +281,30 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
           )}
         </div>
       ) : (
-        ((otherUser.bio || '').trim() || (Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0)) ? (
+        (hasProfileContent || (hasScores && !showHexaco)) ? (
           <div className={styles.lockedSection}>
             <div className={styles.lockedTitle}>🔒 know them before you decide</div>
             <p className={styles.lockedDescription}>
-              unlock their photos, bio, music, food & hobbies — $2.99
+              their photo&apos;s already here — go deeper before you lock in.
             </p>
-            <button onClick={handleUnlock} disabled={busy} className={styles.unlockButton}>
-              {busy ? 'loading...' : 'unlock for $2.99 →'}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.5rem' }}>
+              {!showHexaco && hasScores && (
+                <button onClick={() => handleUnlock('hexaco')} disabled={busy} className={styles.unlockButton} style={{ background: 'transparent', color: '#1b46c9', border: '1px solid rgba(37,99,255,0.5)' }}>
+                  {busy ? 'loading...' : 'see their HEXACO — $0.99'}
+                </button>
+              )}
+              {hasProfileContent && (
+                <button onClick={() => handleUnlock('profile')} disabled={busy} className={styles.unlockButton}>
+                  {busy ? 'loading...' : 'open full profile — $1.99 →'}
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className={styles.lockedSection}>
             <div className={styles.lockedTitle}>🌱 not ready yet</div>
             <p className={styles.lockedDescription}>
-              {(otherUser.name || 'they').split(' ')[0]} hasn't set up their profile yet — there's nothing extra to unlock. check back soon.
+              {(otherUser.name || 'they').split(' ')[0]} hasn&apos;t set up their profile yet — nothing extra to unlock. check back soon.
             </p>
             <button disabled className={styles.unlockButton} style={{opacity:0.45,cursor:'not-allowed'}}>
               profile incomplete
