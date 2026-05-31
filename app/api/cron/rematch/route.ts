@@ -165,11 +165,12 @@ export async function GET(req: NextRequest) {
     const consider = async (userId: string) => {
       const { data: u } = await supabaseAdmin
         .from('users')
-        .select('auto_rematch, matching_disabled_at, matching_cooldown_until')
+        .select('matching_disabled_at, matching_cooldown_until')
         .eq('id', userId)
         .single()
       if (!u) return
-      if (u.auto_rematch === false) return
+      // Roster-first: everyone whose match ended returns to the pool (no
+      // auto_rematch opt-out anymore — pausing is done via unsubscribe).
       if (u.matching_disabled_at) return
       if (u.matching_cooldown_until && new Date(u.matching_cooldown_until) > new Date()) return
       toRematch.add(userId)
