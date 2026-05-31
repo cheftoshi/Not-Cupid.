@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import MatchCard from './match-card';
 import MatchReveal from './match-reveal';
-import ExpandRadiusButton from './expand-radius-button';
+import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
@@ -145,15 +145,7 @@ export default async function DashboardPage({
             })()}
           />
         ) : (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>✦</div>
-            <h2 className={styles.emptyTitle}>in the queue.</h2>
-            <p className={styles.emptyText}>
-              the algorithm re-runs every 20 minutes, scanning the pool for your person.
-              your next match can land any minute — we&apos;ll email you the moment it does.
-            </p>
-            <ExpandRadiusButton radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} />
-          </div>
+          <RosterPicker radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} />
         )}
 
         {historyMatches && historyMatches.length > 0 && (

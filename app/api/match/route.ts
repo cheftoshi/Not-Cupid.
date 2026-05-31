@@ -179,6 +179,23 @@ export async function POST(req: NextRequest) {
     const sameIntent = rank(clearing.filter((p: any) => intentCompatible(userIntent, intentOf(p))))
     const best = (sameIntent.length > 0 ? sameIntent : rank(clearing))[0]
 
+    // Atomic claim BEFORE creating the match, so a concurrent roster-pick (or
+    // another match run) can't double-match either party. Each claim only
+    // succeeds if the user is still 'waiting'.
+    const matchedAt = new Date().toISOString()
+    const { data: claimedSelf } = await supabaseAdmin
+      .from('users').update({ status: 'matched', last_matched_at: matchedAt }).eq('id', userId).eq('status', 'waiting').select('id')
+    if (!claimedSelf || claimedSelf.length === 0) {
+      return NextResponse.json({ matched: false, message: 'Already matched' })
+    }
+    const { data: claimedBest } = await supabaseAdmin
+      .from('users').update({ status: 'matched', last_matched_at: matchedAt }).eq('id', best.id).eq('status', 'waiting').select('id')
+    if (!claimedBest || claimedBest.length === 0) {
+      // Candidate was claimed by someone else a moment ago — release self.
+      await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', userId)
+      return NextResponse.json({ matched: false, message: 'Candidate just got matched' })
+    }
+
     const { data: match } = await supabaseAdmin
       .from('matches')
       .insert([{
@@ -192,10 +209,6 @@ export async function POST(req: NextRequest) {
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       }])
       .select().single()
-
-    const matchedAt = new Date().toISOString()
-    await supabaseAdmin.from('users').update({ status: 'matched', last_matched_at: matchedAt }).eq('id', userId)
-    await supabaseAdmin.from('users').update({ status: 'matched', last_matched_at: matchedAt }).eq('id', best.id)
 
     await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-match`, {
       method: 'POST',
