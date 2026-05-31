@@ -63,7 +63,9 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
   else phase = 'pending';
 
   const expiresIn = match.expires_at ? hoursUntil(match.expires_at) : null;
-  const showPhoto = phase === 'active';
+  // Primary photo is always free + visible (any phase) once there's a match —
+  // people shouldn't pay to see a face before deciding. Gallery/bio stay paid.
+  const showPhoto = !!otherUser.photo_url;
 
   // Two-tier reveal. $1.99 profile is a superset (also shows HEXACO). Fall back
   // to the legacy single `isUnlocked` flag if the new props aren't passed.
