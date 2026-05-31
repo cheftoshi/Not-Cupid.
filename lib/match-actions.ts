@@ -116,6 +116,10 @@ async function sendItsAMatchEmails(user1Id: string, user2Id: string) {
           <li>Make the first message a real one, not "hey." You both already passed the hard part.</li>
           <li>If it lands, come back and tell us how it went.</li>
         </ul>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.paper};border:1px solid ${C.border};border-radius:10px;margin:0 0 18px 0;"><tr><td style="padding:12px 16px;">
+          <div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:${C.lav};margin-bottom:6px;">first date? play it smart</div>
+          <div style="font-size:13px;color:${C.muted};line-height:1.6;">Meet somewhere public, tell a friend where you'll be, and arrange your own ride. Trust your gut — if something feels off, you owe nothing. (You can report anyone from the match.)</div>
+        </td></tr></table>
         ${button({ href: `${base}/dashboard`, label: 'Open the chat →' })}
       `,
       recipientId,
