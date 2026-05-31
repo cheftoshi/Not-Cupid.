@@ -422,6 +422,15 @@ export default function AdminClient() {
                 const note = d.remaining > 0 ? `\n\n${d.remaining} remaining. Click again to continue.` : ''
                 alert(`Blast: sent ${d.sent || 0}, failed ${d.failed || 0}, candidates ${d.totalCandidates || 0}${note}`)
               }}>✨ Quiz-retake blast</button>
+              <button className={`${s.btn} ${s.btnInk}`} onClick={async () => {
+                const dry = await fetch('/api/admin/send-relaunch-blast?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
+                const preview = dry ? `\n\n${dry.wouldSend} recipients (${dry.withLiveMatch} have a live match → "see your match", rest → "retake quiz").` : ''
+                if (!confirm(`Send the matching-RELAUNCH blast to all UNSENT users?${preview}\n\nIdempotent — already-sent users skipped.`)) return
+                const res = await fetch('/api/admin/send-relaunch-blast', { method: 'POST' })
+                const d = await parseResponse<any>(res)
+                const note = d.remaining > 0 ? `\n\n${d.remaining} remaining. Click again to continue.` : ''
+                alert(`Relaunch blast: sent ${d.sent || 0}, failed ${d.failed || 0}, candidates ${d.totalCandidates || 0}${note}${d.errors?.length ? '\n\n' + d.errors.slice(0,5).join('\n') : ''}`)
+              }}>📣 Relaunch blast (pick-from-5)</button>
             </div>
           </div>
 
