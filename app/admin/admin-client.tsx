@@ -473,6 +473,17 @@ export default function AdminClient() {
               <a href="/api/admin/send-pending-matches" target="_blank" className={`${s.btn} ${s.btnInk}`}>📨 Send pending match emails</a>
               <a href="/api/cron/rematch" target="_blank" className={`${s.btn} ${s.btnDeep}`}>🔄 Run rematch cron (raw)</a>
             </div>
+            <div className={`${s.actionsGrid} ${s.actions2}`} style={{ marginBottom: '0.75rem' }}>
+              <button className={`${s.btn} ${s.btnGhost}`} onClick={async () => {
+                if (!confirm('Create / reset the two test accounts (Alex + Bailey) and get magic-login links?')) return;
+                const res = await fetch('/api/admin/seed-test', { method: 'POST' });
+                const d = await parseResponse<any>(res);
+                if (!d.ok) { alert('Failed: ' + (d.error || 'unknown')); return; }
+                const lines = (d.accounts || []).map((a: any) => `${a.name} (${a.email}):\n${a.loginUrl}`).join('\n\n');
+                // Show in a prompt so the links are easy to copy.
+                window.prompt('Open each link in a SEPARATE incognito window, then have one pick the other:', lines);
+              }}>🧪 Seed test accounts + login links</button>
+            </div>
             <div className={`${s.actionsGrid} ${s.actions3}`} style={{ marginBottom: '1.5rem' }}>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
                 const res = await fetch('/api/admin/fix-email-typos')

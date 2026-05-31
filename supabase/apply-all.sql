@@ -405,3 +405,9 @@ create index if not exists page_views_path_idx on page_views(path);
 
 grant all on page_views to service_role;
 alter table page_views enable row level security;
+
+-- ==================== 20260531_test_accounts.sql ====================
+-- Test accounts: flag throwaway users so the magic dev-login can ONLY ever
+-- create a session for a test account, never a real user (the hard safety gate).
+alter table users add column if not exists is_test boolean not null default false;
+create index if not exists users_is_test_idx on users(is_test) where is_test = true;
