@@ -21,14 +21,20 @@ export async function GET() {
   const accepted = list.filter(m => m.user_1_accepted && m.user_2_accepted).length;
   const passed = list.filter(m => m.status === 'passed' || m.ended_reason === 'one_passed').length;
 
-  // "active" = genuinely LIVE: both accepted, not terminal, chat not gone
-  // silent past its window. (A both-accepted match whose chat expired but
-  // the cron hasn't set ended_at yet must NOT count — that was the "1 active"
-  // vs "in queue" mismatch.)
-  const active = list.filter(m =>
-    m.user_1_accepted && m.user_2_accepted && !isTerminal(m) &&
-    (!m.chat_expires_at || new Date(m.chat_expires_at).getTime() > now)
+  // A match where both said yes and it isn't terminal. chat_expires_at is only
+  // set once the FIRST message is sent, so split this into two real states:
+  //   - matched: both yes, no one's messaged yet (chat_expires_at null) → "say hi"
+  //   - live:    a message has been sent and the window is still open → live chat
+  const matchedNotTerminal = (m: any) =>
+    m.user_1_accepted && m.user_2_accepted && !isTerminal(m);
+
+  const live = list.filter(m =>
+    matchedNotTerminal(m) && m.chat_expires_at && new Date(m.chat_expires_at).getTime() > now
   ).length;
+
+  // "active" kept for back-compat = any non-terminal mutual match (live + say-hi).
+  const active = list.filter(matchedNotTerminal).length;
+  const matched = active - live; // mutual but no conversation yet
 
   // "pending" = I haven't acted yet, still inside the accept window, not terminal.
   const pending = list.filter(m => {
@@ -38,5 +44,5 @@ export async function GET() {
     return !mine;
   }).length;
 
-  return NextResponse.json({ total, accepted, passed, active, pending });
+  return NextResponse.json({ total, accepted, passed, active, live, matched, pending });
 }

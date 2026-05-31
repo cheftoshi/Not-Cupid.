@@ -11,7 +11,7 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
   onEdit: () => void;
   onLogout: () => void;
 }) {
-  const [stats, setStats] = useState<{ total: number; accepted: number; active: number; pending: number } | null>(null);
+  const [stats, setStats] = useState<{ total: number; accepted: number; active: number; live: number; matched: number; pending: number } | null>(null);
   useEffect(() => {
     fetch('/api/profile/stats').then(r => r.ok ? r.json() : null).then(setStats).catch(() => {});
   }, []);
@@ -87,11 +87,13 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
           <div className={styles.dashStatLabel}>your matches</div>
           {stats !== null ? (
             <div className={styles.dashStatNum}>
-              {stats.active > 0
-                ? <><strong>{stats.active}</strong> active</>
-                : stats.pending > 0
-                  ? <><strong>{stats.pending}</strong> waiting on you</>
-                  : <>{stats.total} total →</>}
+              {stats.live > 0
+                ? <><strong>{stats.live}</strong> active chat{stats.live > 1 ? 's' : ''}</>
+                : stats.matched > 0
+                  ? <><strong>{stats.matched}</strong> new match — say hi →</>
+                  : stats.pending > 0
+                    ? <><strong>{stats.pending}</strong> waiting on you</>
+                    : <>in the queue · <em>searching</em> →</>}
             </div>
           ) : <div className={styles.dashStatHint}>view →</div>}
         </Link>
