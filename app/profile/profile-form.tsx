@@ -391,7 +391,19 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
       <div className={styles.accountSection}>
         <div className={styles.accountTitle}>Account</div>
         <button type="button" onClick={handleLogout} className={styles.linkButton}>Log out</button>
-        <button type="button" onClick={handleDelete} className={`${styles.linkButton} ${styles.linkButtonDanger}`}>Delete account</button>
+        {/* Delete is now a clear full-width danger button — users couldn't find the old text link. */}
+        <button
+          type="button"
+          onClick={handleDelete}
+          style={{
+            marginTop: '1rem', display: 'block', width: '100%', padding: '0.9rem',
+            background: 'transparent', border: '1.5px solid #c0392b', color: '#c0392b',
+            borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: '0.7rem',
+            letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          Delete my account
+        </button>
       </div>
     </form>
   );
