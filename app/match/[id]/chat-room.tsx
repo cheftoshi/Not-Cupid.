@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
+import ReportDialog from '@/components/report-dialog';
 import styles from './chat.module.css';
 
 interface Props {
@@ -63,6 +64,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const [sending, setSending] = useState(false);
   const [heyWarned, setHeyWarned] = useState(false);
   const [nudge, setNudge] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
   // Live match status — seeded from the server, refreshed by the poll, so the
   // header stays accurate (countdown ticking, or "ended" if they bailed).
   const [liveMatch, setLiveMatch] = useState<any>(match);
@@ -180,6 +182,14 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
         ) : (
           <div className={styles.headerPhotoEmpty} />
         )}
+        <button
+          onClick={() => setReportOpen(true)}
+          aria-label="Report or block"
+          title="Report or block"
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.05rem', padding: '0.25rem 0.4rem', color: '#9a96a8' }}
+        >
+          ⋯
+        </button>
       </header>
 
       <div className={styles.messages} ref={scrollRef}>
@@ -247,6 +257,16 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           →
         </button>
       </form>
+
+      {reportOpen && (
+        <ReportDialog
+          reportedId={(otherUser as any)?.id}
+          matchId={matchId}
+          otherName={otherUser?.name || 'them'}
+          onClose={() => setReportOpen(false)}
+          onDone={() => { window.location.href = '/dashboard'; }}
+        />
+      )}
     </div>
   );
 }

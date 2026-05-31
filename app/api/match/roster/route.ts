@@ -65,6 +65,7 @@ export async function GET() {
     .select('*')
     .eq('status', 'waiting')
     .eq('pool_active', true)
+    .eq('is_blocked', false)
     .neq('id', user.id)
     .is('matching_disabled_at', null)
     .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`);

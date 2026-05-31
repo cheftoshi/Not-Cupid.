@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
+import ReportDialog from '@/components/report-dialog';
 import { VIBE_HEADS, vibeLabel, relationshipStyleLabel, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import { parseResponse } from '@/lib/fetch-helpers';

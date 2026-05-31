@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('status', 'waiting')
       .eq('pool_active', true)
+      .eq('is_blocked', false)
       .neq('id', userId)
       .is('matching_disabled_at', null)
       .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`)
