@@ -83,7 +83,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
           <Link href="/quiz" className={`${styles.landProd} ${styles.landProdLove}`}>
             <div className={styles.landProdEye}><span className={styles.landProdDotLive} /> live</div>
             <div className={styles.landProdName}>love <em>maxxin.</em></div>
-            <div className={styles.landProdDesc}>one date match. boston only. personality first.</div>
+            <div className={styles.landProdDesc}>pick from your 5 most compatible. greater boston. personality first.</div>
             <div className={styles.landProdCta}>sign up →</div>
           </Link>
           <Link href="/friend-maxxin" className={`${styles.landProd} ${styles.landProdFriend}`}>

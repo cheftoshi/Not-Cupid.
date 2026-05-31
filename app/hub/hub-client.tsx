@@ -62,14 +62,14 @@ export default function HubClient({
           <div className={styles.cardEyebrow}><span className={styles.dotLive} />live</div>
           <h2 className={styles.cardH2}>love <em>maxxin.</em></h2>
           <p className={styles.cardDesc}>
-            one date match. boston only. built on personality, not lighting.
-            no swipes, no photos first.
+            pick from your 5 most compatible. greater boston. built on
+            personality, not lighting. no swipes, no photos first.
           </p>
           <div className={styles.cardSpec}>
             <div><span className={styles.specK}>quiz</span><span className={styles.specV}>30 questions</span></div>
-            <div><span className={styles.specK}>pool</span><span className={styles.specV}>boston · 75mi</span></div>
-            <div><span className={styles.specK}>match</span><span className={styles.specV}>within 25mi</span></div>
-            <div><span className={styles.specK}>style</span><span className={styles.specV}>one at a time</span></div>
+            <div><span className={styles.specK}>pool</span><span className={styles.specV}>greater boston</span></div>
+            <div><span className={styles.specK}>match</span><span className={styles.specV}>within 15mi</span></div>
+            <div><span className={styles.specK}>style</span><span className={styles.specV}>choose from 5</span></div>
           </div>
           <div className={styles.cardCta}>open love maxxin →</div>
         </Link>
