@@ -316,16 +316,26 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
       )}
 
       {phase === 'pending' && (
-        <div className={styles.actions}>
-          <button onClick={handlePass} disabled={busy} className={styles.passButton}>pass</button>
-          <button onClick={handleAccept} disabled={busy} className={styles.acceptButton}>accept →</button>
-        </div>
+        <>
+          <div className={styles.actions}>
+            <button onClick={handlePass} disabled={busy} className={styles.passButton}>pass</button>
+            <a href={`/match/${match.id}`} className={styles.acceptButton} style={{ textAlign: 'center', textDecoration: 'none' }}>say hi →</a>
+          </div>
+          <button onClick={handleAccept} disabled={busy} className={styles.reportLink} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            or just accept without a message
+          </button>
+        </>
       )}
 
       {phase === 'waiting' && (
-        <div className={styles.statusBox}>
-          ✓ you accepted. waiting for them to decide.
-        </div>
+        <>
+          <div className={styles.statusBox}>
+            ✓ you&apos;re in. break the ice — your message lands the moment they open it.
+          </div>
+          <div className={styles.actions}>
+            <a href={`/match/${match.id}`} className={styles.chatButton}>send an opener →</a>
+          </div>
+        </>
       )}
 
       {phase === 'active' && (
