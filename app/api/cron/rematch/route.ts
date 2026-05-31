@@ -147,8 +147,8 @@ export async function GET(req: NextRequest) {
         .upsert(historyRows, { onConflict: 'user_a_id,user_b_id' })
     }
 
-    // ============== 2) Expire pending matches older than 48h ==============
-    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+    // ============== 2) Expire pending matches older than 24h ==============
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const { data: expiredPending } = await supabaseAdmin
       .from('matches')
       .select('*')

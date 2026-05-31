@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
   // only closes after 24h of silence (the rematch cron sweeps stale ones).
   await supabaseAdmin
     .from('matches')
-    .update({ chat_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() })
+    .update({ chat_expires_at: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString() })
     .eq('id', match_id);
 
   // Per product call: chat stays in-app, no email-on-message. The

@@ -107,7 +107,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ matched: false, message: 'No compatible matches nearby yet' })
     }
 
-    const scored = locationCompatible
+    // Hard cluster segregation: ENM/poly is a closed pool. An enm user only
+    // sees other enm users, and monogamous users never see enm candidates
+    // (and vice versa). serious/casual/open stay soft-prioritized below.
+    const uIntent = intentOf(user)
+    const clusterCompatible = locationCompatible.filter((p: any) => {
+      const pIntent = intentOf(p)
+      if (uIntent === 'enm' || pIntent === 'enm') return uIntent === 'enm' && pIntent === 'enm'
+      return true
+    })
+
+    if (clusterCompatible.length === 0) {
+      return NextResponse.json({ matched: false, message: 'No compatible matches in your cluster yet' })
+    }
+
+    const scored = clusterCompatible
       .map((p: any) => ({ ...p, score: compatibilityScore(user, p) }))
       .sort((a: any, b: any) => b.score - a.score)
 
@@ -171,7 +185,11 @@ export async function POST(req: NextRequest) {
         user_1_id: userId,
         user_2_id: best.id,
         compatibility_score: best.score,
-        status: 'pending'
+        status: 'pending',
+        // Unaccepted matches expire 24h after creation (accepted chats get
+        // their own 36h inactivity window). Drives the card countdown + the
+        // "accept window closing" reminder consistently.
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       }])
       .select().single()
 

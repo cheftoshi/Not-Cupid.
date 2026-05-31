@@ -14,7 +14,7 @@ import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email';
 
 // Chat expires after this much SILENCE. Each new message slides it forward
 // (see /api/messages). An active conversation therefore never expires.
-export const CHAT_INACTIVITY_MS = 24 * 60 * 60 * 1000;
+export const CHAT_INACTIVITY_MS = 36 * 60 * 60 * 1000;
 
 export type AcceptResult =
   | { ok: false; reason: 'not_found' | 'not_party' | 'ended' }

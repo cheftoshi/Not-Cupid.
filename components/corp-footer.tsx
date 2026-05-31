@@ -21,6 +21,23 @@ export default function CorpFooter() {
       >
         NOT<span style={{ color: '#ff6a1f' }}>CUPID</span>
       </div>
+      <div style={{ marginBottom: '0.7rem' }}>
+        <a
+          href="https://instagram.com/notcupidapp"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontFamily: "'DM Mono', ui-monospace, monospace",
+            fontSize: '0.6rem',
+            letterSpacing: '0.14em',
+            textTransform: 'lowercase',
+            color: '#2563ff',
+            textDecoration: 'none',
+          }}
+        >
+          ↗ @notcupidapp
+        </a>
+      </div>
       <div
         style={{
           fontSize: '0.5rem',
