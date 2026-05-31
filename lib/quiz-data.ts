@@ -393,8 +393,8 @@ export function haversine(lat1: number, lon1: number, lat2: number, lon2: number
 // Distance in miles between two ZIPs, or null if either is unknown.
 export function zipDistanceMiles(zip1: string | null | undefined, zip2: string | null | undefined): number | null {
   if (!zip1 || !zip2) return null
-  const c1 = ZIP_COORDS[zip1]
-  const c2 = ZIP_COORDS[zip2]
+  const c1 = coordsForZip(zip1)
+  const c2 = coordsForZip(zip2)
   if (!c1 || !c2) return null
   return haversine(c1.lat, c1.lng, c2.lat, c2.lng)
 }
@@ -885,9 +885,30 @@ export const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
   '02675':{lat:41.7001,lng:-70.2918},
 }
 
+// Resolve a zip to coordinates. Falls back to the centroid of all known zips
+// sharing the same 3-digit prefix (ZCTA region) when the exact zip isn't in
+// our table — so a real resident of a covered area (e.g. a Providence 029xx or
+// Cape 026xx zip we didn't hardcode) is NOT wrongly rejected at signup. Only a
+// zip whose entire prefix is unknown returns null.
+const _prefixCentroids: Record<string, { lat: number; lng: number } | null> = {}
+export function coordsForZip(zip: string | null | undefined): { lat: number; lng: number } | null {
+  if (!zip || zip.length < 5) return null
+  const exact = ZIP_COORDS[zip]
+  if (exact) return exact
+  const prefix = zip.slice(0, 3)
+  if (prefix in _prefixCentroids) return _prefixCentroids[prefix]
+  let sumLat = 0, sumLng = 0, n = 0
+  for (const z in ZIP_COORDS) {
+    if (z.slice(0, 3) === prefix) { sumLat += ZIP_COORDS[z].lat; sumLng += ZIP_COORDS[z].lng; n++ }
+  }
+  const centroid = n > 0 ? { lat: sumLat / n, lng: sumLng / n } : null
+  _prefixCentroids[prefix] = centroid
+  return centroid
+}
+
 export function validateZip(zip: string): 'valid'|'invalid'|'outofrange'|'incomplete' {
   if (zip.length < 5) return 'incomplete'
-  const coords = ZIP_COORDS[zip]
+  const coords = coordsForZip(zip)
   if (!coords) return 'invalid'
   const dist = haversine(BOSTON_CENTER.lat, BOSTON_CENTER.lng, coords.lat, coords.lng)
   return dist <= SIGNUP_RADIUS_MILES ? 'valid' : 'outofrange'
@@ -911,7 +932,7 @@ export type Metro = keyof typeof METRO_CENTERS
 // every metro center.
 export function metroOf(zip: string | null | undefined): Metro | null {
   if (!zip) return null
-  const c = ZIP_COORDS[zip]
+  const c = coordsForZip(zip)
   if (!c) return null
   let best: Metro | null = null
   let bestDist = Infinity

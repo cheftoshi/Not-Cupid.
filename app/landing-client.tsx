@@ -25,7 +25,7 @@ function relativeTime(iso: string | null): string {
 
 export default function LandingClient({ stats }: { stats: Stats }) {
   const tickers: Array<{ k: string; v: string }> = []
-  if (stats.poolCount > 0) tickers.push({ k: 'in the boston pool', v: stats.poolCount.toLocaleString() })
+  if (stats.poolCount > 0) tickers.push({ k: 'in the pool · eastern mass + ri + nh', v: stats.poolCount.toLocaleString() })
   if (stats.matchesThisWeek > 0) tickers.push({ k: 'mutual matches · last 7 days', v: stats.matchesThisWeek.toString() })
   if (stats.lastMatchAt) tickers.push({ k: 'last mutual match', v: relativeTime(stats.lastMatchAt) })
   if (tickers.length === 0) tickers.push({ k: 'cooking up the algo', v: '∞' })
@@ -67,7 +67,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       <section className={styles.landHero}>
         <div className={styles.landEyebrow}>
           <span className={styles.landDot} />
-          boston · ma · a social experiment
+          greater boston → providence · worcester · the cape
         </div>
 
         <h1 className={styles.landH1}>
@@ -84,7 +84,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
           <Link href="/quiz" className={`${styles.landProd} ${styles.landProdLove}`}>
             <div className={styles.landProdEye}><span className={styles.landProdDotLive} /> live</div>
             <div className={styles.landProdName}>love <em>maxxin.</em></div>
-            <div className={styles.landProdDesc}>pick from your 5 most compatible. greater boston. personality first.</div>
+            <div className={styles.landProdDesc}>pick from your 5 most compatible. eastern mass, ri & southern nh. personality first.</div>
             <div className={styles.landProdCta}>sign up →</div>
           </Link>
           <Link href="/friend-maxxin" className={`${styles.landProd} ${styles.landProdFriend}`}>
