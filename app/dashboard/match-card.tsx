@@ -122,7 +122,6 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
           {phase === 'pending' && 'pending match'}
           {phase === 'waiting' && 'waiting on them'}
           {phase === 'active' && 'active match'}
-          {phase === 'expired' && 'expired'}
         </span>
         {expiresIn !== null && expiresIn > 0 && phase !== 'active' && (
           <span className={styles.timer}>expires in {expiresIn}h</span>
