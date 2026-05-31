@@ -47,7 +47,9 @@ Algorithm-assigned, one-match-at-a-time, no swiping, no browsing.
 
 ## Roadmap — when we come back
 1. **Women-first GROWTH/SUPPLY (the #1 real lever).** The sim proved matching can't fix a 70/30 pool — only more women can. Wanted: a written growth playbook (women-free or men-pay pricing, where/how to recruit women in Boston, referral mechanics, launch sequencing). User deferred this — pick it up.
-2. **OG / social share images + meta tags** — for shared links (Reddit/social). Still not done.
+2. **OG / social share images + meta tags** — for shared links (Reddit/social). Still not done. (HELD by user 5/31.) Also held: higher-fidelity favicon (currently `app/icon.svg` "nc" monogram) + exact social wordmark font (currently Playfair italic stand-in for the Not/Cupid blue/orange lockup).
+- **Relaunch email blast is BUILT but NOT SENT** — `📣 Relaunch blast` button on `/admin` (shows dry-run preview first). Migration `relaunch_blast_sent_at` already run. Send when ready.
+- **Unnamed "complex build"** the user keeps deferring — ask what it is next session.
 3. **More edgy UI (warm, minimal — user's stated taste):** unlock-as-drama (redacted/blurred reveal), quiz loading-screen algo voice, editorial match card. (Match reveal + motion + algo voice already shipped.)
 4. **Acceptance-likelihood weighting** in the matcher (conversion lever — use pool-health data).
 5. **Per-metro `thresholdFor`** (gender-balance is still global in `thresholdFor`; intake gating IS per-metro now, but the score threshold isn't).
