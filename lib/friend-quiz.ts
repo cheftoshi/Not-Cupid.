@@ -62,8 +62,10 @@ export function normalizeFriendVibes(input: any): FriendVibes {
   };
   for (const q of FRIEND_QUESTIONS) {
     if (q.multi) {
-      const arr = Array.isArray(input.activities) ? input.activities.filter((a: any) => typeof a === 'string' && q.opts.includes(a)) : [];
-      out.activities = Array.from(new Set(arr)).slice(0, q.opts.length);
+      const arr: string[] = Array.isArray(input.activities)
+        ? input.activities.filter((a: any): a is string => typeof a === 'string' && q.opts.includes(a))
+        : [];
+      out.activities = Array.from(new Set<string>(arr)).slice(0, q.opts.length);
     } else {
       single(q.key as keyof FriendVibes, q);
     }
