@@ -181,6 +181,7 @@ export default function AdminClient() {
               <h1 className={s.title}>MISSION CONTROL</h1>
             </div>
             <nav className={s.nav}>
+              <a href="#funnel" className={s.navLink}>Funnel</a>
               <a href="#pool" className={s.navLink}>Pool</a>
               <a href="#health" className={s.navLink}>Health</a>
               <a href="#ops" className={s.navLink}>Ops</a>
@@ -215,6 +216,34 @@ export default function AdminClient() {
                 {sub && <div className={s.kpiSub}>{sub}</div>}
               </div>
             ))}
+          </div>
+
+          {/* ── CONVERSION FUNNEL (the app's webflow) ── */}
+          <div className={s.card} id="funnel">
+            <div className={s.cardHead}>
+              <p className={s.cardTitle}>Conversion funnel — <b>where users flow &amp; drop</b></p>
+            </div>
+            {!data?.funnel ? <p className={s.note}>loading…</p> : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginTop: '0.5rem' }}>
+                {data.funnel.map((stg: any, i: number) => {
+                  const prev = i > 0 ? data.funnel[i - 1].count : null;
+                  const dropPct = prev && prev > 0 ? Math.round(((prev - stg.count) / prev) * 100) : null;
+                  return (
+                    <div key={stg.label} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                      <span style={{ width: 148, flexShrink: 0, fontFamily: 'DM Mono, monospace', fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#0e0c1a' }}>{stg.label}</span>
+                      <div style={{ flex: 1, background: 'rgba(37,99,255,0.1)', borderRadius: 6, height: 26, position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ width: `${stg.pctOfTotal}%`, height: '100%', background: 'linear-gradient(90deg,#2563ff,#1b46c9)', borderRadius: 6, minWidth: stg.count > 0 ? 3 : 0 }} />
+                        <span style={{ position: 'absolute', left: 9, top: 0, lineHeight: '26px', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', fontWeight: 700, color: stg.pctOfTotal > 14 ? '#fff' : '#0e0c1a' }}>{stg.count}</span>
+                      </div>
+                      <span style={{ width: 40, textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', color: '#7a7590' }}>{stg.pctOfTotal}%</span>
+                      <span style={{ width: 64, textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: '0.55rem', color: dropPct != null && dropPct >= 50 ? '#d94f3d' : '#a8a3b8' }} title="drop-off from previous stage">
+                        {dropPct != null ? `−${dropPct}%` : '—'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── DATING POOL ── */}

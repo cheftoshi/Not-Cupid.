@@ -12,6 +12,9 @@ export async function GET(req: NextRequest) {
     const { data: users } = await supabaseAdmin.from('users').select('*').order('created_at', { ascending: false })
     const { data: matches } = await supabaseAdmin.from('matches').select('*').order('created_at', { ascending: false })
     const { data: unlocks } = await supabaseAdmin.from('unlocks').select('*')
+    // For the conversion funnel: which matches have ≥1 message, and which users gave date feedback.
+    const { data: msgRows } = await supabaseAdmin.from('messages').select('match_id')
+    const { data: feedbackRows } = await supabaseAdmin.from('date_feedback').select('user_id')
 
     const totalUsers = users?.length ?? 0
     const totalMatches = matches?.length ?? 0
@@ -58,9 +61,47 @@ export async function GET(req: NextRequest) {
     const decided = bothAccepted + passed
     const passRate = decided > 0 ? Math.round((passed / decided) * 100) : null
 
+    // ───────────── Conversion funnel (the app's "webflow") ─────────────
+    // Distinct users at each stage of the journey, computed from real data so
+    // you can see exactly where people drop off.
+    const allUsers = users ?? []
+    const allMatches = matches ?? []
+    const liveUsers = allUsers.filter(u => !u.deleted_at)
+    const total = liveUsers.length
+
+    const matchedUserIds = new Set<string>()
+    const mutualUserIds = new Set<string>()
+    allMatches.forEach(m => {
+      matchedUserIds.add(m.user_1_id); matchedUserIds.add(m.user_2_id)
+      if (m.user_1_accepted && m.user_2_accepted) { mutualUserIds.add(m.user_1_id); mutualUserIds.add(m.user_2_id) }
+    })
+    // Matches that have at least one message → the users in them "chatted".
+    const matchesWithMsgs = new Set((msgRows ?? []).map(r => r.match_id))
+    const chattedUserIds = new Set<string>()
+    allMatches.forEach(m => {
+      if (matchesWithMsgs.has(m.id)) { chattedUserIds.add(m.user_1_id); chattedUserIds.add(m.user_2_id) }
+    })
+    const datedUserIds = new Set((feedbackRows ?? []).map(r => r.user_id))
+
+    const countIn = (set: Set<string>) => liveUsers.filter(u => set.has(u.id)).length
+    const stage = (label: string, count: number) => ({
+      label, count, pctOfTotal: total > 0 ? Math.round((count / total) * 100) : 0,
+    })
+
+    const funnel = [
+      stage('Signed up', total),
+      stage('Finished quiz', liveUsers.filter(u => u.archetype && typeof u.score_honesty === 'number').length),
+      stage('Did vibes round', liveUsers.filter(u => u.vibes && typeof u.vibes === 'object' && Object.keys(u.vibes).length > 0).length),
+      stage('Got a match', countIn(matchedUserIds)),
+      stage('Mutually accepted', countIn(mutualUserIds)),
+      stage('Started chatting', countIn(chattedUserIds)),
+      stage('Went on a date', countIn(datedUserIds)),
+    ]
+
     return NextResponse.json({
       stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
       signupsPerDay: days,
+      funnel,
       recentUsers,
       recentMatches,
     })
