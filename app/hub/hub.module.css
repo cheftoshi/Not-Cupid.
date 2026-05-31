@@ -42,9 +42,16 @@
 .eyebrow {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; color: #2563ff;
-  margin: 0 0 1rem;
+  margin: 0 0 0.6rem;
+  display: flex; align-items: baseline; justify-content: center; gap: 0.6rem;
 }
-.eyebrow em { font-family: Georgia, ui-serif, serif; font-style: italic; color: #1b46c9; font-weight: 600; text-transform: none; letter-spacing: 0.02em; }
+/* The name is the hero of the greeting now — big serif, not a tiny tag. */
+.eyebrowName {
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-style: italic; color: #1b46c9; font-weight: 400;
+  text-transform: none; letter-spacing: -0.01em;
+  font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1;
+}
 
 .h1 {
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
