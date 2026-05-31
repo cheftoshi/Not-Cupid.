@@ -11,10 +11,24 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { rankCandidates } from '@/lib/matching';
 import { releaseTimedOutMatches } from '@/lib/match-actions';
+import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
+
+// ZIP → human metro label (e.g. "Boston, MA"), or "Boston area" fallback.
+// Never returns the raw ZIP — that's a location-privacy leak.
+function metroLabel(zip: string | null | undefined): string {
+  const m = metroOf(zip);
+  if (m && METRO_CENTERS[m]) return `${METRO_CENTERS[m].city}, ${METRO_CENTERS[m].state}`;
+  return 'Boston area';
+}
 
 export const dynamic = 'force-dynamic';
 
 const ROSTER_SIZE = 5;
+// The scarce side gets a bigger roster. In a male-skewed pool that means
+// women seeking men (or anyone) get more options — but NOT women seeking
+// women, whose sought pool is itself thin, so a bigger number would just
+// show empty slots.
+const ROSTER_SIZE_SCARCE = 8;
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -81,13 +95,16 @@ export async function GET() {
   const freshPool = pool.filter((p: any) => !seen.has(p.id));
 
   const { ranked } = rankCandidates(user, freshPool, { waitDays });
-  const roster = ranked.slice(0, ROSTER_SIZE).map((c) => ({
+  // Bigger roster for women seeking men/anyone (scarce side); 5 otherwise.
+  const size = user.gender === 'f' && user.seeking !== 'f' ? ROSTER_SIZE_SCARCE : ROSTER_SIZE;
+  const roster = ranked.slice(0, size).map((c) => ({
     id: c.user.id,
     name: c.user.name,
     age: c.user.age,
     photo_url: c.user.photo_url,
     archetype: c.user.archetype,
-    zip: c.user.zip,
+    // Privacy: never expose the exact ZIP. Show the metro label only.
+    metro: metroLabel(c.user.zip),
     relationship_style: c.user.relationship_style,
     score: c.score,
   }));

@@ -11,7 +11,7 @@ import ExpandRadiusButton from './expand-radius-button';
 // roster is empty, falls back to the queue message + widen-search.
 type Candidate = {
   id: string; name: string; age: number | null; photo_url: string | null;
-  archetype: string | null; zip: string | null; relationship_style: string | null; score: number;
+  archetype: string | null; metro: string | null; relationship_style: string | null; score: number;
 };
 
 export default function RosterPicker({ radius, maxRadius }: { radius: number; maxRadius: number }) {

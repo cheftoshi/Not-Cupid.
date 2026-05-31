@@ -5,9 +5,23 @@ import { useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
-import { VIBE_HEADS, vibeLabel, relationshipStyleLabel } from '@/lib/quiz-data';
+import { VIBE_HEADS, vibeLabel, relationshipStyleLabel, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import { parseResponse } from '@/lib/fetch-helpers';
+
+// Privacy: show a fuzzy distance band + metro, never the exact ZIP.
+function distanceBand(mi: number | null | undefined): string | null {
+  if (mi == null) return null;
+  if (mi <= 5) return 'nearby';
+  if (mi <= 15) return 'a few miles away';
+  if (mi <= 35) return 'across town';
+  return 'a bit of a trip';
+}
+function metroLabel(zip: string | null | undefined): string | null {
+  const m = metroOf(zip);
+  if (m && METRO_CENTERS[m]) return `${METRO_CENTERS[m].city}, ${METRO_CENTERS[m].state}`;
+  return null;
+}
 
 interface Props {
   match: any;
@@ -140,7 +154,9 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
       </h2>
 
       <div className={styles.matchMeta}>
-        {otherUser.zip && <span>📍 {otherUser.zip}{distanceMi != null ? ` · ~${distanceMi} mi` : ''}</span>}
+        {(metroLabel(otherUser.zip) || distanceBand(distanceMi)) && (
+          <span>📍 {[metroLabel(otherUser.zip), distanceBand(distanceMi)].filter(Boolean).join(' · ')}</span>
+        )}
         {match.compatibility_score && <span>{match.compatibility_score}% compatibility</span>}
         {otherUser.relationship_style && <span>💞 {relationshipStyleLabel(otherUser.relationship_style)}</span>}
       </div>
