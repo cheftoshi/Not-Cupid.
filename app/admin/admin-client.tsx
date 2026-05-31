@@ -17,6 +17,7 @@ export default function AdminClient() {
   const [appFeedback, setAppFeedback] = useState<any>(null)
   const [reports, setReports] = useState<any>(null)
   const [waveBusy, setWaveBusy] = useState(false)
+  const [seedAccounts, setSeedAccounts] = useState<Array<{ name: string; email: string; loginUrl: string }> | null>(null)
 
   async function loadReports() {
     try {
@@ -479,9 +480,7 @@ export default function AdminClient() {
                 const res = await fetch('/api/admin/seed-test', { method: 'POST' });
                 const d = await parseResponse<any>(res);
                 if (!d.ok) { alert('Failed: ' + (d.error || 'unknown')); return; }
-                const lines = (d.accounts || []).map((a: any) => `${a.name} (${a.email}):\n${a.loginUrl}`).join('\n\n');
-                // Show in a prompt so the links are easy to copy.
-                window.prompt('Open each link in a SEPARATE incognito window, then have one pick the other:', lines);
+                setSeedAccounts(d.accounts || []);
               }}>🧪 Seed test accounts + login links</button>
             </div>
             <div className={`${s.actionsGrid} ${s.actions3}`} style={{ marginBottom: '1.5rem' }}>
@@ -761,6 +760,46 @@ export default function AdminClient() {
         </div>
       </div>
       <CorpFooter />
+
+      {seedAccounts && (
+        <div
+          onClick={() => setSeedAccounts(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(14,12,26,0.55)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: '1.75rem', width: '100%', maxWidth: 680, boxShadow: '0 24px 60px -20px rgba(14,12,26,0.5)' }}>
+            <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.4rem', margin: '0 0 0.4rem' }}>Test accounts ready</h2>
+            <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.85rem', color: '#6b6975', margin: '0 0 1.25rem', lineHeight: 1.5 }}>
+              Open each link in a <b>separate incognito window</b>, then have one pick the other to test the full match → chat flow.
+            </p>
+            {seedAccounts.map((a) => (
+              <div key={a.email} style={{ marginBottom: '1.1rem' }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1b46c9', marginBottom: '0.35rem' }}>
+                  {a.name} · {a.email}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                  <input
+                    readOnly
+                    value={a.loginUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    style={{ flex: 1, fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', padding: '0.6rem 0.7rem', border: '1px solid #e5e1ec', borderRadius: 8, background: '#f8f7fb', color: '#0e0c1a', overflow: 'hidden' }}
+                  />
+                  <button
+                    onClick={() => navigator.clipboard?.writeText(a.loginUrl)}
+                    style={{ background: '#0b0b0b', color: '#fff', border: 'none', borderRadius: 8, padding: '0 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  >copy</button>
+                  <a
+                    href={a.loginUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ background: '#2563ff', color: '#fff', borderRadius: 8, padding: '0.6rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+                  >open ↗</a>
+                </div>
+              </div>
+            ))}
+            <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
+              <button onClick={() => setSeedAccounts(null)} style={{ background: 'none', border: '1px solid #e5e1ec', borderRadius: 999, padding: '0.55rem 1.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', color: '#6b6975' }}>close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
