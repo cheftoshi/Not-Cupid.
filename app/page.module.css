@@ -115,13 +115,15 @@
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-weight: 900;
   font-size: clamp(3.4rem, 11vw, 8rem);
-  line-height: 0.92;
+  line-height: 1.04;
   letter-spacing: -0.04em;
   color: #0a0a0a;
   margin: 0 0 1.5rem;
   animation: landFadeUp 0.9s 0.1s both ease;
 }
 .landH1 em {
+  display: inline-block;
+  margin-top: 0.15em;
   font-style: italic;
   font-weight: 400;
   background: linear-gradient(135deg, #1b46c9 0%, #2563ff 100%);
