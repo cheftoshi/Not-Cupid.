@@ -24,7 +24,7 @@ function matchEmail(name: string, otherName: string, score: number, spot: string
   const passUrl = `${baseUrl}/api/match-pass?matchId=${matchId}&userId=${userId}&token=${passToken}`
   return `
     <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f6f6f6;">
-      <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
+      <div style="font-family:Georgia,serif;font-style:italic;font-size:1.5rem;font-weight:700;margin-bottom:2rem"><span style="color:#2563ff">Not</span><span style="color:#ff6a1f">Cupid</span></div>
       <p style="font-size:.75rem;color:#2563ff;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">The algorithm has spoken</p>
       <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem;line-height:1.5">Hey ${name} — we found your match.</p>
       <div style="background:#e8edff;padding:1.5rem;margin-bottom:1.5rem">

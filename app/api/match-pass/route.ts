@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
   const tk = escapeHtml(workingToken)
   return new NextResponse(`
     <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f6f6f6;text-align:center;">
-      <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;color:#0e0c1a;margin-bottom:2rem">NOTCUPID</div>
+      <div style="font-family:Georgia,serif;font-style:italic;font-size:1.5rem;font-weight:700;margin-bottom:2rem"><span style="color:#2563ff">Not</span><span style="color:#ff6a1f">Cupid</span></div>
       <h1 style="font-size:1.8rem;color:#0e0c1a;margin-bottom:1rem">Confirm: pass on this match</h1>
       <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Click below to confirm. You'll go back in the Boston pool and we'll find you another match.</p>
       <form method="POST" action="/api/match-pass" style="display:inline-block">

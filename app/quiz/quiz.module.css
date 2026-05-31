@@ -235,11 +235,14 @@
   display: flex; justify-content: space-between;
   align-items: center; margin-bottom: 1.5rem;
 }
+/* Wordmark — matches the social identity: Not=blue, Cupid=orange, italic serif. */
 .quizLogo {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.1rem; font-weight: 900; color: var(--ink);
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em;
+  color: #2563ff;
 }
-.quizLogo span { color: var(--accent); font-style: italic; }
+.quizLogo span { color: #ff6a1f; }
 .qMeta { display: flex; align-items: center; gap: 0.75rem; }
 .qDim {
   font-family: 'DM Mono', monospace; font-size: 0.6rem;

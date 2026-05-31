@@ -12,14 +12,15 @@ export default function CorpFooter() {
     >
       <div
         style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: '0.95rem',
-          letterSpacing: '0.16em',
-          color: '#2563ff',
+          fontFamily: "'Playfair Display', Georgia, ui-serif, serif",
+          fontStyle: 'italic',
+          fontWeight: 700,
+          fontSize: '1.4rem',
+          letterSpacing: '-0.01em',
           marginBottom: '0.5rem',
         }}
       >
-        NOT<span style={{ color: '#ff6a1f' }}>CUPID</span>
+        <span style={{ color: '#2563ff' }}>Not</span><span style={{ color: '#ff6a1f' }}>Cupid</span>
       </div>
       <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1.1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         {[

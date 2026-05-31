@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Wordmark from '@/components/wordmark';
 import styles from './hub.module.css';
 
 export default function HubClient({
@@ -46,7 +47,7 @@ export default function HubClient({
       <div className={styles.grain} aria-hidden />
 
       <header className={styles.top}>
-        <div className={styles.brand}>NOTCUPID<span className={styles.brandDot}>·</span></div>
+        <Wordmark size={1.25} href="/hub" />
         <a href="/api/auth/logout" onClick={async (e) => { e.preventDefault(); await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/'; }} className={styles.logout}>log out</a>
       </header>
 

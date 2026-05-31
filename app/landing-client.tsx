@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Wordmark from '@/components/wordmark'
 import styles from './page.module.css'
 
 type Stats = {
@@ -59,7 +60,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       <div className={styles.landGrain} aria-hidden />
 
       <header className={styles.landTop}>
-        <div className={styles.landBrand}>NOTCUPID<span className={styles.landBrandDot}>·</span></div>
+        <Wordmark size={1.4} />
         <a href="/login" className={styles.landNavBtn}>log in →</a>
       </header>
 

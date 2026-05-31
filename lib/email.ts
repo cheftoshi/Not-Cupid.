@@ -130,9 +130,9 @@ export function renderEmail(args: RenderArgs): string {
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:${C.card};border:1px solid ${C.border};border-radius:14px;">
         <tr>
           <td style="padding:36px 36px 8px 36px;">
-            <!-- brand lockup -->
-            <div style="font-family:'Bebas Neue','Helvetica Neue',Arial,sans-serif;font-size:24px;font-weight:700;letter-spacing:0.14em;color:${C.ink};">
-              NOT<span style="color:${C.lav};">CUPID</span>
+            <!-- brand lockup — Not=blue, Cupid=orange, italic serif (matches socials) -->
+            <div style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:26px;font-weight:700;letter-spacing:-0.01em;">
+              <span style="color:#2563ff;">Not</span><span style="color:#ff6a1f;">Cupid</span>
             </div>
           </td>
         </tr>

@@ -5,6 +5,7 @@ import MatchCard from './match-card';
 import MatchReveal from './match-reveal';
 import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
+import Wordmark from '@/components/wordmark';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
 import styles from './dashboard.module.css';
@@ -116,7 +117,7 @@ export default async function DashboardPage({
     <div className={styles.page}>
       <div className={styles.container}>
         <nav className={styles.nav}>
-          <a href="/hub" className={styles.navBrand} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>NOTCUPID</a>
+          <Wordmark size={1.15} href="/hub" />
           <div className={styles.navLinks}>
             <a href="/profile" className={styles.navLink}>Profile</a>
             <a href="/profile/preview" className={styles.navLink}>Preview</a>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
 import CorpFooter from '@/components/corp-footer';
+import Wordmark from '@/components/wordmark';
 import { suggestEmailCorrection } from '@/lib/email-typos';
 import { parseResponse } from '@/lib/fetch-helpers';
 
@@ -113,7 +114,7 @@ function LoginInner() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <Link href="/" className={styles.brand}>NOTCUPID</Link>
+        <Wordmark size={1.2} href="/" />
 
         <h1 className={styles.title}>
           welcome <span className={styles.titleAccent}>back.</span>

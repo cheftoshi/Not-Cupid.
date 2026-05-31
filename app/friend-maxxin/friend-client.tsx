@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Wordmark from '@/components/wordmark';
 import styles from './friend.module.css';
 
 export default function FriendMaxxinClient({ authed, onWaitlist }: { authed: boolean; onWaitlist: boolean }) {
@@ -42,7 +43,7 @@ export default function FriendMaxxinClient({ authed, onWaitlist }: { authed: boo
       <div className={styles.grain} aria-hidden />
 
       <header className={styles.top}>
-        <Link href="/" className={styles.brand}>NOTCUPID<span className={styles.brandDot}>·</span></Link>
+        <Wordmark size={1.2} href="/" />
         {authed ? (
           <Link href="/hub" className={styles.back}>← back to hub</Link>
         ) : (
