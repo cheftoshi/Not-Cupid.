@@ -1,14 +1,37 @@
 # dependencies
-/node_modules
+node_modules/
+.pnp
+.pnp.js
 
 # next.js
-/.next/
+.next/
+out/
+build/
 
-# env
-.env*.local
+# debug / logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
 
-# misc
+# environment / secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# os / editor cruft
 .DS_Store
+.vscode/
+.idea/
+*.swp
+
+# vercel
+.vercel/
+
+# local claude overrides (per-machine permissions, etc.)
+.claude/settings.local.json
 
 # local dev journal (not for repo)
 .dev-journal.md
