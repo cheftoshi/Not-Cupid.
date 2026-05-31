@@ -15,7 +15,21 @@ export default function AdminClient() {
   const [pools, setPools] = useState<any>(null)
   const [health, setHealth] = useState<any>(null)
   const [appFeedback, setAppFeedback] = useState<any>(null)
+  const [reports, setReports] = useState<any>(null)
   const [waveBusy, setWaveBusy] = useState(false)
+
+  async function loadReports() {
+    try {
+      const r = await fetch('/api/admin/reports')
+      if (!r.ok) { setReports({ __error: `HTTP ${r.status}`, items: [] }); return }
+      setReports(await parseResponse<any>(r))
+    } catch (e: any) { setReports({ __error: e?.message || 'network error', items: [] }) }
+  }
+  async function moderate(userId: string, action: 'block' | 'unblock') {
+    if (!confirm(action === 'block' ? 'Block this user from all matching?' : 'Unblock this user?')) return
+    await fetch('/api/admin/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, action }) })
+    loadReports()
+  }
 
   useEffect(() => {
     fetch('/api/admin-stats')
