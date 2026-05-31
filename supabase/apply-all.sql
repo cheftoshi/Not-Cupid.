@@ -197,22 +197,10 @@ alter table matches add constraint matches_status_check
     'matched'
   ));
 
-alter table matches drop constraint if exists matches_ended_reason_check;
-
-alter table matches add constraint matches_ended_reason_check
-  check (
-    ended_reason is null or ended_reason in (
-      'expired',
-      'one_passed',
-      'mutual_pass',
-      'completed',
-      'user_deleted',
-      'user_ended',
-      'ghosted',
-      'not_vibing',
-      'user_requiz'
-    )
-  );
+-- NOTE: the ended_reason CHECK from this 5/28 migration is intentionally
+-- omitted here — it predates the 'reported' value now present in live data
+-- and would fail. The authoritative ended_reason constraint (including
+-- 'reported') is set by the 20260531_reports.sql section below.
 
 -- ==================== 20260528_pool_rotation.sql ====================
 -- Pool rotation: wave drops + activity ejection
