@@ -32,60 +32,15 @@ export async function GET(req: NextRequest) {
   try {
     const nowIso = new Date().toISOString()
 
-    // ============== 0a) Activity-based ejection ==============
-    // Users with no session activity in INACTIVE_DAYS get pool_active = false.
-    const INACTIVE_DAYS = 7
-    const inactiveCutoff = new Date(Date.now() - INACTIVE_DAYS * 24 * 60 * 60 * 1000).toISOString()
-
-    const { data: recentSessions } = await supabaseAdmin
-      .from('sessions')
-      .select('user_id')
-      .gte('last_used_at', inactiveCutoff)
-    const activeUserIds = new Set((recentSessions || []).map((s: any) => s.user_id))
-
-    const { data: currentlyActive } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('pool_active', true)
-
-    const toEject = (currentlyActive || [])
-      .filter((u: any) => !activeUserIds.has(u.id))
-      .map((u: any) => u.id)
-
-    if (toEject.length > 0) {
-      await supabaseAdmin
-        .from('users')
-        .update({ pool_active: false, pool_drop_at: nowIso })
-        .in('id', toEject)
-    }
-
-    // ============== 0b) Wave drop — release a balanced batch ==============
-    // Pull up to WAVE_PER_GENDER per gender from the inactive queue.
-    const WAVE_PER_GENDER = 10
-    const { data: queued } = await supabaseAdmin
-      .from('users')
-      .select('id, gender')
-      .eq('pool_active', false)
-      .eq('status', 'waiting')
-      .is('matching_disabled_at', null)
-      .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`)
-      .order('pool_drop_at', { ascending: true, nullsFirst: true })
-
-    const men = (queued || []).filter((u: any) => u.gender === 'm').slice(0, WAVE_PER_GENDER)
-    const women = (queued || []).filter((u: any) => u.gender === 'f').slice(0, WAVE_PER_GENDER)
-    const otherGender = (queued || [])
-      .filter((u: any) => u.gender && u.gender !== 'm' && u.gender !== 'f')
-      .slice(0, WAVE_PER_GENDER)
-    const wakeIds = [...men, ...women, ...otherGender].map((u: any) => u.id)
-
-    if (wakeIds.length > 0) {
-      await supabaseAdmin
-        .from('users')
-        .update({ pool_active: true, pool_drop_at: null })
-        .in('id', wakeIds)
-    }
-
-    console.log(`Pool rotation: ejected ${toEject.length}, woke ${wakeIds.length} (${men.length}m / ${women.length}f / ${otherGender.length}o)`)
+    // ============== Pool rotation: DISABLED ==============
+    // Activity-based ejection (no login in 7 days -> pool_active=false) was wrong
+    // for NotCupid's model: users take the quiz and WAIT for a match email — they
+    // have no reason to log back in, so the ejection benched the real, willing pool
+    // (179 of 287 waiting users) and starved matching, esp. the scarce female side.
+    // Removed 2026-05-31. pool_active now stays true; the gate in /api/match is a
+    // harmless no-op kept for future use. Keep these counters for the response shape.
+    const toEject: string[] = []
+    const wakeIds: string[] = []
 
     // ============== 0c) Auto-release expired cooldowns ==============
     // A user whose matching_cooldown_until has passed (and who isn't banned
