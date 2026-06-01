@@ -10,6 +10,11 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   const { data: me } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
   if (!me || !me.friend_opted_in_at) return 0;
 
+  // Ghosted/paused users are locked out of BOTH lines until they refresh their
+  // profile (which clears the flag). Don't assign them any new friend matches.
+  if (me.matching_disabled_at) return 0;
+  if (me.matching_cooldown_until && new Date(me.matching_cooldown_until).getTime() > Date.now()) return 0;
+
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')
     .select('user_a_id, user_b_id, status')
@@ -32,6 +37,9 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     .select('*')
     .not('friend_opted_in_at', 'is', null)
     .is('deleted_at', null)
+    // Exclude ghosted/paused users — they don't surface to anyone on either line.
+    .is('matching_disabled_at', null)
+    .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${new Date().toISOString()}`)
     .neq('id', userId);
 
   // Realm segregation: test accounts only crew up with other test accounts;

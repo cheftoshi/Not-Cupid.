@@ -364,6 +364,7 @@ if (res.status === 409) {
                     <option value="">—</option>
                     <option value="m">man</option>
                     <option value="f">woman</option>
+                    <option value="nb">non-binary</option>
                     <option value="b">bisexual</option>
                   </select>
                 </div>

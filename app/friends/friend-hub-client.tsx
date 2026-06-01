@@ -109,6 +109,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
     alert('got it — thank you! 🙏');
   }
   const [matches, setMatches] = useState<any[]>([]);
+  const [ghosted, setGhosted] = useState(false);
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
   const [pulse, setPulse] = useState<any>(null);
   const [acts, setActs] = useState<any[]>([]);
@@ -124,7 +125,8 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const chatRef = useRef<HTMLDivElement>(null);
 
   const loadMatches = useCallback(async () => {
-    const r = await fetch('/api/friend/roster'); if (r.ok) setMatches((await r.json()).matches || []);
+    const r = await fetch('/api/friend/roster');
+    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setGhosted(!!d.ghosted); }
   }, []);
   const loadChat = useCallback(async () => {
     const r = await fetch('/api/friend/messages'); if (r.ok) setChat(await r.json());
@@ -295,7 +297,17 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
 
           {/* CREW — a deck you swipe through (frees the room below for the chat) */}
           <h2 style={sectionLabel}><StationDot />🎒 your crew</h2>
-          {matches.length === 0 ? (
+          {ghosted ? (
+            <div style={{ ...card, padding: '1.25rem' }}>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ your matching is paused</div>
+              <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: '#6b4a2f', lineHeight: 1.5, margin: '0 0 0.6rem' }}>
+                you were flagged for ghosting a match, so you&apos;re paused on both the friend and love lines. head to your profile and <strong>start fresh</strong> to wipe the slate and get back in.
+              </p>
+              <a href="/friends/profile" style={{ display: 'inline-block', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: LINE, border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: `3px 3px 0 ${INK}`, textDecoration: 'none' }}>
+                go to my profile →
+              </a>
+            </div>
+          ) : matches.length === 0 ? (
             <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>the algo is still finding your people — check back soon.</div>
           ) : (
             <>

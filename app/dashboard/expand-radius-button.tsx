@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
 
+const DEFAULT_RADIUS = 15;
+
 // Shown in the "in the queue" state. Lets a waiting user widen their match
 // radius in 15mi steps (up to 75) when their local pool is thin, then reloads
-// to pick up any match the wider net surfaces.
+// to pick up any match the wider net surfaces. Once widened, a small "reset to
+// 15 mi" link snaps it back to the default for people who want to stay local.
 export default function ExpandRadiusButton({ radius, maxRadius }: { radius: number; maxRadius: number }) {
   const [r, setR] = useState(radius);
   const [busy, setBusy] = useState(false);
@@ -20,6 +23,21 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
       if (res.ok && data.radius) {
         setR(data.radius);
         // Give the fresh match attempt a beat, then reload to surface it.
+        setTimeout(() => window.location.reload(), 900);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reset() {
+    if (busy || r <= DEFAULT_RADIUS) return;
+    setBusy(true);
+    try {
+      const res = await fetch('/api/profile/reset-radius', { method: 'POST' });
+      const data = await parseResponse<any>(res);
+      if (res.ok && data.radius) {
+        setR(data.radius);
         setTimeout(() => window.location.reload(), 900);
       }
     } finally {
@@ -49,6 +67,21 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
         >
           {busy ? 'widening…' : `widen search to ${Math.min(r + 15, maxRadius)} mi →`}
         </button>
+      )}
+      {r > DEFAULT_RADIUS && (
+        <div style={{ marginTop: '0.7rem' }}>
+          <button
+            onClick={reset}
+            disabled={busy}
+            style={{
+              background: 'none', border: 'none', cursor: busy ? 'wait' : 'pointer',
+              fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: '#9a96a8', textDecoration: 'underline', padding: 0,
+            }}
+          >
+            reset to {DEFAULT_RADIUS} mi
+          </button>
+        </div>
       )}
     </div>
   );

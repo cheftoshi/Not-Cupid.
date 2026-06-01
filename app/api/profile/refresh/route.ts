@@ -65,6 +65,8 @@ export async function POST() {
       gallery: [], relationship_style: null,
       // love-line pool state
       status: 'waiting', pool_active: true, roster_snapshot: [], roster_refreshed_at: null,
+      // clear any ghost/pause penalties — a refresh "starts over" on both lines
+      matching_disabled_at: null, matching_cooldown_until: null, ghost_reports_received: 0,
       // friend-line opt-out (they re-take the friend quiz if they want back in)
       friend_opted_in_at: null, friend_vibes: null, friend_seeking: [],
       friend_age_min: null, friend_age_max: null,

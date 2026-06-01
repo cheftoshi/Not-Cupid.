@@ -64,6 +64,13 @@ export async function GET() {
   if (hasLive) return NextResponse.json({ roster: [], hasOpenMatch: true });
   if (user.pool_active === false) return NextResponse.json({ roster: [], paused: true });
 
+  // Ghosted/paused users are locked out of matching on BOTH lines until they
+  // refresh their profile (which clears the flag and starts them over).
+  const cooldownActive = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > now;
+  if (user.matching_disabled_at || cooldownActive) {
+    return NextResponse.json({ roster: [], ghosted: true });
+  }
+
   const nowIso = new Date().toISOString();
   const { data: pool } = await supabaseAdmin
     .from('users')

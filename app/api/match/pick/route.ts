@@ -27,6 +27,13 @@ export async function POST(req: NextRequest) {
   }
   if (candidateId === user.id) return NextResponse.json({ error: 'Cannot pick yourself' }, { status: 400 });
 
+  // Ghosted/paused callers can't pick — locked out of both lines until they
+  // refresh their profile (which clears the flag and starts them over).
+  const callerCooldown = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > Date.now();
+  if (user.matching_disabled_at || callerCooldown) {
+    return NextResponse.json({ error: 'Your matching is paused. Refresh your profile to start over.' }, { status: 403 });
+  }
+
   // Free the caller's own timed-out matches first (returns them to 'waiting'),
   // then block only if they still have a genuinely LIVE match.
   await releaseTimedOutMatches(user.id);
