@@ -301,7 +301,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           )}
 
           <a href={`/match/${matchId}/date-vibes`} style={{ display: 'block', textAlign: 'center', marginTop: '0.9rem', background: '#2563ff', color: '#fff', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', textDecoration: 'none', padding: '0.7rem', borderRadius: 999 }}>
-            ✦ swipe the deck →
+            ✦ {vibes?.counts && !vibes.counts.iPicked ? 'set your date vibes' : 'swipe the deck'} →
           </a>
 
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>✓ you both want this</div>

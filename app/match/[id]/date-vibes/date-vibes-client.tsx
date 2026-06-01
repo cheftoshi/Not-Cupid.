@@ -269,13 +269,13 @@ function Picker({
   return (
     <div style={{ background: '#fff', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14, padding: 24 }}>
       <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
-        pick your interests
+        let's set your date vibes
       </div>
       <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: '#0e0c1a', margin: '0 0 8px 0', lineHeight: 1.2 }}>
-        What's your speed? Pick 3-8.
+        What's the first vibe date?
       </h2>
       <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 13, marginTop: 0, marginBottom: 18, lineHeight: 1.5 }}>
-        We'll use both of your picks to filter the activity deck.
+        Pick 3-8 things you're into — we'll use both of your picks to filter the deck.
         {partnerInterests.length > 0
           ? <> {first} has already picked {partnerInterests.length}. The <span style={{ color: '#1b46c9' }}>⋆</span> shows overlap.</>
           : <> {first} hasn't picked yet — that's fine, the deck still works.</>
