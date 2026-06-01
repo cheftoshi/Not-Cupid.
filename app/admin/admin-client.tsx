@@ -304,8 +304,8 @@ export default function AdminClient() {
             ) : (
               <div className={s.chips}>
                 <span className={s.chip}>Opted in <b>{data.friend.optedIn}</b></span>
-                <span className={`${s.chip} ${s.chipGold}`}>Pro subs <b>{data.friend.pro}</b></span>
-                <span className={s.chip}>Pro rev/mo <b>${data.friend.proRevenue}</b></span>
+                <span className={`${s.chip} ${s.chipGold}`}>Chat unlocks <b>{data.friend.chatUnlocks}</b></span>
+                <span className={s.chip}>Unlock rev <b>${data.friend.unlockRevenue}</b></span>
                 <span className={s.chip}>Connections <b>{data.friend.connectionsMade}</b></span>
                 <span className={s.chip}>Pending <b>{data.friend.connectionsPending}</b></span>
                 <span className={s.chip}>Active crews <b>{data.friend.activeCircles}</b></span>

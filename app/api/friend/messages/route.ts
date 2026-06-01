@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { activeCircleOf } from '@/lib/friend-circles';
-import { canUseFriendCircle } from '@/lib/friend-access';
+import { hasCircleAccess, circleChatStatus } from '@/lib/friend-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +24,14 @@ export async function GET() {
   const { data: members } = await supabaseAdmin
     .from('users').select('id, name, photo_url').in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
 
-  const unlocked = await canUseFriendCircle(user, circleId);
+  // Two gates: do I personally have access, and is the chat live for everyone?
+  const iHaveAccess = await hasCircleAccess(user, circleId);
+  const status = await circleChatStatus(circleId);
+  const canSee = iHaveAccess && status.live;
 
-  // When locked, return the roster (members) but withhold message bodies so the
-  // UI can show a paywall over a real, populated chat.
-  const { data: messages } = unlocked
+  // Withhold message bodies unless the chat is fully live (so the UI can show
+  // either "unlock to join" or "waiting on N crewmates to unlock").
+  const { data: messages } = canSee
     ? await supabaseAdmin
         .from('friend_messages')
         .select('id, sender_id, body, created_at')
@@ -36,7 +39,13 @@ export async function GET() {
         .order('created_at', { ascending: true })
     : { data: [] };
 
-  return NextResponse.json({ circleId, members: members ?? [], messages: messages ?? [], locked: !unlocked });
+  return NextResponse.json({
+    circleId, members: members ?? [], messages: messages ?? [],
+    locked: !canSee,
+    iHaveAccess,
+    chatLive: status.live,
+    waitingOn: Math.max(0, status.total - status.ready),
+  });
 }
 
 // POST: send a message to the caller's friend circle.
@@ -53,9 +62,15 @@ export async function POST(req: NextRequest) {
   const circleId = await activeCircleOf(user.id);
   if (!circleId) return NextResponse.json({ error: 'You have no friend circle yet — match with someone first.' }, { status: 400 });
 
-  // Paywall: Pro (all chats) OR this specific crew unlocked ($0.99).
-  if (!(await canUseFriendCircle(user, circleId))) {
+  // Must personally have access (free 1st crew or $0.99 unlock)…
+  if (!(await hasCircleAccess(user, circleId))) {
     return NextResponse.json({ error: 'locked', needsUnlock: true }, { status: 402 });
+  }
+  // …and the chat must be live for the whole crew (no posting into a room a
+  // crewmate is locked out of).
+  const status = await circleChatStatus(circleId);
+  if (!status.live) {
+    return NextResponse.json({ error: 'waiting', waitingOn: Math.max(0, status.total - status.ready) }, { status: 409 });
   }
 
   const { data: message, error } = await supabaseAdmin

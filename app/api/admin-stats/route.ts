@@ -21,22 +21,21 @@ export async function GET(req: NextRequest) {
     try {
       const liveUsers = (users ?? []).filter((u: any) => !u.deleted_at)
       const optedIn = liveUsers.filter((u: any) => u.friend_opted_in_at)
-      const proCount = liveUsers.filter((u: any) =>
-        u.friend_paid_at || (u.friend_pro_until && new Date(u.friend_pro_until).getTime() > Date.now())
-      ).length
       const { data: conns } = await supabaseAdmin.from('friend_connections').select('status')
       const { data: circleMembers } = await supabaseAdmin.from('friend_circle_members').select('circle_id').is('left_at', null)
-      const { data: fMsgs } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
+      const { count: fMsgCount } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
+      const { count: unlockCount } = await supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true })
       const { data: acts } = await supabaseAdmin.from('friend_activities').select('kind')
       const connList = conns ?? []
+      const paidUnlocks = unlockCount ?? 0
       friend = {
         optedIn: optedIn.length,
-        pro: proCount,
-        proRevenue: (proCount * 2.99).toFixed(2),
+        chatUnlocks: paidUnlocks,
+        unlockRevenue: (paidUnlocks * 0.99).toFixed(2),
         connectionsPending: connList.filter((c: any) => c.status === 'pending').length,
         connectionsMade: connList.filter((c: any) => c.status === 'connected').length,
         activeCircles: new Set((circleMembers ?? []).map((m: any) => m.circle_id)).size,
-        messages: (fMsgs as any)?.length ?? 0,
+        messages: fMsgCount ?? 0,
         posts: (acts ?? []).filter((a: any) => a.kind === 'post').length,
         events: (acts ?? []).filter((a: any) => a.kind !== 'post').length,
       }

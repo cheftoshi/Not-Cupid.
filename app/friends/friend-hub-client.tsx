@@ -54,17 +54,16 @@ function TransitBackdrop() {
   );
 }
 
-export default function FriendHubClient({ firstName, accessTier, daysLeft }: { firstName: string; accessTier: 'pro' | 'trial' | 'expired'; daysLeft: number }) {
-  const isPro = accessTier === 'pro';
-  const [payBusy, setPayBusy] = useState<'' | 'pro'>('');
-  async function pay(tier: 'pro') {
-    setPayBusy(tier);
+export default function FriendHubClient({ firstName }: { firstName: string; accessTier?: string; daysLeft?: number }) {
+  const [payBusy, setPayBusy] = useState(false);
+  async function unlockChat() {
+    setPayBusy(true);
     try {
-      const r = await fetch('/api/friend/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier }) });
+      const r = await fetch('/api/friend/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       const d = await r.json();
       if (d.url) { window.location.href = d.url; return; }
-      alert(d.error || 'Could not start checkout'); setPayBusy('');
-    } catch { setPayBusy(''); }
+      alert(d.error || 'Could not start checkout'); setPayBusy(false);
+    } catch { setPayBusy(false); }
   }
   async function sendFeedback() {
     const fb = window.prompt('what would make friend maxxin better? (bugs, ideas, anything)');
@@ -173,16 +172,6 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         </div>
 
         {tab === 'crew' && (<>
-        {/* Crew chat allowance — free unlocks 1, Pro unlocks 3 */}
-        <div style={{ ...card, padding: '0.8rem 1.1rem', margin: '1.25rem 0', background: '#fffaf0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>
-            {isPro ? '✦ pro — chat in up to 3 crews' : 'free — 1 crew chat · pro unlocks 3'}
-          </div>
-          {!isPro && (
-            <button style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 1rem' }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : 'go pro · $2.99/mo'}</button>
-          )}
-        </div>
-
         {pendingToJoin && (
           <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew.</div>
@@ -213,16 +202,25 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
           </div>
         )}
 
-        {/* GROUP CHAT — locked until $0.99 crew unlock or Pro */}
+        {/* GROUP CHAT — locked: either I need to unlock ($0.99) or we're waiting on crewmates */}
         {chat.circleId && chat.locked && (
           <>
             <h2 style={sectionLabel}><StationDot />💬 the group chat</h2>
             <div style={{ ...card, padding: '1.75rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem' }}>🎟️</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>this crew needs pro</div>
-              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0 0 1.25rem' }}>your first crew&apos;s chat is free — Pro lets you chat in up to 3 crews, including this {chat.members.length}-person one.</p>
-              <button style={{ ...poppyBtn }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : '✦ go pro — 3 crews · $2.99/mo'}</button>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.85rem' }}>cancel anytime</p>
+              {!chat.iHaveAccess ? (
+                <>
+                  <div style={{ fontSize: '2rem' }}>🎟️</div>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>unlock this crew&apos;s chat</div>
+                  <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0 0 1.25rem' }}>your first crew is free — this is an extra one. one-time <b>$0.99</b> and you&apos;re in this {chat.members.length}-person chat for good.</p>
+                  <button style={{ ...poppyBtn }} onClick={unlockChat} disabled={payBusy}>{payBusy ? '…' : 'unlock this chat · $0.99'}</button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '2rem' }}>🚥</div>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>almost there</div>
+                  <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, margin: 0 }}>you&apos;re in — waiting on <b>{chat.waitingOn}</b> crewmate{chat.waitingOn === 1 ? '' : 's'} to unlock before the chat goes live for everyone.</p>
+                </>
+              )}
             </div>
           </>
         )}
