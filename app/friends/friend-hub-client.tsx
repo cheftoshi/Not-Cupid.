@@ -10,7 +10,25 @@ const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize
 const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', letterSpacing: '0.04em', margin: '2rem 0 0.9rem', display: 'flex', gap: '0.5rem', alignItems: 'center' };
 const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: 'linear-gradient(135deg,#ff7a1f,#ff3d77)', border: `3px solid ${INK}`, borderRadius: 14, padding: '0.55rem 1.4rem', boxShadow: `4px 4px 0 ${INK}`, cursor: 'pointer' };
 
-export default function FriendHubClient({ firstName }: { firstName: string }) {
+export default function FriendHubClient({ firstName, accessTier, daysLeft }: { firstName: string; accessTier: 'full' | 'trial' | 'expired'; daysLeft: number }) {
+  const isFounding = accessTier === 'full';
+  const isExpired = accessTier === 'expired';
+  const [foundingBusy, setFoundingBusy] = useState(false);
+  async function goFounding() {
+    setFoundingBusy(true);
+    try {
+      const r = await fetch('/api/friend/checkout', { method: 'POST' });
+      const d = await r.json();
+      if (d.url) { window.location.href = d.url; return; }
+      alert(d.error || 'Could not start checkout'); setFoundingBusy(false);
+    } catch { setFoundingBusy(false); }
+  }
+  async function sendFeedback() {
+    const fb = window.prompt('what would make friend maxxin better? (bugs, ideas, anything)');
+    if (!fb || !fb.trim()) return;
+    await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: fb }) });
+    alert('got it — thank you! 🙏');
+  }
   const [matches, setMatches] = useState<any[]>([]);
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
   const [pulse, setPulse] = useState<any>(null);
@@ -74,9 +92,20 @@ export default function FriendHubClient({ firstName }: { firstName: string }) {
           hey {firstName.toLowerCase()}, <span style={{ color: '#ff3d77', WebkitTextStroke: `2px ${INK}` }}>your crew awaits.</span>
         </h1>
 
+        {!isFounding && (
+          <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', background: isExpired ? '#fff0f2' : '#fffaf0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', flex: 1, minWidth: 220 }}>
+              {isExpired
+                ? 'your 7-day free look is up — go founding to get back to your crew + the chat.'
+                : <><b>{daysLeft} day{daysLeft === 1 ? '' : 's'}</b> of free access left. founding members unlock the group chat (and keep everything) — one time, $2.99.</>}
+            </div>
+            <button style={poppyBtn} onClick={goFounding} disabled={foundingBusy}>{foundingBusy ? '…' : '✦ go founding · $2.99'}</button>
+          </div>
+        )}
+
         {pendingToJoin && (
           <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to unlock the group chat with your matches.</div>
+            <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew{isFounding ? ' + open the group chat' : ''}.</div>
             <button style={poppyBtn} onClick={join} disabled={busy}>{busy ? '…' : "I'M IN →"}</button>
           </div>
         )}
@@ -104,8 +133,19 @@ export default function FriendHubClient({ firstName }: { firstName: string }) {
           </div>
         )}
 
-        {/* GROUP CHAT */}
-        {chat.circleId && (
+        {/* GROUP CHAT (founding-only) */}
+        {chat.circleId && !isFounding && (
+          <>
+            <h2 style={sectionLabel}>💬 the group chat</h2>
+            <div style={{ ...card, padding: '1.75rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem' }}>🔒</div>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>the chat is founding-only</div>
+              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', margin: '0 0 1rem' }}>your crew&apos;s here — unlock the group chat to actually talk. one-time $2.99, founding member forever.</p>
+              <button style={poppyBtn} onClick={goFounding} disabled={foundingBusy}>{foundingBusy ? '…' : '✦ unlock the chat · $2.99'}</button>
+            </div>
+          </>
+        )}
+        {chat.circleId && isFounding && (
           <>
             <h2 style={sectionLabel}>💬 the group chat</h2>
             <div style={{ ...card, overflow: 'hidden' }}>
@@ -198,6 +238,10 @@ export default function FriendHubClient({ firstName }: { firstName: string }) {
               </button>
             </div>
           ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>
+          <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
+          <a href="/friends/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>✨ what&apos;s new</a>
         </div>
       </div>
     </div>

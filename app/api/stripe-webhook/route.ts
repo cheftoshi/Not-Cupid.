@@ -61,6 +61,17 @@ export async function POST(req: NextRequest) {
       }
       // ============== End match unlock ==============
 
+      // ============== Friend Maxxin founding membership ($2.99) ==============
+      if (session.metadata?.type === 'friend_founding' && session.metadata?.user_id) {
+        const { error } = await supabaseAdmin
+          .from('users')
+          .update({ friend_paid_at: new Date().toISOString() })
+          .eq('id', session.metadata.user_id)
+        if (error) console.error('Friend founding update error:', error)
+        else console.log('Friend founding member recorded')
+        return NextResponse.json({ received: true })
+      }
+
       console.log('Payment completed for userId:', userId)
 
       if (userId) {
