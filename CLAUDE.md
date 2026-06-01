@@ -1,8 +1,18 @@
 # NotCupid — project memory
 
-Boston-area dating experiment. "Meet People. Not Profiles." A Lemon Labs property.
-Two products: **Love Maxxin** (live, dating) and **Friend Maxxin** (soon, platonic).
-Algorithm-assigned, one-match-at-a-time, no swiping, no browsing.
+Boston-area social experiment. "Meet People. Not Profiles." A Lemon Labs property.
+Two products: **Love Line** (dating, live) and **Friend Line** (platonic, BUILT — MBTA "transit line" theme). Both live.
+Algorithm-curated, pick-from-a-roster, no swiping, no browsing.
+
+## ⚠️ PARALLEL-SESSION SYNC NOTE (read before building)
+Another session built a LOT (50+ commits) that this memory predated. Confirmed current direction (6/4):
+- **Brand renamed** Love Maxxin/Friend Maxxin → **Love Line / Friend Line** (MBTA transit theme: "board the love line", station-dot sections, route maps). 44+ refs.
+- **Friend Line is FULLY BUILT** (not "soon"): friend quiz (`app/friends/quiz`, `lib/friend-quiz.ts` — vibes: intent/activities/cadence/group_size/life_stage + `friend_seeking` genders), crew/group chat, city-pulse bubble map, activity/event board w/ RSVP, `/friends` hub. APIs under `app/api/friend/*`. Schema: `users.friend_opted_in_at|friend_vibes|friend_seeking` + `friend_circles`/`friend_messages`/`friend_connections` (migrations `20260601_friend_maxxin.sql` … `20260604_friend_match_rounds.sql`). Friend matching = `lib/friend-matching.ts` (shared activities #1 driver, life_stage, cadence). **Friend quiz does NOT yet collect an age preference** — that's a requested build.
+- **Pricing changed**: Love unlock is now TWO-TIER — but the wall forces **$1.99 full profile** only (HEXACO $0.99 tier never sold standalone; `unlock-checkout` route). Friend billing: first crew chat free, **$0.99 one-time per extra crew**, **$2.99/mo Pro** (up to 3 crews); webhooks handle renew/cancel (`20260602_friend_billing.sql`).
+- **Schema resync**: `supabase/migrations/apply-all.sql` is the consolidated idempotent source-of-truth (several migrations were never individually run). When adding a migration, ALSO fold it into apply-all.sql.
+- **Test accounts**: `users.is_test` — realm-segregated (real users never see test crew/matches & vice versa); seedable testable world + magic dev-login, admin-gated.
+- Other: web-traffic tracker (`/api/track` + admin card), conversion funnel tracker (signup→quiz→vibes→match→mutual→chat→date), Friend Line launch email blast (admin-triggered).
+- **Registration bug FIXED (6/4):** `/api/submit` now calls `createSession` — new users were never logged in (verify-otp returns redirect:'/quiz' w/o session for not-yet-existing users), so they bounced off /dashboard. HEAD `fe79e27`.
 
 ## Stack & deploy
 - Next.js 14 (App Router) + Supabase (Postgres) + Vercel (**Pro** plan) + Resend (email).
