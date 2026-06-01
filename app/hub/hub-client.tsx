@@ -52,16 +52,16 @@ export default function HubClient({
       </header>
 
       <section className={styles.intro}>
-        <p className={styles.eyebrow}>hi <em className={styles.eyebrowName}>{firstName.toLowerCase()}</em></p>
-        <h1 className={styles.h1}>what&apos;s the vibe today?</h1>
-        <p className={styles.lede}>two algorithms. one boston. pick a vibe.</p>
+        <p className={styles.eyebrow}>🚉 now boarding · <em className={styles.eyebrowName}>{firstName.toLowerCase()}</em></p>
+        <h1 className={styles.h1}>which line are you boarding today?</h1>
+        <p className={styles.lede}>two lines. one boston. pick your platform.</p>
       </section>
 
       <section className={styles.grid}>
-        {/* LOVE MAXXIN */}
+        {/* LOVE LINE */}
         <Link href={loveHref} className={`${styles.card} ${styles.cardLove}`}>
           <div className={styles.cardEyebrow}><span className={styles.dotLive} />live</div>
-          <h2 className={styles.cardH2}>love <em>maxxin.</em></h2>
+          <h2 className={styles.cardH2}>love <em>line.</em></h2>
           <p className={styles.cardDesc}>
             pick from your 5 most compatible. greater boston. built on
             personality, not lighting. no swipes, no photos first.
@@ -72,13 +72,13 @@ export default function HubClient({
             <div><span className={styles.specK}>match</span><span className={styles.specV}>within 15mi</span></div>
             <div><span className={styles.specK}>style</span><span className={styles.specV}>choose from 5</span></div>
           </div>
-          <div className={styles.cardCta}>open love maxxin →</div>
+          <div className={styles.cardCta}>board the love line →</div>
         </Link>
 
-        {/* FRIEND MAXXIN */}
+        {/* FRIEND LINE */}
         <div className={`${styles.card} ${styles.cardFriend}`}>
           <div className={styles.cardEyebrow}><span className={styles.dotLive} />live</div>
-          <h2 className={styles.cardH2}>friend <em>maxxin.</em></h2>
+          <h2 className={styles.cardH2}>friend <em>line.</em></h2>
           <p className={styles.cardDesc}>
             up to 5 platonic matches. shared interests, a group chat, a city
             full of plans. a real crew, not a swipe deck.
@@ -91,13 +91,13 @@ export default function HubClient({
           <Link href="/friends" className={styles.cardCtaFriend} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
             find your crew →
           </Link>
-          <Link href="/friends/how-it-works" className={styles.cardSub}>how friend maxxin works →</Link>
+          <Link href="/friends/how-it-works" className={styles.cardSub}>how the friend line works →</Link>
         </div>
       </section>
 
       <footer className={styles.foot}>
         <div className={styles.footTop}>
-          <span>made with cynicism in boston</span><span>·</span><span>two algos. one city.</span>
+          <span>made with cynicism in boston</span><span>·</span><span>two lines. one city.</span>
         </div>
         <div className={styles.footCorp}>
           © {new Date().getFullYear()} notcupid · a lemon labs property
