@@ -217,7 +217,9 @@ if (res.status === 409) {
 }
       if (data.userId) {
         userIdRef.current = data.userId
-        window.location.href = `/dashboard?id=${data.userId}`
+        // Session is created server-side in /api/submit, so the dashboard
+        // sees them as logged in. No more ?id= (that old param did nothing).
+        window.location.href = '/dashboard'
       }
     } catch (err) {
       console.error('Failed to submit:', err)

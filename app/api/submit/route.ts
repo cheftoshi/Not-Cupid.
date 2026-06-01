@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createSession } from '@/lib/auth'
 import { metroOf } from '@/lib/quiz-data'
 import { metroGenderCounts, shouldHoldForBalance } from '@/lib/balance'
 
@@ -72,10 +73,20 @@ if (error) {
       console.error('Submit: balance gate check failed (matching anyway):', e)
     }
 
+    // Log the new user in. Without this, a brand-new signup had no session,
+    // so when the quiz redirected them to /dashboard, getCurrentUser() was
+    // null → bounced to "/" — i.e. "I registered but it didn't work." Now
+    // they land on the dashboard authenticated. (verify-otp doesn't create a
+    // session for not-yet-existing users, so this is the only place to do it.)
+    try {
+      await createSession(data.id)
+    } catch (e) {
+      console.error('Submit: createSession failed (user saved, not logged in):', e)
+    }
+
     // Roster-first: we no longer auto-assign a single match on signup. Unless
     // they were balance-held (pool_active=false), the user lands on the
     // dashboard and picks from their top ~5 (GET /api/match/roster → /pick).
-    // The `held` flag still controls pool_active above; nothing to trigger here.
 
     return NextResponse.json({ success: true, userId: data.id, held })
   } catch (err) {
