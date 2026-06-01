@@ -59,7 +59,7 @@ export default function HubClient({
 
       <section className={styles.grid}>
         {/* LOVE LINE */}
-        <Link href={loveHref} className={`${styles.card} ${styles.cardLove}`}>
+        <div className={`${styles.card} ${styles.cardLove}`}>
           <div className={styles.cardEyebrow}><span className={styles.dotLive} />live</div>
           <h2 className={styles.cardH2}>love <em>line.</em></h2>
           <p className={styles.cardDesc}>
@@ -72,8 +72,9 @@ export default function HubClient({
             <div><span className={styles.specK}>match</span><span className={styles.specV}>within 15mi</span></div>
             <div><span className={styles.specK}>style</span><span className={styles.specV}>choose from 5</span></div>
           </div>
-          <div className={styles.cardCta}>board the love line →</div>
-        </Link>
+          <Link href={loveHref} className={styles.cardCta} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>board the love line →</Link>
+          <Link href="/how-it-works" className={styles.cardSub}>how the love line works →</Link>
+        </div>
 
         {/* FRIEND LINE */}
         <div className={`${styles.card} ${styles.cardFriend}`}>
