@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join Friend Maxxin first.' }, { status: 400 });
+  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
 
   const { candidateId } = await req.json().catch(() => ({}));
   if (!candidateId || candidateId === user.id) return NextResponse.json({ error: 'Invalid candidate' }, { status: 400 });

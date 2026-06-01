@@ -53,7 +53,7 @@ export default function FriendMaxxinClient({ authed, onWaitlist }: { authed: boo
 
       <section className={styles.hero}>
         <div className={styles.eyebrow}>
-          <span className={styles.dot} /> friend maxxin · coming soon
+          <span className={styles.dot} /> the friend line · now boarding
         </div>
 
         <h1 className={styles.h1}>

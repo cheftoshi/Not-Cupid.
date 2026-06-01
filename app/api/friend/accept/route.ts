@@ -29,7 +29,7 @@ async function emailCrewReady(otherId: string, joinerName: string) {
 export async function POST() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join Friend Maxxin first.' }, { status: 400 });
+  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
 
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')

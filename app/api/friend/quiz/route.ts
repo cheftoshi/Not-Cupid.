@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (typeof user.score_honesty !== 'number') {
-    return NextResponse.json({ error: 'Take the main quiz first — Friend Maxxin reuses your personality profile.' }, { status: 400 });
+    return NextResponse.json({ error: 'Take the main quiz first — the Friend Line reuses your personality profile.' }, { status: 400 });
   }
 
   const body = await req.json().catch(() => ({}));

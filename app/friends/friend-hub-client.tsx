@@ -103,7 +103,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
     } catch { setPayBusy(false); }
   }
   async function sendFeedback() {
-    const fb = window.prompt('what would make friend maxxin better? (bugs, ideas, anything)');
+    const fb = window.prompt('what would make the friend line better? (bugs, ideas, anything)');
     if (!fb || !fb.trim()) return;
     await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: fb }) });
     alert('got it — thank you! 🙏');

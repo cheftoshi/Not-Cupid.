@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   params.append('mode', 'payment');
   params.append('line_items[0][quantity]', '1');
   params.append('line_items[0][price_data][currency]', 'usd');
-  params.append('line_items[0][price_data][product_data][name]', 'Friend Maxxin — another round of matches');
+  params.append('line_items[0][price_data][product_data][name]', 'Friend Line — another round of matches');
   params.append('line_items[0][price_data][unit_amount]', String(FRIEND_CHAT_UNLOCK_CENTS));
   params.append('metadata[user_id]', user.id);
   params.append('metadata[type]', 'friend_more_matches');

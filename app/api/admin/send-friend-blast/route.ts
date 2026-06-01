@@ -28,7 +28,7 @@ function emailHtml(name: string, recipientId: string, baseUrl: string): string {
     eyebrow: '🟠 the friend line is live',
     headline: `${first}, find your next friend.`,
     bodyHtml: `
-      <p style="margin:0 0 16px 0;">We started with dates. Turns out making real friends in this city is just as hard — so we built a second line. Meet <strong style="color:${C.ink};">Friend Maxxin</strong>: same algorithm energy, zero romance, all crew.</p>
+      <p style="margin:0 0 16px 0;">We started with dates. Turns out making real friends in this city is just as hard — so we built a second line. Meet <strong style="color:${C.ink};">the Friend Line</strong>: same algorithm energy, zero romance, all crew.</p>
 
       <div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.18em;text-transform:uppercase;margin:0 0 8px 0;">how the friend line runs</div>
       <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">

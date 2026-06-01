@@ -23,7 +23,7 @@ export default function FriendDashboardMock() {
     <div className={styles.page}>
       <div className={styles.wrap}>
         <div className={styles.topbar}>
-          <div className={styles.brand}>FRIEND<span>MAXXIN</span></div>
+          <div className={styles.brand}>FRIEND<span>LINE</span></div>
           <div className={styles.mockTag}>style mock</div>
         </div>
 

@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join Friend Maxxin first.' }, { status: 400 });
+  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
   const title = (body.title || '').toString().trim();

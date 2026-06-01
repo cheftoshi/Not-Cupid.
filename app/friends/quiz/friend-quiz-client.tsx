@@ -56,7 +56,7 @@ export default function FriendQuizClient() {
   return (
     <div className={styles.page}>
       <div className={styles.wrap}>
-        <div className={styles.brand}>FRIEND<span>MAXXIN</span></div>
+        <div className={styles.brand}>FRIEND<span>LINE</span></div>
         <div className={styles.kick}>✦ find-a-friend quiz</div>
         <h1 className={styles.title}>let&apos;s find <em>your people.</em></h1>
         <p className={styles.sub}>quick one — we already know your personality, this is about how you like to hang.</p>

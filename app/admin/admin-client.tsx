@@ -297,7 +297,7 @@ export default function AdminClient() {
           {/* ── FRIEND MAXXIN ── */}
           <div className={s.card} id="friend">
             <div className={s.cardHead}>
-              <p className={s.cardTitle}>Friend Maxxin — <b>the orange line</b></p>
+              <p className={s.cardTitle}>Friend Line — <b>launch blast</b></p>
             </div>
             {!data?.friend ? (
               <p className={s.note}>no friend data yet (run the friend migrations).</p>
