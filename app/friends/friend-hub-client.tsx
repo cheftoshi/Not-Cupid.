@@ -199,8 +199,8 @@ function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, cre
 }
 
 // The center "home" hub — auto-pulls what's popular on the scene + your crew.
-function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onOpen }: {
-  firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string) => void; onOpen: (v: NavKey) => void;
+function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen }: {
+  firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string) => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void;
 }) {
   return (
     <div>
@@ -223,29 +223,61 @@ function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, 
           nothing on the board yet — <button onClick={onScene} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>be the first to post →</button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-          {popular.map((a) => (
-            <div key={a.id} style={{ ...card, padding: '0.9rem 1.1rem', display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
-              {a.authorPhoto ? <img src={a.authorPhoto} alt="" style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7', flexShrink: 0 }} />}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.98rem' }}>{a.title}</div>
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.35rem 0 0' }}>
-                  <span style={chip}>{a.kind === 'post' ? '💬' : '📅'} {a.category}</span>
-                  {a.area && <span style={chip}>📍 {a.area}</span>}
-                  {a.happens_at && <span style={chip}>🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' })}</span>}
-                  <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', color: '#6b4a2f', alignSelf: 'center' }}>by {a.authorName?.split(' ')[0] || '—'}</span>
-                </div>
-              </div>
-              <button onClick={() => onRsvp(a.id)} style={{ ...chip, cursor: 'pointer', fontSize: '0.8rem', padding: '0.35rem 0.7rem', background: a.iRsvped ? '#ffd23d' : '#fff', alignSelf: 'center', flexShrink: 0 }}>
-                {a.kind === 'post' ? `👍 ${a.rsvpCount || ''}` : (a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`)}
-              </button>
-            </div>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {popular.map((a) => <ActivityPost key={a.id} a={a} onRsvp={onRsvp} onDelete={onDelete} />)}
           <button onClick={() => onOpen('scene')} style={{ alignSelf: 'center', marginTop: '0.2rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 4 }}>
             see everything on the scene →
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// Relative "2h / 3d / 1w" stamp (client-only; acts load after mount so no SSR mismatch).
+function timeAgo(iso?: string | null): string {
+  if (!iso) return '';
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  const m = s / 60; if (m < 60) return `${Math.floor(m)}m`;
+  const h = m / 60; if (h < 24) return `${Math.floor(h)}h`;
+  const d = h / 24; if (d < 7) return `${Math.floor(d)}d`;
+  return `${Math.floor(d / 7)}w`;
+}
+
+// One Scene post, FB-post structured: header (who/when) · body · action bar.
+function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string) => void; onDelete: (id: string) => void }) {
+  const isEvent = (a.kind || 'event') !== 'post';
+  return (
+    <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
+        {a.authorPhoto
+          ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} />
+          : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7', flexShrink: 0 }} />}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: '#a8896a', marginTop: '0.2rem' }}>
+            {isEvent ? '📅 plan' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
+          </div>
+        </div>
+        <span style={{ ...chip, flexShrink: 0 }}>{a.category}</span>
+        {a.isMine && <button onClick={() => onDelete(a.id)} title="delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>✕</button>}
+      </div>
+      <div style={{ padding: '0 1rem 0.75rem' }}>
+        <div style={{ fontSize: '1.02rem', lineHeight: 1.4 }}>{a.title}</div>
+        {isEvent && a.happens_at && (
+          <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', ...chip, background: '#fff7e6' }}>
+            🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric' })}
+          </div>
+        )}
+      </div>
+      <div style={{ borderTop: `2px solid rgba(36,29,18,0.12)`, padding: '0.4rem 0.6rem' }}>
+        <button onClick={() => onRsvp(a.id)}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', background: a.iRsvped ? '#ffd23d' : 'transparent', border: 'none', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: INK, fontWeight: 700 }}>
+          {isEvent ? (a.iRsvped ? "✓ you're in" : '🎟️ i’m in') : (a.iRsvped ? '👍 liked' : '👍 like')}
+          {a.rsvpCount ? <span style={{ ...miniCount, background: a.iRsvped ? INK : LINE }}>{a.rsvpCount}</span> : null}
+        </button>
+      </div>
     </div>
   );
 }
@@ -468,7 +500,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
 
         {view === 'home' && (
           <HomeFeed firstName={firstName} activeGroups={activeGroups} popular={popular} hasCrew={matches.length > 0}
-            onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onOpen={setView} />
+            onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} />
         )}
 
         {view === 'map' && (
@@ -725,81 +757,65 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
 
         {view === 'scene' && (
         <div>
-        <h2 style={sectionLabel}><StationDot />📣 what&apos;s the move?</h2>
-        <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.7rem' }}>
-            {([['post', '💬 just saying'], ['event', '📅 plan a thing']] as const).map(([k, label]) => (
-              <button key={k} onClick={() => setNewAct({ ...newAct, kind: k })}
-                style={{ ...chip, cursor: 'pointer', fontSize: '0.62rem', padding: '0.3rem 0.7rem', background: newAct.kind === k ? '#ffd23d' : '#fff' }}>{label}</button>
-            ))}
+        <h2 style={sectionLabel}><StationDot />📣 the scene</h2>
+
+        {/* FB-style status composer */}
+        <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1.1rem' }}>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+            {me?.photo_url
+              ? <img src={me.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} />
+              : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7', flexShrink: 0 }} />}
+            <input value={newAct.title} onChange={(e) => setNewAct({ ...newAct, title: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && !busy && newAct.title.trim() && createAct()}
+              placeholder={newAct.kind === 'post' ? `what's on your mind, ${firstName.toLowerCase()}?` : "wanna plan a hang? what's the move?"}
+              style={{ flex: 1, minWidth: 0, border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem' }} />
           </div>
-          <input value={newAct.title} onChange={(e) => setNewAct({ ...newAct, title: e.target.value })}
-            placeholder={newAct.kind === 'post' ? "what's on your mind? (e.g. anyone know a good thai spot in camberville?)" : "wanna…? (e.g. catch the new A24 movie fri night)"}
-            style={{ width: '100%', border: `2.5px solid ${INK}`, borderRadius: 12, padding: '0.6rem 0.8rem', fontSize: '0.95rem', marginBottom: '0.6rem' }} />
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <select value={newAct.category} onChange={(e) => setNewAct({ ...newAct, category: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.7rem' }}>
+            <div style={{ display: 'flex', border: `2.5px solid ${INK}`, borderRadius: 10, overflow: 'hidden' }}>
+              {([['post', '💬 saying'], ['event', '📅 plan']] as const).map(([k, label]) => (
+                <button key={k} onClick={() => setNewAct({ ...newAct, kind: k })}
+                  style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.05em', padding: '0.4rem 0.75rem', border: 'none', cursor: 'pointer', background: newAct.kind === k ? LINE : '#fffdf7', color: newAct.kind === k ? '#fff' : INK }}>{label}</button>
+              ))}
+            </div>
+            <select value={newAct.category} onChange={(e) => setNewAct({ ...newAct, category: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
               {CATS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }}>
+            <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
               <option value="">📍 my area</option>
               {NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
             {newAct.kind === 'event' && (
-              <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }} />
+              <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
             )}
-            <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto' }}>{newAct.kind === 'post' ? 'post →' : 'plan it →'}</button>
+            <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '1.05rem', padding: '0.45rem 1.1rem', opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{newAct.kind === 'post' ? 'post →' : 'plan it →'}</button>
           </div>
         </div>
 
         <div ref={feedRef} />
-        {/* active area filter (from a city-pulse bubble) */}
-        {areaFilter && (
-          <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', background: '#ffd23d', marginBottom: '0.6rem', display: 'inline-flex', gap: '0.4rem' }}>
-            📍 showing: {areaFilter} <span style={{ fontWeight: 800, color: LINE_DEEP }}>×</span>
-          </button>
-        )}
 
-        {/* post / event filter */}
-        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
-          {([['all', 'everything'], ['event', '📅 things to do'], ['post', '💬 just talk']] as const).map(([k, label]) => (
-            <button key={k} onClick={() => setKindFilter(k)} style={{ ...chip, cursor: 'pointer', fontSize: '0.62rem', padding: '0.3rem 0.7rem', background: kindFilter === k ? '#ffd23d' : '#fff' }}>{label}</button>
-          ))}
+        {/* filters: kind segmented control + active-area chip */}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.7rem' }}>
+          <div style={{ display: 'flex', border: `2.5px solid ${INK}`, borderRadius: 10, overflow: 'hidden' }}>
+            {([['all', 'all'], ['event', '📅 plans'], ['post', '💬 talk']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => setKindFilter(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: kindFilter === k ? LINE : '#fffdf7', color: kindFilter === k ? '#fff' : INK }}>{label}</button>
+            ))}
+          </div>
+          {areaFilter && (
+            <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', background: '#ffd23d', display: 'inline-flex', gap: '0.4rem' }}>
+              📍 {areaFilter} <span style={{ fontWeight: 800, color: LINE_DEEP }}>×</span>
+            </button>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <button onClick={() => setFilterCat('')} style={{ ...chip, cursor: 'pointer', background: filterCat === '' ? '#ffd23d' : '#fff' }}>all</button>
           {CATS.map((c) => <button key={c} onClick={() => setFilterCat(c)} style={{ ...chip, cursor: 'pointer', background: filterCat === c ? '#ffd23d' : '#fff' }}>{c}</button>)}
         </div>
 
         {(() => { const shown = acts.filter((a) => (kindFilter === 'all' || (a.kind || 'event') === kindFilter) && (!areaFilter || a.area === areaFilter)); return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-          {shown.length === 0 && <div style={{ ...card, padding: '1rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>{kindFilter === 'event' ? 'no hangs planned yet — post one!' : 'nothing here yet — be the one to start something.'}</div>}
-          {shown.map((a) => (
-            <div key={a.id} style={{ ...card, padding: '0.9rem 1.1rem', display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
-              {a.authorPhoto ? <img src={a.authorPhoto} alt="" style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7', flexShrink: 0 }} />}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.98rem' }}>{a.title}</div>
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.35rem 0' }}>
-                  <span style={chip}>{a.category}</span>
-                  {a.area && <span style={chip}>📍 {a.area}</span>}
-                  {a.happens_at && <span style={chip}>🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' })}</span>}
-                  <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', color: '#6b4a2f', alignSelf: 'center' }}>by {a.authorName?.split(' ')[0] || '—'}</span>
-                  {a.isMine && (
-                    <button onClick={() => deleteAct(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', alignSelf: 'center' }}>delete</button>
-                  )}
-                </div>
-              </div>
-              {a.kind === 'post' ? (
-                <button onClick={() => rsvp(a.id)} style={{ ...chip, cursor: 'pointer', fontSize: '0.8rem', padding: '0.35rem 0.7rem', background: a.iRsvped ? '#ffd23d' : '#fff', alignSelf: 'center' }}>
-                  👍 {a.rsvpCount || ''}
-                </button>
-              ) : (
-                <button onClick={() => rsvp(a.id)} style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 0.9rem', background: a.iRsvped ? '#ffd23d' : 'linear-gradient(135deg,#ff7a1f,#ff3d77)', color: a.iRsvped ? INK : '#fff' }}>
-                  {a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`}
-                </button>
-              )}
-            </div>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>{kindFilter === 'event' ? 'no hangs planned yet — plan one above!' : 'nothing here yet — be the one to start something.'}</div>}
+          {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} />)}
         </div>
         ); })()}
         </div>
