@@ -266,7 +266,10 @@ export function filterDeck(
 ): Activity[] {
   const union = new Set<Interest>([...(userInterests || []), ...(partnerInterests || [])]);
   return deck.filter((a) => {
-    if (activityTier(a) > maxTier) return false;
+    // Curated items escalate by tier (date 1 = light/public, date 3 = all in).
+    // Live real-world events are time-sensitive, so they always surface
+    // regardless of date number — only the interest gate applies to them.
+    if (a.source === 'curated' && activityTier(a) > maxTier) return false;
     if (union.size === 0) return true;
     return a.tags.some((t) => union.has(t));
   });
