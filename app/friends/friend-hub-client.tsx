@@ -30,48 +30,60 @@ const SPOTS: Array<[string, string, string]> = [
 ];
 // City Pulse — clean speech-bubble chips that wrap neatly. Each shows a
 // neighborhood with a chat tail + a count badge; busier hoods read bolder.
-function PulseBubbles({ areas, line, ink }: { areas: any[]; line: string; ink: string }) {
+function PulseBubbles({ areas, line, ink, onPick, active }: { areas: any[]; line: string; ink: string; onPick: (area: string) => void; active: string }) {
   const max = areas[0]?.members || 1;
   const sorted = [...areas].sort((a, b) => b.members - a.members).slice(0, 14);
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem 0.5rem', paddingBottom: '0.6rem' }}>
       {sorted.map((a: any) => {
         const hot = a.members / max >= 0.66;
+        const sel = active === a.area;
+        const bg = sel ? '#ffd23d' : hot ? line : '#fffdf7';
+        const fg = sel ? ink : hot ? '#fff' : ink;
         return (
-          <div key={a.area} title={`${a.area} · ${a.members}`} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: hot ? line : '#fffdf7', color: hot ? '#fff' : ink, border: `2px solid ${ink}`, borderRadius: 14, padding: '0.3rem 0.55rem 0.3rem 0.65rem', boxShadow: `2px 2px 0 ${ink}` }}>
-            {/* chat tail */}
-            <span style={{ position: 'absolute', left: 10, bottom: -6, width: 9, height: 9, background: hot ? line : '#fffdf7', borderRight: `2px solid ${ink}`, borderBottom: `2px solid ${ink}`, transform: 'rotate(45deg)' }} />
+          <button key={a.area} onClick={() => onPick(a.area)} title={`see what's happening in ${a.area}`}
+            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: bg, color: fg, border: `2px solid ${ink}`, borderRadius: 14, padding: '0.3rem 0.55rem 0.3rem 0.65rem', boxShadow: `2px 2px 0 ${ink}`, cursor: 'pointer', font: 'inherit' }}>
+            <span style={{ position: 'absolute', left: 10, bottom: -6, width: 9, height: 9, background: bg, borderRight: `2px solid ${ink}`, borderBottom: `2px solid ${ink}`, transform: 'rotate(45deg)' }} />
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{a.area}</span>
-            <span style={{ minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: hot ? '#fffdf7' : line, color: hot ? ink : '#fff', border: `1.5px solid ${ink}`, fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{a.members}</span>
-          </div>
+            <span style={{ minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: sel || !hot ? line : '#fffdf7', color: sel || !hot ? '#fff' : ink, border: `1.5px solid ${ink}`, fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{a.members}</span>
+          </button>
         );
       })}
     </div>
   );
 }
 
+// SVG paper-grain (fractal noise) data-URI — gives the flat cream a crafted,
+// printed-poster texture without loading an image.
+const GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
 function TransitBackdrop() {
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      <svg viewBox="0 0 1000 1400" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.22 }}>
-        <g fill="none" strokeWidth="13" strokeLinecap="round">
+      {/* warm radial glow so it isn't flat beige */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% -10%, rgba(232,132,43,0.14), transparent 60%), radial-gradient(100% 70% at 100% 100%, rgba(63,125,87,0.10), transparent 55%)' }} />
+      {/* the T map — richer, softly blurred so it reads as ambient */}
+      <svg viewBox="0 0 1000 1400" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.3, filter: 'blur(0.4px)' }}>
+        <g fill="none" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round">
           <path d="M-40 180 L260 180 L420 340 L420 1100 L600 1280 L1100 1280" stroke={T_RED} />
           <path d="M-40 420 L380 420 L520 560 L1100 560" stroke={T_BLUE} />
           <path d="M120 -40 L120 520 L320 720 L320 1450" stroke={T_GREEN} />
           <path d="M1080 120 L720 120 L560 280 L560 1450" stroke={T_ORANGE} />
         </g>
         {[[260,180,T_RED],[420,340,T_RED],[380,420,T_BLUE],[520,560,T_BLUE],[120,520,T_GREEN],[320,720,T_GREEN],[720,120,T_ORANGE],[560,280,T_ORANGE]].map(([x,y,c],i)=>(
-          <circle key={i} cx={x as number} cy={y as number} r="13" fill={CREAM} stroke={c as string} strokeWidth="6" opacity="0.55" />
+          <circle key={i} cx={x as number} cy={y as number} r="15" fill="#fffdf7" stroke={c as string} strokeWidth="7" opacity="0.7" />
         ))}
       </svg>
       {SPOTS.map(([name, left, top], i) => (
         <span key={name} style={{
           position: 'absolute', left, top,
-          fontFamily: "'Bebas Neue', sans-serif", fontSize: i % 3 === 0 ? '2rem' : '1.4rem',
-          letterSpacing: '0.05em', color: i % 2 ? LINE_DEEP : '#3f7d57', opacity: 0.18,
+          fontFamily: "'Bebas Neue', sans-serif", fontSize: i % 3 === 0 ? '2.1rem' : '1.45rem',
+          letterSpacing: '0.05em', color: i % 2 ? LINE_DEEP : '#3f7d57', opacity: 0.2,
           transform: `rotate(${i % 2 ? -5 : 4}deg)`, whiteSpace: 'nowrap',
         }}>◉ {name}</span>
       ))}
+      {/* paper grain on top, multiplied so it textures everything below */}
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: GRAIN, opacity: 0.12, mixBlendMode: 'multiply' }} />
     </div>
   );
 }
@@ -101,6 +113,12 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [acts, setActs] = useState<any[]>([]);
   const [filterCat, setFilterCat] = useState<string>('');
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
+  const [areaFilter, setAreaFilter] = useState<string>('');
+  const feedRef = useRef<HTMLDivElement>(null);
+  function focusArea(area: string) {
+    setAreaFilter(area); setTab('community');
+    setTimeout(() => feedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event' }>({ title: '', category: 'hang', happens_at: '', kind: 'post' });
   const [busy, setBusy] = useState(false);
@@ -330,7 +348,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                   <span style={chip}>🫂 {pulse.activeGroups}</span>
                   <button onClick={() => setKindFilter('event')} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities}</button>
                 </div>
-                <PulseBubbles areas={pulse.areas} line={LINE} ink={INK} />
+                <PulseBubbles areas={pulse.areas} line={LINE} ink={INK} onPick={focusArea} active={areaFilter} />
                 <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8896a', textAlign: 'center', marginTop: '0.4rem' }}>bubbles = neighborhoods · number = people here</p>
               </>
             )}
@@ -361,6 +379,14 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           </div>
         </div>
 
+        <div ref={feedRef} />
+        {/* active area filter (from a city-pulse bubble) */}
+        {areaFilter && (
+          <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', background: '#ffd23d', marginBottom: '0.6rem', display: 'inline-flex', gap: '0.4rem' }}>
+            📍 showing: {areaFilter} <span style={{ fontWeight: 800, color: LINE_DEEP }}>×</span>
+          </button>
+        )}
+
         {/* post / event filter */}
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
           {([['all', 'everything'], ['event', '📅 things to do'], ['post', '💬 just talk']] as const).map(([k, label]) => (
@@ -373,7 +399,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           {CATS.map((c) => <button key={c} onClick={() => setFilterCat(c)} style={{ ...chip, cursor: 'pointer', background: filterCat === c ? '#ffd23d' : '#fff' }}>{c}</button>)}
         </div>
 
-        {(() => { const shown = acts.filter((a) => kindFilter === 'all' || (a.kind || 'event') === kindFilter); return (
+        {(() => { const shown = acts.filter((a) => (kindFilter === 'all' || (a.kind || 'event') === kindFilter) && (!areaFilter || a.area === areaFilter)); return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
           {shown.length === 0 && <div style={{ ...card, padding: '1rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>{kindFilter === 'event' ? 'no hangs planned yet — post one!' : 'nothing here yet — be the one to start something.'}</div>}
           {shown.map((a) => (
