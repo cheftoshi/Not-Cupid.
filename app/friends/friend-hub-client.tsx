@@ -124,7 +124,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '' });
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<'map' | 'scene' | 'crew' | 'pulse'>('map');
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
   const chatRef = useRef<HTMLDivElement>(null);
 
   const loadMatches = useCallback(async () => {
@@ -147,6 +147,15 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   useEffect(() => { const t = setInterval(loadChat, 4000); return () => clearInterval(t); }, [loadChat]);
 
   const pendingToJoin = matches.some((m) => !m.iAccepted);
+  // The chat is free now — it's live once the crew (circle) exists. Until then
+  // we still show the box with the prospective members so the section is visible.
+  const chatLive = !!(chat.circleId && chat.chatLive);
+  const crewPeople: any[] = chat.circleId
+    ? chat.members
+    : [
+        ...(me ? [{ id: 'me', name: me.name, photo_url: me.photo_url }] : []),
+        ...matches.map((m) => ({ id: m.otherId, name: m.name, photo_url: m.photo_url })),
+      ];
 
   async function join() {
     setBusy(true);
@@ -194,12 +203,17 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
           .fmMain { grid-column: 1; grid-row: 1; }
         }
-        .fmMap { display: grid; grid-template-columns: 1fr; gap: 1.1rem; margin: 2rem 0 0.5rem; }
-        @media (min-width: 760px) { .fmMap { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; } }
-        .fmStop { position: relative; text-align: left; display: flex; flex-direction: column; background: #fffdf7; border: 3px solid ${INK}; border-radius: 18px; box-shadow: 5px 5px 0 ${INK}; padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: ${INK}; font: inherit; min-height: 200px; transition: transform .12s ease, box-shadow .12s ease; }
-        .fmStop:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 ${INK}; }
-        .fmStop:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 ${INK}; }
-        .fmStopDot { position: absolute; top: -11px; left: 22px; width: 18px; height: 18px; border-radius: 50%; background: ${CREAM}; border: 5px solid ${LINE}; }
+        .fmMap { position: relative; min-height: min(72vh, 600px); margin: 1.25rem 0 0; }
+        .fmMapLine { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .fmStop { position: absolute; transform: translateX(-50%); width: min(300px, 84vw); text-align: left; display: flex; flex-direction: column; background: #fffdf7; border: 3px solid ${INK}; border-radius: 18px; box-shadow: 6px 6px 0 ${INK}; padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: ${INK}; font: inherit; min-height: 190px; z-index: 1; transition: transform .12s ease, box-shadow .12s ease; }
+        .fmStop:hover { transform: translate(calc(-50% - 2px), -3px); box-shadow: 9px 9px 0 ${INK}; }
+        .fmStopDot { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: ${CREAM}; border: 5px solid ${LINE}; box-shadow: 0 0 0 3px #fffdf7; }
+        @media (max-width: 759px) {
+          .fmMap { min-height: 0; display: flex; flex-direction: column; gap: 1.6rem; padding-top: 0.6rem; }
+          .fmStop { position: static; transform: none; width: auto; }
+          .fmStop:hover { transform: translate(-2px,-3px); }
+          .fmMapLine { display: none; }
+        }
       `}</style>
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
@@ -226,14 +240,17 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         </p>
 
         {view === 'map' ? (
-          /* ───── THE MAP — three stops on the line, each its own page ───── */
+          /* ───── THE MAP — three stops spread along the line, each its own page ───── */
           <div className="fmMap">
+            <svg className="fmMapLine" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+              <polyline points="16,15 50,48 84,15" fill="none" stroke={LINE} strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.85} />
+            </svg>
             {([
-              { key: 'scene', icon: '🚇', name: 'the scene', tag: "what's the move around town", stat: `${acts.length || 0} on the board`, badge: false },
-              { key: 'crew', icon: '🎒', name: 'my crew', tag: 'your people + the group chat', stat: matches.length ? `${matches.length} matched` : 'finding your people', badge: matches.some((m) => m.theyAccepted && !m.iAccepted) },
-              { key: 'pulse', icon: '🌆', name: 'city pulse', tag: 'which neighborhoods are buzzing', stat: pulse ? `${pulse.totalMembers} on the line` : 'loading…', badge: false },
+              { key: 'scene', icon: '🚇', name: 'the scene', tag: "what's the move around town", stat: `${acts.length || 0} on the board`, badge: false, pos: { left: '16%', top: '15%' } },
+              { key: 'crew', icon: '🎒', name: 'my crew', tag: 'your people + the group chat', stat: matches.length ? `${matches.length} matched` : 'finding your people', badge: matches.some((m) => m.theyAccepted && !m.iAccepted), pos: { left: '50%', top: '48%' } },
+              { key: 'pulse', icon: '🌆', name: 'city pulse', tag: 'which neighborhoods are buzzing', stat: pulse ? `${pulse.totalMembers} on the line` : 'loading…', badge: false, pos: { left: '84%', top: '15%' } },
             ] as const).map((s) => (
-              <button key={s.key} className="fmStop" onClick={() => setView(s.key)}>
+              <button key={s.key} className="fmStop" style={{ left: s.pos.left, top: s.pos.top }} onClick={() => setView(s.key)}>
                 <span className="fmStopDot" />
                 {s.badge && <span style={{ position: 'absolute', top: 14, right: 14, width: 15, height: 15, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />}
                 <div style={{ fontSize: '2.4rem', lineHeight: 1 }}>{s.icon}</div>
@@ -286,38 +303,26 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
               </a>
             )}
 
-            {/* CHAT — button that opens a chat box */}
-            {chat.circleId && (
+            {/* CHAT — always visible so the crew can see where the group thread lives */}
+            {(chat.circleId || matches.length > 0) && (
               <div style={{ marginTop: '1rem' }}>
                 <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
                   style={{ ...poppyBtn, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>💬 crew chat</span>
-                  <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲' : `▾ ${chat.members.length}`}</span>
+                  <span>💬 group chat</span>
+                  <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewPeople.length}`}</span>
                 </button>
                 <div ref={chatRef} />
                 {chatOpen && (
                   <div style={{ ...card, overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
-                    {chat.locked ? (
-                      <div style={{ padding: '1.25rem', textAlign: 'center' }}>
-                        {!chat.iHaveAccess ? (<>
-                          <div style={{ fontSize: '1.6rem' }}>🎟️</div>
-                          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', margin: '0.3rem 0' }}>unlock this crew</div>
-                          <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem', margin: '0 0 0.9rem' }}>first crew&apos;s free — this one&apos;s a one-time <b>$0.99</b>.</p>
-                          <button style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.45rem 1rem' }} onClick={unlockChat} disabled={payBusy}>{payBusy ? '…' : 'unlock · $0.99'}</button>
-                        </>) : (<>
-                          <div style={{ fontSize: '1.6rem' }}>🚥</div>
-                          <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem', margin: '0.5rem 0 0' }}>you&apos;re in — waiting on <b>{chat.waitingOn}</b> crewmate{chat.waitingOn === 1 ? '' : 's'}.</p>
-                        </>)}
-                      </div>
-                    ) : (<>
-                      <div style={{ background: LINE, color: '#fff', padding: '0.55rem 0.9rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', borderBottom: `3px solid ${INK}`, display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
-                        your crew · {chat.members.length}
-                        <span style={{ display: 'flex', marginLeft: 'auto' }}>
-                          {chat.members.slice(0, 5).map((u: any) => u.photo_url
-                            ? <img key={u.id} src={u.photo_url} alt="" title={u.name} style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, objectFit: 'cover' }} />
-                            : <span key={u.id} title={u.name} style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, background: '#fbe6cf', display: 'inline-block' }} />)}
-                        </span>
-                      </div>
+                    <div style={{ background: LINE, color: '#fff', padding: '0.55rem 0.9rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', borderBottom: `3px solid ${INK}`, display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
+                      your crew · {crewPeople.length}
+                      <span style={{ display: 'flex', marginLeft: 'auto' }}>
+                        {crewPeople.slice(0, 6).map((u: any) => u.photo_url
+                          ? <img key={u.id} src={u.photo_url} alt="" title={u.name} style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, objectFit: 'cover' }} />
+                          : <span key={u.id} title={u.name} style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, background: '#fbe6cf', display: 'inline-block' }} />)}
+                      </span>
+                    </div>
+                    {chatLive ? (<>
                       <div style={{ padding: '0.8rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 300, overflowY: 'auto' }}>
                         {chat.messages.length === 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.85rem' }}>say hi to the crew 👋</div>}
                         {chat.messages.map((mm: any) => {
@@ -335,7 +340,17 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                         <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something…" style={{ flex: 1, border: `2px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.8rem', fontSize: '0.82rem' }} />
                         <button onClick={send} style={{ ...poppyBtn, fontSize: '1rem', padding: '0 0.8rem' }}>→</button>
                       </div>
-                    </>)}
+                    </>) : (
+                      <div style={{ padding: '1.1rem 1rem 1.25rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.6rem' }}>🚥</div>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.25rem', margin: '0.2rem 0 0.35rem' }}>chat opens when your crew locks in</div>
+                        <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem', margin: 0 }}>
+                          {matches.some((m) => m.iAccepted)
+                            ? <>you&apos;re in 🎒 — waiting on the others to say they&apos;re in too. the second they do, this becomes your group thread.</>
+                            : <>say <b>“I&apos;m in”</b> above to lock in your crew — then this opens up as your group thread.</>}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -487,17 +502,19 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         </>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>
-          <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
-          <a href="/friends/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>✨ what&apos;s new</a>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.1rem', marginTop: '1.25rem' }}>
-          {[['instagram', 'https://instagram.com/notcupidapp'], ['tiktok', 'https://tiktok.com/@notcupid11'], ['x', 'https://x.com/notcupidapp']].map(([label, href]) => (
-            <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'lowercase', color: LINE_DEEP, textDecoration: 'none' }}>↗ {label}</a>
-          ))}
-        </div>
-        <div style={{ textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#a8896a' }}>
-          © {new Date().getFullYear()} notcupid · a lemon labs property
+        <div style={{ maxWidth: 470, margin: '2.75rem auto 0', background: 'rgba(255,253,247,0.94)', border: `2px solid ${INK}`, borderRadius: 16, boxShadow: `4px 4px 0 ${INK}`, padding: '1rem 1.25rem', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+            <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: INK, textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
+            <a href="/friends/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: INK, textDecoration: 'underline', textUnderlineOffset: 4 }}>✨ what&apos;s new</a>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', marginTop: '0.85rem' }}>
+            {[['instagram', 'https://instagram.com/notcupidapp'], ['tiktok', 'https://tiktok.com/@notcupid11'], ['x', 'https://x.com/notcupidapp']].map(([label, href]) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'lowercase', color: LINE_DEEP, textDecoration: 'none' }}>↗ {label}</a>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#6b4a2f' }}>
+            © {new Date().getFullYear()} notcupid · a lemon labs property
+          </div>
         </div>
       </div>
     </div>
