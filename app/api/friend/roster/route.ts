@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
-import { assignFriendMatches } from '@/lib/friend-assign';
+import { assignFriendMatches, matchCapFor } from '@/lib/friend-assign';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.friend_opted_in_at) return NextResponse.json({ optedIn: false, matches: [] });
 
-  await assignFriendMatches(user.id);
+  const cap = await matchCapFor(user.id);
+  await assignFriendMatches(user.id, cap);
 
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')
@@ -27,7 +28,7 @@ export async function GET() {
     .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
     .neq('status', 'declined')
     .order('compatibility_score', { ascending: false })
-    .limit(5);
+    .limit(cap);
 
   const otherIds = (conns ?? []).map((c) => (c.user_a_id === user.id ? c.user_b_id : c.user_a_id));
   const { data: others } = await supabaseAdmin

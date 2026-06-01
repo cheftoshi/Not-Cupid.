@@ -28,10 +28,16 @@ export async function GET(req: NextRequest) {
       const { data: acts } = await supabaseAdmin.from('friend_activities').select('kind')
       const connList = conns ?? []
       const paidUnlocks = unlockCount ?? 0
+      let paidRounds = 0
+      try {
+        const { count } = await supabaseAdmin.from('friend_match_rounds').select('id', { count: 'exact', head: true })
+        paidRounds = count ?? 0
+      } catch { /* friend_match_rounds not migrated yet */ }
       friend = {
         optedIn: optedIn.length,
+        matchRounds: paidRounds,
         chatUnlocks: paidUnlocks,
-        unlockRevenue: (paidUnlocks * 0.99).toFixed(2),
+        unlockRevenue: ((paidRounds + paidUnlocks) * 0.99).toFixed(2),
         connectionsPending: connList.filter((c: any) => c.status === 'pending').length,
         connectionsMade: connList.filter((c: any) => c.status === 'connected').length,
         activeCircles: new Set((circleMembers ?? []).map((m: any) => m.circle_id)).size,

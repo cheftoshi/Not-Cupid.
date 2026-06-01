@@ -10,7 +10,7 @@ const STEPS = [
   { n: '1', emoji: '📝', title: 'take a quick friend quiz', body: "a few questions about how you actually like to hang — your scene, your cadence, what you want to do. that's the only step on your end. the algo does the rest." },
   { n: '2', emoji: '🤝', title: 'get clustered into a crew', body: 'behind the scenes we route you into a friend group of people on your wavelength — shared interests, similar energy, same corner of greater boston. no swiping, no endless scroll.' },
   { n: '3', emoji: '🎒', title: 'lock it in — or opt out', body: "say you're in. not feeling the group? opt out of the whole crew in one tap — it's symmetric, no awkward one-on-one rejections. there's no picking people off." },
-  { n: '4', emoji: '💬', title: 'open the group chat', body: "your crew shares one thread to make plans. your first crew is free, forever — and if it never fully comes together, that free slot just stays open for your next one. extra crews are a one-time $0.99." },
+  { n: '4', emoji: '💬', title: 'open the group chat', body: "your crew shares one thread to make plans — free for everyone in it, the moment the crew locks in. no unlocks, no paywall on talking to your people." },
   { n: '5', emoji: '📣', title: 'ride the scene', body: 'post what you want to do — "trivia thursday?", "anyone for the new A24 movie?" — RSVP to events, and see which neighborhoods are buzzing.' },
 ];
 
@@ -50,7 +50,7 @@ export default function HowItWorks() {
         <div style={{ background: '#fffaf0', border: `3px dashed ${LINE}`, borderRadius: 16, padding: '1.25rem', margin: '1.75rem 0', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-your first crew is <b>free, forever</b> — and if it never fully forms, that free slot waits for the next one. each extra crew is a one-time <b>$0.99</b> — no subscription, no catch.
+your crews and their group chats are <b>free</b>. want more people? a fresh round of 5 matches is a one-time <b>$0.99</b> — no subscription, no catch.
           </p>
         </div>
 

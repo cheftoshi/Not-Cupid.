@@ -6,27 +6,28 @@ import FriendHubClient from './friend-hub-client';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FriendsHubPage({ searchParams }: { searchParams: { crew_unlock?: string } }) {
+export default async function FriendsHubPage({ searchParams }: { searchParams: { more_matches?: string } }) {
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/friends');
   if (!user.friend_opted_in_at || !hasFriendVibes(user.friend_vibes)) redirect('/friends/quiz');
 
-  // Returning from a $0.99 crew-unlock checkout → record it inline so the chat
-  // opens instantly (the webhook is the durable path; this avoids a wait).
-  if (searchParams.crew_unlock) {
+  // Returning from a $0.99 "another round of matches" checkout → grant it inline
+  // so the new matches show instantly (the webhook is the durable path). Keyed on
+  // the Stripe payment id, so this and the webhook can't double-grant.
+  if (searchParams.more_matches) {
     try {
-      const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${searchParams.crew_unlock}`, {
+      const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${searchParams.more_matches}`, {
         headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, cache: 'no-store',
       });
       const s = await r.json();
       const paid = s.payment_status === 'paid' || s.status === 'complete';
-      if (paid && s.metadata?.user_id === user.id && s.metadata?.type === 'friend_crew_unlock' && s.metadata?.circle_id) {
-        await supabaseAdmin.from('friend_chat_unlocks').upsert(
-          { user_id: user.id, circle_id: s.metadata.circle_id, stripe_payment_id: s.payment_intent },
-          { onConflict: 'user_id,circle_id' }
+      if (paid && s.metadata?.user_id === user.id && s.metadata?.type === 'friend_more_matches') {
+        await supabaseAdmin.from('friend_match_rounds').upsert(
+          { user_id: user.id, stripe_payment_id: s.payment_intent },
+          { onConflict: 'stripe_payment_id' }
         );
       }
-    } catch (e) { console.error('Friend crew unlock verify failed', e); }
+    } catch (e) { console.error('Friend more-matches verify failed', e); }
   }
 
   const me = {

@@ -61,14 +61,14 @@ export async function POST(req: NextRequest) {
       }
       // ============== End match unlock ==============
 
-      // ============== Friend Maxxin — per-crew $0.99 chat unlock ==============
-      if (session.metadata?.type === 'friend_crew_unlock' && session.metadata?.user_id && session.metadata?.circle_id) {
-        const { error } = await supabaseAdmin.from('friend_chat_unlocks').upsert(
-          { user_id: session.metadata.user_id, circle_id: session.metadata.circle_id, stripe_payment_id: session.payment_intent },
-          { onConflict: 'user_id,circle_id' }
+      // ============== Friend Maxxin — $0.99 another round of matches ==============
+      if (session.metadata?.type === 'friend_more_matches' && session.metadata?.user_id) {
+        const { error } = await supabaseAdmin.from('friend_match_rounds').upsert(
+          { user_id: session.metadata.user_id, stripe_payment_id: session.payment_intent },
+          { onConflict: 'stripe_payment_id' }
         )
-        if (error) console.error('Friend crew unlock error:', error)
-        else console.log('Friend crew unlock recorded')
+        if (error) console.error('Friend match round error:', error)
+        else console.log('Friend match round granted')
         return NextResponse.json({ received: true })
       }
 

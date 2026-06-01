@@ -46,7 +46,9 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
       .select('status')
       .or(`user_a_id.eq.${cand.id},user_b_id.eq.${cand.id}`);
     const candActive = (candConns ?? []).filter((c) => c.status !== 'declined').length;
-    if (candActive >= max) continue;
+    // Protect the candidate by their BASE cap (not the buyer's expanded cap), so
+    // buying extra rounds never overloads someone else's roster.
+    if (candActive >= FRIEND_MAX_CONNECTIONS) continue;
 
     const [a, b] = [userId, cand.id].sort();
     const { error } = await supabaseAdmin.from('friend_connections').upsert(
@@ -56,4 +58,18 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     if (!error) created++;
   }
   return created;
+}
+
+// A user's match cap = base 5, plus 5 for every paid "another round" ($0.99).
+// Tolerant: if the friend_match_rounds table isn't migrated yet, fall back to base.
+export async function matchCapFor(userId: string): Promise<number> {
+  try {
+    const { count } = await supabaseAdmin
+      .from('friend_match_rounds')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    return FRIEND_MAX_CONNECTIONS * (1 + (count ?? 0));
+  } catch {
+    return FRIEND_MAX_CONNECTIONS;
+  }
 }

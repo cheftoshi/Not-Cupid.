@@ -93,7 +93,7 @@ type Me = { name: string; photo_url: string | null; archetype: string | null; bi
 export default function FriendHubClient({ firstName, me }: { firstName: string; me?: Me; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
   const [payBusy, setPayBusy] = useState(false);
-  async function unlockChat() {
+  async function buyMoreMatches() {
     setPayBusy(true);
     try {
       const r = await fetch('/api/friend/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
@@ -389,10 +389,16 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                   </div>
                 ))}
               </div>
-              <button onClick={leaveCrew} disabled={busy}
-                style={{ display: 'block', margin: '1.25rem auto 0', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
-                {busy ? '…' : 'not your crew? opt out of the group →'}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem' }}>
+                <button onClick={buyMoreMatches} disabled={payBusy} style={{ ...poppyBtn }}>
+                  {payBusy ? '…' : '🎟️ another round of matches · $0.99'}
+                </button>
+                <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>your crews &amp; their chats are free — this just routes you a fresh batch of 5.</span>
+                <button onClick={leaveCrew} disabled={busy}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
+                  {busy ? '…' : 'not your crew? opt out of the group →'}
+                </button>
+              </div>
               </>
             )}
           </div>
