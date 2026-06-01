@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       .neq('id', userId)
       .is('matching_disabled_at', null)
       .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`)
+      .or('is_test.is.null,is_test.eq.false')
 
     if (!pool || pool.length === 0) {
       return NextResponse.json({ matched: false, message: 'In the pool — watching for matches' })

@@ -67,7 +67,7 @@ export default async function DashboardPage({
   const matchTimedOut = !!(
     rawMatch && rawMatch.expires_at && new Date(rawMatch.expires_at) < new Date() && !matchBothAccepted
   );
-  const currentMatch = rawMatch && !terminalStatus && !matchTimedOut ? rawMatch : null;
+  let currentMatch = rawMatch && !terminalStatus && !matchTimedOut ? rawMatch : null;
 
   let otherUser = null;
   let isUnlocked = false;
@@ -94,6 +94,9 @@ export default async function DashboardPage({
     profileUnlocked = !!unlock?.profile_unlocked;
     hexacoUnlocked = !!unlock?.hexaco_unlocked || profileUnlocked;
     isUnlocked = profileUnlocked; // back-compat for any consumer still reading it
+
+    // Hide test accounts from real users — treat a test match as no match.
+    if ((otherUser as any)?.is_test) { currentMatch = null; otherUser = null; }
   }
 
 

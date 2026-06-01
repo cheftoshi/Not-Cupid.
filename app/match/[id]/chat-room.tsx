@@ -79,6 +79,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   // event APIs, so we don't poll it like messages).
   const [vibes, setVibes] = useState<any>(null);
   const [vibePending, setVibePending] = useState<string | null>(null);
+  const [showLive, setShowLive] = useState(false);
   // Live match status — seeded from the server, refreshed by the poll, so the
   // header stays accurate (countdown ticking, or "ended" if they bailed).
   const [liveMatch, setLiveMatch] = useState<any>(match);
@@ -138,6 +139,20 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
     } finally {
       setVibePending(null);
     }
+  }
+
+  // One tappable date-vibe option (used for both date ideas and live events).
+  function renderVibeOption(o: any) {
+    return (
+      <button key={o.id} onClick={() => pickVibe(o.id, o._sel)} disabled={vibePending === o.id}
+        style={{ textAlign: 'left', display: 'flex', gap: '0.6rem', alignItems: 'center', cursor: 'pointer', background: o._sel ? '#0a0a0a' : '#fff', color: o._sel ? '#fff' : '#0a0a0a', border: `1px solid ${o._sel ? '#0a0a0a' : 'rgba(37,99,255,0.3)'}`, borderRadius: 12, padding: '0.6rem 0.75rem', font: 'inherit', opacity: vibePending === o.id ? 0.5 : 1, width: '100%' }}>
+        <span style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', border: `1.5px solid ${o._sel ? '#2563ff' : 'rgba(37,99,255,0.5)'}`, background: o._sel ? '#2563ff' : 'transparent', color: '#fff' }}>{o._sel ? '✓' : ''}</span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: '0.86rem', fontWeight: 600, lineHeight: 1.25, display: 'block' }}>{o.title}</span>
+          {(o.venue || o.whenLabel) && <span style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.52rem', color: o._sel ? '#c8c4dc' : '#7a7590', letterSpacing: '0.04em' }}>{[o.venue, o.whenLabel].filter(Boolean).join(' · ')}</span>}
+        </span>
+      </button>
+    );
   }
 
   useEffect(() => {
@@ -337,30 +352,40 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             </div>
           )}
 
-          {/* MULTIPLE CHOICE — tap what you'd do; it locks when you both pick it */}
+          {/* MULTIPLE CHOICE — date ideas by default; live events are opt-in */}
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>pick what you&apos;d do</div>
           {!vibes ? (
             <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
           ) : (() => {
-            const picks = (vibes.myPicks || []).map((a: any) => ({ ...a, _sel: true }));
-            const avail = (vibes.deck || []).map((a: any) => ({ ...a, _sel: false }));
-            const options = [...picks, ...avail].slice(0, 12);
-            return options.length === 0 ? (
-              <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>no options right now — new live events drop in regularly.</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {options.map((o: any) => (
-                  <button key={o.id} onClick={() => pickVibe(o.id, o._sel)} disabled={vibePending === o.id}
-                    style={{ textAlign: 'left', display: 'flex', gap: '0.6rem', alignItems: 'center', cursor: 'pointer', background: o._sel ? '#0a0a0a' : '#fff', color: o._sel ? '#fff' : '#0a0a0a', border: `1px solid ${o._sel ? '#0a0a0a' : 'rgba(37,99,255,0.3)'}`, borderRadius: 12, padding: '0.6rem 0.75rem', font: 'inherit', opacity: vibePending === o.id ? 0.5 : 1 }}>
-                    <span style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', border: `1.5px solid ${o._sel ? '#2563ff' : 'rgba(37,99,255,0.5)'}`, background: o._sel ? '#2563ff' : 'transparent', color: '#fff' }}>{o._sel ? '✓' : ''}</span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: '0.86rem', fontWeight: 600, lineHeight: 1.25, display: 'block' }}>{o.title}</span>
-                      {(o.venue || o.whenLabel) && <span style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.52rem', color: o._sel ? '#c8c4dc' : '#7a7590', letterSpacing: '0.04em' }}>{[o.venue, o.whenLabel].filter(Boolean).join(' · ')}</span>}
-                    </span>
-                  </button>
-                ))}
-                <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a8a3b8', textAlign: 'center', marginTop: '0.2rem' }}>tap to pick · locks when you both choose it</div>
-              </div>
+            const all = [
+              ...(vibes.myPicks || []).map((a: any) => ({ ...a, _sel: true })),
+              ...(vibes.deck || []).map((a: any) => ({ ...a, _sel: false })),
+            ];
+            const curated = all.filter((o: any) => o.source === 'curated');
+            const live = all.filter((o: any) => o.source !== 'curated');
+            return (
+              <>
+                {curated.length === 0 ? (
+                  <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>no date ideas left right now — check back soon.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {curated.slice(0, 12).map(renderVibeOption)}
+                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a8a3b8', textAlign: 'center', marginTop: '0.2rem' }}>tap to pick · locks when you both choose it</div>
+                  </div>
+                )}
+                <button onClick={() => setShowLive((v) => !v)} style={{ width: '100%', marginTop: '0.8rem', background: '#fff', border: '1px solid rgba(37,99,255,0.35)', color: '#1b46c9', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.6rem', borderRadius: 12, cursor: 'pointer' }}>
+                  🎟️ {showLive ? 'hide live events' : `check out live events${live.length ? ` (${live.length})` : ''}`}
+                </button>
+                {showLive && (
+                  live.length === 0 ? (
+                    <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', lineHeight: 1.45, marginTop: '0.6rem' }}>nothing live right now — concerts &amp; events drop in when there&apos;s something on.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.6rem' }}>
+                      {live.slice(0, 12).map(renderVibeOption)}
+                    </div>
+                  )
+                )}
+              </>
             );
           })()}
           <a href={`/match/${matchId}/date-vibes`} style={{ display: 'block', textAlign: 'center', marginTop: '0.7rem', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#1b46c9', textDecoration: 'none' }}>open the full deck ↗</a>

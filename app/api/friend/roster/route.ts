@@ -33,7 +33,7 @@ export async function GET() {
   const otherIds = (conns ?? []).map((c) => (c.user_a_id === user.id ? c.user_b_id : c.user_a_id));
   const { data: others } = await supabaseAdmin
     .from('users')
-    .select('id, name, age, photo_url, archetype, zip, friend_vibes')
+    .select('id, name, age, photo_url, archetype, zip, friend_vibes, is_test')
     .in('id', otherIds.length ? otherIds : ['00000000-0000-0000-0000-000000000000']);
   const byId = new Map((others ?? []).map((u) => [u.id, u]));
 
@@ -58,5 +58,7 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ optedIn: true, matches });
+  // Hide test accounts from real users' crews.
+  const visible = matches.filter((m) => (byId.get(m.otherId) as any)?.is_test !== true);
+  return NextResponse.json({ optedIn: true, matches: visible });
 }

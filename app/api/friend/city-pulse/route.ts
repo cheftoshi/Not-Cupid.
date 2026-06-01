@@ -14,7 +14,7 @@ export async function GET() {
   const nowIso = new Date().toISOString();
 
   const { data: members } = await supabaseAdmin
-    .from('users').select('zip').not('friend_opted_in_at', 'is', null).is('deleted_at', null);
+    .from('users').select('zip').not('friend_opted_in_at', 'is', null).is('deleted_at', null).or('is_test.is.null,is_test.eq.false');
 
   const { data: acts } = await supabaseAdmin
     .from('friend_activities').select('area, kind').or(`expires_at.is.null,expires_at.gt.${nowIso}`);

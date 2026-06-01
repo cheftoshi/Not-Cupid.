@@ -34,7 +34,8 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     .is('deleted_at', null)
     .neq('id', userId);
 
-  const fresh = (pool ?? []).filter((p) => !seen.has(p.id));
+  // Exclude test accounts so they never get matched into real users' crews.
+  const fresh = (pool ?? []).filter((p) => !seen.has(p.id) && (p as any).is_test !== true);
   const ranked = rankFriendCandidates(me, fresh);
 
   let created = 0;
