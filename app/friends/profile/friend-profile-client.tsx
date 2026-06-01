@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const INK = '#241d12', LINE = '#e8842b', LINE_DEEP = '#c96a18', CREAM = '#f7f1e3';
 const card: React.CSSProperties = { background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}`, padding: '1.25rem' };
@@ -41,6 +42,7 @@ export default function FriendProfileClient({ initial }: { initial: Init }) {
   const [hobbies, setHobbies] = useState(initial.hobbies);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const router = useRouter();
 
   async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
@@ -70,8 +72,13 @@ export default function FriendProfileClient({ initial }: { initial: Init }) {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bio, occupation, music, food, hobbies }),
     });
-    setMsg(r.ok ? '✓ saved' : 'couldn\'t save'); setBusy(false);
-    setTimeout(() => setMsg(''), 2500);
+    if (r.ok) {
+      setMsg('✓ saved — taking you to your crew…');
+      router.push('/friends'); router.refresh();
+    } else {
+      setMsg('couldn\'t save'); setBusy(false);
+      setTimeout(() => setMsg(''), 2500);
+    }
   }
 
   return (
