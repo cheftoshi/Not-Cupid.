@@ -116,10 +116,6 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
-  function focusArea(area: string) {
-    setAreaFilter(area); setView('scene');
-    setTimeout(() => feedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
-  }
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '' });
   const [busy, setBusy] = useState(false);
@@ -214,6 +210,13 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           .fmStop:hover { transform: translate(-2px,-3px); }
           .fmMapLine { display: none; }
         }
+        /* crew as a deck you swipe through, so the chat gets real room below */
+        .crewDeck { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0.4rem 0.2rem 1rem; scrollbar-width: thin; }
+        .crewDeck::-webkit-scrollbar { height: 8px; }
+        .crewDeck::-webkit-scrollbar-thumb { background: rgba(36,29,18,0.3); border-radius: 999px; }
+        .crewDeck > * { flex: 0 0 210px; scroll-snap-align: start; }
+        .crewLower { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.5rem; align-items: start; }
+        @media (min-width: 820px) { .crewLower { grid-template-columns: 280px minmax(0,1fr); } }
       `}</style>
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
@@ -243,7 +246,10 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           /* ───── THE MAP — three stops spread along the line, each its own page ───── */
           <div className="fmMap">
             <svg className="fmMapLine" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-              <polyline points="16,15 50,48 84,15" fill="none" stroke={LINE} strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.85} />
+              {/* a zig-zag route weaving through the three stops… */}
+              <polyline points="-6,46 16,15 50,48 84,15 106,46" fill="none" stroke={LINE} strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.9} />
+              {/* …plus a crossing interchange line so they inter-cross */}
+              <line x1="12" y1="49" x2="88" y2="18" stroke={LINE} strokeWidth={3} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.4} strokeDasharray="3 4" />
             </svg>
             {([
               { key: 'scene', icon: '🚇', name: 'the scene', tag: "what's the move around town", stat: `${acts.length || 0} on the board`, badge: false, pos: { left: '16%', top: '15%' } },
@@ -279,9 +285,55 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           </div>
 
         {view === 'crew' && (
-        <div className="fmGrid">
-          {/* RIGHT RAIL — your friend card + chat toggle */}
-          <div className="fmRail">
+        <div>
+          {pendingToJoin && (
+            <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew.</div>
+              <button style={poppyBtn} onClick={join} disabled={busy}>{busy ? '…' : "I'M IN →"}</button>
+            </div>
+          )}
+
+          {/* CREW — a deck you swipe through (frees the room below for the chat) */}
+          <h2 style={sectionLabel}><StationDot />🎒 your crew</h2>
+          {matches.length === 0 ? (
+            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>the algo is still finding your people — check back soon.</div>
+          ) : (
+            <>
+            <div className="crewDeck">
+              {matches.map((m) => (
+                <div key={m.otherId} style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ position: 'relative' }}>
+                    {m.photo_url
+                      ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', borderBottom: `3px solid ${INK}` }} />
+                      : <div style={{ width: '100%', aspectRatio: '1', borderBottom: `3px solid ${INK}`, background: '#ffe6c7' }} />}
+                    <span style={{ position: 'absolute', top: 8, left: 8, background: '#ffce4d', border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.1rem 0.5rem', fontFamily: "'Bebas Neue',sans-serif", fontSize: '1rem', transform: 'rotate(-6deg)', boxShadow: `2px 2px 0 ${INK}` }}>{m.score}%</span>
+                  </div>
+                  <div style={{ padding: '0.7rem 0.8rem' }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem' }}>{m.name} <span style={{ color: '#6b4a2f', fontSize: '0.85rem' }}>· {m.age}</span></div>
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : LINE_DEEP, marginBottom: '0.4rem' }}>● {m.connected ? 'in your crew' : m.iAccepted ? 'waiting on them' : 'new match'}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                      {(m.sharedActivities || []).slice(0, 3).map((a: string) => <span key={a} style={chip}>{a}</span>)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#a8896a', marginTop: '-0.2rem' }}>← deck through your crew →</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginTop: '1.25rem' }}>
+              <button onClick={buyMoreMatches} disabled={payBusy} style={{ ...poppyBtn }}>
+                {payBusy ? '…' : '🎟️ another round of matches · $0.99'}
+              </button>
+              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>your crews &amp; their chats are free — this just routes you a fresh batch of 5.</span>
+              <button onClick={leaveCrew} disabled={busy}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
+                {busy ? '…' : 'not your crew? opt out of the group →'}
+              </button>
+            </div>
+            </>
+          )}
+
+          {/* LOWER — your card on the left, a roomy group chat on the right */}
+          <div className="crewLower">
             {profileSet && me ? (
               <div style={{ ...card, padding: '1rem 1.1rem' }}>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.5rem' }}>your friend card</div>
@@ -303,104 +355,60 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
               </a>
             )}
 
-            {/* CHAT — always visible so the crew can see where the group thread lives */}
-            {(chat.circleId || matches.length > 0) && (
-              <div style={{ marginTop: '1rem' }}>
-                <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
-                  style={{ ...poppyBtn, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>💬 group chat</span>
-                  <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewPeople.length}`}</span>
-                </button>
-                <div ref={chatRef} />
-                {chatOpen && (
-                  <div style={{ ...card, overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
-                    <div style={{ background: LINE, color: '#fff', padding: '0.55rem 0.9rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', borderBottom: `3px solid ${INK}`, display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
-                      your crew · {crewPeople.length}
-                      <span style={{ display: 'flex', marginLeft: 'auto' }}>
-                        {crewPeople.slice(0, 6).map((u: any) => u.photo_url
-                          ? <img key={u.id} src={u.photo_url} alt="" title={u.name} style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, objectFit: 'cover' }} />
-                          : <span key={u.id} title={u.name} style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, background: '#fbe6cf', display: 'inline-block' }} />)}
-                      </span>
+            {/* CHAT — roomy now that the crew is a deck */}
+            <div>
+              {(chat.circleId || matches.length > 0) && (
+                <>
+                  <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
+                    style={{ ...poppyBtn, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>💬 group chat</span>
+                    <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewPeople.length}`}</span>
+                  </button>
+                  <div ref={chatRef} />
+                  {chatOpen && (
+                    <div style={{ ...card, overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
+                      <div style={{ background: LINE, color: '#fff', padding: '0.6rem 1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', borderBottom: `3px solid ${INK}`, display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
+                        your crew · {crewPeople.length}
+                        <span style={{ display: 'flex', marginLeft: 'auto' }}>
+                          {crewPeople.slice(0, 6).map((u: any) => u.photo_url
+                            ? <img key={u.id} src={u.photo_url} alt="" title={u.name} style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, objectFit: 'cover' }} />
+                            : <span key={u.id} title={u.name} style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, background: '#fbe6cf', display: 'inline-block' }} />)}
+                        </span>
+                      </div>
+                      {chatLive ? (<>
+                        <div style={{ padding: '1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', minHeight: 240, maxHeight: 460, overflowY: 'auto' }}>
+                          {chat.messages.length === 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.9rem' }}>say hi to the crew 👋</div>}
+                          {chat.messages.map((mm: any) => {
+                            const sender = chat.members.find((u: any) => u.id === mm.sender_id);
+                            return (
+                              <div key={mm.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                {sender?.photo_url ? <img src={sender.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover' }} /> : <div style={{ width: 26, height: 26, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7' }} />}
+                                <div><span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.5rem', color: '#6b4a2f' }}>{sender?.name?.split(' ')[0] || '—'}</span>
+                                  <div style={{ background: '#fbe6cf', border: `2px solid ${INK}`, borderRadius: 12, padding: '0.45rem 0.75rem', fontSize: '0.9rem', maxWidth: 520 }}>{mm.body}</div></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.8rem 1.1rem', borderTop: `3px dashed rgba(36,29,18,0.25)` }}>
+                          <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something to the crew…" style={{ flex: 1, border: `2px solid ${INK}`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '0.9rem' }} />
+                          <button onClick={send} style={{ ...poppyBtn, fontSize: '1.1rem', padding: '0 1rem' }}>→</button>
+                        </div>
+                      </>) : (
+                        <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
+                          <div style={{ fontSize: '2rem' }}>🚥</div>
+                          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.3rem 0 0.5rem' }}>chat opens when your crew locks in</div>
+                          <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.92rem', margin: '0 auto', maxWidth: 420, lineHeight: 1.5 }}>
+                            {matches.some((m) => m.iAccepted)
+                              ? <>you&apos;re in 🎒 — waiting on the others to say they&apos;re in too. the second they do, this becomes your group thread.</>
+                              : <>say <b>“I&apos;m in”</b> above to lock in your crew — then this opens up as your group thread.</>}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    {chatLive ? (<>
-                      <div style={{ padding: '0.8rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 300, overflowY: 'auto' }}>
-                        {chat.messages.length === 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.85rem' }}>say hi to the crew 👋</div>}
-                        {chat.messages.map((mm: any) => {
-                          const sender = chat.members.find((u: any) => u.id === mm.sender_id);
-                          return (
-                            <div key={mm.id} style={{ display: 'flex', gap: '0.45rem', alignItems: 'flex-end' }}>
-                              {sender?.photo_url ? <img src={sender.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover' }} /> : <div style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7' }} />}
-                              <div><span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.48rem', color: '#6b4a2f' }}>{sender?.name?.split(' ')[0] || '—'}</span>
-                                <div style={{ background: '#fbe6cf', border: `2px solid ${INK}`, borderRadius: 10, padding: '0.35rem 0.6rem', fontSize: '0.82rem' }}>{mm.body}</div></div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.4rem', padding: '0.7rem 0.9rem', borderTop: `3px dashed rgba(36,29,18,0.25)` }}>
-                        <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something…" style={{ flex: 1, border: `2px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.8rem', fontSize: '0.82rem' }} />
-                        <button onClick={send} style={{ ...poppyBtn, fontSize: '1rem', padding: '0 0.8rem' }}>→</button>
-                      </div>
-                    </>) : (
-                      <div style={{ padding: '1.1rem 1rem 1.25rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.6rem' }}>🚥</div>
-                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.25rem', margin: '0.2rem 0 0.35rem' }}>chat opens when your crew locks in</div>
-                        <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem', margin: 0 }}>
-                          {matches.some((m) => m.iAccepted)
-                            ? <>you&apos;re in 🎒 — waiting on the others to say they&apos;re in too. the second they do, this becomes your group thread.</>
-                            : <>say <b>“I&apos;m in”</b> above to lock in your crew — then this opens up as your group thread.</>}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* MAIN — crew cards */}
-          <div className="fmMain">
-            {pendingToJoin && (
-              <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew.</div>
-                <button style={poppyBtn} onClick={join} disabled={busy}>{busy ? '…' : "I'M IN →"}</button>
-              </div>
-            )}
-            <h2 style={sectionLabel}><StationDot />🎒 your crew</h2>
-            {matches.length === 0 ? (
-              <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>the algo is still finding your people — check back soon.</div>
-            ) : (
-              <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '1rem' }}>
-                {matches.map((m) => (
-                  <div key={m.otherId} style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
-                    <div style={{ position: 'relative' }}>
-                      {m.photo_url
-                        ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', borderBottom: `3px solid ${INK}` }} />
-                        : <div style={{ width: '100%', aspectRatio: '1', borderBottom: `3px solid ${INK}`, background: '#ffe6c7' }} />}
-                      <span style={{ position: 'absolute', top: 8, left: 8, background: '#ffce4d', border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.1rem 0.5rem', fontFamily: "'Bebas Neue',sans-serif", fontSize: '1rem', transform: 'rotate(-6deg)', boxShadow: `2px 2px 0 ${INK}` }}>{m.score}%</span>
-                    </div>
-                    <div style={{ padding: '0.7rem 0.8rem' }}>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem' }}>{m.name} <span style={{ color: '#6b4a2f', fontSize: '0.85rem' }}>· {m.age}</span></div>
-                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : LINE_DEEP, marginBottom: '0.4rem' }}>● {m.connected ? 'in your crew' : m.iAccepted ? 'waiting on them' : 'new match'}</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                        {(m.sharedActivities || []).slice(0, 3).map((a: string) => <span key={a} style={chip}>{a}</span>)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem' }}>
-                <button onClick={buyMoreMatches} disabled={payBusy} style={{ ...poppyBtn }}>
-                  {payBusy ? '…' : '🎟️ another round of matches · $0.99'}
-                </button>
-                <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>your crews &amp; their chats are free — this just routes you a fresh batch of 5.</span>
-                <button onClick={leaveCrew} disabled={busy}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
-                  {busy ? '…' : 'not your crew? opt out of the group →'}
-                </button>
-              </div>
-              </>
-            )}
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
         )}
@@ -416,11 +424,45 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                   <span style={chip}>🫂 {pulse.activeGroups}</span>
                   <button onClick={() => { setKindFilter('event'); setView('scene'); }} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities}</button>
                 </div>
-                <PulseBubbles areas={pulse.areas} line={LINE} ink={INK} onPick={focusArea} active={areaFilter} />
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8896a', textAlign: 'center', marginTop: '0.4rem' }}>bubbles = neighborhoods · number = people here</p>
+                <PulseBubbles areas={pulse.areas} line={LINE} ink={INK} onPick={(a) => setAreaFilter(areaFilter === a ? '' : a)} active={areaFilter} />
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8896a', textAlign: 'center', marginTop: '0.4rem' }}>tap a bubble to see what&apos;s happening there</p>
               </>
             )}
           </div>
+
+          {/* the clicked neighborhood loads right here — no jump to another page */}
+          {areaFilter && (
+            <div style={{ marginTop: '1.1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '0 0 0.7rem' }}>
+                <h3 style={{ ...sectionLabel, margin: 0, fontSize: '1.3rem' }}><StationDot />📍 {areaFilter}</h3>
+                <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', marginLeft: 'auto' }}>clear ✕</button>
+              </div>
+              {(() => { const shown = acts.filter((a) => a.area === areaFilter); return shown.length === 0 ? (
+                <div style={{ ...card, padding: '1rem 1.1rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>
+                  nothing posted in {areaFilter} yet — <button onClick={() => { setNewAct({ ...newAct, area: areaFilter }); setView('scene'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something →</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {shown.map((a) => (
+                    <div key={a.id} style={{ ...card, padding: '0.8rem 1rem', display: 'flex', gap: '0.7rem', alignItems: 'center' }}>
+                      {a.authorPhoto ? <img src={a.authorPhoto} alt="" style={{ width: 34, height: 34, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7', flexShrink: 0 }} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{a.title}</div>
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                          <span style={chip}>{a.category}</span>
+                          {a.happens_at && <span style={chip}>🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' })}</span>}
+                          <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', color: '#6b4a2f', alignSelf: 'center' }}>by {a.authorName?.split(' ')[0] || '—'}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => rsvp(a.id)} style={{ ...chip, cursor: 'pointer', fontSize: '0.8rem', padding: '0.35rem 0.7rem', background: a.iRsvped ? '#ffd23d' : '#fff', flexShrink: 0 }}>
+                        {a.kind === 'post' ? `👍 ${a.rsvpCount || ''}` : (a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`)}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ); })()}
+            </div>
+          )}
         </div>
         )}
 
