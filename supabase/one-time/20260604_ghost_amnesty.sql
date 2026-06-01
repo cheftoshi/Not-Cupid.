@@ -11,7 +11,9 @@
 update users
 set matching_disabled_at   = null,
     matching_cooldown_until = null,
-    ghost_reports_received  = 0
+    ghost_reports_received  = 0,
+    ghost_strikes           = 0
 where matching_disabled_at is not null
    or matching_cooldown_until is not null
-   or ghost_reports_received > 0;
+   or ghost_reports_received > 0
+   or ghost_strikes > 0;
