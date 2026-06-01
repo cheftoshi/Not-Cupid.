@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { isLgbtqIdentity } from '@/lib/friend-matching';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   // Audience gate (events only; author is always allowed).
   if ((activity.kind || 'event') === 'event' && activity.author_id !== user.id) {
     const aud = activity.audience_gender as string[] | null;
-    const inGender = !Array.isArray(aud) || aud.length === 0 || aud.includes(user.gender) || (aud.includes('lgbtq') && (user.gender === 'nb' || user.gender === 'b'));
+    const inGender = !Array.isArray(aud) || aud.length === 0 || aud.includes(user.gender) || (aud.includes('lgbtq') && isLgbtqIdentity(user));
     const inAgeMin = activity.audience_age_min == null || (user.age != null && user.age >= activity.audience_age_min);
     const inAgeMax = activity.audience_age_max == null || (user.age != null && user.age <= activity.audience_age_max);
     if (!inGender || !inAgeMin || !inAgeMax) {

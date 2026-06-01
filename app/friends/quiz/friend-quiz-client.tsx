@@ -19,6 +19,7 @@ export default function FriendQuizClient() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({ activities: [] });
   const [seeking, setSeeking] = useState<string[]>([]);
+  const [isLgbtq, setIsLgbtq] = useState<boolean | null>(null);
   const [ageMin, setAgeMin] = useState('');
   const [ageMax, setAgeMax] = useState('');
   const [busy, setBusy] = useState(false);
@@ -54,6 +55,7 @@ export default function FriendQuizClient() {
         body: JSON.stringify({
           friend_vibes: answers,
           friend_seeking: seeking,
+          is_lgbtq: isLgbtq,
           friend_age_min: ageMin || null,
           friend_age_max: ageMax || null,
         }),
@@ -115,6 +117,17 @@ export default function FriendQuizClient() {
               <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.85rem', margin: '0.75rem 0' }}>
                 pick any. leave all unchecked = open to everyone.
               </p>
+              <div style={{ marginTop: '0.5rem', borderTop: '1.5px solid rgba(107,74,47,0.15)', paddingTop: '1rem' }}>
+                <div className={styles.qText}>do you identify as LGBTQ+?</div>
+                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.8rem', margin: '0 0 0.6rem' }}>
+                  optional — so LGBTQ+ folks &amp; events can find you.
+                </p>
+                {([[true, 'yes'], [false, 'no']] as const).map(([v, label]) => (
+                  <button key={label} type="button"
+                    className={`${styles.opt} ${styles.optMulti} ${isLgbtq === v ? styles.optSel : ''}`}
+                    onClick={() => setIsLgbtq((cur) => (cur === v ? null : v))}>{label}</button>
+                ))}
+              </div>
               <div className={styles.btnRow}>
                 <button className={styles.btn} onClick={() => setStep((s) => s + 1)}>next →</button>
               </div>

@@ -490,3 +490,7 @@ alter table friend_activities add column if not exists audience_age_max int;
 alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
   check (response in ('yes', 'maybe', 'no'));
 alter table users add column if not exists friend_digest_sent_at timestamptz;
+
+-- ==================== 20260608_friend_lgbtq.sql ====================
+-- Self-ID so LGBTQ+ audiences/seeking gate accurately (null = unset → gender fallback).
+alter table users add column if not exists is_lgbtq boolean;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { neighborhoodOf } from '@/lib/neighborhoods';
+import { isLgbtqIdentity } from '@/lib/friend-matching';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
     if ((a.kind || 'event') !== 'event') return true;
     const aud = a.audience_gender;
     if (Array.isArray(aud) && aud.length > 0) {
-      const inGender = aud.includes(user.gender) || (aud.includes('lgbtq') && (user.gender === 'nb' || user.gender === 'b'));
+      const inGender = aud.includes(user.gender) || (aud.includes('lgbtq') && isLgbtqIdentity(user));
       if (!inGender) return false;
     }
     if (a.audience_age_min != null && (user.age == null || user.age < a.audience_age_min)) return false;

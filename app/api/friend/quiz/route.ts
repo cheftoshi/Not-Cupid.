@@ -32,17 +32,22 @@ export async function POST(req: NextRequest) {
   };
   const friend_age_min = clampAge(body.friend_age_min);
   const friend_age_max = clampAge(body.friend_age_max);
+  const is_lgbtq = typeof body.is_lgbtq === 'boolean' ? body.is_lgbtq : null;
 
-  const { error } = await supabaseAdmin
-    .from('users')
-    .update({
-      friend_vibes,
-      friend_seeking,
-      friend_age_min,
-      friend_age_max,
-      friend_opted_in_at: user.friend_opted_in_at || new Date().toISOString(),
-    })
-    .eq('id', user.id);
+  const base: any = {
+    friend_vibes,
+    friend_seeking,
+    friend_age_min,
+    friend_age_max,
+    friend_opted_in_at: user.friend_opted_in_at || new Date().toISOString(),
+  };
+
+  let { error } = await supabaseAdmin.from('users').update({ ...base, is_lgbtq }).eq('id', user.id);
+  // Graceful fallback if the is_lgbtq column isn't migrated yet.
+  if (error && /is_lgbtq|column|schema cache/i.test(error.message || '')) {
+    console.warn('users.is_lgbtq missing — run 20260608 migration. Saving quiz without it.');
+    ({ error } = await supabaseAdmin.from('users').update(base).eq('id', user.id));
+  }
 
   if (error) {
     console.error('friend quiz save error', error);

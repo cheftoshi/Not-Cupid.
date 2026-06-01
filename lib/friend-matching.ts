@@ -79,17 +79,26 @@ export function friendCompatibilityScore(a: any, b: any): number {
 }
 
 // Mutual gender openness: each must be open to the other's gender (empty = any).
+// Does this person count as LGBTQ+ for "open to LGBTQ+" matching/events?
+// Uses the explicit self-ID flag when set; for users who pre-date the field
+// (null), falls back to the gender signal we have (non-binary / bi).
+export function isLgbtqIdentity(u: any): boolean {
+  if (u?.is_lgbtq === true) return true;
+  if (u?.is_lgbtq == null && (u?.gender === 'nb' || u?.gender === 'b')) return true;
+  return false;
+}
+
 export function friendGenderOk(a: any, b: any): boolean {
   const aOpen: string[] = Array.isArray(a.friend_seeking) ? a.friend_seeking : [];
   const bOpen: string[] = Array.isArray(b.friend_seeking) ? b.friend_seeking : [];
-  // Seeking codes: m / f / nb (gender), lgbtq (non-binary or bi), all (everyone).
-  const wants = (open: string[], gender: any) => {
+  // Seeking codes: m / f / nb (gender), lgbtq (self-ID), all (everyone).
+  const wants = (open: string[], other: any) => {
     if (open.length === 0 || open.includes('all')) return true;
-    if (open.includes(gender)) return true;
-    if (open.includes('lgbtq') && (gender === 'nb' || gender === 'b')) return true;
+    if (open.includes(other.gender)) return true;
+    if (open.includes('lgbtq') && isLgbtqIdentity(other)) return true;
     return false;
   };
-  return wants(aOpen, b.gender) && wants(bOpen, a.gender);
+  return wants(aOpen, b) && wants(bOpen, a);
 }
 
 // Symmetric age check: each person's age must fall in the other's preferred
