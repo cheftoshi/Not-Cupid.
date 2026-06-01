@@ -438,3 +438,8 @@ alter table friend_chat_unlocks enable row level security;
 -- Admin reply to user feedback (emails the user + stamps the reply).
 alter table feedback add column if not exists replied_at timestamptz;
 alter table feedback add column if not exists reply_body text;
+
+-- ==================== 20260604_friend_age_pref.sql ====================
+-- Friend Line age preference (symmetric, NULL = no bound).
+alter table users add column if not exists friend_age_min int;
+alter table users add column if not exists friend_age_max int;

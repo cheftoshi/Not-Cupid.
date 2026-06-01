@@ -25,11 +25,21 @@ export async function POST(req: NextRequest) {
     ? Array.from(new Set(body.friend_seeking.filter((g: any) => VALID_GENDERS.includes(g))))
     : [];
 
+  // Optional, symmetric age preference. Clamp to 18-100; null = no bound.
+  const clampAge = (v: any) => {
+    const n = parseInt(v, 10);
+    return isNaN(n) ? null : Math.max(18, Math.min(100, n));
+  };
+  const friend_age_min = clampAge(body.friend_age_min);
+  const friend_age_max = clampAge(body.friend_age_max);
+
   const { error } = await supabaseAdmin
     .from('users')
     .update({
       friend_vibes,
       friend_seeking,
+      friend_age_min,
+      friend_age_max,
       friend_opted_in_at: user.friend_opted_in_at || new Date().toISOString(),
     })
     .eq('id', user.id);

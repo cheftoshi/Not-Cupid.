@@ -14,14 +14,17 @@ const GENDERS = [
 
 export default function FriendQuizClient() {
   const router = useRouter();
-  const total = FRIEND_QUESTIONS.length + 1; // + gender step
+  const total = FRIEND_QUESTIONS.length + 2; // + gender step + age step
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({ activities: [] });
   const [seeking, setSeeking] = useState<string[]>([]);
+  const [ageMin, setAgeMin] = useState('');
+  const [ageMax, setAgeMax] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
   const onGender = step === FRIEND_QUESTIONS.length;
+  const onAge = step === FRIEND_QUESTIONS.length + 1;
   const q = FRIEND_QUESTIONS[step];
 
   function pickSingle(key: string, opt: string) {
@@ -43,7 +46,12 @@ export default function FriendQuizClient() {
     try {
       const res = await fetch('/api/friend/quiz', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ friend_vibes: answers, friend_seeking: seeking }),
+        body: JSON.stringify({
+          friend_vibes: answers,
+          friend_seeking: seeking,
+          friend_age_min: ageMin || null,
+          friend_age_max: ageMax || null,
+        }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Something went wrong');
@@ -102,6 +110,27 @@ export default function FriendQuizClient() {
               <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.85rem', margin: '0.75rem 0' }}>
                 pick any. leave all unchecked = open to everyone.
               </p>
+              <div className={styles.btnRow}>
+                <button className={styles.btn} onClick={() => setStep((s) => s + 1)}>next →</button>
+              </div>
+            </>
+          )}
+
+          {onAge && (
+            <>
+              <div className={styles.qText}>what age range of friends are you after?</div>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0.5rem 0 0.25rem' }}>
+                <input type="number" inputMode="numeric" min={18} max={100} placeholder="18"
+                  value={ageMin} onChange={(e) => setAgeMin(e.target.value)}
+                  style={{ flex: 1, padding: '0.7rem 0.85rem', borderRadius: 10, border: '1.5px solid rgba(107,74,47,0.25)', fontFamily: 'inherit', fontSize: '1rem', background: '#fff', color: '#2a1a0f' }} />
+                <span style={{ fontFamily: 'DM Mono, monospace', color: '#6b4a2f' }}>to</span>
+                <input type="number" inputMode="numeric" min={18} max={100} placeholder="99"
+                  value={ageMax} onChange={(e) => setAgeMax(e.target.value)}
+                  style={{ flex: 1, padding: '0.7rem 0.85rem', borderRadius: 10, border: '1.5px solid rgba(107,74,47,0.25)', fontFamily: 'inherit', fontSize: '1rem', background: '#fff', color: '#2a1a0f' }} />
+              </div>
+              <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.85rem', margin: '0.75rem 0' }}>
+                leave blank for no limit. friends near your vibe, your age.
+              </p>
               {err && <div className={styles.err}>{err}</div>}
               <div className={styles.btnRow}>
                 <button className={styles.btn} disabled={busy} onClick={submit}>
@@ -112,7 +141,7 @@ export default function FriendQuizClient() {
           )}
         </div>
 
-        {!onGender && step > 0 && (
+        {!onGender && !onAge && step > 0 && (
           <button onClick={() => setStep((s) => s - 1)}
             style={{ background: 'none', border: 'none', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#d2530f', cursor: 'pointer' }}>← back</button>
         )}

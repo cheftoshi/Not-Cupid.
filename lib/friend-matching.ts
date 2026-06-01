@@ -87,9 +87,22 @@ export function friendGenderOk(a: any, b: any): boolean {
   return aWantsB && bWantsA;
 }
 
+// Symmetric age check: each person's age must fall in the other's preferred
+// range. NULL bounds = no limit on that side; missing age never blocks.
+export function friendAgeOk(a: any, b: any): boolean {
+  const inRange = (age: any, min: any, max: any) => {
+    if (typeof age !== 'number') return true;
+    if (typeof min === 'number' && age < min) return false;
+    if (typeof max === 'number' && age > max) return false;
+    return true;
+  };
+  return inRange(b.age, a.friend_age_min, a.friend_age_max)
+    && inRange(a.age, b.friend_age_min, b.friend_age_max);
+}
+
 export function rankFriendCandidates(user: any, pool: any[]): Array<{ user: any; score: number }> {
   return pool
-    .filter((p) => p.id !== user.id && friendGenderOk(user, p))
+    .filter((p) => p.id !== user.id && friendGenderOk(user, p) && friendAgeOk(user, p))
     .map((p) => ({ user: p, score: friendCompatibilityScore(user, p) }))
     .sort((x, y) => y.score - x.score);
 }
