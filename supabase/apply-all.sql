@@ -482,6 +482,13 @@ alter table if exists friend_activity_rsvps  enable row level security;
 alter table if exists friend_chat_unlocks    enable row level security;
 alter table if exists friend_match_rounds    enable row level security;
 
+-- ==================== 20260602_friend_post_kind.sql ====================
+-- post vs event distinction (was never folded into apply-all — caused a
+-- "could not find the 'kind' column" error when posting events).
+alter table friend_activities add column if not exists kind text not null default 'event'
+  check (kind in ('post', 'event'));
+create index if not exists friend_activities_kind_idx on friend_activities(kind);
+
 -- ==================== 20260607_friend_event_audience.sql ====================
 -- Event audience targeting (gender + age) + yes/maybe/no RSVPs + digest stamp.
 alter table friend_activities add column if not exists audience_gender text[];
