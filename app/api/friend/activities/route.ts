@@ -118,21 +118,25 @@ export async function POST(req: NextRequest) {
   const audMin = kind === 'event' ? clampAge(body.audience_age_min) : null;
   const audMax = kind === 'event' ? clampAge(body.audience_age_max) : null;
 
-  const { data: act, error } = await supabaseAdmin
-    .from('friend_activities')
-    .insert({
-      author_id: user.id, title, kind,
-      body: (body.body || '').toString().slice(0, 1000) || null,
-      category, area,
-      happens_at: happensAt ? happensAt.toISOString() : null,
-      expires_at: expiresAt.toISOString(),
-      audience_gender: audienceGender,
-      audience_age_min: audMin,
-      audience_age_max: audMax,
-    })
-    .select('id')
-    .single();
+  const baseRow: any = {
+    author_id: user.id, title, kind,
+    body: (body.body || '').toString().slice(0, 1000) || null,
+    category, area,
+    happens_at: happensAt ? happensAt.toISOString() : null,
+    expires_at: expiresAt.toISOString(),
+  };
+  const audienceRow = { audience_gender: audienceGender, audience_age_min: audMin, audience_age_max: audMax };
+
+  let { data: act, error } = await supabaseAdmin
+    .from('friend_activities').insert({ ...baseRow, ...audienceRow }).select('id').single();
+  // Graceful fallback: if the audience columns aren't migrated yet, still post
+  // the event (without targeting) instead of failing into the void.
+  if (error && /audience_|column|schema cache/i.test(error.message || '')) {
+    console.warn('friend_activities: audience columns missing — run 20260607 migration. Posting without targeting.');
+    ({ data: act, error } = await supabaseAdmin.from('friend_activities').insert(baseRow).select('id').single());
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!act) return NextResponse.json({ error: 'Could not create activity.' }, { status: 500 });
 
   // Author auto-RSVPs their own activity.
   await supabaseAdmin.from('friend_activity_rsvps').upsert(

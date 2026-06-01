@@ -471,7 +471,13 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
       audience_age_min: newAct.kind === 'event' && newAct.audMin ? parseInt(newAct.audMin) : undefined,
       audience_age_max: newAct.kind === 'event' && newAct.audMax ? parseInt(newAct.audMax) : undefined,
     };
-    await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert(d?.error || "Couldn't post that — try again.");
+      setBusy(false);
+      return;
+    }
     setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax }); await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
