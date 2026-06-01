@@ -117,13 +117,13 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   function focusArea(area: string) {
-    setAreaFilter(area); setTab('community');
+    setAreaFilter(area); setView('scene');
     setTimeout(() => feedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
   }
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '' });
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<'community' | 'crew'>('community');
+  const [view, setView] = useState<'map' | 'scene' | 'crew' | 'pulse'>('map');
   const [chatOpen, setChatOpen] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -191,6 +191,12 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
           .fmMain { grid-column: 1; grid-row: 1; }
         }
+        .fmMap { display: grid; grid-template-columns: 1fr; gap: 1.1rem; margin: 2rem 0 0.5rem; }
+        @media (min-width: 760px) { .fmMap { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; } }
+        .fmStop { position: relative; text-align: left; display: flex; flex-direction: column; background: #fffdf7; border: 3px solid ${INK}; border-radius: 18px; box-shadow: 5px 5px 0 ${INK}; padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: ${INK}; font: inherit; min-height: 200px; transition: transform .12s ease, box-shadow .12s ease; }
+        .fmStop:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 ${INK}; }
+        .fmStop:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 ${INK}; }
+        .fmStopDot { position: absolute; top: -11px; left: 22px; width: 18px; height: 18px; border-radius: 50%; background: ${CREAM}; border: 5px solid ${LINE}; }
       `}</style>
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
@@ -216,23 +222,43 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           hey {firstName.toLowerCase()} — next stop, your people.
         </p>
 
-        {/* SEGMENT SWITCHER — two stops on the line */}
-        <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0.5rem' }}>
-          {([['community', '🚇 the scene'], ['crew', '🎒 my crew']] as const).map(([t, label]) => (
-            <button key={t} onClick={() => setTab(t)}
-              style={{ flex: 1, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.04em', padding: '0.6rem', borderRadius: 12, border: `3px solid ${INK}`, cursor: 'pointer',
-                background: tab === t ? LINE : '#fffdf7', color: tab === t ? '#fff' : INK,
-                boxShadow: tab === t ? `4px 4px 0 ${INK}` : 'none',
-                position: 'relative' }}>
-              {label}
-              {t === 'crew' && matches.some((m) => m.theyAccepted && !m.iAccepted) && (
-                <span style={{ position: 'absolute', top: -6, right: -6, width: 14, height: 14, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />
-              )}
-            </button>
-          ))}
-        </div>
+        {view === 'map' ? (
+          /* ───── THE MAP — three stops on the line, each its own page ───── */
+          <div className="fmMap">
+            {([
+              { key: 'scene', icon: '🚇', name: 'the scene', tag: "what's the move around town", stat: `${acts.length || 0} on the board`, badge: false },
+              { key: 'crew', icon: '🎒', name: 'my crew', tag: 'your people + the group chat', stat: matches.length ? `${matches.length} matched` : 'finding your people', badge: matches.some((m) => m.theyAccepted && !m.iAccepted) },
+              { key: 'pulse', icon: '🌆', name: 'city pulse', tag: 'which neighborhoods are buzzing', stat: pulse ? `${pulse.totalMembers} on the line` : 'loading…', badge: false },
+            ] as const).map((s) => (
+              <button key={s.key} className="fmStop" onClick={() => setView(s.key)}>
+                <span className="fmStopDot" />
+                {s.badge && <span style={{ position: 'absolute', top: 14, right: 14, width: 15, height: 15, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />}
+                <div style={{ fontSize: '2.4rem', lineHeight: 1 }}>{s.icon}</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.95rem', letterSpacing: '0.03em', marginTop: '0.45rem' }}>{s.name}</div>
+                <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.9rem', margin: '0.25rem 0 0.9rem' }}>{s.tag}</div>
+                <span style={{ ...chip, marginTop: 'auto', alignSelf: 'flex-start', background: '#ffd23d' }}>{s.stat} →</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+          {/* sub-nav — hop between stops, or back to the map */}
+          <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0.5rem', flexWrap: 'wrap', alignItems: 'stretch' }}>
+            <button onClick={() => setView('map')} title="back to the map"
+              style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP, background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 12, padding: '0 0.85rem', cursor: 'pointer' }}>◉ map</button>
+            {([['scene', '🚇 scene'], ['crew', '🎒 crew'], ['pulse', '🌆 pulse']] as const).map(([t, label]) => (
+              <button key={t} onClick={() => setView(t)}
+                style={{ flex: '1 1 0', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.04em', padding: '0.5rem', borderRadius: 12, border: `3px solid ${INK}`, cursor: 'pointer', position: 'relative',
+                  background: view === t ? LINE : '#fffdf7', color: view === t ? '#fff' : INK, boxShadow: view === t ? `4px 4px 0 ${INK}` : 'none' }}>
+                {label}
+                {t === 'crew' && matches.some((m) => m.theyAccepted && !m.iAccepted) && (
+                  <span style={{ position: 'absolute', top: -6, right: -6, width: 14, height: 14, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />
+                )}
+              </button>
+            ))}
+          </div>
 
-        {tab === 'crew' && (
+        {view === 'crew' && (
         <div className="fmGrid">
           {/* RIGHT RAIL — your friend card + chat toggle */}
           <div className="fmRail">
@@ -351,11 +377,8 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         </div>
         )}
 
-        {tab === 'community' && (
-        <div className="fmGrid">
-
-        {/* SIDE RAIL — city pulse map */}
-        <div className="fmRail">
+        {view === 'pulse' && (
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
           <div style={{ ...card, padding: '1.1rem 1.25rem' }}>
             {!pulse ? <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>loading…</span> : (
@@ -363,7 +386,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
                   <span style={chip}>👥 {pulse.totalMembers}</span>
                   <span style={chip}>🫂 {pulse.activeGroups}</span>
-                  <button onClick={() => setKindFilter('event')} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities}</button>
+                  <button onClick={() => { setKindFilter('event'); setView('scene'); }} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities}</button>
                 </div>
                 <PulseBubbles areas={pulse.areas} line={LINE} ink={INK} onPick={focusArea} active={areaFilter} />
                 <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8896a', textAlign: 'center', marginTop: '0.4rem' }}>bubbles = neighborhoods · number = people here</p>
@@ -371,9 +394,10 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             )}
           </div>
         </div>
+        )}
 
-        {/* MAIN — the feed */}
-        <div className="fmMain">
+        {view === 'scene' && (
+        <div>
         <h2 style={sectionLabel}><StationDot />📣 what&apos;s the move?</h2>
         <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.7rem' }}>
@@ -452,7 +476,8 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         </div>
         ); })()}
         </div>
-        </div>
+        )}
+        </>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>
