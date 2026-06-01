@@ -82,9 +82,14 @@ export function friendCompatibilityScore(a: any, b: any): number {
 export function friendGenderOk(a: any, b: any): boolean {
   const aOpen: string[] = Array.isArray(a.friend_seeking) ? a.friend_seeking : [];
   const bOpen: string[] = Array.isArray(b.friend_seeking) ? b.friend_seeking : [];
-  const aWantsB = aOpen.length === 0 || aOpen.includes(b.gender);
-  const bWantsA = bOpen.length === 0 || bOpen.includes(a.gender);
-  return aWantsB && bWantsA;
+  // Seeking codes: m / f / nb (gender), lgbtq (non-binary or bi), all (everyone).
+  const wants = (open: string[], gender: any) => {
+    if (open.length === 0 || open.includes('all')) return true;
+    if (open.includes(gender)) return true;
+    if (open.includes('lgbtq') && (gender === 'nb' || gender === 'b')) return true;
+    return false;
+  };
+  return wants(aOpen, b.gender) && wants(bOpen, a.gender);
 }
 
 // Symmetric age check: each person's age must fall in the other's preferred

@@ -8,8 +8,9 @@ import styles from '../friends.module.css';
 const GENDERS = [
   { v: 'm', label: 'men' },
   { v: 'f', label: 'women' },
-  { v: 'nb', label: 'non-binary folks' },
-  { v: 'o', label: 'everyone else' },
+  { v: 'lgbtq', label: 'LGBTQ+' },
+  { v: 'nb', label: 'non-binary' },
+  { v: 'all', label: 'all of them' },
 ];
 
 export default function FriendQuizClient() {
@@ -38,7 +39,11 @@ export default function FriendQuizClient() {
     });
   }
   function toggleGender(v: string) {
-    setSeeking((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]));
+    setSeeking((s) => {
+      // "all of them" is exclusive with the specific options.
+      if (v === 'all') return s.includes('all') ? [] : ['all'];
+      return s.includes(v) ? s.filter((x) => x !== v) : [...s.filter((x) => x !== 'all'), v];
+    });
   }
 
   async function submit() {

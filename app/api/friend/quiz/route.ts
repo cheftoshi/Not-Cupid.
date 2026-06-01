@@ -5,7 +5,7 @@ import { normalizeFriendVibes, hasFriendVibes } from '@/lib/friend-quiz';
 
 export const dynamic = 'force-dynamic';
 
-const VALID_GENDERS = ['m', 'f', 'nb', 'o'];
+const VALID_GENDERS = ['m', 'f', 'nb', 'lgbtq', 'all'];
 
 // Save the incremental friend quiz + gender openness, and opt the user into the
 // friend pool. Requires the user to already have a HEXACO profile (they reuse it).

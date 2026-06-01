@@ -53,7 +53,10 @@ export async function GET(req: NextRequest) {
     if (a.author_id === user.id) return true;
     if ((a.kind || 'event') !== 'event') return true;
     const aud = a.audience_gender;
-    if (Array.isArray(aud) && aud.length > 0 && !aud.includes(user.gender)) return false;
+    if (Array.isArray(aud) && aud.length > 0) {
+      const inGender = aud.includes(user.gender) || (aud.includes('lgbtq') && (user.gender === 'nb' || user.gender === 'b'));
+      if (!inGender) return false;
+    }
     if (a.audience_age_min != null && (user.age == null || user.age < a.audience_age_min)) return false;
     if (a.audience_age_max != null && (user.age == null || user.age > a.audience_age_max)) return false;
     return true;
@@ -105,7 +108,7 @@ export async function POST(req: NextRequest) {
 
   // Audience targeting (events only). Gender = subset of m/f/nb (empty/null =
   // everyone). Age bounds clamped to 18–120. Posts ignore all this.
-  const GENDERS = ['m', 'f', 'nb'];
+  const GENDERS = ['m', 'f', 'nb', 'lgbtq'];
   let audienceGender: string[] | null = null;
   if (kind === 'event' && Array.isArray(body.audience_gender)) {
     const g = body.audience_gender.filter((x: any) => GENDERS.includes(x));

@@ -261,7 +261,7 @@ function Countdown({ to }: { to: string }) {
 function audienceLabel(a: any): string | null {
   const g = a.audienceGender;
   const gLabel = Array.isArray(g) && g.length
-    ? g.map((x: string) => (x === 'm' ? 'men' : x === 'f' ? 'women' : 'non-binary')).join(' + ')
+    ? g.map((x: string) => (x === 'm' ? 'men' : x === 'f' ? 'women' : x === 'lgbtq' ? 'LGBTQ+' : 'non-binary')).join(' + ')
     : null;
   const min = a.audienceAgeMin, max = a.audienceAgeMax;
   let ageLabel = '';
@@ -353,7 +353,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   // An event defaults to the audience the poster set on the Friend Line quiz
   // (who they want to meet + their age range). 'o' = everyone → no gender limit.
   const prefAud = {
-    audGenders: (me?.friendSeeking || []).includes('o') ? [] : (me?.friendSeeking || []).filter((g) => ['m', 'f', 'nb'].includes(g)),
+    audGenders: (me?.friendSeeking || []).includes('all') ? [] : (me?.friendSeeking || []).filter((g) => ['m', 'f', 'nb', 'lgbtq'].includes(g)),
     audMin: me?.friendAgeMin != null ? String(me.friendAgeMin) : '',
     audMax: me?.friendAgeMax != null ? String(me.friendAgeMax) : '',
   };
@@ -877,7 +877,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             <div style={{ marginTop: '0.7rem', borderTop: `2px dashed rgba(36,29,18,0.18)`, paddingTop: '0.7rem' }}>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>who&apos;s it open to?</div>
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {([['m', 'men'], ['f', 'women'], ['nb', 'non-binary']] as const).map(([v, label]) => {
+                {([['m', 'men'], ['f', 'women'], ['lgbtq', 'LGBTQ+'], ['nb', 'non-binary']] as const).map(([v, label]) => {
                   const on = newAct.audGenders.includes(v);
                   return (
                     <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: on ? s.audGenders.filter((x) => x !== v) : [...s.audGenders, v] }))}
