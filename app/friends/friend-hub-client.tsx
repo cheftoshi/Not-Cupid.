@@ -2,13 +2,20 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
-const INK = '#1a1410';
+// ── Friend Line theme (warm MBTA transit) ──
+const INK = '#241d12';           // warm near-black (signage)
+const LINE = '#e8842b';          // the Friend Line — warm orange
+const LINE_DEEP = '#c96a18';     // deeper orange for shadows/hover
+const CREAM = '#f7f1e3';         // warm station-tile cream
 const CATS = ['food', 'drinks', 'active', 'outdoors', 'culture', 'nightlife', 'games', 'chill', 'hang'];
 
-const card: React.CSSProperties = { background: '#fff', border: `3px solid ${INK}`, borderRadius: 20, boxShadow: '5px 5px 0 rgba(26,20,16,0.85)' };
-const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', background: '#ffe6c7', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.2rem 0.55rem' };
-const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', letterSpacing: '0.04em', margin: '2rem 0 0.9rem', display: 'flex', gap: '0.5rem', alignItems: 'center' };
-const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: 'linear-gradient(135deg,#ff7a1f,#ff3d77)', border: `3px solid ${INK}`, borderRadius: 14, padding: '0.55rem 1.4rem', boxShadow: `4px 4px 0 ${INK}`, cursor: 'pointer' };
+const card: React.CSSProperties = { background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}` };
+const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', background: '#fbe6cf', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.2rem 0.55rem' };
+// Section headers look like station stops: a Friend-Line dot on the route.
+const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', letterSpacing: '0.04em', margin: '2rem 0 0.9rem', display: 'flex', gap: '0.55rem', alignItems: 'center' };
+const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: `3px solid ${INK}`, borderRadius: 12, padding: '0.55rem 1.4rem', boxShadow: `4px 4px 0 ${INK}`, cursor: 'pointer' };
+// A station dot to prefix section labels (the route runs through the page).
+const StationDot = () => <span style={{ width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}`, flexShrink: 0, display: 'inline-block' }} />;
 
 export default function FriendHubClient({ firstName, accessTier, daysLeft }: { firstName: string; accessTier: 'pro' | 'trial' | 'expired'; daysLeft: number }) {
   const isPro = accessTier === 'pro';
@@ -81,28 +88,42 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 12% 18%,rgba(255,180,90,0.3),transparent 30%),radial-gradient(circle at 88% 8%,rgba(255,120,160,0.25),transparent 28%),linear-gradient(160deg,#fff3df,#ffe6c7 55%,#ffd9e0)', color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, #f3e7cf 60%, #f7ddc0 100%)`, color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
+        {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.12em', color: '#d2530f' }}>FRIEND<span style={{ color: INK }}>MAXXIN</span></div>
-          <a href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'none' }}>← hub</a>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}` }}>FRIEND LINE</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>notcupid · greater boston</span>
+          </div>
+          <a href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>← transfer to hub</a>
         </div>
 
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.5rem)', lineHeight: 0.9, color: '#ff7a1f', WebkitTextStroke: `2px ${INK}`, textShadow: `4px 4px 0 rgba(26,20,16,0.18)`, margin: 0 }}>
-          hey {firstName.toLowerCase()}, <span style={{ color: '#ff3d77', WebkitTextStroke: `2px ${INK}` }}>this is your scene.</span>
-        </h1>
+        {/* the route line under the header */}
+        <div style={{ height: 6, background: LINE, borderRadius: 999, margin: '0 0 1.5rem', position: 'relative' }}>
+          <span style={{ position: 'absolute', left: '8%', top: -5, width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}` }} />
+          <span style={{ position: 'absolute', left: '50%', top: -5, width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}` }} />
+          <span style={{ position: 'absolute', left: '88%', top: -5, width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}` }} />
+        </div>
 
-        {/* SEGMENT SWITCHER */}
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.6rem,9vw,4rem)', lineHeight: 0.88, color: LINE, WebkitTextStroke: `2px ${INK}`, textShadow: `4px 4px 0 rgba(36,29,18,0.18)`, margin: 0 }}>
+          find your <span style={{ color: '#3f7d57', WebkitTextStroke: `2px ${INK}` }}>next friend.</span>
+        </h1>
+        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.5rem 0 0' }}>
+          hey {firstName.toLowerCase()} — next stop, your people.
+        </p>
+
+        {/* SEGMENT SWITCHER — two stops on the line */}
         <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0.5rem' }}>
-          {([['community', '🌆 the scene'], ['crew', '🎒 my crew']] as const).map(([t, label]) => (
+          {([['community', '🚇 the scene'], ['crew', '🎒 my crew']] as const).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
-              style={{ flex: 1, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.04em', padding: '0.6rem', borderRadius: 14, border: `3px solid ${INK}`, cursor: 'pointer',
-                background: tab === t ? 'linear-gradient(135deg,#ff7a1f,#ff3d77)' : '#fff', color: tab === t ? '#fff' : INK,
+              style={{ flex: 1, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.04em', padding: '0.6rem', borderRadius: 12, border: `3px solid ${INK}`, cursor: 'pointer',
+                background: tab === t ? LINE : '#fffdf7', color: tab === t ? '#fff' : INK,
                 boxShadow: tab === t ? `4px 4px 0 ${INK}` : 'none',
                 position: 'relative' }}>
               {label}
               {t === 'crew' && matches.some((m) => m.theyAccepted && !m.iAccepted) && (
-                <span style={{ position: 'absolute', top: -6, right: -6, width: 14, height: 14, borderRadius: '50%', background: '#ff3d77', border: `2px solid ${INK}` }} />
+                <span style={{ position: 'absolute', top: -6, right: -6, width: 14, height: 14, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />
               )}
             </button>
           ))}
@@ -123,7 +144,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         )}
 
         {/* CREW */}
-        <h2 style={sectionLabel}>🎒 your crew</h2>
+        <h2 style={sectionLabel}><StationDot />🎒 your crew</h2>
         {matches.length === 0 ? (
           <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>the algo is still finding your people — check back soon.</div>
         ) : (
@@ -148,7 +169,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         {/* GROUP CHAT — locked until $0.99 crew unlock or Pro */}
         {chat.circleId && chat.locked && (
           <>
-            <h2 style={sectionLabel}>💬 the group chat</h2>
+            <h2 style={sectionLabel}><StationDot />💬 the group chat</h2>
             <div style={{ ...card, padding: '1.75rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2rem' }}>🔒</div>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>unlock the chat with your crew</div>
@@ -163,7 +184,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         )}
         {chat.circleId && !chat.locked && (
           <>
-            <h2 style={sectionLabel}>💬 the group chat</h2>
+            <h2 style={sectionLabel}><StationDot />💬 the group chat</h2>
             <div style={{ ...card, overflow: 'hidden' }}>
               <div style={{ background: 'linear-gradient(135deg,#ff7a1f,#ff3d77)', color: '#fff', padding: '0.8rem 1.1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', borderBottom: `3px solid ${INK}` }}>your crew · {chat.members.length} people</div>
               <div style={{ padding: '1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', maxHeight: 360, overflowY: 'auto' }}>
@@ -191,7 +212,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
 
         {tab === 'community' && (<>
         {/* CITY PULSE */}
-        <h2 style={sectionLabel}>🌆 city pulse</h2>
+        <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
         <div style={{ ...card, padding: '1.1rem 1.25rem' }}>
           {!pulse ? <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>loading…</span> : (
             <>
@@ -219,7 +240,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         </div>
 
         {/* THE FEED — post (talk) or event (RSVP) */}
-        <h2 style={sectionLabel}>📣 what&apos;s the move?</h2>
+        <h2 style={sectionLabel}><StationDot />📣 what&apos;s the move?</h2>
         <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.7rem' }}>
             {([['post', '💬 just saying'], ['event', '📅 plan a thing']] as const).map(([k, label]) => (
