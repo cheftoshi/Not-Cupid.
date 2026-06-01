@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
     const author: any = aById.get(a.author_id) || {};
     return {
       id: a.id, title: a.title, body: a.body, category: a.category, area: a.area,
+      kind: a.kind || 'event',
       happens_at: a.happens_at, created_at: a.created_at,
       authorName: author.name, authorPhoto: author.photo_url,
       isMine: a.author_id === user.id,
@@ -68,17 +69,21 @@ export async function POST(req: NextRequest) {
   const title = (body.title || '').toString().trim();
   if (!title) return NextResponse.json({ error: 'Give it a title.' }, { status: 400 });
   if (title.length > 140) return NextResponse.json({ error: 'Title too long (140 max).' }, { status: 400 });
+  const kind = body.kind === 'post' ? 'post' : 'event';
   const category = CATEGORIES.includes(body.category) ? body.category : 'hang';
-  const happensAt = body.happens_at ? new Date(body.happens_at) : null;
+  // Posts have no time; events can. Posts live 7d, events until 12h after they happen (or 14d).
+  const happensAt = kind === 'event' && body.happens_at ? new Date(body.happens_at) : null;
   const area = (body.area || '').toString().trim() || neighborhoodOf(user.zip);
-  const expiresAt = happensAt
-    ? new Date(happensAt.getTime() + 12 * 60 * 60 * 1000)
-    : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const expiresAt = kind === 'post'
+    ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    : happensAt
+      ? new Date(happensAt.getTime() + 12 * 60 * 60 * 1000)
+      : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
   const { data: act, error } = await supabaseAdmin
     .from('friend_activities')
     .insert({
-      author_id: user.id, title,
+      author_id: user.id, title, kind,
       body: (body.body || '').toString().slice(0, 1000) || null,
       category, area,
       happens_at: happensAt ? happensAt.toISOString() : null,

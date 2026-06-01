@@ -34,7 +34,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
   const [acts, setActs] = useState<any[]>([]);
   const [filterCat, setFilterCat] = useState<string>('');
   const [msg, setMsg] = useState('');
-  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string }>({ title: '', category: 'hang', happens_at: '' });
+  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event' }>({ title: '', category: 'hang', happens_at: '', kind: 'post' });
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'community' | 'crew'>('community');
 
@@ -73,7 +73,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
   async function createAct() {
     if (!newAct.title.trim()) return; setBusy(true);
     await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAct) });
-    setNewAct({ title: '', category: 'hang', happens_at: '' }); await loadActs(); await loadPulse(); setBusy(false);
+    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind }); await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string) {
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, { method: 'POST' });
@@ -218,18 +218,26 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
           )}
         </div>
 
-        {/* ACTIVITY BOARD */}
+        {/* THE FEED — post (talk) or event (RSVP) */}
         <h2 style={sectionLabel}>📣 what&apos;s the move?</h2>
         <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.7rem' }}>
+            {([['post', '💬 just saying'], ['event', '📅 plan a thing']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => setNewAct({ ...newAct, kind: k })}
+                style={{ ...chip, cursor: 'pointer', fontSize: '0.62rem', padding: '0.3rem 0.7rem', background: newAct.kind === k ? '#ffd23d' : '#fff' }}>{label}</button>
+            ))}
+          </div>
           <input value={newAct.title} onChange={(e) => setNewAct({ ...newAct, title: e.target.value })}
-            placeholder="wanna…? (e.g. catch the new A24 movie fri night)"
+            placeholder={newAct.kind === 'post' ? "what's on your mind? (e.g. anyone know a good thai spot in camberville?)" : "wanna…? (e.g. catch the new A24 movie fri night)"}
             style={{ width: '100%', border: `2.5px solid ${INK}`, borderRadius: 12, padding: '0.6rem 0.8rem', fontSize: '0.95rem', marginBottom: '0.6rem' }} />
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <select value={newAct.category} onChange={(e) => setNewAct({ ...newAct, category: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }}>
               {CATS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }} />
-            <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto' }}>post it →</button>
+            {newAct.kind === 'event' && (
+              <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }} />
+            )}
+            <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto' }}>{newAct.kind === 'post' ? 'post →' : 'plan it →'}</button>
           </div>
         </div>
 
@@ -252,9 +260,15 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
                   <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', color: '#6b4a2f', alignSelf: 'center' }}>by {a.authorName?.split(' ')[0] || '—'}</span>
                 </div>
               </div>
-              <button onClick={() => rsvp(a.id)} style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 0.9rem', background: a.iRsvped ? '#ffd23d' : 'linear-gradient(135deg,#ff7a1f,#ff3d77)', color: a.iRsvped ? INK : '#fff' }}>
-                {a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`}
-              </button>
+              {a.kind === 'post' ? (
+                <button onClick={() => rsvp(a.id)} style={{ ...chip, cursor: 'pointer', fontSize: '0.8rem', padding: '0.35rem 0.7rem', background: a.iRsvped ? '#ffd23d' : '#fff', alignSelf: 'center' }}>
+                  👍 {a.rsvpCount || ''}
+                </button>
+              ) : (
+                <button onClick={() => rsvp(a.id)} style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 0.9rem', background: a.iRsvped ? '#ffd23d' : 'linear-gradient(135deg,#ff7a1f,#ff3d77)', color: a.iRsvped ? INK : '#fff' }}>
+                  {a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`}
+                </button>
+              )}
             </div>
           ))}
         </div>
