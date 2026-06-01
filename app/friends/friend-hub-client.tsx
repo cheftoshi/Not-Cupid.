@@ -45,9 +45,9 @@ function TransitBackdrop() {
       {SPOTS.map(([name, left, top], i) => (
         <span key={name} style={{
           position: 'absolute', left, top,
-          fontFamily: "'Bebas Neue', sans-serif", fontSize: i % 3 === 0 ? '1.5rem' : '1.05rem',
-          letterSpacing: '0.06em', color: INK, opacity: 0.06,
-          transform: `rotate(${i % 2 ? -4 : 3}deg)`, whiteSpace: 'nowrap',
+          fontFamily: "'Bebas Neue', sans-serif", fontSize: i % 3 === 0 ? '2rem' : '1.4rem',
+          letterSpacing: '0.05em', color: i % 2 ? LINE_DEEP : '#3f7d57', opacity: 0.18,
+          transform: `rotate(${i % 2 ? -5 : 4}deg)`, whiteSpace: 'nowrap',
         }}>◉ {name}</span>
       ))}
     </div>
@@ -76,6 +76,7 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
   const [pulse, setPulse] = useState<any>(null);
   const [acts, setActs] = useState<any[]>([]);
   const [filterCat, setFilterCat] = useState<string>('');
+  const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event' }>({ title: '', category: 'hang', happens_at: '', kind: 'post' });
   const [busy, setBusy] = useState(false);
@@ -172,6 +173,12 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
         </div>
 
         {tab === 'crew' && (<>
+        {/* Make your profile worth matching with */}
+        <a href="/profile" style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.9rem 1.1rem', margin: '1.25rem 0', textDecoration: 'none', color: INK, background: '#fffdf7' }}>
+          <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>📸 add your photos &amp; interests so crews know it&apos;s you.</span>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>set up profile →</span>
+        </a>
+
         {pendingToJoin && (
           <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew.</div>
@@ -261,7 +268,7 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
                 <span style={chip}>👥 {pulse.totalMembers} in the network</span>
                 <span style={chip}>🫂 {pulse.activeGroups} active groups</span>
-                <span style={chip}>📣 {pulse.liveActivities} things to do</span>
+                <button onClick={() => { setTab('community'); setKindFilter('event'); }} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities} things to do</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {pulse.areas.slice(0, 10).map((a: any) => {
@@ -304,14 +311,22 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
           </div>
         </div>
 
+        {/* post / event filter */}
+        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
+          {([['all', 'everything'], ['event', '📅 things to do'], ['post', '💬 just talk']] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setKindFilter(k)} style={{ ...chip, cursor: 'pointer', fontSize: '0.62rem', padding: '0.3rem 0.7rem', background: kindFilter === k ? '#ffd23d' : '#fff' }}>{label}</button>
+          ))}
+        </div>
+
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
           <button onClick={() => setFilterCat('')} style={{ ...chip, cursor: 'pointer', background: filterCat === '' ? '#ffd23d' : '#fff' }}>all</button>
           {CATS.map((c) => <button key={c} onClick={() => setFilterCat(c)} style={{ ...chip, cursor: 'pointer', background: filterCat === c ? '#ffd23d' : '#fff' }}>{c}</button>)}
         </div>
 
+        {(() => { const shown = acts.filter((a) => kindFilter === 'all' || (a.kind || 'event') === kindFilter); return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-          {acts.length === 0 && <div style={{ ...card, padding: '1rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>nothing posted yet — be the one to start something.</div>}
-          {acts.map((a) => (
+          {shown.length === 0 && <div style={{ ...card, padding: '1rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>{kindFilter === 'event' ? 'no hangs planned yet — post one!' : 'nothing here yet — be the one to start something.'}</div>}
+          {shown.map((a) => (
             <div key={a.id} style={{ ...card, padding: '0.9rem 1.1rem', display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
               {a.authorPhoto ? <img src={a.authorPhoto} alt="" style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7', flexShrink: 0 }} />}
               <div style={{ flex: 1 }}>
@@ -338,6 +353,7 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
             </div>
           ))}
         </div>
+        ); })()}
         </>)}
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>

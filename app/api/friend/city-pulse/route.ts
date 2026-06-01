@@ -17,7 +17,7 @@ export async function GET() {
     .from('users').select('zip').not('friend_opted_in_at', 'is', null).is('deleted_at', null);
 
   const { data: acts } = await supabaseAdmin
-    .from('friend_activities').select('area').or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+    .from('friend_activities').select('area, kind').or(`expires_at.is.null,expires_at.gt.${nowIso}`);
 
   const { data: activeMembers } = await supabaseAdmin
     .from('friend_circle_members').select('circle_id').is('left_at', null);
@@ -36,7 +36,8 @@ export async function GET() {
   return NextResponse.json({
     totalMembers: members?.length ?? 0,
     activeGroups,
-    liveActivities: acts?.length ?? 0,
+    // "things to do" = events/hangs only (posts aren't plans).
+    liveActivities: (acts ?? []).filter((a: any) => (a.kind || 'event') !== 'post').length,
     areas,
   });
 }
