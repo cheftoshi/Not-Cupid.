@@ -13,6 +13,11 @@ Another session built a LOT (50+ commits) that this memory predated. Confirmed c
 - **Test accounts**: `users.is_test` — realm-segregated (real users never see test crew/matches & vice versa); seedable testable world + magic dev-login, admin-gated.
 - Other: web-traffic tracker (`/api/track` + admin card), conversion funnel tracker (signup→quiz→vibes→match→mutual→chat→date), Friend Line launch email blast (admin-triggered).
 - **Registration bug FIXED (6/4):** `/api/submit` now calls `createSession` — new users were never logged in (verify-otp returns redirect:'/quiz' w/o session for not-yet-existing users), so they bounced off /dashboard. HEAD `fe79e27`.
+- **Shipped 6/4 (HEAD `aff9755`), no migration needed:**
+  1. **Reset match radius** — `/api/profile/reset-radius` snaps `match_radius` back to 15mi default; "reset to 15 mi" link under the widen button in `expand-radius-button.tsx` (shows when radius>15). Counterpart to expand-radius.
+  2. **Ghost lockout on BOTH lines** — a ghosted/paused user (`matching_disabled_at` set at 3 ghost reports via `matches/[id]/end`, OR active `matching_cooldown_until`) is now blocked as a CALLER on love roster+pick AND on the friend matcher (`lib/friend-assign.ts` skips ghosted callers + excludes ghosted candidates). Both routes return `ghosted:true`; dashboards show a "matching paused → start fresh" card. **Profile refresh now clears `matching_disabled_at`/`matching_cooldown_until`/`ghost_reports_received`** so a refresh truly starts over (the only user-facing way back besides admin lift / 7-day cooldown expiry).
+  3. **Non-binary gender** — added `<option value="nb">` to the "i am a" quiz picker (code `'nb'` already used by friend quiz + `profile-dashboard` genderLabel). `isGenderMatch` handles it: nb users are matched by seekers of 'b'/everyone. Submit doesn't whitelist gender.
+- **Earlier 6/4 builds (HEAD `e1554e9`), STILL NEED MIGRATIONS RUN:** admin feedback reply→email (`20260604_feedback_reply.sql`), friend age pref (`20260604_friend_age_pref.sql`), profile refresh 3x/email (`20260604_profile_refresh.sql`). Folded into apply-all.sql. **Features error until these 3 run in Supabase SQL editor.**
 
 ## Stack & deploy
 - Next.js 14 (App Router) + Supabase (Postgres) + Vercel (**Pro** plan) + Resend (email).
