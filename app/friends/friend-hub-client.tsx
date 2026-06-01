@@ -10,18 +10,17 @@ const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize
 const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', letterSpacing: '0.04em', margin: '2rem 0 0.9rem', display: 'flex', gap: '0.5rem', alignItems: 'center' };
 const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: 'linear-gradient(135deg,#ff7a1f,#ff3d77)', border: `3px solid ${INK}`, borderRadius: 14, padding: '0.55rem 1.4rem', boxShadow: `4px 4px 0 ${INK}`, cursor: 'pointer' };
 
-export default function FriendHubClient({ firstName, accessTier, daysLeft }: { firstName: string; accessTier: 'full' | 'trial' | 'expired'; daysLeft: number }) {
-  const isFounding = accessTier === 'full';
-  const isExpired = accessTier === 'expired';
-  const [foundingBusy, setFoundingBusy] = useState(false);
-  async function goFounding() {
-    setFoundingBusy(true);
+export default function FriendHubClient({ firstName, accessTier, daysLeft }: { firstName: string; accessTier: 'pro' | 'trial' | 'expired'; daysLeft: number }) {
+  const isPro = accessTier === 'pro';
+  const [payBusy, setPayBusy] = useState<'' | 'crew' | 'pro'>('');
+  async function pay(tier: 'crew' | 'pro') {
+    setPayBusy(tier);
     try {
-      const r = await fetch('/api/friend/checkout', { method: 'POST' });
+      const r = await fetch('/api/friend/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier }) });
       const d = await r.json();
       if (d.url) { window.location.href = d.url; return; }
-      alert(d.error || 'Could not start checkout'); setFoundingBusy(false);
-    } catch { setFoundingBusy(false); }
+      alert(d.error || 'Could not start checkout'); setPayBusy('');
+    } catch { setPayBusy(''); }
   }
   async function sendFeedback() {
     const fb = window.prompt('what would make friend maxxin better? (bugs, ideas, anything)');
@@ -110,20 +109,15 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         </div>
 
         {tab === 'crew' && (<>
-        {!isFounding && (
-          <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', background: isExpired ? '#fff0f2' : '#fffaf0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', flex: 1, minWidth: 220 }}>
-              {isExpired
-                ? 'your 7-day free look is up — go founding to get back to your crew + the chat.'
-                : <><b>{daysLeft} day{daysLeft === 1 ? '' : 's'}</b> of free access left. founding members unlock the group chat (and keep everything) — one time, $2.99.</>}
-            </div>
-            <button style={poppyBtn} onClick={goFounding} disabled={foundingBusy}>{foundingBusy ? '…' : '✦ go founding · $2.99'}</button>
+        {isPro && (
+          <div style={{ ...card, padding: '0.7rem 1.1rem', margin: '1.25rem 0', background: '#fffaf0', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a4a12' }}>
+            ✦ you&apos;re pro — every crew chat&apos;s unlocked.
           </div>
         )}
 
         {pendingToJoin && (
           <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew{isFounding ? ' + open the group chat' : ''}.</div>
+            <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew.</div>
             <button style={poppyBtn} onClick={join} disabled={busy}>{busy ? '…' : "I'M IN →"}</button>
           </div>
         )}
@@ -151,19 +145,23 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
           </div>
         )}
 
-        {/* GROUP CHAT (founding-only) */}
-        {chat.circleId && !isFounding && (
+        {/* GROUP CHAT — locked until $0.99 crew unlock or Pro */}
+        {chat.circleId && chat.locked && (
           <>
             <h2 style={sectionLabel}>💬 the group chat</h2>
             <div style={{ ...card, padding: '1.75rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2rem' }}>🔒</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>the chat is founding-only</div>
-              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', margin: '0 0 1rem' }}>your crew&apos;s here — unlock the group chat to actually talk. one-time $2.99, founding member forever.</p>
-              <button style={poppyBtn} onClick={goFounding} disabled={foundingBusy}>{foundingBusy ? '…' : '✦ unlock the chat · $2.99'}</button>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>unlock the chat with your crew</div>
+              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', margin: '0 0 1.25rem' }}>your {chat.members.length}-person crew is ready — open the chat to make plans.</p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button style={poppyBtn} onClick={() => pay('crew')} disabled={!!payBusy}>{payBusy === 'crew' ? '…' : 'unlock this crew · $0.99'}</button>
+                <button style={{ ...poppyBtn, background: '#1a1410' }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : '✦ go pro — all chats · $2.99/mo'}</button>
+              </div>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a8896a', marginTop: '0.85rem' }}>pro = every crew, cancel anytime</p>
             </div>
           </>
         )}
-        {chat.circleId && isFounding && (
+        {chat.circleId && !chat.locked && (
           <>
             <h2 style={sectionLabel}>💬 the group chat</h2>
             <div style={{ ...card, overflow: 'hidden' }}>

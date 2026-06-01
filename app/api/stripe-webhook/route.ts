@@ -61,14 +61,28 @@ export async function POST(req: NextRequest) {
       }
       // ============== End match unlock ==============
 
-      // ============== Friend Maxxin founding membership ($2.99) ==============
-      if (session.metadata?.type === 'friend_founding' && session.metadata?.user_id) {
-        const { error } = await supabaseAdmin
-          .from('users')
-          .update({ friend_paid_at: new Date().toISOString() })
-          .eq('id', session.metadata.user_id)
-        if (error) console.error('Friend founding update error:', error)
-        else console.log('Friend founding member recorded')
+      // ============== Friend Maxxin — per-crew $0.99 chat unlock ==============
+      if (session.metadata?.type === 'friend_crew_unlock' && session.metadata?.user_id && session.metadata?.circle_id) {
+        const { error } = await supabaseAdmin.from('friend_chat_unlocks').upsert(
+          { user_id: session.metadata.user_id, circle_id: session.metadata.circle_id, stripe_payment_id: session.payment_intent },
+          { onConflict: 'user_id,circle_id' }
+        )
+        if (error) console.error('Friend crew unlock error:', error)
+        else console.log('Friend crew unlock recorded')
+        return NextResponse.json({ received: true })
+      }
+
+      // ============== Friend Maxxin — Pro subscription started ==============
+      if (session.metadata?.type === 'friend_pro' && session.metadata?.user_id) {
+        // Grant a month immediately; renewals extend it via invoice.payment_succeeded.
+        const until = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
+        const { error } = await supabaseAdmin.from('users').update({
+          friend_pro_until: until,
+          stripe_customer_id: session.customer || null,
+          friend_sub_id: session.subscription || null,
+        }).eq('id', session.metadata.user_id)
+        if (error) console.error('Friend pro start error:', error)
+        else console.log('Friend Pro subscription started')
         return NextResponse.json({ received: true })
       }
 
@@ -161,6 +175,28 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    }
+
+    // ============== Friend Pro — monthly renewal extends access ==============
+    if (event.type === 'invoice.payment_succeeded') {
+      const inv = event.data.object
+      const subId = inv.subscription
+      if (subId) {
+        // period end is on the invoice line; fall back to +31d.
+        const periodEnd = inv.lines?.data?.[0]?.period?.end
+        const until = periodEnd ? new Date(periodEnd * 1000).toISOString() : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
+        await supabaseAdmin.from('users').update({ friend_pro_until: until }).eq('friend_sub_id', subId)
+        console.log('Friend Pro renewed to', until)
+      }
+    }
+
+    // ============== Friend Pro — canceled: let access lapse at period end ==============
+    if (event.type === 'customer.subscription.deleted') {
+      const sub = event.data.object
+      // Keep friend_pro_until as-is (they keep access until the paid period ends),
+      // but clear the sub id so renewals stop matching.
+      await supabaseAdmin.from('users').update({ friend_sub_id: null }).eq('friend_sub_id', sub.id)
+      console.log('Friend Pro subscription canceled:', sub.id)
     }
 
     return NextResponse.json({ received: true })
