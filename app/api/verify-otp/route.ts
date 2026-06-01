@@ -96,7 +96,10 @@ export async function POST(req: NextRequest) {
       .maybeSingle()
 
     if (!user) {
-      // Return 200, not 404 — this is a successful verification, just no profile yet
+      // Brand-new user (no row yet). They take the core personality quiz first
+      // — it powers BOTH lines (the Friend Line reuses these HEXACO scores).
+      // /api/submit creates their row + session, then routes them to /hub (the
+      // line chooser) to board Love and/or Friend. Returning 200 (not 404).
       return NextResponse.json({
         success: true,
         needsQuiz: true,

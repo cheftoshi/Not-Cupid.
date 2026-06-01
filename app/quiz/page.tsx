@@ -217,9 +217,10 @@ if (res.status === 409) {
 }
       if (data.userId) {
         userIdRef.current = data.userId
-        // Session is created server-side in /api/submit, so the dashboard
-        // sees them as logged in. No more ?id= (that old param did nothing).
-        window.location.href = '/dashboard'
+        // Session is created server-side in /api/submit, so the user is logged
+        // in. Land them on /hub (the line chooser) so they board Love and/or
+        // Friend — the core quiz they just finished powers both lines.
+        window.location.href = '/hub'
       }
     } catch (err) {
       console.error('Failed to submit:', err)
