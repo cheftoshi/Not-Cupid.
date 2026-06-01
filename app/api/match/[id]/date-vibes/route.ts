@@ -131,10 +131,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .map((id) => byId.get(id))
     .filter((a): a is Activity => !!a);
 
+  // The things I've said yes to that aren't mutual yet — so the multiple-choice
+  // picker can show them as "selected, waiting on them".
+  const myPicks = (swipes ?? [])
+    .filter((s: any) => s.user_id === user.id && s.decision === 'yes' && !mutualIds.has(s.activity_id))
+    .map((s: any) => byId.get(s.activity_id))
+    .filter((a): a is Activity => !!a);
+
   return NextResponse.json({
     myInterests,
     partnerInterests,
     deck,
+    myPicks,
     mutualMatches,
     dateNumber,
     counts: {

@@ -19,7 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const body = await req.json().catch(() => ({}));
   const activityId = typeof body?.activityId === 'string' ? body.activityId : null;
   const decision = body?.decision;
-  if (!activityId || (decision !== 'yes' && decision !== 'no')) {
+  // 'clear' un-picks (deletes the swipe) so the multiple-choice picker can toggle.
+  if (!activityId || (decision !== 'yes' && decision !== 'no' && decision !== 'clear')) {
     return NextResponse.json({ error: 'activityId + decision required' }, { status: 400 });
   }
 
@@ -37,6 +38,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Date vibes locked' }, { status: 400 });
   }
   const partnerId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
+
+  // Un-pick: delete the swipe so the option returns to the pool.
+  if (decision === 'clear') {
+    await supabaseAdmin
+      .from('activity_swipes')
+      .delete()
+      .eq('match_id', params.id)
+      .eq('user_id', user.id)
+      .eq('activity_id', activityId);
+    return NextResponse.json({ ok: true, mutual: false });
+  }
 
   // Record/update the swipe (idempotent via upsert).
   const { error: swipeErr } = await supabaseAdmin
