@@ -20,18 +20,19 @@ const StationDot = () => <span style={{ width: 16, height: 16, borderRadius: '50
 // Faint transit map behind everything: T-line colors criss-crossing + iconic
 // Boston station/spot names as ghost labels. Decorative, pointer-events:none.
 const T_RED = '#da291c', T_BLUE = '#003da5', T_GREEN = '#00843d', T_ORANGE = '#ed8b00';
+// Funky Boston phrases/places as ghost accents (not literal T stops).
 const SPOTS: Array<[string, string, string]> = [
-  ['Park Street', '7%', '14%'], ['Harvard Sq', '62%', '9%'], ['Kendall/MIT', '30%', '20%'],
-  ['Davis', '80%', '24%'], ['South Station', '12%', '40%'], ['Back Bay', '70%', '38%'],
-  ['Fenway', '40%', '52%'], ['Coolidge Corner', '85%', '58%'], ['JFK/UMass', '8%', '66%'],
-  ['Government Ctr', '55%', '72%'], ['Maverick', '78%', '80%'], ['Ashmont', '20%', '86%'],
-  ['Alewife', '46%', '90%'], ['North Station', '88%', '12%'],
+  ['wicked pissah', '6%', '13%'], ['the Citgo sign', '60%', '8%'], ['Dunkies run', '30%', '19%'],
+  ['the Common', '80%', '25%'], ['Sully’s on Castle Is.', '10%', '39%'], ['Newbury St', '70%', '37%'],
+  ['the Esplanade', '40%', '51%'], ['Tasty Burger', '85%', '57%'], ['the Gahden', '8%', '66%'],
+  ['cannoli @ Mike’s', '54%', '72%'], ['Wally’s jazz', '78%', '80%'], ['Spectacle Island', '20%', '86%'],
+  ['Davis porchfest', '46%', '90%'], ['Charles river', '88%', '12%'],
 ];
 function TransitBackdrop() {
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      <svg viewBox="0 0 1000 1400" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.13 }}>
-        <g fill="none" strokeWidth="9" strokeLinecap="round">
+      <svg viewBox="0 0 1000 1400" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.22 }}>
+        <g fill="none" strokeWidth="13" strokeLinecap="round">
           <path d="M-40 180 L260 180 L420 340 L420 1100 L600 1280 L1100 1280" stroke={T_RED} />
           <path d="M-40 420 L380 420 L520 560 L1100 560" stroke={T_BLUE} />
           <path d="M120 -40 L120 520 L320 720 L320 1450" stroke={T_GREEN} />
@@ -121,6 +122,11 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
   async function rsvp(id: string) {
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, { method: 'POST' });
     if (r.ok) { const d = await r.json(); setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count } : x)); }
+  }
+  async function deleteAct(id: string) {
+    if (!confirm('Delete this post?')) return;
+    const r = await fetch(`/api/friend/activities/${id}`, { method: 'DELETE' });
+    if (r.ok) setActs((a) => a.filter((x) => x.id !== id));
   }
 
   return (
@@ -317,6 +323,9 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
                   {a.area && <span style={chip}>📍 {a.area}</span>}
                   {a.happens_at && <span style={chip}>🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' })}</span>}
                   <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', color: '#6b4a2f', alignSelf: 'center' }}>by {a.authorName?.split(' ')[0] || '—'}</span>
+                  {a.isMine && (
+                    <button onClick={() => deleteAct(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', alignSelf: 'center' }}>delete</button>
+                  )}
                 </div>
               </div>
               {a.kind === 'post' ? (
