@@ -88,14 +88,10 @@ export default function HubClient({
             <div><span className={styles.specK}>pool</span><span className={styles.specV}>group chat</span></div>
             <div><span className={styles.specK}>style</span><span className={styles.specV}>activity-led</span></div>
           </div>
-          {joined ? (
-            <div className={styles.cardCtaJoined}>✓ you're on the waitlist</div>
-          ) : (
-            <button onClick={joinWaitlist} disabled={busy} className={styles.cardCtaFriend}>
-              {busy ? 'joining…' : 'join the waitlist →'}
-            </button>
-          )}
-          <Link href="/friend-maxxin" className={styles.cardSub}>read more about friend maxxin →</Link>
+          <Link href="/friends" className={styles.cardCtaFriend} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+            find your crew →
+          </Link>
+          <Link href="/friends/how-it-works" className={styles.cardSub}>how friend maxxin works →</Link>
         </div>
       </section>
 
