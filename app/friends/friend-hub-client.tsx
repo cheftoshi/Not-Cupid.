@@ -30,24 +30,54 @@ const SPOTS: Array<[string, string, string]> = [
   ['cannoli @ Mike’s', '54%', '72%'], ['Wally’s jazz', '78%', '80%'], ['Spectacle Island', '20%', '86%'],
   ['Davis porchfest', '46%', '90%'], ['Charles river', '88%', '12%'],
 ];
-// City Pulse — clean speech-bubble chips that wrap neatly. Each shows a
-// neighborhood with a chat tail + a count badge; busier hoods read bolder.
-function PulseBubbles({ areas, line, ink, onPick, active }: { areas: any[]; line: string; ink: string; onPick: (area: string) => void; active: string }) {
-  const max = areas[0]?.members || 1;
-  const sorted = [...areas].sort((a, b) => b.members - a.members).slice(0, 14);
+// City Pulse — a live "departure board" of three headline stats.
+function PulseBoard({ stats, line, ink, deep }: { stats: { n: number; label: string; icon: string; onClick?: () => void }[]; line: string; ink: string; deep: string }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem 0.5rem', paddingBottom: '0.6rem' }}>
-      {sorted.map((a: any) => {
-        const hot = a.members / max >= 0.66;
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.6rem' }}>
+      {stats.map((t) => {
+        const Tag: any = t.onClick ? 'button' : 'div';
+        return (
+          <Tag key={t.label} onClick={t.onClick}
+            style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', background: '#fffdf7', border: `3px solid ${ink}`, borderRadius: 14, boxShadow: `4px 4px 0 ${ink}`, padding: '0.7rem 0.75rem 0.6rem', cursor: t.onClick ? 'pointer' : 'default', font: 'inherit', color: ink }}>
+            <span style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: line }} />
+            <div style={{ fontSize: '1rem', marginTop: '0.2rem' }}>{t.icon}</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.4rem', lineHeight: 0.9, color: deep }}>{t.n}</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b4a2f', marginTop: '0.15rem' }}>{t.label}</div>
+          </Tag>
+        );
+      })}
+    </div>
+  );
+}
+
+// City Pulse — ranked "where it's buzzing" list. Each neighborhood is a row with
+// an intensity bar (members + things-to-do) so you read the hot spots at a glance.
+function PulseRanked({ areas, line, ink, deep, onPick, active }: { areas: any[]; line: string; ink: string; deep: string; onPick: (area: string) => void; active: string }) {
+  const scored = [...areas]
+    .map((a) => ({ ...a, score: (a.members || 0) + (a.activities || 0) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 12);
+  const max = Math.max(1, ...scored.map((a) => a.score));
+  if (scored.length === 0) return <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>quiet out there right now — be the first to start something.</div>;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+      {scored.map((a, i) => {
         const sel = active === a.area;
-        const bg = sel ? '#ffd23d' : hot ? line : '#fffdf7';
-        const fg = sel ? ink : hot ? '#fff' : ink;
+        const hot = i === 0 && a.score > 0;
+        const pct = Math.max(8, Math.round((a.score / max) * 100));
         return (
           <button key={a.area} onClick={() => onPick(a.area)} title={`see what's happening in ${a.area}`}
-            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: bg, color: fg, border: `2px solid ${ink}`, borderRadius: 14, padding: '0.3rem 0.55rem 0.3rem 0.65rem', boxShadow: `2px 2px 0 ${ink}`, cursor: 'pointer', font: 'inherit' }}>
-            <span style={{ position: 'absolute', left: 10, bottom: -6, width: 9, height: 9, background: bg, borderRight: `2px solid ${ink}`, borderBottom: `2px solid ${ink}`, transform: 'rotate(45deg)' }} />
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{a.area}</span>
-            <span style={{ minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: sel || !hot ? line : '#fffdf7', color: sel || !hot ? '#fff' : ink, border: `1.5px solid ${ink}`, fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{a.members}</span>
+            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', background: sel ? '#fff7e6' : '#fffdf7', border: `2.5px solid ${ink}`, borderRadius: 12, boxShadow: sel ? `3px 3px 0 ${ink}` : `2px 2px 0 ${ink}`, padding: '0.5rem 0.7rem', cursor: 'pointer', font: 'inherit', color: ink }}>
+            <span style={{ width: 96, flexShrink: 0, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {hot && '🔥 '}{a.area}
+            </span>
+            <span style={{ flex: 1, height: 12, background: '#f1e2c8', borderRadius: 999, border: `1.5px solid ${ink}`, overflow: 'hidden' }}>
+              <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: sel ? '#ffce4d' : hot ? line : 'rgba(232,132,43,0.55)' }} />
+            </span>
+            <span style={{ flexShrink: 0, display: 'inline-flex', gap: '0.4rem', alignItems: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: deep }}>
+              <span title="people here">👥{a.members || 0}</span>
+              {a.activities ? <span title="things to do">📣{a.activities}</span> : null}
+            </span>
           </button>
         );
       })}
@@ -147,14 +177,18 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   useEffect(() => { const t = setInterval(loadChat, 4000); return () => clearInterval(t); }, [loadChat]);
 
   const pendingToJoin = matches.some((m) => !m.iAccepted);
+  const iAmIn = matches.some((m) => m.iAccepted);
   // The chat is free now — it's live once the crew (circle) exists. Until then
   // we still show the box with the prospective members so the section is visible.
   const chatLive = !!(chat.circleId && chat.chatLive);
-  const crewPeople: any[] = chat.circleId
-    ? chat.members
+  // Who's in the chat — a labeled roster (avatar + first name + in/invited dot).
+  // Live circle → the actual members; pre-circle → me + prospective matches.
+  type CrewMember = { id: string; name: string; photo_url: string | null; here: boolean; you: boolean };
+  const crewRoster: CrewMember[] = chat.circleId
+    ? (chat.members || []).map((u: any) => ({ id: u.id, name: u.name, photo_url: u.photo_url, here: true, you: !!u.isMe }))
     : [
-        ...(me ? [{ id: 'me', name: me.name, photo_url: me.photo_url }] : []),
-        ...matches.map((m) => ({ id: m.otherId, name: m.name, photo_url: m.photo_url })),
+        ...(me ? [{ id: 'me', name: me.name, photo_url: me.photo_url, here: iAmIn, you: true }] : []),
+        ...matches.map((m) => ({ id: m.otherId, name: m.name, photo_url: m.photo_url, here: !!m.theyAccepted, you: false })),
       ];
 
   async function join() {
@@ -219,6 +253,8 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         .crewDeck::-webkit-scrollbar { height: 8px; }
         .crewDeck::-webkit-scrollbar-thumb { background: rgba(36,29,18,0.3); border-radius: 999px; }
         .crewDeck > * { flex: 0 0 210px; scroll-snap-align: start; }
+        .crewWho { scrollbar-width: none; }
+        .crewWho::-webkit-scrollbar { display: none; }
         .crewLower { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.5rem; align-items: start; }
         @media (min-width: 820px) { .crewLower { grid-template-columns: 280px minmax(0,1fr); } }
       `}</style>
@@ -387,18 +423,31 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                   <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
                     style={{ ...poppyBtn, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>💬 group chat</span>
-                    <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewPeople.length}`}</span>
+                    <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewRoster.length}`}</span>
                   </button>
                   <div ref={chatRef} />
                   {chatOpen && (
                     <div style={{ ...card, overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
-                      <div style={{ background: LINE, color: '#fff', padding: '0.6rem 1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', borderBottom: `3px solid ${INK}`, display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
-                        your crew · {crewPeople.length}
-                        <span style={{ display: 'flex', marginLeft: 'auto' }}>
-                          {crewPeople.slice(0, 6).map((u: any) => u.photo_url
-                            ? <img key={u.id} src={u.photo_url} alt="" title={u.name} style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, objectFit: 'cover' }} />
-                            : <span key={u.id} title={u.name} style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid #fff`, marginLeft: -6, background: '#fbe6cf', display: 'inline-block' }} />)}
-                        </span>
+                      {/* header + who's-here roster — names, not just avatars */}
+                      <div style={{ background: LINE, color: '#fff', padding: '0.6rem 0.85rem 0.7rem', borderBottom: `3px solid ${INK}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem' }}>
+                          💬 your crew · {crewRoster.length}
+                          <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: chatLive ? '#3f7d57' : 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, padding: '0.18rem 0.55rem' }}>
+                            {chatLive ? '● live' : '○ forming'}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', marginTop: '0.55rem', paddingBottom: '0.1rem' }} className="crewWho">
+                          {crewRoster.map((u) => (
+                            <span key={u.id} title={u.here ? `${u.name} · in the chat` : `${u.name} · invited`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, background: '#fffdf7', color: INK, border: `2px solid ${INK}`, borderRadius: 999, padding: '0.18rem 0.55rem 0.18rem 0.22rem' }}>
+                              {u.photo_url
+                                ? <img src={u.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: `1.5px solid ${INK}` }} />
+                                : <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#fbe6cf', border: `1.5px solid ${INK}`, display: 'inline-block' }} />}
+                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
+                              <span style={{ width: 7, height: 7, borderRadius: '50%', background: u.here ? '#3f7d57' : '#c9a06a', flexShrink: 0 }} />
+                            </span>
+                          ))}
+                        </div>
                       </div>
                       {chatLive ? (<>
                         <div style={{ padding: '1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', minHeight: 240, maxHeight: 460, overflowY: 'auto' }}>
@@ -441,19 +490,29 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         {view === 'pulse' && (
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
-          <div style={{ ...card, padding: '1.1rem 1.25rem' }}>
-            {!pulse ? <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>loading…</span> : (
-              <>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
-                  <span style={chip}>👥 {pulse.totalMembers}</span>
-                  <span style={chip}>🫂 {pulse.activeGroups}</span>
-                  <button onClick={() => { setKindFilter('event'); setView('scene'); }} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities}</button>
+          {!pulse ? (
+            <div style={{ ...card, padding: '1.1rem 1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>reading the city&apos;s pulse…</div>
+          ) : (
+            <>
+              {/* the live board — three headline numbers */}
+              <PulseBoard
+                line={LINE} ink={INK} deep={LINE_DEEP}
+                stats={[
+                  { n: pulse.totalMembers, label: 'on the line', icon: '👥' },
+                  { n: pulse.activeGroups, label: pulse.activeGroups === 1 ? 'crew rolling' : 'crews rolling', icon: '🫂' },
+                  { n: pulse.liveActivities, label: 'things to do', icon: '📣', onClick: () => { setKindFilter('event'); setView('scene'); } },
+                ]}
+              />
+              {/* where it's buzzing — ranked intensity */}
+              <div style={{ ...card, padding: '1rem 1.1rem', marginTop: '0.9rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.7rem' }}>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', letterSpacing: '0.03em' }}>where it&apos;s buzzing</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8896a', marginLeft: 'auto' }}>tap to explore</span>
                 </div>
-                <PulseBubbles areas={pulse.areas} line={LINE} ink={INK} onPick={(a) => setAreaFilter(areaFilter === a ? '' : a)} active={areaFilter} />
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8896a', textAlign: 'center', marginTop: '0.4rem' }}>tap a bubble to see what&apos;s happening there</p>
-              </>
-            )}
-          </div>
+                <PulseRanked areas={pulse.areas} line={LINE} ink={INK} deep={LINE_DEEP} onPick={(a) => setAreaFilter(areaFilter === a ? '' : a)} active={areaFilter} />
+              </div>
+            </>
+          )}
 
           {/* the clicked neighborhood loads right here — no jump to another page */}
           {areaFilter && (

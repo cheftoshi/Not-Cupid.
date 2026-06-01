@@ -6,20 +6,39 @@ import { renderEmail, sendEmail, button, C } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
-// Tell the OTHER person a crew just came together (the caller's already in-app).
-async function emailCrewReady(otherId: string, joinerName: string) {
+// Ping ONE crewmate that the chat is live and someone just hopped in.
+async function emailCrewMember(memberId: string, joinerName: string, crewSize: number) {
   const { data: u } = await supabaseAdmin
-    .from('users').select('name, email, email_notifications').eq('id', otherId).single();
-  if (!u?.email || u.email_notifications === false) return;
+    .from('users').select('name, email, email_notifications, is_test').eq('id', memberId).single();
+  if (!u?.email || u.email_notifications === false || u.is_test) return;
+  const first = joinerName.split(' ')[0];
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
+  const others = crewSize > 2 ? `you + ${crewSize - 1} others` : 'your crew';
   const html = renderEmail({
-    preheader: `${joinerName.split(' ')[0]} said yes — your crew chat is open.`,
+    preheader: `${first} just joined — your crew chat is active. hop in.`,
     eyebrow: 'friend line · all aboard',
-    headline: `${joinerName.split(' ')[0]} is in. your crew chat just opened.`,
-    bodyHtml: `<p style="margin:0 0 16px 0;">you matched, you both said yes — that's a crew. the group chat's live, so go make a plan before the moment passes.</p>
-      ${button({ href: `${base}/friends`, label: 'open the chat →' })}`,
+    headline: `${first} is in. the crew chat is live.`,
+    bodyHtml: `<p style="margin:0 0 16px 0;">${first} just said they're in, so the group thread is open for ${others}. hop in, say hi, and make a plan before the moment passes.</p>
+      ${button({ href: `${base}/friends`, label: 'hop in to the chat →' })}`,
   });
-  await sendEmail({ to: u.email, subject: `${joinerName.split(' ')[0]} joined your crew on NotCupid`, html }).catch(() => {});
+  await sendEmail({ to: u.email, subject: `${first} joined your crew — chat's live on NotCupid`, html }).catch(() => {});
+}
+
+// Email the WHOLE crew (everyone in the touched circle(s) except the person who
+// just joined) that the chat is active. Deduped across circles so each member
+// gets at most one ping per accept.
+async function emailCrewGroup(circleIds: Set<string>, joinerId: string, joinerName: string) {
+  const notified = new Set<string>([joinerId]);
+  for (const circleId of circleIds) {
+    const { data: memberRows } = await supabaseAdmin
+      .from('friend_circle_members').select('user_id').eq('circle_id', circleId).is('left_at', null);
+    const ids = (memberRows ?? []).map((m) => m.user_id);
+    for (const id of ids) {
+      if (notified.has(id)) continue;
+      notified.add(id);
+      await emailCrewMember(id, joinerName, ids.length);
+    }
+  }
 }
 
 // "I'm in" — the user joins their matches as a SET (no per-friend curation).
@@ -38,6 +57,7 @@ export async function POST() {
     .neq('status', 'declined');
 
   let connected = 0;
+  const touchedCircles = new Set<string>();
   for (const c of conns ?? []) {
     const iAmA = c.user_a_id === user.id;
     const myField = iAmA ? 'a_picked' : 'b_picked';
@@ -50,12 +70,15 @@ export async function POST() {
         .update({ [myField]: true, status: 'connected', circle_id: circleId, connected_at: new Date().toISOString() })
         .eq('id', c.id);
       connected++;
-      // Notify the other person a crew just formed.
-      const otherId = iAmA ? c.user_b_id : c.user_a_id;
-      await emailCrewReady(otherId, user.name || 'someone');
+      touchedCircles.add(circleId);
     } else if (!c[myField]) {
       await supabaseAdmin.from('friend_connections').update({ [myField]: true }).eq('id', c.id);
     }
+  }
+
+  // Tell the whole crew the chat just went active — "hop in to join in."
+  if (touchedCircles.size) {
+    await emailCrewGroup(touchedCircles, user.id, user.name || 'someone');
   }
 
   return NextResponse.json({ ok: true, connected });

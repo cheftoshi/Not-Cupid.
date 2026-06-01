@@ -21,8 +21,12 @@ export async function GET() {
     .is('left_at', null);
   const ids = (memberRows ?? []).map((m) => m.user_id);
 
-  const { data: members } = await supabaseAdmin
+  const { data: memberData } = await supabaseAdmin
     .from('users').select('id, name, photo_url').in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+  // Mark the caller + float them first, so the "who's here" roster can say "you".
+  const members = (memberData ?? [])
+    .map((m: any) => ({ ...m, isMe: m.id === user.id }))
+    .sort((a: any, b: any) => (a.isMe === b.isMe ? 0 : a.isMe ? -1 : 1));
 
   // Two gates: do I personally have access, and is the chat live for everyone?
   const iHaveAccess = await hasCircleAccess(user, circleId);
