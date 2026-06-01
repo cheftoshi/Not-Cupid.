@@ -10,6 +10,17 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const activityId = params.id;
+
+  // The Scene is a public neighborhood board (any member can RSVP to any post),
+  // but the activity must actually exist — so you can't pad counts on a deleted
+  // or made-up id.
+  const { data: activity } = await supabaseAdmin
+    .from('friend_activities')
+    .select('id')
+    .eq('id', activityId)
+    .maybeSingle();
+  if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
+
   const { data: existing } = await supabaseAdmin
     .from('friend_activity_rsvps')
     .select('activity_id')

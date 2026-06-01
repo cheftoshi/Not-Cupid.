@@ -205,14 +205,9 @@ function QuizInner() {
       })
       const data = await parseResponse<any>(res)
 if (res.status === 409) {
-  const existing = await fetch(`/api/get-user-by-email?email=${encodeURIComponent(form.email)}`)
-  const existingData = await parseResponse<any>(existing)
-  if (existingData.userId) {
-    window.location.href = `/dashboard?id=${existingData.userId}`
-  } else {
-    setScreen('result')
-    setTimeout(() => setBarsVisible(true), 400)
-  }
+  // Email already has an account — send them to log in (they own the email, so
+  // they can OTP in). We never expose user ids to the browser.
+  window.location.href = '/login?next=' + encodeURIComponent('/hub')
   return
 }
       if (data.userId) {

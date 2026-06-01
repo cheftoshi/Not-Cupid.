@@ -39,12 +39,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please verify your email first.' }, { status: 403 })
     }
 
+    // Server-side validation (don't trust the client): bound everything that
+    // gets written, so oversized junk / out-of-range scores can't be stored.
+    const ageNum = parseInt(age)
+    if (!Number.isFinite(ageNum) || ageNum < 18 || ageNum > 120) {
+      return NextResponse.json({ error: 'Invalid age' }, { status: 400 })
+    }
+    if (!/^\d{5}$/.test(String(zip).trim())) {
+      return NextResponse.json({ error: 'Invalid ZIP code' }, { status: 400 })
+    }
+    const cleanName = String(name).trim().slice(0, 100)
+    if (!cleanName) return NextResponse.json({ error: 'Name required' }, { status: 400 })
+    // HEXACO dimensions are 0–16 (4 questions × 4 pts); clamp so a tampered
+    // client can't store fake personality scores that skew matching.
+    const clampScore = (v: any) => Math.max(0, Math.min(16, Number(v) || 0))
+    const clampAge = (v: any, d: number) => { const n = parseInt(v); return Number.isFinite(n) ? Math.max(18, Math.min(120, n)) : d }
+
     const insertRow: any = {
-      name, age: parseInt(age), gender, seeking, zip, email,
-      age_min: age_min ?? 18, age_max: age_max ?? 99,
-      score_honesty, score_emotionality, score_extraversion,
-      score_agreeableness, score_conscientiousness, score_openness,
-      archetype, status: 'waiting',
+      name: cleanName, age: ageNum, gender, seeking, zip: String(zip).trim(), email,
+      age_min: clampAge(age_min, 18), age_max: clampAge(age_max, 99),
+      score_honesty: clampScore(score_honesty), score_emotionality: clampScore(score_emotionality),
+      score_extraversion: clampScore(score_extraversion), score_agreeableness: clampScore(score_agreeableness),
+      score_conscientiousness: clampScore(score_conscientiousness), score_openness: clampScore(score_openness),
+      archetype: archetype ? String(archetype).slice(0, 80) : archetype, status: 'waiting',
     }
     if (vibes && typeof vibes === 'object') insertRow.vibes = vibes
     if (relationship_style && VALID_RELATIONSHIP_STYLES.has(relationship_style)) {

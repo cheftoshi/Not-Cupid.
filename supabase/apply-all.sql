@@ -449,3 +449,35 @@ alter table users add column if not exists friend_age_max int;
 -- ==================== 20260604_profile_refresh.sql ====================
 -- Profile refresh counter (max 3 full resets per account).
 alter table users add column if not exists profile_refresh_count int not null default 0;
+
+-- ==================== 20260605_ghost_strikes.sql ====================
+-- Permanent lifetime ghost counter (reactivate can't zero it; drives escalation + hard cap).
+alter table users add column if not exists ghost_strikes int not null default 0;
+
+-- ==================== 20260606_rls_core_tables.sql ====================
+-- Defense-in-depth: RLS deny-by-default on sensitive tables. Safe because the
+-- app uses the SERVICE key (bypasses RLS) and the anon client never queries
+-- tables. RULE: never query tables with the anon `supabase` client client-side.
+alter table if exists users                  enable row level security;
+alter table if exists sessions               enable row level security;
+alter table if exists otp_codes              enable row level security;
+alter table if exists matches                enable row level security;
+alter table if exists messages               enable row level security;
+alter table if exists match_history          enable row level security;
+alter table if exists end_reports            enable row level security;
+alter table if exists user_reports           enable row level security;
+alter table if exists feedback               enable row level security;
+alter table if exists inbound_messages       enable row level security;
+alter table if exists match_date_vibes       enable row level security;
+alter table if exists activity_swipes        enable row level security;
+alter table if exists live_activity_blacklist enable row level security;
+alter table if exists page_views             enable row level security;
+alter table if exists friend_circles         enable row level security;
+alter table if exists friend_circle_members  enable row level security;
+alter table if exists friend_messages        enable row level security;
+alter table if exists friend_connections     enable row level security;
+alter table if exists friend_match_history   enable row level security;
+alter table if exists friend_activities      enable row level security;
+alter table if exists friend_activity_rsvps  enable row level security;
+alter table if exists friend_chat_unlocks    enable row level security;
+alter table if exists friend_match_rounds    enable row level security;
