@@ -3,7 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
 import ReportDialog from '@/components/report-dialog';
+import DateFeedbackDialog from '@/components/date-feedback-dialog';
 import styles from './chat.module.css';
+
+// Emoji labels for a partner's picked interests (mirrors INTEREST_OPTIONS).
+const INTEREST_LABELS: Record<string, string> = {
+  food: '🍜 food', music: '🎵 music', sports: '🏟 sports', comedy: '🎤 comedy',
+  art: '🎨 art', theater: '🎭 theater', outdoor: '🌳 outdoor', nightlife: '🍸 nightlife',
+  coffee: '☕ coffee', films: '🎬 films', books: '📚 books', gaming: '🎮 gaming',
+};
+const TIER_LABEL: Record<number, string> = { 1: 'the warm-up', 2: 'getting real', 3: 'all in' };
 
 interface Props {
   matchId: string;
@@ -65,6 +74,10 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const [heyWarned, setHeyWarned] = useState(false);
   const [nudge, setNudge] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // Date vibes for the side rail — fetched once (the endpoint hits external
+  // event APIs, so we don't poll it like messages).
+  const [vibes, setVibes] = useState<any>(null);
   // Live match status — seeded from the server, refreshed by the poll, so the
   // header stays accurate (countdown ticking, or "ended" if they bailed).
   const [liveMatch, setLiveMatch] = useState<any>(match);
@@ -101,6 +114,18 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages.length]);
+
+  // Load the date vibes (mutual picks + their interests) for the side rail.
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/match/${matchId}/date-vibes`);
+        if (r.ok && !cancel) setVibes(await r.json());
+      } catch {}
+    })();
+    return () => { cancel = true; };
+  }, [matchId]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -171,6 +196,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
 
   return (
     <div className={styles.page}>
+      <div className={styles.chatCol}>
       <header className={styles.header}>
         <a href="/dashboard" className={styles.back}>←</a>
         <div className={styles.headerInfo}>
@@ -262,6 +288,62 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           →
         </button>
       </form>
+      </div>
+
+      <aside className={styles.vibesCol}>
+        <div className={styles.vibesInner}>
+          <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>✦ date vibes</div>
+          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.3rem', lineHeight: 1.1, color: '#0a0a0a' }}>you &amp; {firstName}</div>
+          {vibes?.dateNumber && (
+            <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#7a7590', marginTop: '0.3rem' }}>
+              date {vibes.dateNumber} · {TIER_LABEL[vibes.dateNumber] || ''}
+            </div>
+          )}
+
+          <a href={`/match/${matchId}/date-vibes`} style={{ display: 'block', textAlign: 'center', marginTop: '0.9rem', background: '#2563ff', color: '#fff', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', textDecoration: 'none', padding: '0.7rem', borderRadius: 999 }}>
+            ✦ swipe the deck →
+          </a>
+
+          <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>✓ you both want this</div>
+          {!vibes ? (
+            <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
+          ) : vibes.mutualMatches?.length ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {vibes.mutualMatches.map((a: any) => (
+                <div key={a.id} style={{ background: '#f6f8ff', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 14, padding: '0.75rem 0.85rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', lineHeight: 1.25 }}>{a.title}</div>
+                  {a.blurb && <div style={{ fontSize: '0.78rem', color: '#6b6975', lineHeight: 1.4, marginTop: '0.2rem' }}>{a.blurb}</div>}
+                  {(a.venue || a.whenLabel) && (
+                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.06em', color: '#7a7590', marginTop: '0.4rem' }}>
+                      {[a.venue, a.whenLabel].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                  {a.url && <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2563ff', textDecoration: 'none', display: 'inline-block', marginTop: '0.4rem' }}>details ↗</a>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>
+              nothing locked in yet — swipe the deck together and the things you <em>both</em> want show up here.
+            </div>
+          )}
+
+          <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>{firstName}&apos;s vibe</div>
+          {vibes?.partnerInterests?.length ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {vibes.partnerInterests.map((i: string) => (
+                <span key={i} style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', background: '#e8edff', color: '#1b46c9', borderRadius: 999, padding: '0.25rem 0.6rem' }}>{INTEREST_LABELS[i] || i}</span>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem' }}>they haven&apos;t picked their interests yet.</div>
+          )}
+
+          <button onClick={() => setFeedbackOpen(true)} style={{ width: '100%', marginTop: '1.75rem', background: '#fff', border: '1px solid rgba(37,99,255,0.35)', color: '#0a0a0a', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.7rem', borderRadius: 12, cursor: 'pointer' }}>
+            🍷 we went on a date
+          </button>
+        </div>
+      </aside>
 
       {reportOpen && (
         <ReportDialog
@@ -270,6 +352,13 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           otherName={otherUser?.name || 'them'}
           onClose={() => setReportOpen(false)}
           onDone={() => { window.location.href = '/dashboard'; }}
+        />
+      )}
+      {feedbackOpen && (
+        <DateFeedbackDialog
+          matchId={matchId}
+          otherName={firstName}
+          onClose={() => setFeedbackOpen(false)}
         />
       )}
     </div>

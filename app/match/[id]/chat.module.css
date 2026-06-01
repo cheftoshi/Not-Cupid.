@@ -7,6 +7,36 @@
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* The chat column (header + messages + input) — one side of the split view. */
+.chatCol {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The date-vibes rail — the other side. Stacks under the chat on mobile,
+   sits beside it on desktop. */
+.vibesCol {
+  background: #fff;
+  border-top: 1px solid rgba(37,99,255,0.2);
+}
+.vibesInner { padding: 1.1rem 1.1rem 2.5rem; }
+
+@media (min-width: 880px) {
+  .page { flex-direction: row; align-items: stretch; height: 100vh; }
+  .chatCol { height: 100vh; min-height: 0; }
+  .vibesCol {
+    width: 360px;
+    flex-shrink: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-top: none;
+    border-left: 1px solid rgba(37,99,255,0.2);
+  }
+}
+
 /* ============= HEADER ============= */
 .header {
   background: #fff;
