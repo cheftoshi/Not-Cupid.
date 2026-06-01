@@ -28,41 +28,21 @@ const SPOTS: Array<[string, string, string]> = [
   ['cannoli @ Mike’s', '54%', '72%'], ['Wally’s jazz', '78%', '80%'], ['Spectacle Island', '20%', '86%'],
   ['Davis porchfest', '46%', '90%'], ['Charles river', '88%', '12%'],
 ];
-// Rough map positions (% left/top) per neighborhood for the bubble map.
-const HOOD_POS: Record<string, [number, number]> = {
-  'Cambridge': [32, 30], 'Somerville': [40, 16], 'Allston/Brighton': [18, 44],
-  'Back Bay': [42, 52], 'Beacon Hill': [50, 44], 'North End': [58, 36],
-  'Downtown': [54, 50], 'South End': [46, 60], 'Fenway': [30, 56],
-  'Charlestown': [58, 24], 'East Boston': [72, 28], 'South Boston': [66, 60],
-  'Jamaica Plain': [30, 72], 'Roxbury': [44, 70], 'Dorchester': [56, 76],
-  'Roslindale/West Roxbury': [34, 86], 'Brookline': [22, 60], 'Newton': [8, 54],
-  'Watertown': [16, 36], 'Belmont': [20, 24], 'Arlington': [28, 10],
-  'Medford': [46, 8], 'Malden': [56, 8], 'Everett': [62, 16], 'Chelsea': [68, 18],
-  'Revere': [78, 12], 'Winthrop': [84, 24], 'Quincy': [70, 84], 'Milton': [52, 88],
-  'Braintree': [64, 94], 'Waltham': [6, 38], 'Greater Boston': [88, 70],
-};
-
-// City Pulse as a scattered bubble map — each hood is a chat-bubble pin with a
-// person count; the busiest are bigger + brighter.
+// City Pulse — clean speech-bubble chips that wrap neatly. Each shows a
+// neighborhood with a chat tail + a count badge; busier hoods read bolder.
 function PulseBubbles({ areas, line, ink }: { areas: any[]; line: string; ink: string }) {
   const max = areas[0]?.members || 1;
+  const sorted = [...areas].sort((a, b) => b.members - a.members).slice(0, 14);
   return (
-    <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', minHeight: 280 }}>
-      {areas.slice(0, 14).map((a: any, i: number) => {
-        const pos = HOOD_POS[a.area] || [10 + (i * 13) % 80, 10 + (i * 23) % 80];
-        const intensity = a.members / max; // 0..1
-        const size = 30 + Math.round(intensity * 22); // px
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem 0.5rem', paddingBottom: '0.6rem' }}>
+      {sorted.map((a: any) => {
+        const hot = a.members / max >= 0.66;
         return (
-          <div key={a.area} title={`${a.area} · ${a.members}`} style={{ position: 'absolute', left: `${pos[0]}%`, top: `${pos[1]}%`, transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
-            {/* chat bubble */}
-            <div style={{
-              width: size, height: size, borderRadius: '50% 50% 50% 6px',
-              background: line, border: `2.5px solid ${ink}`,
-              boxShadow: `2px 2px 0 ${ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: size > 40 ? '1.1rem' : '0.85rem',
-              opacity: 0.55 + intensity * 0.45, margin: '0 auto',
-            }}>{a.members}</div>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.04em', color: ink, marginTop: 2, maxWidth: 80, lineHeight: 1.1 }}>{a.area}</div>
+          <div key={a.area} title={`${a.area} · ${a.members}`} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: hot ? line : '#fffdf7', color: hot ? '#fff' : ink, border: `2px solid ${ink}`, borderRadius: 14, padding: '0.3rem 0.55rem 0.3rem 0.65rem', boxShadow: `2px 2px 0 ${ink}` }}>
+            {/* chat tail */}
+            <span style={{ position: 'absolute', left: 10, bottom: -6, width: 9, height: 9, background: hot ? line : '#fffdf7', borderRight: `2px solid ${ink}`, borderBottom: `2px solid ${ink}`, transform: 'rotate(45deg)' }} />
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{a.area}</span>
+            <span style={{ minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: hot ? '#fffdf7' : line, color: hot ? ink : '#fff', border: `1.5px solid ${ink}`, fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{a.members}</span>
           </div>
         );
       })}
