@@ -96,7 +96,9 @@ function TransitBackdrop() {
   );
 }
 
-export default function FriendHubClient({ firstName }: { firstName: string; accessTier?: string; daysLeft?: number }) {
+type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number };
+export default function FriendHubClient({ firstName, me }: { firstName: string; me?: Me; accessTier?: string; daysLeft?: number }) {
+  const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
   const [payBusy, setPayBusy] = useState(false);
   async function unlockChat() {
     setPayBusy(true);
@@ -231,11 +233,27 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
         </div>
 
         {tab === 'crew' && (<>
-        {/* Make your profile worth matching with */}
-        <a href="/friends/profile" style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.9rem 1.1rem', margin: '1.25rem 0', textDecoration: 'none', color: INK, background: '#fffdf7' }}>
-          <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>📸 add your photos &amp; interests so crews know it&apos;s you.</span>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>set up profile →</span>
-        </a>
+        {/* MY CARD — what crews see (when set up); otherwise a setup nudge */}
+        {profileSet && me ? (
+          <div style={{ ...card, margin: '1.25rem 0', padding: '1rem 1.1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {me.photo_url
+              ? <img src={me.photo_url} alt="" style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'cover', border: `3px solid ${INK}`, flexShrink: 0 }} />
+              : <div style={{ width: 64, height: 64, borderRadius: 12, border: `3px solid ${INK}`, background: '#fbe6cf', flexShrink: 0 }} />}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>your friend card</div>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', lineHeight: 1 }}>{me.name}{me.archetype ? <span style={{ fontSize: '0.7rem', color: '#6b4a2f', marginLeft: 8 }}>· {me.archetype}</span> : null}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
+                {[...me.hobbies, ...me.music, ...me.food].slice(0, 4).map((t) => <span key={t} style={chip}>{t}</span>)}
+              </div>
+            </div>
+            <a href="/friends/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none', alignSelf: 'flex-start' }}>edit →</a>
+          </div>
+        ) : (
+          <a href="/friends/profile" style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.9rem 1.1rem', margin: '1.25rem 0', textDecoration: 'none', color: INK, background: '#fffdf7' }}>
+            <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>📸 add your photos &amp; interests so crews know it&apos;s you.</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>set up profile →</span>
+          </a>
+        )}
 
         {pendingToJoin && (
           <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>

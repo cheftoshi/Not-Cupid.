@@ -29,5 +29,15 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: {
     } catch (e) { console.error('Friend crew unlock verify failed', e); }
   }
 
-  return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} />;
+  const me = {
+    name: user.name || 'you',
+    photo_url: user.photo_url || null,
+    archetype: user.archetype || null,
+    bio: user.bio || '',
+    music: user.music || [],
+    food: user.food || [],
+    hobbies: user.hobbies || [],
+    galleryCount: Array.isArray(user.gallery) ? user.gallery.length : 0,
+  };
+  return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} me={me} />;
 }
