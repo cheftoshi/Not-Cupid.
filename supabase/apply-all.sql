@@ -433,3 +433,8 @@ create table if not exists friend_chat_unlocks (
 create index if not exists friend_chat_unlocks_user_idx on friend_chat_unlocks(user_id);
 grant all on friend_chat_unlocks to service_role;
 alter table friend_chat_unlocks enable row level security;
+
+-- ==================== 20260604_feedback_reply.sql ====================
+-- Admin reply to user feedback (emails the user + stamps the reply).
+alter table feedback add column if not exists replied_at timestamptz;
+alter table feedback add column if not exists reply_body text;

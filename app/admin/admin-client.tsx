@@ -18,6 +18,41 @@ export default function AdminClient() {
   const [reports, setReports] = useState<any>(null)
   const [waveBusy, setWaveBusy] = useState(false)
   const [seedAccounts, setSeedAccounts] = useState<Array<{ name: string; email: string; loginUrl: string }> | null>(null)
+  const [replyOpen, setReplyOpen] = useState<string | null>(null) // feedback id being replied to
+  const [replyText, setReplyText] = useState('')
+  const [replyBusy, setReplyBusy] = useState(false)
+
+  async function loadFeedback() {
+    try {
+      const r = await fetch('/api/admin/feedback')
+      if (!r.ok) {
+        const b = await parseResponse<any>(r).catch(() => ({}))
+        setAppFeedback({ __error: b?.error || `HTTP ${r.status}`, items: [] })
+        return
+      }
+      setAppFeedback(await parseResponse<any>(r))
+    } catch (e: any) {
+      setAppFeedback({ __error: e?.message || 'network error', items: [] })
+    }
+  }
+
+  async function sendFeedbackReply(feedbackId: string) {
+    if (!replyText.trim() || replyBusy) return
+    setReplyBusy(true)
+    try {
+      const r = await fetch('/api/admin/feedback/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedbackId, message: replyText.trim() }),
+      })
+      const d = await parseResponse<any>(r)
+      if (!r.ok) { alert(d.error || 'Reply failed'); return }
+      setReplyOpen(null); setReplyText('')
+      loadFeedback()
+    } finally {
+      setReplyBusy(false)
+    }
+  }
 
   async function loadReports() {
     try {
@@ -66,16 +101,7 @@ export default function AdminClient() {
       .then(setHealth)
       .catch((e) => setHealth({ __error: e?.message || 'network error' }))
 
-    fetch('/api/admin/feedback')
-      .then(async (r) => {
-        if (!r.ok) {
-          const body = await parseResponse<any>(r).catch(() => ({}))
-          return { __error: body?.error || `HTTP ${r.status}`, items: [] }
-        }
-        return parseResponse<any>(r)
-      })
-      .then(setAppFeedback)
-      .catch((e) => setAppFeedback({ __error: e?.message || 'network error', items: [] }))
+    loadFeedback()
   }, [])
 
   async function refreshPools() {
@@ -688,9 +714,39 @@ export default function AdminClient() {
                 {appFeedback.items.map((f: any) => (
                   <div key={f.id} style={{ background: '#f8f5ff', border: '1px solid rgba(14,12,26,0.06)', borderRadius: 8, padding: '0.7rem 0.9rem' }}>
                     <div style={{ fontFamily: 'Georgia, serif', fontSize: '0.9rem', color: '#0e0c1a', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
-                    <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', letterSpacing: '0.08em', color: '#7a7590', marginTop: '0.5rem', textTransform: 'uppercase' }}>
-                      {f.user ? `${f.user.name || 'user'} · ${f.user.email}` : 'anonymous'} · {f.created_at?.split('T')[0]}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', letterSpacing: '0.08em', color: '#7a7590', textTransform: 'uppercase' }}>
+                        {f.user ? `${f.user.name || 'user'} · ${f.user.email}` : 'anonymous'} · {f.created_at?.split('T')[0]}
+                      </div>
+                      {f.replied_at ? (
+                        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', letterSpacing: '0.08em', color: '#3a7a4f', textTransform: 'uppercase' }}>✓ replied {f.replied_at?.split('T')[0]}</span>
+                      ) : f.user ? (
+                        <button onClick={() => { setReplyOpen(replyOpen === f.id ? null : f.id); setReplyText('') }} style={{ background: '#0e0c1a', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.7rem', fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                          {replyOpen === f.id ? 'cancel' : '↩ reply'}
+                        </button>
+                      ) : (
+                        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.5rem', color: '#c8c4dc', textTransform: 'uppercase' }}>anonymous · no reply</span>
+                      )}
                     </div>
+
+                    {f.replied_at && f.reply_body && (
+                      <div style={{ marginTop: '0.5rem', paddingLeft: '0.7rem', borderLeft: '2px solid #2563ff', fontFamily: 'Georgia, serif', fontSize: '0.82rem', color: '#1b46c9', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.reply_body}</div>
+                    )}
+
+                    {replyOpen === f.id && (
+                      <div style={{ marginTop: '0.6rem' }}>
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          rows={3}
+                          placeholder={`reply to ${f.user?.name || 'them'} — emails them directly`}
+                          style={{ width: '100%', borderRadius: 8, border: '1px solid rgba(14,12,26,0.15)', padding: '0.55rem 0.7rem', fontFamily: 'system-ui, sans-serif', fontSize: '0.85rem', resize: 'vertical', outline: 'none' }}
+                        />
+                        <button onClick={() => sendFeedbackReply(f.id)} disabled={!replyText.trim() || replyBusy} style={{ marginTop: '0.4rem', background: '#2563ff', color: '#fff', border: 'none', borderRadius: 6, padding: '0.45rem 1rem', fontFamily: 'DM Mono, monospace', fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: replyText.trim() && !replyBusy ? 'pointer' : 'not-allowed', opacity: replyText.trim() && !replyBusy ? 1 : 0.5 }}>
+                          {replyBusy ? 'sending…' : 'send reply email →'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

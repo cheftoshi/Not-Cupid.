@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const { data: rows } = await supabaseAdmin
       .from('feedback')
-      .select('id, user_id, body, created_at')
+      .select('id, user_id, body, created_at, replied_at, reply_body')
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -28,6 +28,8 @@ export async function GET() {
         id: r.id,
         body: r.body,
         created_at: r.created_at,
+        replied_at: r.replied_at,
+        reply_body: r.reply_body,
         user: u ? { name: u.name, email: u.email } : null,
       };
     });
