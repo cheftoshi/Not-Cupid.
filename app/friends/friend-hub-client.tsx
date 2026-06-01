@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { NEIGHBORHOODS } from '@/lib/neighborhoods';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#241d12';           // warm near-black (signage)
@@ -120,7 +121,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
     setTimeout(() => feedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
   }
   const [msg, setMsg] = useState('');
-  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event' }>({ title: '', category: 'hang', happens_at: '', kind: 'post' });
+  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '' });
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'community' | 'crew'>('community');
   const chatRef = useRef<HTMLDivElement>(null);
@@ -167,7 +168,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   async function createAct() {
     if (!newAct.title.trim()) return; setBusy(true);
     await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAct) });
-    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind }); await loadActs(); await loadPulse(); setBusy(false);
+    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area }); await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string) {
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, { method: 'POST' });
@@ -372,6 +373,10 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             <select value={newAct.category} onChange={(e) => setNewAct({ ...newAct, category: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }}>
               {CATS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+            <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }}>
+              <option value="">📍 my area</option>
+              {NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
             {newAct.kind === 'event' && (
               <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.65rem' }} />
             )}
@@ -437,6 +442,14 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>
           <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
           <a href="/friends/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>✨ what&apos;s new</a>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.1rem', marginTop: '1.25rem' }}>
+          {[['instagram', 'https://instagram.com/notcupidapp'], ['tiktok', 'https://tiktok.com/@notcupid11'], ['x', 'https://x.com/notcupidapp']].map(([label, href]) => (
+            <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'lowercase', color: LINE_DEEP, textDecoration: 'none' }}>↗ {label}</a>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#a8896a' }}>
+          © {new Date().getFullYear()} notcupid · a lemon labs property
         </div>
       </div>
     </div>

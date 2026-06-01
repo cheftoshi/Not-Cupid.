@@ -45,3 +45,8 @@ export function neighborhoodOf(zip: string | null | undefined): string {
   if (m && m !== 'boston' && METRO_CENTERS[m]) return METRO_CENTERS[m].city;
   return 'Greater Boston';
 }
+
+// Distinct neighborhood labels (for the activity-board area picker), sorted.
+export const NEIGHBORHOODS: string[] = Array.from(new Set(Object.values(ZIP_AREA)))
+  .sort()
+  .concat('Greater Boston');
