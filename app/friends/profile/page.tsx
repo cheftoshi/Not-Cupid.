@@ -22,6 +22,7 @@ export default async function FriendProfilePage() {
         food: user.food || [],
         hobbies: user.hobbies || [],
       }}
+      refreshCount={user.profile_refresh_count ?? 0}
     />
   );
 }

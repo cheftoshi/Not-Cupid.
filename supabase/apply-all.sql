@@ -443,3 +443,7 @@ alter table feedback add column if not exists reply_body text;
 -- Friend Line age preference (symmetric, NULL = no bound).
 alter table users add column if not exists friend_age_min int;
 alter table users add column if not exists friend_age_max int;
+
+-- ==================== 20260604_profile_refresh.sql ====================
+-- Profile refresh counter (max 3 full resets per account).
+alter table users add column if not exists profile_refresh_count int not null default 0;

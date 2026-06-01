@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import RefreshProfileButton from '@/components/refresh-profile-button';
 
 const INK = '#241d12', LINE = '#e8842b', LINE_DEEP = '#c96a18', CREAM = '#f7f1e3';
 const card: React.CSSProperties = { background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}`, padding: '1.25rem' };
@@ -32,7 +33,7 @@ function TagField({ value, onChange, placeholder }: { value: string[]; onChange:
   );
 }
 
-export default function FriendProfileClient({ initial }: { initial: Init }) {
+export default function FriendProfileClient({ initial, refreshCount }: { initial: Init; refreshCount?: number }) {
   const [photo, setPhoto] = useState(initial.photo_url);
   const [gallery, setGallery] = useState(initial.gallery);
   const [bio, setBio] = useState(initial.bio);
@@ -158,6 +159,15 @@ export default function FriendProfileClient({ initial }: { initial: Init }) {
         <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a8896a', marginTop: '0.6rem' }}>
           photos save instantly · bio &amp; interests save when you hit the button
         </p>
+
+        {/* START FRESH — wipe & re-take quiz, capped at 3 per account */}
+        <div style={{ ...label, color: LINE_DEEP }}>start over</div>
+        <div style={card}>
+          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: INK, margin: '0 0 0.4rem' }}>
+            Want a clean slate? This wipes your quiz answers, profile, and current matches on <strong>both</strong> the Friend and Love lines, then you re-take the quiz. Your account stays. Limited to 3 times.
+          </p>
+          <RefreshProfileButton usedCount={refreshCount} />
+        </div>
       </div>
     </div>
   );

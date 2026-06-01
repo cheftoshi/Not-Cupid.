@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import ChipInput from './chip-input';
+import RefreshProfileButton from '@/components/refresh-profile-button';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
 
@@ -387,6 +388,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
       <div className={styles.accountSection}>
         <div className={styles.accountTitle}>Account</div>
         <button type="button" onClick={handleLogout} className={styles.linkButton}>Log out</button>
+        <RefreshProfileButton usedCount={user.profile_refresh_count} />
         {/* Delete is now a clear full-width danger button — users couldn't find the old text link. */}
         <button
           type="button"
