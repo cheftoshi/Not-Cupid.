@@ -1,15 +1,14 @@
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Friend Maxxin access model (v2):
-//   • 7-day free trial from join → everything EXCEPT chat
-//   • Pro ($2.99/mo subscription, friend_pro_until in the future) → ALL chats
-//   • $0.99 per-crew unlock (friend_chat_unlocks row) → THAT crew's chat
+// Friend Maxxin access model (v3):
+//   • 7-day free trial from join → explore everything EXCEPT chat
+//   • FIRST crew's group chat is FREE forever (lowest barrier for new users)
+//   • Pro ($2.99/mo subscription) → ALL crews' chats
 //   • legacy founding (friend_paid_at) → grandfathered to all-chat access
 export type FriendAccess = 'pro' | 'trial' | 'expired';
 
 export const FRIEND_TRIAL_DAYS = 7;
-export const FRIEND_CHAT_UNLOCK_CENTS = 99;   // per-crew
-export const FRIEND_PRO_CENTS = 299;          // per month
+export const FRIEND_PRO_CENTS = 299; // per month
 
 export function isPro(user: any): boolean {
   if (user?.friend_paid_at) return true; // grandfathered founding members
@@ -24,16 +23,24 @@ export function friendAccess(user: any): { tier: FriendAccess; daysLeft: number 
   return { tier: daysLeft > 0 ? 'trial' : 'expired', daysLeft };
 }
 
-// Can this user use the chat for THIS circle? Pro → any circle; otherwise the
-// circle must be individually unlocked ($0.99).
+// The user's "first crew" = the circle they joined earliest (still active).
+// Its chat is free forever; everything beyond it needs Pro.
+export async function freeCircleId(userId: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('friend_circle_members')
+    .select('circle_id, joined_at')
+    .eq('user_id', userId)
+    .is('left_at', null)
+    .order('joined_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data?.circle_id ?? null;
+}
+
+// Can this user use the chat for THIS circle?
+//   Pro / legacy → any circle. Otherwise only their first (free) crew.
 export async function canUseFriendCircle(user: any, circleId: string): Promise<boolean> {
   if (!circleId) return false;
   if (isPro(user)) return true;
-  const { data } = await supabaseAdmin
-    .from('friend_chat_unlocks')
-    .select('circle_id')
-    .eq('user_id', user.id)
-    .eq('circle_id', circleId)
-    .maybeSingle();
-  return !!data;
+  return (await freeCircleId(user.id)) === circleId;
 }

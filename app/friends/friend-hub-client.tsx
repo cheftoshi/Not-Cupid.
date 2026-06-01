@@ -19,8 +19,8 @@ const StationDot = () => <span style={{ width: 16, height: 16, borderRadius: '50
 
 export default function FriendHubClient({ firstName, accessTier, daysLeft }: { firstName: string; accessTier: 'pro' | 'trial' | 'expired'; daysLeft: number }) {
   const isPro = accessTier === 'pro';
-  const [payBusy, setPayBusy] = useState<'' | 'crew' | 'pro'>('');
-  async function pay(tier: 'crew' | 'pro') {
+  const [payBusy, setPayBusy] = useState<'' | 'pro'>('');
+  async function pay(tier: 'pro') {
     setPayBusy(tier);
     try {
       const r = await fetch('/api/friend/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier }) });
@@ -171,14 +171,11 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
           <>
             <h2 style={sectionLabel}><StationDot />💬 the group chat</h2>
             <div style={{ ...card, padding: '1.75rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem' }}>🔒</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>unlock the chat with your crew</div>
-              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', margin: '0 0 1.25rem' }}>your {chat.members.length}-person crew is ready — open the chat to make plans.</p>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button style={poppyBtn} onClick={() => pay('crew')} disabled={!!payBusy}>{payBusy === 'crew' ? '…' : 'unlock this crew · $0.99'}</button>
-                <button style={{ ...poppyBtn, background: '#1a1410' }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : '✦ go pro — all chats · $2.99/mo'}</button>
-              </div>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a8896a', marginTop: '0.85rem' }}>pro = every crew, cancel anytime</p>
+              <div style={{ fontSize: '2rem' }}>🎟️</div>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>this is an extra crew</div>
+              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0 0 1.25rem' }}>your first crew&apos;s chat is free — to chat with this {chat.members.length}-person crew too, go Pro.</p>
+              <button style={{ ...poppyBtn }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : '✦ go pro — every crew · $2.99/mo'}</button>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.85rem' }}>cancel anytime</p>
             </div>
           </>
         )}
@@ -186,7 +183,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
           <>
             <h2 style={sectionLabel}><StationDot />💬 the group chat</h2>
             <div style={{ ...card, overflow: 'hidden' }}>
-              <div style={{ background: 'linear-gradient(135deg,#ff7a1f,#ff3d77)', color: '#fff', padding: '0.8rem 1.1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', borderBottom: `3px solid ${INK}` }}>your crew · {chat.members.length} people</div>
+              <div style={{ background: LINE, color: '#fff', padding: '0.8rem 1.1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', borderBottom: `3px solid ${INK}` }}>your crew · {chat.members.length} people</div>
               <div style={{ padding: '1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', maxHeight: 360, overflowY: 'auto' }}>
                 {chat.messages.length === 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>say hi to the crew 👋</div>}
                 {chat.messages.map((mm: any) => {
