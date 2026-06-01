@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#241d12';           // warm near-black (signage)
@@ -81,6 +81,7 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event' }>({ title: '', category: 'hang', happens_at: '', kind: 'post' });
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'community' | 'crew'>('community');
+  const chatRef = useRef<HTMLDivElement>(null);
 
   const loadMatches = useCallback(async () => {
     const r = await fetch('/api/friend/roster'); if (r.ok) setMatches((await r.json()).matches || []);
@@ -103,7 +104,14 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
 
   const pendingToJoin = matches.some((m) => !m.iAccepted);
 
-  async function join() { setBusy(true); await fetch('/api/friend/accept', { method: 'POST' }); await loadMatches(); await loadChat(); setBusy(false); }
+  async function join() {
+    setBusy(true);
+    await fetch('/api/friend/accept', { method: 'POST' });
+    await loadMatches(); await loadChat();
+    setBusy(false);
+    // Jump to the chat block so the user sees their accepted / waiting state.
+    setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }
   async function optOut(otherId: string, name: string) {
     if (!confirm(`Opt out of your match with ${name}? This removes you both.`)) return;
     await fetch('/api/friend/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId }) });
@@ -217,6 +225,7 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
           </div>
         )}
 
+        <div ref={chatRef} />
         {/* GROUP CHAT — locked: either I need to unlock ($0.99) or we're waiting on crewmates */}
         {chat.circleId && chat.locked && (
           <>
