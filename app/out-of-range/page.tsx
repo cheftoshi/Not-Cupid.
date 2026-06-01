@@ -11,13 +11,13 @@ export default function OutOfRange() {
 
   async function submit() {
     if (!email) return
-    await fetch('https://api.resend.com/emails', {
+    // Server-side: the team gets the signup via the server RESEND key. (Never
+    // call Resend from the browser — that would expose the secret.)
+    await fetch('/api/waitlist', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, city }),
+    }).catch(() => {})
     setSubmitted(true)
   }
 

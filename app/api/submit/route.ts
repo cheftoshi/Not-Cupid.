@@ -25,6 +25,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Proof of email ownership: there must be a verified OTP for this email.
+    // (Without this, a script could POST here to create an account + get a
+    // session cookie for ANY email — account creation with no email proof.)
+    const { data: verifiedOtp } = await supabaseAdmin
+      .from('otp_codes')
+      .select('id')
+      .eq('email', email)
+      .eq('verified', true)
+      .limit(1)
+      .maybeSingle()
+    if (!verifiedOtp) {
+      return NextResponse.json({ error: 'Please verify your email first.' }, { status: 403 })
+    }
+
     const insertRow: any = {
       name, age: parseInt(age), gender, seeking, zip, email,
       age_min: age_min ?? 18, age_max: age_max ?? 99,

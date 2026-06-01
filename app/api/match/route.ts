@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data'
 import { compatibilityScore, thresholdFor } from '@/lib/matching'
@@ -61,13 +62,14 @@ function isGenderMatch(user: any, candidate: any): boolean {
   return userWantsCand && candWantsUser
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
-    const { userId } = await req.json()
-
-    const { data: user } = await supabaseAdmin
-      .from('users').select('*').eq('id', userId).single()
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Auth-gated: only ever matches the SESSION user, never a client-supplied id.
+    // (Previously trusted { userId } from the body with no auth — anyone could
+    // force-match an arbitrary user and spam match emails.)
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userId = user.id
     if (user.pool_active === false) {
       return NextResponse.json({ matched: false, message: 'Waiting for the next pool wave' })
     }

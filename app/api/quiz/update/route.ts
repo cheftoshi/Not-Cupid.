@@ -57,12 +57,9 @@ export async function POST(req: NextRequest) {
     .eq('status', 'pending')
     .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`);
 
-  // Fire-and-forget the match call.
-  fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/match`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: user.id }),
-  }).catch((e) => console.error('Re-match trigger error:', e));
+  // Roster-first: no auto-match trigger here. Expiring the user's pending
+  // matches above is enough — the dashboard recomputes a fresh roster on load.
+  // (Removed a fire-and-forget self-call to the now auth-gated /api/match.)
 
   return NextResponse.json({ success: true, userId: user.id });
 }
