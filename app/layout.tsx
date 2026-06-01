@@ -3,9 +3,12 @@ import './globals.css'
 import PageTracker from '@/components/page-tracker'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://notcupid.com'),
   title: 'NotCupid — Boston\'s Social Experiment',
   description: 'Meet people, not profiles. The algorithm shows you 5 compatible people — you choose one. One match at a time, no swiping. A Boston social experiment.',
+  applicationName: 'NotCupid',
   openGraph: {
+    type: 'website',
     title: 'NotCupid — Boston\'s Social Experiment',
     description: 'Meet people, not profiles. See your 5 most compatible, choose one. No swiping.',
     url: 'https://notcupid.com',

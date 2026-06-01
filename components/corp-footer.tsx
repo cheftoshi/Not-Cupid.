@@ -46,6 +46,30 @@ export default function CorpFooter() {
           </a>
         ))}
       </div>
+      <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {[
+          { label: 'about', href: '/about' },
+          { label: 'safety', href: '/safety' },
+          { label: 'privacy', href: '/privacy' },
+          { label: 'terms', href: '/terms' },
+          { label: 'contact', href: 'mailto:match@notcupid.com' },
+        ].map((l) => (
+          <a
+            key={l.label}
+            href={l.href}
+            style={{
+              fontFamily: "'DM Mono', ui-monospace, monospace",
+              fontSize: '0.58rem',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#6b6b76',
+              textDecoration: 'none',
+            }}
+          >
+            {l.label}
+          </a>
+        ))}
+      </div>
       <div
         style={{
           fontSize: '0.5rem',
