@@ -58,7 +58,9 @@ export async function GET() {
     };
   });
 
-  // Hide test accounts from real users' crews.
-  const visible = matches.filter((m) => (byId.get(m.otherId) as any)?.is_test !== true);
+  // Realm segregation: real users never see test crew members; test accounts
+  // only see other test accounts.
+  const meTest = (user as any).is_test === true;
+  const visible = matches.filter((m) => (((byId.get(m.otherId) as any)?.is_test === true)) === meTest);
   return NextResponse.json({ optedIn: true, matches: visible });
 }

@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     const nowIso = new Date().toISOString()
-    const { data: pool } = await supabaseAdmin
+    let poolQuery = supabaseAdmin
       .from('users')
       .select('*')
       .eq('status', 'waiting')
@@ -82,7 +82,12 @@ export async function POST(req: NextRequest) {
       .neq('id', userId)
       .is('matching_disabled_at', null)
       .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`)
-      .or('is_test.is.null,is_test.eq.false')
+    // Realm segregation: test accounts only match other test accounts; real
+    // users never see test accounts (and vice-versa).
+    poolQuery = (user as any).is_test
+      ? poolQuery.eq('is_test', true)
+      : poolQuery.or('is_test.is.null,is_test.eq.false')
+    const { data: pool } = await poolQuery
 
     if (!pool || pool.length === 0) {
       return NextResponse.json({ matched: false, message: 'In the pool — watching for matches' })

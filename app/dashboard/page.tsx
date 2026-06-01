@@ -95,8 +95,11 @@ export default async function DashboardPage({
     hexacoUnlocked = !!unlock?.hexaco_unlocked || profileUnlocked;
     isUnlocked = profileUnlocked; // back-compat for any consumer still reading it
 
-    // Hide test accounts from real users — treat a test match as no match.
-    if ((otherUser as any)?.is_test) { currentMatch = null; otherUser = null; }
+    // Realm segregation: only show a match within the viewer's realm (real
+    // users never see a test match; test accounts only see other test accounts).
+    if (otherUser && (((otherUser as any).is_test === true) !== ((user as any).is_test === true))) {
+      currentMatch = null; otherUser = null;
+    }
   }
 
 

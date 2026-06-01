@@ -34,8 +34,10 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     .is('deleted_at', null)
     .neq('id', userId);
 
-  // Exclude test accounts so they never get matched into real users' crews.
-  const fresh = (pool ?? []).filter((p) => !seen.has(p.id) && (p as any).is_test !== true);
+  // Realm segregation: test accounts only crew up with other test accounts;
+  // real users never get matched to a test account (and vice-versa).
+  const meTest = (me as any).is_test === true;
+  const fresh = (pool ?? []).filter((p) => !seen.has(p.id) && (((p as any).is_test === true) === meTest));
   const ranked = rankFriendCandidates(me, fresh);
 
   let created = 0;

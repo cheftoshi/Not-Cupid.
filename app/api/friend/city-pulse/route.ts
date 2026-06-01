@@ -13,8 +13,14 @@ export async function GET() {
 
   const nowIso = new Date().toISOString();
 
-  const { data: members } = await supabaseAdmin
-    .from('users').select('zip').not('friend_opted_in_at', 'is', null).is('deleted_at', null).or('is_test.is.null,is_test.eq.false');
+  // Realm segregation: a test viewer sees the test world's pulse; real users
+  // see the real one (test accounts never inflate real counts).
+  let memberQuery = supabaseAdmin
+    .from('users').select('zip').not('friend_opted_in_at', 'is', null).is('deleted_at', null);
+  memberQuery = (user as any).is_test
+    ? memberQuery.eq('is_test', true)
+    : memberQuery.or('is_test.is.null,is_test.eq.false');
+  const { data: members } = await memberQuery;
 
   const { data: acts } = await supabaseAdmin
     .from('friend_activities').select('area, kind').or(`expires_at.is.null,expires_at.gt.${nowIso}`);
