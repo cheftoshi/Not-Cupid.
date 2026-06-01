@@ -10,7 +10,7 @@ const STEPS = [
   { n: '1', emoji: '📝', title: 'take the find-a-friend quiz', body: "we already know your personality from your NotCupid profile — this quick round is about how you actually like to hang: your scene, your cadence, what you want to do." },
   { n: '2', emoji: '🤝', title: 'get matched with 5 of your vibe', body: 'the algo finds five people on your wavelength — shared interests, similar energy, same corner of greater boston. no swiping, no endless scroll.' },
   { n: '3', emoji: '🎒', title: 'lock in your crew', body: "say you're in. anyone you don't vibe with, just opt out — it's symmetric, no awkwardness. your accepted matches become your crew." },
-  { n: '4', emoji: '💬', title: 'open the group chat', body: 'your crew shares one group thread to actually make plans. unlock a crew for $0.99, or go Pro ($2.99/mo) to open every chat.' },
+  { n: '4', emoji: '💬', title: 'open the group chat', body: 'your crew shares one group thread to actually make plans. your first crew is free — go Pro ($2.99/mo) to chat in up to 3 crews.' },
   { n: '5', emoji: '📣', title: 'ride the scene', body: 'post what you want to do — "trivia thursday?", "anyone for the new A24 movie?" — RSVP to events, and see which neighborhoods are buzzing.' },
 ];
 
@@ -50,7 +50,7 @@ export default function HowItWorks() {
         <div style={{ background: '#fffaf0', border: `3px dashed ${LINE}`, borderRadius: 16, padding: '1.25rem', margin: '1.75rem 0', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-            free for 7 days to match + explore the whole scene. to open a crew&apos;s group chat: <b>$0.99</b> for that crew, or go <b>Pro · $2.99/mo</b> for every chat. cancel anytime.
+your first crew&apos;s group chat is <b>free, forever</b>. want more circles? go <b>Pro · $2.99/mo</b> to chat in up to <b>3 crews</b>. cancel anytime.
           </p>
         </div>
 

@@ -167,11 +167,15 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         </div>
 
         {tab === 'crew' && (<>
-        {isPro && (
-          <div style={{ ...card, padding: '0.7rem 1.1rem', margin: '1.25rem 0', background: '#fffaf0', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a4a12' }}>
-            ✦ you&apos;re pro — every crew chat&apos;s unlocked.
+        {/* Crew chat allowance — free unlocks 1, Pro unlocks 3 */}
+        <div style={{ ...card, padding: '0.8rem 1.1rem', margin: '1.25rem 0', background: '#fffaf0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>
+            {isPro ? '✦ pro — chat in up to 3 crews' : 'free — 1 crew chat · pro unlocks 3'}
           </div>
-        )}
+          {!isPro && (
+            <button style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 1rem' }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : 'go pro · $2.99/mo'}</button>
+          )}
+        </div>
 
         {pendingToJoin && (
           <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -209,9 +213,9 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
             <h2 style={sectionLabel}><StationDot />💬 the group chat</h2>
             <div style={{ ...card, padding: '1.75rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2rem' }}>🎟️</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>this is an extra crew</div>
-              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0 0 1.25rem' }}>your first crew&apos;s chat is free — to chat with this {chat.members.length}-person crew too, go Pro.</p>
-              <button style={{ ...poppyBtn }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : '✦ go pro — every crew · $2.99/mo'}</button>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', margin: '0.4rem 0' }}>this crew needs pro</div>
+              <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0 0 1.25rem' }}>your first crew&apos;s chat is free — Pro lets you chat in up to 3 crews, including this {chat.members.length}-person one.</p>
+              <button style={{ ...poppyBtn }} onClick={() => pay('pro')} disabled={!!payBusy}>{payBusy === 'pro' ? '…' : '✦ go pro — 3 crews · $2.99/mo'}</button>
               <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.85rem' }}>cancel anytime</p>
             </div>
           </>
