@@ -34,14 +34,30 @@ export async function GET(req: NextRequest) {
   const aById = new Map((authors ?? []).map((u) => [u.id, u]));
 
   const { data: rsvps } = await supabaseAdmin
-    .from('friend_activity_rsvps').select('activity_id, user_id')
+    .from('friend_activity_rsvps').select('activity_id, user_id, response')
     .in('activity_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
   const countByAct = new Map<string, number>();
-  const mineByAct = new Set<string>();
+  const respByAct = new Map<string, { yes: number; maybe: number; no: number }>();
+  const myRespByAct = new Map<string, string>();
   (rsvps ?? []).forEach((r) => {
+    const resp = (r.response || 'yes') as 'yes' | 'maybe' | 'no';
     countByAct.set(r.activity_id, (countByAct.get(r.activity_id) || 0) + 1);
-    if (r.user_id === user.id) mineByAct.add(r.activity_id);
+    const tally = respByAct.get(r.activity_id) || { yes: 0, maybe: 0, no: 0 };
+    if (resp === 'yes' || resp === 'maybe' || resp === 'no') tally[resp]++;
+    respByAct.set(r.activity_id, tally);
+    if (r.user_id === user.id) myRespByAct.set(r.activity_id, resp);
   });
+
+  // Is this responder inside an event's audience (gender + age)? Author always is.
+  const eligibleFor = (a: any) => {
+    if (a.author_id === user.id) return true;
+    if ((a.kind || 'event') !== 'event') return true;
+    const aud = a.audience_gender;
+    if (Array.isArray(aud) && aud.length > 0 && !aud.includes(user.gender)) return false;
+    if (a.audience_age_min != null && (user.age == null || user.age < a.audience_age_min)) return false;
+    if (a.audience_age_max != null && (user.age == null || user.age > a.audience_age_max)) return false;
+    return true;
+  };
 
   const activities = (acts ?? []).map((a) => {
     const author: any = aById.get(a.author_id) || {};
@@ -52,7 +68,14 @@ export async function GET(req: NextRequest) {
       authorName: author.name, authorPhoto: author.photo_url,
       isMine: a.author_id === user.id,
       rsvpCount: countByAct.get(a.id) || 0,
-      iRsvped: mineByAct.has(a.id),
+      iRsvped: myRespByAct.has(a.id),
+      // event extras
+      audienceGender: a.audience_gender || null,
+      audienceAgeMin: a.audience_age_min ?? null,
+      audienceAgeMax: a.audience_age_max ?? null,
+      eligible: eligibleFor(a),
+      responses: respByAct.get(a.id) || { yes: 0, maybe: 0, no: 0 },
+      myResponse: myRespByAct.get(a.id) || null,
     };
   });
 
@@ -80,6 +103,18 @@ export async function POST(req: NextRequest) {
       ? new Date(happensAt.getTime() + 12 * 60 * 60 * 1000)
       : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
+  // Audience targeting (events only). Gender = subset of m/f/nb (empty/null =
+  // everyone). Age bounds clamped to 18–120. Posts ignore all this.
+  const GENDERS = ['m', 'f', 'nb'];
+  let audienceGender: string[] | null = null;
+  if (kind === 'event' && Array.isArray(body.audience_gender)) {
+    const g = body.audience_gender.filter((x: any) => GENDERS.includes(x));
+    audienceGender = g.length && g.length < GENDERS.length ? g : null; // all-or-empty = everyone
+  }
+  const clampAge = (v: any) => { const n = parseInt(v); return Number.isFinite(n) ? Math.max(18, Math.min(120, n)) : null; };
+  const audMin = kind === 'event' ? clampAge(body.audience_age_min) : null;
+  const audMax = kind === 'event' ? clampAge(body.audience_age_max) : null;
+
   const { data: act, error } = await supabaseAdmin
     .from('friend_activities')
     .insert({
@@ -88,6 +123,9 @@ export async function POST(req: NextRequest) {
       category, area,
       happens_at: happensAt ? happensAt.toISOString() : null,
       expires_at: expiresAt.toISOString(),
+      audience_gender: audienceGender,
+      audience_age_min: audMin,
+      audience_age_max: audMax,
     })
     .select('id')
     .single();

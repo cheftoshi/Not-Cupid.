@@ -481,3 +481,12 @@ alter table if exists friend_activities      enable row level security;
 alter table if exists friend_activity_rsvps  enable row level security;
 alter table if exists friend_chat_unlocks    enable row level security;
 alter table if exists friend_match_rounds    enable row level security;
+
+-- ==================== 20260607_friend_event_audience.sql ====================
+-- Event audience targeting (gender + age) + yes/maybe/no RSVPs + digest stamp.
+alter table friend_activities add column if not exists audience_gender text[];
+alter table friend_activities add column if not exists audience_age_min int;
+alter table friend_activities add column if not exists audience_age_max int;
+alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
+  check (response in ('yes', 'maybe', 'no'));
+alter table users add column if not exists friend_digest_sent_at timestamptz;

@@ -200,7 +200,7 @@ function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, cre
 
 // The center "home" hub — auto-pulls what's popular on the scene + your crew.
 function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen }: {
-  firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string) => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void;
+  firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void;
 }) {
   return (
     <div>
@@ -245,9 +245,42 @@ function timeAgo(iso?: string | null): string {
   return `${Math.floor(d / 7)}w`;
 }
 
+// Live "starts in 3h 20m" ticker until an event kicks off (then "happening now").
+function Countdown({ to }: { to: string }) {
+  const [, setT] = useState(0);
+  useEffect(() => { const id = setInterval(() => setT((n) => n + 1), 30000); return () => clearInterval(id); }, []);
+  const ms = new Date(to).getTime() - Date.now();
+  if (ms <= 0) return <span style={{ color: '#3f7d57', fontWeight: 700 }}>● happening now</span>;
+  const mins = Math.floor(ms / 60000);
+  const d = Math.floor(mins / 1440), h = Math.floor((mins % 1440) / 60), m = mins % 60;
+  const label = d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const soon = ms < 3 * 3600 * 1000;
+  return <span style={{ color: soon ? LINE_DEEP : '#a8896a', fontWeight: soon ? 700 : 400 }}>⏳ starts in {label}</span>;
+}
+
+function audienceLabel(a: any): string | null {
+  const g = a.audienceGender;
+  const gLabel = Array.isArray(g) && g.length
+    ? g.map((x: string) => (x === 'm' ? 'men' : x === 'f' ? 'women' : 'non-binary')).join(' + ')
+    : null;
+  const min = a.audienceAgeMin, max = a.audienceAgeMax;
+  let ageLabel = '';
+  if (min != null && max != null) ageLabel = `${min}–${max}`;
+  else if (min != null) ageLabel = `${min}+`;
+  else if (max != null) ageLabel = `under ${max + 1}`;
+  if (!gLabel && !ageLabel) return null; // open to everyone
+  return [gLabel, ageLabel].filter(Boolean).join(' · ');
+}
+
 // One Scene post, FB-post structured: header (who/when) · body · action bar.
-function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string) => void; onDelete: (id: string) => void }) {
+// Events carry an audience (gender+age) and a live countdown; eligible people
+// get yes/maybe/no, everyone else sees who it's open to. Posts keep a 👍 like.
+function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void }) {
   const isEvent = (a.kind || 'event') !== 'post';
+  const aud = isEvent ? audienceLabel(a) : null;
+  const r = a.responses || { yes: 0, maybe: 0, no: 0 };
+  const eligible = a.eligible !== false;
+  const RESP: Array<['yes' | 'maybe' | 'no', string]> = [['yes', '✅ in'], ['maybe', '🤔 maybe'], ['no', '🚫 out']];
   return (
     <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
@@ -266,17 +299,49 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string) =>
       <div style={{ padding: '0 1rem 0.75rem' }}>
         <div style={{ fontSize: '1.02rem', lineHeight: 1.4 }}>{a.title}</div>
         {isEvent && a.happens_at && (
-          <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', ...chip, background: '#fff7e6' }}>
-            🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric' })}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center', marginTop: '0.55rem' }}>
+            <span style={{ ...chip, background: '#fff7e6', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric' })}
+            </span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}><Countdown to={a.happens_at} /></span>
+          </div>
+        )}
+        {isEvent && aud && (
+          <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: LINE_DEEP }}>
+            👥 open to {aud}
           </div>
         )}
       </div>
-      <div style={{ borderTop: `2px solid rgba(36,29,18,0.12)`, padding: '0.4rem 0.6rem' }}>
-        <button onClick={() => onRsvp(a.id)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', background: a.iRsvped ? '#ffd23d' : 'transparent', border: 'none', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: INK, fontWeight: 700 }}>
-          {isEvent ? (a.iRsvped ? "✓ you're in" : '🎟️ i’m in') : (a.iRsvped ? '👍 liked' : '👍 like')}
-          {a.rsvpCount ? <span style={{ ...miniCount, background: a.iRsvped ? INK : LINE }}>{a.rsvpCount}</span> : null}
-        </button>
+      <div style={{ borderTop: `2px solid rgba(36,29,18,0.12)`, padding: '0.45rem 0.6rem' }}>
+        {!isEvent ? (
+          <button onClick={() => onRsvp(a.id)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', background: a.iRsvped ? '#ffd23d' : 'transparent', border: 'none', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: INK, fontWeight: 700 }}>
+            {a.iRsvped ? '👍 liked' : '👍 like'}{a.rsvpCount ? <span style={{ ...miniCount, background: a.iRsvped ? INK : LINE }}>{a.rsvpCount}</span> : null}
+          </button>
+        ) : eligible ? (
+          <div>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {RESP.map(([val, label]) => {
+                const on = a.myResponse === val;
+                return (
+                  <button key={val} onClick={() => onRsvp(a.id, val)}
+                    style={{ flex: 1, background: on ? (val === 'no' ? '#f0d2c8' : '#ffd23d') : 'transparent', border: `2px solid ${on ? INK : 'rgba(36,29,18,0.2)'}`, borderRadius: 8, padding: '0.45rem 0.3rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: INK, fontWeight: on ? 700 : 500 }}>
+                    {label}{val === 'yes' && r.yes ? ` · ${r.yes}` : val === 'maybe' && r.maybe ? ` · ${r.maybe}` : ''}
+                  </button>
+                );
+              })}
+            </div>
+            {(r.yes > 0 || r.maybe > 0) && (
+              <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: '#a8896a' }}>
+                {r.yes} going{r.maybe ? ` · ${r.maybe} maybe` : ''}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '0.4rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: '#a8896a' }}>
+            🔒 open to {aud || 'a specific group'}{r.yes ? ` · ${r.yes} going` : ''}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -312,7 +377,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
-  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '' });
+  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', audGenders: [], audMin: '', audMax: '' });
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<NavKey>('home');
   const [chatOpen, setChatOpen] = useState(true);
@@ -393,12 +458,24 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   }
   async function createAct() {
     if (!newAct.title.trim()) return; setBusy(true);
-    await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAct) });
-    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area }); await loadActs(); await loadPulse(); setBusy(false);
+    const payload = {
+      ...newAct,
+      audience_gender: newAct.kind === 'event' ? newAct.audGenders : undefined,
+      audience_age_min: newAct.kind === 'event' && newAct.audMin ? parseInt(newAct.audMin) : undefined,
+      audience_age_max: newAct.kind === 'event' && newAct.audMax ? parseInt(newAct.audMax) : undefined,
+    };
+    await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, audGenders: [], audMin: '', audMax: '' }); await loadActs(); await loadPulse(); setBusy(false);
   }
-  async function rsvp(id: string) {
-    const r = await fetch(`/api/friend/activities/${id}/rsvp`, { method: 'POST' });
-    if (r.ok) { const d = await r.json(); setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count } : x)); }
+  async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
+    const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(response ? { response } : {}),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
+    }
   }
   async function deleteAct(id: string) {
     if (!confirm('Delete this post?')) return;
@@ -789,6 +866,26 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             )}
             <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '1.05rem', padding: '0.45rem 1.1rem', opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{newAct.kind === 'post' ? 'post →' : 'plan it →'}</button>
           </div>
+          {newAct.kind === 'event' && (
+            <div style={{ marginTop: '0.7rem', borderTop: `2px dashed rgba(36,29,18,0.18)`, paddingTop: '0.7rem' }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>who&apos;s it open to?</div>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {([['m', 'men'], ['f', 'women'], ['nb', 'non-binary']] as const).map(([v, label]) => {
+                  const on = newAct.audGenders.includes(v);
+                  return (
+                    <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: on ? s.audGenders.filter((x) => x !== v) : [...s.audGenders, v] }))}
+                      style={{ ...chip, cursor: 'pointer', background: on ? '#ffd23d' : '#fff' }}>{on ? '✓ ' : ''}{label}</button>
+                  );
+                })}
+                {newAct.audGenders.length === 0 && <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.75rem', color: '#a8896a' }}>everyone</span>}
+                <span style={{ marginLeft: '0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b4a2f' }}>age</span>
+                <input type="number" min={18} max={120} placeholder="18" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 54, border: `2px solid ${INK}`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <span style={{ color: '#a8896a' }}>–</span>
+                <input type="number" min={18} max={120} placeholder="99" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 54, border: `2px solid ${INK}`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+              </div>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: '#a8896a', marginTop: '0.4rem' }}>only people in range can RSVP yes / maybe / no. leave blank for everyone.</div>
+            </div>
+          )}
         </div>
 
         <div ref={feedRef} />

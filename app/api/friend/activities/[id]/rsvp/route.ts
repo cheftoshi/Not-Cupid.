@@ -4,45 +4,64 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-// Toggle RSVP ("I'm in") on an activity. Returns the new joined state + count.
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+const RESPONSES = ['yes', 'maybe', 'no'] as const;
+type Response = (typeof RESPONSES)[number];
+
+// RSVP to an activity. Events take a yes/maybe/no `response` and are gated to the
+// event's audience (gender + age). Posts (likes) just toggle a 'yes'. Tapping
+// your current response again clears it. Returns per-response counts + my state.
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const activityId = params.id;
+  const body = await req.json().catch(() => ({} as any));
+  const desired: Response = RESPONSES.includes(body?.response) ? body.response : 'yes';
 
-  // The Scene is a public neighborhood board (any member can RSVP to any post),
-  // but the activity must actually exist — so you can't pad counts on a deleted
-  // or made-up id.
   const { data: activity } = await supabaseAdmin
     .from('friend_activities')
-    .select('id')
+    .select('id, kind, author_id, audience_gender, audience_age_min, audience_age_max')
     .eq('id', activityId)
     .maybeSingle();
   if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
 
+  // Audience gate (events only; author is always allowed).
+  if ((activity.kind || 'event') === 'event' && activity.author_id !== user.id) {
+    const aud = activity.audience_gender as string[] | null;
+    const inGender = !Array.isArray(aud) || aud.length === 0 || aud.includes(user.gender);
+    const inAgeMin = activity.audience_age_min == null || (user.age != null && user.age >= activity.audience_age_min);
+    const inAgeMax = activity.audience_age_max == null || (user.age != null && user.age <= activity.audience_age_max);
+    if (!inGender || !inAgeMin || !inAgeMax) {
+      return NextResponse.json({ error: 'This event is open to a specific group.' }, { status: 403 });
+    }
+  }
+
   const { data: existing } = await supabaseAdmin
     .from('friend_activity_rsvps')
-    .select('activity_id')
+    .select('response')
     .eq('activity_id', activityId)
     .eq('user_id', user.id)
     .maybeSingle();
 
-  let joined: boolean;
-  if (existing) {
+  let myResponse: Response | null;
+  if (existing && existing.response === desired) {
+    // Same answer tapped again → clear it.
     await supabaseAdmin.from('friend_activity_rsvps').delete().eq('activity_id', activityId).eq('user_id', user.id);
-    joined = false;
+    myResponse = null;
   } else {
     await supabaseAdmin.from('friend_activity_rsvps').upsert(
-      { activity_id: activityId, user_id: user.id }, { onConflict: 'activity_id,user_id' }
+      { activity_id: activityId, user_id: user.id, response: desired },
+      { onConflict: 'activity_id,user_id' }
     );
-    joined = true;
+    myResponse = desired;
   }
 
-  const { count } = await supabaseAdmin
-    .from('friend_activity_rsvps')
-    .select('user_id', { count: 'exact', head: true })
-    .eq('activity_id', activityId);
+  // Fresh per-response tally.
+  const { data: all } = await supabaseAdmin
+    .from('friend_activity_rsvps').select('response').eq('activity_id', activityId);
+  const responses = { yes: 0, maybe: 0, no: 0 };
+  (all ?? []).forEach((r: any) => { const k = (r.response || 'yes') as Response; if (k in responses) responses[k]++; });
+  const count = (all ?? []).length;
 
-  return NextResponse.json({ ok: true, joined, count: count ?? 0 });
+  return NextResponse.json({ ok: true, joined: myResponse !== null, myResponse, responses, count });
 }
