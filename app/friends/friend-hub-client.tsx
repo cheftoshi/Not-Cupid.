@@ -28,6 +28,48 @@ const SPOTS: Array<[string, string, string]> = [
   ['cannoli @ Mike’s', '54%', '72%'], ['Wally’s jazz', '78%', '80%'], ['Spectacle Island', '20%', '86%'],
   ['Davis porchfest', '46%', '90%'], ['Charles river', '88%', '12%'],
 ];
+// Rough map positions (% left/top) per neighborhood for the bubble map.
+const HOOD_POS: Record<string, [number, number]> = {
+  'Cambridge': [32, 30], 'Somerville': [40, 16], 'Allston/Brighton': [18, 44],
+  'Back Bay': [42, 52], 'Beacon Hill': [50, 44], 'North End': [58, 36],
+  'Downtown': [54, 50], 'South End': [46, 60], 'Fenway': [30, 56],
+  'Charlestown': [58, 24], 'East Boston': [72, 28], 'South Boston': [66, 60],
+  'Jamaica Plain': [30, 72], 'Roxbury': [44, 70], 'Dorchester': [56, 76],
+  'Roslindale/West Roxbury': [34, 86], 'Brookline': [22, 60], 'Newton': [8, 54],
+  'Watertown': [16, 36], 'Belmont': [20, 24], 'Arlington': [28, 10],
+  'Medford': [46, 8], 'Malden': [56, 8], 'Everett': [62, 16], 'Chelsea': [68, 18],
+  'Revere': [78, 12], 'Winthrop': [84, 24], 'Quincy': [70, 84], 'Milton': [52, 88],
+  'Braintree': [64, 94], 'Waltham': [6, 38], 'Greater Boston': [88, 70],
+};
+
+// City Pulse as a scattered bubble map — each hood is a chat-bubble pin with a
+// person count; the busiest are bigger + brighter.
+function PulseBubbles({ areas, line, ink }: { areas: any[]; line: string; ink: string }) {
+  const max = areas[0]?.members || 1;
+  return (
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', minHeight: 280 }}>
+      {areas.slice(0, 14).map((a: any, i: number) => {
+        const pos = HOOD_POS[a.area] || [10 + (i * 13) % 80, 10 + (i * 23) % 80];
+        const intensity = a.members / max; // 0..1
+        const size = 30 + Math.round(intensity * 22); // px
+        return (
+          <div key={a.area} title={`${a.area} · ${a.members}`} style={{ position: 'absolute', left: `${pos[0]}%`, top: `${pos[1]}%`, transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
+            {/* chat bubble */}
+            <div style={{
+              width: size, height: size, borderRadius: '50% 50% 50% 6px',
+              background: line, border: `2.5px solid ${ink}`,
+              boxShadow: `2px 2px 0 ${ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: size > 40 ? '1.1rem' : '0.85rem',
+              opacity: 0.55 + intensity * 0.45, margin: '0 auto',
+            }}>{a.members}</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.04em', color: ink, marginTop: 2, maxWidth: 80, lineHeight: 1.1 }}>{a.area}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function TransitBackdrop() {
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -290,20 +332,8 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
                   <span style={chip}>🫂 {pulse.activeGroups}</span>
                   <button onClick={() => setKindFilter('event')} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities}</button>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                  {pulse.areas.slice(0, 10).map((a: any) => {
-                    const max = pulse.areas[0]?.members || 1;
-                    return (
-                      <div key={a.area} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ width: 96, fontFamily: "'DM Mono',monospace", fontSize: '0.56rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.area}</span>
-                        <div style={{ flex: 1, background: '#ffe6c7', borderRadius: 6, height: 14, border: `1.5px solid ${INK}` }}>
-                          <div style={{ width: `${Math.round((a.members / max) * 100)}%`, height: '100%', background: LINE, borderRadius: 6, minWidth: 3 }} />
-                        </div>
-                        <span style={{ width: 18, textAlign: 'right', fontFamily: "'DM Mono',monospace", fontSize: '0.56rem', color: '#6b4a2f' }}>{a.members}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <PulseBubbles areas={pulse.areas} line={LINE} ink={INK} />
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8896a', textAlign: 'center', marginTop: '0.4rem' }}>bubbles = neighborhoods · number = people here</p>
               </>
             )}
           </div>
