@@ -132,7 +132,15 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
   return (
     <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, #f3e7cf 60%, #f7ddc0 100%)`, color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <TransitBackdrop />
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
+      <style>{`
+        .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+        @media (min-width: 880px) {
+          .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
+          .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
+          .fmMain { grid-column: 1; grid-row: 1; }
+        }
+      `}</style>
+      <div style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -259,36 +267,41 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
 
         </>)}
 
-        {tab === 'community' && (<>
-        {/* CITY PULSE */}
-        <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
-        <div style={{ ...card, padding: '1.1rem 1.25rem' }}>
-          {!pulse ? <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>loading…</span> : (
-            <>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
-                <span style={chip}>👥 {pulse.totalMembers} in the network</span>
-                <span style={chip}>🫂 {pulse.activeGroups} active groups</span>
-                <button onClick={() => { setTab('community'); setKindFilter('event'); }} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities} things to do</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {pulse.areas.slice(0, 10).map((a: any) => {
-                  const max = pulse.areas[0]?.members || 1;
-                  return (
-                    <div key={a.area} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <span style={{ width: 150, fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>{a.area}</span>
-                      <div style={{ flex: 1, background: '#ffe6c7', borderRadius: 6, height: 16, border: `1.5px solid ${INK}` }}>
-                        <div style={{ width: `${Math.round((a.members / max) * 100)}%`, height: '100%', background: 'linear-gradient(90deg,#ff7a1f,#ff3d77)', borderRadius: 6, minWidth: 3 }} />
+        {tab === 'community' && (
+        <div className="fmGrid">
+
+        {/* SIDE RAIL — city pulse map */}
+        <div className="fmRail">
+          <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
+          <div style={{ ...card, padding: '1.1rem 1.25rem' }}>
+            {!pulse ? <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>loading…</span> : (
+              <>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
+                  <span style={chip}>👥 {pulse.totalMembers}</span>
+                  <span style={chip}>🫂 {pulse.activeGroups}</span>
+                  <button onClick={() => setKindFilter('event')} style={{ ...chip, cursor: 'pointer' }}>📣 {pulse.liveActivities}</button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  {pulse.areas.slice(0, 10).map((a: any) => {
+                    const max = pulse.areas[0]?.members || 1;
+                    return (
+                      <div key={a.area} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ width: 96, fontFamily: "'DM Mono',monospace", fontSize: '0.56rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.area}</span>
+                        <div style={{ flex: 1, background: '#ffe6c7', borderRadius: 6, height: 14, border: `1.5px solid ${INK}` }}>
+                          <div style={{ width: `${Math.round((a.members / max) * 100)}%`, height: '100%', background: LINE, borderRadius: 6, minWidth: 3 }} />
+                        </div>
+                        <span style={{ width: 18, textAlign: 'right', fontFamily: "'DM Mono',monospace", fontSize: '0.56rem', color: '#6b4a2f' }}>{a.members}</span>
                       </div>
-                      <span style={{ width: 70, textAlign: 'right', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: '#6b4a2f' }}>{a.members} ppl</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* THE FEED — post (talk) or event (RSVP) */}
+        {/* MAIN — the feed */}
+        <div className="fmMain">
         <h2 style={sectionLabel}><StationDot />📣 what&apos;s the move?</h2>
         <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.7rem' }}>
@@ -354,7 +367,9 @@ export default function FriendHubClient({ firstName }: { firstName: string; acce
           ))}
         </div>
         ); })()}
-        </>)}
+        </div>
+        </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>
           <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
