@@ -156,10 +156,13 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
     // Jump to the chat block so the user sees their accepted / waiting state.
     setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
   }
-  async function optOut(otherId: string, name: string) {
-    if (!confirm(`Opt out of your match with ${name}? This removes you both.`)) return;
-    await fetch('/api/friend/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId }) });
+  async function leaveCrew() {
+    if (!confirm("Opt out of this crew? You'll leave the group for everyone in it and the algo will route you to a fresh one.")) return;
+    setBusy(true);
+    await fetch('/api/friend/leave', { method: 'POST' });
+    setChatOpen(false);
     await loadMatches(); await loadChat();
+    setBusy(false);
   }
   async function send() {
     const body = msg.trim(); if (!body) return; setMsg('');
@@ -351,11 +354,10 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             {matches.length === 0 ? (
               <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>the algo is still finding your people — check back soon.</div>
             ) : (
+              <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '1rem' }}>
                 {matches.map((m) => (
                   <div key={m.otherId} style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
-                    <button onClick={() => optOut(m.otherId, m.name)} aria-label="opt out"
-                      style={{ position: 'absolute', top: 8, right: 8, zIndex: 2, width: 26, height: 26, borderRadius: '50%', background: '#fff', border: `2.5px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}`, cursor: 'pointer', fontWeight: 800 }}>✕</button>
                     <div style={{ position: 'relative' }}>
                       {m.photo_url
                         ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', borderBottom: `3px solid ${INK}` }} />
@@ -372,6 +374,11 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                   </div>
                 ))}
               </div>
+              <button onClick={leaveCrew} disabled={busy}
+                style={{ display: 'block', margin: '1.25rem auto 0', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
+                {busy ? '…' : 'not your crew? opt out of the group →'}
+              </button>
+              </>
             )}
           </div>
         </div>
