@@ -167,7 +167,7 @@ export default async function DashboardPage({
             })()}
           />
         ) : (
-          <RosterPicker radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} refreshCount={user.profile_refresh_count ?? 0} />
+          <RosterPicker radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} />
         )}
 
         {historyMatches && historyMatches.length > 0 && (

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
-import RefreshProfileButton from '@/components/refresh-profile-button';
+import ReactivateButton from '@/components/reactivate-button';
 
 // The waiting-state experience: instead of being assigned one match, the user
 // sees their top compatible people and CHOOSES who to connect with. First pick
@@ -15,7 +15,7 @@ type Candidate = {
   archetype: string | null; metro: string | null; relationship_style: string | null; score: number;
 };
 
-export default function RosterPicker({ radius, maxRadius, refreshCount }: { radius: number; maxRadius: number; refreshCount?: number }) {
+export default function RosterPicker({ radius, maxRadius }: { radius: number; maxRadius: number }) {
   const [roster, setRoster] = useState<Candidate[] | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -71,18 +71,22 @@ export default function RosterPicker({ radius, maxRadius, refreshCount }: { radi
     );
   }
 
-  // Ghosted/paused → locked out of both lines until they start fresh.
+  // Ghosted/paused → matching is paused on both lines. Gentle, non-destructive
+  // path back: one click reactivates, no profile wipe, no refresh spent.
   if (ghosted) {
     return (
       <div style={emptyWrap}>
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>⏸</div>
         <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.75rem', color: '#0b0b0b', margin: '0 0 0.5rem' }}>your matching is paused.</h2>
         <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
-          you were flagged for ghosting a match, so you&apos;re paused on both the love and friend lines. start fresh below to wipe the slate clean and get back in the pool.
+          a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — pick back up whenever you&apos;re ready.
         </p>
-        <div style={{ maxWidth: 360, margin: '1.5rem auto 0' }}>
-          <RefreshProfileButton usedCount={refreshCount} />
+        <div style={{ marginTop: '1.5rem' }}>
+          <ReactivateButton />
         </div>
+        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9a96a8', marginTop: '0.9rem' }}>
+          your profile &amp; past matches stay exactly as they are
+        </p>
       </div>
     );
   }

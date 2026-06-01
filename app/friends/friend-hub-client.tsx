@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { NEIGHBORHOODS } from '@/lib/neighborhoods';
+import ReactivateButton from '@/components/reactivate-button';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#241d12';           // warm near-black (signage)
@@ -300,12 +301,10 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           {ghosted ? (
             <div style={{ ...card, padding: '1.25rem' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ your matching is paused</div>
-              <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: '#6b4a2f', lineHeight: 1.5, margin: '0 0 0.6rem' }}>
-                you were flagged for ghosting a match, so you&apos;re paused on both the friend and love lines. head to your profile and <strong>start fresh</strong> to wipe the slate and get back in.
+              <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: '#6b4a2f', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
+                a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — your crew &amp; profile stay put. pick back up whenever you&apos;re ready.
               </p>
-              <a href="/friends/profile" style={{ display: 'inline-block', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: LINE, border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: `3px 3px 0 ${INK}`, textDecoration: 'none' }}>
-                go to my profile →
-              </a>
+              <ReactivateButton accent={LINE} />
             </div>
           ) : matches.length === 0 ? (
             <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>the algo is still finding your people — check back soon.</div>
