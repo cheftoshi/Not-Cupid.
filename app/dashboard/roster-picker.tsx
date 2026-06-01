@@ -20,6 +20,7 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
   const [picking, setPicking] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [ghosted, setGhosted] = useState(false);
+  const [hardLocked, setHardLocked] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -28,6 +29,7 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
       const res = await fetch('/api/match/roster');
       const data = await parseResponse<any>(res);
       setGhosted(!!data.ghosted);
+      setHardLocked(!!data.hardLocked);
       setRoster(Array.isArray(data.roster) ? data.roster : []);
     } catch {
       setRoster([]);
@@ -71,22 +73,36 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
     );
   }
 
-  // Ghosted/paused → matching is paused on both lines. Gentle, non-destructive
-  // path back: one click reactivates, no profile wipe, no refresh spent.
+  // Ghosted/paused → matching is paused on both lines. Below the hard cap the
+  // path back is one gentle, non-destructive click (no profile wipe, no refresh
+  // spent). Past the hard cap (repeat ghosting), only an admin can restore them.
   if (ghosted) {
     return (
       <div style={emptyWrap}>
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>⏸</div>
         <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.75rem', color: '#0b0b0b', margin: '0 0 0.5rem' }}>your matching is paused.</h2>
-        <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
-          a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — pick back up whenever you&apos;re ready.
-        </p>
-        <div style={{ marginTop: '1.5rem' }}>
-          <ReactivateButton />
-        </div>
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9a96a8', marginTop: '0.9rem' }}>
-          your profile &amp; past matches stay exactly as they are
-        </p>
+        {hardLocked ? (
+          <>
+            <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
+              this has happened a few times now, so we&apos;ve paused your account on both lines. if you think that&apos;s a mistake, email us and we&apos;ll take a look.
+            </p>
+            <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', marginTop: '1.3rem', background: '#0b0b0b', color: '#fff', borderRadius: 999, padding: '0.8rem 1.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.14em', textTransform: 'uppercase', textDecoration: 'none' }}>
+              email match@notcupid.com →
+            </a>
+          </>
+        ) : (
+          <>
+            <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
+              a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — pick back up whenever you&apos;re ready.
+            </p>
+            <div style={{ marginTop: '1.5rem' }}>
+              <ReactivateButton />
+            </div>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9a96a8', marginTop: '0.9rem' }}>
+              your profile &amp; past matches stay exactly as they are
+            </p>
+          </>
+        )}
       </div>
     );
   }

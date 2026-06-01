@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { assignFriendMatches, matchCapFor } from '@/lib/friend-assign';
+import { isHardLocked } from '@/lib/ghost';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,11 +20,11 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.friend_opted_in_at) return NextResponse.json({ optedIn: false, matches: [] });
 
-  // Ghosted/paused users are locked out of matching on BOTH lines until they
-  // refresh their profile (which clears the flag and starts them over).
+  // Ghosted/paused users are locked out of matching on BOTH lines. Self-
+  // reactivate (free) unless past the hard cap, where only an admin can restore.
   const cooldownActive = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > Date.now();
   if (user.matching_disabled_at || cooldownActive) {
-    return NextResponse.json({ optedIn: true, matches: [], ghosted: true });
+    return NextResponse.json({ optedIn: true, matches: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes) });
   }
 
   const cap = await matchCapFor(user.id);

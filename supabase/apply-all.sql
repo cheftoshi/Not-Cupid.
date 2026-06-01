@@ -115,6 +115,8 @@ alter table match_notifications enable row level security;
 alter table users add column if not exists ghost_reports_received int not null default 0;
 alter table users add column if not exists matching_cooldown_until timestamptz;
 alter table users add column if not exists matching_disabled_at timestamptz;
+-- Permanent lifetime ghost counter (reactivate can't zero it; drives escalation + hard cap)
+alter table users add column if not exists ghost_strikes int not null default 0;
 
 -- Date feedback per (match, reporting user). Each user gets one row per match.
 create table if not exists date_feedback (

@@ -111,6 +111,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   }
   const [matches, setMatches] = useState<any[]>([]);
   const [ghosted, setGhosted] = useState(false);
+  const [hardLocked, setHardLocked] = useState(false);
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
   const [pulse, setPulse] = useState<any>(null);
   const [acts, setActs] = useState<any[]>([]);
@@ -127,7 +128,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
 
   const loadMatches = useCallback(async () => {
     const r = await fetch('/api/friend/roster');
-    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setGhosted(!!d.ghosted); }
+    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); }
   }, []);
   const loadChat = useCallback(async () => {
     const r = await fetch('/api/friend/messages'); if (r.ok) setChat(await r.json());
@@ -301,10 +302,23 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           {ghosted ? (
             <div style={{ ...card, padding: '1.25rem' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ your matching is paused</div>
-              <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: '#6b4a2f', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
-                a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — your crew &amp; profile stay put. pick back up whenever you&apos;re ready.
-              </p>
-              <ReactivateButton accent={LINE} />
+              {hardLocked ? (
+                <>
+                  <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: '#6b4a2f', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
+                    this has happened a few times now, so we&apos;ve paused your account on both lines. if you think that&apos;s a mistake, email us and we&apos;ll take a look.
+                  </p>
+                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: `3px 3px 0 ${LINE_DEEP}`, textDecoration: 'none' }}>
+                    email match@notcupid.com →
+                  </a>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: '#6b4a2f', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
+                    a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — your crew &amp; profile stay put. pick back up whenever you&apos;re ready.
+                  </p>
+                  <ReactivateButton accent={LINE} />
+                </>
+              )}
             </div>
           ) : matches.length === 0 ? (
             <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>the algo is still finding your people — check back soon.</div>

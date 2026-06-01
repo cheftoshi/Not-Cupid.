@@ -12,6 +12,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { rankCandidates } from '@/lib/matching';
 import { releaseTimedOutMatches } from '@/lib/match-actions';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
+import { isHardLocked } from '@/lib/ghost';
 
 // ZIP → human metro label (e.g. "Boston, MA"), or "Boston area" fallback.
 // Never returns the raw ZIP — that's a location-privacy leak.
@@ -64,11 +65,12 @@ export async function GET() {
   if (hasLive) return NextResponse.json({ roster: [], hasOpenMatch: true });
   if (user.pool_active === false) return NextResponse.json({ roster: [], paused: true });
 
-  // Ghosted/paused users are locked out of matching on BOTH lines until they
-  // refresh their profile (which clears the flag and starts them over).
+  // Ghosted/paused users are locked out of matching on BOTH lines. They can
+  // self-reactivate (free, non-destructive) unless they're past the hard cap,
+  // in which case only an admin can restore them.
   const cooldownActive = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > now;
   if (user.matching_disabled_at || cooldownActive) {
-    return NextResponse.json({ roster: [], ghosted: true });
+    return NextResponse.json({ roster: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes) });
   }
 
   const nowIso = new Date().toISOString();

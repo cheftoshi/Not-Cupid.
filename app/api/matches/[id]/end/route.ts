@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { GHOST_COOLDOWN_DAYS, GHOST_PAUSE_AT } from '@/lib/ghost'
 
 export const dynamic = 'force-dynamic'
 
 type Reason = 'ghosted' | 'not_vibing' | 'user_ended'
 const VALID_REASONS: Reason[] = ['ghosted', 'not_vibing', 'user_ended']
-
-const COOLDOWN_DAYS = 7
-const GHOST_REPORTS_BAN_THRESHOLD = 3
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
@@ -76,20 +74,30 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (bothAccepted) {
       const { data: target } = await supabaseAdmin
         .from('users')
-        .select('ghost_reports_received, matching_disabled_at')
+        .select('ghost_reports_received, ghost_strikes, is_test')
         .eq('id', targetId)
         .single()
 
-      const newCount = (target?.ghost_reports_received ?? 0) + 1
-      const updates: any = { ghost_reports_received: newCount }
+      // Test accounts are exempt — they're for QA and never penalized.
+      if (!target?.is_test) {
+        const strikes = (target?.ghost_strikes ?? 0) + 1
+        const updates: any = {
+          ghost_strikes: strikes, // permanent — reactivate can't zero this
+          ghost_reports_received: (target?.ghost_reports_received ?? 0) + 1,
+        }
 
-      if (newCount >= GHOST_REPORTS_BAN_THRESHOLD && !target?.matching_disabled_at) {
-        updates.matching_disabled_at = now
-      } else {
-        updates.matching_cooldown_until = new Date(Date.now() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString()
+        // Escalate by LIFETIME strikes (so a reactivate that zeroes the soft
+        // counter can't reset the ladder): 1–2 → cooldown, 3+ → full pause.
+        // Past the hard cap the pause stays but self-reactivate is refused
+        // (enforced in /api/profile/reactivate), so no extra flag needed here.
+        if (strikes >= GHOST_PAUSE_AT) {
+          updates.matching_disabled_at = now
+        } else {
+          updates.matching_cooldown_until = new Date(Date.now() + GHOST_COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString()
+        }
+
+        await supabaseAdmin.from('users').update(updates).eq('id', targetId)
       }
-
-      await supabaseAdmin.from('users').update(updates).eq('id', targetId)
     }
   }
 

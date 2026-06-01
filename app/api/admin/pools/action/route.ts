@@ -36,10 +36,12 @@ export async function POST(req: NextRequest) {
           pool_active: true,
         }
       : {
-          // lift_ban — clean slate
+          // lift_ban — clean slate (also zero the permanent strike count, or a
+          // hard-locked user would re-lock the instant they're reactivated).
           matching_disabled_at: null,
           matching_cooldown_until: null,
           ghost_reports_received: 0,
+          ghost_strikes: 0,
           status: 'waiting',
           pool_active: true,
         };

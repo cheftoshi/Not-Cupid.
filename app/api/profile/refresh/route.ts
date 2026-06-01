@@ -65,8 +65,10 @@ export async function POST() {
       gallery: [], relationship_style: null,
       // love-line pool state
       status: 'waiting', pool_active: true, roster_snapshot: [], roster_refreshed_at: null,
-      // clear any ghost/pause penalties — a refresh "starts over" on both lines
-      matching_disabled_at: null, matching_cooldown_until: null, ghost_reports_received: 0,
+      // NOTE: a refresh wipes profile DATA but is NOT a way out of a ghost pause
+      // — that's what /api/profile/reactivate is for (and it's hard-capped). So
+      // we deliberately do NOT clear matching_disabled_at / ghost_strikes here,
+      // or a serial ghoster could nuke their profile to dodge the hard lock.
       // friend-line opt-out (they re-take the friend quiz if they want back in)
       friend_opted_in_at: null, friend_vibes: null, friend_seeking: [],
       friend_age_min: null, friend_age_max: null,
