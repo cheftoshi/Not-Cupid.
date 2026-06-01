@@ -37,6 +37,7 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string }>({ title: '', category: 'hang', happens_at: '' });
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<'community' | 'crew'>('community');
 
   const loadMatches = useCallback(async () => {
     const r = await fetch('/api/friend/roster'); if (r.ok) setMatches((await r.json()).matches || []);
@@ -89,9 +90,26 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
         </div>
 
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.5rem)', lineHeight: 0.9, color: '#ff7a1f', WebkitTextStroke: `2px ${INK}`, textShadow: `4px 4px 0 rgba(26,20,16,0.18)`, margin: 0 }}>
-          hey {firstName.toLowerCase()}, <span style={{ color: '#ff3d77', WebkitTextStroke: `2px ${INK}` }}>your crew awaits.</span>
+          hey {firstName.toLowerCase()}, <span style={{ color: '#ff3d77', WebkitTextStroke: `2px ${INK}` }}>this is your scene.</span>
         </h1>
 
+        {/* SEGMENT SWITCHER */}
+        <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0.5rem' }}>
+          {([['community', '🌆 the scene'], ['crew', '🎒 my crew']] as const).map(([t, label]) => (
+            <button key={t} onClick={() => setTab(t)}
+              style={{ flex: 1, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.04em', padding: '0.6rem', borderRadius: 14, border: `3px solid ${INK}`, cursor: 'pointer',
+                background: tab === t ? 'linear-gradient(135deg,#ff7a1f,#ff3d77)' : '#fff', color: tab === t ? '#fff' : INK,
+                boxShadow: tab === t ? `4px 4px 0 ${INK}` : 'none',
+                position: 'relative' }}>
+              {label}
+              {t === 'crew' && matches.some((m) => m.theyAccepted && !m.iAccepted) && (
+                <span style={{ position: 'absolute', top: -6, right: -6, width: 14, height: 14, borderRadius: '50%', background: '#ff3d77', border: `2px solid ${INK}` }} />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'crew' && (<>
         {!isFounding && (
           <div style={{ ...card, padding: '1rem 1.25rem', margin: '1.25rem 0', background: isExpired ? '#fff0f2' : '#fffaf0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', flex: 1, minWidth: 220 }}>
@@ -171,6 +189,9 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
           </>
         )}
 
+        </>)}
+
+        {tab === 'community' && (<>
         {/* CITY PULSE */}
         <h2 style={sectionLabel}>🌆 city pulse</h2>
         <div style={{ ...card, padding: '1.1rem 1.25rem' }}>
@@ -239,6 +260,8 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
             </div>
           ))}
         </div>
+        </>)}
+
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '2.5rem' }}>
           <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
           <a href="/friends/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d2530f', textDecoration: 'underline', textUnderlineOffset: 4 }}>✨ what&apos;s new</a>
