@@ -347,9 +347,16 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
   );
 }
 
-type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number };
+type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null };
 export default function FriendHubClient({ firstName, me }: { firstName: string; me?: Me; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
+  // An event defaults to the audience the poster set on the Friend Line quiz
+  // (who they want to meet + their age range). 'o' = everyone → no gender limit.
+  const prefAud = {
+    audGenders: (me?.friendSeeking || []).includes('o') ? [] : (me?.friendSeeking || []).filter((g) => ['m', 'f', 'nb'].includes(g)),
+    audMin: me?.friendAgeMin != null ? String(me.friendAgeMin) : '',
+    audMax: me?.friendAgeMax != null ? String(me.friendAgeMax) : '',
+  };
   const [payBusy, setPayBusy] = useState(false);
   async function buyMoreMatches() {
     setPayBusy(true);
@@ -377,7 +384,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
-  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', audGenders: [], audMin: '', audMax: '' });
+  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax });
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<NavKey>('home');
   const [chatOpen, setChatOpen] = useState(true);
@@ -465,7 +472,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
       audience_age_max: newAct.kind === 'event' && newAct.audMax ? parseInt(newAct.audMax) : undefined,
     };
     await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, audGenders: [], audMin: '', audMax: '' }); await loadActs(); await loadPulse(); setBusy(false);
+    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax }); await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
@@ -883,7 +890,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                 <span style={{ color: '#a8896a' }}>–</span>
                 <input type="number" min={18} max={120} placeholder="99" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 54, border: `2px solid ${INK}`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
               </div>
-              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: '#a8896a', marginTop: '0.4rem' }}>only people in range can RSVP yes / maybe / no. leave blank for everyone.</div>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: '#a8896a', marginTop: '0.4rem' }}>pre-filled from who you set out to meet — tweak it per event. only people in range can RSVP. leave blank for everyone.</div>
             </div>
           )}
         </div>

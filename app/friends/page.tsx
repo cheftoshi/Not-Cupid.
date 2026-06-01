@@ -39,6 +39,11 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: {
     food: user.food || [],
     hobbies: user.hobbies || [],
     galleryCount: Array.isArray(user.gallery) ? user.gallery.length : 0,
+    // Who they set out to meet on the Friend Line — used to pre-fill an event's
+    // audience so a posted event defaults to the poster's preferred range.
+    friendSeeking: Array.isArray(user.friend_seeking) ? user.friend_seeking : [],
+    friendAgeMin: user.friend_age_min ?? null,
+    friendAgeMax: user.friend_age_max ?? null,
   };
   return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} me={me} />;
 }
