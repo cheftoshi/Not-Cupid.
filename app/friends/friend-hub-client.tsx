@@ -120,6 +120,136 @@ function TransitBackdrop() {
   );
 }
 
+// ── old-school-FB shell pieces (warm transit palette) ──
+type NavKey = 'home' | 'map' | 'scene' | 'crew' | 'pulse';
+const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
+  { key: 'home', icon: '🏠', label: 'home' },
+  { key: 'map', icon: '🗺️', label: 'the map' },
+  { key: 'scene', icon: '🚇', label: 'the scene' },
+  { key: 'crew', icon: '🎒', label: 'my crew' },
+  { key: 'pulse', icon: '🌆', label: 'city pulse' },
+];
+const sideHd: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, fontWeight: 700 };
+const sideEmpty: React.CSSProperties = { fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.82rem', marginTop: '0.4rem' };
+const miniCount: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', minWidth: 20, height: 18, padding: '0 5px', borderRadius: 999, background: LINE, color: '#fff', border: `1.5px solid ${INK}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
+
+type Person = { id: string; name: string; photo_url: string | null; tag?: string };
+
+// The left rail: FB-style nav + active-crew stat + people + zones. Uses the
+// module palette directly so the call site stays clean.
+function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, crewBadge }: {
+  view: NavKey; setView: (v: NavKey) => void; activeGroups: number; people: Person[]; zones: any[]; onZone: (a: string) => void; crewBadge: boolean;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+      <nav className="fbSideNav" style={{ ...card, padding: '0.45rem' }}>
+        {NAV.map((n) => {
+          const active = view === n.key;
+          return (
+            <button key={n.key} onClick={() => setView(n.key)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', background: active ? LINE : 'transparent', color: active ? '#fff' : INK, border: 'none', borderRadius: 10, padding: '0.5rem 0.7rem', cursor: 'pointer', font: 'inherit', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.03em' }}>
+              <span style={{ fontSize: '1.05rem' }}>{n.icon}</span>{n.label}
+              {n.key === 'crew' && crewBadge && <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: '#da291c', border: `2px solid ${active ? '#fff' : INK}` }} />}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div style={{ ...card, padding: '0.75rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+        <span style={{ width: 11, height: 11, borderRadius: '50%', flexShrink: 0, background: activeGroups > 0 ? '#3f7d57' : '#c9a06a', boxShadow: activeGroups > 0 ? '0 0 0 4px rgba(63,125,87,0.18)' : 'none' }} />
+        <div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', lineHeight: 1 }}>{activeGroups} {activeGroups === 1 ? 'crew' : 'crews'} live</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b4a2f' }}>hanging right now</div>
+        </div>
+      </div>
+
+      <div style={{ ...card, padding: '0.8rem 0.9rem' }}>
+        <div style={sideHd}>👥 on the line</div>
+        {people.length === 0 ? <div style={sideEmpty}>finding your people…</div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
+            {people.slice(0, 8).map((p) => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {p.photo_url
+                  ? <img src={p.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${INK}`, flexShrink: 0 }} />
+                  : <span style={{ width: 28, height: 28, borderRadius: '50%', background: '#fbe6cf', border: `2px solid ${INK}`, flexShrink: 0, display: 'inline-block' }} />}
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name?.split(' ')[0] || '—'}</span>
+                {p.tag && <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, background: '#fbe6cf', border: `1.5px solid ${INK}`, borderRadius: 999, padding: '0.1rem 0.4rem', flexShrink: 0 }}>{p.tag}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ ...card, padding: '0.8rem 0.9rem' }}>
+        <div style={sideHd}>📍 zones</div>
+        {(!zones || zones.length === 0) ? <div style={sideEmpty}>no zones yet.</div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', marginTop: '0.5rem' }}>
+            {[...zones].sort((a, b) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 8).map((z, i) => (
+              <button key={z.area} onClick={() => onZone(z.area)} title={`see ${z.area}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: '0.3rem 0.1rem', color: INK, borderRadius: 6 }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
+                <span style={{ marginLeft: 'auto', ...miniCount }}>{z.members}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// The center "home" hub — auto-pulls what's popular on the scene + your crew.
+function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onOpen }: {
+  firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string) => void; onOpen: (v: NavKey) => void;
+}) {
+  return (
+    <div>
+      <div style={{ ...card, padding: '1rem 1.15rem', marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.9rem', flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', lineHeight: 1 }}>welcome back, {firstName.toLowerCase()}.</div>
+          <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.92rem' }}>
+            {activeGroups > 0 ? `${activeGroups} ${activeGroups === 1 ? 'crew is' : 'crews are'} hanging right now.` : 'the line is warming up — post something to get it going.'}
+          </div>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+          {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my crew →</button>}
+          <button onClick={onScene} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: `3px solid ${INK}`, borderRadius: 12, padding: '0.45rem 0.95rem', boxShadow: `3px 3px 0 ${INK}`, cursor: 'pointer' }}>📣 post →</button>
+        </div>
+      </div>
+
+      <h2 style={sectionLabel}><StationDot />🔥 what&apos;s popping</h2>
+      {popular.length === 0 ? (
+        <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: '#6b4a2f' }}>
+          nothing on the board yet — <button onClick={onScene} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>be the first to post →</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+          {popular.map((a) => (
+            <div key={a.id} style={{ ...card, padding: '0.9rem 1.1rem', display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
+              {a.authorPhoto ? <img src={a.authorPhoto} alt="" style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', border: `2px solid ${INK}`, background: '#ffe6c7', flexShrink: 0 }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.98rem' }}>{a.title}</div>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.35rem 0 0' }}>
+                  <span style={chip}>{a.kind === 'post' ? '💬' : '📅'} {a.category}</span>
+                  {a.area && <span style={chip}>📍 {a.area}</span>}
+                  {a.happens_at && <span style={chip}>🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' })}</span>}
+                  <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', color: '#6b4a2f', alignSelf: 'center' }}>by {a.authorName?.split(' ')[0] || '—'}</span>
+                </div>
+              </div>
+              <button onClick={() => onRsvp(a.id)} style={{ ...chip, cursor: 'pointer', fontSize: '0.8rem', padding: '0.35rem 0.7rem', background: a.iRsvped ? '#ffd23d' : '#fff', alignSelf: 'center', flexShrink: 0 }}>
+                {a.kind === 'post' ? `👍 ${a.rsvpCount || ''}` : (a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`)}
+              </button>
+            </div>
+          ))}
+          <button onClick={() => onOpen('scene')} style={{ alignSelf: 'center', marginTop: '0.2rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 4 }}>
+            see everything on the scene →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number };
 export default function FriendHubClient({ firstName, me }: { firstName: string; me?: Me; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
@@ -152,7 +282,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '' });
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<'map' | 'scene' | 'crew' | 'pulse'>('map');
+  const [view, setView] = useState<NavKey>('home');
   const [chatOpen, setChatOpen] = useState(true);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -190,6 +320,23 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         ...(me ? [{ id: 'me', name: me.name, photo_url: me.photo_url, here: iAmIn, you: true }] : []),
         ...matches.map((m) => ({ id: m.otherId, name: m.name, photo_url: m.photo_url, here: !!m.theyAccepted, you: false })),
       ];
+
+  // ── derived data for the FB-style shell ──
+  const activeGroups = pulse?.activeGroups ?? 0;
+  const crewBadge = matches.some((m) => m.theyAccepted && !m.iAccepted);
+  // "On the line" = your crew first, then recent faces posting on the scene
+  // (deduped), so the rail feels alive even before you have a full crew.
+  const people: Person[] = (() => {
+    const seen = new Set<string>();
+    const out: Person[] = [];
+    matches.forEach((m) => { if (!seen.has(m.otherId)) { seen.add(m.otherId); out.push({ id: m.otherId, name: m.name, photo_url: m.photo_url, tag: m.connected ? 'crew' : 'match' }); } });
+    acts.forEach((a) => { const k = a.authorName || ''; if (a.authorName && !seen.has(k)) { seen.add(k); out.push({ id: `act-${a.id}`, name: a.authorName, photo_url: a.authorPhoto || null, tag: 'posting' }); } });
+    return out;
+  })();
+  // Home feed = what's popular on the scene (most RSVPs/likes), freshest first.
+  const popular = [...acts]
+    .sort((a, b) => (b.rsvpCount || 0) - (a.rsvpCount || 0) || (b.happens_at ? new Date(b.happens_at).getTime() : 0) - (a.happens_at ? new Date(a.happens_at).getTime() : 0))
+    .slice(0, 6);
 
   async function join() {
     setBusy(true);
@@ -231,6 +378,22 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
     <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, #f3e7cf 60%, #f7ddc0 100%)`, color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <TransitBackdrop />
       <style>{`
+        /* old-school-FB shell: left rail + main column */
+        .fbShell { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.25rem; }
+        @media (max-width: 879px) {
+          /* stack: feed first, then people/zones rail; top-nav handles nav */
+          .fbSide { order: 2; }
+          .fbMain { order: 1; }
+          .fbSideNav { display: none; }
+        }
+        @media (min-width: 880px) {
+          .fbShell { grid-template-columns: 248px minmax(0,1fr); align-items: start; }
+          .fbSide { position: sticky; top: 1rem; }
+          .fbTopNav { display: none; }
+        }
+        /* on mobile the nav rides along the top as a horizontal toggle */
+        .fbTopNav { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.3rem; margin-top: 1rem; scrollbar-width: none; }
+        .fbTopNav::-webkit-scrollbar { display: none; }
         .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
         @media (min-width: 880px) {
           .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
@@ -282,7 +445,33 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           hey {firstName.toLowerCase()} — next stop, your people.
         </p>
 
-        {view === 'map' ? (
+        {/* mobile: the nav rides up top as a horizontal toggle */}
+        <div className="fbTopNav">
+          {NAV.map((n) => {
+            const active = view === n.key;
+            return (
+              <button key={n.key} onClick={() => setView(n.key)}
+                style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.03em', padding: '0.4rem 0.85rem', borderRadius: 10, border: `3px solid ${INK}`, cursor: 'pointer', background: active ? LINE : '#fffdf7', color: active ? '#fff' : INK, boxShadow: active ? `3px 3px 0 ${INK}` : 'none' }}>
+                {n.icon} {n.label}
+                {n.key === 'crew' && crewBadge && <span style={{ position: 'absolute', top: -5, right: -5, width: 12, height: 12, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="fbShell">
+          <aside className="fbSide">
+            <FriendSidebar view={view} setView={setView} activeGroups={activeGroups} people={people} zones={pulse?.areas || []} crewBadge={crewBadge}
+              onZone={(a) => { setAreaFilter(a); setView('scene'); }} />
+          </aside>
+          <main className="fbMain">
+
+        {view === 'home' && (
+          <HomeFeed firstName={firstName} activeGroups={activeGroups} popular={popular} hasCrew={matches.length > 0}
+            onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onOpen={setView} />
+        )}
+
+        {view === 'map' && (
           /* ───── THE MAP — three stops spread along the line, each its own page ───── */
           <div className="fmMap">
             <svg className="fmMapLine" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
@@ -294,7 +483,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             {([
               { key: 'scene', icon: '🚇', name: 'the scene', tag: "what's the move around town", stat: `${acts.length || 0} on the board`, badge: false, pos: { left: '16%', top: '15%' } },
               { key: 'crew', icon: '🎒', name: 'my crew', tag: 'your people + the group chat', stat: matches.length ? `${matches.length} matched` : 'finding your people', badge: matches.some((m) => m.theyAccepted && !m.iAccepted), pos: { left: '50%', top: '48%' } },
-              { key: 'pulse', icon: '🌆', name: 'city pulse', tag: 'which neighborhoods are buzzing', stat: pulse ? `${pulse.totalMembers} on the line` : 'loading…', badge: false, pos: { left: '84%', top: '15%' } },
+              { key: 'pulse', icon: '🌆', name: 'city pulse', tag: 'which neighborhoods are buzzing', stat: pulse ? `${activeGroups} ${activeGroups === 1 ? 'crew' : 'crews'} live · ${pulse.totalMembers} on the line` : 'loading…', badge: activeGroups > 0, pos: { left: '84%', top: '15%' } },
             ] as const).map((s) => (
               <button key={s.key} className="fmStop" style={{ left: s.pos.left, top: s.pos.top }} onClick={() => setView(s.key)}>
                 <span className="fmStopDot" />
@@ -306,23 +495,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
               </button>
             ))}
           </div>
-        ) : (
-          <>
-          {/* sub-nav — hop between stops, or back to the map */}
-          <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0.5rem', flexWrap: 'wrap', alignItems: 'stretch' }}>
-            <button onClick={() => setView('map')} title="back to the map"
-              style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP, background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 12, padding: '0 0.85rem', cursor: 'pointer' }}>◉ map</button>
-            {([['scene', '🚇 scene'], ['crew', '🎒 crew'], ['pulse', '🌆 pulse']] as const).map(([t, label]) => (
-              <button key={t} onClick={() => setView(t)}
-                style={{ flex: '1 1 0', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.04em', padding: '0.5rem', borderRadius: 12, border: `3px solid ${INK}`, cursor: 'pointer', position: 'relative',
-                  background: view === t ? LINE : '#fffdf7', color: view === t ? '#fff' : INK, boxShadow: view === t ? `4px 4px 0 ${INK}` : 'none' }}>
-                {label}
-                {t === 'crew' && matches.some((m) => m.theyAccepted && !m.iAccepted) && (
-                  <span style={{ position: 'absolute', top: -6, right: -6, width: 14, height: 14, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />
-                )}
-              </button>
-            ))}
-          </div>
+        )}
 
         {view === 'crew' && (
         <div>
@@ -631,8 +804,8 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
         ); })()}
         </div>
         )}
-        </>
-        )}
+          </main>
+        </div>
 
         <div style={{ maxWidth: 470, margin: '2.75rem auto 0', background: 'rgba(255,253,247,0.94)', border: `2px solid ${INK}`, borderRadius: 16, boxShadow: `4px 4px 0 ${INK}`, padding: '1rem 1.25rem', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
