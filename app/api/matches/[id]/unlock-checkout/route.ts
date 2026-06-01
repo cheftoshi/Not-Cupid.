@@ -32,30 +32,22 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     .eq('id', otherUserId)
     .single();
 
-  if (tier === 'profile') {
-    // Wall: don't sell the full-profile unlock when there's nothing extra to
-    // reveal. Paid profile content = bio OR gallery photos. Frontend gates this
-    // too; guard server-side so direct API hits can't bypass it.
-    const hasBio = !!(otherUser?.bio || '').trim();
-    const hasGallery = Array.isArray(otherUser?.gallery) && otherUser!.gallery.length > 0;
-    if (!hasBio && !hasGallery) {
-      return NextResponse.json(
-        { error: `${otherUser?.name || 'They'} hasn't set up their profile yet — nothing to unlock.` },
-        { status: 422 }
-      );
-    }
-  } else if (typeof otherUser?.score_honesty !== 'number') {
-    // HEXACO tier needs personality scores to exist.
+  // Single wall for EVERY unlock: there must be real, user-added content
+  // (bio and/or gallery). HEXACO is auto-generated and never sold on its own,
+  // so we force every purchase to the $1.99 profile tier and reject when the
+  // matched user hasn't actually added anything. Guards direct API hits too.
+  const hasBio = !!(otherUser?.bio || '').trim();
+  const hasGallery = Array.isArray(otherUser?.gallery) && otherUser!.gallery.length > 0;
+  if (!hasBio && !hasGallery) {
     return NextResponse.json(
-      { error: `${otherUser?.name || 'They'} hasn't finished the quiz yet — no personality profile to unlock.` },
+      { error: `${otherUser?.name || 'They'} hasn't added a bio or photos yet — nothing to unlock.` },
       { status: 422 }
     );
   }
+  tier = 'profile'; // never sell the standalone HEXACO tier
 
-  const amount = tier === 'hexaco' ? '99' : '199';
-  const productName = tier === 'hexaco'
-    ? `${otherUser?.name || 'Match'}'s HEXACO personality`
-    : `Unlock ${otherUser?.name || 'match'}'s full profile`;
+  const amount = '199';
+  const productName = `Unlock ${otherUser?.name || 'match'}'s full profile`;
 
   // Determine origin for redirect URLs
   const origin = req.headers.get('origin') || `https://${req.headers.get('host')}` || 'https://notcupid.com';

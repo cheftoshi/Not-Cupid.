@@ -283,34 +283,32 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
           )}
         </div>
       ) : (
-        (hasProfileContent || (hasScores && !showHexaco)) ? (
+        // PAYWALL RULE: only sell an unlock when the matched user has added REAL
+        // content themselves (bio and/or gallery photos). HEXACO is auto-generated
+        // from the quiz — it is NOT something they "added", so we never sell it on
+        // its own. If there's no real content, show nothing to buy. (Fixes the
+        // "paid and got only HEXACO / nothing" complaints.)
+        hasProfileContent ? (
           <div className={styles.lockedSection}>
-            <div className={styles.lockedTitle}>🔒 know them before you decide</div>
+            <div className={styles.lockedTitle}>🔒 there&apos;s more to {(otherUser.name || 'them').split(' ')[0]}</div>
             <p className={styles.lockedDescription}>
-              their photo&apos;s already here — go deeper before you lock in.
+              unlock {[
+                (otherUser.bio || '').trim() ? 'their bio' : null,
+                (Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0) ? `${otherUser.gallery.length} more photo${otherUser.gallery.length > 1 ? 's' : ''}` : null,
+                'music, food & hobbies',
+                'their HEXACO breakdown',
+              ].filter(Boolean).join(', ')} — $1.99.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.5rem' }}>
-              {!showHexaco && hasScores && (
-                <button onClick={() => handleUnlock('hexaco')} disabled={busy} className={styles.unlockButton} style={{ background: 'transparent', color: '#1b46c9', border: '1px solid rgba(37,99,255,0.5)' }}>
-                  {busy ? 'loading...' : 'see their HEXACO — $0.99'}
-                </button>
-              )}
-              {hasProfileContent && (
-                <button onClick={() => handleUnlock('profile')} disabled={busy} className={styles.unlockButton}>
-                  {busy ? 'loading...' : 'open full profile — $1.99 →'}
-                </button>
-              )}
-            </div>
+            <button onClick={() => handleUnlock('profile')} disabled={busy} className={styles.unlockButton}>
+              {busy ? 'loading...' : 'open full profile — $1.99 →'}
+            </button>
           </div>
         ) : (
           <div className={styles.lockedSection}>
-            <div className={styles.lockedTitle}>🌱 not ready yet</div>
+            <div className={styles.lockedTitle}>🌱 nothing to unlock yet</div>
             <p className={styles.lockedDescription}>
-              {(otherUser.name || 'they').split(' ')[0]} hasn&apos;t set up their profile yet — nothing extra to unlock. check back soon.
+              {(otherUser.name || 'they').split(' ')[0]} hasn&apos;t added a bio or photos yet — so there&apos;s nothing to pay for. their photo and personality are already shown above.
             </p>
-            <button disabled className={styles.unlockButton} style={{opacity:0.45,cursor:'not-allowed'}}>
-              profile incomplete
-            </button>
           </div>
         )
       )}
