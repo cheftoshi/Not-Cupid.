@@ -184,6 +184,7 @@ export default function AdminClient() {
             <nav className={s.nav}>
               <a href="#funnel" className={s.navLink}>Funnel</a>
               <a href="#traffic" className={s.navLink}>Traffic</a>
+              <a href="#friend" className={s.navLink}>Friend</a>
               <a href="#pool" className={s.navLink}>Pool</a>
               <a href="#health" className={s.navLink}>Health</a>
               <a href="#ops" className={s.navLink}>Ops</a>
@@ -290,6 +291,28 @@ export default function AdminClient() {
                   })}
                 </div>
               </>
+            )}
+          </div>
+
+          {/* ── FRIEND MAXXIN ── */}
+          <div className={s.card} id="friend">
+            <div className={s.cardHead}>
+              <p className={s.cardTitle}>Friend Maxxin — <b>the orange line</b></p>
+            </div>
+            {!data?.friend ? (
+              <p className={s.note}>no friend data yet (run the friend migrations).</p>
+            ) : (
+              <div className={s.chips}>
+                <span className={s.chip}>Opted in <b>{data.friend.optedIn}</b></span>
+                <span className={`${s.chip} ${s.chipGold}`}>Pro subs <b>{data.friend.pro}</b></span>
+                <span className={s.chip}>Pro rev/mo <b>${data.friend.proRevenue}</b></span>
+                <span className={s.chip}>Connections <b>{data.friend.connectionsMade}</b></span>
+                <span className={s.chip}>Pending <b>{data.friend.connectionsPending}</b></span>
+                <span className={s.chip}>Active crews <b>{data.friend.activeCircles}</b></span>
+                <span className={s.chip}>Chat msgs <b>{data.friend.messages}</b></span>
+                <span className={s.chip}>Posts <b>{data.friend.posts}</b></span>
+                <span className={s.chip}>Events <b>{data.friend.events}</b></span>
+              </div>
             )}
           </div>
 

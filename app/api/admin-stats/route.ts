@@ -15,6 +15,34 @@ export async function GET(req: NextRequest) {
     // For the conversion funnel: which matches have ≥1 message, and which users gave date feedback.
     const { data: msgRows } = await supabaseAdmin.from('messages').select('match_id')
     const { data: feedbackRows } = await supabaseAdmin.from('date_feedback').select('user_id')
+
+    // ── Friend Maxxin metrics (wrapped so missing tables don't break the dashboard) ──
+    let friend: any = null
+    try {
+      const liveUsers = (users ?? []).filter((u: any) => !u.deleted_at)
+      const optedIn = liveUsers.filter((u: any) => u.friend_opted_in_at)
+      const proCount = liveUsers.filter((u: any) =>
+        u.friend_paid_at || (u.friend_pro_until && new Date(u.friend_pro_until).getTime() > Date.now())
+      ).length
+      const { data: conns } = await supabaseAdmin.from('friend_connections').select('status')
+      const { data: circleMembers } = await supabaseAdmin.from('friend_circle_members').select('circle_id').is('left_at', null)
+      const { data: fMsgs } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
+      const { data: acts } = await supabaseAdmin.from('friend_activities').select('kind')
+      const connList = conns ?? []
+      friend = {
+        optedIn: optedIn.length,
+        pro: proCount,
+        proRevenue: (proCount * 2.99).toFixed(2),
+        connectionsPending: connList.filter((c: any) => c.status === 'pending').length,
+        connectionsMade: connList.filter((c: any) => c.status === 'connected').length,
+        activeCircles: new Set((circleMembers ?? []).map((m: any) => m.circle_id)).size,
+        messages: (fMsgs as any)?.length ?? 0,
+        posts: (acts ?? []).filter((a: any) => a.kind === 'post').length,
+        events: (acts ?? []).filter((a: any) => a.kind !== 'post').length,
+      }
+    } catch (e) {
+      console.warn('friend metrics unavailable', e)
+    }
     // Web traffic (last 7 days) for the in-admin flow view. Wrapped so a missing
     // page_views table (migration not run yet) doesn't break the whole dashboard.
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -139,6 +167,7 @@ export async function GET(req: NextRequest) {
       signupsPerDay: days,
       funnel,
       traffic,
+      friend,
       recentUsers,
       recentMatches,
     })

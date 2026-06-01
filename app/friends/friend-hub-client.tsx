@@ -17,6 +17,42 @@ const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", 
 // A station dot to prefix section labels (the route runs through the page).
 const StationDot = () => <span style={{ width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}`, flexShrink: 0, display: 'inline-block' }} />;
 
+// Faint transit map behind everything: T-line colors criss-crossing + iconic
+// Boston station/spot names as ghost labels. Decorative, pointer-events:none.
+const T_RED = '#da291c', T_BLUE = '#003da5', T_GREEN = '#00843d', T_ORANGE = '#ed8b00';
+const SPOTS: Array<[string, string, string]> = [
+  ['Park Street', '7%', '14%'], ['Harvard Sq', '62%', '9%'], ['Kendall/MIT', '30%', '20%'],
+  ['Davis', '80%', '24%'], ['South Station', '12%', '40%'], ['Back Bay', '70%', '38%'],
+  ['Fenway', '40%', '52%'], ['Coolidge Corner', '85%', '58%'], ['JFK/UMass', '8%', '66%'],
+  ['Government Ctr', '55%', '72%'], ['Maverick', '78%', '80%'], ['Ashmont', '20%', '86%'],
+  ['Alewife', '46%', '90%'], ['North Station', '88%', '12%'],
+];
+function TransitBackdrop() {
+  return (
+    <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+      <svg viewBox="0 0 1000 1400" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.13 }}>
+        <g fill="none" strokeWidth="9" strokeLinecap="round">
+          <path d="M-40 180 L260 180 L420 340 L420 1100 L600 1280 L1100 1280" stroke={T_RED} />
+          <path d="M-40 420 L380 420 L520 560 L1100 560" stroke={T_BLUE} />
+          <path d="M120 -40 L120 520 L320 720 L320 1450" stroke={T_GREEN} />
+          <path d="M1080 120 L720 120 L560 280 L560 1450" stroke={T_ORANGE} />
+        </g>
+        {[[260,180,T_RED],[420,340,T_RED],[380,420,T_BLUE],[520,560,T_BLUE],[120,520,T_GREEN],[320,720,T_GREEN],[720,120,T_ORANGE],[560,280,T_ORANGE]].map(([x,y,c],i)=>(
+          <circle key={i} cx={x as number} cy={y as number} r="13" fill={CREAM} stroke={c as string} strokeWidth="6" opacity="0.55" />
+        ))}
+      </svg>
+      {SPOTS.map(([name, left, top], i) => (
+        <span key={name} style={{
+          position: 'absolute', left, top,
+          fontFamily: "'Bebas Neue', sans-serif", fontSize: i % 3 === 0 ? '1.5rem' : '1.05rem',
+          letterSpacing: '0.06em', color: INK, opacity: 0.06,
+          transform: `rotate(${i % 2 ? -4 : 3}deg)`, whiteSpace: 'nowrap',
+        }}>◉ {name}</span>
+      ))}
+    </div>
+  );
+}
+
 export default function FriendHubClient({ firstName, accessTier, daysLeft }: { firstName: string; accessTier: 'pro' | 'trial' | 'expired'; daysLeft: number }) {
   const isPro = accessTier === 'pro';
   const [payBusy, setPayBusy] = useState<'' | 'pro'>('');
@@ -88,8 +124,9 @@ export default function FriendHubClient({ firstName, accessTier, daysLeft }: { f
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, #f3e7cf 60%, #f7ddc0 100%)`, color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
+    <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, #f3e7cf 60%, #f7ddc0 100%)`, color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
+      <TransitBackdrop />
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
