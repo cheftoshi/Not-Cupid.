@@ -574,6 +574,16 @@ export default function AdminClient() {
                 const note = d.remaining > 0 ? `\n\n${d.remaining} remaining. Click again to continue.` : ''
                 alert(`Friend Line blast: sent ${d.sent || 0}, failed ${d.failed || 0}, candidates ${d.totalCandidates || 0}${note}${d.errors?.length ? '\n\n' + d.errors.slice(0,5).join('\n') : ''}`)
               }}>🟠 Friend Line launch blast</button>
+              <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
+                const dry = await fetch('/api/admin/send-friend-digest?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
+                const preview = dry
+                  ? (dry.reason ? `\n\n(${dry.reason})` : `\n\n${dry.candidates} recipients · ${dry.events} upcoming events · ${dry.posts} fresh posts.`)
+                  : ''
+                if (!confirm(`Send the Friend Line daily digest NOW?${preview}\n\n(Ignores the 20h throttle — a deliberate manual send.)`)) return
+                const res = await fetch('/api/admin/send-friend-digest', { method: 'POST' })
+                const d = await parseResponse<any>(res)
+                alert(`Friend digest: sent ${d.sent || 0}${d.reason ? ` (${d.reason})` : ` · ${d.events} events, ${d.posts} posts`}`)
+              }}>📨 Send friend digest now</button>
             </div>
           </div>
 
