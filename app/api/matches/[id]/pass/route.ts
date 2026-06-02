@@ -44,5 +44,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     { onConflict: 'user_a_id,user_b_id' }
   );
 
+  // Return both parties to the pool (else a stale 'matched' status strands them
+  // on the roster — they see picks but can't claim).
+  await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [match.user_1_id, match.user_2_id]);
+
   return NextResponse.json({ success: true });
 }

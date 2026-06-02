@@ -54,6 +54,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'You already have an active match.' }, { status: 409 });
   }
 
+  // No live match → the caller is free to pick. A prior match may have ended
+  // (reported / passed / chat expired) without resetting their status to
+  // 'waiting', which would make the atomic self-claim below fail and strand
+  // them on "refresh to see it" forever. Normalize it now.
+  if (user.status !== 'waiting') {
+    await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', user.id);
+  }
+
   // Load + validate the candidate (prevents picking arbitrary / ineligible ids).
   const { data: cand } = await supabaseAdmin.from('users').select('*').eq('id', candidateId).is('deleted_at', null).single();
   if (!cand) return NextResponse.json({ error: 'That person is no longer available.' }, { status: 404 });

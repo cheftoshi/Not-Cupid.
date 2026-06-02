@@ -68,6 +68,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     { onConflict: 'user_a_id,user_b_id' }
   )
 
+  // Return both parties to the pool so they can be matched again (otherwise a
+  // stale 'matched' status strands them: roster shows, but picking can't claim).
+  // Ghost penalties below are enforced separately via matching_disabled_at /
+  // matching_cooldown_until, so 'waiting' here is safe.
+  await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [match.user_1_id, match.user_2_id])
+
   if (reason === 'ghosted') {
     // Only count ghost reports if the match actually reached mutual acceptance —
     // prevents weaponizing the report against people who simply passed.

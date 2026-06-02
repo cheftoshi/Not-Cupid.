@@ -73,6 +73,12 @@ export async function GET() {
     return NextResponse.json({ roster: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes) });
   }
 
+  // They have no live match but their status got stuck (a prior match ended
+  // without resetting it) — normalize to 'waiting' so picking actually works.
+  if (user.status !== 'waiting') {
+    await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', user.id);
+  }
+
   const nowIso = new Date().toISOString();
   const { data: pool } = await supabaseAdmin
     .from('users')
