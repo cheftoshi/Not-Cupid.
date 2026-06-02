@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
 import ReportDialog from '@/components/report-dialog';
+import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
 import styles from './chat.module.css';
 
@@ -74,6 +75,8 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const [heyWarned, setHeyWarned] = useState(false);
   const [nudge, setNudge] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   // Date vibes for the side rail — fetched once (the endpoint hits external
   // event APIs, so we don't poll it like messages).
@@ -241,14 +244,31 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
         ) : (
           <div className={styles.headerPhotoEmpty} />
         )}
-        <button
-          onClick={() => setReportOpen(true)}
-          aria-label="Report or block"
-          title="Report or block"
-          style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.05rem', padding: '0.25rem 0.4rem', color: '#9a96a8' }}
-        >
-          ⋯
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Match options"
+            title="Match options"
+            style={{ background: menuOpen ? 'rgba(11,11,11,0.06)' : 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.15rem', lineHeight: 1, padding: '0.3rem 0.5rem', borderRadius: 8, color: '#6b6b76' }}
+          >
+            ⋯
+          </button>
+          {menuOpen && (
+            <>
+              <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 41, background: '#fff', border: '1px solid rgba(11,11,11,0.1)', borderRadius: 12, boxShadow: '0 10px 30px rgba(11,11,11,0.14)', overflow: 'hidden', minWidth: 184 }}>
+                <button onClick={() => { setMenuOpen(false); setEndOpen(true); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '0.8rem 1rem', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.7rem', letterSpacing: '0.05em', color: '#0b0b0b' }}>
+                  <span style={{ fontSize: '0.95rem' }}>💔</span> End match
+                </button>
+                <button onClick={() => { setMenuOpen(false); setReportOpen(true); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '0.8rem 1rem', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.7rem', letterSpacing: '0.05em', color: '#c0392b', borderTop: '1px solid rgba(11,11,11,0.07)' }}>
+                  <span style={{ fontSize: '0.95rem' }}>🛡️</span> Report or block
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       <div className={styles.messages} ref={scrollRef}>
@@ -414,6 +434,14 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           otherName={otherUser?.name || 'them'}
           onClose={() => setReportOpen(false)}
           onDone={() => { window.location.href = '/dashboard'; }}
+        />
+      )}
+      {endOpen && (
+        <EndMatchDialog
+          matchId={matchId}
+          otherName={otherUser?.name || 'them'}
+          onClose={() => setEndOpen(false)}
+          onEnded={() => { window.location.href = '/dashboard'; }}
         />
       )}
       {feedbackOpen && (
