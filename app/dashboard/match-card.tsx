@@ -333,6 +333,9 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
           <div className={styles.actions}>
             <a href={`/match/${match.id}`} className={styles.chatButton}>send an opener →</a>
           </div>
+          <button onClick={handlePass} disabled={busy} className={styles.reportLink} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            ← unmatch &amp; go back to your roster
+          </button>
         </>
       )}
 
