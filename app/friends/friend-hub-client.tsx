@@ -137,8 +137,8 @@ type Person = { id: string; name: string; photo_url: string | null; tag?: string
 
 // The left rail: FB-style nav + active-crew stat + people + zones. Uses the
 // module palette directly so the call site stays clean.
-function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, crewBadge }: {
-  view: NavKey; setView: (v: NavKey) => void; activeGroups: number; people: Person[]; zones: any[]; onZone: (a: string) => void; crewBadge: boolean;
+function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, crewBadge, sceneBadge = 0 }: {
+  view: NavKey; setView: (v: NavKey) => void; activeGroups: number; people: Person[]; zones: any[]; onZone: (a: string) => void; crewBadge: boolean; sceneBadge?: number;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -150,6 +150,7 @@ function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, cre
               style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', background: active ? LINE : 'transparent', color: active ? '#fff' : INK, border: 'none', borderRadius: 10, padding: '0.5rem 0.7rem', cursor: 'pointer', font: 'inherit', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.03em' }}>
               <span style={{ fontSize: '1.05rem' }}>{n.icon}</span>{n.label}
               {n.key === 'crew' && crewBadge && <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: '#da291c', border: `2px solid ${active ? '#fff' : INK}` }} />}
+              {n.key === 'scene' && sceneBadge > 0 && <span style={{ marginLeft: 'auto', minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${active ? '#fff' : INK}` }}>{sceneBadge}</span>}
             </button>
           );
         })}
@@ -389,6 +390,11 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [view, setView] = useState<NavKey>('home');
   const [chatOpen, setChatOpen] = useState(true);
   const chatRef = useRef<HTMLDivElement>(null);
+  // In-app "new event" notification (no email — the daily digest covers that).
+  const [evToast, setEvToast] = useState<{ id: string; title: string; author: string } | null>(null);
+  const [newScene, setNewScene] = useState(0);
+  const seenEvents = useRef<Set<string>>(new Set());
+  const seenBootstrapped = useRef(false);
 
   const loadMatches = useCallback(async () => {
     const r = await fetch('/api/friend/roster');
@@ -409,6 +415,30 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   useEffect(() => { loadActs(); }, [loadActs]);
   // light polling for the group chat
   useEffect(() => { const t = setInterval(loadChat, 4000); return () => clearInterval(t); }, [loadChat]);
+  // poll the Scene so new posts/events surface live (and can notify)
+  useEffect(() => { const t = setInterval(loadActs, 45000); return () => clearInterval(t); }, [loadActs]);
+
+  // In-app "new event" notification: when an eligible event you didn't post
+  // appears, pop a toast + bump the Scene badge. First load seeds the baseline
+  // so existing events don't notify on open.
+  useEffect(() => {
+    const events = acts.filter((a) => (a.kind || 'event') === 'event' && !a.isMine && a.eligible !== false);
+    if (!seenBootstrapped.current) {
+      events.forEach((e) => seenEvents.current.add(e.id));
+      seenBootstrapped.current = true;
+      return;
+    }
+    const fresh = events.filter((e) => !seenEvents.current.has(e.id));
+    if (!fresh.length) return;
+    fresh.forEach((e) => seenEvents.current.add(e.id));
+    const newest = fresh[0]; // acts come newest-first
+    setEvToast({ id: newest.id, title: newest.title, author: newest.authorName || 'someone' });
+    setNewScene((n) => n + fresh.length);
+  }, [acts]);
+  // Opening the Scene clears the badge + toast.
+  useEffect(() => { if (view === 'scene') { setNewScene(0); setEvToast(null); } }, [view]);
+  // Auto-dismiss the toast after a few seconds (the badge persists until viewed).
+  useEffect(() => { if (!evToast) return; const t = setTimeout(() => setEvToast(null), 7000); return () => clearTimeout(t); }, [evToast]);
 
   const pendingToJoin = matches.some((m) => !m.iAccepted);
   const iAmIn = matches.some((m) => m.iAccepted);
@@ -499,7 +529,24 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   return (
     <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, #f3e7cf 60%, #f7ddc0 100%)`, color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <TransitBackdrop />
+
+      {/* in-app "new event" pop-up — tap to jump to the Scene */}
+      {evToast && (
+        <button onClick={() => { setView('scene'); setEvToast(null); setNewScene(0); }}
+          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'min(440px, 92vw)', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', background: LINE, color: '#fff', border: `3px solid ${INK}`, borderRadius: 14, boxShadow: `4px 4px 0 ${INK}`, padding: '0.7rem 0.95rem', cursor: 'pointer', font: 'inherit', animation: 'fbToastIn 0.25s ease' }}>
+          <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔔</span>
+          <span style={{ minWidth: 0 }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+              {(evToast.author || 'someone').split(' ')[0]}: {evToast.title}
+            </span>
+          </span>
+          <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>see →</span>
+        </button>
+      )}
+
       <style>{`
+        @keyframes fbToastIn { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
         /* old-school-FB shell: left rail + main column */
         .fbShell { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.25rem; }
         @media (max-width: 879px) {
@@ -576,6 +623,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
                 style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.03em', padding: '0.4rem 0.85rem', borderRadius: 10, border: `3px solid ${INK}`, cursor: 'pointer', background: active ? LINE : '#fffdf7', color: active ? '#fff' : INK, boxShadow: active ? `3px 3px 0 ${INK}` : 'none' }}>
                 {n.icon} {n.label}
                 {n.key === 'crew' && crewBadge && <span style={{ position: 'absolute', top: -5, right: -5, width: 12, height: 12, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />}
+                {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${INK}` }}>{newScene}</span>}
               </button>
             );
           })}
@@ -583,7 +631,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
 
         <div className="fbShell">
           <aside className="fbSide">
-            <FriendSidebar view={view} setView={setView} activeGroups={activeGroups} people={people} zones={pulse?.areas || []} crewBadge={crewBadge}
+            <FriendSidebar view={view} setView={setView} activeGroups={activeGroups} people={people} zones={pulse?.areas || []} crewBadge={crewBadge} sceneBadge={newScene}
               onZone={(a) => { setAreaFilter(a); setView('scene'); }} />
           </aside>
           <main className="fbMain">
