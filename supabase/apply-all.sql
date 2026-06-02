@@ -414,6 +414,100 @@ alter table page_views enable row level security;
 alter table users add column if not exists is_test boolean not null default false;
 create index if not exists users_is_test_idx on users(is_test) where is_test = true;
 
+-- ==================== 20260601_friend_maxxin.sql ====================
+-- Friend Line core: opt-in + quiz data on users, pairwise connections, circles
+-- (group chats), messages, and no-repeat history. (Was never folded in — these
+-- tables exist in prod from the migration, but apply-all needs them to be a
+-- complete from-zero rebuild, and friend_chat_unlocks below FKs friend_circles.)
+alter table users add column if not exists friend_opted_in_at timestamptz;
+alter table users add column if not exists friend_vibes jsonb;
+alter table users add column if not exists friend_seeking text[] not null default '{}';
+create index if not exists users_friend_pool_idx on users(friend_opted_in_at) where friend_opted_in_at is not null;
+
+create table if not exists friend_connections (
+  id uuid primary key default gen_random_uuid(),
+  user_a_id uuid not null references users(id) on delete cascade,
+  user_b_id uuid not null references users(id) on delete cascade,
+  a_picked boolean not null default false,
+  b_picked boolean not null default false,
+  status text not null default 'pending' check (status in ('pending','connected','declined')),
+  circle_id uuid,
+  compatibility_score int,
+  created_at timestamptz not null default now(),
+  connected_at timestamptz,
+  unique (user_a_id, user_b_id)
+);
+create index if not exists friend_connections_a_idx on friend_connections(user_a_id);
+create index if not exists friend_connections_b_idx on friend_connections(user_b_id);
+
+create table if not exists friend_circles (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now()
+);
+create table if not exists friend_circle_members (
+  circle_id uuid not null references friend_circles(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  joined_at timestamptz not null default now(),
+  left_at timestamptz,
+  primary key (circle_id, user_id)
+);
+create index if not exists friend_circle_members_user_idx on friend_circle_members(user_id) where left_at is null;
+create index if not exists friend_circle_members_circle_idx on friend_circle_members(circle_id) where left_at is null;
+
+create table if not exists friend_messages (
+  id uuid primary key default gen_random_uuid(),
+  circle_id uuid not null references friend_circles(id) on delete cascade,
+  sender_id uuid not null references users(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_messages_circle_idx on friend_messages(circle_id, created_at);
+
+create table if not exists friend_match_history (
+  user_a_id uuid not null,
+  user_b_id uuid not null,
+  outcome text,
+  created_at timestamptz not null default now(),
+  primary key (user_a_id, user_b_id)
+);
+
+-- ==================== 20260601_friend_activities.sql ====================
+-- Friend Line activity board ("the Scene") + RSVPs. (kind / audience / response
+-- columns are added by the 20260602 + 20260607 blocks further down.)
+create table if not exists friend_activities (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid not null references users(id) on delete cascade,
+  title text not null,
+  body text,
+  category text not null default 'hang' check (category in
+    ('food','drinks','active','outdoors','culture','nightlife','games','chill','hang')),
+  area text,
+  happens_at timestamptz,
+  expires_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_activities_live_idx on friend_activities(expires_at, created_at desc);
+create index if not exists friend_activities_area_idx on friend_activities(area);
+create index if not exists friend_activities_cat_idx on friend_activities(category);
+
+create table if not exists friend_activity_rsvps (
+  activity_id uuid not null references friend_activities(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (activity_id, user_id)
+);
+create index if not exists friend_activity_rsvps_act_idx on friend_activity_rsvps(activity_id);
+
+-- ==================== 20260604_friend_match_rounds.sql ====================
+-- The $0.99 "another round of matches" purchases (idempotent per Stripe payment).
+create table if not exists friend_match_rounds (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  stripe_payment_id text unique,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_match_rounds_user_idx on friend_match_rounds (user_id);
+
 -- ==================== 20260602_friend_billing.sql ====================
 -- Friend Maxxin billing v2: per-crew $0.99 chat unlocks + $2.99/mo Pro subscription.
 -- Replaces the one-time "founding" model (friend_paid_at kept for back-compat:
