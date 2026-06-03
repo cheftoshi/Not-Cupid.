@@ -39,6 +39,7 @@ Another session built a LOT (50+ commits) that this memory predated. Confirmed c
 - Local `.env.local` holds PLACEHOLDER keys (gitignored) so `next build` can construct service clients during page-data collection. Real keys live in Vercel env vars.
 
 ## ⚠️ Operational rules (don't forget)
+- **✅ ALL migrations through `20260608_friend_lgbtq.sql` CONFIRMED RUN (6/4).** Every feature is fully live (no degraded/fallback modes). The older "⏳ run this" notes scattered below are historical — ignore them. Going forward, only NEW migrations added after 6/4 need running.
 - **Migrations are NOT auto-applied.** SQL files in `supabase/migrations/` are run MANUALLY in the Supabase SQL Editor. After adding a migration, always remind the user to run it or new features 500.
 - **⏳ PENDING MIGRATIONS to confirm next session** (5/29 set was run by user; these from 5/31 may not be yet): `20260531_reports.sql` (user_reports table + users.is_blocked + 'reported' ended_reason — block/report errors until run), `20260531_roster_snapshot.sql` (users.roster_snapshot + roster_refreshed_at — the roster page errors until run). All earlier migrations confirmed run.
 - Required Vercel env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `RESEND_API_KEY`, `MATCH_LINK_SECRET`, `CRON_SECRET`, `ADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `TICKETMASTER_API_KEY`, `YELP_API_KEY`.
