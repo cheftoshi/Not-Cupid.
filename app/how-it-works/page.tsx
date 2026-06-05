@@ -10,7 +10,7 @@ const BLUE_DEEP = '#1b46c9';
 const LAV = '#e8edff';
 
 const STEPS = [
-  { n: '1', emoji: '📝', title: 'take the quiz', body: "24 personality questions + a few lifestyle vibes — your chronotype, how you date, what you're after. ~5 minutes, and New England-flavored." },
+  { n: '1', emoji: '📝', title: 'take the quiz', body: "24 personality questions + a few lifestyle vibes — your chronotype, how you date, what you're after. ~5 minutes, and Boston-flavored." },
   { n: '2', emoji: '🧠', title: 'the algo reads you', body: 'we score real compatibility on who you actually are — HEXACO personality + how you live — not photos, hot-takes, or a swipe count.' },
   { n: '3', emoji: '💘', title: 'meet your match', body: 'your most compatible person in greater boston, one at a time. no swiping, no endless feed — just someone worth the first message.' },
   { n: '4', emoji: '💬', title: 'say hi', body: "a real chat (lead with more than “hey” — we'll gently roast you if you don't). want the full picture? unlock their bio, interests & HEXACO for a one-time $1.99." },

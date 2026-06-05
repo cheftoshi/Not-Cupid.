@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og';
 // Branded 1200×630 share card — what renders when a NotCupid link is dropped in
 // Reddit / iMessage / socials. Generated at the edge, no image asset to ship.
 export const runtime = 'edge';
-export const alt = "NotCupid — New England's Social Experiment";
+export const alt = "NotCupid — Boston's Social Experiment";
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -32,7 +32,7 @@ export default function OpengraphImage() {
           Meet people. Not profiles.
         </div>
         <div style={{ fontSize: 26, color: '#6b6b76', marginTop: 30, letterSpacing: 6 }}>
-          NEW ENGLAND&apos;S SOCIAL EXPERIMENT
+          BOSTON&apos;S SOCIAL EXPERIMENT · NEW ENGLAND
         </div>
       </div>
     ),

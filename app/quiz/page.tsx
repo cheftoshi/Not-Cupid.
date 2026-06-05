@@ -19,7 +19,7 @@ interface FormData {
 
 const LOADING_MSGS = [
   'Cross-referencing chaos levels...',
-  'Consulting the New England oracle...',
+  'Consulting the Boston oracle...',
   'Penalizing red flag responses...',
   "Checking Dunkin' loyalty scores...",
   'Calibrating emotional damage...',
