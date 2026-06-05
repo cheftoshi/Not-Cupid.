@@ -33,13 +33,13 @@ export default function OutOfRange() {
         {!submitted ? (
           <>
             <p style={{fontFamily:'DM Mono,monospace',fontSize:'.62rem',letterSpacing:'.2em',textTransform:'uppercase',color:'var(--lav)',marginBottom:'1.5rem'}}>
-              Not in Boston yet
+              Outside New England — for now
             </p>
             <h1 style={{fontFamily:'Bebas Neue,sans-serif',fontSize:'clamp(2.5rem,7vw,5rem)',lineHeight:.9,color:'var(--ink)',marginBottom:'1rem'}}>
               THE ALGO IS<br/>COMING TO<br/>YOUR CITY.
             </h1>
             <p style={{fontSize:'.88rem',color:'var(--ink2)',lineHeight:1.75,maxWidth:'380px',margin:'0 auto 2.5rem'}}>
-              We're Boston-only for now. Drop your email and city — you'll be first when we expand.
+              We're across New England now — but not your area yet. Drop your email and city and you'll be first when we expand.
             </p>
             <div style={{display:'flex',flexDirection:'column',gap:'.75rem',width:'100%',maxWidth:'360px'}}>
               <input

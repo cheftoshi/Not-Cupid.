@@ -885,6 +885,39 @@ export const ZIP_COORDS: Record<string, { lat: number; lng: number }> = {
   '02675':{lat:41.7001,lng:-70.2918},
 }
 
+// New England coverage by 3-digit ZIP prefix (010–069 = MA/RI/NH/ME/VT/CT).
+// Used as a fallback in coordsForZip for regions we don't hardcode at the full-
+// zip level — so anyone in New England resolves to a sane location for distance
+// + metro labeling. (Eastern-MA/RI prefixes already have full-zip coverage in
+// ZIP_COORDS above and never hit this table.)
+export const PREFIX_COORDS: Record<string, { lat: number; lng: number }> = {
+  // Massachusetts (west + central + north + south where not already covered)
+  '010':{lat:42.11,lng:-72.55}, '011':{lat:42.15,lng:-72.70}, '012':{lat:42.40,lng:-73.18},
+  '013':{lat:42.40,lng:-72.55}, '014':{lat:42.58,lng:-71.80}, '015':{lat:42.40,lng:-71.75},
+  '016':{lat:42.26,lng:-71.80}, '017':{lat:42.30,lng:-71.42}, '018':{lat:42.55,lng:-71.20},
+  '019':{lat:42.50,lng:-70.95},
+  // Rhode Island
+  '028':{lat:41.82,lng:-71.41}, '029':{lat:41.70,lng:-71.45},
+  // New Hampshire
+  '030':{lat:42.76,lng:-71.46}, '031':{lat:42.99,lng:-71.46}, '032':{lat:43.05,lng:-71.45},
+  '033':{lat:43.21,lng:-71.54}, '034':{lat:43.05,lng:-70.78}, '035':{lat:44.31,lng:-71.77},
+  '036':{lat:42.93,lng:-72.28}, '037':{lat:43.64,lng:-72.25}, '038':{lat:43.20,lng:-70.87},
+  // Maine
+  '039':{lat:43.08,lng:-70.74}, '040':{lat:43.66,lng:-70.26}, '041':{lat:43.85,lng:-69.96},
+  '042':{lat:44.08,lng:-70.20}, '043':{lat:44.40,lng:-69.78}, '044':{lat:44.80,lng:-68.77},
+  '045':{lat:44.90,lng:-68.50}, '046':{lat:46.13,lng:-67.84}, '047':{lat:46.68,lng:-68.01},
+  '048':{lat:45.20,lng:-69.20}, '049':{lat:44.10,lng:-69.11},
+  // Vermont
+  '050':{lat:43.65,lng:-72.32}, '051':{lat:42.85,lng:-72.56}, '052':{lat:43.13,lng:-72.44},
+  '053':{lat:42.95,lng:-72.60}, '054':{lat:44.48,lng:-73.21}, '056':{lat:44.26,lng:-72.58},
+  '057':{lat:43.61,lng:-72.97}, '058':{lat:44.94,lng:-72.21}, '059':{lat:44.42,lng:-72.02},
+  // Connecticut
+  '060':{lat:41.70,lng:-72.75}, '061':{lat:41.76,lng:-72.69}, '062':{lat:41.78,lng:-72.52},
+  '063':{lat:41.52,lng:-72.10}, '064':{lat:41.40,lng:-72.85}, '065':{lat:41.31,lng:-72.93},
+  '066':{lat:41.18,lng:-73.19}, '067':{lat:41.56,lng:-73.04}, '068':{lat:41.10,lng:-73.45},
+  '069':{lat:41.05,lng:-73.60},
+}
+
 // Resolve a zip to coordinates. Falls back to the centroid of all known zips
 // sharing the same 3-digit prefix (ZCTA region) when the exact zip isn't in
 // our table — so a real resident of a covered area (e.g. a Providence 029xx or
@@ -901,17 +934,24 @@ export function coordsForZip(zip: string | null | undefined): { lat: number; lng
   for (const z in ZIP_COORDS) {
     if (z.slice(0, 3) === prefix) { sumLat += ZIP_COORDS[z].lat; sumLng += ZIP_COORDS[z].lng; n++ }
   }
-  const centroid = n > 0 ? { lat: sumLat / n, lng: sumLng / n } : null
+  const centroid = n > 0 ? { lat: sumLat / n, lng: sumLng / n } : (PREFIX_COORDS[prefix] ?? null)
   _prefixCentroids[prefix] = centroid
   return centroid
 }
 
+// New England = ZIP prefixes 010–069 (MA 010–027, RI 028–029, NH 030–038,
+// ME 039–049, VT 050–059, CT 060–069). NJ starts at 070.
+export function isNewEnglandZip(zip: string | null | undefined): boolean {
+  if (!zip || !/^\d{5}$/.test(zip)) return false
+  const p = parseInt(zip.slice(0, 3), 10)
+  return p >= 10 && p <= 69
+}
+
 export function validateZip(zip: string): 'valid'|'invalid'|'outofrange'|'incomplete' {
   if (zip.length < 5) return 'incomplete'
-  const coords = coordsForZip(zip)
-  if (!coords) return 'invalid'
-  const dist = haversine(BOSTON_CENTER.lat, BOSTON_CENTER.lng, coords.lat, coords.lng)
-  return dist <= SIGNUP_RADIUS_MILES ? 'valid' : 'outofrange'
+  if (!/^\d{5}$/.test(zip)) return 'invalid'
+  // Eligibility is now all of New England (matching stays local via match_radius).
+  return isNewEnglandZip(zip) ? 'valid' : 'outofrange'
 }
 
 // ─── Metros (area pools) ───────────────────────────────────────────────
@@ -921,9 +961,32 @@ export function validateZip(zip: string): 'valid'|'invalid'|'outofrange'|'incomp
 // user sits in — for admin analytics now, and regional pool-balancing
 // later. It changes NO matching behavior on its own (dormant).
 export const METRO_CENTERS: Record<string, { label: string; city: string; state: string; lat: number; lng: number }> = {
-  boston:     { label: 'Boston',     city: 'Boston',     state: 'MA', lat: 42.3601, lng: -71.0589 },
-  worcester:  { label: 'Worcester',  city: 'Worcester',  state: 'MA', lat: 42.2626, lng: -71.8023 },
-  providence: { label: 'Providence', city: 'Providence', state: 'RI', lat: 41.8240, lng: -71.4128 },
+  // Massachusetts
+  boston:      { label: 'Boston',         city: 'Boston',        state: 'MA', lat: 42.3601, lng: -71.0589 },
+  worcester:   { label: 'Worcester',      city: 'Worcester',     state: 'MA', lat: 42.2626, lng: -71.8023 },
+  springfield: { label: 'Springfield',    city: 'Springfield',   state: 'MA', lat: 42.1015, lng: -72.5898 },
+  berkshires:  { label: 'Berkshires',     city: 'Pittsfield',    state: 'MA', lat: 42.4501, lng: -73.2454 },
+  capecod:     { label: 'Cape Cod',       city: 'Hyannis',       state: 'MA', lat: 41.6529, lng: -70.2890 },
+  southcoast:  { label: 'South Coast',    city: 'New Bedford',   state: 'MA', lat: 41.6362, lng: -70.9342 },
+  merrimack:   { label: 'Merrimack Valley', city: 'Lowell',      state: 'MA', lat: 42.6334, lng: -71.3162 },
+  // Rhode Island
+  providence:  { label: 'Providence',     city: 'Providence',    state: 'RI', lat: 41.8240, lng: -71.4128 },
+  // New Hampshire
+  manchester:  { label: 'Manchester',     city: 'Manchester',    state: 'NH', lat: 42.9956, lng: -71.4548 },
+  concord_nh:  { label: 'Concord',        city: 'Concord',       state: 'NH', lat: 43.2081, lng: -71.5376 },
+  seacoast:    { label: 'Seacoast',       city: 'Portsmouth',    state: 'NH', lat: 43.0718, lng: -70.7626 },
+  // Maine
+  portland_me: { label: 'Portland',       city: 'Portland',      state: 'ME', lat: 43.6591, lng: -70.2568 },
+  augusta:     { label: 'Augusta',        city: 'Augusta',       state: 'ME', lat: 44.3106, lng: -69.7795 },
+  bangor:      { label: 'Bangor',         city: 'Bangor',        state: 'ME', lat: 44.8012, lng: -68.7778 },
+  // Vermont
+  burlington:  { label: 'Burlington',     city: 'Burlington',    state: 'VT', lat: 44.4759, lng: -73.2121 },
+  montpelier:  { label: 'Montpelier',     city: 'Montpelier',    state: 'VT', lat: 44.2601, lng: -72.5754 },
+  // Connecticut
+  hartford:    { label: 'Hartford',       city: 'Hartford',      state: 'CT', lat: 41.7658, lng: -72.6734 },
+  newhaven:    { label: 'New Haven',      city: 'New Haven',     state: 'CT', lat: 41.3083, lng: -72.9279 },
+  fairfield:   { label: 'Fairfield County', city: 'Stamford',    state: 'CT', lat: 41.0534, lng: -73.5387 },
+  easternct:   { label: 'Eastern CT',     city: 'New London',    state: 'CT', lat: 41.3557, lng: -72.0995 },
 }
 
 export type Metro = keyof typeof METRO_CENTERS
@@ -940,7 +1003,8 @@ export function metroOf(zip: string | null | undefined): Metro | null {
     const d = haversine(c.lat, c.lng, m.lat, m.lng)
     if (d < bestDist) { bestDist = d; best = key as Metro }
   }
-  return bestDist <= SIGNUP_RADIUS_MILES ? best : null
+  // Label to the nearest metro within ~150mi (covers sparse northern ME/VT).
+  return bestDist <= 150 ? best : null
 }
 
 export function computeScores(answers: number[]): Record<Dimension, number> {
