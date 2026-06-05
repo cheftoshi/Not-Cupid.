@@ -4,19 +4,19 @@ import PageTracker from '@/components/page-tracker'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://notcupid.com'),
-  title: 'NotCupid — Boston\'s Social Experiment',
-  description: 'Meet people, not profiles. The algorithm shows you 5 compatible people — you choose one. One match at a time, no swiping. A Boston social experiment.',
+  title: 'NotCupid — New England\'s Social Experiment',
+  description: 'Meet people, not profiles. The algorithm shows you 5 compatible people — you choose one. One match at a time, no swiping. A New England social experiment.',
   applicationName: 'NotCupid',
   openGraph: {
     type: 'website',
-    title: 'NotCupid — Boston\'s Social Experiment',
+    title: 'NotCupid — New England\'s Social Experiment',
     description: 'Meet people, not profiles. See your 5 most compatible, choose one. No swiping.',
     url: 'https://notcupid.com',
     siteName: 'NotCupid',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NotCupid — Boston\'s Social Experiment',
+    title: 'NotCupid — New England\'s Social Experiment',
     description: 'Meet people, not profiles. See your 5 most compatible, choose one. No swiping.',
   },
 }

@@ -58,7 +58,7 @@ function buildStarters(other: any): string[] {
   const generics = [
     'two truths and a lie. you first.',
     "what's a hill you'd die on at brunch?",
-    'best thing you ate in Boston this month?',
+    'best thing you ate out this month?',
     'if this goes well, where are we going?',
   ];
   for (const g of generics) {

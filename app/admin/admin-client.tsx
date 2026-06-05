@@ -14,6 +14,7 @@ export default function AdminClient() {
   const [liveEvents, setLiveEvents] = useState<any>(null)
   const [pools, setPools] = useState<any>(null)
   const [health, setHealth] = useState<any>(null)
+  const [metroHealth, setMetroHealth] = useState<any>(null)
   const [appFeedback, setAppFeedback] = useState<any>(null)
   const [reports, setReports] = useState<any>(null)
   const [waveBusy, setWaveBusy] = useState(false)
@@ -100,6 +101,14 @@ export default function AdminClient() {
       })
       .then(setHealth)
       .catch((e) => setHealth({ __error: e?.message || 'network error' }))
+
+    fetch('/api/admin/metro-health')
+      .then(async (r) => {
+        if (!r.ok) { const body = await parseResponse<any>(r).catch(() => ({})); return { __error: body?.error || `HTTP ${r.status}` } }
+        return parseResponse<any>(r)
+      })
+      .then(setMetroHealth)
+      .catch((e) => setMetroHealth({ __error: e?.message || 'network error' }))
 
     loadFeedback()
   }, [])
@@ -512,6 +521,60 @@ export default function AdminClient() {
                         </div>
                       ))}
                   </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── METRO HEALTH ── */}
+          <div className={s.card} id="metros">
+            <div className={s.cardHead}><p className={s.cardTitle}>Metro health — <b>New England by city</b></p></div>
+            {!metroHealth && <p className={s.note}>loading…</p>}
+            {metroHealth?.__error && <p className={s.noteErr}>couldn’t load: {metroHealth.__error}</p>}
+            {metroHealth && !metroHealth.__error && (
+              <>
+                <p className={s.note} style={{ marginBottom: '0.75rem' }}>
+                  {metroHealth.totals?.total ?? 0} real members · {metroHealth.totals?.women ?? 0} women / {metroHealth.totals?.men ?? 0} men region-wide. Each metro is its own pool — watch the ratio (men per woman); 🔴 = needs women.
+                </p>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', color: '#6b6b76', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '0.4rem 0.5rem' }}>Metro</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Total</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Women</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Men</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>NB</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Women %</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Ratio (M/F)</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>In pool</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Friend</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(metroHealth.metros || []).map((m: any) => {
+                        const ratioBad = m.ratio === null || m.ratio >= 2 // >=2 men per woman (or no women) = red
+                        const ratioWarn = !ratioBad && m.ratio >= 1.5
+                        const flag = ratioBad ? '🔴' : ratioWarn ? '🟡' : '🟢'
+                        return (
+                          <tr key={m.key} style={{ borderTop: '1px solid rgba(11,11,11,0.07)' }}>
+                            <td style={{ padding: '0.45rem 0.5rem', fontWeight: 600 }}>{flag} {m.city}{m.state !== '—' ? <span style={{ color: '#9a96a8', fontWeight: 400 }}>, {m.state}</span> : ''}</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right' }}>{m.total}</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right', color: '#2563ff', fontWeight: 600 }}>{m.women}</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right' }}>{m.men}</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right', color: '#9a96a8' }}>{m.other}</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right' }}>{m.womenPct}%</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right', fontWeight: 600, color: ratioBad ? '#d94f3d' : ratioWarn ? '#c97a0f' : '#3f7d57' }}>{m.ratio === null ? '∞' : m.ratio === 0 ? '—' : m.ratio}</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right' }}>{m.active}</td>
+                            <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right', color: '#d2530f' }}>{m.friends}</td>
+                          </tr>
+                        )
+                      })}
+                      {(metroHealth.metros || []).length === 0 && (
+                        <tr><td colSpan={9} style={{ padding: '0.8rem 0.5rem', color: '#9a96a8', fontStyle: 'italic' }}>no members yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </>
             )}

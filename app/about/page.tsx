@@ -9,18 +9,18 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <LegalPage title="About NotCupid" subtitle="Meet people. Not profiles.">
-      <p>NotCupid is a Boston social experiment with a simple bet: people are better than their profiles. So we built the anti-dating-app — no endless swiping, no browsing a catalog of strangers, no gamified attention economy.</p>
+      <p>NotCupid is a New England social experiment with a simple bet: people are better than their profiles. So we built the anti-dating-app — no endless swiping, no browsing a catalog of strangers, no gamified attention economy.</p>
 
       <p>Instead, an algorithm reads compatibility from a real personality quiz and quietly shows you a small, curated roster of people you&apos;d actually get along with. You pick <strong>one</strong>. One match at a time, on purpose — the way it works when a friend introduces you to someone, not the way it works when you&apos;re doom-scrolling at midnight.</p>
 
-      <h2>Two lines, one city</h2>
+      <h2>Two lines, one region</h2>
       <ul>
         <li><strong>The Love Line</strong> — for dating. Compatible people, one choice at a time, then a real conversation.</li>
         <li><strong>The Friend Line</strong> — for making actual friends as an adult, which is somehow harder than dating. Crews, group chats, and a feed of what&apos;s happening around town.</li>
       </ul>
 
-      <h2>Why Boston</h2>
-      <p>We&apos;re starting in Greater Boston — Cambridge, Somerville, the whole T map — because real-life connection is local. We&apos;d rather be the best way to meet someone in one city than a mediocre one everywhere.</p>
+      <h2>Why New England</h2>
+      <p>We&apos;re built for New England — Boston, Providence, Hartford, New Haven, Portland, Burlington, Manchester, and everywhere in between. Connection is local, so the algorithm only ever matches you with people in your own metro. We&apos;d rather be the best way to meet someone in your city than a mediocre one everywhere.</p>
 
       <h2>Who&apos;s behind it</h2>
       <p>NotCupid is built and run by <strong>Lemon Labs</strong>, an independent studio. We&apos;re a small team that actually answers its email — if you have a bug, an idea, or just want to tell us what&apos;s missing, write to <a href="mailto:match@notcupid.com">match@notcupid.com</a> and a person will read it.</p>
