@@ -1004,6 +1004,16 @@ export const PREFIX_COORDS: Record<string, { lat: number; lng: number }> = {
   '063':{lat:41.52,lng:-72.10}, '064':{lat:41.40,lng:-72.85}, '065':{lat:41.31,lng:-72.93},
   '066':{lat:41.18,lng:-73.19}, '067':{lat:41.56,lng:-73.04}, '068':{lat:41.10,lng:-73.45},
   '069':{lat:41.05,lng:-73.60},
+  // New York City metro (100–119). Manhattan/Bronx/SI, Westchester+Rockland,
+  // Queens/Brooklyn, then Far Rockaway + Nassau/Suffolk Long Island.
+  '100':{lat:40.78,lng:-73.97}, '101':{lat:40.78,lng:-73.97}, '102':{lat:40.78,lng:-73.97},
+  '103':{lat:40.58,lng:-74.15}, '104':{lat:40.85,lng:-73.88},
+  '105':{lat:41.03,lng:-73.76}, '106':{lat:41.03,lng:-73.76}, '107':{lat:40.93,lng:-73.90},
+  '108':{lat:40.91,lng:-73.78}, '109':{lat:41.09,lng:-73.92},
+  '110':{lat:40.75,lng:-73.94}, '111':{lat:40.76,lng:-73.92}, '112':{lat:40.65,lng:-73.95},
+  '113':{lat:40.75,lng:-73.82}, '114':{lat:40.70,lng:-73.81},
+  '115':{lat:40.73,lng:-73.60}, '116':{lat:40.60,lng:-73.75}, '117':{lat:40.78,lng:-73.30},
+  '118':{lat:40.76,lng:-73.52}, '119':{lat:40.87,lng:-72.85},
 }
 
 // Resolve a zip to coordinates. Falls back to the centroid of all known zips
@@ -1035,11 +1045,27 @@ export function isNewEnglandZip(zip: string | null | undefined): boolean {
   return p >= 10 && p <= 69
 }
 
+// NYC metro = ZIP prefixes 100–119 (Manhattan/Bronx/SI 100–104, Westchester &
+// Rockland 105–109, Queens/Brooklyn 110–114, Far Rockaway/Nassau/Suffolk LI
+// 115–119). Upstate NY (120–149) is intentionally NOT included yet.
+export function isNycMetroZip(zip: string | null | undefined): boolean {
+  if (!zip || !/^\d{5}$/.test(zip)) return false
+  const p = parseInt(zip.slice(0, 3), 10)
+  return p >= 100 && p <= 119
+}
+
+// Signup eligibility: all of New England + the NYC metro. Matching still stays
+// LOCAL per-user (match_radius) and metros never cross-match, so opening NYC
+// just creates a separate, very dense NYC pool — it doesn't touch Boston.
+export function isEligibleZip(zip: string | null | undefined): boolean {
+  return isNewEnglandZip(zip) || isNycMetroZip(zip)
+}
+
 export function validateZip(zip: string): 'valid'|'invalid'|'outofrange'|'incomplete' {
   if (zip.length < 5) return 'incomplete'
   if (!/^\d{5}$/.test(zip)) return 'invalid'
-  // Eligibility is now all of New England (matching stays local via match_radius).
-  return isNewEnglandZip(zip) ? 'valid' : 'outofrange'
+  // Eligibility = New England + NYC metro (matching stays local via match_radius).
+  return isEligibleZip(zip) ? 'valid' : 'outofrange'
 }
 
 // ─── Metros (area pools) ───────────────────────────────────────────────
@@ -1075,6 +1101,10 @@ export const METRO_CENTERS: Record<string, { label: string; city: string; state:
   newhaven:    { label: 'New Haven',      city: 'New Haven',     state: 'CT', lat: 41.3083, lng: -72.9279 },
   fairfield:   { label: 'Fairfield County', city: 'Stamford',    state: 'CT', lat: 41.0534, lng: -73.5387 },
   easternct:   { label: 'Eastern CT',     city: 'New London',    state: 'CT', lat: 41.3557, lng: -72.0995 },
+  // New York (NYC metro only for now — its own dense, separate pool)
+  nyc:         { label: 'New York City',  city: 'New York',      state: 'NY', lat: 40.7128, lng: -74.0060 },
+  longisland:  { label: 'Long Island',    city: 'Hempstead',     state: 'NY', lat: 40.7062, lng: -73.6187 },
+  westchester: { label: 'Westchester',    city: 'White Plains',  state: 'NY', lat: 41.0340, lng: -73.7629 },
 }
 
 export type Metro = keyof typeof METRO_CENTERS

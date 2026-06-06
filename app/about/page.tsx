@@ -19,8 +19,8 @@ export default function AboutPage() {
         <li><strong>The Friend Line</strong> — for making actual friends as an adult, which is somehow harder than dating. Crews, group chats, and a feed of what&apos;s happening around town.</li>
       </ul>
 
-      <h2>Started in Boston, now across New England</h2>
-      <p>We started in Boston — Cambridge, Somerville, the whole T map — because real-life connection is local. We&apos;ve since opened up the rest of New England: Providence, Hartford, New Haven, Portland, Burlington, Manchester, and everywhere in between. Wherever you are, the algorithm only ever matches you with people in your own metro. We&apos;d rather be the best way to meet someone in your city than a mediocre one everywhere.</p>
+      <h2>Started in Boston, now across the Northeast</h2>
+      <p>We started in Boston — Cambridge, Somerville, the whole T map — because real-life connection is local. We&apos;ve since opened up the rest of New England — Providence, Hartford, New Haven, Portland, Burlington, Manchester — and now New York City too. Wherever you are, the algorithm only ever matches you with people in your own metro. We&apos;d rather be the best way to meet someone in your city than a mediocre one everywhere.</p>
 
       <h2>Who&apos;s behind it</h2>
       <p>NotCupid is built and run by <strong>Lemon Labs</strong>, an independent studio. We&apos;re a small team that actually answers its email — if you have a bug, an idea, or just want to tell us what&apos;s missing, write to <a href="mailto:match@notcupid.com">match@notcupid.com</a> and a person will read it.</p>

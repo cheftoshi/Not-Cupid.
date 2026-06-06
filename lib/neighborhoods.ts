@@ -75,6 +75,26 @@ add('Springfield', ['01103', '01104', '01105', '01107', '01108', '01109', '01118
 add('Chicopee', ['01013', '01020']);
 add('Holyoke', ['01040']);
 
+// ── New York City metro (added with the NYC expansion) ──
+// Manhattan
+add('Lower Manhattan', ['10002', '10003', '10009', '10038', '10004', '10005', '10006', '10007', '10012', '10013']);
+add('West Village / Chelsea', ['10011', '10014', '10001']);
+add('Midtown', ['10016', '10017', '10018', '10019', '10022', '10036']);
+add('Upper East Side', ['10021', '10028', '10065', '10075', '10128']);
+add('Upper West Side', ['10023', '10024', '10025', '10069']);
+add('Harlem / Uptown', ['10026', '10027', '10029', '10030', '10031', '10032', '10033', '10034', '10035', '10037', '10039', '10040']);
+// Brooklyn
+add('Williamsburg / Greenpoint', ['11211', '11206', '11222', '11249']);
+add('Park Slope / Prospect Heights', ['11215', '11217', '11238']);
+add('Downtown Brooklyn / Heights', ['11201', '11231', '11205', '11216']);
+add('Bushwick / Bed-Stuy', ['11221', '11237', '11233', '11207']);
+// Queens
+add('Long Island City / Astoria', ['11101', '11102', '11103', '11105', '11106']);
+add('Forest Hills / Central Queens', ['11375', '11374', '11377', '11385', '11355', '11354']);
+// Other boroughs
+add('The Bronx', ['10451', '10452', '10453', '10454', '10455', '10456', '10457', '10458', '10463', '10467', '10468']);
+add('Staten Island', ['10301', '10304', '10305', '10306', '10314']);
+
 export function neighborhoodOf(zip: string | null | undefined): string {
   if (!zip) return 'Greater Boston';
   if (ZIP_AREA[zip]) return ZIP_AREA[zip];

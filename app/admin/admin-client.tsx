@@ -528,7 +528,7 @@ export default function AdminClient() {
 
           {/* ── METRO HEALTH ── */}
           <div className={s.card} id="metros">
-            <div className={s.cardHead}><p className={s.cardTitle}>Metro health — <b>New England by city</b></p></div>
+            <div className={s.cardHead}><p className={s.cardTitle}>Metro health — <b>Northeast by city</b></p></div>
             {!metroHealth && <p className={s.note}>loading…</p>}
             {metroHealth?.__error && <p className={s.noteErr}>couldn’t load: {metroHealth.__error}</p>}
             {metroHealth && !metroHealth.__error && (
