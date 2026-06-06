@@ -2,38 +2,41 @@ import Link from 'next/link';
 
 export const dynamic = 'force-static';
 
-// Love Line "how it works" — mirror of /friends/how-it-works, in the dating
-// palette (blue, Georgia italic). Personality-first dating, no swiping.
+// "How NotCupid works" — the overall app flow (linked from the landing page).
+// Covers the shared core quiz + the two lines (Love = blue, Friend = orange).
 const INK = '#0a0a0a';
 const BLUE = '#2563ff';
 const BLUE_DEEP = '#1b46c9';
 const LAV = '#e8edff';
+const ORANGE = '#ff6a1f';
+const ORANGE_DEEP = '#d2530f';
 
 const STEPS = [
-  { n: '1', emoji: '📝', title: 'take the quiz', body: "24 personality questions + a few lifestyle vibes — your chronotype, how you date, what you're after. ~5 minutes, and Boston-flavored." },
-  { n: '2', emoji: '🧠', title: 'the algo reads you', body: 'we score real compatibility on who you actually are — HEXACO personality + how you live — not photos, hot-takes, or a swipe count.' },
-  { n: '3', emoji: '💘', title: 'meet your match', body: 'your most compatible person in greater boston, one at a time. no swiping, no endless feed — just someone worth the first message.' },
-  { n: '4', emoji: '💬', title: 'say hi', body: "a real chat (lead with more than “hey” — we'll gently roast you if you don't). want the full picture? unlock their bio, interests & HEXACO for a one-time $1.99." },
-  { n: '5', emoji: '✦', title: 'set your date vibes', body: "tap the things you'd actually do together — when you both pick the same one, it locks in. then get off the app and onto the date." },
+  { n: '1', emoji: '📝', title: 'sign up', body: 'name, email, a 6-digit code to prove it’s you. born in Boston, now open across New England.' },
+  { n: '2', emoji: '🧠', title: 'take the core quiz', body: 'a short, chaptered run — who you are (personality), the day-to-day (lifestyle), and a rapid-fire round. ~4 minutes, no photos, no performing.' },
+  { n: '3', emoji: '🚉', title: 'pick your line', body: 'board the Love Line (dating), the Friend Line (platonic crews), or both. your core quiz powers both sides.' },
+  { n: '4', emoji: '🎯', title: 'go a little deeper', body: 'each line asks a few questions of its own — Love: what you want in a partner, how you connect, what matters. Friend: how you like to hang. that’s what the matching actually weighs.' },
+  { n: '5', emoji: '💘', title: 'meet people, not profiles', body: 'the algo curates a small roster of your most compatible people. you pick. no swiping, no endless feed — just someone worth the first message.' },
 ];
 
-export default function LoveHowItWorks() {
+export default function HowItWorks() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #f6f6f6 0%, #eef1ff 100%)', color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ background: BLUE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6 }}>LOVE LINE</span>
+            <span style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.15rem', color: BLUE }}>not<span style={{ color: ORANGE }}>cupid</span></span>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: BLUE_DEEP }}>how it works</span>
           </div>
-          <Link href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>← back to hub</Link>
+          <Link href="/" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>← back</Link>
         </div>
 
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: '#6b6975', marginBottom: '0.6rem' }}>a social experiment</div>
         <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.6rem,9vw,3.8rem)', lineHeight: 1, color: INK, margin: '0 0 0.5rem' }}>
-          find your <span style={{ color: BLUE }}>person.</span>
+          meet people. <span style={{ color: BLUE }}>not profiles.</span>
         </h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '1.05rem', margin: '0 0 2rem' }}>
-          personality first, no swiping — the algo does the heavy lifting.
+          one quiz, two lines, real connection — the algo does the heavy lifting.
         </p>
 
         {/* the line runs down the left of the stops */}
@@ -50,16 +53,28 @@ export default function LoveHowItWorks() {
           ))}
         </div>
 
-        <div style={{ background: '#fff', border: `2px dashed ${BLUE}`, borderRadius: 16, padding: '1.25rem', margin: '1.75rem 0', textAlign: 'center' }}>
+        {/* the two lines */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', margin: '1.75rem 0' }}>
+          <div style={{ background: '#fff', border: `1.5px solid ${BLUE}`, borderRadius: 16, padding: '1.1rem 1.15rem' }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em', color: BLUE_DEEP }}>💘 love line</div>
+            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: '#4a4754' }}>pick from your 5 most compatible. personality-first dating, no swiping.</p>
+          </div>
+          <div style={{ background: '#fff', border: `1.5px solid ${ORANGE}`, borderRadius: 16, padding: '1.1rem 1.15rem' }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em', color: ORANGE_DEEP }}>🧡 friend line</div>
+            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: '#4a4754' }}>up to 5 platonic matches, a group chat, and a city full of plans.</p>
+          </div>
+        </div>
+
+        <div style={{ background: '#fff', border: `2px dashed ${BLUE}`, borderRadius: 16, padding: '1.25rem', margin: '0 0 1.75rem', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: BLUE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-            the quiz and your match are <b>free</b>. when you want the full picture on someone, unlock their profile — bio, interests &amp; HEXACO — for a one-time <b>$1.99</b>. no subscription, no swiping.
+            the quiz and your matches are <b>free</b>. on Love, unlock someone’s full profile — bio, gallery &amp; personality — for a one-time <b>$1.99</b>. on Friend, your first crew chat is free. no subscription, no swiping.
           </p>
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <Link href="/quiz" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', letterSpacing: '0.05em', color: '#fff', background: BLUE, border: 'none', borderRadius: 14, padding: '0.8rem 2rem', boxShadow: '0 14px 30px -12px rgba(27,70,201,0.6)', textDecoration: 'none', display: 'inline-block' }}>
-            take the quiz →
+          <Link href="/quiz" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', letterSpacing: '0.05em', color: '#fff', background: INK, border: 'none', borderRadius: 14, padding: '0.8rem 2rem', boxShadow: '0 14px 30px -12px rgba(0,0,0,0.5)', textDecoration: 'none', display: 'inline-block' }}>
+            get started →
           </Link>
         </div>
       </div>

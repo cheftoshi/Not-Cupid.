@@ -5,6 +5,14 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 60 // refresh stats every minute
 
 async function getStats() {
+  // Never let a slow/unreachable DB hang the landing page render — cap the
+  // whole stats lookup and fall back to zeros if it's not quick.
+  const fallback = { poolCount: 0, matchesThisWeek: 0, lastMatchAt: null as string | null }
+  const timeout = new Promise<typeof fallback>((resolve) => setTimeout(() => resolve(fallback), 3000))
+  return Promise.race([getStatsInner(), timeout])
+}
+
+async function getStatsInner() {
   try {
     // Total active members in the Boston pool
     const { count: poolCount } = await supabaseAdmin

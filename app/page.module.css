@@ -337,3 +337,55 @@
   .landTickV { font-size: 0.9rem; }
   .landFoot { padding: 1rem 1.25rem 1.25rem; font-size: 0.52rem; }
 }
+
+/* ── minimal landing auth row (sign up / log in) + learn link ── */
+.landAuthRow {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 1.6rem;
+  animation: landFadeUp 0.9s 0.28s both ease;
+}
+.landAuthPrimary {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: #0a0a0a;
+  padding: 0.95rem 2.1rem;
+  border-radius: 999px;
+  border: 1px solid #0a0a0a;
+  transition: all 0.15s;
+}
+.landAuthPrimary:hover { background: #2563ff; border-color: #2563ff; transform: translateY(-1px); }
+.landAuthGhost {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #0a0a0a;
+  text-decoration: none;
+  background: transparent;
+  padding: 0.95rem 1.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(11,11,11,0.22);
+  transition: all 0.15s;
+}
+.landAuthGhost:hover { border-color: #0a0a0a; background: rgba(11,11,11,0.04); }
+.landLearn {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #5a5566;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(90,85,102,0.4);
+  padding-bottom: 0.15rem;
+  transition: color 0.15s;
+  animation: landFadeUp 0.9s 0.36s both ease;
+}
+.landLearn:hover { color: #2563ff; border-color: #2563ff; }

@@ -3,7 +3,27 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FRIEND_QUESTIONS } from '@/lib/friend-quiz';
-import styles from '../friends.module.css';
+import styles from '../../quiz/quiz.module.css';
+
+// Friend quiz, re-skinned to match the Love-line quiz aesthetic (same layout,
+// type + chrome from quiz.module.css) with the friend palette: we flip the
+// quiz's accent CSS vars to orange on the wrapper so it reads as a sibling.
+const ORANGE_VARS: any = {
+  '--accent': '#ff6a1f',
+  '--accent-dim': 'rgba(255,106,31,0.12)',
+  '--accent-mid': 'rgba(255,106,31,0.4)',
+  '--gold': '#d2530f',
+  '--gold-dim': 'rgba(210,83,15,0.14)',
+  '--ink-muted': '#6b6b76',
+  '--ink-faint': '#a9a9b4',
+  '--bg-card': '#ffffff',
+  '--bg-subtle': '#faf7f3',
+  '--bg-dark': '#1a120c',
+  '--border': 'rgba(11,11,11,0.07)',
+  '--border-md': 'rgba(11,11,11,0.14)',
+  '--border-dark': 'rgba(11,11,11,0.2)',
+  '--green': '#2d7a4f',
+};
 
 const GENDERS = [
   { v: 'm', label: 'men' },
@@ -16,6 +36,7 @@ const GENDERS = [
 export default function FriendQuizClient() {
   const router = useRouter();
   const total = FRIEND_QUESTIONS.length + 2; // + gender step + age step
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({ activities: [] });
   const [seeking, setSeeking] = useState<string[]>([]);
@@ -28,6 +49,8 @@ export default function FriendQuizClient() {
   const onGender = step === FRIEND_QUESTIONS.length;
   const onAge = step === FRIEND_QUESTIONS.length + 1;
   const q = FRIEND_QUESTIONS[step];
+  const stepNum = step + 1;
+  const dim = onGender ? 'who you vibe with' : onAge ? 'age range' : 'how you hang';
 
   function pickSingle(key: string, opt: string) {
     setAnswers((a) => ({ ...a, [key]: opt }));
@@ -66,102 +89,158 @@ export default function FriendQuizClient() {
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
 
-  const stepNum = step + 1;
+  const inputStyle: React.CSSProperties = {
+    flex: 1, padding: '0.85rem 1rem', borderRadius: '0.3rem',
+    border: '1.5px solid rgba(11,11,11,0.14)', fontFamily: "'Syne', sans-serif",
+    fontSize: '0.95rem', background: '#fff', color: '#0b0b0b',
+  };
+
+  // ── chapter-style intro card (mirrors the love quiz) ──
+  if (!started) {
+    return (
+      <div className={styles.screen} style={ORANGE_VARS}>
+        <div className={styles.introWrap}>
+          <div className={styles.introHero}>
+            <div className={styles.stickerRow}>
+              <span className={styles.sticker}>✦ friend line</span>
+              <span className={styles.stickerGold}>find your people</span>
+            </div>
+            <h1 className={styles.introH1}>
+              let&apos;s find <em>your people.</em>
+            </h1>
+            <p className={styles.introLede}>
+              we already know your personality — this part is about how you actually like to hang.<br />
+              <span className={styles.introLedeSub}>{total} quick ones. then we go.</span>
+            </p>
+          </div>
+          <button className="btn-primary" onClick={() => setStarted(true)} style={{ width: '100%', justifyContent: 'center' }}>
+            start →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.wrap}>
-        <div className={styles.brand}>FRIEND<span>LINE</span></div>
-        <div className={styles.kick}>✦ find-a-friend quiz</div>
-        <h1 className={styles.title}>let&apos;s find <em>your people.</em></h1>
-        <p className={styles.sub}>quick one — we already know your personality, this is about how you like to hang.</p>
-
-        <div className={styles.qCard}>
-          <div className={styles.qProgress}>step {stepNum} of {total}</div>
-
-          {!onGender && q && (
-            <>
-              <div className={styles.qText}>{q.q}</div>
-              {q.multi ? (
-                <>
-                  <div>
-                    {q.opts.map((opt) => (
-                      <button key={opt} type="button"
-                        className={`${styles.opt} ${styles.optMulti} ${(answers.activities || []).includes(opt) ? styles.optSel : ''}`}
-                        onClick={() => toggleActivity(opt)}>{opt}</button>
-                    ))}
-                  </div>
-                  <div className={styles.btnRow} style={{ marginTop: '0.75rem' }}>
-                    <button className={styles.btn} disabled={(answers.activities || []).length === 0}
-                      onClick={() => setStep((s) => s + 1)}>next →</button>
-                  </div>
-                </>
-              ) : (
-                q.opts.map((opt) => (
-                  <button key={opt} type="button"
-                    className={`${styles.opt} ${answers[q.key] === opt ? styles.optSel : ''}`}
-                    onClick={() => pickSingle(q.key, opt)}>{opt}</button>
-                ))
-              )}
-            </>
-          )}
-
-          {onGender && (
-            <>
-              <div className={styles.qText}>who are you open to befriending?</div>
-              {GENDERS.map((g) => (
-                <button key={g.v} type="button"
-                  className={`${styles.opt} ${styles.optMulti} ${seeking.includes(g.v) ? styles.optSel : ''}`}
-                  onClick={() => toggleGender(g.v)}>{g.label}</button>
-              ))}
-              <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.85rem', margin: '0.75rem 0' }}>
-                pick any. leave all unchecked = open to everyone.
-              </p>
-              <div style={{ marginTop: '0.5rem', borderTop: '1.5px solid rgba(107,74,47,0.15)', paddingTop: '1rem' }}>
-                <div className={styles.qText}>do you identify as LGBTQ+?</div>
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.8rem', margin: '0 0 0.6rem' }}>
-                  optional — so LGBTQ+ folks &amp; events can find you.
-                </p>
-                {([[true, 'yes'], [false, 'no']] as const).map(([v, label]) => (
-                  <button key={label} type="button"
-                    className={`${styles.opt} ${styles.optMulti} ${isLgbtq === v ? styles.optSel : ''}`}
-                    onClick={() => setIsLgbtq((cur) => (cur === v ? null : v))}>{label}</button>
-                ))}
-              </div>
-              <div className={styles.btnRow}>
-                <button className={styles.btn} onClick={() => setStep((s) => s + 1)}>next →</button>
-              </div>
-            </>
-          )}
-
-          {onAge && (
-            <>
-              <div className={styles.qText}>what age range of friends are you after?</div>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0.5rem 0 0.25rem' }}>
-                <input type="number" inputMode="numeric" min={18} max={100} placeholder="18"
-                  value={ageMin} onChange={(e) => setAgeMin(e.target.value)}
-                  style={{ flex: 1, padding: '0.7rem 0.85rem', borderRadius: 10, border: '1.5px solid rgba(107,74,47,0.25)', fontFamily: 'inherit', fontSize: '1rem', background: '#fff', color: '#2a1a0f' }} />
-                <span style={{ fontFamily: 'DM Mono, monospace', color: '#6b4a2f' }}>to</span>
-                <input type="number" inputMode="numeric" min={18} max={100} placeholder="99"
-                  value={ageMax} onChange={(e) => setAgeMax(e.target.value)}
-                  style={{ flex: 1, padding: '0.7rem 0.85rem', borderRadius: 10, border: '1.5px solid rgba(107,74,47,0.25)', fontFamily: 'inherit', fontSize: '1rem', background: '#fff', color: '#2a1a0f' }} />
-              </div>
-              <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b4a2f', fontSize: '0.85rem', margin: '0.75rem 0' }}>
-                leave blank for no limit. friends near your vibe, your age.
-              </p>
-              {err && <div className={styles.err}>{err}</div>}
-              <div className={styles.btnRow}>
-                <button className={styles.btn} disabled={busy} onClick={submit}>
-                  {busy ? 'finding…' : 'find my crew →'}
-                </button>
-              </div>
-            </>
-          )}
+    <div className={styles.screen} style={ORANGE_VARS}>
+      <div className={styles.quizWrap}>
+        <div className={styles.quizTop}>
+          <div className={styles.quizLogo} style={{ color: '#d2530f' }}>Friend<span style={{ color: '#ff6a1f' }}>Line</span></div>
+          <div className={styles.qMeta}>
+            <span className={styles.qDim}>{dim}</span>
+            <span className={styles.qCount}>{stepNum}/{total}</span>
+          </div>
         </div>
 
-        {!onGender && !onAge && step > 0 && (
-          <button onClick={() => setStep((s) => s - 1)}
-            style={{ background: 'none', border: 'none', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#d2530f', cursor: 'pointer' }}>← back</button>
+        <div className={styles.progressBar}>
+          <div className={styles.progressFill} style={{ width: `${((step) / total) * 100}%` }} />
+        </div>
+
+        {/* ── regular friend question ── */}
+        {!onGender && !onAge && q && (
+          <>
+            <p className={styles.qText}>{q.q}</p>
+            {q.multi ? (
+              <>
+                <div className={styles.qOptions}>
+                  {q.opts.map((opt, i) => (
+                    <button key={opt} type="button"
+                      className={`${styles.qOpt} ${(answers.activities || []).includes(opt) ? styles.qOptSelected : ''}`}
+                      onClick={() => toggleActivity(opt)}>
+                      <span className={styles.qKey}>{String.fromCharCode(65 + i)}</span>
+                      <span className={styles.qOptText}>{opt}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.qNav}>
+                  <button className={styles.qSkip} onClick={() => step > 0 && setStep((s) => s - 1)}>{step > 0 ? '← back' : ''}</button>
+                  <button className="btn-primary" disabled={(answers.activities || []).length === 0}
+                    onClick={() => setStep((s) => s + 1)}>next →</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.qOptions}>
+                  {q.opts.map((opt, i) => (
+                    <button key={opt} type="button"
+                      className={`${styles.qOpt} ${answers[q.key] === opt ? styles.qOptSelected : ''}`}
+                      onClick={() => pickSingle(q.key, opt)}>
+                      <span className={styles.qKey}>{String.fromCharCode(65 + i)}</span>
+                      <span className={styles.qOptText}>{opt}</span>
+                    </button>
+                  ))}
+                </div>
+                {step > 0 && (
+                  <div className={styles.qNav}>
+                    <button className={styles.qSkip} onClick={() => setStep((s) => s - 1)}>← back</button>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── who you're open to + LGBTQ self-ID ── */}
+        {onGender && (
+          <>
+            <p className={styles.qText}>who are you open to befriending?</p>
+            <div className={styles.qOptions}>
+              {GENDERS.map((g, i) => (
+                <button key={g.v} type="button"
+                  className={`${styles.qOpt} ${seeking.includes(g.v) ? styles.qOptSelected : ''}`}
+                  onClick={() => toggleGender(g.v)}>
+                  <span className={styles.qKey}>{String.fromCharCode(65 + i)}</span>
+                  <span className={styles.qOptText}>{g.label}</span>
+                </button>
+              ))}
+            </div>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#8a8a93', margin: '0 0 1.5rem' }}>
+              pick any. leave all unchecked = open to everyone.
+            </p>
+
+            <p className={styles.qText} style={{ fontSize: '1.1rem' }}>do you identify as LGBTQ+?</p>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#8a8a93', margin: '0 0 0.85rem' }}>
+              optional — so LGBTQ+ folks &amp; events can find you.
+            </p>
+            <div className={styles.qOptions}>
+              {([[true, 'yes'], [false, 'no']] as const).map(([v, label], i) => (
+                <button key={label} type="button"
+                  className={`${styles.qOpt} ${isLgbtq === v ? styles.qOptSelected : ''}`}
+                  onClick={() => setIsLgbtq((cur) => (cur === v ? null : v))}>
+                  <span className={styles.qKey}>{String.fromCharCode(65 + i)}</span>
+                  <span className={styles.qOptText}>{label}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={() => setStep((s) => s - 1)}>← back</button>
+              <button className="btn-primary" onClick={() => setStep((s) => s + 1)}>next →</button>
+            </div>
+          </>
+        )}
+
+        {/* ── age range ── */}
+        {onAge && (
+          <>
+            <p className={styles.qText}>what age range of friends are you after?</p>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0 0 0.75rem' }}>
+              <input type="number" inputMode="numeric" min={18} max={100} placeholder="18"
+                value={ageMin} onChange={(e) => setAgeMin(e.target.value)} style={inputStyle} />
+              <span style={{ fontFamily: "'DM Mono', monospace", color: '#8a8a93' }}>to</span>
+              <input type="number" inputMode="numeric" min={18} max={100} placeholder="99"
+                value={ageMax} onChange={(e) => setAgeMax(e.target.value)} style={inputStyle} />
+            </div>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#8a8a93', margin: '0 0 1.5rem' }}>
+              leave blank for no limit. friends near your vibe, your age.
+            </p>
+            {err && <p style={{ color: '#d2530f', fontSize: '0.82rem', marginBottom: '1rem' }}>{err}</p>}
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={() => setStep((s) => s - 1)}>← back</button>
+              <button className="btn-primary" disabled={busy} onClick={submit}>
+                {busy ? 'finding…' : 'find my crew →'}
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

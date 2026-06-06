@@ -61,13 +61,13 @@ export default function LandingClient({ stats }: { stats: Stats }) {
 
       <header className={styles.landTop}>
         <Wordmark size={1.4} />
-        <a href="/login" className={styles.landNavBtn}>log in →</a>
+        <Link href="/how-it-works" className={styles.landNavBtn}>how it works →</Link>
       </header>
 
       <section className={styles.landHero}>
         <div className={styles.landEyebrow}>
           <span className={styles.landDot} />
-          greater boston → providence · worcester · the cape
+          a social experiment
         </div>
 
         <h1 className={styles.landH1}>
@@ -76,29 +76,16 @@ export default function LandingClient({ stats }: { stats: Stats }) {
         </h1>
 
         <p className={styles.landLede}>
-          a social experiment in real-life connection.<br/>
-          real people, real conversations — no endless swiping.
+          algorithm-matched connection — for love and for friendship.<br/>
+          real people, real conversations, no endless swiping.
         </p>
 
-        <div className={styles.landProducts}>
-          <Link href="/quiz" className={`${styles.landProd} ${styles.landProdLove}`}>
-            <div className={styles.landProdEye}><span className={styles.landProdDotLive} /> live</div>
-            <div className={styles.landProdName}>love <em>line.</em></div>
-            <div className={styles.landProdDesc}>pick from your 5 most compatible. eastern mass, ri & southern nh. personality first.</div>
-            <div className={styles.landProdCta}>sign up →</div>
-          </Link>
-          <Link href="/friends" className={`${styles.landProd} ${styles.landProdFriend}`}>
-            <div className={styles.landProdEye}><span className={styles.landProdDotLive} /> live</div>
-            <div className={styles.landProdName}>friend <em>line.</em></div>
-            <div className={styles.landProdDesc}>up to 5 platonic matches. group chat. a city full of plans.</div>
-            <div className={styles.landProdCta}>find your crew →</div>
-          </Link>
+        <div className={styles.landAuthRow}>
+          <Link href="/quiz" className={styles.landAuthPrimary}>sign up →</Link>
+          <Link href="/login" className={styles.landAuthGhost}>log in</Link>
         </div>
 
-        <div className={styles.landTicker} aria-live="polite">
-          <span key={`${tickIdx}-k`} className={styles.landTickK}>{t.k}</span>
-          <span key={`${tickIdx}-v`} className={styles.landTickV}>{t.v}</span>
-        </div>
+        <Link href="/how-it-works" className={styles.landLearn}>learn how it works ↓</Link>
       </section>
 
       <footer className={styles.landFoot}>
