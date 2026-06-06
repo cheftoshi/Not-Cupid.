@@ -33,6 +33,8 @@ export const DIM_SHORT: Record<Dimension, string> = {
   'Openness': 'Openness',
 }
 
+// Trimmed to 12 (2 per trait) for a shorter, lower-drop-off quiz — still valid
+// for matching. Each dimension's max raw score is now 8 (2 questions × 4 pts).
 export const QUESTIONS: Question[] = [
   {
     dim: 'Honesty-Humility', short: 'Honesty',
@@ -47,12 +49,6 @@ export const QUESTIONS: Question[] = [
     score: [4, 3, 1, 1],
   },
   {
-    dim: 'Honesty-Humility', short: 'Honesty',
-    q: "You're casually dating. They ask if you're talking to anyone else. You are. You say:",
-    opts: ['Yes. We never said exclusive.', 'Vague answer, redirect.', 'No. Obviously no.', 'Ask them first.'],
-    score: [4, 2, 1, 2],
-  },
-  {
     dim: 'Emotionality', short: 'Emotionality',
     q: "Sunday 4pm dread. What's it actually about?",
     opts: ['Something I said in 2019.', "A real worry I've ignored.", 'Just the vibe of Sunday.', "I don't get that. I'm fine."],
@@ -65,18 +61,6 @@ export const QUESTIONS: Question[] = [
     score: [4, 3, 2, 1],
   },
   {
-    dim: 'Emotionality', short: 'Emotionality',
-    q: "Most accurate description of your sleep schedule:",
-    opts: ['Asleep by 10. Built different.', 'Normal human hours, mostly.', '"Just one more episode."', 'Sleep is a suggestion.'],
-    score: [3, 4, 2, 1],
-  },
-  {
-    dim: 'Extraversion', short: 'Extraversion',
-    q: "Friend cancels last minute. Plans were in the South End. You:",
-    opts: ['Go solo. Underrated move.', 'Text someone else, pivot.', 'Go home. This is ideal.', 'Sit in the car, then go home.'],
-    score: [4, 3, 2, 1],
-  },
-  {
     dim: 'Extraversion', short: 'Extraversion',
     q: '"We need to talk" lands in your DMs. Before you know what it\'s about, you:',
     opts: ['"When?" and move on.', 'Run the scenarios quickly.', 'Full spiral. Three drafts.', 'Go quiet and wait.'],
@@ -85,7 +69,7 @@ export const QUESTIONS: Question[] = [
   {
     dim: 'Extraversion', short: 'Extraversion',
     q: 'Group chat: "what are we doing tonight?" You:',
-    opts: ['Three ideas with Yelp links.', 'One thing, commit hard.', '"Down for whatever."', '👍 and await instructions.'],
+    opts: ['Three ideas with links.', 'One thing, commit hard.', '"Down for whatever."', '👍 and await instructions.'],
     score: [4, 3, 2, 1],
   },
   {
@@ -101,12 +85,6 @@ export const QUESTIONS: Question[] = [
     score: [3, 4, 2, 1],
   },
   {
-    dim: 'Agreeableness', short: 'Agreeableness',
-    q: "Someone takes your Red Line seat. The one you literally just got up from. You:",
-    opts: ['"That was mine." Civil but firm.', 'Extended eye contact. No words.', "Let it go. It's a seat.", 'This is why I Uber.'],
-    score: [3, 2, 4, 1],
-  },
-  {
     dim: 'Conscientiousness', short: 'Conscientiousness',
     q: "Your Notes app is:",
     opts: ["Folders, color-coded. It's a system.", 'Useful stuff + 2am chaos.', 'One scroll of chaos I navigate.', 'Voice memos. Like a feral person.'],
@@ -119,12 +97,6 @@ export const QUESTIONS: Question[] = [
     score: [4, 3, 2, 1],
   },
   {
-    dim: 'Conscientiousness', short: 'Conscientiousness',
-    q: "Being early is:",
-    opts: ['Early is on time. Non-negotiable.', 'I aim for on time, usually make it.', "Slightly late. I've accepted this.", 'Time is a construct. I reject it.'],
-    score: [4, 3, 2, 1],
-  },
-  {
     dim: 'Openness', short: 'Openness',
     q: '"Slow but rewarding" movie recommendation. You:',
     opts: ['Watch immediately. My genre.', 'List. Eventually.', 'How slow are we talking.', "Put on something I've seen before."],
@@ -132,51 +104,8 @@ export const QUESTIONS: Question[] = [
   },
   {
     dim: 'Openness', short: 'Openness',
-    q: "Uber driver wants to debate free will at 1am. You:",
-    opts: ["Let's go. I have thoughts.", 'Engage then wind it down.', 'Short answers, pray it stops.', 'AirPods. Immediately.'],
-    score: [4, 3, 2, 1],
-  },
-  {
-    dim: 'Openness', short: 'Openness',
     q: "Your relationship with your own weirdness:",
     opts: ["Fully embraced. It's the point.", 'Aware of it. Selectively deploy.', 'I prefer "specific" to "weird."', "I'm not weird. I'm particular."],
-    score: [4, 3, 2, 1],
-  },
-  // ─── added Q4 per dim to bring HEXACO to 24 total ─────────────
-  {
-    dim: 'Honesty-Humility', short: 'Honesty',
-    q: 'Friend just dropped $250 on a cut from a Newbury salon. It is not it. They ask. You:',
-    opts: ["Tell them. Kindly. They asked.", "Hint at it — 'interesting choice'.", 'Lie cleanly. Hair grows.', "Compliment the highlights and bail."],
-    score: [4, 2, 1, 2],
-  },
-  {
-    dim: 'Emotionality', short: 'Emotionality',
-    q: "2am. The radiator in your apartment clanks like someone's in the wall. You:",
-    opts: ["It's the radiator. I know my building.", "Pause, listen, move on.", "Phone in hand, lights on.", "Already googling 'is this a ghost'."],
-    score: [4, 3, 2, 1],
-  },
-  {
-    dim: 'Extraversion', short: 'Extraversion',
-    q: 'House party in Allston. You know one person. They went out for a smoke. You:',
-    opts: ['Find the kitchen, talk to whoever\'s in it.', 'Park near the snacks. Smile at people.', 'Text them: where are you?', "Step outside for 'air' and check the time."],
-    score: [4, 3, 2, 1],
-  },
-  {
-    dim: 'Agreeableness', short: 'Agreeableness',
-    q: 'Bartender at the Beehive misses your order — twice. You:',
-    opts: ['Wave them over, easy. People mess up.', "Lean in: 'still waiting on that one?'", "Catch the manager's eye.", "Stage-whisper to my table about it."],
-    score: [4, 3, 2, 1],
-  },
-  {
-    dim: 'Conscientiousness', short: 'Conscientiousness',
-    q: "Your unread email count:",
-    opts: ['Zero. I touch each one once.', 'Under fifty. Mostly handled.', "Three figures. I have a system, sort of.", 'Four-digit red dot. Do not open the app.'],
-    score: [4, 3, 2, 1],
-  },
-  {
-    dim: 'Openness', short: 'Openness',
-    q: 'Friend wants to drag you to an experimental noise show at the Lily Pad in Inman. You:',
-    opts: ['Already in. Worst case it\'s a story.', "Sure, if dinner's part of it.", "What does 'experimental noise' actually mean.", "Hard pass. I know what I like."],
     score: [4, 3, 2, 1],
   },
 ]
@@ -327,6 +256,165 @@ export const VIBE_HEADS: Record<VibeKey, string> = {
 export function vibeLabel(key: VibeKey, score: number | undefined): string | null {
   if (score === undefined || score === null) return null
   return VIBE_LABELS[key]?.[score] ?? null
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUIZ v2 — attachment style + values (the dimensions the research says
+// actually predict compatibility, vs. trait similarity which doesn't).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Attachment (adapted from ECR-S short-form). 8 statements rated on a 1–5
+//     agree scale; 4 load on ANXIETY, 4 on AVOIDANCE (some reverse-keyed).
+//     → two 0–100 scores + a style (secure / anxious / avoidant / fearful).
+//     Attachment is the single most predictive individual-difference dimension
+//     for relationship quality (Joel 2020; Candel & Turliuc 2019 meta).
+export interface AttachmentItem { sub: 'anx' | 'avo'; reverse?: boolean; q: string }
+
+export const ATTACHMENT_QUESTIONS: AttachmentItem[] = [
+  { sub: 'anx', q: 'I worry that the people I date don’t really care about me as much as I care about them.' },
+  { sub: 'anx', q: 'I need a fair amount of reassurance that someone I’m seeing actually likes me.' },
+  { sub: 'anx', q: 'When someone I’m into goes quiet, I assume something’s wrong.' },
+  { sub: 'anx', reverse: true, q: 'I rarely worry about someone losing interest in me.' },
+  { sub: 'avo', q: 'I’d rather not show someone how I really feel deep down.' },
+  { sub: 'avo', q: 'I find it hard to fully rely on a partner.' },
+  { sub: 'avo', reverse: true, q: 'I’m comfortable opening up and getting close fast.' },
+  { sub: 'avo', reverse: true, q: 'Depending on someone — and being depended on — feels natural to me.' },
+]
+
+// answers: array aligned to ATTACHMENT_QUESTIONS, each 1..5 (-1 = skipped → neutral 3).
+export function computeAttachment(answers: number[]): { anxiety: number; avoidance: number; style: AttachStyle } {
+  let anxRaw = 0, anxN = 0, avoRaw = 0, avoN = 0
+  ATTACHMENT_QUESTIONS.forEach((item, i) => {
+    let a = answers[i]
+    if (a === undefined || a === -1) a = 3
+    a = Math.max(1, Math.min(5, a))
+    const v = item.reverse ? 6 - a : a
+    if (item.sub === 'anx') { anxRaw += v; anxN++ } else { avoRaw += v; avoN++ }
+  })
+  // mean (1..5) → 0..100
+  const anxiety = anxN ? Math.round(((anxRaw / anxN) - 1) / 4 * 100) : 50
+  const avoidance = avoN ? Math.round(((avoRaw / avoN) - 1) / 4 * 100) : 50
+  return { anxiety, avoidance, style: attachStyle(anxiety, avoidance) }
+}
+
+export type AttachStyle = 'secure' | 'anxious' | 'avoidant' | 'fearful'
+export function attachStyle(anxiety: number, avoidance: number): AttachStyle {
+  const hiAnx = anxiety >= 50, hiAvo = avoidance >= 50
+  if (hiAnx && hiAvo) return 'fearful'
+  if (hiAnx) return 'anxious'
+  if (hiAvo) return 'avoidant'
+  return 'secure'
+}
+export const ATTACH_LABEL: Record<AttachStyle, string> = {
+  secure: 'secure', anxious: 'anxious-leaning', avoidant: 'avoidant-leaning', fearful: 'fearful (anxious + avoidant)',
+}
+export const ATTACH_BLURB: Record<AttachStyle, string> = {
+  secure: 'comfortable with closeness and independence — you give and take support easily.',
+  anxious: 'you love deeply and want closeness; reassurance and consistency matter to you.',
+  avoidant: 'you value your independence and take your time letting people in.',
+  fearful: 'you crave closeness and guard it at the same time — depth on your own terms.',
+}
+
+// ─── Values (single-choice, like the vibes). Captures the things that actually
+//     gate compatibility: kids, faith, politics, ambition, lifestyle pace,
+//     substances. Stored as users.values_profile JSONB.
+export type ValueKey = 'kids' | 'faith' | 'politics' | 'ambition' | 'lifestyle' | 'fitness' | 'substances'
+export interface ValuesQuestion { key: ValueKey; short: string; q: string; opts: string[]; vals: (string | number)[] }
+
+export const VALUES_QUESTIONS: ValuesQuestion[] = [
+  { key: 'kids', short: 'Kids', q: 'Kids — where do you honestly land?',
+    opts: ['Want them', 'Open / maybe someday', 'Don’t want them', 'Already have + content'],
+    vals: ['yes', 'maybe', 'no', 'have'] },
+  { key: 'faith', short: 'Faith', q: 'How big a role does faith or spirituality play in your life?',
+    opts: ['Central to who I am', 'Somewhat important', 'Not really', 'None at all'],
+    vals: [3, 2, 1, 0] },
+  { key: 'politics', short: 'Politics', q: 'How much do you need a partner to share your politics?',
+    opts: ['It’s a dealbreaker', 'Prefer we align', 'Can handle some difference', 'I’m pretty apolitical'],
+    vals: [3, 2, 1, 0] },
+  { key: 'ambition', short: 'Ambition', q: 'Your relationship with work and ambition?',
+    opts: ['Career is a top priority', 'Driven but balanced', 'Work to live', 'Anti-hustle, fully'],
+    vals: [3, 2, 1, 0] },
+  { key: 'lifestyle', short: 'Pace', q: 'Your default speed in life?',
+    opts: ['Always out, always moving', 'Social but I need to recharge', 'Mostly cozy', 'Full homebody'],
+    vals: [3, 2, 1, 0] },
+  { key: 'fitness', short: 'Health', q: 'How central is health & fitness to your life?',
+    opts: ['It’s a lifestyle — most days', 'Regular, a few times a week', 'On and off', 'Not really my thing'],
+    vals: [3, 2, 1, 0] },
+  { key: 'substances', short: 'Drinking', q: 'Drinking / substances?',
+    opts: ['Sober', 'Rarely', 'Socially', 'Regularly'],
+    vals: ['none', 'rare', 'social', 'regular'] },
+]
+
+export function valuesFromAnswers(answers: number[]): Record<string, string | number> {
+  const out: Record<string, string | number> = {}
+  VALUES_QUESTIONS.forEach((q, i) => {
+    const idx = answers[i]
+    if (idx === undefined || idx < 0 || idx >= q.opts.length) return
+    out[q.key] = q.vals[idx]
+  })
+  return out
+}
+
+export const KIDS_LABEL: Record<string, string> = { yes: 'wants kids', maybe: 'open to kids', no: 'no kids', have: 'has kids' }
+
+// ─── Partner preferences (LOVE-line deep quiz — "what you're looking for").
+//     The first question maps to users.relationship_style (drives the matcher's
+//     intent prioritization + ENM/poly hard-cluster). The rest land in
+//     values_profile.partner for preference-matching levers down the line.
+export interface PartnerQuestion { key: string; short: string; q: string; opts: string[]; vals: (string | number)[]; mapsTo?: 'relationship_style' }
+
+export const PARTNER_QUESTIONS: PartnerQuestion[] = [
+  { key: 'intent', short: 'Looking for', q: 'What are you actually looking for right now?',
+    opts: ['Marriage + kids in mind', 'Long-term, no kids (DINK)', 'Something real, no rush', 'Casual / right-now', 'ENM / polyamorous'],
+    vals: ['marriage_track', 'dink', 'open', 'casual', 'enm_poly'], mapsTo: 'relationship_style' },
+  { key: 'pace', short: 'Pace', q: 'Your ideal pace for something new?',
+    opts: ['Slow burn — let it build', 'Steady and intentional', 'All in when it’s right'],
+    vals: ['slow', 'steady', 'fast'] },
+  { key: 'energy', short: 'Their energy', q: 'You click most with someone who’s…',
+    opts: ['A homebody like me', 'Balanced — in and out', 'Always out and social'],
+    vals: ['home', 'balanced', 'social'] },
+  { key: 'drive', short: 'Their drive', q: 'A partner’s ambition — you want someone who’s…',
+    opts: ['Deeply driven', 'Driven but balanced', 'Anti-hustle, present'],
+    vals: ['driven', 'balanced', 'chill'] },
+  { key: 'priority', short: 'Matters most', q: 'Honestly — what matters MOST in a match?',
+    opts: ['Shared values', 'Emotional depth', 'Physical chemistry', 'Shared lifestyle'],
+    vals: ['values', 'emotional', 'chemistry', 'lifestyle'] },
+]
+
+// Returns the relationship_style (from the intent question) + a partner-prefs
+// object for values_profile.partner. Skips (answer -1) are omitted.
+export function partnerFromAnswers(answers: number[]): { relationship_style?: string; partner: Record<string, string | number> } {
+  const partner: Record<string, string | number> = {}
+  let relationship_style: string | undefined
+  PARTNER_QUESTIONS.forEach((qq, i) => {
+    const idx = answers[i]
+    if (idx === undefined || idx < 0 || idx >= qq.opts.length) return
+    const v = qq.vals[idx]
+    if (qq.mapsTo === 'relationship_style') relationship_style = String(v)
+    else partner[qq.key] = v
+  })
+  return { relationship_style, partner }
+}
+
+// ─── Rapid fire ⚡ — fast this-or-that. A palate cleanser that's mostly for fun
+//     but also drops a few light vibe tags into matching (small weight).
+//     Option A = 0, Option B = 1. Stored in users.vibes.rapid.
+export interface RapidQ { key: string; q: string; a: string; b: string }
+export const RAPID_FIRE: RapidQ[] = [
+  { key: 'texter', q: 'Texting, honestly:', a: 'Instant replier', b: 'Leaves you on read' },
+  { key: 'night', q: 'Friday night:', a: 'Out out', b: 'Cozy in' },
+  { key: 'terrain', q: 'Dream escape:', a: 'Mountains', b: 'Beach' },
+  { key: 'fuel', q: 'Morning fuel:', a: 'Coffee', b: 'Tea / matcha' },
+  { key: 'clock', q: 'You run on:', a: 'Early bird', b: 'Night owl' },
+  { key: 'spont', q: 'A trip is:', a: 'Planned to the hour', b: 'Total wing-it' },
+  { key: 'pets', q: 'Team:', a: 'Dogs', b: 'Cats' },
+  { key: 'pineapple', q: 'Pineapple on pizza:', a: 'Yes chef', b: 'Crime' },
+]
+// answers aligned to RAPID_FIRE: 0 or 1 (skip = omit). Stored under vibes.rapid.
+export function rapidFromAnswers(answers: number[]): Record<string, number> {
+  const out: Record<string, number> = {}
+  RAPID_FIRE.forEach((q, i) => { if (answers[i] === 0 || answers[i] === 1) out[q.key] = answers[i] })
+  return out
 }
 
 export const ARCHETYPES = [

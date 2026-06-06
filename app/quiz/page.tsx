@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import CorpFooter from '@/components/corp-footer'
 import { suggestEmailCorrection } from '@/lib/email-typos'
-import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype } from '@/lib/quiz-data'
+import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype, ATTACHMENT_QUESTIONS, computeAttachment, VALUES_QUESTIONS, valuesFromAnswers, RAPID_FIRE, rapidFromAnswers, PARTNER_QUESTIONS, partnerFromAnswers } from '@/lib/quiz-data'
 import type { VibeKey } from '@/lib/quiz-data'
 import { parseResponse } from '@/lib/fetch-helpers'
 import styles from './quiz.module.css'
 
-type Screen = 'intro' | 'verify' | 'quiz' | 'vibes-intro' | 'vibes' | 'loading' | 'result'
+type Screen = 'intro' | 'verify' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result'
 
 interface FormData {
   name: string; age: string; gender: string; seek: string
@@ -26,6 +26,52 @@ const LOADING_MSGS = [
   'Your match is almost cooked...',
 ]
 
+// Named chapters so the quiz reads like an experience, not a form.
+// Two tracks: the CORE quiz (everyone — personality + lifestyle + fun) and the
+// LOVE-line deep quiz (only when you board Love — partner + attachment + values).
+const CHAPTERS: Record<string, { n: number; total: number; title: string; lede: string; sub: string; eyebrow?: string }> = {
+  // ── core track (1–3 of 3)
+  who:     { n: 1, total: 3, title: 'who you are',          lede: "the personality stuff. answer honestly — the algorithm clocks when you're performing.", sub: '12 quick ones.' },
+  vibes:   { n: 2, total: 3, title: 'the day-to-day',       lede: 'how you actually live — your rhythms, your energy, your pace.',                        sub: '6 quick ones.' },
+  rapid:   { n: 3, total: 3, title: 'rapid fire',           lede: 'no overthinking. gut answer, tap fast. speed-dating style.',                          sub: '8 this-or-thats.' },
+  // ── love-deep track (1–3 of 3)
+  partner: { n: 1, total: 3, title: 'what you’re looking for', eyebrow: 'love line', lede: 'now the romantic side — the kind of partner and relationship you actually want.', sub: '5 quick ones.' },
+  attach:  { n: 2, total: 3, title: 'how you connect',      eyebrow: 'love line', lede: 'the way you bond is the single best read on how a relationship will feel. no wrong answers.', sub: '8 quick reads.' },
+  values:  { n: 3, total: 3, title: 'what matters',         eyebrow: 'love line', lede: 'the stuff that quietly makes or breaks a match — kids, faith, ambition, health.', sub: '7 honest ones.' },
+}
+
+function ChapterCard({ k, onStart, onSkip, styles }: { k: string; onStart: () => void; onSkip?: () => void; styles: any }) {
+  const c = CHAPTERS[k]
+  if (!c) return null
+  return (
+    <div className={styles.screen}>
+      <div className={styles.introWrap}>
+        <div className={styles.introHero}>
+          <div className={styles.stickerRow}>
+            {c.eyebrow && <span className={styles.sticker}>✦ {c.eyebrow}</span>}
+            <span className={styles.stickerGold}>chapter {c.n} / {c.total}</span>
+          </div>
+          <h1 className={styles.introH1}>
+            {k === 'rapid' ? <>rapid <em>fire ⚡</em></> : <em>{c.title}.</em>}
+          </h1>
+          <p className={styles.introLede}>
+            {c.lede}<br />
+            <span className={styles.introLedeSub}>{c.sub} then we keep moving.</span>
+          </p>
+        </div>
+        <button className="btn-primary" onClick={onStart} style={{ width: '100%', justifyContent: 'center' }}>
+          {k === 'rapid' ? "let's go ⚡" : 'start →'}
+        </button>
+        {onSkip && (
+          <button className="btn-ghost" onClick={onSkip} style={{ width: '100%', justifyContent: 'center', marginTop: '.6rem' }}>
+            skip for now →
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function QuizPage() {
   return (
     <Suspense fallback={null}>
@@ -37,6 +83,8 @@ export default function QuizPage() {
 function QuizInner() {
   const searchParams = useSearchParams()
   const isRetake = searchParams.get('retake') === '1'
+  // Love-line deep quiz: /quiz?line=love (logged-in users, after the core quiz).
+  const isLoveDeep = searchParams.get('line') === 'love'
   const [screen, setScreen] = useState<Screen>('intro')
   const [retakeReady, setRetakeReady] = useState(false)
   const [form, setForm] = useState<FormData>({ name:'', age:'', gender:'', seek:'', zip:'', email:'', ageMin:'22', ageMax:'38' })
@@ -52,6 +100,22 @@ function QuizInner() {
   const [currentVibeQ, setCurrentVibeQ] = useState(0)
   const [vibeAnswers, setVibeAnswers] = useState<number[]>([])
   const [vibeSelected, setVibeSelected] = useState<number|null>(null)
+  // v2: attachment (Likert 1–5) + values (single-choice)
+  const [currentAttachQ, setCurrentAttachQ] = useState(0)
+  const [attachAnswers, setAttachAnswers] = useState<number[]>([])
+  const [attachSelected, setAttachSelected] = useState<number|null>(null)
+  const [currentValuesQ, setCurrentValuesQ] = useState(0)
+  const [valuesAnswers, setValuesAnswers] = useState<number[]>([])
+  const [valuesSelected, setValuesSelected] = useState<number|null>(null)
+  // v2: rapid fire (this-or-that; selected value is 0 or 1, skip = -1)
+  const [currentRapidQ, setCurrentRapidQ] = useState(0)
+  const [rapidAnswers, setRapidAnswers] = useState<number[]>([])
+  const [rapidSelected, setRapidSelected] = useState<number|null>(null)
+  // love-deep: partner preferences (single-choice; skip = -1)
+  const [currentPartnerQ, setCurrentPartnerQ] = useState(0)
+  const [partnerAnswers, setPartnerAnswers] = useState<number[]>([])
+  const [partnerSelected, setPartnerSelected] = useState<number|null>(null)
+  const [loveDeepReady, setLoveDeepReady] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
   const [loadingPct, setLoadingPct] = useState(0)
   const [archetype, setArchetype] = useState<ReturnType<typeof pickArchetype>|null>(null)
@@ -89,6 +153,28 @@ function QuizInner() {
       }
     })()
   }, [isRetake, retakeReady])
+
+  // Love-deep entry: logged-in user boarding the Love line completes the deeper
+  // romantic quiz (partner → attachment → values). Requires the core quiz first.
+  useEffect(() => {
+    if (!isLoveDeep || loveDeepReady) return
+    (async () => {
+      const res = await fetch('/api/profile')
+      if (res.ok) {
+        const data = await parseResponse<any>(res)
+        if (!data?.user?.archetype) {
+          // Haven't done the core quiz yet — send them there first.
+          window.location.href = '/quiz'
+          return
+        }
+        setForm((f) => ({ ...f, name: data.user.name || '', email: data.user.email || '' }))
+        setLoveDeepReady(true)
+        setScreen('partner-intro')
+      } else {
+        window.location.href = '/login?next=' + encodeURIComponent('/quiz?line=love')
+      }
+    })()
+  }, [isLoveDeep, loveDeepReady])
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
@@ -153,7 +239,7 @@ function QuizInner() {
         // This avoids re-running the quiz and hitting a duplicate-email
         // 409 at /api/submit.
         if (data.needsQuiz) {
-          setScreen('quiz')
+          setScreen('quiz-intro')
         } else {
           window.location.href = data.redirect || '/hub'
         }
@@ -168,9 +254,12 @@ function QuizInner() {
     finally { setOtpVerifying(false) }
   }
 
-  const submitToDatabase = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>, vibeAns: number[]) => {
+  // CORE submit — personality + lifestyle + rapid. Lands on /hub (the line
+  // chooser). Attachment/values are NOT here; they're the love-deep quiz.
+  const submitCore = useCallback(async (finalScores: Record<string, number>, arch: ReturnType<typeof pickArchetype>, vibeAns: number[], rapidAns: number[]) => {
     try {
-      const vibes = vibesFromAnswers(vibeAns)
+      // Rapid-fire ⚡ lives under vibes.rapid (light this-or-that signal).
+      const vibes = { ...vibesFromAnswers(vibeAns), rapid: rapidFromAnswers(rapidAns) }
       const scorePayload = {
         score_honesty: finalScores['Honesty-Humility'] ?? 0,
         score_emotionality: finalScores['Emotionality'] ?? 0,
@@ -204,12 +293,12 @@ function QuizInner() {
         })
       })
       const data = await parseResponse<any>(res)
-if (res.status === 409) {
-  // Email already has an account — send them to log in (they own the email, so
-  // they can OTP in). We never expose user ids to the browser.
-  window.location.href = '/login?next=' + encodeURIComponent('/hub')
-  return
-}
+      if (res.status === 409) {
+        // Email already has an account — send them to log in (they own the email,
+        // so they can OTP in). We never expose user ids to the browser.
+        window.location.href = '/login?next=' + encodeURIComponent('/hub')
+        return
+      }
       if (data.userId) {
         userIdRef.current = data.userId
         // Session is created server-side in /api/submit, so the user is logged
@@ -223,6 +312,31 @@ if (res.status === 409) {
       setTimeout(() => setBarsVisible(true), 400)
     }
   }, [form, isRetake])
+
+  // LOVE-DEEP submit — partner prefs + attachment + values. Enriches the love
+  // profile (best-effort) and lands on the love dashboard.
+  const submitLoveDeep = useCallback(async (attachAns: number[], valuesAns: number[], partnerAns: number[]) => {
+    userIdRef.current = 'done' // prevent the loading screen's result fallback
+    try {
+      const attach = computeAttachment(attachAns)
+      const { relationship_style, partner } = partnerFromAnswers(partnerAns)
+      const values_profile = { ...valuesFromAnswers(valuesAns), partner }
+      await fetch('/api/quiz/love-deep', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attach_anxiety: attach.anxiety,
+          attach_avoidance: attach.avoidance,
+          attach_style: attach.style,
+          values_profile,
+          relationship_style,
+        }),
+      })
+    } catch (err) {
+      console.error('Love-deep submit failed:', err)
+    } finally {
+      window.location.href = '/dashboard'
+    }
+  }, [])
 
   const advance = useCallback((ans: number) => {
     const newAnswers = [...answers, ans]
@@ -246,16 +360,65 @@ if (res.status === 409) {
     setVibeAnswers(newAnswers)
     setVibeSelected(null)
     if (currentVibeQ + 1 >= VIBE_QUESTIONS.length) {
-      // All done — submit + go to loading.
-      setScreen('loading')
-      setLoadingStep(0)
-      setLoadingPct(0)
-      submitToDatabase(scores, archetype!, newAnswers)
+      setScreen('rapid-intro') // core chapter 3: rapid fire
     } else { setCurrentVibeQ(q => q + 1) }
-  }, [vibeAnswers, currentVibeQ, submitToDatabase, scores, archetype])
+  }, [vibeAnswers, currentVibeQ])
 
   function nextVibe() { if (vibeSelected !== null) advanceVibe(vibeSelected) }
   function skipVibe() { advanceVibe(-1) }
+
+  // love-deep: partner preferences (single-choice index, skip = -1)
+  const advancePartner = useCallback((ans: number) => {
+    const newAnswers = [...partnerAnswers, ans]
+    setPartnerAnswers(newAnswers)
+    setPartnerSelected(null)
+    if (currentPartnerQ + 1 >= PARTNER_QUESTIONS.length) {
+      setScreen('attach-intro') // love chapter 2: how you connect
+    } else { setCurrentPartnerQ(q => q + 1) }
+  }, [partnerAnswers, currentPartnerQ])
+  function nextPartner() { if (partnerSelected !== null) advancePartner(partnerSelected) }
+  function skipPartner() { advancePartner(-1) }
+
+  // v2: attachment (Likert 1–5; selected value is the 1–5 rating, skip = -1)
+  const advanceAttach = useCallback((ans: number) => {
+    const newAnswers = [...attachAnswers, ans]
+    setAttachAnswers(newAnswers)
+    setAttachSelected(null)
+    if (currentAttachQ + 1 >= ATTACHMENT_QUESTIONS.length) {
+      setScreen('values-intro') // love chapter 3: what matters
+    } else { setCurrentAttachQ(q => q + 1) }
+  }, [attachAnswers, currentAttachQ])
+  function nextAttach() { if (attachSelected !== null) advanceAttach(attachSelected) }
+  function skipAttach() { advanceAttach(-1) }
+
+  // love-deep: values (single-choice index) — last love chapter → submit love-deep.
+  const advanceValues = useCallback((ans: number) => {
+    const newAnswers = [...valuesAnswers, ans]
+    setValuesAnswers(newAnswers)
+    setValuesSelected(null)
+    if (currentValuesQ + 1 >= VALUES_QUESTIONS.length) {
+      setScreen('loading')
+      setLoadingStep(0)
+      setLoadingPct(0)
+      submitLoveDeep(attachAnswers, newAnswers, partnerAnswers)
+    } else { setCurrentValuesQ(q => q + 1) }
+  }, [valuesAnswers, currentValuesQ, submitLoveDeep, attachAnswers, partnerAnswers])
+  function nextValues() { if (valuesSelected !== null) advanceValues(valuesSelected) }
+  function skipValues() { advanceValues(-1) }
+
+  // core: rapid fire (this-or-that; 0/1, skip = -1) — last core chapter → submit core.
+  const advanceRapid = useCallback((ans: number) => {
+    const newAnswers = [...rapidAnswers, ans]
+    setRapidAnswers(newAnswers)
+    setRapidSelected(null)
+    if (currentRapidQ + 1 >= RAPID_FIRE.length) {
+      setScreen('loading')
+      setLoadingStep(0)
+      setLoadingPct(0)
+      submitCore(scores, archetype!, vibeAnswers, newAnswers)
+    } else { setCurrentRapidQ(q => q + 1) }
+  }, [rapidAnswers, currentRapidQ, submitCore, scores, archetype, vibeAnswers])
+  function skipRapid() { advanceRapid(-1) }
 
   useEffect(() => {
     if (screen !== 'quiz') return
@@ -301,7 +464,7 @@ if (res.status === 409) {
 
   const q = QUESTIONS[currentQ]
   const progress = (currentQ / QUESTIONS.length) * 100
-  const MAX_SCORE = 16
+  const MAX_SCORE = 8 // HEXACO trimmed to 2 questions/dim × 4 pts
 
   return (
     <>
@@ -488,6 +651,10 @@ if (res.status === 409) {
         </div>
       )}
 
+      {screen === 'quiz-intro' && (
+        <ChapterCard k="who" onStart={() => setScreen('quiz')} styles={styles} />
+      )}
+
       {screen === 'quiz' && q && (
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
@@ -527,25 +694,7 @@ if (res.status === 409) {
       )}
 
       {screen === 'vibes-intro' && (
-        <div className={styles.screen}>
-          <div className={styles.introWrap}>
-            <div className={styles.introHero}>
-              <div className={styles.stickerRow}>
-                <span className={styles.stickerGold}>✦ part 2</span>
-              </div>
-              <h1 className={styles.introH1}>
-                now <em>the day-to-day.</em>
-              </h1>
-              <p className={styles.introLede}>
-                personality is half the story. how you actually <em>live</em> matters just as much.<br />
-                <span className={styles.introLedeSub}>6 quick ones. then we go.</span>
-              </p>
-            </div>
-            <button className="btn-primary" onClick={() => setScreen('vibes')} style={{width:'100%',justifyContent:'center'}}>
-              start →
-            </button>
-          </div>
-        </div>
+        <ChapterCard k="vibes" onStart={() => setScreen('vibes')} styles={styles} />
       )}
 
       {screen === 'vibes' && VIBE_QUESTIONS[currentVibeQ] && (
@@ -581,6 +730,163 @@ if (res.status === 409) {
               <button className="btn-primary" onClick={nextVibe} disabled={vibeSelected === null}>
                 {currentVibeQ + 1 === VIBE_QUESTIONS.length ? 'finish →' : 'next →'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'partner-intro' && (
+        <ChapterCard
+          k="partner"
+          onStart={() => setScreen('partner')}
+          onSkip={() => { window.location.href = '/dashboard' }}
+          styles={styles}
+        />
+      )}
+
+      {screen === 'partner' && PARTNER_QUESTIONS[currentPartnerQ] && (
+        <div className={styles.screen}>
+          <div className={styles.quizWrap}>
+            <div className={styles.quizTop}>
+              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <div className={styles.qMeta}>
+                <span className={styles.qDim}>{PARTNER_QUESTIONS[currentPartnerQ].short}</span>
+                <span className={styles.qCount}>{currentPartnerQ + 1}/{PARTNER_QUESTIONS.length}</span>
+              </div>
+            </div>
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{ width: `${(currentPartnerQ / PARTNER_QUESTIONS.length) * 100}%` }} />
+            </div>
+            <p className={styles.qText}>{PARTNER_QUESTIONS[currentPartnerQ].q}</p>
+            <div className={styles.qOptions}>
+              {PARTNER_QUESTIONS[currentPartnerQ].opts.map((opt, i) => (
+                <button key={i}
+                  className={`${styles.qOpt} ${partnerSelected === i ? styles.qOptSelected : ''}`}
+                  onClick={() => setPartnerSelected(i)}>
+                  <span className={styles.qKey}>{String.fromCharCode(65 + i)}</span>
+                  <span className={styles.qOptText}>{opt}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={skipPartner}>skip this one</button>
+              <button className="btn-primary" onClick={nextPartner} disabled={partnerSelected === null}>
+                {currentPartnerQ + 1 === PARTNER_QUESTIONS.length ? 'next →' : 'next →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'attach-intro' && (
+        <ChapterCard k="attach" onStart={() => setScreen('attach')} styles={styles} />
+      )}
+
+      {screen === 'attach' && ATTACHMENT_QUESTIONS[currentAttachQ] && (
+        <div className={styles.screen}>
+          <div className={styles.quizWrap}>
+            <div className={styles.quizTop}>
+              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <div className={styles.qMeta}>
+                <span className={styles.qDim}>how you connect</span>
+                <span className={styles.qCount}>{currentAttachQ + 1}/{ATTACHMENT_QUESTIONS.length}</span>
+              </div>
+            </div>
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{ width: `${(currentAttachQ / ATTACHMENT_QUESTIONS.length) * 100}%` }} />
+            </div>
+            <p className={styles.qText}>{ATTACHMENT_QUESTIONS[currentAttachQ].q}</p>
+            <div className={styles.qOptions}>
+              {[['1', 'Strongly disagree'], ['2', 'Disagree'], ['3', 'Neutral'], ['4', 'Agree'], ['5', 'Strongly agree']].map(([val, label]) => {
+                const v = parseInt(val)
+                return (
+                  <button key={val}
+                    className={`${styles.qOpt} ${attachSelected === v ? styles.qOptSelected : ''}`}
+                    onClick={() => setAttachSelected(v)}>
+                    <span className={styles.qKey}>{val}</span>
+                    <span className={styles.qOptText}>{label}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={skipAttach}>skip this one</button>
+              <button className="btn-primary" onClick={nextAttach} disabled={attachSelected === null}>
+                {currentAttachQ + 1 === ATTACHMENT_QUESTIONS.length ? 'next →' : 'next →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'values-intro' && (
+        <ChapterCard k="values" onStart={() => setScreen('values')} styles={styles} />
+      )}
+
+      {screen === 'values' && VALUES_QUESTIONS[currentValuesQ] && (
+        <div className={styles.screen}>
+          <div className={styles.quizWrap}>
+            <div className={styles.quizTop}>
+              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <div className={styles.qMeta}>
+                <span className={styles.qDim}>{VALUES_QUESTIONS[currentValuesQ].short}</span>
+                <span className={styles.qCount}>{currentValuesQ + 1}/{VALUES_QUESTIONS.length}</span>
+              </div>
+            </div>
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{ width: `${(currentValuesQ / VALUES_QUESTIONS.length) * 100}%` }} />
+            </div>
+            <p className={styles.qText}>{VALUES_QUESTIONS[currentValuesQ].q}</p>
+            <div className={styles.qOptions}>
+              {VALUES_QUESTIONS[currentValuesQ].opts.map((opt, i) => (
+                <button key={i}
+                  className={`${styles.qOpt} ${valuesSelected === i ? styles.qOptSelected : ''}`}
+                  onClick={() => setValuesSelected(i)}>
+                  <span className={styles.qKey}>{String.fromCharCode(65 + i)}</span>
+                  <span className={styles.qOptText}>{opt}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={skipValues}>skip this one</button>
+              <button className="btn-primary" onClick={nextValues} disabled={valuesSelected === null}>
+                {currentValuesQ + 1 === VALUES_QUESTIONS.length ? 'finish →' : 'next →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'rapid-intro' && (
+        <ChapterCard k="rapid" onStart={() => setScreen('rapid')} styles={styles} />
+      )}
+
+      {screen === 'rapid' && RAPID_FIRE[currentRapidQ] && (
+        <div className={styles.screen}>
+          <div className={styles.quizWrap}>
+            <div className={styles.quizTop}>
+              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <div className={styles.qMeta}>
+                <span className={styles.qDim}>rapid fire ⚡</span>
+                <span className={styles.qCount}>{currentRapidQ + 1}/{RAPID_FIRE.length}</span>
+              </div>
+            </div>
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{ width: `${(currentRapidQ / RAPID_FIRE.length) * 100}%` }} />
+            </div>
+            <p className={styles.qText}>{RAPID_FIRE[currentRapidQ].q}</p>
+            <div className={styles.qOptions}>
+              {[RAPID_FIRE[currentRapidQ].a, RAPID_FIRE[currentRapidQ].b].map((opt, i) => (
+                <button key={i}
+                  className={`${styles.qOpt} ${rapidSelected === i ? styles.qOptSelected : ''}`}
+                  onClick={() => { setRapidSelected(i); advanceRapid(i) }}>
+                  <span className={styles.qKey}>{i === 0 ? 'A' : 'B'}</span>
+                  <span className={styles.qOptText}>{opt}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.qNav}>
+              <button className={styles.qSkip} onClick={skipRapid}>no preference</button>
             </div>
           </div>
         </div>

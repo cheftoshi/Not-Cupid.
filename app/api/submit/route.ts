@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       archetype,
       vibes,
       relationship_style,
+      attach_anxiety, attach_avoidance, attach_style, values_profile,
     } = body
 
     const VALID_RELATIONSHIP_STYLES = new Set([
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (!cleanName) return NextResponse.json({ error: 'Name required' }, { status: 400 })
     // HEXACO dimensions are 0–16 (4 questions × 4 pts); clamp so a tampered
     // client can't store fake personality scores that skew matching.
-    const clampScore = (v: any) => Math.max(0, Math.min(16, Number(v) || 0))
+    const clampScore = (v: any) => Math.max(0, Math.min(8, Number(v) || 0)) // 2 questions/dim × 4 = max 8
     const clampAge = (v: any, d: number) => { const n = parseInt(v); return Number.isFinite(n) ? Math.max(18, Math.min(120, n)) : d }
 
     const insertRow: any = {
@@ -67,11 +68,25 @@ export async function POST(req: NextRequest) {
     if (relationship_style && VALID_RELATIONSHIP_STYLES.has(relationship_style)) {
       insertRow.relationship_style = relationship_style
     }
+    // Quiz v2: attachment (0–100) + values profile.
+    const clamp100 = (v: any) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)))
+    if (attach_anxiety != null) insertRow.attach_anxiety = clamp100(attach_anxiety)
+    if (attach_avoidance != null) insertRow.attach_avoidance = clamp100(attach_avoidance)
+    if (['secure', 'anxious', 'avoidant', 'fearful'].includes(attach_style)) insertRow.attach_style = attach_style
+    if (values_profile && typeof values_profile === 'object') insertRow.values_profile = values_profile
 
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from('users')
       .insert([insertRow])
       .select().single()
+
+    // Graceful fallback: if the quiz-v2 columns aren't migrated yet, retry
+    // without them so signup never breaks (run 20260609_quiz_v2.sql to activate).
+    if (error && /attach_|values_profile|column|schema cache/i.test(error.message || '') && error.code !== '23505') {
+      delete insertRow.attach_anxiety; delete insertRow.attach_avoidance; delete insertRow.attach_style; delete insertRow.values_profile
+      console.warn('Submit: quiz-v2 columns missing — run 20260609 migration. Saving without them.')
+      ;({ data, error } = await supabaseAdmin.from('users').insert([insertRow]).select().single())
+    }
 
 if (error) {
   if (error.code === '23505') {

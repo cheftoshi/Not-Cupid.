@@ -22,15 +22,12 @@ const W = {
   extraversion: 0.5,
 } as const;
 
-const DIM_MAX_DIFF = 16; // points
+const DIM_MAX_DIFF = 8; // points (HEXACO trimmed to 2 questions/dim × 4 pts = max 8)
 
 // Sum of weights × max per-dim diff = absolute worst case
 const MAX_WEIGHTED_DIFF =
   DIM_MAX_DIFF *
   (W.honesty + W.agreeableness + W.conscientiousness + W.emotionality + W.openness + W.extraversion);
-
-const HEXACO_WEIGHT = 0.8;
-const VIBES_WEIGHT = 0.2;
 
 const VIBE_KEYS = ['chronotype', 'date_freq', 'future', 'comm', 'social', 'risk'] as const;
 const VIBE_MAX_DIFF_PER_KEY = 3; // each key on a 1..4 scale → max |diff| = 3
@@ -72,16 +69,80 @@ function vibesSubscore(a: any, b: any): number | null {
   return 100 - (totalDiff / maxDiff) * 100;
 }
 
+// ─── v2 subscores: attachment compatibility + values alignment ───────────────
+// Both return 0..100, or null when either side lacks the data (old/v1 users) so
+// compatibilityScore can renormalize over whatever signals are present.
+
+// Attachment: reward security, heavily penalize the anxious×avoidant
+// "chase–withdraw" pairing — the combination meta-analyses flag as worst.
+function attachmentSubscore(a: any, b: any): number | null {
+  const aAnx = a?.attach_anxiety, aAvo = a?.attach_avoidance;
+  const bAnx = b?.attach_anxiety, bAvo = b?.attach_avoidance;
+  if ([aAnx, aAvo, bAnx, bAvo].some((v) => typeof v !== 'number')) return null;
+  const insecurity = (aAnx + aAvo + bAnx + bAvo) / 4 / 100;            // 0..1, lower = more secure
+  const trap = ((aAnx * bAvo) + (bAnx * aAvo)) / (2 * 100 * 100);       // 0..1, anxious↔avoidant risk
+  const score = 100 * (1 - 0.4 * insecurity - 0.6 * trap);
+  return Math.max(0, Math.min(100, score));
+}
+
+// Kids is the heaviest values term (closest thing to a dealbreaker); the rest
+// (faith/politics/ambition/lifestyle/substances) are similarity on a 0..3 scale.
+function kidsCompat(a: any, b: any): number | null {
+  if (a == null || b == null) return null;
+  if (a === b) return 1;                       // yes=yes, no=no, maybe=maybe, have=have
+  const s = new Set([a, b]);
+  if (s.has('maybe')) return 0.6;              // maybe is flexible with anything
+  if (s.has('yes') && s.has('no')) return 0;   // hard conflict
+  if (s.has('have') && s.has('no')) return 0.7;
+  if (s.has('have') && s.has('yes')) return 0.45;
+  return 0.5;
+}
+const VAL_NUM_KEYS = ['faith', 'politics', 'ambition', 'lifestyle', 'fitness'] as const;
+const SUBSTANCE_ORD: Record<string, number> = { none: 0, rare: 1, social: 2, regular: 3 };
+function valuesSubscore(a: any, b: any): number | null {
+  const av = a?.values_profile, bv = b?.values_profile;
+  if (!av || !bv || typeof av !== 'object' || typeof bv !== 'object') return null;
+  let sum = 0, wsum = 0;
+  const add = (w: number, sim: number | null) => { if (sim != null) { sum += w * sim; wsum += w; } };
+  add(0.35, kidsCompat(av.kids, bv.kids));
+  for (const k of VAL_NUM_KEYS) {
+    if (typeof av[k] === 'number' && typeof bv[k] === 'number') add(0.13, 1 - Math.abs(av[k] - bv[k]) / 3);
+  }
+  const aS = SUBSTANCE_ORD[av.substances], bS = SUBSTANCE_ORD[bv.substances];
+  if (aS != null && bS != null) add(0.13, 1 - Math.abs(aS - bS) / 3);
+  if (wsum === 0) return null;
+  return (sum / wsum) * 100;
+}
+
+// Rapid fire ⚡ — light this-or-that overlap (stored in vibes.rapid). Fraction of
+// shared answers that match. Low weight; pure delight + a small nudge.
+function rapidSubscore(a: any, b: any): number | null {
+  const ar = a?.vibes?.rapid, br = b?.vibes?.rapid;
+  if (!ar || !br || typeof ar !== 'object' || typeof br !== 'object') return null;
+  let same = 0, n = 0;
+  for (const k of Object.keys(ar)) {
+    if (typeof br[k] === 'number' && typeof ar[k] === 'number') { n++; if (ar[k] === br[k]) same++; }
+  }
+  return n === 0 ? null : (same / n) * 100;
+}
+
+// v2 weights (cold-start: no behavioral/reciprocity term yet — that blends in
+// later). Values lead, attachment next, traits + vibes + rapid light. Weights
+// are renormalized over whichever signals both users actually have.
+const V2_WEIGHTS = { values: 0.38, attachment: 0.27, traits: 0.13, vibes: 0.12, rapid: 0.10 } as const;
+
 export function compatibilityScore(a: any, b: any): number {
-  const hexaco = hexacoSubscore(a, b);
-  const vibes = vibesSubscore(a, b);
-
-  // If either side hasn't filled the vibes quiz, fall back to pure HEXACO.
-  const blended = vibes === null
-    ? hexaco
-    : hexaco * HEXACO_WEIGHT + vibes * VIBES_WEIGHT;
-
-  return Math.round(blended);
+  const parts: Array<[number, number | null]> = [
+    [V2_WEIGHTS.values, valuesSubscore(a, b)],
+    [V2_WEIGHTS.attachment, attachmentSubscore(a, b)],
+    [V2_WEIGHTS.traits, hexacoSubscore(a, b)],
+    [V2_WEIGHTS.vibes, vibesSubscore(a, b)],
+    [V2_WEIGHTS.rapid, rapidSubscore(a, b)],
+  ];
+  let sum = 0, wsum = 0;
+  for (const [w, v] of parts) { if (v != null) { sum += w * v; wsum += w; } }
+  // hexacoSubscore is never null, so wsum >= traits weight; guard anyway.
+  return Math.round(wsum > 0 ? sum / wsum : hexacoSubscore(a, b));
 }
 
 /**

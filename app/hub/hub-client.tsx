@@ -9,7 +9,8 @@ export default function HubClient({
   firstName,
   onWaitlist,
   hasArchetype,
-}: { firstName: string; onWaitlist: boolean; hasArchetype: boolean }) {
+  needsLoveDeep,
+}: { firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean }) {
   const [joined, setJoined] = useState(onWaitlist);
   const [busy, setBusy] = useState(false);
   const [coords, setCoords] = useState({ x: 50, y: 40 });
@@ -33,7 +34,9 @@ export default function HubClient({
     }
   }
 
-  const loveHref = hasArchetype ? '/profile' : '/quiz';
+  // No core quiz yet → /quiz. Core done but love-deep not → the deeper love
+  // quiz. Fully set up → straight to the love profile.
+  const loveHref = !hasArchetype ? '/quiz' : needsLoveDeep ? '/quiz?line=love' : '/profile';
 
   return (
     <main className={styles.hub}>
@@ -67,12 +70,12 @@ export default function HubClient({
             personality, not lighting. no swipes, no photos first.
           </p>
           <div className={styles.cardSpec}>
-            <div><span className={styles.specK}>quiz</span><span className={styles.specV}>30 questions</span></div>
+            <div><span className={styles.specK}>quiz</span><span className={styles.specV}>personality-led</span></div>
             <div><span className={styles.specK}>pool</span><span className={styles.specV}>greater boston</span></div>
             <div><span className={styles.specK}>match</span><span className={styles.specV}>within 15mi</span></div>
             <div><span className={styles.specK}>style</span><span className={styles.specV}>choose from 5</span></div>
           </div>
-          <Link href={loveHref} className={styles.cardCta} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>board the love line →</Link>
+          <Link href={loveHref} className={styles.cardCta} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>{needsLoveDeep ? 'finish your love profile →' : 'board the love line →'}</Link>
           <Link href="/how-it-works" className={styles.cardSub}>how the love line works →</Link>
         </div>
 

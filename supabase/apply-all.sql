@@ -595,3 +595,10 @@ alter table users add column if not exists friend_digest_sent_at timestamptz;
 -- ==================== 20260608_friend_lgbtq.sql ====================
 -- Self-ID so LGBTQ+ audiences/seeking gate accurately (null = unset → gender fallback).
 alter table users add column if not exists is_lgbtq boolean;
+
+-- ==================== 20260609_quiz_v2.sql ====================
+-- Quiz v2: attachment + values (the dimensions that actually predict compatibility).
+alter table users add column if not exists attach_anxiety int;
+alter table users add column if not exists attach_avoidance int;
+alter table users add column if not exists attach_style text;
+alter table users add column if not exists values_profile jsonb;

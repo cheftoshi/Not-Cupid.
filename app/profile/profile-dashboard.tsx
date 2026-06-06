@@ -34,7 +34,7 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
   // HEXACO dimension bars — raw scores are 0–16 (4 questions × 4pts). Show as
   // a percentage fill so users see their personality breakdown, not just the
   // archetype label.
-  const HEXACO_MAX = 16;
+  const HEXACO_MAX = 8;
   const hexaco: Array<{ label: string; score: number }> = [
     { label: 'Honesty', score: user.score_honesty },
     { label: 'Emotionality', score: user.score_emotionality },
