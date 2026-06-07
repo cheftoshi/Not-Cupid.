@@ -153,6 +153,7 @@ export function renderEmail(args: RenderArgs): string {
           <td style="padding:0 36px 32px 36px;">
             <div style="border-top:1px solid ${C.border};padding-top:18px;font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.mutedSoft};letter-spacing:0.12em;text-transform:uppercase;">
               ${args.footerNote ? `<div style="margin-bottom:8px;color:${C.muted};text-transform:none;letter-spacing:0;font-family:Georgia,serif;font-style:italic;font-size:12px;">${args.footerNote}</div>` : ''}
+              <div style="margin-bottom:8px;color:${C.muted};text-transform:none;letter-spacing:0;font-family:Georgia,serif;font-style:italic;font-size:12px;">add <strong>match@notcupid.com</strong> to your contacts so matches land in your inbox — not Promotions or spam.</div>
               Boston · notcupid.com · the algo decided
               <div style="margin-top:10px;">
                 <a href="https://instagram.com/notcupidapp" style="color:${C.lav};text-decoration:none;letter-spacing:0.12em;">instagram</a>
@@ -187,6 +188,26 @@ interface SendArgs {
   subject: string;
   html: string;
   replyTo?: string;
+  text?: string;
+}
+
+// Crude HTML→text fallback. A multipart (text + html) email reads as a real
+// personal message to Gmail's classifier and is far less likely to be filed
+// under Promotions/spam than an HTML-only blast — which is why match emails
+// were getting missed.
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<head[\s\S]*?<\/head>/gi, '')
+    .replace(/<(br|\/p|\/div|\/tr|\/h[1-6])\s*\/?>(?=)/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&[a-z#0-9]+;/gi, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    .split('\n').map((l) => l.trim()).join('\n')
+    .trim();
 }
 
 /** Send a single email via Resend. Returns { ok, error? } — never throws. */
@@ -207,7 +228,10 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
         to: [args.to],
         subject: args.subject,
         html: args.html,
-        ...(args.replyTo ? { reply_to: args.replyTo } : {}),
+        // Always send a text part (better inbox placement) + a real reply-to so
+        // replies reach a human and the message reads as transactional.
+        text: args.text || htmlToText(args.html),
+        reply_to: args.replyTo || 'match@notcupid.com',
       }),
     });
     if (!res.ok) {

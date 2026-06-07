@@ -35,7 +35,9 @@ interface Props {
   beyondRadius?: boolean;
 }
 
-const HEXACO_MAX = 16;
+// HEXACO is now 2 questions/dim (max 8). Old rows from the 24-Q quiz can be up
+// to 16, so we clamp the bar at 100% rather than overflow.
+const HEXACO_MAX = 8;
 
 function hoursUntil(iso: string): number {
   const ms = new Date(iso).getTime() - Date.now();
@@ -136,14 +138,19 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
 
   if (phase === 'expired') {
     const first = (otherUser?.name || 'that match').split(' ')[0];
+    // Distinguish "they passed" from a true accept-window timeout so we don't
+    // tell someone a match "expired" when the other person actually declined.
+    const wasPassed = (match as any).ended_reason === 'passed' || match.status === 'passed';
     return (
       <div className={styles.matchCard}>
         <div className={styles.matchHeader}>
-          <span className={styles.phaseLabel}>match expired</span>
+          <span className={styles.phaseLabel}>{wasPassed ? 'match ended' : 'match expired'}</span>
         </div>
-        <h2 className={styles.matchName} style={{ marginBottom: '0.6rem' }}>{first} got away.</h2>
+        <h2 className={styles.matchName} style={{ marginBottom: '0.6rem' }}>{wasPassed ? 'on to the next.' : `${first} got away.`}</h2>
         <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.95rem', lineHeight: 1.55, margin: '0 0 1.25rem' }}>
-          this one timed out before you both locked in. it happens — and you&apos;re already back in line.
+          {wasPassed
+            ? 'this one didn’t move forward — no hard feelings. the right match is still out there, and you’re back in line.'
+            : 'this one timed out before you both locked in. it happens — and you’re already back in line.'}
         </p>
         <div style={{ background: 'linear-gradient(135deg,#e8edff,#fff)', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.25rem' }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.4rem' }}>✦ you&apos;re back in the pool</div>
@@ -208,7 +215,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
           <div className={styles.tagLabel}>→ Their HEXACO</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.4rem' }}>
             {hexacoBars.map(([label, score]) => {
-              const pct = Math.round((score / HEXACO_MAX) * 100);
+              const pct = Math.min(100, Math.round((score / HEXACO_MAX) * 100));
               return (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6975', width: 120, flexShrink: 0 }}>{label}</span>

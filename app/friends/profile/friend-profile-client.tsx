@@ -170,6 +170,15 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
         {/* START FRESH — wipe & re-take quiz, capped at 3 per account */}
         <div style={{ ...label, color: LINE_DEEP }}>start over</div>
         <div style={card}>
+          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: INK, margin: '0 0 0.6rem' }}>
+            Vibes changed? Re-take the friend quiz to update your activities, who you&apos;re open to, and your age range. Your crews stay put.
+          </p>
+          <a href="/friends/quiz?retake=1" style={{ display: 'inline-block', background: '#fff', color: LINE_DEEP, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.06em', padding: '0.55rem 1.2rem', borderRadius: 10, border: `2.5px solid ${INK}`, boxShadow: `3px 3px 0 ${INK}`, textDecoration: 'none' }}>
+            retake friend quiz →
+          </a>
+        </div>
+
+        <div style={card}>
           <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: INK, margin: '0 0 0.4rem' }}>
             Want a clean slate? This wipes your quiz answers, profile, and current matches on <strong>both</strong> the Friend and Love lines, then you re-take the quiz. Your account stays. Limited to 3 times.
           </p>
