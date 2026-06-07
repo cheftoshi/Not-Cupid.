@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { rankCandidates } from '@/lib/matching';
-import { releaseTimedOutMatches } from '@/lib/match-actions';
+import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS } from '@/lib/match-actions';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
 
@@ -44,25 +44,17 @@ export async function GET() {
   // doesn't block their roster (and so they show as 'waiting' for picking).
   await releaseTimedOutMatches(user.id);
 
-  // If the user has a LIVE match, no roster — they're committed (one at a
-  // time). "Live" = both-accepted, or a pending match still within its accept
-  // window. A timed-out pending match (expires_at passed) does NOT count, so
-  // the roster shows again even before the cron sweeps it.
-  const { data: openMatches } = await supabaseAdmin
-    .from('matches')
-    .select('user_1_accepted, user_2_accepted, expires_at')
-    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-    .is('ended_at', null)
-    .neq('status', 'expired');
-
+  // Capacity model: you can run up to MAX_CONNECTIONS live conversations. The
+  // roster keeps showing until you're maxed out (it no longer disappears the
+  // moment you have one match). We also exclude anyone you're already talking to.
   const now = Date.now();
-  const hasLive = (openMatches ?? []).some((m: any) => {
-    const both = m.user_1_accepted && m.user_2_accepted;
-    if (both) return true;
-    return !m.expires_at || new Date(m.expires_at).getTime() >= now; // still in window
-  });
-
-  if (hasLive) return NextResponse.json({ roster: [], hasOpenMatch: true });
+  const myLive = await liveMatchesFor(user.id);
+  const livePartnerIds = new Set<string>(
+    myLive.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
+  );
+  if (myLive.length >= MAX_CONNECTIONS) {
+    return NextResponse.json({ roster: [], atCapacity: true, liveCount: myLive.length });
+  }
   if (user.pool_active === false) return NextResponse.json({ roster: [], paused: true });
 
   // Ghosted/paused users are locked out of matching on BOTH lines. They can
@@ -73,17 +65,19 @@ export async function GET() {
     return NextResponse.json({ roster: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes) });
   }
 
-  // They have no live match but their status got stuck (a prior match ended
-  // without resetting it) — normalize to 'waiting' so picking actually works.
-  if (user.status !== 'waiting') {
+  // Fully free (no live matches) but status got stuck → normalize to 'waiting'
+  // so back-compat consumers (pools/legacy) read them correctly.
+  if (myLive.length === 0 && user.status !== 'waiting') {
     await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', user.id);
   }
 
+  // Candidate pool. We no longer filter by status='waiting' (that was the
+  // single-match lock) — instead we surface anyone with spare capacity and
+  // filter out those at the cap below.
   const nowIso = new Date().toISOString();
   const { data: pool } = await supabaseAdmin
     .from('users')
     .select('*')
-    .eq('status', 'waiting')
     .eq('pool_active', true)
     .eq('is_blocked', false)
     .neq('id', user.id)
@@ -104,16 +98,42 @@ export async function GET() {
   const waitStartMs = lastEnded?.ended_at ? new Date(lastEnded.ended_at).getTime() : new Date(user.created_at).getTime();
   const waitDays = Math.max(0, (Date.now() - waitStartMs) / 86_400_000);
 
-  // Exclude anyone this user has already matched with before (no repeats).
+  // Exclude anyone this user has already matched with before (no repeats) AND
+  // anyone they're currently in a live conversation with.
   const { data: history } = await supabaseAdmin
     .from('match_history')
     .select('user_a_id, user_b_id')
     .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
-  const seen = new Set<string>();
+  const seen = new Set<string>(livePartnerIds);
   for (const h of history ?? []) {
     seen.add(h.user_a_id === user.id ? h.user_b_id : h.user_a_id);
   }
-  const freshPool = pool.filter((p: any) => !seen.has(p.id));
+  let freshPool = pool.filter((p: any) => !seen.has(p.id));
+
+  // Drop candidates who are already at the connection cap (no spare capacity).
+  // Batch-fetch every live match touching the pool, then count per candidate.
+  if (freshPool.length > 0) {
+    const poolIds = freshPool.map((p: any) => p.id);
+    const [{ data: m1 }, { data: m2 }] = await Promise.all([
+      supabaseAdmin.from('matches')
+        .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, status, ended_at')
+        .in('user_1_id', poolIds).is('ended_at', null).neq('status', 'expired'),
+      supabaseAdmin.from('matches')
+        .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, status, ended_at')
+        .in('user_2_id', poolIds).is('ended_at', null).neq('status', 'expired'),
+    ]);
+    const byId = new Map<string, any>();
+    for (const m of [...(m1 ?? []), ...(m2 ?? [])]) byId.set(m.id, m);
+    const liveCount = new Map<string, number>();
+    const poolSet = new Set(poolIds);
+    for (const m of byId.values()) {
+      if (!isMatchLive(m)) continue;
+      for (const uid of [m.user_1_id, m.user_2_id]) {
+        if (poolSet.has(uid)) liveCount.set(uid, (liveCount.get(uid) || 0) + 1);
+      }
+    }
+    freshPool = freshPool.filter((p: any) => (liveCount.get(p.id) || 0) < MAX_CONNECTIONS);
+  }
 
   const { ranked } = rankCandidates(user, freshPool, { waitDays });
   // Bigger roster for women seeking men/anyone (scarce side); 5 otherwise.

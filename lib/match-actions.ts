@@ -12,6 +12,31 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email';
 
+// How many live conversations a user can run at once. The product stays
+// curated (not a swipe feed), but you no longer have to drop one match to
+// consider another. "Live" = both-accepted, or pending within the accept window.
+export const MAX_CONNECTIONS = 3;
+
+/** Is this match row currently live (not ended/expired, and still in window)? */
+export function isMatchLive(m: any, nowMs: number = Date.now()): boolean {
+  if (!m || m.ended_at) return false;
+  if (['ended', 'passed', 'expired'].includes(m.status)) return false;
+  if (m.user_1_accepted && m.user_2_accepted) return true; // both accepted → active chat
+  return !m.expires_at || new Date(m.expires_at).getTime() >= nowMs; // pending, still in window
+}
+
+/** All of a user's currently-live matches (pending-in-window OR both-accepted). */
+export async function liveMatchesFor(userId: string): Promise<any[]> {
+  const { data } = await supabaseAdmin
+    .from('matches')
+    .select('*')
+    .or(`user_1_id.eq.${userId},user_2_id.eq.${userId}`)
+    .is('ended_at', null)
+    .neq('status', 'expired');
+  const now = Date.now();
+  return (data ?? []).filter((m) => isMatchLive(m, now));
+}
+
 // Lazily expire a user's timed-out pending matches and return both parties to
 // the pool. The cron does this every 20 min, but roster/pick call this on
 // demand so a just-timed-out user can immediately pick again (no 20-min limbo

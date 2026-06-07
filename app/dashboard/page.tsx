@@ -9,6 +9,7 @@ import Wordmark from '@/components/wordmark';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
+import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
 import styles from './dashboard.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -48,59 +49,57 @@ export default async function DashboardPage({
     }
   }
 
-  // Get current (non-ended) match
-  const { data: rawMatch } = await supabaseAdmin
-    .from('matches')
-    .select('*')
-    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-    .is('ended_at', null)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  // A match is "live" (shows the match card) only if it's both-accepted, OR
-  // still within its accept window. A pending match that timed out (expires_at
-  // passed, not yet swept by the cron) is NOT live — we fall through to the
-  // roster so the user can pick again instead of staring at a dead card.
-  const matchBothAccepted = !!(rawMatch && rawMatch.user_1_accepted && rawMatch.user_2_accepted);
-  const terminalStatus = !!(rawMatch && ['expired', 'passed', 'ended'].includes(rawMatch.status));
-  const matchTimedOut = !!(
-    rawMatch && rawMatch.expires_at && new Date(rawMatch.expires_at) < new Date() && !matchBothAccepted
+  // Capacity model: a user can run up to MAX_CONNECTIONS live conversations at
+  // once. Sweep any timed-out matches, then load ALL live matches as a list of
+  // "connections" (each gets its own card), plus the roster to discover more.
+  await releaseTimedOutMatches(user.id);
+  const liveMatches = await liveMatchesFor(user.id);
+  liveMatches.sort(
+    (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
-  let currentMatch = rawMatch && !terminalStatus && !matchTimedOut ? rawMatch : null;
 
-  let otherUser = null;
-  let isUnlocked = false;
-  let hexacoUnlocked = false;
-  let profileUnlocked = false;
+  const liveIds = liveMatches.map((m: any) => m.id);
+  const { data: unlockRows } = liveIds.length
+    ? await supabaseAdmin
+        .from('match_unlocks')
+        .select('match_id, hexaco_unlocked, profile_unlocked')
+        .eq('user_id', user.id)
+        .in('match_id', liveIds)
+    : { data: [] as any[] };
+  const unlockByMatch = new Map((unlockRows ?? []).map((u: any) => [u.match_id, u]));
 
-  if (currentMatch) {
-    const otherId =
-      currentMatch.user_1_id === user.id ? currentMatch.user_2_id : currentMatch.user_1_id;
+  const otherIds = liveMatches.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id));
+  const { data: others } = otherIds.length
+    ? await supabaseAdmin.from('users').select('*').in('id', otherIds)
+    : { data: [] as any[] };
+  const otherById = new Map((others ?? []).map((u: any) => [u.id, u]));
 
-    const { data } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('id', otherId)
-      .single();
-    otherUser = data;
+  const isTestViewer = (user as any).is_test === true;
+  const connections = liveMatches
+    .map((m: any) => {
+      const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
+      const other = otherById.get(otherId);
+      if (!other) return null;
+      // Realm segregation: real users never see test matches & vice versa.
+      if (((other as any).is_test === true) !== isTestViewer) return null;
+      const u: any = unlockByMatch.get(m.id);
+      const profileUnlocked = !!u?.profile_unlocked;
+      const hexacoUnlocked = !!u?.hexaco_unlocked || profileUnlocked;
+      const d = zipDistanceMiles(user.zip, other.zip);
+      return {
+        match: m,
+        otherUser: other,
+        profileUnlocked,
+        hexacoUnlocked,
+        isUnlocked: profileUnlocked,
+        distanceMi: d == null ? null : Math.round(d),
+        beyondRadius: d != null && d > (user.match_radius ?? DEFAULT_MATCH_RADIUS),
+      };
+    })
+    .filter(Boolean) as any[];
 
-    const { data: unlock } = await supabaseAdmin
-      .from('match_unlocks')
-      .select('hexaco_unlocked, profile_unlocked')
-      .eq('user_id', user.id)
-      .eq('match_id', currentMatch.id)
-      .maybeSingle();
-    profileUnlocked = !!unlock?.profile_unlocked;
-    hexacoUnlocked = !!unlock?.hexaco_unlocked || profileUnlocked;
-    isUnlocked = profileUnlocked; // back-compat for any consumer still reading it
-
-    // Realm segregation: only show a match within the viewer's realm (real
-    // users never see a test match; test accounts only see other test accounts).
-    if (otherUser && (((otherUser as any).is_test === true) !== ((user as any).is_test === true))) {
-      currentMatch = null; otherUser = null;
-    }
-  }
+  const atCapacity = connections.length >= MAX_CONNECTIONS;
+  const newest = connections[0] || null;
 
 
   // History (ended matches)
@@ -140,50 +139,72 @@ export default async function DashboardPage({
           your <span className={styles.titleAccent}>matches.</span>
         </h1>
         <p className={styles.subtitle}>
-          one match at a time · the algorithm sets the pace →
+          {connections.length > 0
+            ? `up to ${MAX_CONNECTIONS} conversations at once · you set the pace →`
+            : 'pick who you connect with · you set the pace →'}
         </p>
 
-        {currentMatch && otherUser && !currentMatch.ended_at && (
+        {/* One-time cinematic reveal for the newest connection. */}
+        {newest && (
           <MatchReveal
-            matchId={currentMatch.id}
-            name={otherUser.name || 'your match'}
-            score={currentMatch.compatibility_score ?? null}
-            archetype={otherUser.archetype}
+            matchId={newest.match.id}
+            name={newest.otherUser.name || 'your match'}
+            score={newest.match.compatibility_score ?? null}
+            archetype={newest.otherUser.archetype}
           />
         )}
 
-        {currentMatch && otherUser ? (
-          <MatchCard
-            match={currentMatch}
-            otherUser={otherUser}
-            currentUserId={user.id}
-            isUnlocked={isUnlocked}
-            hexacoUnlocked={hexacoUnlocked}
-            profileUnlocked={profileUnlocked}
-            distanceMi={(() => { const d = zipDistanceMiles(user.zip, otherUser.zip); return d == null ? null : Math.round(d); })()}
-            beyondRadius={(() => {
-              const d = zipDistanceMiles(user.zip, otherUser.zip);
-              return d != null && d > (user.match_radius ?? DEFAULT_MATCH_RADIUS);
-            })()}
-          />
+        {/* YOUR CONNECTIONS — every live conversation gets its own card. */}
+        {connections.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {connections.map((c: any) => (
+              <MatchCard
+                key={c.match.id}
+                match={c.match}
+                otherUser={c.otherUser}
+                currentUserId={user.id}
+                isUnlocked={c.isUnlocked}
+                hexacoUnlocked={c.hexacoUnlocked}
+                profileUnlocked={c.profileUnlocked}
+                distanceMi={c.distanceMi}
+                beyondRadius={c.beyondRadius}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* DISCOVER MORE — roster stays available until you're at the cap. */}
+        {atCapacity ? (
+          connections.length > 0 && (
+            <div className={styles.history} style={{ marginTop: '1.5rem' }}>
+              <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.92rem', lineHeight: 1.55, textAlign: 'center' }}>
+                you&apos;re running {MAX_CONNECTIONS} conversations — the max. wrap one up to meet someone new.
+              </p>
+            </div>
+          )
         ) : (
-          <RosterPicker radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} />
+          <div style={{ marginTop: connections.length > 0 ? '2rem' : 0 }}>
+            {connections.length > 0 && (
+              <h2 className={styles.historyTitle} style={{ marginBottom: '0.75rem' }}>discover more</h2>
+            )}
+            <RosterPicker radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} />
+          </div>
         )}
 
         {historyMatches && historyMatches.length > 0 && (
           <div className={styles.history}>
-            <h2 className={styles.historyTitle}>past matches</h2>
+            <h2 className={styles.historyTitle}>past conversations</h2>
             <div className={styles.historyList}>
               {historyMatches.map((m: any) => {
                 const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
                 const name = historyNameById.get(otherId) || 'a match';
                 return (
-                  <div key={m.id} className={styles.historyItem}>
+                  <a key={m.id} href={`/match/${m.id}`} className={styles.historyItem} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
                     <span className={styles.historyDate}>
                       {new Date(m.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
-                    <span className={styles.historyOutcome}>{name}</span>
-                  </div>
+                    <span className={styles.historyOutcome}>{name} <span style={{ opacity: 0.5 }}>· read →</span></span>
+                  </a>
                 );
               })}
             </div>

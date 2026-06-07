@@ -12,7 +12,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { compatibilityScore, isGenderMatch, isWithinRadius } from '@/lib/matching';
 import { intentOf } from '@/lib/pools';
-import { acceptMatch, releaseTimedOutMatches } from '@/lib/match-actions';
+import { acceptMatch, releaseTimedOutMatches, liveMatchesFor, MAX_CONNECTIONS } from '@/lib/match-actions';
 import { DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
@@ -34,41 +34,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Your matching is paused. Refresh your profile to start over.' }, { status: 403 });
   }
 
-  // Free the caller's own timed-out matches first (returns them to 'waiting'),
-  // then block only if they still have a genuinely LIVE match.
+  // Free the caller's own timed-out matches first, then enforce the CONNECTION
+  // CAP: you can run up to MAX_CONNECTIONS live conversations at once (no longer
+  // strictly one). Past the cap, you wrap one up before starting another.
   await releaseTimedOutMatches(user.id);
 
-  const { data: openMatches } = await supabaseAdmin
-    .from('matches')
-    .select('user_1_accepted, user_2_accepted, expires_at')
-    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-    .is('ended_at', null)
-    .neq('status', 'expired');
-  const nowCheck = Date.now();
-  const hasLive = (openMatches ?? []).some((m: any) => {
-    const both = m.user_1_accepted && m.user_2_accepted;
-    if (both) return true;
-    return !m.expires_at || new Date(m.expires_at).getTime() >= nowCheck;
-  });
-  if (hasLive) {
-    return NextResponse.json({ error: 'You already have an active match.' }, { status: 409 });
+  const myLive = await liveMatchesFor(user.id);
+  if (myLive.length >= MAX_CONNECTIONS) {
+    return NextResponse.json(
+      { error: `You're at your max of ${MAX_CONNECTIONS} conversations — wrap one up to start another.` },
+      { status: 409 }
+    );
   }
-
-  // No live match → the caller is free to pick. A prior match may have ended
-  // (reported / passed / chat expired) without resetting their status to
-  // 'waiting', which would make the atomic self-claim below fail and strand
-  // them on "refresh to see it" forever. Normalize it now.
-  if (user.status !== 'waiting') {
-    await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', user.id);
+  // Already connected with this person? (don't create a duplicate live match)
+  const alreadyWith = myLive.some(
+    (m: any) => m.user_1_id === candidateId || m.user_2_id === candidateId
+  );
+  if (alreadyWith) {
+    return NextResponse.json({ error: "You're already connected with them." }, { status: 409 });
   }
 
   // Load + validate the candidate (prevents picking arbitrary / ineligible ids).
   const { data: cand } = await supabaseAdmin.from('users').select('*').eq('id', candidateId).is('deleted_at', null).single();
   if (!cand) return NextResponse.json({ error: 'That person is no longer available.' }, { status: 404 });
 
+  // Candidate must have spare capacity too (they can be talking to others, just
+  // not maxed out). Replaces the old single-match `status === 'waiting'` gate.
+  const candLive = await liveMatchesFor(candidateId);
   const nowMs = Date.now();
   const eligible =
-    cand.status === 'waiting' &&
+    candLive.length < MAX_CONNECTIONS &&
     cand.pool_active !== false &&
     !cand.matching_disabled_at &&
     (!cand.matching_cooldown_until || new Date(cand.matching_cooldown_until).getTime() < nowMs) &&
@@ -95,25 +90,16 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (prior) return NextResponse.json({ error: 'You two have already been matched before.' }, { status: 409 });
 
-  // ── Atomic claim: candidate first, then self. Only succeeds if still 'waiting'.
-  const { data: claimedCand } = await supabaseAdmin
-    .from('users').update({ status: 'matched' }).eq('id', candidateId).eq('status', 'waiting').select('id');
-  if (!claimedCand || claimedCand.length === 0) {
-    return NextResponse.json({ error: 'They just got matched with someone else — pick another.' }, { status: 409 });
-  }
-
-  const { data: claimedSelf } = await supabaseAdmin
-    .from('users').update({ status: 'matched' }).eq('id', user.id).eq('status', 'waiting').select('id');
-  if (!claimedSelf || claimedSelf.length === 0) {
-    // We grabbed the candidate but couldn't grab ourselves (cron matched us
-    // first). Release the candidate so they stay available to others.
-    await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', candidateId);
-    return NextResponse.json({ error: 'You just got matched — refresh to see it.' }, { status: 409 });
-  }
-
-  // Both claimed. Stamp last_matched_at + create the pending match.
+  // Capacity model: no single-match atomic claim. Both sides had spare capacity
+  // above, so we create the pending match directly. `status='matched'` is kept
+  // for back-compat (pools/legacy) but is now just informational — capacity is
+  // enforced by the live-match count, not this flag. A rare double-pick race
+  // just means a candidate gets an extra suitor to accept or decline.
   const matchedAt = new Date().toISOString();
-  await supabaseAdmin.from('users').update({ last_matched_at: matchedAt }).in('id', [user.id, candidateId]);
+  await supabaseAdmin
+    .from('users')
+    .update({ status: 'matched', last_matched_at: matchedAt })
+    .in('id', [user.id, candidateId]);
 
   const score = compatibilityScore(user, cand);
   const { data: match, error: insErr } = await supabaseAdmin

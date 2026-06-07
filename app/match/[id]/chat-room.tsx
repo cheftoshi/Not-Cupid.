@@ -21,6 +21,7 @@ interface Props {
   otherUser: any;
   match: any;
   initialMessages: any[];
+  readOnly?: boolean;
 }
 
 function timeLeft(iso: string, nowMs: number): string {
@@ -68,7 +69,7 @@ function buildStarters(other: any): string[] {
   return out.slice(0, 4);
 }
 
-export default function ChatRoom({ matchId, currentUserId, otherUser, match, initialMessages }: Props) {
+export default function ChatRoom({ matchId, currentUserId, otherUser, match, initialMessages, readOnly = false }: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -316,26 +317,32 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
 
       {nudge && <div className={styles.nudge}>{nudge}</div>}
 
-      <form onSubmit={handleSend} className={styles.inputForm}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={chatExpired ? 'chat ended' : pendingAccept ? `say hi — your message connects you with ${firstName}` : placeholder}
-          disabled={chatExpired || sending}
-          maxLength={2000}
-          className={styles.input}
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || sending || chatExpired}
-          className={styles.send}
-          aria-label="send"
-        >
-          →
-        </button>
-      </form>
+      {readOnly ? (
+        <div style={{ padding: '0.9rem 1rem', textAlign: 'center', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.85rem', borderTop: '1px solid rgba(11,11,11,0.08)' }}>
+          this conversation has ended — you can still read it, but messages are closed.
+        </div>
+      ) : (
+        <form onSubmit={handleSend} className={styles.inputForm}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={chatExpired ? 'chat ended' : pendingAccept ? `say hi — your message connects you with ${firstName}` : placeholder}
+            disabled={chatExpired || sending}
+            maxLength={2000}
+            className={styles.input}
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || sending || chatExpired}
+            className={styles.send}
+            aria-label="send"
+          >
+            →
+          </button>
+        </form>
+      )}
       </div>
 
       <aside className={styles.vibesCol}>

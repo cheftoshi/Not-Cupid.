@@ -20,7 +20,9 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
   // Open the chat for any non-ended match the user is part of — including a
   // PENDING one. Sending a message here auto-accepts (see /api/messages), so an
   // opener / first reply starts the chat without a separate accept step.
-  if (match.ended_at || ['ended', 'passed', 'expired'].includes(match.status)) redirect('/dashboard');
+  // ENDED/expired matches are still READABLE (read-only) so people can revisit a
+  // past conversation instead of losing it.
+  const readOnly = !!match.ended_at || ['ended', 'passed', 'expired'].includes(match.status);
 
   const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
   const { data: otherUser } = await supabaseAdmin
@@ -42,6 +44,7 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
       otherUser={otherUser}
       match={match}
       initialMessages={messages || []}
+      readOnly={readOnly}
     />
   );
 }
