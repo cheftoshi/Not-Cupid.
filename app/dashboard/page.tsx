@@ -98,7 +98,6 @@ export default async function DashboardPage({
     })
     .filter(Boolean) as any[];
 
-  const atCapacity = connections.length >= MAX_CONNECTIONS;
   const newest = connections[0] || null;
 
 
@@ -173,23 +172,22 @@ export default async function DashboardPage({
           </div>
         )}
 
-        {/* DISCOVER MORE — roster stays available until you're at the cap. */}
-        {atCapacity ? (
-          connections.length > 0 && (
-            <div className={styles.history} style={{ marginTop: '1.5rem' }}>
-              <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.92rem', lineHeight: 1.55, textAlign: 'center' }}>
-                you&apos;re running {MAX_CONNECTIONS} conversations — the max. wrap one up to meet someone new.
-              </p>
-            </div>
-          )
-        ) : (
-          <div style={{ marginTop: connections.length > 0 ? '2rem' : 0 }}>
-            {connections.length > 0 && (
-              <h2 className={styles.historyTitle} style={{ marginBottom: '0.75rem' }}>discover more</h2>
-            )}
-            <RosterPicker radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} maxRadius={MAX_MATCH_RADIUS} />
-          </div>
-        )}
+        {/* THE ROSTER — always browsable. At the cap, picking prompts you to
+            close one of your conversations first (in the roster component). */}
+        <div style={{ marginTop: connections.length > 0 ? '2rem' : 0 }}>
+          {connections.length > 0 && (
+            <h2 className={styles.historyTitle} style={{ marginBottom: '0.75rem' }}>the roster</h2>
+          )}
+          <RosterPicker
+            radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
+            maxRadius={MAX_MATCH_RADIUS}
+            maxConnections={MAX_CONNECTIONS}
+            liveConnections={connections.map((c: any) => ({
+              matchId: c.match.id,
+              name: c.otherUser.name || 'your match',
+            }))}
+          />
+        </div>
 
         {historyMatches && historyMatches.length > 0 && (
           <div className={styles.history}>

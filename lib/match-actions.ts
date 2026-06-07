@@ -12,10 +12,11 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email';
 
-// How many live conversations a user can run at once. The product stays
-// curated (not a swipe feed), but you no longer have to drop one match to
-// consider another. "Live" = both-accepted, or pending within the accept window.
-export const MAX_CONNECTIONS = 3;
+// How many live conversations a user can run at once. Kept deliberately small
+// to preserve the curated, scarcity-driven feel — you can browse the whole
+// roster, but to open a NEW chat past the cap you must close an existing one.
+// "Live" = both-accepted, or pending within the accept window.
+export const MAX_CONNECTIONS = 2;
 
 /** Is this match row currently live (not ended/expired, and still in window)? */
 export function isMatchLive(m: any, nowMs: number = Date.now()): boolean {

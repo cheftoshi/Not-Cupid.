@@ -5,6 +5,9 @@ import { parseResponse } from '@/lib/fetch-helpers';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
 import ReactivateButton from '@/components/reactivate-button';
+import EndMatchDialog from '@/components/end-match-dialog';
+
+type LiveConnection = { matchId: string; name: string };
 
 // The waiting-state experience: instead of being assigned one match, the user
 // sees their top compatible people and CHOOSES who to connect with. First pick
@@ -15,12 +18,27 @@ type Candidate = {
   archetype: string | null; metro: string | null; relationship_style: string | null; score: number;
 };
 
-export default function RosterPicker({ radius, maxRadius }: { radius: number; maxRadius: number }) {
+export default function RosterPicker({
+  radius,
+  maxRadius,
+  maxConnections = 2,
+  liveConnections = [],
+}: {
+  radius: number;
+  maxRadius: number;
+  maxConnections?: number;
+  liveConnections?: LiveConnection[];
+}) {
   const [roster, setRoster] = useState<Candidate[] | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
+  const [atCapacity, setAtCapacity] = useState(false);
+  // When at capacity, picking opens a "close one first" prompt for this person.
+  const [closePromptFor, setClosePromptFor] = useState<Candidate | null>(null);
+  // Which existing conversation's end-dialog (reason picker) is open.
+  const [endingMatchId, setEndingMatchId] = useState<string | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -30,6 +48,7 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
       const data = await parseResponse<any>(res);
       setGhosted(!!data.ghosted);
       setHardLocked(!!data.hardLocked);
+      setAtCapacity(!!data.atCapacity);
       setRoster(Array.isArray(data.roster) ? data.roster : []);
     } catch {
       setRoster([]);
@@ -38,6 +57,11 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
 
   async function pick(c: Candidate) {
     if (picking) return;
+    // At the cap → don't pick; prompt them to close an existing conversation.
+    if (atCapacity || liveConnections.length >= maxConnections) {
+      setClosePromptFor(c);
+      return;
+    }
     setPicking(c.id);
     setNotice(null);
     try {
@@ -131,9 +155,15 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
           pick who you want to meet.
         </h2>
         <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: '0.85rem', margin: 0 }}>
-          one at a time — choose one and we&apos;ll let them know. the rest stay in your pool.
+          up to {maxConnections} conversations at once — choose someone and we&apos;ll let them know. the rest stay in your pool.
         </p>
       </div>
+
+      {atCapacity && (
+        <div style={{ background: '#fff1e8', border: '1px solid rgba(255,106,31,0.4)', color: '#9a4a12', borderRadius: 12, padding: '0.75rem 0.95rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>
+          you&apos;re chatting with {maxConnections} people — your max. browse freely, but to open a new chat you&apos;ll close one first.
+        </div>
+      )}
 
       {notice && (
         <div style={{ background: '#fff1e8', border: '1px solid rgba(255,106,31,0.4)', color: '#9a4a12', borderRadius: 12, padding: '0.7rem 0.9rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center' }}>
@@ -174,7 +204,7 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
                     opacity: picking && picking !== c.id ? 0.4 : 1,
                   }}
                 >
-                  {picking === c.id ? 'connecting…' : `choose ${first} →`}
+                  {picking === c.id ? 'connecting…' : atCapacity ? `close a chat to open →` : `choose ${first} →`}
                 </button>
               </div>
             </div>
@@ -185,6 +215,52 @@ export default function RosterPicker({ radius, maxRadius }: { radius: number; ma
       <p style={{ textAlign: 'center', marginTop: '1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a96a8' }}>
         not feeling these? the roster refreshes as new people join.
       </p>
+
+      {/* At-capacity: choosing prompts the user to close one existing chat. */}
+      {closePromptFor && (
+        <div
+          onClick={() => setClosePromptFor(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem', zIndex: 60 }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, padding: '1.5rem', maxWidth: 420, width: '100%' }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>your inbox is full</div>
+            <h3 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.4rem', color: '#0b0b0b', margin: '0 0 0.4rem' }}>
+              close a chat to open one with {(closePromptFor.name || 'them').split(' ')[0]}.
+            </h3>
+            <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
+              you can run {maxConnections} conversations at once. end one of these to free up a spot:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+              {liveConnections.map((lc) => (
+                <button
+                  key={lc.matchId}
+                  onClick={() => { setClosePromptFor(null); setEndingMatchId(lc.matchId); }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', background: '#faf7f3', border: '1.5px solid rgba(11,11,11,0.12)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: '#0b0b0b' }}>{(lc.name || 'your match').split(' ')[0]}</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#d2530f' }}>end this →</span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setClosePromptFor(null)}
+              style={{ marginTop: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a96a8' }}
+            >
+              never mind
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* The reason picker for closing a conversation (shared component). */}
+      {endingMatchId && (
+        <EndMatchDialog
+          matchId={endingMatchId}
+          otherName={(liveConnections.find((l) => l.matchId === endingMatchId)?.name || 'them').split(' ')[0]}
+          onClose={() => setEndingMatchId(null)}
+          onEnded={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

@@ -52,9 +52,9 @@ export async function GET() {
   const livePartnerIds = new Set<string>(
     myLive.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
   );
-  if (myLive.length >= MAX_CONNECTIONS) {
-    return NextResponse.json({ roster: [], atCapacity: true, liveCount: myLive.length });
-  }
+  // At capacity, the roster is still BROWSABLE — the user just can't open a new
+  // chat without closing one first (the client gates picking on `atCapacity`).
+  const atCapacity = myLive.length >= MAX_CONNECTIONS;
   if (user.pool_active === false) return NextResponse.json({ roster: [], paused: true });
 
   // Ghosted/paused users are locked out of matching on BOTH lines. They can
@@ -84,7 +84,7 @@ export async function GET() {
     .is('matching_disabled_at', null)
     .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`);
 
-  if (!pool || pool.length === 0) return NextResponse.json({ roster: [] });
+  if (!pool || pool.length === 0) return NextResponse.json({ roster: [], atCapacity });
 
   // Wait-time decay input (same derivation as /api/match).
   const { data: lastEnded } = await supabaseAdmin
@@ -190,5 +190,5 @@ export async function GET() {
     await supabaseAdmin.from('users').update(updates).eq('id', user.id);
   }
 
-  return NextResponse.json({ roster });
+  return NextResponse.json({ roster, atCapacity });
 }
