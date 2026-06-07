@@ -272,13 +272,17 @@ function QuizInner() {
       }
 
       // Retake path: existing logged-in user → UPDATE row, don't re-insert.
+      // Land on /hub (the line chooser), NOT the love dashboard — finishing the
+      // CORE quiz means "pick a line," and this path also catches users who
+      // signed up before the quiz existed (verify-otp routes them here). Sending
+      // them to /dashboard was auto-dropping them onto the Love line.
       if (isRetake) {
         const res = await fetch('/api/quiz/update', {
           method: 'POST', headers: {'Content-Type':'application/json'},
           body: JSON.stringify(scorePayload),
         })
         if (res.ok) {
-          window.location.href = '/dashboard'
+          window.location.href = '/hub'
           return
         }
         // Fall through to result screen on error

@@ -7,6 +7,7 @@ import ChipInput from './chip-input';
 import RefreshProfileButton from '@/components/refresh-profile-button';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
+import { compressImage } from '@/lib/compress-image';
 
 type Props = {
   initialUser: any;
@@ -56,18 +57,18 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   }
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Vercel serverless functions cap request bodies at 4.5MB; multipart adds
-    // overhead, so reject anything above ~4MB client-side with a real message.
-    if (file.size > 4 * 1024 * 1024) {
-      setMessage('photo must be under 4MB');
-      e.target.value = '';
-      return;
-    }
+    const picked = e.target.files?.[0];
+    if (!picked) return;
     setUploadingPhoto(true);
     setMessage('');
     try {
+      // Downscale + re-encode to JPEG in the browser so big phone photos and
+      // iPhone HEIC files don't blow past the 4MB cap or the JPEG-only server.
+      const file = await compressImage(picked);
+      if (file.size > 4 * 1024 * 1024) {
+        setMessage('that photo is too large even after shrinking — try another');
+        return;
+      }
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch('/api/profile/photo', { method: 'POST', body: formData });
@@ -84,16 +85,16 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   }
 
   async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      setMessage('photo must be under 4MB');
-      e.target.value = '';
-      return;
-    }
+    const picked = e.target.files?.[0];
+    if (!picked) return;
     setUploadingGallery(true);
     setMessage('');
     try {
+      const file = await compressImage(picked);
+      if (file.size > 4 * 1024 * 1024) {
+        setMessage('that photo is too large even after shrinking — try another');
+        return;
+      }
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch('/api/profile/gallery', { method: 'POST', body: formData });
@@ -174,7 +175,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           </div>
           <label className={styles.uploadButton}>
             {uploadingPhoto ? 'uploading...' : (user.photo_url ? 'change photo' : 'upload photo')}
-            <input type="file" accept="image/jpeg,image/png,image/webp" className={styles.fileInput} onChange={handlePhotoUpload} disabled={uploadingPhoto} />
+            <input type="file" accept="image/*" className={styles.fileInput} onChange={handlePhotoUpload} disabled={uploadingPhoto} />
           </label>
         </div>
 
@@ -193,7 +194,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
             {gallery.length < 3 && (
               <label className={styles.galleryAdd}>
                 {uploadingGallery ? '…' : '+ add'}
-                <input type="file" accept="image/jpeg,image/png,image/webp" className={styles.fileInput} onChange={handleGalleryUpload} disabled={uploadingGallery} />
+                <input type="file" accept="image/*" className={styles.fileInput} onChange={handleGalleryUpload} disabled={uploadingGallery} />
               </label>
             )}
           </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import RefreshProfileButton from '@/components/refresh-profile-button';
+import { compressImage } from '@/lib/compress-image';
 
 const INK = '#241d12', LINE = '#e8842b', LINE_DEEP = '#c96a18', CREAM = '#f7f1e3';
 const card: React.CSSProperties = { background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}`, padding: '1.25rem' };
@@ -46,22 +47,28 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
   const router = useRouter();
 
   async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
+    const picked = e.target.files?.[0]; if (!picked) return;
     setBusy(true); setMsg('');
-    const fd = new FormData(); fd.append('file', file);
-    const r = await fetch('/api/profile/photo', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (r.ok && d.url) setPhoto(d.url); else setMsg(d.error || 'upload failed');
-    setBusy(false);
+    try {
+      const file = await compressImage(picked);
+      if (file.size > 4 * 1024 * 1024) { setMsg('that photo is too large even after shrinking — try another'); return; }
+      const fd = new FormData(); fd.append('file', file);
+      const r = await fetch('/api/profile/photo', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (r.ok && d.url) setPhoto(d.url); else setMsg(d.error || 'upload failed');
+    } finally { setBusy(false); e.target.value = ''; }
   }
   async function uploadGallery(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
+    const picked = e.target.files?.[0]; if (!picked) return;
     setBusy(true); setMsg('');
-    const fd = new FormData(); fd.append('file', file);
-    const r = await fetch('/api/profile/gallery', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (r.ok && d.gallery) setGallery(d.gallery); else setMsg(d.error || 'upload failed');
-    setBusy(false);
+    try {
+      const file = await compressImage(picked);
+      if (file.size > 4 * 1024 * 1024) { setMsg('that photo is too large even after shrinking — try another'); return; }
+      const fd = new FormData(); fd.append('file', file);
+      const r = await fetch('/api/profile/gallery', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (r.ok && d.gallery) setGallery(d.gallery); else setMsg(d.error || 'upload failed');
+    } finally { setBusy(false); e.target.value = ''; }
   }
   async function removeGallery(url: string) {
     const r = await fetch('/api/profile/gallery', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
