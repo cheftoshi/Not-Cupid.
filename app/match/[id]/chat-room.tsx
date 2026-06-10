@@ -34,10 +34,11 @@ function timeLeft(iso: string, nowMs: number): string {
 }
 
 // Cheeky rotating placeholders — picked once per mount so they don't flicker.
+// (Keep these warm, never surveillance-y — "the algo's watching" read as creepy.)
 const PLACEHOLDERS = [
   "say something better than 'hey'…",
   'make it count…',
-  "the algo's watching…",
+  'ask the thing you actually want to know…',
   'open strong.',
   'no pressure. (ok, a little pressure.)',
 ];
