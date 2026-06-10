@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { acceptMatch } from '@/lib/match-actions';
 import { renderEmail, sendEmail, button } from '@/lib/email';
+import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,6 +139,18 @@ async function notifyNewMessage(matchId: string, recipientId: string, senderId: 
     .from('users').select('email, email_notifications').eq('id', recipientId).single();
   if (!recipient?.email || recipient.email_notifications === false) return;
 
+  const { data: senderRow } = await supabaseAdmin.from('users').select('name').eq('id', senderId).single();
+  const senderFirst = (senderRow?.name || 'Your match').split(' ')[0];
+
+  // Push: every message (the per-chat tag collapses stacked pings — the
+  // lock screen shows one "Maya sent you a message", not ten).
+  await sendPushToUser(recipientId, {
+    title: `${senderFirst} sent you a message`,
+    body: 'Open the chat before it goes quiet.',
+    url: `/match/${matchId}`,
+    tag: `chat-${matchId}`,
+  });
+
   const { data: throttle } = await supabaseAdmin
     .from('match_notifications')
     .select('last_message_email_at')
@@ -148,8 +161,7 @@ async function notifyNewMessage(matchId: string, recipientId: string, senderId: 
     Date.now() - new Date(throttle.last_message_email_at).getTime() < MESSAGE_EMAIL_THROTTLE_MS
   ) return;
 
-  const { data: sender } = await supabaseAdmin.from('users').select('name').eq('id', senderId).single();
-  const senderName = (sender?.name || 'Your match').split(' ')[0];
+  const senderName = senderFirst;
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
 
   await sendEmail({

@@ -20,7 +20,7 @@ export default function RetroB() {
           <span>NOTCUPID</span><span>★ boston ★</span>
         </div>
         <div style={{ textAlign: 'center', marginTop: '3.5rem' }}>
-          <span style={{ display: 'inline-block', background: PINK, color: BG, padding: '0.3rem 1rem', fontSize: '1rem', letterSpacing: '0.2em', transform: 'rotate(-3deg)', border: `2px solid ${CREAM}` }}>BOSTON&apos;S SOCIAL EXPERIMENT</span>
+          <span style={{ display: 'inline-block', background: PINK, color: BG, padding: '0.3rem 1rem', fontSize: '1rem', letterSpacing: '0.2em', transform: 'rotate(-3deg)', border: `2px solid ${CREAM}` }}>BOSTON&apos;S CONNECTION EXPERIMENT</span>
           <h1 style={{ fontSize: 'clamp(4rem,16vw,9rem)', lineHeight: 0.82, margin: '1.25rem 0 0', letterSpacing: '0.02em' }}>
             <span style={{ color: GOLD, textShadow: `4px 4px 0 ${ORANGE}` }}>MEET</span>{' '}
             <span style={{ color: TEAL, textShadow: `4px 4px 0 ${BG}` }}>PEOPLE.</span><br />

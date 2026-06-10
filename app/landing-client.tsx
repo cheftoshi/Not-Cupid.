@@ -67,7 +67,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
       <section className={styles.landHero}>
         <div className={styles.landEyebrow}>
           <span className={styles.landDot} />
-          a social experiment
+          a connection experiment
         </div>
 
         <h1 className={styles.landH1}>

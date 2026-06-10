@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <LegalPage title="About NotCupid" subtitle="Meet people. Not profiles.">
-      <p>NotCupid is a Boston-born social experiment with a simple bet: people are better than their profiles. So we built the anti-dating-app — no endless swiping, no browsing a catalog of strangers, no gamified attention economy.</p>
+      <p>NotCupid is a Boston-born connection experiment with a simple bet: people are better than their profiles. So we built the anti-dating-app — no endless swiping, no browsing a catalog of strangers, no gamified attention economy.</p>
 
       <p>Instead, an algorithm reads compatibility from a real personality quiz and quietly shows you a small, curated roster of people you&apos;d actually get along with. You pick <strong>one</strong>. One match at a time, on purpose — the way it works when a friend introduces you to someone, not the way it works when you&apos;re doom-scrolling at midnight.</p>
 

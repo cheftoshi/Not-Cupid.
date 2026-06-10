@@ -11,6 +11,7 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email';
+import { sendPushToUser } from '@/lib/push';
 
 // How many live conversations a user can run at once. Kept deliberately small
 // to preserve the curated, scarcity-driven feel — you can browse the whole
@@ -121,6 +122,11 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
     await sendItsAMatchEmails(match.user_1_id, match.user_2_id).catch((e) =>
       console.error('acceptMatch: its-a-match email failed', e)
     );
+    // Push to both — lands on the lock screen instead of the Promotions tab.
+    await Promise.all([
+      sendPushToUser(match.user_1_id, { title: "It's a match ✦", body: 'Both of you said yes — the chat is open.', url: `/match/${matchId}`, tag: `match-${matchId}` }),
+      sendPushToUser(match.user_2_id, { title: "It's a match ✦", body: 'Both of you said yes — the chat is open.', url: `/match/${matchId}`, tag: `match-${matchId}` }),
+    ]);
     return { ok: true, mutual: true };
   }
 
@@ -129,6 +135,7 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
   await sendInterestNudge(matchId, otherId, userId).catch((e) =>
     console.error('acceptMatch: interest nudge failed', e)
   );
+  await sendPushToUser(otherId, { title: 'Someone said yes 👀', body: 'A match is waiting on your answer.', url: '/dashboard', tag: `match-${matchId}` });
   return { ok: true, mutual: false };
 }
 

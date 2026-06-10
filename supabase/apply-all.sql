@@ -615,3 +615,15 @@ create index if not exists matches_pending_created_idx
   on matches (created_at) where status = 'pending';
 create index if not exists match_history_user_a_idx on match_history (user_a_id);
 create index if not exists match_history_user_b_idx on match_history (user_b_id);
+
+-- ──────────────────────── 20260611_push_subscriptions ────────────────────────
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subs_user_idx on push_subscriptions(user_id);
+alter table push_subscriptions enable row level security;

@@ -5,6 +5,7 @@ import MatchCard from './match-card';
 import MatchReveal from './match-reveal';
 import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
+import PwaPrompt from '@/components/pwa-prompt';
 import Wordmark from '@/components/wordmark';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
@@ -137,6 +138,7 @@ export default async function DashboardPage({
         </nav>
 
         <DashboardExtras />
+        <PwaPrompt />
 
         <h1 className={styles.title}>
           your <span className={styles.titleAccent}>matches.</span>

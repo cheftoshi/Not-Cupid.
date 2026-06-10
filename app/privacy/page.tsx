@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" subtitle="Plain-English version of what we collect and why." updated="June 2026">
-      <p>NotCupid is a Boston-born social experiment (now across the Northeast — New England + New York City) operated by <strong>Lemon Labs</strong>. We take your data seriously because the whole product only works on trust. This page explains what we collect, how we use it, and the control you have. Questions? Email <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
+      <p>NotCupid is a Boston-born connection experiment (now across the Northeast — New England + New York City) operated by <strong>Lemon Labs</strong>. We take your data seriously because the whole product only works on trust. This page explains what we collect, how we use it, and the control you have. Questions? Email <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
 
       <h2>What we collect</h2>
       <ul>
