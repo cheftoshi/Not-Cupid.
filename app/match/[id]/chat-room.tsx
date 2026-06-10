@@ -71,6 +71,13 @@ function buildStarters(other: any): string[] {
 
 export default function ChatRoom({ matchId, currentUserId, otherUser, match, initialMessages, readOnly = false }: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
+  // Newest message timestamp we hold — lets the poll ask for only newer rows.
+  const lastMsgAtRef = useRef<string>(
+    initialMessages.length ? initialMessages[initialMessages.length - 1].created_at : ''
+  );
+  useEffect(() => {
+    lastMsgAtRef.current = messages.length ? messages[messages.length - 1].created_at : '';
+  }, [messages]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [heyWarned, setHeyWarned] = useState(false);
@@ -160,18 +167,33 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   }
 
   useEffect(() => {
+    if (readOnly) return; // ended conversations don't change — no need to poll
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/messages?match_id=${matchId}`);
+        // Incremental poll: only fetch messages newer than the last one we
+        // have (the server re-ships the whole thread without `after`).
+        const after = lastMsgAtRef.current;
+        const res = await fetch(`/api/messages?match_id=${matchId}${after ? `&after=${encodeURIComponent(after)}` : ''}`);
         if (res.ok) {
           const data = await parseResponse<any>(res);
-          setMessages(data.messages || []);
+          const fresh: any[] = data.messages || [];
+          if (data.incremental) {
+            if (fresh.length) {
+              setMessages((prev) => {
+                const seen = new Set(prev.map((m: any) => m.id));
+                const add = fresh.filter((m: any) => !seen.has(m.id));
+                return add.length ? [...prev, ...add] : prev;
+              });
+            }
+          } else {
+            setMessages(fresh);
+          }
           if (data.match) setLiveMatch((prev: any) => ({ ...prev, ...data.match }));
         }
       } catch {}
     }, 3000);
     return () => clearInterval(interval);
-  }, [matchId]);
+  }, [matchId, readOnly]);
 
   function pickStarter(text: string) {
     setInput(text);

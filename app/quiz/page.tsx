@@ -176,6 +176,24 @@ function QuizInner() {
     })()
   }, [isLoveDeep, loveDeepReady])
 
+  // Already logged in but landed on the bare signup quiz (e.g. sent here by the
+  // hub or friend-quiz gate)? Don't make them re-enter details + re-verify their
+  // email — that read as "it's making me sign up / take the quiz again". Route
+  // them into the retake flow, which hydrates their info and jumps straight to
+  // the questions, saving via /api/quiz/update (no duplicate-email 409).
+  useEffect(() => {
+    if (isRetake || isLoveDeep || screen !== 'intro') return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/profile')
+        if (!cancelled && res.ok) window.location.replace('/quiz?retake=1')
+      } catch { /* not logged in — stay on signup */ }
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
     emailValid && parseInt(form.ageMin) >= 18 && parseInt(form.ageMax) > parseInt(form.ageMin) && zipStatus === 'valid'
@@ -274,8 +292,7 @@ function QuizInner() {
       // Retake path: existing logged-in user → UPDATE row, don't re-insert.
       // Land on /hub (the line chooser), NOT the love dashboard — finishing the
       // CORE quiz means "pick a line," and this path also catches users who
-      // signed up before the quiz existed (verify-otp routes them here). Sending
-      // them to /dashboard was auto-dropping them onto the Love line.
+      // signed up before the quiz existed (verify-otp routes them here).
       if (isRetake) {
         const res = await fetch('/api/quiz/update', {
           method: 'POST', headers: {'Content-Type':'application/json'},
@@ -285,7 +302,14 @@ function QuizInner() {
           window.location.href = '/hub'
           return
         }
-        // Fall through to result screen on error
+        // IMPORTANT: do NOT fall through to /api/submit — their email already
+        // has an account, so submit 409s → login → verify-otp sees no archetype
+        // → back to retake → loop ("it keeps telling me to retake the quiz").
+        // Show the result screen with a retry instead.
+        console.error('Retake save failed', res.status)
+        setScreen('result')
+        setTimeout(() => setBarsVisible(true), 400)
+        return
       }
 
       const res = await fetch('/api/submit', {
@@ -495,9 +519,9 @@ function QuizInner() {
               <p className={styles.rulesTitle}>here's the deal →</p>
               {[
                 ['no photos first', 'your personality goes before your face. radical concept.'],
-                ['one match only', 'we pick one person. you get an email. the rest is on you.'],
-                ['boston only', '50 miles of 02116. so you can actually meet up.'],
-                ['7 minutes', "answer honestly. the algorithm clocks when you're performing."],
+                ['a curated roster', 'the algorithm hands you your most compatible people. you pick. up to 2 conversations at once.'],
+                ['actually local', 'born in boston, open across new england + nyc. matched near you so you can actually meet up.'],
+                ['4 minutes', "answer honestly. the algorithm clocks when you're performing."],
               ].map(([bold, rest]) => (
                 <div key={bold} className={styles.rule}>
                   <span className={styles.ruleDot}>→</span>
@@ -926,7 +950,7 @@ function QuizInner() {
             <div className={styles.profileCard}>
               <div className={styles.profileHeader}>
                 <span className={styles.profileTitle}>your hexaco profile</span>
-                <span className={styles.profileLock}>🔒 $0.99 to unlock</span>
+                <span className={styles.profileLock}>🔒 full breakdown on your profile</span>
               </div>
               <div className={styles.dimRows}>
                 {DIMS.map((dim, i) => {
@@ -984,7 +1008,7 @@ function QuizInner() {
               <div className={styles.matchBadge}>pool status: active 👀</div>
               <p className={styles.matchTitle}>you're in.</p>
               <p className={styles.matchDesc}>
-                the algorithm is watching the boston pool. the second someone compatible shows up you'll get an email. one match. one spot in the city. show up.
+                the algorithm is scanning your metro's pool. your roster — the most compatible people near you — lands on your dashboard. you pick who to meet. show up.
               </p>
             </div>
 

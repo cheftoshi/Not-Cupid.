@@ -116,28 +116,25 @@ export async function GET(req: NextRequest) {
     }
 
     // ============== 3) Collect all user IDs eligible to rematch ==============
+    // Batched: one IN query for everyone touched by an expiry, instead of a
+    // sequential per-user fetch loop (2 round trips per expired match).
     const toRematch = new Set<string>()
-    const consider = async (userId: string) => {
-      const { data: u } = await supabaseAdmin
+    const touched = new Set<string>()
+    for (const m of expiredChats || []) { touched.add(m.user_1_id); touched.add(m.user_2_id) }
+    for (const m of expiredPending || []) { touched.add((m as any).user_1_id); touched.add((m as any).user_2_id) }
+    if (touched.size > 0) {
+      const { data: touchedUsers } = await supabaseAdmin
         .from('users')
-        .select('matching_disabled_at, matching_cooldown_until')
-        .eq('id', userId)
-        .single()
-      if (!u) return
-      // Roster-first: everyone whose match ended returns to the pool (no
-      // auto_rematch opt-out anymore — pausing is done via unsubscribe).
-      if (u.matching_disabled_at) return
-      if (u.matching_cooldown_until && new Date(u.matching_cooldown_until) > new Date()) return
-      toRematch.add(userId)
-    }
-
-    for (const m of expiredChats || []) {
-      await consider(m.user_1_id)
-      await consider(m.user_2_id)
-    }
-    for (const m of expiredPending || []) {
-      await consider((m as any).user_1_id)
-      await consider((m as any).user_2_id)
+        .select('id, matching_disabled_at, matching_cooldown_until')
+        .in('id', Array.from(touched))
+      const nowMs2 = Date.now()
+      for (const u of touchedUsers ?? []) {
+        // Roster-first: everyone whose match ended returns to the pool (no
+        // auto_rematch opt-out anymore — pausing is done via unsubscribe).
+        if (u.matching_disabled_at) continue
+        if (u.matching_cooldown_until && new Date(u.matching_cooldown_until).getTime() > nowMs2) continue
+        toRematch.add(u.id)
+      }
     }
     // Freshly cooldown-released users are eligible by construction
     // (cooldown cleared, not banned, not matched) — add them directly.
@@ -162,11 +159,11 @@ export async function GET(req: NextRequest) {
     // match ended/expired (plus cooldown/balance releases) back to 'waiting'
     // so they reappear in the pool and get a fresh roster on their next
     // dashboard visit. Match creation happens when a user actively picks.
-    let returnedToPool = 0
-    for (const uid of toRematch) {
-      await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', uid)
-      returnedToPool++
-    }
+    const { error: poolErr } = await supabaseAdmin
+      .from('users')
+      .update({ status: 'waiting' })
+      .in('id', Array.from(toRematch))
+    const returnedToPool = poolErr ? 0 : toRematch.size
 
     return NextResponse.json({
       success: true,

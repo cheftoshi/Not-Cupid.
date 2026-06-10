@@ -20,7 +20,9 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
   const firstName = (user.name || 'friend').split(' ')[0];
   const heightFt = user.height_cm ? Math.floor(user.height_cm / 30.48) : null;
   const heightIn = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : null;
-  const needsQuiz = !user.archetype || !user.score_honesty;
+  // typeof check, NOT falsy: with the 12-question quiz (2/dim) a legit 0 on a
+  // dimension is common — `!user.score_honesty` told quiz-finishers to retake.
+  const needsQuiz = !user.archetype || typeof user.score_honesty !== 'number';
 
   const tags: Array<{ label: string; items: string[]; variant: 'lav' | 'accent' }> = [
     { label: 'Music', items: user.music || [], variant: 'lav' },

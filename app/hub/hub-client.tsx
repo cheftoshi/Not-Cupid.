@@ -66,14 +66,14 @@ export default function HubClient({
           <div className={styles.cardEyebrow}><span className={styles.dotLive} />live</div>
           <h2 className={styles.cardH2}>love <em>line.</em></h2>
           <p className={styles.cardDesc}>
-            pick from your 5 most compatible. greater boston. built on
+            pick from your most compatible, near you. built on
             personality, not lighting. no swipes, no photos first.
           </p>
           <div className={styles.cardSpec}>
             <div><span className={styles.specK}>quiz</span><span className={styles.specV}>personality-led</span></div>
-            <div><span className={styles.specK}>pool</span><span className={styles.specV}>greater boston</span></div>
-            <div><span className={styles.specK}>match</span><span className={styles.specV}>within 15mi</span></div>
-            <div><span className={styles.specK}>style</span><span className={styles.specV}>choose from 5</span></div>
+            <div><span className={styles.specK}>pool</span><span className={styles.specV}>new england + nyc</span></div>
+            <div><span className={styles.specK}>match</span><span className={styles.specV}>5–75mi, you tune it</span></div>
+            <div><span className={styles.specK}>style</span><span className={styles.specV}>you choose</span></div>
           </div>
           <Link href={loveHref} className={styles.cardCta} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>{needsLoveDeep ? 'finish your love profile →' : 'board the love line →'}</Link>
           <Link href="/how-it-works" className={styles.cardSub}>how the love line works →</Link>

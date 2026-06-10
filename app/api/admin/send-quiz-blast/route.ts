@@ -32,7 +32,7 @@ function emailHtml(name: string, baseUrl: string) {
         <a href="${baseUrl}/quiz?retake=1" style="display:inline-block;background:#0e0c1a;color:#f6f6f6;padding:1rem 1.75rem;font-family:monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none">retake the quiz →</a>
       </div>
       <div style="padding-top:1.5rem;border-top:1px solid #e8edff;font-size:.65rem;color:#c8c4dc;letter-spacing:.1em;text-transform:uppercase">
-        boston only · notcupid.com · the algo got upgraded
+        new england + nyc · notcupid.com · the algo got upgraded
       </div>
     </div>
   `

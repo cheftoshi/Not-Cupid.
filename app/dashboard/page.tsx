@@ -53,26 +53,49 @@ export default async function DashboardPage({
   // once. Sweep any timed-out matches, then load ALL live matches as a list of
   // "connections" (each gets its own card), plus the roster to discover more.
   await releaseTimedOutMatches(user.id);
-  const liveMatches = await liveMatchesFor(user.id);
+  // History is independent of the live set — fetch them in parallel (the
+  // dashboard was a 6-query sequential waterfall).
+  const [liveMatches, { data: historyMatches }] = await Promise.all([
+    liveMatchesFor(user.id),
+    supabaseAdmin
+      .from('matches')
+      .select('id, user_1_id, user_2_id, ended_at')
+      .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
+      .not('ended_at', 'is', null)
+      .order('ended_at', { ascending: false })
+      .limit(10),
+  ]);
   liveMatches.sort(
     (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
   const liveIds = liveMatches.map((m: any) => m.id);
-  const { data: unlockRows } = liveIds.length
-    ? await supabaseAdmin
-        .from('match_unlocks')
-        .select('match_id, hexaco_unlocked, profile_unlocked')
-        .eq('user_id', user.id)
-        .in('match_id', liveIds)
-    : { data: [] as any[] };
-  const unlockByMatch = new Map((unlockRows ?? []).map((u: any) => [u.match_id, u]));
-
   const otherIds = liveMatches.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id));
-  const { data: others } = otherIds.length
-    ? await supabaseAdmin.from('users').select('*').in('id', otherIds)
-    : { data: [] as any[] };
-  const otherById = new Map((others ?? []).map((u: any) => [u.id, u]));
+  const historyOtherIds = Array.from(new Set(
+    (historyMatches ?? []).map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
+  ));
+  // MatchCard needs profile + HEXACO fields — but not email/roster_snapshot/etc.
+  const CARD_COLS =
+    'id, name, age, photo_url, archetype, zip, relationship_style, bio, gallery, music, food, hobbies, ' +
+    'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
+  const [{ data: unlockRows }, { data: others }, { data: historyOthers }] = await Promise.all([
+    liveIds.length
+      ? supabaseAdmin
+          .from('match_unlocks')
+          .select('match_id, hexaco_unlocked, profile_unlocked')
+          .eq('user_id', user.id)
+          .in('match_id', liveIds)
+      : Promise.resolve({ data: [] as any[] }),
+    otherIds.length
+      ? supabaseAdmin.from('users').select(CARD_COLS).in('id', otherIds)
+      : Promise.resolve({ data: [] as any[] }),
+    historyOtherIds.length
+      ? supabaseAdmin.from('users').select('id, name').in('id', historyOtherIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ] as any[]);
+  const unlockByMatch = new Map<string, any>((unlockRows ?? []).map((u: any) => [u.match_id, u]));
+  const otherById = new Map<string, any>((others ?? []).map((u: any) => [u.id, u]));
+  const historyNameById = new Map<string, any>((historyOthers ?? []).map((u: any) => [u.id, u.name]));
 
   const isTestViewer = (user as any).is_test === true;
   const connections = liveMatches
@@ -99,25 +122,6 @@ export default async function DashboardPage({
     .filter(Boolean) as any[];
 
   const newest = connections[0] || null;
-
-
-  // History (ended matches)
-  const { data: historyMatches } = await supabaseAdmin
-    .from('matches')
-    .select('*')
-    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-    .not('ended_at', 'is', null)
-    .order('ended_at', { ascending: false })
-    .limit(10);
-
-  // Names of past matches (we show who, not why it ended).
-  const historyOtherIds = Array.from(new Set(
-    (historyMatches ?? []).map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
-  ));
-  const { data: historyOthers } = historyOtherIds.length
-    ? await supabaseAdmin.from('users').select('id, name').in('id', historyOtherIds)
-    : { data: [] as any[] };
-  const historyNameById = new Map((historyOthers ?? []).map((u: any) => [u.id, u.name]));
 
   return (
     <div className={styles.page}>

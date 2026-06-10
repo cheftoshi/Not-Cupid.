@@ -602,3 +602,16 @@ alter table users add column if not exists attach_anxiety int;
 alter table users add column if not exists attach_avoidance int;
 alter table users add column if not exists attach_style text;
 alter table users add column if not exists values_profile jsonb;
+
+-- ───────────────────────── 20260610_perf_indexes ─────────────────────────
+-- Hot-path indexes: chat polling, open-match lookups, pending sweeps, history.
+create index if not exists messages_match_created_idx
+  on messages (match_id, created_at);
+create index if not exists matches_user1_open_idx
+  on matches (user_1_id) where ended_at is null;
+create index if not exists matches_user2_open_idx
+  on matches (user_2_id) where ended_at is null;
+create index if not exists matches_pending_created_idx
+  on matches (created_at) where status = 'pending';
+create index if not exists match_history_user_a_idx on match_history (user_a_id);
+create index if not exists match_history_user_b_idx on match_history (user_b_id);

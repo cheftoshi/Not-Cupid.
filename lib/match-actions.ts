@@ -68,7 +68,7 @@ export async function releaseTimedOutMatches(userId: string): Promise<void> {
 export const CHAT_INACTIVITY_MS = 36 * 60 * 60 * 1000;
 
 export type AcceptResult =
-  | { ok: false; reason: 'not_found' | 'not_party' | 'ended' }
+  | { ok: false; reason: 'not_found' | 'not_party' | 'ended' | 'at_capacity' }
   | { ok: true; mutual: boolean; already?: boolean };
 
 export async function acceptMatch(matchId: string, userId: string): Promise<AcceptResult> {
@@ -90,6 +90,16 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
   // Already mutually accepted → idempotent success (don't re-send emails).
   if (match.user_1_accepted && match.user_2_accepted) {
     return { ok: true, mutual: true, already: true };
+  }
+
+  // Capacity guard: pick gates the PICKER, but a candidate can accrue extra
+  // pendings via the double-pick race ("extra suitor"). Accepting must not push
+  // anyone past MAX_CONNECTIONS — count their OTHER live matches (this pending
+  // already counts as live, so exclude it) and block at the cap.
+  const live = await liveMatchesFor(userId);
+  const othersLive = live.filter((m: any) => m.id !== matchId);
+  if (othersLive.length >= MAX_CONNECTIONS) {
+    return { ok: false, reason: 'at_capacity' };
   }
 
   const field = isUser1 ? 'user_1_accepted' : 'user_2_accepted';
@@ -138,7 +148,7 @@ async function sendItsAMatchEmails(user1Id: string, user2Id: string) {
         ${infoCard({ eyebrow: `${otherName}'s email`, big: otherEmail })}
         <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
         <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
-          <li>Message in the next day — the chat goes quiet if neither of you speaks for 24h.</li>
+          <li>Message soon — the chat closes after 36 quiet hours (every message resets the clock).</li>
           <li>Make the first message a real one, not "hey." You both already passed the hard part.</li>
           <li>If it lands, come back and tell us how it went.</li>
         </ul>

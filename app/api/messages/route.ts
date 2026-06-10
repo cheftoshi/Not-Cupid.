@@ -26,16 +26,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Not your match' }, { status: 403 });
   }
 
-  const { data: messages } = await supabaseAdmin
+  // Incremental polling: the chat polls every few seconds — with `after` (an
+  // ISO timestamp of the newest message the client has) we return only newer
+  // rows instead of re-shipping the whole conversation on every poll.
+  const after = req.nextUrl.searchParams.get('after');
+  let msgQuery = supabaseAdmin
     .from('messages')
     .select('*')
     .eq('match_id', matchId)
     .order('created_at', { ascending: true });
+  if (after && !Number.isNaN(Date.parse(after))) {
+    msgQuery = msgQuery.gt('created_at', after);
+  }
+  const { data: messages } = await msgQuery;
 
   // Return live match status alongside messages so the chat header can
   // auto-update (countdown ticking, or "ended" if the other person bailed).
   return NextResponse.json({
     messages: messages || [],
+    incremental: !!after,
     match: {
       chat_expires_at: match.chat_expires_at,
       ended_at: match.ended_at,

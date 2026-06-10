@@ -77,7 +77,7 @@ export default function EndMatchDialog({
             <h2 className={styles.endTitle}>{otherName} ghosted you?</h2>
             <div className={styles.endWarn}>
               <p>they'll be put in a <strong>7-day cooldown</strong>.</p>
-              <p>after <strong>3 reports</strong>, they won't be matched again.</p>
+              <p>repeat reports escalate — longer pauses, and eventually they're off the line for good.</p>
               <p className={styles.endWarnNote}>only report if you both said yes and they stopped responding without explanation.</p>
             </div>
             <div className={styles.endActions}>

@@ -33,7 +33,7 @@ export default function RetroA() {
             BOSTON&apos;S<br /><span style={{ fontStyle: 'italic', color: TEAL }}>date experiment</span>
           </h1>
           <p style={{ fontStyle: 'italic', fontSize: '1.05rem', color: '#5c4a36', margin: '1.25rem auto 0', maxWidth: 420 }}>
-            one match. no swiping. built on personality, the old-fashioned way.
+            your top picks. no swiping. built on personality, the old-fashioned way.
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1.75rem', flexWrap: 'wrap' }}>
             <span style={{ background: RUST, color: CREAM, padding: '0.8rem 1.6rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.16em', textTransform: 'uppercase', border: `2px solid ${INK}` }}>take the quiz →</span>

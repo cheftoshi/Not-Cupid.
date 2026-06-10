@@ -138,8 +138,17 @@ export async function POST(req: NextRequest) {
 
     await supabaseAdmin
       .from('matches')
-      .update({ status: 'passed' })
+      .update({ status: 'passed', ended_at: new Date().toISOString(), ended_reason: 'passed' })
       .eq('id', matchId)
+
+    // Block the pair from re-matching — same as the in-app pass route. Without
+    // this, passing via the email link let the same two people re-surface on
+    // each other's rosters.
+    const [ha, hb] = [match.user_1_id, match.user_2_id].sort()
+    await supabaseAdmin.from('match_history').upsert(
+      { user_a_id: ha, user_b_id: hb, match_id: matchId, outcome: 'passed' },
+      { onConflict: 'user_a_id,user_b_id' }
+    )
 
     await supabaseAdmin
       .from('users')
@@ -158,15 +167,15 @@ export async function POST(req: NextRequest) {
         to: user.email,
         subject: 'You passed — back in the pool',
         html: renderEmail({
-          preheader: 'No hard feelings. You\'re back in the Boston pool and the algo is already looking.',
+          preheader: 'No hard feelings. Your roster is waiting — pick your next person.',
           eyebrow: 'noted.',
           headline: `You passed on ${other?.name?.split(' ')[0] ?? 'your match'}.`,
           bodyHtml: `
             <p style="margin:0 0 12px 0;">No hard feelings — better an honest "not it" than a wasted coffee.</p>
-            <p style="margin:0;">You're back in the Boston pool. The algo's already looking for your next one; we'll email when we find them.</p>
+            <p style="margin:0;">Your roster's open on the dashboard — your most compatible people, you pick who's next.</p>
           `,
           recipientId: user.id,
-          footerNote: 'one match at a time. quality over chaos.',
+          footerNote: 'you choose. quality over chaos.',
         }),
       })
     }

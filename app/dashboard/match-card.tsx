@@ -155,7 +155,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
         <div style={{ background: 'linear-gradient(135deg,#e8edff,#fff)', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.25rem' }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.4rem' }}>✦ you&apos;re back in the pool</div>
           <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.9rem', color: '#0a0a0a', lineHeight: 1.5 }}>
-            the algorithm re-runs every 20 minutes — your next match is already cooking.
+            your roster's open below — your most compatible people, ready when you are.
           </div>
         </div>
         <div className={styles.actions}>

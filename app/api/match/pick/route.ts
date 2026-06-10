@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
   const nowMs = Date.now();
   const eligible =
     candLive.length < MAX_CONNECTIONS &&
+    // Realm segregation: test ↔ test, real ↔ real only.
+    ((cand.is_test === true) === ((user as any).is_test === true)) &&
     cand.pool_active !== false &&
     !cand.matching_disabled_at &&
     (!cand.matching_cooldown_until || new Date(cand.matching_cooldown_until).getTime() < nowMs) &&

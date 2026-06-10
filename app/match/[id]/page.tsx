@@ -31,11 +31,15 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
     .eq('id', otherId)
     .single();
 
-  const { data: messages } = await supabaseAdmin
+  // Last 500 messages (newest-first, then re-ordered) — enough for any real
+  // conversation without making long threads unbounded on first paint.
+  const { data: messagesDesc } = await supabaseAdmin
     .from('messages')
     .select('*')
     .eq('match_id', params.id)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(500);
+  const messages = (messagesDesc ?? []).reverse();
 
   return (
     <ChatRoom

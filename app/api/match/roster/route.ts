@@ -74,15 +74,30 @@ export async function GET() {
   // Candidate pool. We no longer filter by status='waiting' (that was the
   // single-match lock) — instead we surface anyone with spare capacity and
   // filter out those at the cap below.
+  // Select ONLY what ranking + the response need — `select('*')` was hauling
+  // every column (email, bio, gallery, roster_snapshot…) for the whole active
+  // pool on every roster load: a PII over-fetch that scales with user count.
+  const POOL_COLS =
+    'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, ' +
+    'relationship_style, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, ' +
+    'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
+    'score_conscientiousness, score_openness, last_matched_at, is_test';
   const nowIso = new Date().toISOString();
-  const { data: pool } = await supabaseAdmin
+  let poolQuery = supabaseAdmin
     .from('users')
-    .select('*')
+    .select(POOL_COLS)
     .eq('pool_active', true)
     .eq('is_blocked', false)
     .neq('id', user.id)
     .is('matching_disabled_at', null)
+    .is('deleted_at', null)
     .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`);
+  // Realm segregation: test accounts only roster test accounts, real users only
+  // real ones (this was enforced at display time but not here).
+  poolQuery = (user as any).is_test === true
+    ? poolQuery.eq('is_test', true)
+    : poolQuery.not('is_test', 'is', true);
+  const { data: pool } = await poolQuery;
 
   if (!pool || pool.length === 0) return NextResponse.json({ roster: [], atCapacity });
 
