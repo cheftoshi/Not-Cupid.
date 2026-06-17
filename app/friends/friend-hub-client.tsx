@@ -388,7 +388,12 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax });
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<NavKey>('home');
+  // Deep-link: a crew push opens /friends?view=crew straight into the chat.
+  const [view, setView] = useState<NavKey>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const v = new URLSearchParams(window.location.search).get('view');
+    return (['home', 'map', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home';
+  });
   const [chatOpen, setChatOpen] = useState(true);
   const chatRef = useRef<HTMLDivElement>(null);
   // In-app "new event" notification (no email — the daily digest covers that).

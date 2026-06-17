@@ -3,15 +3,25 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { joinCircle } from '@/lib/friend-circles';
 import { renderEmail, sendEmail, button, C } from '@/lib/email';
+import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
-// Ping ONE crewmate that the chat is live and someone just hopped in.
-async function emailCrewMember(memberId: string, joinerName: string, crewSize: number) {
+// Ping ONE crewmate that the chat is live and someone just hopped in — push
+// (separate opt-in channel, fires regardless of the email pref) + email.
+async function notifyCrewMember(memberId: string, joinerName: string, crewSize: number) {
+  const first = joinerName.split(' ')[0];
+  // Push first — independent of email_notifications.
+  await sendPushToUser(memberId, {
+    title: `${first} joined your crew 🧡`,
+    body: 'the chat is live — hop in and make a plan.',
+    url: '/friends?view=crew',
+    tag: 'crew-join',
+  });
+
   const { data: u } = await supabaseAdmin
     .from('users').select('name, email, email_notifications, is_test').eq('id', memberId).single();
   if (!u?.email || u.email_notifications === false || u.is_test) return;
-  const first = joinerName.split(' ')[0];
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const others = crewSize > 2 ? `you + ${crewSize - 1} others` : 'your crew';
   const html = renderEmail({
@@ -24,10 +34,10 @@ async function emailCrewMember(memberId: string, joinerName: string, crewSize: n
   await sendEmail({ to: u.email, subject: `${first} joined your crew — chat's live on NotCupid`, html }).catch(() => {});
 }
 
-// Email the WHOLE crew (everyone in the touched circle(s) except the person who
+// Notify the WHOLE crew (everyone in the touched circle(s) except the person who
 // just joined) that the chat is active. Deduped across circles so each member
 // gets at most one ping per accept.
-async function emailCrewGroup(circleIds: Set<string>, joinerId: string, joinerName: string) {
+async function notifyCrewGroup(circleIds: Set<string>, joinerId: string, joinerName: string) {
   const notified = new Set<string>([joinerId]);
   for (const circleId of circleIds) {
     const { data: memberRows } = await supabaseAdmin
@@ -36,7 +46,7 @@ async function emailCrewGroup(circleIds: Set<string>, joinerId: string, joinerNa
     for (const id of ids) {
       if (notified.has(id)) continue;
       notified.add(id);
-      await emailCrewMember(id, joinerName, ids.length);
+      await notifyCrewMember(id, joinerName, ids.length);
     }
   }
 }
@@ -78,7 +88,7 @@ export async function POST() {
 
   // Tell the whole crew the chat just went active — "hop in to join in."
   if (touchedCircles.size) {
-    await emailCrewGroup(touchedCircles, user.id, user.name || 'someone');
+    await notifyCrewGroup(touchedCircles, user.id, user.name || 'someone');
   }
 
   return NextResponse.json({ ok: true, connected });

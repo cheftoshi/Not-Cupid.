@@ -3,8 +3,24 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { activeCircleOf } from '@/lib/friend-circles';
 import { hasCircleAccess, circleChatStatus } from '@/lib/friend-access';
+import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
+
+// Push every other live member of a circle. Crew chat has no email notification,
+// so this is the ONLY ping crewmates get — the per-circle tag collapses a burst
+// of messages into one lock-screen notification.
+async function pushCrew(circleId: string, exceptId: string, title: string, body: string) {
+  const { data: members } = await supabaseAdmin
+    .from('friend_circle_members')
+    .select('user_id')
+    .eq('circle_id', circleId)
+    .is('left_at', null);
+  const ids = (members ?? []).map((m) => m.user_id).filter((id) => id !== exceptId);
+  await Promise.all(
+    ids.map((id) => sendPushToUser(id, { title, body, url: '/friends?view=crew', tag: `crew-${circleId}` }))
+  );
+}
 
 // GET: the caller's friend-circle group chat — members + messages.
 export async function GET() {
@@ -84,5 +100,12 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify the rest of the crew (awaited — Vercel can kill un-awaited work, and
+  // this is the crew chat's only notification channel). Never blocks the send.
+  const senderFirst = (user.name || 'A crewmate').split(' ')[0];
+  const preview = message.body.length > 90 ? message.body.slice(0, 90) + '…' : message.body;
+  await pushCrew(circleId, user.id, `${senderFirst} · your crew`, preview).catch(() => {});
+
   return NextResponse.json({ message });
 }
