@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
+import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const { data: activity } = await supabaseAdmin
     .from('friend_activities')
-    .select('id, kind, author_id, audience_gender, audience_age_min, audience_age_max')
+    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max')
     .eq('id', activityId)
     .maybeSingle();
   if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
@@ -63,6 +64,25 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const responses = { yes: 0, maybe: 0, no: 0 };
   (all ?? []).forEach((r: any) => { const k = (r.response || 'yes') as Response; if (k in responses) responses[k]++; });
   const count = (all ?? []).length;
+
+  // Ping the host when someone's coming (yes/maybe). Events only — post 'likes'
+  // would flood — and never on your own RSVP or on a clear. Per-event tag
+  // collapses a wave of RSVPs into one notification for the host.
+  if (
+    (activity.kind || 'event') === 'event' &&
+    activity.author_id !== user.id &&
+    (myResponse === 'yes' || myResponse === 'maybe')
+  ) {
+    const who = (user.name || 'Someone').split(' ')[0];
+    const verb = myResponse === 'yes' ? 'is going to' : 'might come to';
+    const what = activity.title ? `"${activity.title}"` : 'your event';
+    await sendPushToUser(activity.author_id, {
+      title: `${who} ${verb} your event 🎟️`,
+      body: `${what} — ${responses.yes} going, ${responses.maybe} maybe`,
+      url: '/friends?view=scene',
+      tag: `rsvp-${activityId}`,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ ok: true, joined: myResponse !== null, myResponse, responses, count });
 }
