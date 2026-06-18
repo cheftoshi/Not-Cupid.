@@ -1,6 +1,14 @@
 -- CONSOLIDATED IDEMPOTENT MIGRATION — apply all schema in order.
 -- Safe to re-run: every statement is 'if not exists' or drop-then-add.
 -- Generated 2026-05-31 to resync production schema with code.
+--
+-- ⚠️ NOT A COMPLETE FROM-ZERO REBUILD. The CORE love-side tables — `users`,
+-- `matches`, `messages`, `sessions`, `otp_codes`, `match_history` — were created
+-- directly in the Supabase dashboard and have NEVER lived in repo SQL. This file
+-- ALTERs/indexes them assuming they already exist. To stand up a brand-new
+-- environment you must first recreate those core tables from the live schema
+-- (Supabase → Database → Schema, or `pg_dump --schema-only`). Everything else
+-- (friend_*, unlocks, push_subscriptions, aux tables) IS fully defined here.
 
 -- ==================== 20260527_security_hardening.sql ====================
 -- Security hardening migration
@@ -357,6 +365,30 @@ alter table matches add constraint matches_ended_reason_check
 alter table users add column if not exists roster_snapshot text[] not null default '{}';
 alter table users add column if not exists roster_refreshed_at timestamptz;
 
+
+-- ==================== unlock tables (were dashboard-created) ====================
+-- `match_unlocks`: current per-(user,match) unlock state (lib/record-unlock).
+-- `unlocks`: legacy payment ledger still read by admin stats + written by the
+-- stripe webhook. Both were created in the dashboard and missing from this file;
+-- folded in idempotently so admin reads don't break + a rebuild includes them.
+create table if not exists match_unlocks (
+  user_id uuid not null,
+  match_id uuid not null,
+  unlocked_user_id uuid,
+  amount_cents int,
+  stripe_payment_id text,
+  created_at timestamptz not null default now(),
+  primary key (user_id, match_id)
+);
+create table if not exists unlocks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  stripe_payment_id text,
+  amount int,
+  created_at timestamptz not null default now()
+);
+alter table match_unlocks enable row level security;
+alter table unlocks enable row level security;
 
 -- ==================== 20260531_unlock_tiers.sql ====================
 -- Two-tier match unlock:

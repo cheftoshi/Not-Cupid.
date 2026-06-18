@@ -13,7 +13,6 @@ export default function robots(): MetadataRoute.Robots {
           '/profile',
           '/match/',
           '/hub',
-          '/unlock',
           '/out-of-range',
         ],
       },
