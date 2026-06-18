@@ -659,3 +659,20 @@ create table if not exists push_subscriptions (
 );
 create index if not exists push_subs_user_idx on push_subscriptions(user_id);
 alter table push_subscriptions enable row level security;
+
+-- ──────────────────────── 20260617_activity_rsvp_counts ────────────────────────
+-- Per-activity RSVP tallies via DB aggregate (was an O(all-rsvps) fetch in JS).
+create or replace function activity_rsvp_counts(p_ids uuid[])
+returns table (activity_id uuid, yes int, maybe int, no int)
+language sql
+stable
+as $$
+  select
+    activity_id,
+    count(*) filter (where coalesce(response, 'yes') = 'yes')::int   as yes,
+    count(*) filter (where coalesce(response, 'yes') = 'maybe')::int as maybe,
+    count(*) filter (where coalesce(response, 'yes') = 'no')::int    as no
+  from friend_activity_rsvps
+  where activity_id = any(p_ids)
+  group by activity_id
+$$;

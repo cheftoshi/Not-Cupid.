@@ -34,20 +34,40 @@ export async function GET(req: NextRequest) {
     .in('id', authorIds.length ? authorIds : ['00000000-0000-0000-0000-000000000000']);
   const aById = new Map((authors ?? []).map((u) => [u.id, u]));
 
-  const { data: rsvps } = await supabaseAdmin
-    .from('friend_activity_rsvps').select('activity_id, user_id, response')
-    .in('activity_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
   const countByAct = new Map<string, number>();
   const respByAct = new Map<string, { yes: number; maybe: number; no: number }>();
   const myRespByAct = new Map<string, string>();
-  (rsvps ?? []).forEach((r) => {
-    const resp = (r.response || 'yes') as 'yes' | 'maybe' | 'no';
-    countByAct.set(r.activity_id, (countByAct.get(r.activity_id) || 0) + 1);
-    const tally = respByAct.get(r.activity_id) || { yes: 0, maybe: 0, no: 0 };
-    if (resp === 'yes' || resp === 'maybe' || resp === 'no') tally[resp]++;
-    respByAct.set(r.activity_id, tally);
-    if (r.user_id === user.id) myRespByAct.set(r.activity_id, resp);
-  });
+  if (ids.length) {
+    // Tallies via a DB aggregate (activity_rsvp_counts) instead of pulling every
+    // RSVP row into the API and counting in JS — the old way scaled with the
+    // total number of RSVPs across all shown events.
+    const { data: counts, error: rpcErr } = await supabaseAdmin.rpc('activity_rsvp_counts', { p_ids: ids });
+    if (!rpcErr && Array.isArray(counts)) {
+      for (const c of counts as any[]) {
+        const tally = { yes: c.yes ?? 0, maybe: c.maybe ?? 0, no: c.no ?? 0 };
+        respByAct.set(c.activity_id, tally);
+        countByAct.set(c.activity_id, tally.yes + tally.maybe + tally.no);
+      }
+      // The caller's OWN response per activity — bounded by the ~60 shown events.
+      const { data: mine } = await supabaseAdmin
+        .from('friend_activity_rsvps').select('activity_id, response')
+        .eq('user_id', user.id).in('activity_id', ids);
+      (mine ?? []).forEach((r) => myRespByAct.set(r.activity_id, (r.response || 'yes')));
+    } else {
+      // Fallback (RPC not migrated yet — 20260617_activity_rsvp_counts.sql): the
+      // original fetch-all tally, so the board never breaks pre-migration.
+      const { data: rsvps } = await supabaseAdmin
+        .from('friend_activity_rsvps').select('activity_id, user_id, response').in('activity_id', ids);
+      (rsvps ?? []).forEach((r) => {
+        const resp = (r.response || 'yes') as 'yes' | 'maybe' | 'no';
+        countByAct.set(r.activity_id, (countByAct.get(r.activity_id) || 0) + 1);
+        const tally = respByAct.get(r.activity_id) || { yes: 0, maybe: 0, no: 0 };
+        if (resp === 'yes' || resp === 'maybe' || resp === 'no') tally[resp]++;
+        respByAct.set(r.activity_id, tally);
+        if (r.user_id === user.id) myRespByAct.set(r.activity_id, resp);
+      });
+    }
+  }
 
   // Is this responder inside an event's audience (gender + age)? Author always is.
   const eligibleFor = (a: any) => {
