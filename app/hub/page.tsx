@@ -13,5 +13,26 @@ export default async function HubPage() {
   // Boarding Love runs the deeper romantic quiz (partner + attachment + values)
   // once. Done = they have an attachment style on file.
   const needsLoveDeep = !!user.archetype && !user.attach_style;
-  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} />;
+
+  // The hub is the user's home base — pass their own display fields so it can
+  // show their photo, archetype, personality + vibes (NOT email/tokens/etc).
+  const profile = {
+    name: user.name || 'friend',
+    photo_url: user.photo_url ?? null,
+    archetype: user.archetype ?? null,
+    age: user.age ?? null,
+    score_honesty: user.score_honesty,
+    score_emotionality: user.score_emotionality,
+    score_extraversion: user.score_extraversion,
+    score_agreeableness: user.score_agreeableness,
+    score_conscientiousness: user.score_conscientiousness,
+    score_openness: user.score_openness,
+    attach_style: user.attach_style ?? null,
+    vibes: user.vibes ?? null,
+    music: user.music ?? [],
+    food: user.food ?? [],
+    hobbies: user.hobbies ?? [],
+  };
+
+  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} />;
 }
