@@ -25,7 +25,7 @@ export const MAX_CONNECTIONS = 2;
 // the pool stops wasting picks on a chronic no-show. Resets to 0 the moment they
 // accept (or pre-accept by picking) any match. This is the #1 pool-failure mode:
 // picks landing on people who never respond.
-export const MAX_IGNORED_PICKS = 5;
+export const MAX_IGNORED_PICKS = 3;
 
 /** A pending match's NON-accepting party (the picked side that hasn't said yes),
  *  but only if the OTHER side actually accepted (a real pick that got ignored). */

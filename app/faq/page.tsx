@@ -42,6 +42,10 @@ const FAQS: { q: string; a: string }[] = [
     a: 'Yes. Your core quiz powers both lines — board whichever you want, or both.',
   },
   {
+    q: 'What if I don’t respond to my matches?',
+    a: 'Please do — someone chose you. If you keep letting matches expire without ever responding, we’ll quietly pause you from new rosters until you re-engage; accepting any match brings you straight back. It keeps the pool fair for the people who actually show up — silence wastes more of someone’s time than an honest no.',
+  },
+  {
     q: 'How do you keep things safe?',
     a: 'You can block and report anyone, we never show your exact location (just a fuzzy metro and distance band), and date-safety tips are built into your matches. People who repeatedly ghost get paused.',
   },

@@ -1,6 +1,6 @@
 -- Responsiveness gate. Counts how many times a user was PICKED (a pending match
 -- waiting on them, the other side pre-accepted) but let it EXPIRE without ever
--- accepting. Past MAX_IGNORED_PICKS (5, in lib/match-actions) they're benched
+-- accepting. Past MAX_IGNORED_PICKS (3, in lib/match-actions) they're benched
 -- from everyone's roster — the pool stops funneling picks into a no-show, which
 -- protects the people who DO engage. Resets to 0 the moment they accept (or
 -- pre-accept by picking) any match.
