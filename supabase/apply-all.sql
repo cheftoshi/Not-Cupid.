@@ -2,13 +2,12 @@
 -- Safe to re-run: every statement is 'if not exists' or drop-then-add.
 -- Generated 2026-05-31 to resync production schema with code.
 --
--- ⚠️ NOT A COMPLETE FROM-ZERO REBUILD. The CORE love-side tables — `users`,
+-- ⚠️ RUN `supabase/base-schema.sql` FIRST. The CORE love-side tables — `users`,
 -- `matches`, `messages`, `sessions`, `otp_codes`, `match_history` — were created
--- directly in the Supabase dashboard and have NEVER lived in repo SQL. This file
--- ALTERs/indexes them assuming they already exist. To stand up a brand-new
--- environment you must first recreate those core tables from the live schema
--- (Supabase → Database → Schema, or `pg_dump --schema-only`). Everything else
--- (friend_*, unlocks, push_subscriptions, aux tables) IS fully defined here.
+-- in the Supabase dashboard and aren't created here; this file only ALTERs/
+-- indexes them. `base-schema.sql` is the authoritative pg_dump of those 6 tables
+-- (captured 2026-06-17, PG 17.6). Fresh env = base-schema.sql, then this file.
+-- Everything else (friend_*, unlocks, push_subscriptions, aux, functions) IS here.
 
 -- ==================== 20260527_security_hardening.sql ====================
 -- Security hardening migration
