@@ -61,7 +61,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
 
       <header className={styles.landTop}>
         <Wordmark size={1.4} />
-        <Link href="/how-it-works" className={styles.landNavBtn}>how it works →</Link>
+        <Link href="/faq" className={styles.landNavBtn}>faq →</Link>
       </header>
 
       <section className={styles.landHero}>
@@ -76,8 +76,8 @@ export default function LandingClient({ stats }: { stats: Stats }) {
         </h1>
 
         <p className={styles.landLede}>
-          algorithm-matched connection — for love and for friendship.<br/>
-          real people, real conversations, no endless swiping.
+          curated connections — for love and for friendship.<br/>
+          real people, real conversations.
         </p>
 
         <div className={styles.landAuthRow}>
@@ -90,8 +90,6 @@ export default function LandingClient({ stats }: { stats: Stats }) {
 
       <footer className={styles.landFoot}>
         <div className={styles.landFootTop}>
-          <span>two algos · one city</span>
-          <span>·</span>
           <span>built in boston</span>
         </div>
         <div className={styles.landFootCorp}>
