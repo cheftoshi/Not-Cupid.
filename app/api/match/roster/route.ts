@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { rankCandidates } from '@/lib/matching';
-import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS } from '@/lib/match-actions';
+import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS, MAX_IGNORED_PICKS } from '@/lib/match-actions';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
 
@@ -83,21 +83,29 @@ export async function GET() {
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
     'score_conscientiousness, score_openness, last_matched_at, is_test';
   const nowIso = new Date().toISOString();
-  let poolQuery = supabaseAdmin
-    .from('users')
-    .select(POOL_COLS)
-    .eq('pool_active', true)
-    .eq('is_blocked', false)
-    .neq('id', user.id)
-    .is('matching_disabled_at', null)
-    .is('deleted_at', null)
-    .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`);
-  // Realm segregation: test accounts only roster test accounts, real users only
-  // real ones (this was enforced at display time but not here).
-  poolQuery = (user as any).is_test === true
-    ? poolQuery.eq('is_test', true)
-    : poolQuery.not('is_test', 'is', true);
-  const { data: pool } = await poolQuery;
+  // Responsiveness gate: bench chronic no-shows (ignored_picks > MAX_IGNORED_PICKS)
+  // so the pool stops surfacing people who never accept. `applyIgnored` is dropped
+  // on the pre-migration fallback below if the column doesn't exist yet.
+  const buildPool = (applyIgnored: boolean) => {
+    let q = supabaseAdmin
+      .from('users')
+      .select(POOL_COLS)
+      .eq('pool_active', true)
+      .eq('is_blocked', false)
+      .neq('id', user.id)
+      .is('matching_disabled_at', null)
+      .is('deleted_at', null)
+      .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`);
+    // Realm segregation: test ↔ test, real ↔ real only.
+    q = (user as any).is_test === true ? q.eq('is_test', true) : q.not('is_test', 'is', true);
+    if (applyIgnored) q = q.lte('ignored_picks', MAX_IGNORED_PICKS);
+    return q;
+  };
+  let { data: pool, error: poolErr } = await buildPool(true);
+  if (poolErr) {
+    // ignored_picks not migrated yet (or other error) → retry without that filter.
+    ({ data: pool } = await buildPool(false));
+  }
 
   if (!pool || pool.length === 0) return NextResponse.json({ roster: [], atCapacity });
 

@@ -19,6 +19,22 @@ import { sendPushToUser } from '@/lib/push';
 // "Live" = both-accepted, or pending within the accept window.
 export const MAX_CONNECTIONS = 2;
 
+// Responsiveness gate. Each time a user gets PICKED (a pending match waiting on
+// them) and lets it EXPIRE without ever accepting, their `ignored_picks` ticks
+// up. Once it exceeds MAX_IGNORED_PICKS they're benched from everyone's roster —
+// the pool stops wasting picks on a chronic no-show. Resets to 0 the moment they
+// accept (or pre-accept by picking) any match. This is the #1 pool-failure mode:
+// picks landing on people who never respond.
+export const MAX_IGNORED_PICKS = 5;
+
+/** A pending match's NON-accepting party (the picked side that hasn't said yes),
+ *  but only if the OTHER side actually accepted (a real pick that got ignored). */
+export function ignoringParty(m: any): string | null {
+  if (!m.user_1_accepted && m.user_2_accepted) return m.user_1_id;
+  if (!m.user_2_accepted && m.user_1_accepted) return m.user_2_id;
+  return null;
+}
+
 /** Is this match row currently live (not ended/expired, and still in window)? */
 export function isMatchLive(m: any, nowMs: number = Date.now()): boolean {
   if (!m || m.ended_at) return false;
@@ -61,6 +77,9 @@ export async function releaseTimedOutMatches(userId: string): Promise<void> {
       .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
       .eq('id', m.id);
     await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [m.user_1_id, m.user_2_id]);
+    // Whoever got picked here and never accepted accrues an "ignored pick".
+    const ignorer = ignoringParty(m);
+    if (ignorer) await supabaseAdmin.rpc('bump_ignored_picks', { p_id: ignorer }).then(undefined, () => {});
   }
 }
 
@@ -108,6 +127,10 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
 
   // Record this user's acceptance.
   await supabaseAdmin.from('matches').update({ [field]: true }).eq('id', matchId);
+
+  // Re-engaged → clear any "ignored picks" bench (covers both accepting an
+  // incoming pick and pre-accepting your own pick). No-op if column unmigrated.
+  await supabaseAdmin.from('users').update({ ignored_picks: 0 }).eq('id', userId).then(undefined, () => {});
 
   if (otherAccepted) {
     // Mutual → full activation.

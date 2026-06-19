@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { releaseBalanceHolds } from '@/lib/balance'
+import { ignoringParty } from '@/lib/match-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +114,14 @@ export async function GET(req: NextRequest) {
     if (expiredPending && expiredPending.length > 0) {
       const ids = expiredPending.map((m: any) => m.id)
       await supabaseAdmin.from('matches').update({ status: 'expired' }).in('id', ids)
+      // Each pending that died without a yes = an "ignored pick" for the picked
+      // side. Past MAX_IGNORED_PICKS they get benched from rosters (see roster/pick).
+      await Promise.all(
+        expiredPending
+          .map((m: any) => ignoringParty(m))
+          .filter((id): id is string => !!id)
+          .map((id) => supabaseAdmin.rpc('bump_ignored_picks', { p_id: id }).then(undefined, () => {}))
+      )
     }
 
     // ============== 3) Collect all user IDs eligible to rematch ==============

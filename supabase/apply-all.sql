@@ -675,3 +675,14 @@ as $$
   where activity_id = any(p_ids)
   group by activity_id
 $$;
+
+-- ──────────────────────── 20260619_ignored_picks ────────────────────────
+-- Responsiveness gate: bench chronic no-shows (got picked, never accepted) from
+-- rosters once they've ignored > MAX_IGNORED_PICKS picks. Resets on any accept.
+alter table users add column if not exists ignored_picks int not null default 0;
+create or replace function bump_ignored_picks(p_id uuid)
+returns void
+language sql
+as $$
+  update users set ignored_picks = ignored_picks + 1 where id = p_id;
+$$;

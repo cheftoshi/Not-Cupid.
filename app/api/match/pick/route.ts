@@ -12,7 +12,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { compatibilityScore, isGenderMatch, isWithinRadius } from '@/lib/matching';
 import { intentOf } from '@/lib/pools';
-import { acceptMatch, releaseTimedOutMatches, liveMatchesFor, MAX_CONNECTIONS } from '@/lib/match-actions';
+import { acceptMatch, releaseTimedOutMatches, liveMatchesFor, MAX_CONNECTIONS, MAX_IGNORED_PICKS } from '@/lib/match-actions';
 import { DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
   const nowMs = Date.now();
   const eligible =
     candLive.length < MAX_CONNECTIONS &&
+    // Responsiveness gate: a chronic no-show is benched (graceful if unmigrated).
+    ((cand.ignored_picks ?? 0) <= MAX_IGNORED_PICKS) &&
     // Realm segregation: test ↔ test, real ↔ real only.
     ((cand.is_test === true) === ((user as any).is_test === true)) &&
     cand.pool_active !== false &&
