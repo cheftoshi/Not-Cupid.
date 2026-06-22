@@ -21,6 +21,12 @@ type Activity = {
   responses: { yes: number; maybe: number; no: number };
 };
 
+type Friend = {
+  otherId: string; name: string; age: number | null; photo_url: string | null;
+  archetype: string | null; metro: string | null; sharedActivities: string[];
+  connected: boolean; opened: boolean;
+};
+
 const BLUE = '#2563ff';
 const BLUE_DEEP = '#1b46c9';
 const ORANGE_DEEP = '#d2530f';
@@ -36,9 +42,10 @@ function whenLabel(iso: string | null): string {
 }
 
 export default function HubClient({
-  firstName, hasArchetype, needsLoveDeep, profile,
+  firstName, hasArchetype, needsLoveDeep, profile, city, matchRadius,
 }: {
   firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean; profile: Profile;
+  city?: string | null; matchRadius?: number;
 }) {
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
@@ -46,6 +53,8 @@ export default function HubClient({
   const [msg, setMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const [feed, setFeed] = useState<Activity[] | null>(null);
+  const [friends, setFriends] = useState<Friend[] | null>(null);
+  const [friendOptedIn, setFriendOptedIn] = useState(false);
 
   useEffect(() => {
     function onMove(e: MouseEvent) {
@@ -60,6 +69,15 @@ export default function HubClient({
       .then((r) => (r.ok ? r.json() : { activities: [] }))
       .then((d) => setFeed(Array.isArray(d.activities) ? d.activities : []))
       .catch(() => setFeed([]));
+    // Your friends — the people from your packs you've connected with. They
+    // persist across packs (opening a new pack only adds; it never drops anyone).
+    fetch('/api/friend/roster')
+      .then((r) => (r.ok ? r.json() : { matches: [] }))
+      .then((d) => {
+        setFriendOptedIn(!!d.optedIn);
+        setFriends(Array.isArray(d.matches) ? d.matches.filter((m: Friend) => m.opened) : []);
+      })
+      .catch(() => setFriends([]));
   }, []);
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -133,6 +151,11 @@ export default function HubClient({
               {meta
                 ? <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.85rem', color: BLUE, marginTop: '0.15rem' }}>{profile.archetype}</div>
                 : <Link href="/quiz?retake=1" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>finish your quiz →</Link>}
+              {city && (
+                <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: '#6b6975' }}>
+                  📍 {city}{matchRadius ? <span style={{ opacity: 0.7 }}> · {matchRadius}mi</span> : null}
+                </div>
+              )}
               {msg && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', color: msg.startsWith('✓') ? '#2d7a4f' : '#d2530f', marginTop: '0.4rem' }}>{msg}</div>}
             </div>
 
@@ -194,6 +217,39 @@ export default function HubClient({
                 </>
               )}
             </div>
+
+            {/* YOUR FRIENDS — persist across packs (opening a new pack only adds) */}
+            {friendOptedIn && friends !== null && (
+              <div className={styles.dCard}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span className={styles.dLabel}>your friends{friends.length ? ` · ${friends.length}` : ''}</span>
+                  {friends.length > 0 && <Link href="/friends?view=crew" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>group chat →</Link>}
+                </div>
+                {friends.length === 0 ? (
+                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
+                    no friends opened yet — <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>open your first pack 🎒 →</Link>
+                  </p>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                      {friends.slice(0, 12).map((f) => (
+                        <Link key={f.otherId} href="/friends?view=crew" title={f.sharedActivities.length ? `both into ${f.sharedActivities.slice(0, 2).join(', ')}` : undefined}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#faf7f3', border: '1px solid rgba(255,106,31,0.22)', borderRadius: 999, padding: '0.25rem 0.7rem 0.25rem 0.25rem', textDecoration: 'none' }}>
+                          {f.photo_url
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={f.photo_url} alt="" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover' }} />
+                            : <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#ffe6c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: ORANGE_DEEP, fontSize: '0.85rem' }}>{(f.name || '?').charAt(0)}</span>}
+                          <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.9rem', color: '#0a0a0a' }}>{(f.name || 'friend').split(' ')[0]}</span>
+                          {f.connected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3f7d57' }} title="in your crew" />}
+                        </Link>
+                      ))}
+                      {friends.length > 12 && <span style={{ alignSelf: 'center', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: '#9a96a8' }}>+{friends.length - 12} more</span>}
+                    </div>
+                    <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '0.8rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>🎒 open another pack →</Link>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* YOUR EVENTS (RSVP'd) */}
             <div className={styles.dCard}>

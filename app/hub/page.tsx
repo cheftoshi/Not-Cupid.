@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
+import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import HubClient from './hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,9 @@ export default async function HubPage() {
 
   const firstName = (user.name || 'friend').split(' ')[0];
   const onWaitlist = !!user.friend_waitlist_at;
+  // The user's metro — we now span all of New England + NYC, so show where they are.
+  const metro = metroOf(user.zip);
+  const city = metro && METRO_CENTERS[metro] ? `${METRO_CENTERS[metro].city}, ${METRO_CENTERS[metro].state}` : null;
   // Boarding Love runs the deeper romantic quiz (partner + attachment + values)
   // once. Done = they have an attachment style on file.
   const needsLoveDeep = !!user.archetype && !user.attach_style;
@@ -34,5 +38,5 @@ export default async function HubPage() {
     hobbies: user.hobbies ?? [],
   };
 
-  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} />;
+  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} matchRadius={user.match_radius ?? 15} />;
 }

@@ -63,6 +63,8 @@ export async function GET() {
       iAccepted: !!iAccepted,
       theyAccepted: !!theyAccepted,
       connected: c.status === 'connected',
+      // Revealed friend (vs still sealed in a pack). Graceful pre-migration.
+      opened: !('opened_at' in c) || (c as any).opened_at != null,
     };
   });
 
