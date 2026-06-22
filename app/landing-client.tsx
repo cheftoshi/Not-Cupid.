@@ -99,7 +99,7 @@ export default function LandingClient({ stats }: { stats: Stats }) {
         </div>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
           {[['about', '/about'], ['faq', '/faq'], ['safety', '/safety'], ['privacy', '/privacy'], ['terms', '/terms']].map(([label, href]) => (
-            <Link key={label} href={href} style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'lowercase', color: '#6b6975', textDecoration: 'none' }}>{label}</Link>
+            <Link key={label} href={href} style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'lowercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>{label}</Link>
           ))}
         </div>
         <div className={styles.landFootCorp}>

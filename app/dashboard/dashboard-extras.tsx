@@ -47,15 +47,15 @@ function WhatsNewModal({ onClose }: { onClose: () => void }) {
       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2563ff', marginBottom: 8 }}>
         what&apos;s new
       </div>
-      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: '#0b0b0b', margin: '0 0 18px 0', lineHeight: 1.15 }}>
+      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
         we&apos;ve been busy.
       </h2>
       {CHANGELOG.map((entry) => (
         <div key={entry.date} style={{ marginBottom: 18 }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6b76', marginBottom: 10 }}>{entry.date}</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: 10 }}>{entry.date}</div>
           <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {entry.items.map((it, i) => (
-              <li key={i} style={{ fontFamily: 'system-ui, sans-serif', fontSize: 14, lineHeight: 1.5, color: '#0b0b0b' }}>{it}</li>
+              <li key={i} style={{ fontFamily: 'system-ui, sans-serif', fontSize: 14, lineHeight: 1.5, color: 'var(--h-text)' }}>{it}</li>
             ))}
           </ul>
         </div>
@@ -93,8 +93,8 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
       {state === 'done' ? (
         <div style={{ textAlign: 'center', padding: '1rem 0' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🙏</div>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: '#0b0b0b', margin: '0 0 10px 0' }}>thank you.</h2>
-          <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px 0' }}>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 10px 0' }}>thank you.</h2>
+          <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px 0' }}>
             we read every note — it genuinely shapes what we build next.
           </p>
           <button onClick={onClose} style={primaryBtn}>close</button>
@@ -104,8 +104,8 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2563ff', marginBottom: 8 }}>
             feedback
           </div>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: '#0b0b0b', margin: '0 0 6px 0' }}>tell us anything.</h2>
-          <p style={{ fontFamily: 'system-ui, sans-serif', color: '#6b6b76', fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px 0' }}>
+          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 6px 0' }}>tell us anything.</h2>
+          <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px 0' }}>
             a bug, an idea, a gripe, a win — it all helps. we&apos;re a small team in Boston actually reading this.
           </p>
           <textarea
@@ -115,11 +115,11 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
             rows={5}
             placeholder="what's on your mind?"
             style={{
-              width: '100%', borderRadius: 12, border: '1px solid rgba(11,11,11,0.15)', padding: '12px 14px',
-              fontFamily: 'system-ui, sans-serif', fontSize: 14, resize: 'vertical', outline: 'none', color: '#0b0b0b',
+              width: '100%', borderRadius: 12, border: '1px solid var(--h-border)', padding: '12px 14px',
+              fontFamily: 'system-ui, sans-serif', fontSize: 14, resize: 'vertical', outline: 'none', color: 'var(--h-text)',
             }}
           />
-          {state === 'error' && <p style={{ color: '#d2530f', fontSize: 12, margin: '8px 0 0', fontFamily: "'DM Mono', monospace" }}>{err}</p>}
+          {state === 'error' && <p style={{ color: 'var(--h-accent-2)', fontSize: 12, margin: '8px 0 0', fontFamily: "'DM Mono', monospace" }}>{err}</p>}
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <button onClick={onClose} style={ghostBtn}>cancel</button>
             <button onClick={submit} disabled={!body.trim() || state === 'sending'} style={{ ...primaryBtn, flex: 1, opacity: !body.trim() || state === 'sending' ? 0.5 : 1 }}>
@@ -135,7 +135,7 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
 function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 460, width: '100%', padding: 26, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px -20px rgba(11,11,11,0.4)' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 16, maxWidth: 460, width: '100%', padding: 26, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px -20px rgba(11,11,11,0.4)' }}>
         {children}
       </div>
     </div>
@@ -144,11 +144,11 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
 
 function pillBtn(highlight: boolean): React.CSSProperties {
   return {
-    background: highlight ? '#e8edff' : '#fff',
-    border: `1px solid ${highlight ? 'rgba(37,99,255,0.35)' : 'rgba(11,11,11,0.12)'}`,
+    background: highlight ? 'var(--h-surface-2)' : 'var(--h-surface)',
+    border: `1px solid ${highlight ? 'var(--h-border)' : 'var(--h-border)'}`,
     cursor: 'pointer', position: 'relative', borderRadius: 999, padding: '0.45rem 0.9rem',
     fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
-    color: highlight ? '#1b46c9' : '#6b6b76',
+    color: highlight ? 'var(--h-accent)' : 'var(--h-text-dim)',
   };
 }
 const dot: React.CSSProperties = {
@@ -159,6 +159,6 @@ const primaryBtn: React.CSSProperties = {
   fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer',
 };
 const ghostBtn: React.CSSProperties = {
-  background: 'transparent', color: '#6b6b76', border: '1px solid rgba(11,11,11,0.15)', borderRadius: 999, padding: '12px 18px',
+  background: 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '12px 18px',
   fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer',
 };

@@ -7,6 +7,7 @@ import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
 import PwaPrompt from '@/components/pwa-prompt';
 import Wordmark from '@/components/wordmark';
+import ThemeToggle from '@/components/theme-toggle';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
@@ -137,6 +138,7 @@ export default async function DashboardPage({
             <a href="/profile/preview" className={styles.navLink}>Preview</a>
             <a href="/dashboard" className={`${styles.navLink} ${styles.navLinkActive}`}>Matches</a>
             <a href="/quiz?retake=1" className={styles.navLink}>Retake quiz</a>
+            <ThemeToggle style={{ width: 30, height: 30 }} />
           </div>
         </nav>
 

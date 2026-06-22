@@ -149,14 +149,14 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
           <span className={styles.phaseLabel}>{wasPassed ? 'match ended' : 'match expired'}</span>
         </div>
         <h2 className={styles.matchName} style={{ marginBottom: '0.6rem' }}>{wasPassed ? 'on to the next.' : `${first} got away.`}</h2>
-        <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.95rem', lineHeight: 1.55, margin: '0 0 1.25rem' }}>
+        <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, margin: '0 0 1.25rem' }}>
           {wasPassed
             ? 'this one didn’t move forward — no hard feelings. the right match is still out there, and you’re back in line.'
             : 'this one timed out before you both locked in. it happens — and you’re already back in line.'}
         </p>
-        <div style={{ background: 'linear-gradient(135deg,#e8edff,#fff)', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.25rem' }}>
+        <div style={{ background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.25rem' }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.4rem' }}>✦ you&apos;re back in the pool</div>
-          <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.9rem', color: '#0a0a0a', lineHeight: 1.5 }}>
+          <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.9rem', color: 'var(--h-text)', lineHeight: 1.5 }}>
             your roster's open below — your most compatible people, ready when you are.
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
         ) : null;
       })()}
       {beyondRadius && (
-        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: '#d2530f', margin: '0 0 1rem', lineHeight: 1.45 }}>
+        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--h-accent-2)', margin: '0 0 1rem', lineHeight: 1.45 }}>
           heads up — this one&apos;s a bit past your usual range, surfaced because the local pool was thin.
         </div>
       )}
@@ -230,11 +230,11 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
               const pct = Math.min(100, Math.round((score / HEXACO_MAX) * 100));
               return (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6975', width: 120, flexShrink: 0 }}>{label}</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', width: 120, flexShrink: 0 }}>{label}</span>
                   <span style={{ flex: 1, height: 4, background: 'rgba(37,99,255,0.15)', borderRadius: 999, overflow: 'hidden' }}>
                     <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: '#2563ff', borderRadius: 999 }} />
                   </span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: '#1b46c9', width: 26, textAlign: 'right' }}>{pct}</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--h-accent)', width: 26, textAlign: 'right' }}>{pct}</span>
                 </div>
               );
             })}
@@ -265,7 +265,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
                     <span
                       key={k}
                       className={styles.tag}
-                      style={{ background: 'rgba(37,99,255,0.13)', color: '#1b46c9', borderColor: 'rgba(37,99,255,0.35)' }}
+                      style={{ background: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', borderColor: 'var(--h-border)' }}
                     >
                       <span style={{ opacity: 0.55, marginRight: '0.4rem', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{VIBE_HEADS[k]}</span>
                       {label}
@@ -321,7 +321,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
             <button onClick={() => handleUnlock('profile')} disabled={busy} className={styles.unlockButton}>
               {busy ? 'loading...' : 'open full profile — $0.99 →'}
             </button>
-            <a href="/pro" style={{ display: 'block', marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1b46c9', textDecoration: 'none' }}>
+            <a href="/pro" style={{ display: 'block', marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none' }}>
               ✦ or unlock everyone with Pro · $3.99/mo →
             </a>
           </div>

@@ -115,7 +115,7 @@ export default function DateVibesClient({ matchId, currentUserId, partnerName }:
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#f6f6f6', padding: '2rem 1.25rem 4rem' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--h-bg)', padding: '2rem 1.25rem 4rem' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <Header partnerName={partnerName} matchId={matchId} />
 
@@ -166,7 +166,7 @@ function DateMeter({ dateNumber }: { dateNumber: number }) {
   const copy = TIER_COPY[dateNumber] || TIER_COPY[1];
   return (
     <div style={{
-      background: '#fff', border: '1px solid rgba(11,11,11,0.08)', borderRadius: 16,
+      background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 16,
       padding: '18px 20px', marginBottom: 20,
       boxShadow: '0 1px 2px rgba(11,11,11,0.03)',
     }}>
@@ -174,8 +174,8 @@ function DateMeter({ dateNumber }: { dateNumber: number }) {
         {[1, 2, 3].map((n, i) => {
           const done = n < dateNumber;
           const active = n === dateNumber;
-          const dotBg = done ? '#1b46c9' : active ? '#2563ff' : '#e8edff';
-          const dotColor = done || active ? '#fff' : '#9aa0b4';
+          const dotBg = done ? '#1b46c9' : active ? '#2563ff' : 'var(--h-surface-2)';
+          const dotColor = done || active ? '#fff' : 'var(--h-text-faint)';
           return (
             <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < 2 ? 1 : '0 0 auto' }}>
               <div style={{
@@ -187,7 +187,7 @@ function DateMeter({ dateNumber }: { dateNumber: number }) {
                 transition: 'all 0.2s',
               }}>{done ? '✓' : n}</div>
               {i < 2 && (
-                <div style={{ flex: 1, height: 2, background: n < dateNumber ? '#1b46c9' : '#e8edff', margin: '0 6px' }} />
+                <div style={{ flex: 1, height: 2, background: n < dateNumber ? '#1b46c9' : 'var(--h-surface-2)', margin: '0 6px' }} />
               )}
             </div>
           );
@@ -196,7 +196,7 @@ function DateMeter({ dateNumber }: { dateNumber: number }) {
       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', marginBottom: 4 }}>
         date {dateNumber} · {copy.label}
       </div>
-      <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 14, color: '#6b6b76', lineHeight: 1.45 }}>
+      <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 14, color: 'var(--h-text-dim)', lineHeight: 1.45 }}>
         {copy.tagline}
       </div>
     </div>
@@ -211,10 +211,10 @@ function Header({ partnerName, matchId }: { partnerName: string; matchId: string
       <a href={`/match/${matchId}`} style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>
         ← back to chat with {first}
       </a>
-      <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 36, color: '#0e0c1a', margin: '14px 0 6px 0', lineHeight: 1.1 }}>
+      <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 36, color: 'var(--h-text)', margin: '14px 0 6px 0', lineHeight: 1.1 }}>
         Date vibes <span style={{ color: '#2563ff' }}>·</span> you &amp; {first}
       </h1>
-      <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+      <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
         Swipe through things you'd actually do together. When you both swipe ✓ on the same thing, it's locked in as a "we both want this." No one sees the other's no's.
       </p>
     </div>
@@ -225,16 +225,16 @@ function Header({ partnerName, matchId }: { partnerName: string; matchId: string
 function MutualMatches({ matches, partnerName }: { matches: Activity[]; partnerName: string }) {
   const first = partnerName.split(' ')[0];
   return (
-    <div style={{ background: 'linear-gradient(135deg, #e8edff, #fff)', border: '1px solid rgba(37,99,255,0.4)', borderRadius: 14, padding: 18, marginBottom: 24 }}>
+    <div style={{ background: 'var(--h-surface-2)', border: '1px solid rgba(37,99,255,0.4)', borderRadius: 14, padding: 18, marginBottom: 24 }}>
       <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>
         ✦ you both want this {matches.length > 1 ? `(${matches.length})` : ''}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {matches.map((a) => (
-          <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '10px 12px', background: '#fff', borderRadius: 8, border: '1px solid rgba(14,12,26,0.06)' }}>
+          <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '10px 12px', background: 'var(--h-surface)', borderRadius: 8, border: '1px solid var(--h-border)' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: '#0e0c1a', fontWeight: 500, lineHeight: 1.3 }}>{a.title}</div>
-              <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: 12, color: '#7a7590', marginTop: 4 }}>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: 16, color: 'var(--h-text)', fontWeight: 500, lineHeight: 1.3 }}>{a.title}</div>
+              <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: 12, color: 'var(--h-text-dim)', marginTop: 4 }}>
                 {[a.venue, a.whenLabel].filter(Boolean).join(' · ')}
               </div>
             </div>
@@ -246,7 +246,7 @@ function MutualMatches({ matches, partnerName }: { matches: Activity[]; partnerN
           </div>
         ))}
       </div>
-      <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 13, color: '#7a7590', margin: '12px 0 0 0' }}>
+      <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 13, color: 'var(--h-text-dim)', margin: '12px 0 0 0' }}>
         send {first} a message and lock in the time →
       </p>
     </div>
@@ -267,14 +267,14 @@ function Picker({
   const first = partnerName.split(' ')[0];
   const partnerHas = new Set(partnerInterests);
   return (
-    <div style={{ background: '#fff', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14, padding: 24 }}>
+    <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 14, padding: 24 }}>
       <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
         let's set your date vibes
       </div>
-      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: '#0e0c1a', margin: '0 0 8px 0', lineHeight: 1.2 }}>
+      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: 'var(--h-text)', margin: '0 0 8px 0', lineHeight: 1.2 }}>
         What's the first vibe date?
       </h2>
-      <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 13, marginTop: 0, marginBottom: 18, lineHeight: 1.5 }}>
+      <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 13, marginTop: 0, marginBottom: 18, lineHeight: 1.5 }}>
         Pick 3-8 things you're into — we'll use both of your picks to filter the deck.
         {partnerInterests.length > 0
           ? <> {first} has already picked {partnerInterests.length}. The <span style={{ color: '#1b46c9' }}>⋆</span> shows overlap.</>
@@ -291,9 +291,9 @@ function Picker({
               type="button"
               onClick={() => onToggle(opt.value)}
               style={{
-                background: on ? '#0e0c1a' : '#fff',
-                color: on ? '#f6f6f6' : '#0e0c1a',
-                border: `1px solid ${on ? '#0e0c1a' : 'rgba(14,12,26,0.13)'}`,
+                background: on ? '#0e0c1a' : 'var(--h-surface)',
+                color: on ? '#f6f6f6' : 'var(--h-text)',
+                border: `1px solid ${on ? '#0e0c1a' : 'var(--h-border)'}`,
                 padding: '10px 16px',
                 fontFamily: 'system-ui, sans-serif',
                 fontSize: 14,
@@ -347,10 +347,10 @@ function Deck({
 
   if (!card) {
     return (
-      <div style={{ background: '#fff', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14, padding: 32, textAlign: 'center' }}>
+      <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 14, padding: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
-        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: '#0e0c1a', margin: '0 0 10px 0' }}>You're through the deck.</h2>
-        <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 14, lineHeight: 1.6, margin: '0 0 18px 0' }}>
+        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 10px 0' }}>You're through the deck.</h2>
+        <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 18px 0' }}>
           Want more options? Add some interests, or refresh later — new live events drop in regularly.
         </p>
         <button type="button" onClick={onChangeInterests} style={btnSecondary}>change interests</button>
@@ -361,7 +361,7 @@ function Deck({
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#7a7590', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'var(--h-text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           {remaining} left in deck
         </div>
         <button type="button" onClick={onChangeInterests} style={{ background: 'transparent', border: 'none', fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#1b46c9', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
@@ -385,7 +385,7 @@ function Deck({
 
 function ActivityCard({ card }: { card: Activity }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 12px 32px -16px rgba(27,70,201,0.25)' }}>
+    <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 12px 32px -16px rgba(27,70,201,0.25)' }}>
       {card.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={card.imageUrl} alt="" style={{ width: '100%', height: 240, objectFit: 'cover', display: 'block' }} />
@@ -396,23 +396,23 @@ function ActivityCard({ card }: { card: Activity }) {
             {card.category}{sourceBadge(card.source)}
           </span>
           {card.whenLabel && (
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#0e0c1a', fontWeight: 600 }}>{card.whenLabel}</span>
+            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--h-text)', fontWeight: 600 }}>{card.whenLabel}</span>
           )}
         </div>
-        <h3 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: '#0e0c1a', margin: '0 0 10px 0', lineHeight: 1.25 }}>
+        <h3 style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: 'var(--h-text)', margin: '0 0 10px 0', lineHeight: 1.25 }}>
           {card.title}
         </h3>
-        <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 14, lineHeight: 1.55, margin: '0 0 14px 0' }}>
+        <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.55, margin: '0 0 14px 0' }}>
           {card.blurb}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {card.venue && (
-            <span style={{ background: '#e8edff', color: '#1b46c9', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
+            <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-accent)', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
               📍 {card.venue}
             </span>
           )}
           {card.tags.map((t) => (
-            <span key={t} style={{ background: '#f6f6f6', color: '#7a7590', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
+            <span key={t} style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Mono, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
               {t}
             </span>
           ))}
@@ -426,15 +426,15 @@ function CelebrateModal({ activity, partnerName, onClose }: { activity: Activity
   const first = partnerName.split(' ')[0];
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,12,26,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }} onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: 28, textAlign: 'center', border: '2px solid #2563ff' }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: 'var(--h-surface)', borderRadius: 14, maxWidth: 440, width: '100%', padding: 28, textAlign: 'center', border: '2px solid #2563ff' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 44, marginBottom: 8 }}>✦</div>
         <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
           you both said yes
         </div>
-        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: '#0e0c1a', margin: '0 0 12px 0', lineHeight: 1.2 }}>
+        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: 'var(--h-text)', margin: '0 0 12px 0', lineHeight: 1.2 }}>
           {activity.title}
         </h2>
-        <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', fontSize: 14, lineHeight: 1.6, margin: '0 0 22px 0' }}>
+        <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 22px 0' }}>
           You and {first} both want this. Message them and lock in the time.
         </p>
         <button type="button" onClick={onClose} style={btnPrimary}>keep swiping</button>
@@ -454,8 +454,8 @@ function sourceBadge(source: Activity['source']): string {
 
 function CenteredMsg({ text, tone }: { text: string; tone?: 'error' }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#f6f6f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 12, color: tone === 'error' ? '#d94f3d' : '#7a7590', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{text}</p>
+    <main style={{ minHeight: '100vh', background: 'var(--h-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 12, color: tone === 'error' ? '#d94f3d' : 'var(--h-text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{text}</p>
     </main>
   );
 }
@@ -475,8 +475,8 @@ const btnPrimary: React.CSSProperties = {
 };
 const btnSecondary: React.CSSProperties = {
   background: 'transparent',
-  color: '#7a7590',
-  border: '1px solid rgba(14,12,26,0.13)',
+  color: 'var(--h-text-dim)',
+  border: '1px solid var(--h-border)',
   padding: '16px 24px',
   fontFamily: 'DM Mono, monospace',
   fontSize: 12,

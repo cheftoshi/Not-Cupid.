@@ -36,9 +36,9 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
   const first = (user.name || 'there').split(' ')[0];
 
   return (
-    <main style={{ minHeight: '100vh', background: '#f6f6f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div style={{ maxWidth: 520, width: '100%', background: '#fff', padding: '2.5rem', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14 }}>
-        <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 26, letterSpacing: '0.14em', color: '#0e0c1a', marginBottom: 24 }}>
+    <main style={{ minHeight: '100vh', background: 'var(--h-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ maxWidth: 520, width: '100%', background: 'var(--h-surface)', padding: '2.5rem', border: '1px solid var(--h-border)', borderRadius: 14 }}>
+        <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 26, letterSpacing: '0.14em', color: 'var(--h-text)', marginBottom: 24 }}>
           NOT<span style={{ color: '#2563ff' }}>CUPID</span>
         </div>
 
@@ -47,14 +47,14 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
             <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
               unsubscribe
             </div>
-            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 30, color: '#0e0c1a', margin: '0 0 18px 0', lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
               Hold on, {first}. Read this first.
             </h1>
-            <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', lineHeight: 1.65, fontSize: 15 }}>
-              Unsubscribing turns off <em>all</em> NotCupid emails — including the one telling you about a new match. Because the app has no in-app notifications, this also <strong style={{ color: '#0e0c1a' }}>pauses you from the matching pool</strong>. You won't be considered for new matches until you turn this back on.
+            <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15 }}>
+              Unsubscribing turns off <em>all</em> NotCupid emails — including the one telling you about a new match. Because the app has no in-app notifications, this also <strong style={{ color: 'var(--h-text)' }}>pauses you from the matching pool</strong>. You won't be considered for new matches until you turn this back on.
             </p>
-            <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', lineHeight: 1.65, fontSize: 15, marginBottom: 28 }}>
-              You can re-enable both at any time from <a href="/profile" style={{ color: '#1b46c9' }}>your profile</a>.
+            <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15, marginBottom: 28 }}>
+              You can re-enable both at any time from <a href="/profile" style={{ color: 'var(--h-accent)' }}>your profile</a>.
             </p>
 
             <div style={{ display: 'flex', gap: 12 }}>
@@ -83,8 +83,8 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
                 style={{
                   flex: 1,
                   background: 'transparent',
-                  color: '#7a7590',
-                  border: '1px solid rgba(14,12,26,0.13)',
+                  color: 'var(--h-text-dim)',
+                  border: '1px solid var(--h-border)',
                   padding: '14px 24px',
                   fontFamily: 'DM Mono, monospace',
                   fontSize: 11,
@@ -108,14 +108,14 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
             <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
               paused.
             </div>
-            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 30, color: '#0e0c1a', margin: '0 0 18px 0', lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
               You're out of the pool, {first}.
             </h1>
-            <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', lineHeight: 1.65, fontSize: 15 }}>
-              No more emails to <strong style={{ color: '#0e0c1a' }}>{user.email}</strong>. You won't be matched until you turn this back on. Active matches you already have are preserved.
+            <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15 }}>
+              No more emails to <strong style={{ color: 'var(--h-text)' }}>{user.email}</strong>. You won't be matched until you turn this back on. Active matches you already have are preserved.
             </p>
-            <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', lineHeight: 1.65, fontSize: 15, marginBottom: 28 }}>
-              Change your mind? <a href="/profile" style={{ color: '#1b46c9' }}>Re-enable from your profile →</a>
+            <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15, marginBottom: 28 }}>
+              Change your mind? <a href="/profile" style={{ color: 'var(--h-accent)' }}>Re-enable from your profile →</a>
             </p>
           </>
         )}

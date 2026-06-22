@@ -56,7 +56,7 @@ export default function PrivacyPage() {
       <h2>Changes</h2>
       <p>If we make material changes to this policy, we&apos;ll update the date above and, where appropriate, let you know in the app. Continued use means you accept the current version.</p>
 
-      <p style={{ marginTop: '1.5rem', color: '#6b6b76', fontSize: '0.85rem' }}>This policy is written to be readable, not to be legalese. For questions about your data, reach us at <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
+      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>This policy is written to be readable, not to be legalese. For questions about your data, reach us at <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
     </LegalPage>
   );
 }

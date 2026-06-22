@@ -383,7 +383,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           />
           <span>
             Email me about new matches and messages
-            <span style={{display:'block',fontSize:'.7rem',color:'#7a7590',marginTop:'.25rem',fontStyle:'italic'}}>
+            <span style={{display:'block',fontSize:'.7rem',color:'var(--h-text-dim)',marginTop:'.25rem',fontStyle:'italic'}}>
               Turning this off also pauses you from the matching pool — NotCupid has no in-app notifications.
             </span>
           </span>

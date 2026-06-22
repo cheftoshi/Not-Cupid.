@@ -107,7 +107,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
 
   const pill: React.CSSProperties = {
     border: `1.5px solid ${accent}`,
-    background: '#fff',
+    background: 'var(--h-surface)',
     color: accent,
     borderRadius: 999,
     padding: '0.55rem 1.05rem',
@@ -129,14 +129,14 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
         <button onClick={install} style={pill}>📲 install the app</button>
       )}
       {showInstall === 'ios' && (
-        <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: '#6b6975' }}>
+        <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--h-text-dim)' }}>
           📲 on iPhone: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install
         </span>
       )}
       <button
         onClick={dismiss}
         aria-label="dismiss"
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9a96a8', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: 0 }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: 0 }}
       >
         not now
       </button>

@@ -157,11 +157,11 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   function renderVibeOption(o: any) {
     return (
       <button key={o.id} onClick={() => pickVibe(o.id, o._sel)} disabled={vibePending === o.id}
-        style={{ textAlign: 'left', display: 'flex', gap: '0.6rem', alignItems: 'center', cursor: 'pointer', background: o._sel ? '#0a0a0a' : '#fff', color: o._sel ? '#fff' : '#0a0a0a', border: `1px solid ${o._sel ? '#0a0a0a' : 'rgba(37,99,255,0.3)'}`, borderRadius: 12, padding: '0.6rem 0.75rem', font: 'inherit', opacity: vibePending === o.id ? 0.5 : 1, width: '100%' }}>
+        style={{ textAlign: 'left', display: 'flex', gap: '0.6rem', alignItems: 'center', cursor: 'pointer', background: o._sel ? '#0a0a0a' : 'var(--h-surface)', color: o._sel ? '#fff' : 'var(--h-text)', border: `1px solid ${o._sel ? '#0a0a0a' : 'rgba(37,99,255,0.3)'}`, borderRadius: 12, padding: '0.6rem 0.75rem', font: 'inherit', opacity: vibePending === o.id ? 0.5 : 1, width: '100%' }}>
         <span style={{ width: 18, height: 18, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', border: `1.5px solid ${o._sel ? '#2563ff' : 'rgba(37,99,255,0.5)'}`, background: o._sel ? '#2563ff' : 'transparent', color: '#fff' }}>{o._sel ? '✓' : ''}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: '0.86rem', fontWeight: 600, lineHeight: 1.25, display: 'block' }}>{o.title}</span>
-          {(o.venue || o.whenLabel) && <span style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.52rem', color: o._sel ? '#c8c4dc' : '#7a7590', letterSpacing: '0.04em' }}>{[o.venue, o.whenLabel].filter(Boolean).join(' · ')}</span>}
+          {(o.venue || o.whenLabel) && <span style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.52rem', color: o._sel ? '#c8c4dc' : 'var(--h-text-dim)', letterSpacing: '0.04em' }}>{[o.venue, o.whenLabel].filter(Boolean).join(' · ')}</span>}
         </span>
       </button>
     );
@@ -273,16 +273,16 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Match options"
             title="Match options"
-            style={{ background: menuOpen ? 'rgba(11,11,11,0.06)' : 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.15rem', lineHeight: 1, padding: '0.3rem 0.5rem', borderRadius: 8, color: '#6b6b76' }}
+            style={{ background: menuOpen ? 'rgba(11,11,11,0.06)' : 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.15rem', lineHeight: 1, padding: '0.3rem 0.5rem', borderRadius: 8, color: 'var(--h-text-dim)' }}
           >
             ⋯
           </button>
           {menuOpen && (
             <>
               <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 41, background: '#fff', border: '1px solid rgba(11,11,11,0.1)', borderRadius: 12, boxShadow: '0 10px 30px rgba(11,11,11,0.14)', overflow: 'hidden', minWidth: 184 }}>
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 41, background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 12, boxShadow: '0 10px 30px rgba(11,11,11,0.14)', overflow: 'hidden', minWidth: 184 }}>
                 <button onClick={() => { setMenuOpen(false); setEndOpen(true); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '0.8rem 1rem', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.7rem', letterSpacing: '0.05em', color: '#0b0b0b' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '0.8rem 1rem', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.7rem', letterSpacing: '0.05em', color: 'var(--h-text)' }}>
                   <span style={{ fontSize: '0.95rem' }}>💔</span> End match
                 </button>
                 <button onClick={() => { setMenuOpen(false); setReportOpen(true); }}
@@ -341,7 +341,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
       {nudge && <div className={styles.nudge}>{nudge}</div>}
 
       {readOnly ? (
-        <div style={{ padding: '0.9rem 1rem', textAlign: 'center', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.85rem', borderTop: '1px solid rgba(11,11,11,0.08)' }}>
+        <div style={{ padding: '0.9rem 1rem', textAlign: 'center', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', borderTop: '1px solid var(--h-border)' }}>
           this conversation has ended — you can still read it, but messages are closed.
         </div>
       ) : (
@@ -371,24 +371,24 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
       <aside className={styles.vibesCol}>
         <div className={styles.vibesInner}>
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>✦ date vibes</div>
-          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.3rem', lineHeight: 1.1, color: '#0a0a0a' }}>you &amp; {firstName}</div>
+          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.3rem', lineHeight: 1.1, color: 'var(--h-text)' }}>you &amp; {firstName}</div>
           {vibes?.dateNumber && (
-            <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#7a7590', marginTop: '0.3rem' }}>
+            <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.3rem' }}>
               date {vibes.dateNumber} · {TIER_LABEL[vibes.dateNumber] || ''}
             </div>
           )}
 
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.1rem 0 0.6rem' }}>✓ you both want this</div>
           {!vibes ? (
-            <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
+            <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
           ) : vibes.mutualMatches?.length ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {vibes.mutualMatches.map((a: any) => (
-                <div key={a.id} style={{ background: '#f6f8ff', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 14, padding: '0.75rem 0.85rem' }}>
+                <div key={a.id} style={{ background: 'var(--h-surface-2)', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 14, padding: '0.75rem 0.85rem' }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', lineHeight: 1.25 }}>{a.title}</div>
-                  {a.blurb && <div style={{ fontSize: '0.78rem', color: '#6b6975', lineHeight: 1.4, marginTop: '0.2rem' }}>{a.blurb}</div>}
+                  {a.blurb && <div style={{ fontSize: '0.78rem', color: 'var(--h-text-dim)', lineHeight: 1.4, marginTop: '0.2rem' }}>{a.blurb}</div>}
                   {(a.venue || a.whenLabel) && (
-                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.06em', color: '#7a7590', marginTop: '0.4rem' }}>
+                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>
                       {[a.venue, a.whenLabel].filter(Boolean).join(' · ')}
                     </div>
                   )}
@@ -397,7 +397,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
               ))}
             </div>
           ) : (
-            <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>
+            <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>
               nothing locked in yet — pick the same things below and what you <em>both</em> want locks in here.
             </div>
           )}
@@ -405,7 +405,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           {/* MULTIPLE CHOICE — date ideas by default; live events are opt-in */}
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>pick what you&apos;d do</div>
           {!vibes ? (
-            <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
+            <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
           ) : (() => {
             const all = [
               ...(vibes.myPicks || []).map((a: any) => ({ ...a, _sel: true })),
@@ -416,19 +416,19 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             return (
               <>
                 {curated.length === 0 ? (
-                  <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>no date ideas left right now — check back soon.</div>
+                  <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>no date ideas left right now — check back soon.</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {curated.slice(0, 12).map(renderVibeOption)}
-                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a8a3b8', textAlign: 'center', marginTop: '0.2rem' }}>tap to pick · locks when you both choose it</div>
+                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textAlign: 'center', marginTop: '0.2rem' }}>tap to pick · locks when you both choose it</div>
                   </div>
                 )}
-                <button onClick={() => setShowLive((v) => !v)} style={{ width: '100%', marginTop: '0.8rem', background: '#fff', border: '1px solid rgba(37,99,255,0.35)', color: '#1b46c9', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.6rem', borderRadius: 12, cursor: 'pointer' }}>
+                <button onClick={() => setShowLive((v) => !v)} style={{ width: '100%', marginTop: '0.8rem', background: 'var(--h-surface)', border: '1px solid rgba(37,99,255,0.35)', color: 'var(--h-accent)', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.6rem', borderRadius: 12, cursor: 'pointer' }}>
                   🎟️ {showLive ? 'hide live events' : `check out live events${live.length ? ` (${live.length})` : ''}`}
                 </button>
                 {showLive && (
                   live.length === 0 ? (
-                    <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', lineHeight: 1.45, marginTop: '0.6rem' }}>nothing live right now — concerts &amp; events drop in when there&apos;s something on.</div>
+                    <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', lineHeight: 1.45, marginTop: '0.6rem' }}>nothing live right now — concerts &amp; events drop in when there&apos;s something on.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.6rem' }}>
                       {live.slice(0, 12).map(renderVibeOption)}
@@ -444,14 +444,14 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           {vibes?.partnerInterests?.length ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
               {vibes.partnerInterests.map((i: string) => (
-                <span key={i} style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', background: '#e8edff', color: '#1b46c9', borderRadius: 999, padding: '0.25rem 0.6rem' }}>{INTEREST_LABELS[i] || i}</span>
+                <span key={i} style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', background: 'var(--h-surface-2)', color: 'var(--h-accent)', borderRadius: 999, padding: '0.25rem 0.6rem' }}>{INTEREST_LABELS[i] || i}</span>
               ))}
             </div>
           ) : (
-            <div style={{ color: '#9a96a8', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem' }}>they haven&apos;t picked their interests yet.</div>
+            <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem' }}>they haven&apos;t picked their interests yet.</div>
           )}
 
-          <button onClick={() => setFeedbackOpen(true)} style={{ width: '100%', marginTop: '1.75rem', background: '#fff', border: '1px solid rgba(37,99,255,0.35)', color: '#0a0a0a', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.7rem', borderRadius: 12, cursor: 'pointer' }}>
+          <button onClick={() => setFeedbackOpen(true)} style={{ width: '100%', marginTop: '1.75rem', background: 'var(--h-surface)', border: '1px solid rgba(37,99,255,0.35)', color: 'var(--h-text)', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.7rem', borderRadius: 12, cursor: 'pointer' }}>
             🍷 we went on a date
           </button>
         </div>

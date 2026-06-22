@@ -22,33 +22,33 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #f6f6f6 0%, #eef1ff 100%)', color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.15rem', color: BLUE }}>not<span style={{ color: ORANGE }}>cupid</span></span>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: BLUE_DEEP }}>how it works</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>how it works</span>
           </div>
-          <Link href="/" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>← back</Link>
+          <Link href="/" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none' }}>← back</Link>
         </div>
 
-        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: '#6b6975', marginBottom: '0.6rem' }}>a connection experiment</div>
-        <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.6rem,9vw,3.8rem)', lineHeight: 1, color: INK, margin: '0 0 0.5rem' }}>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.6rem' }}>a connection experiment</div>
+        <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.6rem,9vw,3.8rem)', lineHeight: 1, color: 'var(--h-text)', margin: '0 0 0.5rem' }}>
           meet people. <span style={{ color: BLUE }}>not profiles.</span>
         </h1>
-        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '1.05rem', margin: '0 0 2rem' }}>
+        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 2rem' }}>
           one quiz, two lines, real connection — the algo does the heavy lifting.
         </p>
 
         {/* the line runs down the left of the stops */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-          <div style={{ position: 'absolute', left: 26, top: 24, bottom: 24, width: 4, background: LAV, borderRadius: 999, zIndex: 0 }} />
+          <div style={{ position: 'absolute', left: 26, top: 24, bottom: 24, width: 4, background: 'var(--h-surface-2)', borderRadius: 999, zIndex: 0 }} />
           {STEPS.map((s) => (
-            <div key={s.n} style={{ position: 'relative', zIndex: 1, background: '#fff', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 16, boxShadow: '0 10px 30px -20px rgba(27,70,201,0.45)', padding: '1.1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: LAV, border: `3px solid ${BLUE}`, color: BLUE_DEEP, fontFamily: "'DM Mono', monospace", fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>{s.n}</div>
+            <div key={s.n} style={{ position: 'relative', zIndex: 1, background: 'var(--h-surface)', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 16, boxShadow: '0 10px 30px -20px rgba(27,70,201,0.45)', padding: '1.1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--h-surface-2)', border: `3px solid ${BLUE}`, color: 'var(--h-accent)', fontFamily: "'DM Mono', monospace", fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>{s.n}</div>
               <div>
                 <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.3rem' }}>{s.emoji} {s.title}</div>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.92rem', lineHeight: 1.55, color: '#4a4754' }}>{s.body}</p>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.92rem', lineHeight: 1.55, color: 'var(--h-text-dim)' }}>{s.body}</p>
               </div>
             </div>
           ))}
@@ -56,22 +56,22 @@ export default function HowItWorks() {
 
         {/* the two lines */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', margin: '1.75rem 0' }}>
-          <div style={{ background: '#fff', border: `1.5px solid ${BLUE}`, borderRadius: 16, padding: '1.1rem 1.15rem' }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em', color: BLUE_DEEP }}>💘 love line</div>
-            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: '#4a4754' }}>pick from your 5 most compatible. personality-first dating, no swiping.</p>
+          <div style={{ background: 'var(--h-surface)', border: `1.5px solid ${BLUE}`, borderRadius: 16, padding: '1.1rem 1.15rem' }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em', color: 'var(--h-accent)' }}>💘 love line</div>
+            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}>pick from your 5 most compatible. personality-first dating, no swiping.</p>
           </div>
-          <div style={{ background: '#fff', border: `1.5px solid ${ORANGE}`, borderRadius: 16, padding: '1.1rem 1.15rem' }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em', color: ORANGE_DEEP }}>🧡 friend line</div>
-            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: '#4a4754' }}>open <b>friendship packs</b> — up to 10 friends each, a group chat, and a city full of plans.</p>
+          <div style={{ background: 'var(--h-surface)', border: `1.5px solid ${ORANGE}`, borderRadius: 16, padding: '1.1rem 1.15rem' }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em', color: 'var(--h-accent-2)' }}>🧡 friend line</div>
+            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}>open <b>friendship packs</b> — up to 10 friends each, a group chat, and a city full of plans.</p>
           </div>
         </div>
 
-        <div style={{ background: '#fff', border: `2px dashed ${BLUE}`, borderRadius: 16, padding: '1.25rem', margin: '0 0 1.75rem', textAlign: 'center' }}>
+        <div style={{ background: 'var(--h-surface)', border: `2px dashed ${BLUE}`, borderRadius: 16, padding: '1.25rem', margin: '0 0 1.75rem', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
-          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: BLUE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
+          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent)', margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
             the quiz and your matches are <b>free</b>. on Love, unlock a match’s full profile for a one-time <b>$0.99</b>. on Friend, your first <b>friendship pack</b> (up to 10 friends) is free — more packs are <b>$1.99</b> each, and group chats are always free.
           </p>
-          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: ORANGE_DEEP, margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
+          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent-2)', margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
             or go <b>Pro</b> — every love unlock, unlimited friendship packs, and events, all for <b>$3.99/mo</b>. no swiping, ever.
           </p>
         </div>

@@ -62,35 +62,35 @@ const FAQS: { q: string; a: string }[] = [
 
 export default function FAQ() {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #f6f6f6 0%, #eef1ff 100%)', color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.15rem', color: BLUE }}>not<span style={{ color: ORANGE }}>cupid</span></span>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: BLUE_DEEP }}>faq</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>faq</span>
           </div>
-          <Link href="/" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>← back</Link>
+          <Link href="/" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none' }}>← back</Link>
         </div>
 
-        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: '#6b6975', marginBottom: '0.6rem' }}>a connection experiment</div>
-        <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.6rem,9vw,3.8rem)', lineHeight: 1, color: INK, margin: '0 0 0.5rem' }}>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.6rem' }}>a connection experiment</div>
+        <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.6rem,9vw,3.8rem)', lineHeight: 1, color: 'var(--h-text)', margin: '0 0 0.5rem' }}>
           questions? <span style={{ color: BLUE }}>answers.</span>
         </h1>
-        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '1.05rem', margin: '0 0 2rem' }}>
+        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 2rem' }}>
           everything you’d want to know before you sign up.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           {FAQS.map((f) => (
-            <div key={f.q} style={{ background: '#fff', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 16, boxShadow: '0 10px 30px -22px rgba(27,70,201,0.45)', padding: '1.1rem 1.25rem' }}>
-              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.2rem', color: INK, marginBottom: '0.35rem' }}>{f.q}</div>
-              <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.6, color: '#4a4754' }}>{f.a}</p>
+            <div key={f.q} style={{ background: 'var(--h-surface)', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 16, boxShadow: '0 10px 30px -22px rgba(27,70,201,0.45)', padding: '1.1rem 1.25rem' }}>
+              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.2rem', color: 'var(--h-text)', marginBottom: '0.35rem' }}>{f.q}</div>
+              <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)' }}>{f.a}</p>
             </div>
           ))}
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-          <Link href="/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none', borderBottom: `1px dashed ${BLUE}`, paddingBottom: '0.15rem' }}>
+          <Link href="/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none', borderBottom: `1px dashed ${BLUE}`, paddingBottom: '0.15rem' }}>
             still curious? see how it works →
           </Link>
           <Link href="/quiz" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', letterSpacing: '0.05em', color: '#fff', background: INK, border: 'none', borderRadius: 14, padding: '0.8rem 2rem', boxShadow: '0 14px 30px -12px rgba(0,0,0,0.5)', textDecoration: 'none', display: 'inline-block' }}>

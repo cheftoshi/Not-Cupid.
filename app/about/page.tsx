@@ -33,7 +33,7 @@ export default function AboutPage() {
         <li>X — <a href="https://x.com/notcupidapp" target="_blank" rel="noopener noreferrer">@notcupidapp</a></li>
       </ul>
 
-      <p style={{ marginTop: '1.5rem', color: '#6b6b76', fontSize: '0.85rem' }}>The fine print: see our <a href="/privacy">Privacy Policy</a>, <a href="/terms">Terms</a>, and <a href="/safety">Safety Guidelines</a>.</p>
+      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>The fine print: see our <a href="/privacy">Privacy Policy</a>, <a href="/terms">Terms</a>, and <a href="/safety">Safety Guidelines</a>.</p>
     </LegalPage>
   );
 }

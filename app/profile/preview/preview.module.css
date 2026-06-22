@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f6f6f6;
-  color: #0a0a0a;
+  background: var(--h-bg);
+  color: var(--h-text);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 1.5rem 1.5rem 0;
 }
@@ -20,19 +20,19 @@
   align-items: center;
   justify-content: space-between;
   font-size: 0.78rem;
-  color: #6b6975;
+  color: var(--h-text-dim);
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.banner em { font-family: Georgia, ui-serif, serif; font-style: italic; color: #1b46c9; font-weight: 600; }
-.editLink { color: #1b46c9; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; font-size: 0.78rem; }
+.banner em { font-family: Georgia, ui-serif, serif; font-style: italic; color: var(--h-accent); font-weight: 600; }
+.editLink { color: var(--h-accent); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; font-size: 0.78rem; }
 
 /* ============== MAGAZINE ARTICLE ============== */
 .mag {
-  background: #fff;
+  background: var(--h-surface);
   border-radius: 18px;
   padding: 2.5rem 2.25rem;
-  border: 1px solid #e5e1ec;
+  border: 1px solid var(--h-border);
   box-shadow: 0 24px 60px -32px rgba(27,70,201,0.25), 0 4px 12px -4px rgba(14,12,26,0.05);
   position: relative;
   overflow: hidden;
@@ -80,7 +80,7 @@
   line-height: 0.95;
   letter-spacing: -0.025em;
   margin: 0;
-  color: #0a0a0a;
+  color: var(--h-text);
 }
 .coverAge { font-style: italic; font-weight: 400; color: #2563ff; }
 .coverMeta {
@@ -89,7 +89,7 @@
   margin-top: 0.85rem;
   font-family: 'DM Mono', monospace;
   font-size: 0.7rem;
-  color: #6b6975;
+  color: var(--h-text-dim);
   letter-spacing: 0.04em;
 }
 
@@ -100,7 +100,7 @@
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 1.75rem;
-  background: #e8edff;
+  background: var(--h-surface-2);
   position: relative;
 }
 .photoWrap::after {
@@ -133,7 +133,7 @@
   object-fit: cover;
   border-radius: 10px;
   display: block;
-  background: #e8edff;
+  background: var(--h-surface-2);
 }
 @media (max-width: 420px) {
   .galleryGrid { gap: 4px; }
@@ -200,7 +200,7 @@
   font-style: italic;
   font-size: 1.15rem;
   line-height: 1.55;
-  color: #0a0a0a;
+  color: var(--h-text);
   margin: 0;
   display: inline;
   white-space: pre-wrap;
@@ -229,7 +229,7 @@
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1rem;
-  color: #0a0a0a;
+  color: var(--h-text);
 }
 
 /* VIBES */
@@ -254,7 +254,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #6b6975;
+  color: var(--h-text-dim);
 }
 .vibeTags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .vibeTag {

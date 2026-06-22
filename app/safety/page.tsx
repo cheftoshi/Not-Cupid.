@@ -39,7 +39,7 @@ export default function SafetyPage() {
       <h2>If you&apos;re ever in danger</h2>
       <p>If you feel unsafe or are threatened, contact local authorities — in the U.S., call <strong>911</strong>. For confidential support, the <strong>988 Suicide &amp; Crisis Lifeline</strong> (call or text 988) is available 24/7. Your safety always comes before any match.</p>
 
-      <p style={{ marginTop: '1.5rem', color: '#6b6b76', fontSize: '0.85rem' }}>Concerns about someone, or about your experience? Reach a real person at <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
+      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>Concerns about someone, or about your experience? Reach a real person at <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
     </LegalPage>
   );
 }

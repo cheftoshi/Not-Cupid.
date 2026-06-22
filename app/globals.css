@@ -111,3 +111,6 @@ body{
   --h-accent-2: #ff9a5c;
   --c-music: #6f9bff; --c-food: #ff9a5c; --c-hobby: #b794ff; --c-sport: #4fce93; --c-vibe: #ff7ab3;
 }
+
+/* dark base: prevents any unconverted gap from flashing white */
+html[data-theme="dark"] body { background: #0c0a12; color: var(--h-text); }

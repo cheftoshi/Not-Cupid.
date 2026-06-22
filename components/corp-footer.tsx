@@ -6,7 +6,7 @@ export default function CorpFooter() {
         marginTop: 'auto', // sticks to the bottom in any flex-column page
         textAlign: 'center',
         padding: '2rem 1rem 2.25rem',
-        borderTop: '1px solid rgba(11,11,11,0.06)',
+        borderTop: '1px solid var(--h-border)',
         fontFamily: "'DM Mono', ui-monospace, monospace",
       }}
     >
@@ -62,7 +62,7 @@ export default function CorpFooter() {
               fontSize: '0.58rem',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              color: '#6b6b76',
+              color: 'var(--h-text-dim)',
               textDecoration: 'none',
             }}
           >
@@ -75,7 +75,7 @@ export default function CorpFooter() {
           fontSize: '0.5rem',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          color: '#9a96a8',
+          color: 'var(--h-text-faint)',
         }}
       >
         © {year} notcupid · a lemon labs property

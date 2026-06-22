@@ -48,7 +48,7 @@ export default function OutOfRange() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 style={{
-                  background:'#fff',border:'1.5px solid var(--border-md)',
+                  background:'var(--h-surface)',border:'1.5px solid var(--border-md)',
                   color:'var(--ink)',padding:'.85rem 1rem',
                   fontFamily:'Inter,sans-serif',fontSize:'.88rem',outline:'none',
                   borderRadius:'0'
@@ -60,7 +60,7 @@ export default function OutOfRange() {
                 value={city}
                 onChange={e => setCity(e.target.value)}
                 style={{
-                  background:'#fff',border:'1.5px solid var(--border-md)',
+                  background:'var(--h-surface)',border:'1.5px solid var(--border-md)',
                   color:'var(--ink)',padding:'.85rem 1rem',
                   fontFamily:'Inter,sans-serif',fontSize:'.88rem',outline:'none',
                   borderRadius:'0'

@@ -36,7 +36,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
 
   return (
     <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6b76', marginBottom: '0.7rem' }}>
+      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.7rem' }}>
         match distance — searching within <strong style={{ color: '#2563ff' }}>{r} mi</strong>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
@@ -48,9 +48,9 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
               onClick={() => choose(v)}
               disabled={busy}
               style={{
-                background: active ? '#2563ff' : '#fff',
-                color: active ? '#fff' : '#1b46c9',
-                border: `1.5px solid ${active ? '#2563ff' : 'rgba(37,99,255,0.35)'}`,
+                background: active ? '#2563ff' : 'var(--h-surface)',
+                color: active ? '#fff' : 'var(--h-accent)',
+                border: `1.5px solid ${active ? '#2563ff' : 'var(--h-border)'}`,
                 borderRadius: 999,
                 padding: '0.5rem 1rem',
                 fontFamily: "'DM Mono', monospace",
@@ -67,7 +67,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
           );
         })}
       </div>
-      <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.78rem', color: '#9a96a8', marginTop: '0.7rem', lineHeight: 1.45 }}>
+      <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-faint)', marginTop: '0.7rem', lineHeight: 1.45 }}>
         closer = fewer but nearer matches · wider = a bigger pool. the algo re-runs every 20 min.
       </div>
     </div>

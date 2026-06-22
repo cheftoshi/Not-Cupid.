@@ -46,7 +46,7 @@ export default function TermsPage() {
       <h2>Changes</h2>
       <p>We may update these terms; we&apos;ll change the date above when we do. Continued use means you accept the current version.</p>
 
-      <p style={{ marginTop: '1.5rem', color: '#6b6b76', fontSize: '0.85rem' }}>Questions? <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
+      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>Questions? <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
     </LegalPage>
   );
 }

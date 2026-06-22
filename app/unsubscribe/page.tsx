@@ -19,11 +19,11 @@ export default async function UnsubscribePage({
 
   if (!userId || !token || !verifyUnsubToken(userId, token)) {
     return (
-      <main style={{ minHeight: '100vh', background: '#f6f6f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div style={{ maxWidth: 480, background: '#fff', padding: '2.5rem', border: '1px solid rgba(14,12,26,0.08)', borderRadius: 14 }}>
+      <main style={{ minHeight: '100vh', background: 'var(--h-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ maxWidth: 480, background: 'var(--h-surface)', padding: '2.5rem', border: '1px solid var(--h-border)', borderRadius: 14 }}>
           <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>invalid link</div>
-          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, color: '#0e0c1a', margin: '0 0 16px 0' }}>This link isn't valid.</h1>
-          <p style={{ fontFamily: 'system-ui, sans-serif', color: '#7a7590', lineHeight: 1.65 }}>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, color: 'var(--h-text)', margin: '0 0 16px 0' }}>This link isn't valid.</h1>
+          <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65 }}>
             It may have expired or been tampered with. If you want to stop emails, log in and toggle "email notifications" off in your profile.
           </p>
         </div>

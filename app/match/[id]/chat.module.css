@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f6f6f6;
-  color: #0a0a0a;
+  background: var(--h-bg);
+  color: var(--h-text);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -19,8 +19,8 @@
 /* The date-vibes rail — the other side. Stacks under the chat on mobile,
    sits beside it on desktop. */
 .vibesCol {
-  background: #fff;
-  border-top: 1px solid rgba(37,99,255,0.2);
+  background: var(--h-surface);
+  border-top: 1px solid var(--h-border);
 }
 .vibesInner { padding: 1.1rem 1.1rem 2.5rem; }
 
@@ -33,14 +33,14 @@
     height: 100vh;
     overflow-y: auto;
     border-top: none;
-    border-left: 1px solid rgba(37,99,255,0.2);
+    border-left: 1px solid var(--h-border);
   }
 }
 
 /* ============= HEADER ============= */
 .header {
-  background: #fff;
-  border-bottom: 1px solid rgba(37,99,255,0.2);
+  background: var(--h-surface);
+  border-bottom: 1px solid var(--h-border);
   padding: 0.85rem 1.25rem;
   display: flex;
   align-items: center;
@@ -53,13 +53,13 @@
 
 .back {
   font-size: 1.3rem;
-  color: #6b6975;
+  color: var(--h-text-dim);
   text-decoration: none;
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
   transition: all 0.15s;
 }
-.back:hover { color: #1b46c9; background: #e8edff; }
+.back:hover { color: var(--h-accent); background: var(--h-surface-2); }
 
 .headerInfo { flex: 1; min-width: 0; }
 
@@ -70,7 +70,7 @@
   font-weight: 400;
   margin: 0;
   line-height: 1.1;
-  color: #0a0a0a;
+  color: var(--h-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -88,8 +88,8 @@
   font-size: 0.55rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: #1b46c9;
-  background: #e8edff;
+  color: var(--h-accent);
+  background: var(--h-surface-2);
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
 }
@@ -111,14 +111,14 @@
   font-style: italic;
   font-size: 0.82rem;
   line-height: 1.5;
-  color: #7a7590;
+  color: var(--h-text-dim);
   background: rgba(37,99,255,0.08);
-  border: 1px solid rgba(37,99,255,0.2);
+  border: 1px solid var(--h-border);
   border-radius: 14px;
   padding: 0.7rem 1.1rem;
   margin: 0 auto 0.75rem;
 }
-.narrator strong { color: #1b46c9; font-style: normal; }
+.narrator strong { color: var(--h-accent); font-style: normal; }
 .narratorMark {
   display: block;
   font-family: 'DM Mono', ui-monospace, monospace;
@@ -135,7 +135,7 @@
   height: 42px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1.5px solid #fff;
+  border: 1.5px solid var(--h-surface);
   box-shadow: 0 4px 12px -4px rgba(27,70,201,0.25);
   flex-shrink: 0;
 }
@@ -170,7 +170,7 @@
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.6rem;
-  color: #0a0a0a;
+  color: var(--h-text);
   line-height: 1.1;
 }
 .emptySub {
@@ -193,8 +193,8 @@
   font-size: 0.85rem;
   line-height: 1.35;
   text-align: left;
-  color: #0a0a0a;
-  background: #fff;
+  color: var(--h-text);
+  background: var(--h-surface);
   border: 1px solid rgba(37,99,255,0.3);
   border-radius: 14px;
   padding: 0.7rem 0.95rem;
@@ -203,7 +203,7 @@
 }
 .starter:hover {
   border-color: #2563ff;
-  background: #ffffff;
+  background: var(--h-surface);
   transform: translateY(-1px);
   box-shadow: 0 6px 18px -10px rgba(27,70,201,0.35);
 }
@@ -212,9 +212,9 @@
 /* ============= NUDGE (the gentle roast) ============= */
 .nudge {
   margin: 0 1rem;
-  background: #fff1e8;
+  background: var(--h-surface-3);
   border: 1px solid rgba(255,106,31,0.4);
-  color: #9a4a12;
+  color: var(--h-accent-2);
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 0.82rem;
@@ -244,8 +244,8 @@
 
 .bubbleTheirs {
   align-self: flex-start;
-  background: #fff;
-  color: #0a0a0a;
+  background: var(--h-surface-2);
+  color: var(--h-text);
   border: 1px solid rgba(37,99,255,0.25);
   border-bottom-left-radius: 4px;
 }
@@ -267,8 +267,8 @@
 
 /* ============= INPUT ============= */
 .inputForm {
-  background: #fff;
-  border-top: 1px solid rgba(37,99,255,0.2);
+  background: var(--h-surface);
+  border-top: 1px solid var(--h-border);
   padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom, 0));
   display: flex;
   gap: 0.55rem;
@@ -277,19 +277,19 @@
 
 .input {
   flex: 1;
-  background: #f6f6f6;
-  border: 1px solid rgba(37,99,255,0.3);
+  background: var(--h-surface);
+  border: 1px solid var(--h-border);
   border-radius: 999px;
   padding: 0.75rem 1.15rem;
   font-size: 1rem;  /* 1rem prevents iOS auto-zoom on focus */
   font-family: inherit;
-  color: #0a0a0a;
+  color: var(--h-text);
   outline: none;
   transition: border-color 0.15s, background 0.15s;
 }
-.input::placeholder { color: #b8b3c4; font-family: Georgia, ui-serif, serif; font-style: italic; }
-.input:focus { border-color: #2563ff; background: #fff; }
-.input:disabled { opacity: 0.55; background: #e8edff; cursor: not-allowed; }
+.input::placeholder { color: var(--h-text-faint); font-family: Georgia, ui-serif, serif; font-style: italic; }
+.input:focus { border-color: #2563ff; background: var(--h-surface); }
+.input:disabled { opacity: 0.55; background: var(--h-surface-2); cursor: not-allowed; }
 
 .send {
   background: #0a0a0a;

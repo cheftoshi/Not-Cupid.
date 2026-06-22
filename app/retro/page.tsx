@@ -11,13 +11,13 @@ const OPTS = [
 
 export default function RetroIndex() {
   return (
-    <div style={{ minHeight: '100vh', background: '#f3eee4', fontFamily: 'ui-sans-serif,system-ui,sans-serif', padding: '3rem 1.5rem', maxWidth: 640, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', padding: '3rem 1.5rem', maxWidth: 640, margin: '0 auto' }}>
       <h1 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '2rem', marginBottom: '0.5rem' }}>retro direction mocks</h1>
-      <p style={{ color: '#6b6660', marginBottom: '2rem' }}>three takes on &quot;retro Boston scenery.&quot; open each, pick a winner — then I&apos;ll build it for real.</p>
+      <p style={{ color: 'var(--h-text-dim)', marginBottom: '2rem' }}>three takes on &quot;retro Boston scenery.&quot; open each, pick a winner — then I&apos;ll build it for real.</p>
       {OPTS.map((o) => (
-        <Link key={o.slug} href={`/retro/${o.slug}`} style={{ display: 'block', background: '#fff', border: '2px solid #1a1814', borderRadius: 12, padding: '1.1rem 1.25rem', marginBottom: '0.9rem', textDecoration: 'none', color: '#1a1814', boxShadow: '4px 4px 0 #1a1814' }}>
+        <Link key={o.slug} href={`/retro/${o.slug}`} style={{ display: 'block', background: 'var(--h-surface)', border: '2px solid var(--h-text)', borderRadius: 12, padding: '1.1rem 1.25rem', marginBottom: '0.9rem', textDecoration: 'none', color: 'var(--h-text)', boxShadow: '4px 4px 0 var(--h-text)' }}>
           <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Option {o.slug.toUpperCase()} — {o.name}</div>
-          <div style={{ color: '#6b6660', fontSize: '0.9rem', marginTop: '0.2rem' }}>{o.desc}</div>
+          <div style={{ color: 'var(--h-text-dim)', fontSize: '0.9rem', marginTop: '0.2rem' }}>{o.desc}</div>
         </Link>
       ))}
     </div>

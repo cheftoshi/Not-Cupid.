@@ -14,14 +14,14 @@ const ORANGE_VARS: any = {
   '--accent-mid': 'rgba(255,106,31,0.4)',
   '--gold': '#d2530f',
   '--gold-dim': 'rgba(210,83,15,0.14)',
-  '--ink-muted': '#6b6b76',
-  '--ink-faint': '#a9a9b4',
-  '--bg-card': '#ffffff',
-  '--bg-subtle': '#faf7f3',
+  '--ink-muted': 'var(--h-text-dim)',
+  '--ink-faint': 'var(--h-text-faint)',
+  '--bg-card': 'var(--h-surface)',
+  '--bg-subtle': 'var(--h-surface-3)',
   '--bg-dark': '#1a120c',
-  '--border': 'rgba(11,11,11,0.07)',
-  '--border-md': 'rgba(11,11,11,0.14)',
-  '--border-dark': 'rgba(11,11,11,0.2)',
+  '--border': 'var(--h-border)',
+  '--border-md': 'var(--h-border)',
+  '--border-dark': 'var(--h-border)',
   '--green': '#2d7a4f',
 };
 
@@ -91,8 +91,8 @@ export default function FriendQuizClient() {
 
   const inputStyle: React.CSSProperties = {
     flex: 1, padding: '0.85rem 1rem', borderRadius: '0.3rem',
-    border: '1.5px solid rgba(11,11,11,0.14)', fontFamily: "'Syne', sans-serif",
-    fontSize: '0.95rem', background: '#fff', color: '#0b0b0b',
+    border: '1.5px solid var(--h-border)', fontFamily: "'Syne', sans-serif",
+    fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)',
   };
 
   // ── chapter-style intro card (mirrors the love quiz) ──
@@ -194,12 +194,12 @@ export default function FriendQuizClient() {
                 </button>
               ))}
             </div>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#8a8a93', margin: '0 0 1.5rem' }}>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
               pick any. leave all unchecked = open to everyone.
             </p>
 
             <p className={styles.qText} style={{ fontSize: '1.1rem' }}>do you identify as LGBTQ+?</p>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#8a8a93', margin: '0 0 0.85rem' }}>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 0.85rem' }}>
               optional — so LGBTQ+ folks &amp; events can find you.
             </p>
             <div className={styles.qOptions}>
@@ -226,14 +226,14 @@ export default function FriendQuizClient() {
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0 0 0.75rem' }}>
               <input type="number" inputMode="numeric" min={18} max={100} placeholder="18"
                 value={ageMin} onChange={(e) => setAgeMin(e.target.value)} style={inputStyle} />
-              <span style={{ fontFamily: "'DM Mono', monospace", color: '#8a8a93' }}>to</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", color: 'var(--h-text-faint)' }}>to</span>
               <input type="number" inputMode="numeric" min={18} max={100} placeholder="99"
                 value={ageMax} onChange={(e) => setAgeMax(e.target.value)} style={inputStyle} />
             </div>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#8a8a93', margin: '0 0 1.5rem' }}>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
               leave blank for no limit. friends near your vibe, your age.
             </p>
-            {err && <p style={{ color: '#d2530f', fontSize: '0.82rem', marginBottom: '1rem' }}>{err}</p>}
+            {err && <p style={{ color: 'var(--h-accent-2)', fontSize: '0.82rem', marginBottom: '1rem' }}>{err}</p>}
             <div className={styles.qNav}>
               <button className={styles.qSkip} onClick={() => setStep((s) => s - 1)}>← back</button>
               <button className="btn-primary" disabled={busy} onClick={submit}>

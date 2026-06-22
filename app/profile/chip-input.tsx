@@ -12,8 +12,8 @@ type Props = {
 };
 
 const variants = {
-  lav:    { bg: 'rgba(37,99,255,0.13)', color: '#1b46c9', border: 'rgba(37,99,255,0.35)' },
-  accent: { bg: '#e8edff',                color: '#0e0c1a', border: 'rgba(14,12,26,0.13)' },
+  lav:    { bg: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', border: 'rgba(37,99,255,0.35)' },
+  accent: { bg: 'var(--h-surface-2)',     color: 'var(--h-text)', border: 'var(--h-border)' },
 };
 
 export default function ChipInput({ value, onChange, placeholder, variant = 'mix', maxItems = 12 }: Props) {

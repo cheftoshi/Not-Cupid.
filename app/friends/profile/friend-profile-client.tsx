@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import RefreshProfileButton from '@/components/refresh-profile-button';
 import { compressImage } from '@/lib/compress-image';
 
-const INK = '#241d12', LINE = '#e8842b', LINE_DEEP = '#c96a18', CREAM = '#f7f1e3';
-const card: React.CSSProperties = { background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}`, padding: '1.25rem' };
-const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', background: '#fbe6cf', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.25rem 0.6rem' };
+const INK = '#241d12', LINE = '#e8842b', LINE_DEEP = '#c96a18', CREAM = 'var(--h-surface)';
+const card: React.CSSProperties = { background: 'var(--h-surface)', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}`, padding: '1.25rem' };
+const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', background: 'var(--h-surface-3)', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.25rem 0.6rem' };
 const label: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', margin: '1.5rem 0 0.6rem' };
 
 type Init = { name: string; photo_url: string | null; gallery: string[]; bio: string; occupation: string; music: string[]; food: string[]; hobbies: string[] };
@@ -90,7 +90,7 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, #f3e7cf 60%, #f7ddc0 100%)`, color: INK, fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, var(--h-surface-2) 60%, var(--h-surface-3) 100%)`, color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}`, textDecoration: 'none' }}>FRIEND LINE</a>
@@ -108,7 +108,7 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
         <div style={card}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             {photo ? <img src={photo} alt="" style={{ width: 96, height: 96, borderRadius: 14, objectFit: 'cover', border: `3px solid ${INK}` }} />
-              : <div style={{ width: 96, height: 96, borderRadius: 14, border: `3px dashed ${LINE}`, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>📸</div>}
+              : <div style={{ width: 96, height: 96, borderRadius: 14, border: `3px dashed ${LINE}`, background: 'var(--h-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>📸</div>}
             <div>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem' }}>main photo</div>
               <label style={{ ...chip, cursor: 'pointer', display: 'inline-block', marginTop: '0.4rem' }}>
@@ -125,11 +125,11 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
             {gallery.map((g) => (
               <div key={g} style={{ position: 'relative' }}>
                 <img src={g} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', border: `2px solid ${INK}` }} />
-                <button onClick={() => removeGallery(g)} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: '#fff', border: `2px solid ${INK}`, cursor: 'pointer', fontWeight: 800 }}>×</button>
+                <button onClick={() => removeGallery(g)} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface)', border: `2px solid ${INK}`, cursor: 'pointer', fontWeight: 800 }}>×</button>
               </div>
             ))}
             {gallery.length < 3 && (
-              <label style={{ width: 80, height: 80, borderRadius: 10, border: `2px dashed ${LINE}`, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.4rem' }}>
+              <label style={{ width: 80, height: 80, borderRadius: 10, border: `2px dashed ${LINE}`, background: 'var(--h-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.4rem' }}>
                 +<input type="file" accept="image/*" onChange={uploadGallery} disabled={busy} style={{ display: 'none' }} />
               </label>
             )}
@@ -163,23 +163,23 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
           </button>
           {msg && <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP }}>{msg}</span>}
         </div>
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a8896a', marginTop: '0.6rem' }}>
+        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.6rem' }}>
           photos save instantly · bio &amp; interests save when you hit the button
         </p>
 
         {/* START FRESH — wipe & re-take quiz, capped at 3 per account */}
         <div style={{ ...label, color: LINE_DEEP }}>start over</div>
         <div style={card}>
-          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: INK, margin: '0 0 0.6rem' }}>
+          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.6rem' }}>
             Vibes changed? Re-take the friend quiz to update your activities, who you&apos;re open to, and your age range. Your crews stay put.
           </p>
-          <a href="/friends/quiz?retake=1" style={{ display: 'inline-block', background: '#fff', color: LINE_DEEP, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.06em', padding: '0.55rem 1.2rem', borderRadius: 10, border: `2.5px solid ${INK}`, boxShadow: `3px 3px 0 ${INK}`, textDecoration: 'none' }}>
+          <a href="/friends/quiz?retake=1" style={{ display: 'inline-block', background: 'var(--h-surface)', color: LINE_DEEP, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.06em', padding: '0.55rem 1.2rem', borderRadius: 10, border: `2.5px solid ${INK}`, boxShadow: `3px 3px 0 ${INK}`, textDecoration: 'none' }}>
             retake friend quiz →
           </a>
         </div>
 
         <div style={card}>
-          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: INK, margin: '0 0 0.4rem' }}>
+          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
             Want a clean slate? This wipes your quiz answers, profile, and current matches on <strong>both</strong> the Friend and Love lines, then you re-take the quiz. Your account stays. Limited to 3 times.
           </p>
           <RefreshProfileButton usedCount={refreshCount} />

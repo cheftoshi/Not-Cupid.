@@ -74,24 +74,24 @@ export default function MatchReveal({
 
         {score != null && (
           <div style={line(stage >= 2, { marginBottom: 6 })}>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(5rem, 22vw, 9rem)', lineHeight: 0.9, color: '#0b0b0b', letterSpacing: '0.01em' }}>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(5rem, 22vw, 9rem)', lineHeight: 0.9, color: 'var(--h-text)', letterSpacing: '0.01em' }}>
               {count}<span style={{ fontSize: '0.4em', color: '#ff6a1f' }}>%</span>
             </span>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#6b6b76', marginTop: 2 }}>compatibility</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: 2 }}>compatibility</div>
           </div>
         )}
 
         <div style={{ ...line(stage >= 3), marginTop: 14 }}>
-          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(1.6rem, 6vw, 2.4rem)', color: '#0b0b0b', lineHeight: 1.1 }}>
+          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(1.6rem, 6vw, 2.4rem)', color: 'var(--h-text)', lineHeight: 1.1 }}>
             meet <span style={{ color: '#2563ff' }}>{first}</span>.
           </div>
           {archetype && (
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6b76', marginTop: 8 }}>{archetype}</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: 8 }}>{archetype}</div>
           )}
         </div>
 
         <div style={{ ...line(stage >= 4), marginTop: 22, maxWidth: 360 }}>
-          <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: 14, lineHeight: 1.55, color: '#6b6b76', margin: '0 0 22px 0' }}>
+          <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: 14, lineHeight: 1.55, color: 'var(--h-text-dim)', margin: '0 0 22px 0' }}>
             no swiping. no scrolling. just the one the algorithm picked for you.
           </p>
           <button onClick={() => setShow(false)} style={cta}>see your match →</button>
@@ -103,7 +103,7 @@ export default function MatchReveal({
 
 const overlay: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 80,
-  background: 'radial-gradient(circle at 50% 30%, #ffffff 0%, #f6f6f6 55%, #eef2ff 100%)',
+  background: 'var(--h-bg)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem',
   animation: 'ncRevealIn .5s ease both',
 };

@@ -608,12 +608,12 @@ function QuizInner() {
                     const suggestion = suggestEmailCorrection(form.email)
                     if (!suggestion) return null
                     return (
-                      <div style={{fontFamily:"'DM Mono', ui-monospace, monospace",fontSize:'.62rem',letterSpacing:'.06em',color:'#1b46c9',marginTop:'.35rem'}}>
+                      <div style={{fontFamily:"'DM Mono', ui-monospace, monospace",fontSize:'.62rem',letterSpacing:'.06em',color:'var(--h-accent)',marginTop:'.35rem'}}>
                         did you mean{' '}
                         <button
                           type="button"
                           onClick={() => setForm(f => ({ ...f, email: suggestion }))}
-                          style={{background:'rgba(37,99,255,0.15)',border:'1px solid rgba(37,99,255,0.4)',color:'#1b46c9',padding:'.15rem .5rem',borderRadius:'4px',fontFamily:'inherit',fontSize:'inherit',cursor:'pointer'}}
+                          style={{background:'rgba(37,99,255,0.15)',border:'1px solid rgba(37,99,255,0.4)',color:'var(--h-accent)',padding:'.15rem .5rem',borderRadius:'4px',fontFamily:'inherit',fontSize:'inherit',cursor:'pointer'}}
                         >
                           {suggestion}
                         </button>
@@ -1005,7 +1005,7 @@ function QuizInner() {
                         key={vq.key}
                         style={{
                           background:'rgba(37,99,255,0.13)',
-                          color:'#1b46c9',
+                          color:'var(--h-accent)',
                           border:'1px solid rgba(37,99,255,0.35)',
                           borderRadius:'999px',
                           padding:'.4rem .9rem',
