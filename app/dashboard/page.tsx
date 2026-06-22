@@ -78,7 +78,7 @@ export default async function DashboardPage({
   ));
   // MatchCard needs profile + HEXACO fields — but not email/roster_snapshot/etc.
   const CARD_COLS =
-    'id, name, age, photo_url, archetype, zip, relationship_style, bio, gallery, music, food, hobbies, ' +
+    'id, name, age, photo_url, archetype, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
   const [{ data: unlockRows }, { data: others }, { data: historyOthers }] = await Promise.all([
     liveIds.length
@@ -176,6 +176,7 @@ export default async function DashboardPage({
                 profileUnlocked={c.profileUnlocked}
                 distanceMi={c.distanceMi}
                 beyondRadius={c.beyondRadius}
+                viewerSunSign={user.sun_sign}
               />
             ))}
           </div>

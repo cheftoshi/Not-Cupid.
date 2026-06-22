@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { isSunSign } from '@/lib/astrology';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -19,7 +20,7 @@ export async function PUT(req: NextRequest) {
     'bio', 'height_cm', 'occupation', 'education',
     'music', 'food', 'hobbies', 'prompts',
     'age_min', 'age_max', 'auto_rematch',
-    'vibes', 'relationship_style',
+    'vibes', 'relationship_style', 'sun_sign',
     'email_notifications',
   ];
 
@@ -55,6 +56,11 @@ export async function PUT(req: NextRequest) {
   if (updates.relationship_style != null && !VALID_RELATIONSHIP_STYLES.has(updates.relationship_style)) {
     return NextResponse.json({ error: 'Invalid relationship style' }, { status: 400 });
   }
+  // sun_sign is one of the 12 keys, or '' / null to clear it.
+  if (updates.sun_sign != null && updates.sun_sign !== '' && !isSunSign(updates.sun_sign)) {
+    return NextResponse.json({ error: 'Invalid sun sign' }, { status: 400 });
+  }
+  if (updates.sun_sign === '') updates.sun_sign = null;
 
   // email_notifications and pool_active are coupled: turning emails off
   // pulls you from the matching pool (you can't be notified of matches);

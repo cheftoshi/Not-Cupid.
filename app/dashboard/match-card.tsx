@@ -8,6 +8,7 @@ import DateFeedbackDialog from '@/components/date-feedback-dialog';
 import ReportDialog from '@/components/report-dialog';
 import { VIBE_HEADS, vibeLabel, relationshipStyleLabel, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
+import { signLabel, signCompat } from '@/lib/astrology';
 import { parseResponse } from '@/lib/fetch-helpers';
 
 // Privacy: show a fuzzy distance band + metro, never the exact ZIP.
@@ -33,6 +34,7 @@ interface Props {
   profileUnlocked?: boolean;
   distanceMi?: number | null;
   beyondRadius?: boolean;
+  viewerSunSign?: string | null;
 }
 
 // HEXACO is now 2 questions/dim (max 8). Old rows from the 24-Q quiz can be up
@@ -44,7 +46,7 @@ function hoursUntil(iso: string): number {
   return Math.max(0, Math.round(ms / 1000 / 60 / 60));
 }
 
-export default function MatchCard({ match, otherUser, currentUserId, isUnlocked, hexacoUnlocked, profileUnlocked, distanceMi, beyondRadius }: Props) {
+export default function MatchCard({ match, otherUser, currentUserId, isUnlocked, hexacoUnlocked, profileUnlocked, distanceMi, beyondRadius, viewerSunSign }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -195,7 +197,17 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
         )}
         {match.compatibility_score && <span>{match.compatibility_score}% compatibility</span>}
         {otherUser.relationship_style && <span>💞 {relationshipStyleLabel(otherUser.relationship_style)}</span>}
+        {otherUser.sun_sign && <span>{signLabel(otherUser.sun_sign)}</span>}
       </div>
+      {/* Cosmic note — pure flavor, never part of the compatibility score. */}
+      {(() => {
+        const cosmic = signCompat(viewerSunSign, otherUser.sun_sign);
+        return cosmic ? (
+          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: cosmic.level === 'high' ? '#7b3cff' : '#9a7ad0', margin: '0 0 0.75rem', lineHeight: 1.45 }}>
+            ✨ {cosmic.note}
+          </div>
+        ) : null;
+      })()}
       {beyondRadius && (
         <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: '#d2530f', margin: '0 0 1rem', lineHeight: 1.45 }}>
           heads up — this one&apos;s a bit past your usual range, surfaced because the local pool was thin.

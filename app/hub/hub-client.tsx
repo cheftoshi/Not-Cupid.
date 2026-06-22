@@ -6,6 +6,7 @@ import Wordmark from '@/components/wordmark';
 import { compressImage } from '@/lib/compress-image';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel, METRO_CENTERS, METRO_ZIP } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
+import { signLabel } from '@/lib/astrology';
 import styles from './hub.module.css';
 
 // Cities a user can switch to, grouped by state for the picker.
@@ -15,7 +16,7 @@ const CITY_OPTIONS = (Object.keys(METRO_ZIP) as Array<keyof typeof METRO_ZIP>)
 
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
-  attach_style?: string | null; vibes?: Record<string, number> | null;
+  attach_style?: string | null; vibes?: Record<string, number> | null; sun_sign?: string | null;
   music?: string[]; food?: string[]; hobbies?: string[];
 };
 
@@ -167,6 +168,7 @@ export default function HubClient({
               {meta
                 ? <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.85rem', color: BLUE, marginTop: '0.15rem' }}>{profile.archetype}</div>
                 : <Link href="/quiz?retake=1" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>finish your quiz →</Link>}
+              {profile.sun_sign && <div style={{ marginTop: '0.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', color: '#7a7590' }}>{signLabel(profile.sun_sign)}</div>}
               <button type="button" onClick={() => setCityPicker(true)} style={{ marginTop: '0.5rem', background: 'rgba(37,99,255,0.07)', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 999, padding: '0.3rem 0.7rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: BLUE_DEEP }}>
                 📍 {city || 'set your city'}{matchRadius && city ? <span style={{ opacity: 0.6 }}> · {matchRadius}mi</span> : null} <span style={{ opacity: 0.6 }}>· change</span>
               </button>

@@ -18,6 +18,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       '✦ All-Access — one $3.99/mo subscription unlocks everything: every love profile, unlimited friendship packs, and events.',
       '💸 Love unlocks are now just $0.99 (down from $1.99) — see a match’s full profile for less.',
       '🔔 More notifications — get pinged when a match is expiring, when someone unlocks your profile, and when a new friend match lands.',
+      '🌍 Change your city — set your home base from any city we’re live in (all of New England + NYC) right from the hub.',
+      '✨ Sun signs — add yours on your profile for a little cosmic flavor (just for fun — never part of how we match you).',
     ],
   },
   {

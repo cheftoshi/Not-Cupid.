@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { signLabel } from '@/lib/astrology';
 import styles from './pack.module.css';
 
 type Friend = {
   otherId: string; name: string; age: number | null; photo_url: string | null;
   archetype: string | null; metro: string | null; sharedActivities: string[]; score: number | null;
+  sunSign?: string | null;
 };
 type Phase = 'loading' | 'ready' | 'opening' | 'revealed' | 'empty' | 'ghosted';
 
@@ -122,6 +124,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
                     : <div className={styles.fphotoEmpty}>{(f.name || '?').charAt(0)}</div>}
                   <div className={styles.fname}>{(f.name || 'friend').split(' ')[0]}{f.age ? `, ${f.age}` : ''}</div>
                   {f.archetype && <div className={styles.farch}>{f.archetype}</div>}
+                  {f.sunSign && <div className={styles.farch} style={{ color: 'rgba(255,255,255,0.8)' }}>{signLabel(f.sunSign)}</div>}
                   <div className={`${styles.rarity} ${r.cls}`}>{r.label}</div>
                   {f.sharedActivities.length > 0 && (
                     <div className={styles.fshared}>both into {f.sharedActivities.slice(0, 2).join(' · ')}</div>

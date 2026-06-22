@@ -7,6 +7,7 @@ import ChipInput from './chip-input';
 import RefreshProfileButton from '@/components/refresh-profile-button';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
+import { SUN_SIGNS } from '@/lib/astrology';
 import { compressImage } from '@/lib/compress-image';
 
 type Props = {
@@ -292,6 +293,19 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
             <option value="">— pick one —</option>
             {RELATIONSHIP_STYLES.map(s => (
               <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Sun sign · <span className={styles.labelHint}>just for fun — not used in matching</span></label>
+          <select
+            className={styles.select}
+            value={user.sun_sign || ''}
+            onChange={e => setUser({ ...user, sun_sign: e.target.value || null })}
+          >
+            <option value="">— pick one —</option>
+            {SUN_SIGNS.map(s => (
+              <option key={s.key} value={s.key}>{s.glyph} {s.name} · {s.dates}</option>
             ))}
           </select>
         </div>

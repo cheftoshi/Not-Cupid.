@@ -33,6 +33,7 @@ export default async function HubPage() {
     score_openness: user.score_openness,
     attach_style: user.attach_style ?? null,
     vibes: user.vibes ?? null,
+    sun_sign: user.sun_sign ?? null,
     music: user.music ?? [],
     food: user.food ?? [],
     hobbies: user.hobbies ?? [],

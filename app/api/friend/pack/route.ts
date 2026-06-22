@@ -22,7 +22,7 @@ async function loadFriends(userId: string, rows: any[]) {
   if (!ids.length) return [];
   const { data: others } = await supabaseAdmin
     .from('users')
-    .select('id, name, age, photo_url, archetype, zip, friend_vibes, is_test')
+    .select('id, name, age, photo_url, archetype, zip, friend_vibes, sun_sign, is_test')
     .in('id', ids);
   const byId = new Map((others ?? []).map((u) => [u.id, u]));
   const { data: me } = await supabaseAdmin.from('users').select('friend_vibes, is_test').eq('id', userId).single();
@@ -36,6 +36,7 @@ async function loadFriends(userId: string, rows: any[]) {
       return {
         otherId, name: o.name, age: o.age, photo_url: o.photo_url, archetype: o.archetype,
         metro: metroLabel(o.zip), sharedActivities: shared, score: c.compatibility_score,
+        sunSign: o.sun_sign ?? null,
         _test: o.is_test === true, _meTest: meTest,
       };
     })

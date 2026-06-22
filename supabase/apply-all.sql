@@ -697,3 +697,7 @@ $$;
 -- build; idempotent on re-run.) The $3.99/mo All-Access sub reuses the existing
 -- users.friend_pro_until column — no new columns needed.
 update friend_connections set opened_at = now() where opened_at is null;
+
+-- ──────────────────────── 20260621_sun_sign ────────────────────────
+-- Sun sign — profile flavor only, never used in matching. One of the 12 keys.
+alter table users add column if not exists sun_sign text;
