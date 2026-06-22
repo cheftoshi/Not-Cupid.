@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { rankFriendCandidates } from '@/lib/friend-matching';
 import { FRIEND_MAX_CONNECTIONS } from '@/lib/friend-circles';
 import { sendPushToUser } from '@/lib/push';
+import { metroOf } from '@/lib/quiz-data';
 
 // Auto-assign: top the user up to FRIEND_MAX_CONNECTIONS (5) friend matches by
 // score, excluding anyone they already have a connection or history with, and
@@ -38,7 +39,7 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     // Only the fields the friend matcher actually reads — was `select('*')`,
     // a PII over-fetch (email/bio/gallery/love-columns) for the whole friend
     // pool on every roster load. Mirrors the love-roster trim.
-    .select('id, age, gender, is_lgbtq, friend_age_min, friend_age_max, friend_seeking, friend_vibes')
+    .select('id, age, gender, is_lgbtq, friend_age_min, friend_age_max, friend_seeking, friend_vibes, zip')
     .not('friend_opted_in_at', 'is', null)
     .is('deleted_at', null)
     // Exclude ghosted/paused users — they don't surface to anyone on either line.
@@ -49,7 +50,15 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   // Realm segregation: test accounts only crew up with other test accounts;
   // real users never get matched to a test account (and vice-versa).
   const meTest = (me as any).is_test === true;
-  const fresh = (pool ?? []).filter((p) => !seen.has(p.id) && (((p as any).is_test === true) === meTest));
+  // Friend matching is metro-bounded — you crew up across your WHOLE metro (no
+  // radius), but never cross-metro (a Boston user shouldn't be friend-matched to
+  // NYC). If we can't resolve the user's metro, fall back to no geo filter.
+  const myMetro = metroOf((me as any).zip);
+  const fresh = (pool ?? []).filter((p) =>
+    !seen.has(p.id) &&
+    (((p as any).is_test === true) === meTest) &&
+    (!myMetro || metroOf((p as any).zip) === myMetro)
+  );
   const ranked = rankFriendCandidates(me, fresh);
 
   const meFirst = ((me as any).name || 'Someone').split(' ')[0];

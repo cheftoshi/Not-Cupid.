@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Wordmark from '@/components/wordmark';
+import CorpFooter from '@/components/corp-footer';
 import { compressImage } from '@/lib/compress-image';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel, METRO_CENTERS, METRO_ZIP } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
@@ -60,6 +61,8 @@ export default function HubClient({
 }) {
   const [cityPicker, setCityPicker] = useState(false);
   const [cityBusy, setCityBusy] = useState<string | null>(null);
+  const [radius, setRadius] = useState<number>(matchRadius ?? 15);
+  const [radiusBusy, setRadiusBusy] = useState(false);
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
   const [uploading, setUploading] = useState(false);
@@ -118,6 +121,19 @@ export default function HubClient({
     } catch { setCityBusy(null); }
   }
 
+  // Love-line match radius (distance-based). Friends ignore this — they match
+  // across the whole metro. Persists immediately; the love roster picks it up.
+  async function changeRadius(r: number) {
+    const prev = radius;
+    setRadius(r); setRadiusBusy(true);
+    try {
+      const res = await fetch('/api/profile/set-radius', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radius: r }) });
+      if (!res.ok) setRadius(prev);
+    } catch { setRadius(prev); }
+    finally { setRadiusBusy(false); }
+  }
+  const RADIUS_LADDER = [5, 10, 15, 25, 50, 75];
+
   const loveHref = !hasArchetype ? '/quiz' : needsLoveDeep ? '/quiz?line=love' : '/profile';
   const meta = ARCHETYPES.find((a) => a.name === profile.archetype);
 
@@ -175,7 +191,7 @@ export default function HubClient({
                 : <Link href="/quiz?retake=1" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>finish your quiz →</Link>}
               {profile.sun_sign && <div style={{ marginTop: '0.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', color: '#7a7590' }}>{signLabel(profile.sun_sign)}</div>}
               <button type="button" onClick={() => setCityPicker(true)} style={{ marginTop: '0.5rem', background: 'rgba(37,99,255,0.07)', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 999, padding: '0.3rem 0.7rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: BLUE_DEEP }}>
-                📍 {city || 'set your city'}{matchRadius && city ? <span style={{ opacity: 0.6 }}> · {matchRadius}mi</span> : null} <span style={{ opacity: 0.6 }}>· change</span>
+                📍 {city || 'set your city'} <span style={{ opacity: 0.6 }}>· change</span>
               </button>
               {msg && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', color: msg.startsWith('✓') ? '#2d7a4f' : '#d2530f', marginTop: '0.4rem' }}>{msg}</div>}
             </div>
@@ -183,13 +199,23 @@ export default function HubClient({
             {/* line choice — compact, on the side */}
             <div className={styles.dCard}>
               <span className={styles.dLabel}>your lines</span>
-              <Link href={loveHref} style={{ display: 'block', background: '#2563ff', color: '#fff', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none', marginBottom: '0.5rem' }}>
+              <Link href={loveHref} style={{ display: 'block', background: '#2563ff', color: '#fff', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none', marginBottom: '0.4rem' }}>
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em' }}>💘 love line</div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', opacity: 0.85, marginTop: '0.1rem' }}>{needsLoveDeep ? 'finish your love profile →' : 'pick your people →'}</div>
               </Link>
+              {/* match radius lives WITH the love line (love is distance-based) */}
+              <div style={{ marginBottom: '0.6rem', padding: '0 0.1rem' }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9a96a8', marginBottom: '0.35rem' }}>match within {radiusBusy ? '…' : `${radius} mi`}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                  {RADIUS_LADDER.map((r) => (
+                    <button key={r} type="button" onClick={() => changeRadius(r)} disabled={radiusBusy}
+                      style={{ flex: '1 1 auto', minWidth: 0, background: r === radius ? '#2563ff' : 'rgba(37,99,255,0.08)', color: r === radius ? '#fff' : BLUE_DEEP, border: `1px solid ${r === radius ? '#2563ff' : 'rgba(37,99,255,0.2)'}`, borderRadius: 8, padding: '0.28rem 0', cursor: radiusBusy ? 'wait' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.02em' }}>{r}</button>
+                  ))}
+                </div>
+              </div>
               <Link href="/friends" style={{ display: 'block', background: '#ff6a1f', color: '#fff', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em' }}>🧡 friend line</div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', opacity: 0.9, marginTop: '0.1rem' }}>crews · the scene →</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', opacity: 0.9, marginTop: '0.1rem' }}>{city ? `all of ${city.split(',')[0]} · by neighborhood →` : 'crews · the scene →'}</div>
               </Link>
             </div>
 
@@ -408,9 +434,7 @@ export default function HubClient({
         </div>
       )}
 
-      <footer className={styles.foot}>
-        <div className={styles.footCorp}>© {new Date().getFullYear()} notcupid · a lemon labs property</div>
-      </footer>
+      <CorpFooter />
     </main>
   );
 }

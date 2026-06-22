@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CorpFooter from '@/components/corp-footer';
 
 export const dynamic = 'force-static';
 
@@ -97,6 +98,7 @@ export default function FAQ() {
           </Link>
         </div>
       </div>
+      <CorpFooter />
     </div>
   );
 }

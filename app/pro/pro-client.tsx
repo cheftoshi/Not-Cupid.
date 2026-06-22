@@ -77,6 +77,13 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
             {err && <p style={{ textAlign: 'center', color: '#ffb3b3', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem' }}>{err}</p>}
           </>
         )}
+
+        {/* social connect links (dark-friendly) */}
+        <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          {[['instagram', 'https://instagram.com/notcupidapp'], ['tiktok', 'https://tiktok.com/@notcupid11'], ['x', 'https://x.com/notcupidapp']].map(([label, href]) => (
+            <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'lowercase', color: 'rgba(255,255,255,0.65)', textDecoration: 'none' }}>↗ {label}</a>
+          ))}
+        </div>
       </div>
     </div>
   );
