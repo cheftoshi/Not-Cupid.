@@ -113,8 +113,9 @@ function QuizInner() {
   const [rapidSelected, setRapidSelected] = useState<number|null>(null)
   // love-deep: partner preferences (single-choice; skip = -1)
   const [currentPartnerQ, setCurrentPartnerQ] = useState(0)
-  const [partnerAnswers, setPartnerAnswers] = useState<number[]>([])
+  const [partnerAnswers, setPartnerAnswers] = useState<(number | number[])[]>([])
   const [partnerSelected, setPartnerSelected] = useState<number|null>(null)
+  const [partnerMulti, setPartnerMulti] = useState<number[]>([]) // multi-select picks for the current Q
   const [loveDeepReady, setLoveDeepReady] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
   const [loadingPct, setLoadingPct] = useState(0)
@@ -343,7 +344,7 @@ function QuizInner() {
 
   // LOVE-DEEP submit — partner prefs + attachment + values. Enriches the love
   // profile (best-effort) and lands on the love dashboard.
-  const submitLoveDeep = useCallback(async (attachAns: number[], valuesAns: number[], partnerAns: number[]) => {
+  const submitLoveDeep = useCallback(async (attachAns: number[], valuesAns: number[], partnerAns: (number | number[])[]) => {
     userIdRef.current = 'done' // prevent the loading screen's result fallback
     try {
       const attach = computeAttachment(attachAns)
@@ -395,17 +396,26 @@ function QuizInner() {
   function nextVibe() { if (vibeSelected !== null) advanceVibe(vibeSelected) }
   function skipVibe() { advanceVibe(-1) }
 
-  // love-deep: partner preferences (single-choice index, skip = -1)
-  const advancePartner = useCallback((ans: number) => {
+  // love-deep: partner preferences. Single Qs store an index; `multi` Qs store
+  // an array of indices (skip = -1 / []).
+  const advancePartner = useCallback((ans: number | number[]) => {
     const newAnswers = [...partnerAnswers, ans]
     setPartnerAnswers(newAnswers)
     setPartnerSelected(null)
+    setPartnerMulti([])
     if (currentPartnerQ + 1 >= PARTNER_QUESTIONS.length) {
       setScreen('attach-intro') // love chapter 2: how you connect
     } else { setCurrentPartnerQ(q => q + 1) }
   }, [partnerAnswers, currentPartnerQ])
-  function nextPartner() { if (partnerSelected !== null) advancePartner(partnerSelected) }
-  function skipPartner() { advancePartner(-1) }
+  function togglePartnerMulti(i: number) {
+    setPartnerMulti(cur => cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i])
+  }
+  function nextPartner() {
+    const q = PARTNER_QUESTIONS[currentPartnerQ]
+    if (q?.multi) { if (partnerMulti.length > 0) advancePartner([...partnerMulti].sort((a, b) => a - b)) }
+    else if (partnerSelected !== null) advancePartner(partnerSelected)
+  }
+  function skipPartner() { advancePartner(PARTNER_QUESTIONS[currentPartnerQ]?.multi ? [] : -1) }
 
   // v2: attachment (Likert 1–5; selected value is the 1–5 rating, skip = -1)
   const advanceAttach = useCallback((ans: number) => {
@@ -786,20 +796,29 @@ function QuizInner() {
               <div className={styles.progressFill} style={{ width: `${(currentPartnerQ / PARTNER_QUESTIONS.length) * 100}%` }} />
             </div>
             <p className={styles.qText}>{PARTNER_QUESTIONS[currentPartnerQ].q}</p>
+            {PARTNER_QUESTIONS[currentPartnerQ].hint && (
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2563ff', margin: '-0.4rem 0 0.9rem' }}>
+                ⚡ {PARTNER_QUESTIONS[currentPartnerQ].hint}
+              </p>
+            )}
             <div className={styles.qOptions}>
-              {PARTNER_QUESTIONS[currentPartnerQ].opts.map((opt, i) => (
-                <button key={i}
-                  className={`${styles.qOpt} ${partnerSelected === i ? styles.qOptSelected : ''}`}
-                  onClick={() => setPartnerSelected(i)}>
-                  <span className={styles.qKey}>{String.fromCharCode(65 + i)}</span>
-                  <span className={styles.qOptText}>{opt}</span>
-                </button>
-              ))}
+              {PARTNER_QUESTIONS[currentPartnerQ].opts.map((opt, i) => {
+                const isMulti = !!PARTNER_QUESTIONS[currentPartnerQ].multi
+                const on = isMulti ? partnerMulti.includes(i) : partnerSelected === i
+                return (
+                  <button key={i}
+                    className={`${styles.qOpt} ${on ? styles.qOptSelected : ''}`}
+                    onClick={() => (isMulti ? togglePartnerMulti(i) : setPartnerSelected(i))}>
+                    <span className={styles.qKey}>{isMulti ? (on ? '✓' : '+') : String.fromCharCode(65 + i)}</span>
+                    <span className={styles.qOptText}>{opt}</span>
+                  </button>
+                )
+              })}
             </div>
             <div className={styles.qNav}>
               <button className={styles.qSkip} onClick={skipPartner}>skip this one</button>
-              <button className="btn-primary" onClick={nextPartner} disabled={partnerSelected === null}>
-                {currentPartnerQ + 1 === PARTNER_QUESTIONS.length ? 'next →' : 'next →'}
+              <button className="btn-primary" onClick={nextPartner} disabled={PARTNER_QUESTIONS[currentPartnerQ].multi ? partnerMulti.length === 0 : partnerSelected === null}>
+                {PARTNER_QUESTIONS[currentPartnerQ].multi && partnerMulti.length > 0 ? `next (${partnerMulti.length}) →` : 'next →'}
               </button>
             </div>
           </div>

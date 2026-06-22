@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { recordUnlock } from '@/lib/record-unlock'
 import { verifyStripeSignature } from '@/lib/stripe-webhook'
+import { sendPushToUser } from '@/lib/push'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,16 @@ export async function POST(req: NextRequest) {
         })
         if (error) console.error('Match unlock insert error:', error)
         else console.log(`Match unlock recorded (${tier})`)
+        // Tell the person who got unlocked — a warm "someone's into you" signal
+        // (profile tier only; they're already matched so no privacy leak).
+        if (!error && tier === 'profile' && session.metadata.unlocked_user_id) {
+          await sendPushToUser(session.metadata.unlocked_user_id, {
+            title: 'Someone unlocked your profile 👀',
+            body: 'A match liked what they saw and wanted the full picture.',
+            url: session.metadata.match_id ? `/match/${session.metadata.match_id}` : '/dashboard',
+            tag: `unlock-${session.metadata.match_id || session.metadata.unlocked_user_id}`,
+          }).catch(() => {})
+        }
         return NextResponse.json({ received: true })
       }
       // ============== End match unlock ==============

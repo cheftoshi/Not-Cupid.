@@ -361,8 +361,10 @@ export const KIDS_LABEL: Record<string, string> = { yes: 'wants kids', maybe: 'o
 //     The first question maps to users.relationship_style (drives the matcher's
 //     intent prioritization + ENM/poly hard-cluster). The rest land in
 //     values_profile.partner for preference-matching levers down the line.
-export interface PartnerQuestion { key: string; short: string; q: string; opts: string[]; vals: (string | number)[]; mapsTo?: 'relationship_style' }
+export interface PartnerQuestion { key: string; short: string; q: string; opts: string[]; vals: (string | number)[]; mapsTo?: 'relationship_style'; multi?: boolean; hint?: string }
 
+// `multi: true` questions let you pick more than one — people vibe with more
+// than one thing. They store an ARRAY of vals on values_profile.partner[key].
 export const PARTNER_QUESTIONS: PartnerQuestion[] = [
   { key: 'intent', short: 'Looking for', q: 'What are you actually looking for right now?',
     opts: ['Marriage + kids in mind', 'Long-term, no kids (DINK)', 'Something real, no rush', 'Casual / right-now', 'ENM / polyamorous'],
@@ -373,21 +375,31 @@ export const PARTNER_QUESTIONS: PartnerQuestion[] = [
   { key: 'energy', short: 'Their energy', q: 'You click most with someone who’s…',
     opts: ['A homebody like me', 'Balanced — in and out', 'Always out and social'],
     vals: ['home', 'balanced', 'social'] },
-  { key: 'drive', short: 'Their drive', q: 'A partner’s ambition — you want someone who’s…',
-    opts: ['Deeply driven', 'Driven but balanced', 'Anti-hustle, present'],
-    vals: ['driven', 'balanced', 'chill'] },
-  { key: 'priority', short: 'Matters most', q: 'Honestly — what matters MOST in a match?',
-    opts: ['Shared values', 'Emotional depth', 'Physical chemistry', 'Shared lifestyle'],
-    vals: ['values', 'emotional', 'chemistry', 'lifestyle'] },
+  { key: 'draws', short: 'Draws you in', q: 'What actually draws you to someone?',
+    hint: 'pick as many as feel true', multi: true,
+    opts: ['A sharp sense of humor', 'Ambition + drive', 'Warmth + kindness', 'Real emotional depth', 'A spirit for adventure', 'Creativity', 'Intelligence', 'A calm, grounded presence', 'Good looks, honestly'],
+    vals: ['humor', 'ambition', 'warmth', 'depth', 'adventure', 'creativity', 'intelligence', 'calm', 'looks'] },
+  { key: 'priority', short: 'Matters most', q: 'What matters most to you in a match?',
+    hint: 'pick all that count — not just one', multi: true,
+    opts: ['Shared values', 'Emotional depth', 'Physical chemistry', 'Shared lifestyle', 'Big shared ambitions', 'Just makes me laugh'],
+    vals: ['values', 'emotional', 'chemistry', 'lifestyle', 'ambition', 'humor'] },
 ]
 
 // Returns the relationship_style (from the intent question) + a partner-prefs
-// object for values_profile.partner. Skips (answer -1) are omitted.
-export function partnerFromAnswers(answers: number[]): { relationship_style?: string; partner: Record<string, string | number> } {
-  const partner: Record<string, string | number> = {}
+// object for values_profile.partner. Single questions store one val; `multi`
+// questions store an array. Skips (answer -1 / []) are omitted.
+export function partnerFromAnswers(answers: (number | number[])[]): { relationship_style?: string; partner: Record<string, string | number | string[]> } {
+  const partner: Record<string, string | number | string[]> = {}
   let relationship_style: string | undefined
   PARTNER_QUESTIONS.forEach((qq, i) => {
-    const idx = answers[i]
+    const a = answers[i]
+    if (qq.multi) {
+      const idxs = Array.isArray(a) ? a : typeof a === 'number' && a >= 0 ? [a] : []
+      const vals = idxs.filter((idx) => idx >= 0 && idx < qq.opts.length).map((idx) => String(qq.vals[idx]))
+      if (vals.length) partner[qq.key] = vals
+      return
+    }
+    const idx = Array.isArray(a) ? a[0] : a
     if (idx === undefined || idx < 0 || idx >= qq.opts.length) return
     const v = qq.vals[idx]
     if (qq.mapsTo === 'relationship_style') relationship_style = String(v)

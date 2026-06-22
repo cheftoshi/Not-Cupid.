@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { getCurrentAdmin } from '@/lib/admin';
 import { renderEmail, sendEmail, button, C } from '@/lib/email';
 import { signMatchToken } from '@/lib/match-tokens';
+import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,6 +126,15 @@ export async function GET(req: NextRequest) {
 
         if (result.ok) sent++;
         else failures.push(`${recipient.id}: ${result.error}`);
+
+        // Push alongside the email — people miss the email, and a decision
+        // before expiry is exactly what the responsiveness gate rewards.
+        await sendPushToUser(recipient.id, {
+          title: `${hoursLeft}h left with ${otherFirst}`,
+          body: 'Say yes or pass before the match drops back into the pool.',
+          url: '/dashboard',
+          tag: `match-${m.id}`,
+        }).catch(() => {});
       }
 
       // Mark the match as reminded so the next cron tick doesn't re-send.

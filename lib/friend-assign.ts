@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { rankFriendCandidates } from '@/lib/friend-matching';
 import { FRIEND_MAX_CONNECTIONS } from '@/lib/friend-circles';
+import { sendPushToUser } from '@/lib/push';
 
 // Auto-assign: top the user up to FRIEND_MAX_CONNECTIONS (5) friend matches by
 // score, excluding anyone they already have a connection or history with, and
@@ -51,6 +52,8 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   const fresh = (pool ?? []).filter((p) => !seen.has(p.id) && (((p as any).is_test === true) === meTest));
   const ranked = rankFriendCandidates(me, fresh);
 
+  const meFirst = ((me as any).name || 'Someone').split(' ')[0];
+  const pushes: Promise<void>[] = [];
   let created = 0;
   for (const { user: cand, score } of ranked) {
     if (created >= need) break;
@@ -69,8 +72,23 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
       { user_a_id: a, user_b_id: b, status: 'pending', compatibility_score: score },
       { onConflict: 'user_a_id,user_b_id', ignoreDuplicates: true }
     );
-    if (!error) created++;
+    if (!error) {
+      created++;
+      // The candidate just got matched without lifting a finger — ping them so
+      // the Friend Line isn't a one-sided silence (their only friend-match ping).
+      pushes.push(
+        sendPushToUser(cand.id, {
+          title: 'New friend match 🧡',
+          body: `${meFirst} could be your kind of people — say hi on the Friend Line.`,
+          url: '/friends',
+          tag: `friend-match-${cand.id}`,
+        })
+      );
+    }
   }
+  // Awaited (not fire-and-forget) so Vercel can't kill the only friend-match
+  // ping; allSettled runs them concurrently + a dead sub never throws.
+  if (pushes.length) await Promise.allSettled(pushes);
   return created;
 }
 
