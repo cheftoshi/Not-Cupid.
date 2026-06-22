@@ -33,6 +33,11 @@ type Friend = {
   connected: boolean; opened: boolean;
 };
 
+type LoveMatch = {
+  matchId: string; name: string; age: number | null; photo_url: string | null;
+  archetype: string | null; score: number | null; bothAccepted: boolean; iAccepted: boolean;
+};
+
 const BLUE = '#2563ff';
 const BLUE_DEEP = '#1b46c9';
 const ORANGE_DEEP = '#d2530f';
@@ -48,10 +53,10 @@ function whenLabel(iso: string | null): string {
 }
 
 export default function HubClient({
-  firstName, hasArchetype, needsLoveDeep, profile, city, currentMetro, matchRadius,
+  firstName, hasArchetype, needsLoveDeep, profile, city, currentMetro, matchRadius, loveMatches = [],
 }: {
   firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean; profile: Profile;
-  city?: string | null; currentMetro?: string | null; matchRadius?: number;
+  city?: string | null; currentMetro?: string | null; matchRadius?: number; loveMatches?: LoveMatch[];
 }) {
   const [cityPicker, setCityPicker] = useState(false);
   const [cityBusy, setCityBusy] = useState<string | null>(null);
@@ -233,6 +238,40 @@ export default function HubClient({
                 </>
               )}
             </div>
+
+            {/* YOUR MATCHES — live love-line connections (parity with friends) */}
+            {hasArchetype && (
+              <div className={styles.dCard}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span className={styles.dLabel}>your matches{loveMatches.length ? ` · ${loveMatches.length}` : ''}</span>
+                  <Link href="/dashboard" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>{loveMatches.length ? 'all →' : 'the roster →'}</Link>
+                </div>
+                {loveMatches.length === 0 ? (
+                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
+                    no live conversations — <Link href="/dashboard" style={{ color: BLUE_DEEP }}>pick from your roster →</Link>
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {loveMatches.map((m) => {
+                      const status = m.bothAccepted ? 'chatting' : m.iAccepted ? 'waiting on them' : 'your move';
+                      return (
+                        <Link key={m.matchId} href={`/match/${m.matchId}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: '#f3f6ff', border: '1.5px solid rgba(37,99,255,0.2)', borderRadius: 12, padding: '0.55rem 0.8rem', textDecoration: 'none' }}>
+                          {m.photo_url
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                            : <span style={{ width: 38, height: 38, borderRadius: '50%', background: '#e8edff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: BLUE, fontSize: '0.95rem', flexShrink: 0 }}>{(m.name || '?').charAt(0)}</span>}
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: '#0a0a0a' }}>{(m.name || 'match').split(' ')[0]}{m.age ? `, ${m.age}` : ''}</div>
+                            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: m.bothAccepted ? '#2d7a4f' : BLUE_DEEP }}>● {status}{m.score ? ` · ${m.score}%` : ''}</div>
+                          </div>
+                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE_DEEP, flexShrink: 0 }}>{m.bothAccepted ? 'open →' : 'say hi →'}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* YOUR FRIENDS — persist across packs (opening a new pack only adds) */}
             {friendOptedIn && friends !== null && (

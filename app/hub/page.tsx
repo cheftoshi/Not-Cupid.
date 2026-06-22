@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
+import { liveMatchesFor } from '@/lib/match-actions';
 import HubClient from './hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -39,5 +41,28 @@ export default async function HubPage() {
     hobbies: user.hobbies ?? [],
   };
 
-  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} currentMetro={metro} matchRadius={user.match_radius ?? 15} />;
+  // Love-line matches — surface them on the hub too (parity with "your friends").
+  const liveMatches = await liveMatchesFor(user.id);
+  const matchOtherIds = liveMatches.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id));
+  const { data: matchOthers } = matchOtherIds.length
+    ? await supabaseAdmin.from('users').select('id, name, age, photo_url, archetype, is_test').in('id', matchOtherIds)
+    : { data: [] as any[] };
+  const matchById = new Map((matchOthers ?? []).map((u: any) => [u.id, u]));
+  const isTestViewer = (user as any).is_test === true;
+  const loveMatches = liveMatches
+    .map((m: any) => {
+      const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
+      const o: any = matchById.get(otherId);
+      if (!o || (o.is_test === true) !== isTestViewer) return null; // realm segregation
+      const iAccepted = m.user_1_id === user.id ? m.user_1_accepted : m.user_2_accepted;
+      return {
+        matchId: m.id, name: o.name, age: o.age, photo_url: o.photo_url, archetype: o.archetype,
+        score: m.compatibility_score ?? null,
+        bothAccepted: !!(m.user_1_accepted && m.user_2_accepted),
+        iAccepted: !!iAccepted,
+      };
+    })
+    .filter(Boolean);
+
+  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} currentMetro={metro} matchRadius={user.match_radius ?? 15} loveMatches={loveMatches as any} />;
 }
