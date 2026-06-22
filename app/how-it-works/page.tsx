@@ -12,7 +12,7 @@ const ORANGE = '#ff6a1f';
 const ORANGE_DEEP = '#d2530f';
 
 const STEPS = [
-  { n: '1', emoji: '📝', title: 'sign up', body: 'name, email, a 6-digit code to prove it’s you. born in Boston, now open across the Northeast — all of New England plus New York City.' },
+  { n: '1', emoji: '📝', title: 'sign up', body: 'name, email, a 6-digit code to prove it’s you. born in Boston, now open across the Northeast — all of New England, the NYC metro, and North Jersey.' },
   { n: '2', emoji: '🧠', title: 'take the core quiz', body: 'a short, chaptered run — who you are (personality), the day-to-day (lifestyle), and a rapid-fire round. ~4 minutes, no photos, no performing.' },
   { n: '3', emoji: '🚉', title: 'pick your line', body: 'board the Love Line (dating), the Friend Line (platonic crews), or both. your core quiz powers both sides.' },
   { n: '4', emoji: '🎯', title: 'go a little deeper', body: 'each line asks a few questions of its own — Love: what you want in a partner, how you connect, what matters. Friend: how you like to hang. that’s what the matching actually weighs.' },

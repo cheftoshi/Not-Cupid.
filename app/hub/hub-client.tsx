@@ -386,7 +386,7 @@ export default function HubClient({
               <button onClick={() => setCityPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#9a96a8' }}>✕</button>
             </div>
             <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.85rem', margin: '0 0 1rem' }}>
-              we’re live in <b>{CITY_OPTIONS.length} cities</b> across New England + NYC. tap any to set where you match &amp; see events — your matches &amp; friends stay put.
+              we’re live in <b>{CITY_OPTIONS.length} cities</b> across New England, NYC &amp; North Jersey. tap any to set where you match &amp; see events — your matches &amp; friends stay put.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
               {CITY_OPTIONS.map((c) => {

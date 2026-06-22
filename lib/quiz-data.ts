@@ -1018,6 +1018,12 @@ export const PREFIX_COORDS: Record<string, { lat: number; lng: number }> = {
   '063':{lat:41.52,lng:-72.10}, '064':{lat:41.40,lng:-72.85}, '065':{lat:41.31,lng:-72.93},
   '066':{lat:41.18,lng:-73.19}, '067':{lat:41.56,lng:-73.04}, '068':{lat:41.10,lng:-73.45},
   '069':{lat:41.05,lng:-73.60},
+  // North Jersey (070–079) — NYC commuter belt: Newark, Jersey City, Hoboken,
+  // Bergen/Hudson/Essex/Union, Paterson, Morristown. Folds into the NYC pool.
+  '070':{lat:40.72,lng:-74.05}, '071':{lat:40.73,lng:-74.17}, '072':{lat:40.66,lng:-74.21},
+  '073':{lat:40.71,lng:-74.06}, '074':{lat:40.92,lng:-74.17}, '075':{lat:40.89,lng:-74.04},
+  '076':{lat:40.92,lng:-74.07}, '077':{lat:40.35,lng:-74.07}, '078':{lat:40.80,lng:-74.48},
+  '079':{lat:40.70,lng:-74.36},
   // New York City metro (100–119). Manhattan/Bronx/SI, Westchester+Rockland,
   // Queens/Brooklyn, then Far Rockaway + Nassau/Suffolk Long Island.
   '100':{lat:40.78,lng:-73.97}, '101':{lat:40.78,lng:-73.97}, '102':{lat:40.78,lng:-73.97},
@@ -1068,11 +1074,22 @@ export function isNycMetroZip(zip: string | null | undefined): boolean {
   return p >= 100 && p <= 119
 }
 
-// Signup eligibility: all of New England + the NYC metro. Matching still stays
-// LOCAL per-user (match_radius) and metros never cross-match, so opening NYC
-// just creates a separate, very dense NYC pool — it doesn't touch Boston.
+// North Jersey = the NYC commuter belt (Newark, Jersey City, Hoboken, Bergen /
+// Hudson / Essex / Union — prefixes 070–079). It sits 2–5mi from Manhattan, so
+// distance-based matching folds it straight into the NYC pool (it densifies NYC
+// rather than starting a new market). South/Central NJ (080–099 = the Philly
+// metro) stays OUT.
+export function isNorthJerseyZip(zip: string | null | undefined): boolean {
+  if (!zip || !/^\d{5}$/.test(zip)) return false
+  const p = parseInt(zip.slice(0, 3), 10)
+  return p >= 70 && p <= 79
+}
+
+// Signup eligibility: all of New England + the NYC metro (incl. North Jersey).
+// Matching stays LOCAL per-user (match_radius) + is purely distance-based, so
+// North Jersey naturally joins the NYC pool without touching other metros.
 export function isEligibleZip(zip: string | null | undefined): boolean {
-  return isNewEnglandZip(zip) || isNycMetroZip(zip)
+  return isNewEnglandZip(zip) || isNycMetroZip(zip) || isNorthJerseyZip(zip)
 }
 
 export function validateZip(zip: string): 'valid'|'invalid'|'outofrange'|'incomplete' {
@@ -1119,6 +1136,8 @@ export const METRO_CENTERS: Record<string, { label: string; city: string; state:
   nyc:         { label: 'New York City',  city: 'New York',      state: 'NY', lat: 40.7128, lng: -74.0060 },
   longisland:  { label: 'Long Island',    city: 'Hempstead',     state: 'NY', lat: 40.7062, lng: -73.6187 },
   westchester: { label: 'Westchester',    city: 'White Plains',  state: 'NY', lat: 41.0340, lng: -73.7629 },
+  // New Jersey (North Jersey only — the NYC commuter belt; shares NYC's pool)
+  northjersey: { label: 'North Jersey',   city: 'Jersey City',   state: 'NJ', lat: 40.7220, lng: -74.0760 },
 }
 
 export type Metro = keyof typeof METRO_CENTERS
@@ -1133,7 +1152,7 @@ export const METRO_ZIP: Record<Metro, string> = {
   manchester: '03101', concord_nh: '03301', seacoast: '03801', portland_me: '04101',
   augusta: '04330', bangor: '04401', burlington: '05401', montpelier: '05602',
   hartford: '06103', newhaven: '06511', fairfield: '06901', easternct: '06320',
-  nyc: '10001', longisland: '11550', westchester: '10601',
+  nyc: '10001', longisland: '11550', westchester: '10601', northjersey: '07302',
 }
 
 // Nearest metro to a zip, or null if the zip is unknown / beyond range of
