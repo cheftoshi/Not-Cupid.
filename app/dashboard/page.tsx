@@ -5,8 +5,6 @@ import MatchCard from './match-card';
 import MatchReveal from './match-reveal';
 import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
-import Wordmark from '@/components/wordmark';
-import ThemeToggle from '@/components/theme-toggle';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
@@ -130,17 +128,6 @@ export default async function DashboardPage({
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <nav className={styles.nav}>
-          <Wordmark size={1.15} href="/hub" />
-          <div className={styles.navLinks}>
-            <a href="/profile" className={styles.navLink}>Profile</a>
-            <a href="/profile/preview" className={styles.navLink}>Preview</a>
-            <a href="/dashboard" className={`${styles.navLink} ${styles.navLinkActive}`}>Matches</a>
-            <a href="/quiz?retake=1" className={styles.navLink}>Retake quiz</a>
-            <ThemeToggle style={{ width: 30, height: 30 }} />
-          </div>
-        </nav>
-
         <DashboardExtras />
 
         <h1 className={styles.title}>

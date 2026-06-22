@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Wordmark from '@/components/wordmark';
 import CorpFooter from '@/components/corp-footer';
-import ThemeToggle from '@/components/theme-toggle';
 import { compressImage } from '@/lib/compress-image';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel, METRO_CENTERS, METRO_ZIP } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
@@ -163,13 +161,6 @@ export default function HubClient({
       <div className={styles.glow} style={{ background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(37,99,255,0.20) 0%, rgba(255,106,31,0.08) 35%, transparent 60%)` }} aria-hidden />
       <div className={styles.grain} aria-hidden />
 
-      <header className={styles.top}>
-        <Wordmark size={1.25} href="/hub" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <ThemeToggle />
-          <a href="/api/auth/logout" onClick={async (e) => { e.preventDefault(); await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/'; }} className={styles.logout}>log out</a>
-        </div>
-      </header>
 
       <div className={styles.dashWrap}>
         <div className={styles.dashGrid}>

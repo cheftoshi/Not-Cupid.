@@ -51,8 +51,8 @@ const FAQS: { q: string; a: string }[] = [
     a: 'You can block and report anyone, we never show your exact location (just a fuzzy metro and distance band), and date-safety tips are built into your matches. People who repeatedly ghost get paused.',
   },
   {
-    q: 'Do I need to install an app?',
-    a: 'No — NotCupid runs in your browser, and you can “Add to Home Screen” to install it like an app, with notifications. A native App Store version is on the way.',
+    q: 'How do I install the app — and turn on notifications?',
+    a: 'NotCupid runs in your browser, but you can install it like a real app. On iPhone: open notcupid.com in Safari, tap the Share icon (the square with an arrow), scroll to “Add to Home Screen,” then open NotCupid from your Home Screen. On Android / desktop Chrome: tap “install the app” when the prompt appears, or use the browser menu → Install. Notifications: Android and desktop can turn them on right in the browser, but iPhone only allows notifications once you’ve installed the app to your Home Screen (iOS 16.4+) — they don’t work in the Safari tab. So on iPhone: install first, open the app from your Home Screen, then tap “🔔 get pinged when you match.” A native App Store version is on the way.',
   },
   {
     q: 'How do I delete my account?',

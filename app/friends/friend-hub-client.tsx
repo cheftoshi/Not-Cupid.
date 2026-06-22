@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { NEIGHBORHOODS } from '@/lib/neighborhoods';
 import ReactivateButton from '@/components/reactivate-button';
-import ThemeToggle from '@/components/theme-toggle';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#241d12';           // warm near-black (signage)
@@ -594,10 +593,6 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
             <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}`, textDecoration: 'none' }}>FRIEND LINE</a>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>notcupid · greater boston</span>
-          </div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem' }}>
-            <ThemeToggle style={{ width: 28, height: 28 }} />
-            <a href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>← transfer to hub</a>
           </div>
         </div>
 
