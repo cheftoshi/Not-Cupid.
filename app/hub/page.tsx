@@ -39,6 +39,7 @@ export default async function HubPage() {
     music: user.music ?? [],
     food: user.food ?? [],
     hobbies: user.hobbies ?? [],
+    sports: user.sports ?? [],
   };
 
   // Love-line matches — surface them on the hub too (parity with "your friends").

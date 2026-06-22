@@ -348,6 +348,10 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           <label className={styles.label}>Hobbies & obsessions · <span className={styles.labelHint}>press enter or comma to add</span></label>
           <ChipInput value={user.hobbies || []} onChange={(arr) => setUser({ ...user, hobbies: arr })} placeholder="hiking, pottery, conspiracy theories" variant="mix" />
         </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Sports & fitness · <span className={styles.labelHint}>what gets you moving</span></label>
+          <ChipInput value={user.sports || []} onChange={(arr) => setUser({ ...user, sports: arr })} placeholder="climbing, soccer, run club, yoga" variant="lav" />
+        </div>
       </div>
 
       {/* PERSONALITY */}

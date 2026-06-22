@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest) {
   const allowed = [
     'name', 'age', 'gender', 'seeking', 'zip',
     'bio', 'height_cm', 'occupation', 'education',
-    'music', 'food', 'hobbies', 'prompts',
+    'music', 'food', 'hobbies', 'sports', 'prompts',
     'age_min', 'age_max', 'auto_rematch',
     'vibes', 'relationship_style', 'sun_sign',
     'email_notifications',

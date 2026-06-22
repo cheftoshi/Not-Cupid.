@@ -81,3 +81,33 @@ body{
   60%{transform:translateX(-4px)}
   80%{transform:translateX(4px)}
 }
+
+/* ── Dark mode (hub-first; opt-in via [data-theme="dark"] on <html>) ──
+   Scoped to --h-* / --c-* vars so non-converted pages are unaffected. */
+:root{
+  --h-bg: linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
+  --h-surface: #ffffff;
+  --h-surface-2: #f3f6ff;
+  --h-surface-3: #faf7f3;
+  --h-text: #0a0a0a;
+  --h-text-dim: #6b6975;
+  --h-text-faint: #9a96a8;
+  --h-border: rgba(37,99,255,0.16);
+  --h-accent: #1b46c9;
+  --h-accent-2: #d2530f;
+  /* interest category colors (adapt per theme) */
+  --c-music: #1b46c9; --c-food: #d2530f; --c-hobby: #5a2bc4; --c-sport: #1f7a52; --c-vibe: #c01f6f;
+}
+:root[data-theme="dark"]{
+  --h-bg: linear-gradient(180deg, #14121c 0%, #0c0a12 100%);
+  --h-surface: #1a1722;
+  --h-surface-2: #221d30;
+  --h-surface-3: #241d22;
+  --h-text: #f1eef7;
+  --h-text-dim: #aaa4ba;
+  --h-text-faint: #7d7890;
+  --h-border: rgba(255,255,255,0.10);
+  --h-accent: #7fa0ff;
+  --h-accent-2: #ff9a5c;
+  --c-music: #6f9bff; --c-food: #ff9a5c; --c-hobby: #b794ff; --c-sport: #4fce93; --c-vibe: #ff7ab3;
+}

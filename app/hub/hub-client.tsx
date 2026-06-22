@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Wordmark from '@/components/wordmark';
 import CorpFooter from '@/components/corp-footer';
+import ThemeToggle from '@/components/theme-toggle';
 import { compressImage } from '@/lib/compress-image';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel, METRO_CENTERS, METRO_ZIP } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
@@ -18,7 +19,7 @@ const CITY_OPTIONS = (Object.keys(METRO_ZIP) as Array<keyof typeof METRO_ZIP>)
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
   attach_style?: string | null; vibes?: Record<string, number> | null; sun_sign?: string | null;
-  music?: string[]; food?: string[]; hobbies?: string[];
+  music?: string[]; food?: string[]; hobbies?: string[]; sports?: string[];
 };
 
 type Activity = {
@@ -40,8 +41,8 @@ type LoveMatch = {
 };
 
 const BLUE = '#2563ff';
-const BLUE_DEEP = '#1b46c9';
-const ORANGE_DEEP = '#d2530f';
+const BLUE_DEEP = 'var(--h-accent)';
+const ORANGE_DEEP = 'var(--h-accent-2)';
 
 function whenLabel(iso: string | null): string {
   if (!iso) return 'anytime';
@@ -137,12 +138,13 @@ export default function HubClient({
   const loveHref = !hasArchetype ? '/quiz' : needsLoveDeep ? '/quiz?line=love' : '/profile';
   const meta = ARCHETYPES.find((a) => a.name === profile.archetype);
 
-  // interests + vibe tags (NOT the personality bars)
-  const interestGroups = [
-    { head: 'music', items: profile.music ?? [] },
-    { head: 'food & drink', items: profile.food ?? [] },
-    { head: 'into', items: profile.hobbies ?? [] },
-  ].filter((g) => g.items.length > 0);
+  // interests as color-coded bubble clusters (each its own set + accent)
+  const interestCats = [
+    { head: 'music', emoji: '🎵', items: profile.music ?? [], bg: 'rgba(37,99,255,0.12)', fg: 'var(--c-music)', bd: 'rgba(37,99,255,0.3)' },
+    { head: 'food & drink', emoji: '🍜', items: profile.food ?? [], bg: 'rgba(255,106,31,0.12)', fg: 'var(--c-food)', bd: 'rgba(255,106,31,0.3)' },
+    { head: 'hobbies', emoji: '🎨', items: profile.hobbies ?? [], bg: 'rgba(123,60,255,0.14)', fg: 'var(--c-hobby)', bd: 'rgba(123,60,255,0.32)' },
+    { head: 'sports & fitness', emoji: '⚽', items: profile.sports ?? [], bg: 'rgba(45,155,111,0.14)', fg: 'var(--c-sport)', bd: 'rgba(45,155,111,0.35)' },
+  ].filter((c) => c.items.length > 0);
   const vibeTags = (Object.keys(VIBE_HEADS) as VibeKey[])
     .map((k) => ({ k, label: vibeLabel(k, (profile.vibes ?? {})[k]) }))
     .filter((v) => !!v.label);
@@ -163,7 +165,10 @@ export default function HubClient({
 
       <header className={styles.top}>
         <Wordmark size={1.25} href="/hub" />
-        <a href="/api/auth/logout" onClick={async (e) => { e.preventDefault(); await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/'; }} className={styles.logout}>log out</a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <ThemeToggle />
+          <a href="/api/auth/logout" onClick={async (e) => { e.preventDefault(); await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/'; }} className={styles.logout}>log out</a>
+        </div>
       </header>
 
       <div className={styles.dashWrap}>
@@ -183,8 +188,8 @@ export default function HubClient({
                   <input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} disabled={uploading} style={{ display: 'none' }} />
                 </label>
               </div>
-              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontWeight: 700, fontSize: '1.25rem', color: '#0a0a0a' }}>
-                {profile.name.split(' ')[0]}{profile.age ? <span style={{ fontWeight: 400, color: '#6b6975' }}>, {profile.age}</span> : null}
+              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontWeight: 700, fontSize: '1.25rem', color: 'var(--h-text)' }}>
+                {profile.name.split(' ')[0]}{profile.age ? <span style={{ fontWeight: 400, color: 'var(--h-text-dim)' }}>, {profile.age}</span> : null}
               </div>
               {meta
                 ? <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.85rem', color: BLUE, marginTop: '0.15rem' }}>{profile.archetype}</div>
@@ -205,7 +210,7 @@ export default function HubClient({
               </Link>
               {/* match radius lives WITH the love line (love is distance-based) */}
               <div style={{ marginBottom: '0.6rem', padding: '0 0.1rem' }}>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9a96a8', marginBottom: '0.35rem' }}>match within {radiusBusy ? '…' : `${radius} mi`}</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>match within {radiusBusy ? '…' : `${radius} mi`}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                   {RADIUS_LADDER.map((r) => (
                     <button key={r} type="button" onClick={() => changeRadius(r)} disabled={radiusBusy}
@@ -230,7 +235,7 @@ export default function HubClient({
 
           {/* ── MAIN: what you're into + your activity ── */}
           <section className={styles.dashMain}>
-            <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(1.5rem,4vw,2rem)', color: '#0a0a0a', margin: '0 0 0.25rem' }}>
+            <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(1.5rem,4vw,2rem)', color: 'var(--h-text)', margin: '0 0 0.25rem' }}>
               hey {firstName.toLowerCase()}.
             </p>
 
@@ -242,7 +247,7 @@ export default function HubClient({
                   <Link href="/dashboard" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>{loveMatches.length ? 'all →' : 'the roster →'}</Link>
                 </div>
                 {loveMatches.length === 0 ? (
-                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
+                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
                     no live conversations — <Link href="/dashboard" style={{ color: BLUE_DEEP }}>pick from your roster →</Link>
                   </p>
                 ) : (
@@ -250,13 +255,13 @@ export default function HubClient({
                     {loveMatches.map((m) => {
                       const status = m.bothAccepted ? 'chatting' : m.iAccepted ? 'waiting on them' : 'your move';
                       return (
-                        <Link key={m.matchId} href={`/match/${m.matchId}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: '#f3f6ff', border: '1.5px solid rgba(37,99,255,0.2)', borderRadius: 12, padding: '0.55rem 0.8rem', textDecoration: 'none' }}>
+                        <Link key={m.matchId} href={`/match/${m.matchId}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: 'var(--h-surface-2)', border: '1.5px solid rgba(37,99,255,0.2)', borderRadius: 12, padding: '0.55rem 0.8rem', textDecoration: 'none' }}>
                           {m.photo_url
                             // eslint-disable-next-line @next/next/no-img-element
                             ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                             : <span style={{ width: 38, height: 38, borderRadius: '50%', background: '#e8edff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: BLUE, fontSize: '0.95rem', flexShrink: 0 }}>{(m.name || '?').charAt(0)}</span>}
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: '#0a0a0a' }}>{(m.name || 'match').split(' ')[0]}{m.age ? `, ${m.age}` : ''}</div>
+                            <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)' }}>{(m.name || 'match').split(' ')[0]}{m.age ? `, ${m.age}` : ''}</div>
                             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: m.bothAccepted ? '#2d7a4f' : BLUE_DEEP }}>● {status}{m.score ? ` · ${m.score}%` : ''}</div>
                           </div>
                           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE_DEEP, flexShrink: 0 }}>{m.bothAccepted ? 'open →' : 'say hi →'}</span>
@@ -276,7 +281,7 @@ export default function HubClient({
                   {friends.length > 0 && <Link href="/friends?view=crew" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>group chat →</Link>}
                 </div>
                 {friends.length === 0 ? (
-                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
+                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
                     no friends opened yet — <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>open your first pack 🎒 →</Link>
                   </p>
                 ) : (
@@ -284,16 +289,16 @@ export default function HubClient({
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
                       {friends.slice(0, 12).map((f) => (
                         <Link key={f.otherId} href="/friends?view=crew" title={f.sharedActivities.length ? `both into ${f.sharedActivities.slice(0, 2).join(', ')}` : undefined}
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#faf7f3', border: '1px solid rgba(255,106,31,0.22)', borderRadius: 999, padding: '0.25rem 0.7rem 0.25rem 0.25rem', textDecoration: 'none' }}>
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.22)', borderRadius: 999, padding: '0.25rem 0.7rem 0.25rem 0.25rem', textDecoration: 'none' }}>
                           {f.photo_url
                             // eslint-disable-next-line @next/next/no-img-element
                             ? <img src={f.photo_url} alt="" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover' }} />
                             : <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#ffe6c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: ORANGE_DEEP, fontSize: '0.85rem' }}>{(f.name || '?').charAt(0)}</span>}
-                          <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.9rem', color: '#0a0a0a' }}>{(f.name || 'friend').split(' ')[0]}</span>
+                          <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.9rem', color: 'var(--h-text)' }}>{(f.name || 'friend').split(' ')[0]}</span>
                           {f.connected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3f7d57' }} title="in your crew" />}
                         </Link>
                       ))}
-                      {friends.length > 12 && <span style={{ alignSelf: 'center', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: '#9a96a8' }}>+{friends.length - 12} more</span>}
+                      {friends.length > 12 && <span style={{ alignSelf: 'center', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'var(--h-text-faint)' }}>+{friends.length - 12} more</span>}
                     </div>
                     <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '0.8rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>🎒 open another pack →</Link>
                   </>
@@ -305,18 +310,18 @@ export default function HubClient({
             <div className={styles.dCard}>
               <span className={styles.dLabel}>your events</span>
               {feed === null ? (
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9a96a8', margin: 0 }}>loading…</p>
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', margin: 0 }}>loading…</p>
               ) : myEvents.length === 0 ? (
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
+                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
                   nothing on your calendar yet — <Link href="/friends?view=scene" style={{ color: ORANGE_DEEP }}>find something on the Scene →</Link>
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {myEvents.map((a) => (
-                    <Link key={a.id} href="/friends?view=scene" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', background: '#faf7f3', border: '1.5px solid rgba(255,106,31,0.25)', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
+                    <Link key={a.id} href="/friends?view=scene" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', background: 'var(--h-surface-3)', border: '1.5px solid rgba(255,106,31,0.25)', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: '#0a0a0a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', color: '#6b6975' }}>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''}</div>
+                        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''}</div>
                       </div>
                       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: a.myResponse === 'yes' ? '#2d7a4f' : ORANGE_DEEP, flexShrink: 0 }}>{a.myResponse === 'yes' ? "you're in" : 'maybe'}</span>
                     </Link>
@@ -336,8 +341,8 @@ export default function HubClient({
                   {forYourVibe.map((a) => (
                     <Link key={a.id} href="/friends?view=scene" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', background: '#fff', border: '1px solid rgba(11,11,11,0.1)', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: '#0a0a0a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', color: '#6b6975' }}>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''} · {a.responses.yes} going</div>
+                        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''} · {a.responses.yes} going</div>
                       </div>
                       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE_DEEP, flexShrink: 0 }}>rsvp →</span>
                     </Link>
@@ -370,37 +375,48 @@ export default function HubClient({
             )}
           </section>
 
-          {/* ── RIGHT ASIDE: what you're into (interests + vibe — not personality bars) ── */}
+          {/* ── RIGHT ASIDE: what you're into — color-coded bubble sets per category ── */}
           <aside className={styles.dashAside}>
-            <div className={styles.dCard}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span className={styles.dLabel}>what you’re into</span>
-                <Link href="/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>edit →</Link>
-              </div>
-              {interestGroups.length === 0 && vibeTags.length === 0 ? (
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
-                  add your music, food &amp; hobbies on your <Link href="/profile" style={{ color: BLUE_DEEP }}>profile</Link> so matches see the real you.
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 0.2rem' }}>
+              <span className={styles.dLabel} style={{ marginBottom: 0 }}>what you’re into</span>
+              <Link href="/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>edit →</Link>
+            </div>
+            {interestCats.length === 0 && vibeTags.length === 0 ? (
+              <div className={styles.dCard}>
+                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
+                  add your music, food, hobbies &amp; sports on your <Link href="/profile" style={{ color: BLUE_DEEP }}>profile</Link> so matches see the real you.
                 </p>
-              ) : (
-                <>
-                  {interestGroups.map((g) => (
-                    <div key={g.head} style={{ marginBottom: '0.6rem' }}>
-                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a96a8', marginBottom: '0.35rem' }}>{g.head}</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                        {g.items.map((t, i) => <span key={`${t}-${i}`} style={{ background: '#e8edff', color: '#0e0c1a', border: '1px solid rgba(14,12,26,0.12)', borderRadius: 999, padding: '0.3rem 0.75rem', fontSize: '0.78rem' }}>{t}</span>)}
-                      </div>
+              </div>
+            ) : (
+              <>
+                {interestCats.map((c) => (
+                  <div key={c.head} className={styles.dCard} style={{ borderColor: c.bd, padding: '0.95rem 1.05rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.55rem' }}>
+                      <span style={{ fontSize: '1rem' }}>{c.emoji}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: c.fg }}>{c.head}</span>
                     </div>
-                  ))}
-                  {vibeTags.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.2rem' }}>
-                      {vibeTags.map((v) => (
-                        <span key={v.k} style={{ background: 'rgba(37,99,255,0.1)', color: BLUE_DEEP, border: '1px solid rgba(37,99,255,0.3)', borderRadius: 999, padding: '0.3rem 0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.04em' }}>{v.label}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      {c.items.map((t, i) => (
+                        <span key={`${t}-${i}`} style={{ background: c.bg, color: c.fg, border: `1px solid ${c.bd}`, borderRadius: 999, padding: '0.34rem 0.8rem', fontSize: '0.82rem', fontWeight: 500 }}>{t}</span>
                       ))}
                     </div>
-                  )}
-                </>
-              )}
-            </div>
+                  </div>
+                ))}
+                {vibeTags.length > 0 && (
+                  <div className={styles.dCard} style={{ borderColor: 'rgba(255,45,142,0.28)', padding: '0.95rem 1.05rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.55rem' }}>
+                      <span style={{ fontSize: '1rem' }}>✨</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--c-vibe)' }}>your vibe</span>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      {vibeTags.map((v) => (
+                        <span key={v.k} style={{ background: 'rgba(255,45,142,0.08)', color: 'var(--c-vibe)', border: '1px solid rgba(255,45,142,0.28)', borderRadius: 999, padding: '0.3rem 0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.04em' }}>{v.label}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </aside>
         </div>
       </div>
@@ -408,12 +424,12 @@ export default function HubClient({
       {/* CITY PICKER — change which city's pool you're in */}
       {cityPicker && (
         <div onClick={() => setCityPicker(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(10,8,16,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '82vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '82vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: '#0a0a0a' }}>your home base</span>
-              <button onClick={() => setCityPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#9a96a8' }}>✕</button>
+              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>your home base</span>
+              <button onClick={() => setCityPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--h-text-faint)' }}>✕</button>
             </div>
-            <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.85rem', margin: '0 0 1rem' }}>
+            <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
               we’re live in <b>{CITY_OPTIONS.length} cities</b> across New England, NYC &amp; North Jersey. tap any to set where you match &amp; see events — your matches &amp; friends stay put.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -421,8 +437,8 @@ export default function HubClient({
                 const isCurrent = c.key === currentMetro;
                 return (
                   <button key={c.key} onClick={() => { if (!isCurrent) changeCity(c.key); }} disabled={!!cityBusy || isCurrent}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', background: isCurrent ? 'rgba(37,99,255,0.1)' : '#faf9fc', border: `1px solid ${isCurrent ? 'rgba(37,99,255,0.4)' : 'rgba(11,11,11,0.08)'}`, borderRadius: 10, padding: '0.6rem 0.85rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer') }}>
-                    <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.95rem', color: '#0a0a0a' }}>{c.city}<span style={{ color: '#9a96a8', fontSize: '0.78rem' }}>, {c.state}</span></span>
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', background: isCurrent ? 'rgba(37,99,255,0.1)' : 'var(--h-surface-2)', border: `1px solid ${isCurrent ? 'rgba(37,99,255,0.4)' : 'rgba(11,11,11,0.08)'}`, borderRadius: 10, padding: '0.6rem 0.85rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer') }}>
+                    <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.95rem', color: 'var(--h-text)' }}>{c.city}<span style={{ color: 'var(--h-text-faint)', fontSize: '0.78rem' }}>, {c.state}</span></span>
                     <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: isCurrent ? BLUE_DEEP : '#b4b0c2' }}>
                       {cityBusy === c.key ? '…' : isCurrent ? '✓ current' : 'switch →'}
                     </span>
