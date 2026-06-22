@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 
-// PWA niceties for logged-in surfaces (dashboard, friend hub):
+// PWA niceties — a FLOATING prompt mounted ONCE in the root layout, so the
+// "install the app" tag shows on EVERY page (not just dashboard/friends):
 //  1. push: one-tap "turn on notifications" (and silent re-subscribe when
 //     permission is already granted, so device swaps don't lose pushes)
 //  2. install: Android/desktop get the real install prompt; iOS Safari gets
 //     the "Share → Add to Home Screen" hint (Apple offers no API).
-// Both dismissible + remembered in localStorage.
+// Auto-hides once installed (standalone) / permission granted. Dismissible +
+// remembered in localStorage. (A logged-out user who grants push gets silently
+// subscribed on their next logged-in load via the `granted` branch.)
 
 const DISMISS_KEY = 'nc_pwa_prompt_dismissed';
 
@@ -119,27 +122,29 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', margin: '0 0 1.1rem' }}>
-      {showPush && (
-        <button onClick={enablePush} disabled={busy} style={{ ...pill, background: accent, color: '#fff' }}>
-          {busy ? 'turning on…' : '🔔 get pinged when you match'}
+    <div style={{ position: 'fixed', left: '50%', bottom: '0.9rem', transform: 'translateX(-50%)', zIndex: 60, maxWidth: 'calc(100vw - 1.5rem)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.5rem 0.7rem', boxShadow: '0 14px 44px -14px rgba(0,0,0,0.5)' }}>
+        {showPush && (
+          <button onClick={enablePush} disabled={busy} style={{ ...pill, background: accent, color: '#fff' }}>
+            {busy ? 'turning on…' : '🔔 get pinged when you match'}
+          </button>
+        )}
+        {showInstall === 'native' && (
+          <button onClick={install} style={pill}>📲 install the app</button>
+        )}
+        {showInstall === 'ios' && (
+          <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--h-text-dim)', padding: '0 0.3rem' }}>
+            📲 on iPhone: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install
+          </span>
+        )}
+        <button
+          onClick={dismiss}
+          aria-label="dismiss"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 0.3rem' }}
+        >
+          not now
         </button>
-      )}
-      {showInstall === 'native' && (
-        <button onClick={install} style={pill}>📲 install the app</button>
-      )}
-      {showInstall === 'ios' && (
-        <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--h-text-dim)' }}>
-          📲 on iPhone: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install
-        </span>
-      )}
-      <button
-        onClick={dismiss}
-        aria-label="dismiss"
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: 0 }}
-      >
-        not now
-      </button>
+      </div>
     </div>
   );
 }

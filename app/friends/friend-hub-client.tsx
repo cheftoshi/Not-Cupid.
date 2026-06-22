@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { NEIGHBORHOODS } from '@/lib/neighborhoods';
 import ReactivateButton from '@/components/reactivate-button';
-import PwaPrompt from '@/components/pwa-prompt';
 import ThemeToggle from '@/components/theme-toggle';
 
 // ── Friend Line theme (warm MBTA transit) ──
@@ -637,8 +636,6 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
               onZone={(a) => { setAreaFilter(a); setView('scene'); }} />
           </aside>
           <main className="fbMain">
-        <PwaPrompt accent="#d2530f" />
-
         {view === 'home' && (
           <HomeFeed firstName={firstName} activeGroups={activeGroups} popular={popular} hasCrew={matches.length > 0}
             onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} />
