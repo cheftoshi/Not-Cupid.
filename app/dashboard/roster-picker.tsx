@@ -8,11 +8,16 @@ import ReactivateButton from '@/components/reactivate-button';
 import EndMatchDialog from '@/components/end-match-dialog';
 
 type LiveConnection = { matchId: string; name: string };
+// Your chosen/active matches — rendered as the LEADING cards in the carousel.
+type ActiveCard = {
+  matchId: string; name: string; photo_url: string | null; age: number | null;
+  archetype: string | null; score: number | null;
+  status: 'chatting' | 'waiting' | 'your-move'; profileUnlocked: boolean; hasContent: boolean;
+};
 
-// The waiting-state experience: instead of being assigned one match, the user
-// sees their top compatible people and CHOOSES who to connect with. First pick
-// wins — picking creates the match (you pre-accepted) and notifies them. If the
-// roster is empty, falls back to the queue message + widen-search.
+// One horizontal carousel of your people: your chosen matches lead, then the
+// most compatible people you can pick. First pick wins — picking creates the
+// match (you pre-accepted) and notifies them.
 type Candidate = {
   id: string; name: string; age: number | null; photo_url: string | null;
   archetype: string | null; metro: string | null; relationship_style: string | null; score: number;
@@ -23,11 +28,13 @@ export default function RosterPicker({
   maxRadius,
   maxConnections = 2,
   liveConnections = [],
+  activeCards = [],
 }: {
   radius: number;
   maxRadius: number;
   maxConnections?: number;
   liveConnections?: LiveConnection[];
+  activeCards?: ActiveCard[];
 }) {
   const [roster, setRoster] = useState<Candidate[] | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
@@ -47,6 +54,15 @@ export default function RosterPicker({
     const card = el.querySelector<HTMLElement>('[data-card]');
     const step = card ? card.offsetWidth + 16 : el.clientWidth * 0.8;
     el.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
+  async function unlock(matchId: string) {
+    try {
+      const res = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: 'profile' }),
+      });
+      const data = await parseResponse<any>(res);
+      if (res.ok && data.url) window.location.href = data.url;
+    } catch { /* ignore */ }
   }
 
   useEffect(() => { load(); }, []);
@@ -140,8 +156,8 @@ export default function RosterPicker({
     );
   }
 
-  // Empty roster → queue message + widen search (the prior behavior).
-  if (roster.length === 0) {
+  // Empty AND no chosen matches → queue message + widen search.
+  if (roster.length === 0 && activeCards.length === 0) {
     return (
       <div style={emptyWrap}>
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>✦</div>
@@ -154,18 +170,22 @@ export default function RosterPicker({
     );
   }
 
+  const total = activeCards.length + roster.length;
   return (
     <div>
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>
-          ✦ your top {roster.length} — you choose
-        </div>
-        <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
-          pick who you want to meet.
-        </h2>
-        <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: 0 }}>
-          up to {maxConnections} conversations at once — choose someone and we&apos;ll let them know. the rest stay in your pool.
-        </p>
+      {/* slim header — count + roll arrows (no "roster" wording) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.9rem' }}>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
+          {activeCards.length > 0
+            ? `${activeCards.length} chosen${roster.length ? ` · ${roster.length} more to meet` : ''}`
+            : `your top ${roster.length} · you choose`}
+        </span>
+        {total > 1 && (
+          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+            <button onClick={() => rollBy(-1)} aria-label="previous" style={rollArrow}>‹</button>
+            <button onClick={() => rollBy(1)} aria-label="next" style={rollArrow}>›</button>
+          </div>
+        )}
       </div>
 
       {atCapacity && (
@@ -180,66 +200,92 @@ export default function RosterPicker({
         </div>
       )}
 
-      {/* CAROUSEL — roll through your roster, one person at a time */}
+      {/* ONE horizontal carousel: your CHOSEN matches lead, then the rest */}
       <style>{`.ncRoster::-webkit-scrollbar{height:6px}.ncRoster::-webkit-scrollbar-thumb{background:var(--h-border);border-radius:999px}.ncRoster::-webkit-scrollbar-track{background:transparent}`}</style>
-      <div style={{ position: 'relative' }}>
-        <div
-          ref={scrollerRef}
-          className="ncRoster"
-          style={{ display: 'flex', gap: '1rem', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', padding: '0.25rem 0.1rem 1rem', scrollbarWidth: 'thin' }}
-        >
-          {roster.map((c) => {
-            const first = (c.name || 'someone').split(' ')[0];
-            const style = relationshipStyleLabel(c.relationship_style);
-            return (
-              <div key={c.id} data-card style={{ flex: '0 0 auto', width: 'min(80vw, 268px)', scrollSnapAlign: 'center', background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 18, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 16px 44px -28px rgba(0,0,0,0.5)' }}>
-                <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
-                  {c.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#2563ff', fontSize: '0.9rem' }}>no photo</div>
-                  )}
-                  <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 11px', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', fontWeight: 600 }}>
-                    {c.score}<span style={{ color: '#ff6a1f' }}>%</span>
-                  </div>
+      <div
+        ref={scrollerRef}
+        className="ncRoster"
+        style={{ display: 'flex', gap: '0.85rem', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', padding: '0.25rem 0.1rem 1.1rem', scrollbarWidth: 'thin' }}
+      >
+        {/* CHOSEN / active matches — the leading cards */}
+        {activeCards.map((a) => {
+          const first = (a.name || 'your match').split(' ')[0];
+          const statusLabel = a.status === 'chatting' ? '● chatting' : a.status === 'your-move' ? '● your move' : '● waiting on them';
+          const statusColor = a.status === 'chatting' ? '#2d7a4f' : a.status === 'your-move' ? '#2563ff' : 'var(--h-text-dim)';
+          return (
+            <div key={a.matchId} data-card style={{ ...cardBase, border: '2px solid #2563ff' }}>
+              <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
+                {a.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#2563ff', fontSize: '0.9rem' }}>no photo</div>
+                )}
+                <div style={{ position: 'absolute', top: 10, left: 10, background: 'var(--h-surface)', color: statusColor, borderRadius: 999, padding: '3px 9px', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>{statusLabel}</div>
+                {a.score != null && (
+                  <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 11px', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', fontWeight: 600 }}>{a.score}<span style={{ color: '#ff6a1f' }}>%</span></div>
+                )}
+              </div>
+              <div style={{ padding: '0.9rem 0.95rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>
+                  {first}{a.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {a.age}</span> : null}
                 </div>
-                <div style={{ padding: '0.9rem 0.95rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                  <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>
-                    {first}{c.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {c.age}</span> : null}
-                  </div>
-                  {c.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{c.archetype}</div>}
-                  {style && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
-                  {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
-                  <button
-                    onClick={() => pick(c)}
-                    disabled={!!picking}
-                    style={{
-                      marginTop: 'auto', background: picking === c.id ? '#1b46c9' : '#0b0b0b', color: '#fff', border: 'none',
-                      borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem',
-                      letterSpacing: '0.1em', textTransform: 'uppercase', cursor: picking ? 'wait' : 'pointer',
-                      opacity: picking && picking !== c.id ? 0.4 : 1,
-                    }}
-                  >
-                    {picking === c.id ? 'connecting…' : atCapacity ? `close a chat to open →` : `choose ${first} →`}
-                  </button>
+                {a.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{a.archetype}</div>}
+                <a href={`/match/${a.matchId}`} style={{ marginTop: 'auto', textAlign: 'center', textDecoration: 'none', background: '#2563ff', color: '#fff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  {a.status === 'your-move' ? 'say hi →' : 'open chat →'}
+                </a>
+                {!a.profileUnlocked && a.hasContent && (
+                  <button onClick={() => unlock(a.matchId)} style={{ background: 'none', border: '1px solid var(--h-border)', color: 'var(--h-accent)', borderRadius: 10, padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔒 see more · $0.99</button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* the rest — compatible people you can choose */}
+        {roster.map((c) => {
+          const first = (c.name || 'someone').split(' ')[0];
+          const style = relationshipStyleLabel(c.relationship_style);
+          return (
+            <div key={c.id} data-card style={cardBase}>
+              <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
+                {c.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#2563ff', fontSize: '0.9rem' }}>no photo</div>
+                )}
+                <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 11px', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', fontWeight: 600 }}>
+                  {c.score}<span style={{ color: '#ff6a1f' }}>%</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-
-        {/* roll controls (hidden when only one card) */}
-        {roster.length > 1 && (
-          <>
-            <button onClick={() => rollBy(-1)} aria-label="previous" style={arrowBtn('left')}>‹</button>
-            <button onClick={() => rollBy(1)} aria-label="next" style={arrowBtn('right')}>›</button>
-          </>
-        )}
+              <div style={{ padding: '0.9rem 0.95rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>
+                  {first}{c.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {c.age}</span> : null}
+                </div>
+                {c.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{c.archetype}</div>}
+                {style && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
+                {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
+                <button
+                  onClick={() => pick(c)}
+                  disabled={!!picking}
+                  style={{
+                    marginTop: 'auto', background: picking === c.id ? '#1b46c9' : '#0b0b0b', color: '#fff', border: 'none',
+                    borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem',
+                    letterSpacing: '0.1em', textTransform: 'uppercase', cursor: picking ? 'wait' : 'pointer',
+                    opacity: picking && picking !== c.id ? 0.4 : 1,
+                  }}
+                >
+                  {picking === c.id ? 'connecting…' : atCapacity ? `close a chat to open →` : `choose ${first} →`}
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <p style={{ textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
-        ← roll through your roster · refreshes as new people join →
+      <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
+        ← roll through · refreshes as new people join →
       </p>
 
       {/* At-capacity: choosing prompts the user to close one existing chat. */}
@@ -300,14 +346,15 @@ const emptyWrap: React.CSSProperties = {
   marginBottom: '3rem',
 };
 
-// Floating roll arrows for the roster carousel (centered on the card row).
-function arrowBtn(side: 'left' | 'right'): React.CSSProperties {
-  return {
-    position: 'absolute', top: 'calc(40% - 18px)', [side]: -6,
-    width: 36, height: 36, borderRadius: '50%',
-    background: 'var(--h-surface)', border: '1px solid var(--h-border)',
-    color: 'var(--h-text)', fontSize: '1.3rem', lineHeight: 1, cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 8px 24px -10px rgba(0,0,0,0.45)', zIndex: 2, paddingBottom: 3,
-  } as React.CSSProperties;
-}
+// Shared carousel card box (chosen + candidate cards share this footprint).
+const cardBase: React.CSSProperties = {
+  flex: '0 0 auto', width: 'min(82vw, 270px)', scrollSnapAlign: 'center',
+  background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 18,
+  overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 16px 44px -28px rgba(0,0,0,0.5)',
+};
+// Roll arrows in the carousel header (not overlaid → no mobile overflow).
+const rollArrow: React.CSSProperties = {
+  width: 32, height: 32, borderRadius: '50%', background: 'var(--h-surface)', border: '1px solid var(--h-border)',
+  color: 'var(--h-text)', fontSize: '1.2rem', lineHeight: 1, cursor: 'pointer',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', paddingBottom: 3,
+};

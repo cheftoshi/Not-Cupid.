@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import MatchCard from './match-card';
 import MatchReveal from './match-reveal';
 import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
@@ -125,6 +124,22 @@ export default async function DashboardPage({
 
   const newest = connections[0] || null;
 
+  // Your chosen/active matches → the leading cards of the unified carousel.
+  const activeCards = connections.map((c: any) => {
+    const m = c.match;
+    const isU1 = m.user_1_id === user.id;
+    const myAcc = isU1 ? m.user_1_accepted : m.user_2_accepted;
+    const both = m.user_1_accepted && m.user_2_accepted;
+    const o = c.otherUser;
+    const hasContent = !!(o.bio || '').trim() || (Array.isArray(o.gallery) && o.gallery.length > 0);
+    return {
+      matchId: m.id, name: o.name || 'your match', photo_url: o.photo_url || null,
+      age: o.age ?? null, archetype: o.archetype || null, score: m.compatibility_score ?? null,
+      status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
+      profileUnlocked: c.profileUnlocked, hasContent,
+    };
+  });
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -149,42 +164,17 @@ export default async function DashboardPage({
           />
         )}
 
-        {/* YOUR CONNECTIONS — every live conversation gets its own card. */}
-        {connections.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {connections.map((c: any) => (
-              <MatchCard
-                key={c.match.id}
-                match={c.match}
-                otherUser={c.otherUser}
-                currentUserId={user.id}
-                isUnlocked={c.isUnlocked}
-                hexacoUnlocked={c.hexacoUnlocked}
-                profileUnlocked={c.profileUnlocked}
-                distanceMi={c.distanceMi}
-                beyondRadius={c.beyondRadius}
-                viewerSunSign={user.sun_sign}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* THE ROSTER — always browsable. At the cap, picking prompts you to
-            close one of your conversations first (in the roster component). */}
-        <div style={{ marginTop: connections.length > 0 ? '2rem' : 0 }}>
-          {connections.length > 0 && (
-            <h2 className={styles.historyTitle} style={{ marginBottom: '0.75rem' }}>the roster</h2>
-          )}
-          <RosterPicker
-            radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
-            maxRadius={MAX_MATCH_RADIUS}
-            maxConnections={MAX_CONNECTIONS}
-            liveConnections={connections.map((c: any) => ({
-              matchId: c.match.id,
-              name: c.otherUser.name || 'your match',
-            }))}
-          />
-        </div>
+        {/* ONE unified carousel — your chosen matches lead, then who's next. */}
+        <RosterPicker
+          radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
+          maxRadius={MAX_MATCH_RADIUS}
+          maxConnections={MAX_CONNECTIONS}
+          activeCards={activeCards}
+          liveConnections={connections.map((c: any) => ({
+            matchId: c.match.id,
+            name: c.otherUser.name || 'your match',
+          }))}
+        />
 
         {historyMatches && historyMatches.length > 0 && (
           <div className={styles.history}>
