@@ -203,3 +203,15 @@
   .top { padding: 1.1rem 1.25rem; }
   .intro { padding: 1rem 1.25rem 1.5rem; }
 }
+
+/* ── user dashboard layout (sidebar + activity feed) ── */
+.dashWrap { position: relative; z-index: 5; max-width: 1080px; margin: 0 auto; padding: 0.5rem 1.25rem 3rem; width: 100%; }
+.dashGrid { display: grid; grid-template-columns: 290px 1fr; gap: 1.5rem; align-items: start; }
+.dashRail { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.dashMain { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
+.dCard { background: #fff; border: 1px solid rgba(37,99,255,0.16); border-radius: 16px; box-shadow: 0 14px 40px -30px rgba(27,70,201,0.55); padding: 1.1rem 1.2rem; }
+.dLabel { font-family: 'DM Mono', ui-monospace, monospace; font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: #6b6975; margin-bottom: 0.7rem; display: block; }
+@media (max-width: 780px) {
+  .dashGrid { grid-template-columns: 1fr; }
+  .dashRail { position: static; }
+}
