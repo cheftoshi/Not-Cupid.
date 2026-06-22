@@ -341,11 +341,11 @@ export default function HubClient({
         <div onClick={() => setCityPicker(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(10,8,16,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '82vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: '#0a0a0a' }}>change your city</span>
+              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: '#0a0a0a' }}>your home base</span>
               <button onClick={() => setCityPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#9a96a8' }}>✕</button>
             </div>
             <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.85rem', margin: '0 0 1rem' }}>
-              switch the city you match + see events in. your existing matches &amp; friends stay put — only your roster refreshes.
+              we’re live in <b>{CITY_OPTIONS.length} cities</b> across New England + NYC. tap any to set where you match &amp; see events — your matches &amp; friends stay put.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
               {CITY_OPTIONS.map((c) => {
