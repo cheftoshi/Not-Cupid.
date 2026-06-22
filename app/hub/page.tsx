@@ -38,5 +38,5 @@ export default async function HubPage() {
     hobbies: user.hobbies ?? [],
   };
 
-  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} matchRadius={user.match_radius ?? 15} />;
+  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} currentMetro={metro} matchRadius={user.match_radius ?? 15} />;
 }

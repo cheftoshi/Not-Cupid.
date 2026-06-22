@@ -4,9 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Wordmark from '@/components/wordmark';
 import { compressImage } from '@/lib/compress-image';
-import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
+import { ARCHETYPES, VIBE_HEADS, vibeLabel, METRO_CENTERS, METRO_ZIP } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import styles from './hub.module.css';
+
+// Cities a user can switch to, grouped by state for the picker.
+const CITY_OPTIONS = (Object.keys(METRO_ZIP) as Array<keyof typeof METRO_ZIP>)
+  .map((key) => ({ key: key as string, ...METRO_CENTERS[key] }))
+  .sort((a, b) => (a.state === b.state ? a.city.localeCompare(b.city) : a.state.localeCompare(b.state)));
 
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
@@ -42,11 +47,13 @@ function whenLabel(iso: string | null): string {
 }
 
 export default function HubClient({
-  firstName, hasArchetype, needsLoveDeep, profile, city, matchRadius,
+  firstName, hasArchetype, needsLoveDeep, profile, city, currentMetro, matchRadius,
 }: {
   firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean; profile: Profile;
-  city?: string | null; matchRadius?: number;
+  city?: string | null; currentMetro?: string | null; matchRadius?: number;
 }) {
+  const [cityPicker, setCityPicker] = useState(false);
+  const [cityBusy, setCityBusy] = useState<string | null>(null);
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
   const [uploading, setUploading] = useState(false);
@@ -94,6 +101,15 @@ export default function HubClient({
       else setMsg(d.error || 'failed');
     } catch { setMsg('failed'); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
+  }
+
+  async function changeCity(metro: string) {
+    setCityBusy(metro);
+    try {
+      const r = await fetch('/api/profile/set-city', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ metro }) });
+      if (r.ok) window.location.reload();
+      else setCityBusy(null);
+    } catch { setCityBusy(null); }
   }
 
   const loveHref = !hasArchetype ? '/quiz' : needsLoveDeep ? '/quiz?line=love' : '/profile';
@@ -151,11 +167,9 @@ export default function HubClient({
               {meta
                 ? <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.85rem', color: BLUE, marginTop: '0.15rem' }}>{profile.archetype}</div>
                 : <Link href="/quiz?retake=1" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>finish your quiz →</Link>}
-              {city && (
-                <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: '#6b6975' }}>
-                  📍 {city}{matchRadius ? <span style={{ opacity: 0.7 }}> · {matchRadius}mi</span> : null}
-                </div>
-              )}
+              <button type="button" onClick={() => setCityPicker(true)} style={{ marginTop: '0.5rem', background: 'rgba(37,99,255,0.07)', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 999, padding: '0.3rem 0.7rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: BLUE_DEEP }}>
+                📍 {city || 'set your city'}{matchRadius && city ? <span style={{ opacity: 0.6 }}> · {matchRadius}mi</span> : null} <span style={{ opacity: 0.6 }}>· change</span>
+              </button>
               {msg && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', color: msg.startsWith('✓') ? '#2d7a4f' : '#d2530f', marginTop: '0.4rem' }}>{msg}</div>}
             </div>
 
@@ -321,6 +335,35 @@ export default function HubClient({
           </section>
         </div>
       </div>
+
+      {/* CITY PICKER — change which city's pool you're in */}
+      {cityPicker && (
+        <div onClick={() => setCityPicker(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(10,8,16,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '82vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: '#0a0a0a' }}>change your city</span>
+              <button onClick={() => setCityPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#9a96a8' }}>✕</button>
+            </div>
+            <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.85rem', margin: '0 0 1rem' }}>
+              switch the city you match + see events in. your existing matches &amp; friends stay put — only your roster refreshes.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+              {CITY_OPTIONS.map((c) => {
+                const isCurrent = c.key === currentMetro;
+                return (
+                  <button key={c.key} onClick={() => { if (!isCurrent) changeCity(c.key); }} disabled={!!cityBusy || isCurrent}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', background: isCurrent ? 'rgba(37,99,255,0.1)' : '#faf9fc', border: `1px solid ${isCurrent ? 'rgba(37,99,255,0.4)' : 'rgba(11,11,11,0.08)'}`, borderRadius: 10, padding: '0.6rem 0.85rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer') }}>
+                    <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.95rem', color: '#0a0a0a' }}>{c.city}<span style={{ color: '#9a96a8', fontSize: '0.78rem' }}>, {c.state}</span></span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: isCurrent ? BLUE_DEEP : '#b4b0c2' }}>
+                      {cityBusy === c.key ? '…' : isCurrent ? '✓ current' : 'switch →'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className={styles.foot}>
         <div className={styles.footCorp}>© {new Date().getFullYear()} notcupid · a lemon labs property</div>

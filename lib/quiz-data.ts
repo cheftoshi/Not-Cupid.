@@ -996,6 +996,8 @@ export const PREFIX_COORDS: Record<string, { lat: number; lng: number }> = {
   '013':{lat:42.40,lng:-72.55}, '014':{lat:42.58,lng:-71.80}, '015':{lat:42.40,lng:-71.75},
   '016':{lat:42.26,lng:-71.80}, '017':{lat:42.30,lng:-71.42}, '018':{lat:42.55,lng:-71.20},
   '019':{lat:42.50,lng:-70.95},
+  // South Coast MA (New Bedford / Fall River) — ZIP_COORDS gap backstop
+  '027':{lat:41.64,lng:-70.93},
   // Rhode Island
   '028':{lat:41.82,lng:-71.41}, '029':{lat:41.70,lng:-71.45},
   // New Hampshire
@@ -1120,6 +1122,19 @@ export const METRO_CENTERS: Record<string, { label: string; city: string; state:
 }
 
 export type Metro = keyof typeof METRO_CENTERS
+
+// A central, real ZIP for each metro — lets a user "change cities" by repointing
+// their zip to a covered metro (matching + events + the metro label all key off
+// zip, so this moves their whole pool). Every prefix here is in NE (010–069) or
+// the NYC metro (100–119), so coordsForZip always resolves it.
+export const METRO_ZIP: Record<Metro, string> = {
+  boston: '02108', worcester: '01608', springfield: '01103', berkshires: '01201',
+  capecod: '02601', southcoast: '02740', merrimack: '01852', providence: '02903',
+  manchester: '03101', concord_nh: '03301', seacoast: '03801', portland_me: '04101',
+  augusta: '04330', bangor: '04401', burlington: '05401', montpelier: '05602',
+  hartford: '06103', newhaven: '06511', fairfield: '06901', easternct: '06320',
+  nyc: '10001', longisland: '11550', westchester: '10601',
+}
 
 // Nearest metro to a zip, or null if the zip is unknown / beyond range of
 // every metro center.
