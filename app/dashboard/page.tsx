@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import MatchReveal from './match-reveal';
+import ActiveChats from './active-chats';
 import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
 import CorpFooter from '@/components/corp-footer';
@@ -164,12 +165,14 @@ export default async function DashboardPage({
           />
         )}
 
-        {/* ONE unified carousel — your chosen matches lead, then who's next. */}
+        {/* YOUR CHATS — active matches, openable, in a distributed row */}
+        <ActiveChats cards={activeCards} />
+
+        {/* WHO'S NEXT — the compatible people you can pick (carousel) */}
         <RosterPicker
           radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
           maxRadius={MAX_MATCH_RADIUS}
           maxConnections={MAX_CONNECTIONS}
-          activeCards={activeCards}
           liveConnections={connections.map((c: any) => ({
             matchId: c.match.id,
             name: c.otherUser.name || 'your match',
