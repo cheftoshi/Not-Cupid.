@@ -28,10 +28,20 @@ export async function GET(_req: NextRequest) {
   try {
     const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
+    const nowIso = new Date().toISOString()
+    const sumAmt = async (table: string, col: string) => {
+      try { const { data } = await supabaseAdmin.from(table).select(col); return (data ?? []).reduce((s: number, r: any) => s + (r[col] ?? 0), 0) }
+      catch { return 0 }
+    }
+    const paidPacks = async () => {
+      try { const { data } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id'); return (data ?? []).filter((r: any) => !String(r.stripe_payment_id ?? '').startsWith('pro-')).length }
+      catch { return 0 }
+    }
+
     const [
       totalUsers, men, women, bi, waiting, matched,
       totalMatches, bothAccepted, passed, pendingMatches,
-      unlocksCount,
+      loveCents, legacyCents, packs, chatUnlocks, activeSubs,
       recentUsersRes, recentMatchesRes, weekSignupsRes,
     ] = await Promise.all([
       countUsers(),
@@ -44,8 +54,12 @@ export async function GET(_req: NextRequest) {
       countMatches((q) => q.eq('user_1_accepted', true).eq('user_2_accepted', true)),
       countMatches((q) => q.or('status.eq.passed,ended_reason.eq.one_passed')),
       countMatches((q) => q.eq('status', 'pending').is('ended_at', null)),
-      // Revenue proxy: each unlock row ≈ $0.99 (legacy ledger).
-      supabaseAdmin.from('unlocks').select('id', { count: 'exact', head: true }),
+      // Revenue — count EVERY stream by real amount, not a flat proxy.
+      sumAmt('match_unlocks', 'amount_cents'), // current love unlocks
+      sumAmt('unlocks', 'amount'),             // legacy unlock ledger
+      paidPacks(),                             // $1.99 packs (excl. free pro grants)
+      supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true }).then((r) => r.count ?? 0),
+      countUsers((q) => q.gt('friend_pro_until', nowIso)), // active All-Access subs
       supabaseAdmin.from('users')
         .select('name, email, gender, seeking, zip, status, created_at')
         .order('created_at', { ascending: false }).limit(15),
@@ -56,7 +70,9 @@ export async function GET(_req: NextRequest) {
       supabaseAdmin.from('users').select('created_at').gte('created_at', weekAgoIso),
     ])
 
-    const totalRevenue = ((unlocksCount.count ?? 0) * 0.99).toFixed(2)
+    const oneTimeCents = loveCents + legacyCents + packs * 199 + chatUnlocks * 99
+    const totalRevenue = (oneTimeCents / 100).toFixed(2)
+    const mrr = (activeSubs * 399 / 100).toFixed(2)
     const decided = bothAccepted + passed
     const passRate = decided > 0 ? Math.round((passed / decided) * 100) : null
 
@@ -77,7 +93,7 @@ export async function GET(_req: NextRequest) {
     }))
 
     return NextResponse.json({
-      stats: { totalUsers, totalMatches, totalRevenue, pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
+      stats: { totalUsers, totalMatches, totalRevenue, mrr, activeSubs, pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
       signupsPerDay: days,
       recentUsers: recentUsersRes.data ?? [],
       recentMatches,

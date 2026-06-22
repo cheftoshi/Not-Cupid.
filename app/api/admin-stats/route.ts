@@ -11,12 +11,21 @@ export async function GET(req: NextRequest) {
   try {
     const { data: users } = await supabaseAdmin.from('users').select('*').order('created_at', { ascending: false })
     const { data: matches } = await supabaseAdmin.from('matches').select('*').order('created_at', { ascending: false })
-    const { data: unlocks } = await supabaseAdmin.from('unlocks').select('*')
+    // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):
+    //   • match_unlocks.amount_cents = current love-profile unlocks ($0.99)
+    //   • unlocks.amount = legacy standalone unlock ledger (cents)
+    const { data: unlocks } = await supabaseAdmin.from('unlocks').select('amount')
+    let matchUnlocks: any[] = []
+    try { matchUnlocks = (await supabaseAdmin.from('match_unlocks').select('amount_cents')).data ?? [] }
+    catch { /* table missing — fall back to legacy unlocks only */ }
     // For the conversion funnel: which matches have ≥1 message, and which users gave date feedback.
     const { data: msgRows } = await supabaseAdmin.from('messages').select('match_id')
     const { data: feedbackRows } = await supabaseAdmin.from('date_feedback').select('user_id')
 
     // ── Friend Maxxin metrics (wrapped so missing tables don't break the dashboard) ──
+    // Hoisted so the top-level revenue total can fold in friend-side income.
+    let friendPaidPacks = 0   // $1.99 packs actually bought (excludes free pro grants)
+    let friendChatUnlocks = 0 // legacy per-crew $0.99 unlocks
     let friend: any = null
     try {
       const liveUsers = (users ?? []).filter((u: any) => !u.deleted_at)
@@ -27,17 +36,18 @@ export async function GET(req: NextRequest) {
       const { count: unlockCount } = await supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true })
       const { data: acts } = await supabaseAdmin.from('friend_activities').select('kind')
       const connList = conns ?? []
-      const paidUnlocks = unlockCount ?? 0
-      let paidRounds = 0
+      friendChatUnlocks = unlockCount ?? 0
       try {
-        const { count } = await supabaseAdmin.from('friend_match_rounds').select('id', { count: 'exact', head: true })
-        paidRounds = count ?? 0
+        // PAID packs only — pro-granted free packs carry a synthetic `pro-…` id.
+        const { data: roundRows } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id')
+        friendPaidPacks = (roundRows ?? []).filter((r: any) => !String(r.stripe_payment_id ?? '').startsWith('pro-')).length
       } catch { /* friend_match_rounds not migrated yet */ }
       friend = {
         optedIn: optedIn.length,
-        matchRounds: paidRounds,
-        chatUnlocks: paidUnlocks,
-        unlockRevenue: ((paidRounds + paidUnlocks) * 0.99).toFixed(2),
+        matchRounds: friendPaidPacks,
+        chatUnlocks: friendChatUnlocks,
+        // $1.99/pack + legacy $0.99 crew unlocks.
+        unlockRevenue: ((friendPaidPacks * 199 + friendChatUnlocks * 99) / 100).toFixed(2),
         connectionsPending: connList.filter((c: any) => c.status === 'pending').length,
         connectionsMade: connList.filter((c: any) => c.status === 'connected').length,
         activeCircles: new Set((circleMembers ?? []).map((m: any) => m.circle_id)).size,
@@ -59,7 +69,29 @@ export async function GET(req: NextRequest) {
 
     const totalUsers = users?.length ?? 0
     const totalMatches = matches?.length ?? 0
-    const totalRevenue = (unlocks?.length ?? 0) * 0.99
+
+    // ── Revenue: count ALL of it, by real amount (cents → dollars) ──
+    const loveUnlockCents =
+      matchUnlocks.reduce((s: number, r: any) => s + (r.amount_cents ?? 0), 0) +
+      (unlocks ?? []).reduce((s: number, r: any) => s + (r.amount ?? 0), 0)
+    const packCents = friendPaidPacks * 199
+    const friendLegacyCents = friendChatUnlocks * 99
+    const oneTimeCents = loveUnlockCents + packCents + friendLegacyCents // collected to date
+    // Active All-Access subscribers → monthly recurring revenue.
+    const nowMs = Date.now()
+    const activeSubs = (users ?? []).filter(
+      (u: any) => !u.deleted_at && u.friend_pro_until && new Date(u.friend_pro_until).getTime() > nowMs
+    ).length
+    const mrrCents = activeSubs * 399
+    const totalRevenue = oneTimeCents / 100 // one-time collected (subs shown separately as MRR)
+    const revenue = {
+      loveUnlocks: (loveUnlockCents / 100).toFixed(2),
+      packs: (packCents / 100).toFixed(2),
+      friendLegacy: (friendLegacyCents / 100).toFixed(2),
+      oneTimeTotal: totalRevenue.toFixed(2),
+      mrr: (mrrCents / 100).toFixed(2),
+      activeSubs,
+    }
     // Two accept/pass flows exist:
     //   - email link sets status='both_accepted' / 'passed'
     //   - in-app sets booleans / ended_reason but not status
@@ -168,7 +200,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
+      stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), mrr: revenue.mrr, activeSubs, revenue, pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
       signupsPerDay: days,
       funnel,
       traffic,
