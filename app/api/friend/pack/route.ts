@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'grant') {
-    if (!isPro(user)) return NextResponse.json({ error: 'All-Access required', needsPro: true }, { status: 402 });
+    if (!isPro(user)) return NextResponse.json({ error: 'Pro required', needsPro: true }, { status: 402 });
     // Free pack for subscribers: a synthetic round bumps the cap, then assign.
     await supabaseAdmin.from('friend_match_rounds').upsert(
       { user_id: user.id, stripe_payment_id: `pro-${user.id}-${Date.now()}` },

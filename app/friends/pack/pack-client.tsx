@@ -155,7 +155,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
           <button onClick={anotherPack} disabled={busy} className={styles.cta} style={{ marginTop: '1.4rem' }}>
             {busy ? '…' : pro ? '✦ open a pack · free' : '🎁 open a pack · $1.99'}
           </button>
-          {!pro && <Link href="/pro" className={styles.subtle} style={{ textDecoration: 'underline', marginTop: '0.7rem' }}>or go All-Access — unlimited packs, $3.99/mo →</Link>}
+          {!pro && <Link href="/pro" className={styles.subtle} style={{ textDecoration: 'underline', marginTop: '0.7rem' }}>or go Pro — unlimited packs, $3.99/mo →</Link>}
           {err && <p className={styles.subtle} style={{ color: '#ffb3b3' }}>{err}</p>}
         </div>
       )}

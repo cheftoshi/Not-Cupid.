@@ -241,7 +241,7 @@ export default function AdminClient() {
               ['Total Users', stats?.totalUsers, '👥', null],
               ['Total Matches', stats?.totalMatches, '💘', null],
               ['Revenue', `$${stats?.totalRevenue}`, '💰', stats?.revenue ? `unlocks $${stats.revenue.loveUnlocks} · packs $${stats.revenue.packs}` : 'collected to date'],
-              ['All-Access', stats?.activeSubs ?? 0, '✦', stats?.mrr != null ? `$${stats.mrr}/mo recurring` : null],
+              ['Pro subs', stats?.activeSubs ?? 0, '✦', stats?.mrr != null ? `$${stats.mrr}/mo recurring` : null],
               ['Both Accepted', stats?.bothAccepted, '✅', null],
               ['Pending', stats?.pendingMatches, '⏳', null],
               ['Passed', stats?.passed, '👋', stats?.passRate != null ? `${stats.passRate}% pass rate` : null],

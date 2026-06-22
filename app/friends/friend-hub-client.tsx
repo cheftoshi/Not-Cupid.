@@ -739,7 +739,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
               <a href="/friends/pack" style={{ ...poppyBtn, textDecoration: 'none', textAlign: 'center' }}>
                 🎒 open another pack · $1.99
               </a>
-              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>group chats are free — a pack is a fresh batch of up to 10 friends. <a href="/pro" style={{ color: LINE_DEEP }}>All-Access</a> makes packs free.</span>
+              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>group chats are free — a pack is a fresh batch of up to 10 friends. <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free.</span>
               <button onClick={leaveCrew} disabled={busy}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
                 {busy ? '…' : 'not your crew? opt out of the group →'}

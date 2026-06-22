@@ -71,7 +71,7 @@ export default function HowItWorks() {
             the quiz and your matches are <b>free</b>. on Love, unlock a match’s full profile for a one-time <b>$0.99</b>. on Friend, your first <b>friendship pack</b> (up to 10 friends) is free — more packs are <b>$1.99</b> each, and group chats are always free.
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: ORANGE_DEEP, margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
-            or go <b>All-Access</b> — every love unlock, unlimited friendship packs, and events, all for <b>$3.99/mo</b>. no swiping, ever.
+            or go <b>Pro</b> — every love unlock, unlimited friendship packs, and events, all for <b>$3.99/mo</b>. no swiping, ever.
           </p>
         </div>
 

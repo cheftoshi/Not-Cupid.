@@ -15,7 +15,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: 'June 2026',
     items: [
       '🎒 Friendship packs — your Friend Line matches now come in packs you OPEN, cinematically. First pack (up to 10 friends) is free; more are $1.99 each.',
-      '✦ All-Access — one $3.99/mo subscription unlocks everything: every love profile, unlimited friendship packs, and events.',
+      '✦ NotCupid Pro — one $3.99/mo subscription unlocks everything: every love profile, unlimited friendship packs, and events.',
       '💸 Love unlocks are now just $0.99 (down from $1.99) — see a match’s full profile for less.',
       '🔔 More notifications — get pinged when a match is expiring, when someone unlocks your profile, and when a new friend match lands.',
       '🌍 Change your city — set your home base from any city we’re live in (all of New England + NYC) right from the hub.',

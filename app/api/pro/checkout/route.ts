@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   p.append('mode', 'subscription');
   p.append('line_items[0][quantity]', '1');
   p.append('line_items[0][price_data][currency]', 'usd');
-  p.append('line_items[0][price_data][product_data][name]', 'NotCupid All-Access');
+  p.append('line_items[0][price_data][product_data][name]', 'NotCupid Pro');
   p.append('line_items[0][price_data][unit_amount]', String(PRO_PRICE_CENTS));
   p.append('line_items[0][price_data][recurring][interval]', 'month');
   if (user.email) p.append('customer_email', user.email);

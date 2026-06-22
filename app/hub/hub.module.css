@@ -204,14 +204,26 @@
   .intro { padding: 1rem 1.25rem 1.5rem; }
 }
 
-/* ── user dashboard layout (sidebar + activity feed) ── */
-.dashWrap { position: relative; z-index: 5; max-width: 1080px; margin: 0 auto; padding: 0.5rem 1.25rem 3rem; width: 100%; }
-.dashGrid { display: grid; grid-template-columns: 290px 1fr; gap: 1.5rem; align-items: start; }
-.dashRail { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
-.dashMain { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
+/* ── user dashboard layout: left rail · activity feed · "into" aside ── */
+.dashWrap { position: relative; z-index: 5; max-width: 1180px; margin: 0 auto; padding: 0.5rem 1.25rem 3rem; width: 100%; }
+.dashGrid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 290px;
+  grid-template-areas: "rail main aside";
+  gap: 1.25rem; align-items: start;
+}
+.dashRail { grid-area: rail; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.dashMain { grid-area: main; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
+.dashAside { grid-area: aside; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
 .dCard { background: #fff; border: 1px solid rgba(37,99,255,0.16); border-radius: 16px; box-shadow: 0 14px 40px -30px rgba(27,70,201,0.55); padding: 1.1rem 1.2rem; }
 .dLabel { font-family: 'DM Mono', ui-monospace, monospace; font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: #6b6975; margin-bottom: 0.7rem; display: block; }
+/* tablet: drop the aside under the feed */
+@media (max-width: 1024px) {
+  .dashGrid { grid-template-columns: 280px minmax(0, 1fr); grid-template-areas: "rail main" "rail aside"; }
+  .dashAside { position: static; }
+}
+/* mobile: single column — identity, then feed, then "into" */
 @media (max-width: 780px) {
-  .dashGrid { grid-template-columns: 1fr; }
+  .dashGrid { grid-template-columns: 1fr; grid-template-areas: "rail" "main" "aside"; }
   .dashRail { position: static; }
 }

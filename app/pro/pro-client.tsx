@@ -37,7 +37,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
           <Link href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>← hub</Link>
         </div>
 
-        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: '0.6rem' }}>notcupid all-access</div>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: '0.6rem' }}>notcupid pro</div>
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(3rem,12vw,4.5rem)', lineHeight: 0.92, margin: '0 0 0.5rem', background: `linear-gradient(90deg,${ORANGE},#ff2d8e,${BLUE})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
           everything. one price.
         </h1>
@@ -48,7 +48,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
         {pro ? (
           <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 18, padding: '1.5rem', textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ fontSize: '2rem' }}>✦</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.02em' }}>you’re All-Access</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.02em' }}>you’re Pro</div>
             <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '0.3rem 0 0' }}>
               {renewsOn ? `renews ${renewsOn}.` : 'active.'} everything’s unlocked — go enjoy it.
             </p>
@@ -69,7 +69,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
             </div>
 
             <button onClick={subscribe} disabled={busy} style={{ width: '100%', background: `linear-gradient(90deg,${ORANGE},#ff2d8e)`, color: '#fff', border: 'none', borderRadius: 16, padding: '1.1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy ? 'wait' : 'pointer', boxShadow: '0 18px 50px -18px rgba(255,45,142,0.7)' }}>
-              {busy ? '…' : 'go All-Access · $3.99/mo'}
+              {busy ? '…' : 'go Pro · $3.99/mo'}
             </button>
             <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginTop: '0.8rem' }}>
               cancel anytime · keeps access through the month you paid for

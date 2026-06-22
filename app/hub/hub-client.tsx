@@ -198,7 +198,7 @@ export default function HubClient({
               <Link href="/dashboard" style={railLink}><span>💘 your matches</span><span style={{ opacity: 0.5 }}>→</span></Link>
               <Link href="/profile" style={railLink}><span>✎ full profile</span><span style={{ opacity: 0.5 }}>→</span></Link>
               <Link href="/quiz?retake=1" style={railLink}><span>↻ retake quiz</span><span style={{ opacity: 0.5 }}>→</span></Link>
-              <Link href="/pro" style={{ ...railLink, borderBottom: 'none', color: ORANGE_DEEP, fontWeight: 700 }}><span>✦ go all-access</span><span style={{ opacity: 0.5 }}>→</span></Link>
+              <Link href="/pro" style={{ ...railLink, borderBottom: 'none', color: ORANGE_DEEP, fontWeight: 700 }}><span>✦ go pro</span><span style={{ opacity: 0.5 }}>→</span></Link>
             </div>
           </aside>
 
@@ -207,37 +207,6 @@ export default function HubClient({
             <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(1.5rem,4vw,2rem)', color: '#0a0a0a', margin: '0 0 0.25rem' }}>
               hey {firstName.toLowerCase()}.
             </p>
-
-            {/* WHAT YOU'RE INTO (interests + vibe — not personality bars) */}
-            <div className={styles.dCard}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span className={styles.dLabel}>what you’re into</span>
-                <Link href="/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>edit →</Link>
-              </div>
-              {interestGroups.length === 0 && vibeTags.length === 0 ? (
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
-                  add your music, food &amp; hobbies on your <Link href="/profile" style={{ color: BLUE_DEEP }}>profile</Link> so matches see the real you.
-                </p>
-              ) : (
-                <>
-                  {interestGroups.map((g) => (
-                    <div key={g.head} style={{ marginBottom: '0.6rem' }}>
-                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a96a8', marginBottom: '0.35rem' }}>{g.head}</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                        {g.items.map((t, i) => <span key={`${t}-${i}`} style={{ background: '#e8edff', color: '#0e0c1a', border: '1px solid rgba(14,12,26,0.12)', borderRadius: 999, padding: '0.3rem 0.75rem', fontSize: '0.78rem' }}>{t}</span>)}
-                      </div>
-                    </div>
-                  ))}
-                  {vibeTags.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.2rem' }}>
-                      {vibeTags.map((v) => (
-                        <span key={v.k} style={{ background: 'rgba(37,99,255,0.1)', color: BLUE_DEEP, border: '1px solid rgba(37,99,255,0.3)', borderRadius: 999, padding: '0.3rem 0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.04em' }}>{v.label}</span>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
 
             {/* YOUR MATCHES — live love-line connections (parity with friends) */}
             {hasArchetype && (
@@ -374,6 +343,39 @@ export default function HubClient({
               </div>
             )}
           </section>
+
+          {/* ── RIGHT ASIDE: what you're into (interests + vibe — not personality bars) ── */}
+          <aside className={styles.dashAside}>
+            <div className={styles.dCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span className={styles.dLabel}>what you’re into</span>
+                <Link href="/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>edit →</Link>
+              </div>
+              {interestGroups.length === 0 && vibeTags.length === 0 ? (
+                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#6b6975', fontSize: '0.9rem', margin: 0 }}>
+                  add your music, food &amp; hobbies on your <Link href="/profile" style={{ color: BLUE_DEEP }}>profile</Link> so matches see the real you.
+                </p>
+              ) : (
+                <>
+                  {interestGroups.map((g) => (
+                    <div key={g.head} style={{ marginBottom: '0.6rem' }}>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a96a8', marginBottom: '0.35rem' }}>{g.head}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        {g.items.map((t, i) => <span key={`${t}-${i}`} style={{ background: '#e8edff', color: '#0e0c1a', border: '1px solid rgba(14,12,26,0.12)', borderRadius: 999, padding: '0.3rem 0.75rem', fontSize: '0.78rem' }}>{t}</span>)}
+                      </div>
+                    </div>
+                  ))}
+                  {vibeTags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.2rem' }}>
+                      {vibeTags.map((v) => (
+                        <span key={v.k} style={{ background: 'rgba(37,99,255,0.1)', color: BLUE_DEEP, border: '1px solid rgba(37,99,255,0.3)', borderRadius: 999, padding: '0.3rem 0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.04em' }}>{v.label}</span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </aside>
         </div>
       </div>
 

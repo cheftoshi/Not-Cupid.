@@ -23,7 +23,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is it free?',
-    a: 'The quiz and your matches are free. On the Love Line, unlock a match’s full profile — bio, gallery and personality — for a one-time $0.99. On the Friend Line, your first friendship pack (up to 10 friends) is free; more packs are $1.99 each, and group chats are always free. Want everything? All-Access is $3.99/mo — every love unlock, unlimited packs, and events.',
+    a: 'The quiz and your matches are free. On the Love Line, unlock a match’s full profile — bio, gallery and personality — for a one-time $0.99. On the Friend Line, your first friendship pack (up to 10 friends) is free; more packs are $1.99 each, and group chats are always free. Want everything? Pro is $3.99/mo — every love unlock, unlimited packs, and events.',
   },
   {
     q: 'Where is NotCupid available?',

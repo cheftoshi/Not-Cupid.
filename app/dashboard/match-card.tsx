@@ -322,7 +322,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
               {busy ? 'loading...' : 'open full profile — $0.99 →'}
             </button>
             <a href="/pro" style={{ display: 'block', marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1b46c9', textDecoration: 'none' }}>
-              ✦ or unlock everyone with All-Access · $3.99/mo →
+              ✦ or unlock everyone with Pro · $3.99/mo →
             </a>
           </div>
         ) : (
