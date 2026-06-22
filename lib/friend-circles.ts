@@ -61,4 +61,6 @@ export async function connectedFriendCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-export const FRIEND_MAX_CONNECTIONS = 5;
+// A friendship PACK holds up to 10 friends — the crew you converse with + do
+// things with. (Was 5; bumped 6/21 when crews became "packs".)
+export const FRIEND_MAX_CONNECTIONS = 10;

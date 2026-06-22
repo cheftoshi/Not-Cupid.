@@ -70,5 +70,11 @@ export async function GET() {
   // only see other test accounts.
   const meTest = (user as any).is_test === true;
   const visible = matches.filter((m) => (((byId.get(m.otherId) as any)?.is_test === true)) === meTest);
-  return NextResponse.json({ optedIn: true, matches: visible });
+  // How many are still SEALED in an un-opened pack (graceful pre-migration).
+  const visibleIds = new Set(visible.map((m) => m.otherId));
+  const sealedCount = (conns ?? []).filter((c) => {
+    const otherId = c.user_a_id === user.id ? c.user_b_id : c.user_a_id;
+    return visibleIds.has(otherId) && 'opened_at' in c && (c as any).opened_at == null;
+  }).length;
+  return NextResponse.json({ optedIn: true, matches: visible, sealedCount });
 }

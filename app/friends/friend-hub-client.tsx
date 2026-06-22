@@ -359,16 +359,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
     audMin: me?.friendAgeMin != null ? String(me.friendAgeMin) : '',
     audMax: me?.friendAgeMax != null ? String(me.friendAgeMax) : '',
   };
-  const [payBusy, setPayBusy] = useState(false);
-  async function buyMoreMatches() {
-    setPayBusy(true);
-    try {
-      const r = await fetch('/api/friend/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-      const d = await r.json();
-      if (d.url) { window.location.href = d.url; return; }
-      alert(d.error || 'Could not start checkout'); setPayBusy(false);
-    } catch { setPayBusy(false); }
-  }
+  // Buying / opening packs now lives on the cinematic /friends/pack page.
   async function sendFeedback() {
     const fb = window.prompt('what would make the friend line better? (bugs, ideas, anything)');
     if (!fb || !fb.trim()) return;
@@ -376,6 +367,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
     alert('got it — thank you! 🙏');
   }
   const [matches, setMatches] = useState<any[]>([]);
+  const [sealedCount, setSealedCount] = useState(0);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
@@ -404,7 +396,7 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
 
   const loadMatches = useCallback(async () => {
     const r = await fetch('/api/friend/roster');
-    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); }
+    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); }
   }, []);
   const loadChat = useCallback(async () => {
     const r = await fetch('/api/friend/messages'); if (r.ok) setChat(await r.json());
@@ -683,8 +675,21 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             </div>
           )}
 
+          {/* SEALED PACK — a friendship pack waiting to be opened cinematically */}
+          {sealedCount > 0 && !ghosted && (
+            <a href="/friends/pack" style={{ display: 'block', textDecoration: 'none', marginBottom: '1.25rem', background: 'linear-gradient(135deg,#ff6a1f,#ff2d8e 55%,#7b3cff)', border: `3px solid ${INK}`, borderRadius: 16, padding: '1.1rem 1.25rem', boxShadow: `5px 5px 0 ${INK}`, color: '#fff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.02em' }}>🎒 you have a pack to open</div>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.92 }}>{sealedCount} new friend{sealedCount > 1 ? 's' : ''} sealed inside</div>
+                </div>
+                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', whiteSpace: 'nowrap' }}>open it →</span>
+              </div>
+            </a>
+          )}
+
           {/* CREW — a deck you swipe through (frees the room below for the chat) */}
-          <h2 style={sectionLabel}><StationDot />🎒 your crew</h2>
+          <h2 style={sectionLabel}><StationDot />🎒 your pack</h2>
           {ghosted ? (
             <div style={{ ...card, padding: '1.25rem' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ your matching is paused</div>
@@ -731,10 +736,10 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
             </div>
             <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#a8896a', marginTop: '-0.2rem' }}>← deck through your crew →</div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button onClick={buyMoreMatches} disabled={payBusy} style={{ ...poppyBtn }}>
-                {payBusy ? '…' : '🎟️ another round of matches · $0.99'}
-              </button>
-              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>your crews &amp; their chats are free — this just routes you a fresh batch of 5.</span>
+              <a href="/friends/pack" style={{ ...poppyBtn, textDecoration: 'none', textAlign: 'center' }}>
+                🎒 open another pack · $1.99
+              </a>
+              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>group chats are free — a pack is a fresh batch of up to 10 friends. <a href="/pro" style={{ color: LINE_DEEP }}>All-Access</a> makes packs free.</span>
               <button onClick={leaveCrew} disabled={busy}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
                 {busy ? '…' : 'not your crew? opt out of the group →'}

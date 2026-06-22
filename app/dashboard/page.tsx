@@ -10,6 +10,7 @@ import Wordmark from '@/components/wordmark';
 import CorpFooter from '@/components/corp-footer';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
+import { isPro } from '@/lib/pro';
 import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
 import styles from './dashboard.module.css';
 
@@ -99,6 +100,8 @@ export default async function DashboardPage({
   const historyNameById = new Map<string, any>((historyOthers ?? []).map((u: any) => [u.id, u.name]));
 
   const isTestViewer = (user as any).is_test === true;
+  // All-Access subscribers see every match's full profile, no per-unlock fee.
+  const viewerIsPro = isPro(user);
   const connections = liveMatches
     .map((m: any) => {
       const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
@@ -107,7 +110,7 @@ export default async function DashboardPage({
       // Realm segregation: real users never see test matches & vice versa.
       if (((other as any).is_test === true) !== isTestViewer) return null;
       const u: any = unlockByMatch.get(m.id);
-      const profileUnlocked = !!u?.profile_unlocked;
+      const profileUnlocked = !!u?.profile_unlocked || viewerIsPro;
       const hexacoUnlocked = !!u?.hexaco_unlocked || profileUnlocked;
       const d = zipDistanceMiles(user.zip, other.zip);
       return {

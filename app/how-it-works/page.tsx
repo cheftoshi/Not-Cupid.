@@ -61,14 +61,17 @@ export default function HowItWorks() {
           </div>
           <div style={{ background: '#fff', border: `1.5px solid ${ORANGE}`, borderRadius: 16, padding: '1.1rem 1.15rem' }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em', color: ORANGE_DEEP }}>🧡 friend line</div>
-            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: '#4a4754' }}>up to 5 platonic matches, a group chat, and a city full of plans.</p>
+            <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', lineHeight: 1.5, color: '#4a4754' }}>open <b>friendship packs</b> — up to 10 friends each, a group chat, and a city full of plans.</p>
           </div>
         </div>
 
         <div style={{ background: '#fff', border: `2px dashed ${BLUE}`, borderRadius: 16, padding: '1.25rem', margin: '0 0 1.75rem', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: BLUE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-            the quiz and your matches are <b>free</b>. on Love, unlock someone’s full profile — bio, gallery &amp; personality — for a one-time <b>$1.99</b>. on Friend, your first crew chat is free. no subscription, no swiping.
+            the quiz and your matches are <b>free</b>. on Love, unlock a match’s full profile for a one-time <b>$0.99</b>. on Friend, your first <b>friendship pack</b> (up to 10 friends) is free — more packs are <b>$1.99</b> each, and group chats are always free.
+          </p>
+          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: ORANGE_DEEP, margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
+            or go <b>All-Access</b> — every love unlock, unlimited friendship packs, and events, all for <b>$3.99/mo</b>. no swiping, ever.
           </p>
         </div>
 

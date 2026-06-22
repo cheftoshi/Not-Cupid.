@@ -304,11 +304,14 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
                 (Array.isArray(otherUser.gallery) && otherUser.gallery.length > 0) ? `${otherUser.gallery.length} more photo${otherUser.gallery.length > 1 ? 's' : ''}` : null,
                 'music, food & hobbies',
                 'their HEXACO breakdown',
-              ].filter(Boolean).join(', ')} — $1.99.
+              ].filter(Boolean).join(', ')} — $0.99.
             </p>
             <button onClick={() => handleUnlock('profile')} disabled={busy} className={styles.unlockButton}>
-              {busy ? 'loading...' : 'open full profile — $1.99 →'}
+              {busy ? 'loading...' : 'open full profile — $0.99 →'}
             </button>
+            <a href="/pro" style={{ display: 'block', marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1b46c9', textDecoration: 'none' }}>
+              ✦ or unlock everyone with All-Access · $3.99/mo →
+            </a>
           </div>
         ) : (
           <div className={styles.lockedSection}>

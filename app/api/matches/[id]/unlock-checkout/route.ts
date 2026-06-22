@@ -46,7 +46,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
   tier = 'profile'; // never sell the standalone HEXACO tier
 
-  const amount = '199';
+  const amount = '99'; // $0.99 (dropped from $1.99 on 6/21 — a profile is light info)
   const productName = `Unlock ${otherUser?.name || 'match'}'s full profile`;
 
   // Determine origin for redirect URLs

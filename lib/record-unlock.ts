@@ -1,8 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase';
 
 // Records a match unlock without clobbering a previously-bought tier.
-// 'profile' ($1.99) is a superset — it also flips hexaco_unlocked true so the
-// HEXACO bars show too. 'hexaco' ($0.99) only sets hexaco_unlocked.
+// 'profile' ($0.99) is a superset — it also flips hexaco_unlocked true so the
+// HEXACO bars show too. 'hexaco' only sets hexaco_unlocked. (Both $0.99 as of 6/21.)
 export async function recordUnlock(opts: {
   userId: string;
   matchId: string;
@@ -29,7 +29,7 @@ export async function recordUnlock(opts: {
       unlocked_user_id: unlockedUserId,
       hexaco_unlocked,
       profile_unlocked,
-      amount_cents: tier === 'hexaco' ? 99 : 199,
+      amount_cents: 99,
       stripe_payment_id: paymentId ?? null,
     },
     { onConflict: 'user_id,match_id' }

@@ -1,16 +1,17 @@
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Friend Maxxin access model (v4 — no subscription):
-//   • 7-day free trial from join → explore everything EXCEPT chat
-//   • Your FIRST crew's chat is free forever
-//   • Each ADDITIONAL crew = one-time $0.99 unlock (friend_chat_unlocks row)
-//   • A crew's group chat only goes LIVE when EVERY member has access — so
-//     nobody can post into a room a crewmate is locked out of.
-//   • legacy founding (friend_paid_at) → grandfathered: access to all crews
+// Friend Line access model (v5 — packs, 6/21):
+//   • Your FIRST friendship pack (up to 10 friends) is FREE
+//   • Each ADDITIONAL pack = one-time $1.99 (a fresh batch of up to 10 friends)
+//   • Group chats are FREE for everyone in a pack — the $1.99 buys the pack
+//   • All-Access ($3.99/mo) → packs are free (see lib/pro.ts)
 export type FriendAccess = 'trial' | 'active' | 'expired';
 
 export const FRIEND_TRIAL_DAYS = 7;
-export const FRIEND_CHAT_UNLOCK_CENTS = 99;
+// One friendship pack = $1.99 (was a $0.99 "round"; renamed + repriced 6/21).
+export const FRIEND_PACK_CENTS = 199;
+// Back-compat alias — older imports referenced FRIEND_CHAT_UNLOCK_CENTS.
+export const FRIEND_CHAT_UNLOCK_CENTS = FRIEND_PACK_CENTS;
 
 export function friendAccess(user: any): { tier: FriendAccess; daysLeft: number } {
   const start = user?.friend_opted_in_at ? new Date(user.friend_opted_in_at).getTime() : Date.now();

@@ -470,6 +470,9 @@ create table if not exists friend_connections (
 );
 create index if not exists friend_connections_a_idx on friend_connections(user_a_id);
 create index if not exists friend_connections_b_idx on friend_connections(user_b_id);
+-- 20260621_friend_packs: opened_at = when the user revealed this connection in a
+-- cinematic pack (null = still sealed). Existing rows backfill to opened below.
+alter table friend_connections add column if not exists opened_at timestamptz;
 
 create table if not exists friend_circles (
   id uuid primary key default gen_random_uuid(),
@@ -686,3 +689,11 @@ language sql
 as $$
   update users set ignored_picks = ignored_picks + 1 where id = p_id;
 $$;
+
+-- ──────────────────────── 20260621_friend_packs ────────────────────────
+-- Friendship packs. opened_at (added with the friend_connections table above)
+-- marks revealed connections. Backfill existing rows to "opened" so live crews
+-- aren't re-sealed into a pack; new matches arrive unopened. (No-op on a fresh
+-- build; idempotent on re-run.) The $3.99/mo All-Access sub reuses the existing
+-- users.friend_pro_until column — no new columns needed.
+update friend_connections set opened_at = now() where opened_at is null;

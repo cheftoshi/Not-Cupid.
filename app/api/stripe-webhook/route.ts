@@ -58,12 +58,14 @@ export async function POST(req: NextRequest) {
         })
         if (error) console.error('Match unlock insert error:', error)
         else console.log(`Match unlock recorded (${tier})`)
-        // Tell the person who got unlocked — a warm "someone's into you" signal
-        // (profile tier only; they're already matched so no privacy leak).
-        if (!error && tier === 'profile' && session.metadata.unlocked_user_id) {
+        // Tell the person who got unlocked — a warm "someone's into you" signal,
+        // on ANY unlock tier (they're already matched, so no privacy leak).
+        if (!error && session.metadata.unlocked_user_id) {
           await sendPushToUser(session.metadata.unlocked_user_id, {
             title: 'Someone unlocked your profile 👀',
-            body: 'A match liked what they saw and wanted the full picture.',
+            body: tier === 'hexaco'
+              ? 'A match wanted to see what makes you tick.'
+              : 'A match liked what they saw and wanted the full picture.',
             url: session.metadata.match_id ? `/match/${session.metadata.match_id}` : '/dashboard',
             tag: `unlock-${session.metadata.match_id || session.metadata.unlocked_user_id}`,
           }).catch(() => {})
@@ -83,8 +85,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
-      // ============== Friend Maxxin — Pro subscription started ==============
-      if (session.metadata?.type === 'friend_pro' && session.metadata?.user_id) {
+      // ============== All-Access ($3.99/mo) subscription started ==============
+      // Reuses friend_pro_until/friend_sub_id (app-wide now). Renewals extend it
+      // via invoice.payment_succeeded; cancel lapses at period end. Both this and
+      // the legacy friend_pro type land here.
+      if ((session.metadata?.type === 'all_access' || session.metadata?.type === 'friend_pro') && session.metadata?.user_id) {
         // Grant a month immediately; renewals extend it via invoice.payment_succeeded.
         const until = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
         const { error } = await supabaseAdmin.from('users').update({

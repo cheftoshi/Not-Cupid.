@@ -153,7 +153,8 @@ export default function HubClient({
             <div className={styles.dCard} style={{ paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
               <Link href="/dashboard" style={railLink}><span>💘 your matches</span><span style={{ opacity: 0.5 }}>→</span></Link>
               <Link href="/profile" style={railLink}><span>✎ full profile</span><span style={{ opacity: 0.5 }}>→</span></Link>
-              <Link href="/quiz?retake=1" style={{ ...railLink, borderBottom: 'none', color: '#9a96a8' }}><span>↻ retake quiz</span><span style={{ opacity: 0.5 }}>→</span></Link>
+              <Link href="/quiz?retake=1" style={railLink}><span>↻ retake quiz</span><span style={{ opacity: 0.5 }}>→</span></Link>
+              <Link href="/pro" style={{ ...railLink, borderBottom: 'none', color: ORANGE_DEEP, fontWeight: 700 }}><span>✦ go all-access</span><span style={{ opacity: 0.5 }}>→</span></Link>
             </div>
           </aside>
 
