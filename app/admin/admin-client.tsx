@@ -589,12 +589,12 @@ export default function AdminClient() {
             </div>
             <div className={`${s.actionsGrid} ${s.actions2}`} style={{ marginBottom: '0.75rem' }}>
               <button className={`${s.btn} ${s.btnGhost}`} onClick={async () => {
-                if (!confirm('Create / reset the two test accounts (Alex + Bailey) and get magic-login links?')) return;
+                if (!confirm('Build the full TEST WORLD? 11 test accounts (log in as Test Alex): a live love chat + a "your move" match + a full roster, a friend crew + a sealed pack to open, and a populated Scene with RSVPs. Re-running resets the test world. (Test accounts only ever match other test accounts.)')) return;
                 const res = await fetch('/api/admin/seed-test', { method: 'POST' });
                 const d = await parseResponse<any>(res);
                 if (!d.ok) { alert('Failed: ' + (d.error || 'unknown')); return; }
                 setSeedAccounts(d.accounts || []);
-              }}>🧪 Seed test accounts + login links</button>
+              }}>🧪 Seed full test world + login links</button>
             </div>
             <div className={`${s.actionsGrid} ${s.actions3}`} style={{ marginBottom: '1.5rem' }}>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
