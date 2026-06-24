@@ -97,7 +97,17 @@ function ConnectionBackdrop() {
       vx: (Math.random() - 0.5) * 0.00015, vy: (Math.random() - 0.5) * 0.00015,
       r: 0.9 + Math.random() * 1.9, cool: Math.random() < 0.2,
     }));
-    let pulses: { a: number; b: number; t: number; sp: number }[] = [];
+    // "travelers" — little comets that journey node→node along the network,
+    // leaving a fading trail and blooming each person they reach (a connection
+    // finding its way to someone). Pac-Man energy, abstract + elegant.
+    const nearest = (n: number, not: number) => {
+      let best = -1, bd = Infinity;
+      for (let k = 0; k < N; k++) { if (k === n || k === not) continue; const d = Math.hypot(nodes[n].x - nodes[k].x, nodes[n].y - nodes[k].y); if (d < bd) { bd = d; best = k; } }
+      return best < 0 ? (n + 1) % N : best;
+    };
+    const travelers = Array.from({ length: 3 }, (_, i) => ({ from: i * 7 % N, to: -1, prev: -1, t: 0, col: i % 2 ? '156,120,255' : '255,170,80', trail: [] as { x: number; y: number }[] }));
+    for (const tr of travelers) tr.to = nearest(tr.from, -1);
+    const blooms: { x: number; y: number; t: number }[] = [];
     const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size();
     const ro = new ResizeObserver(size); ro.observe(cv);
@@ -116,21 +126,31 @@ function ConnectionBackdrop() {
         const a = nodes[i], b = nodes[j];
         const dn = Math.hypot(a.x - b.x, a.y - b.y);
         if (dn >= LINK) continue;
-        const o = (1 - dn / LINK) * 0.2;
+        const o = (1 - dn / LINK) * 0.18;
         ctx.strokeStyle = (a.cool && b.cool) ? `rgba(123,92,255,${o})` : `rgba(232,132,43,${o})`;
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(a.x * w, a.y * h); ctx.lineTo(b.x * w, b.y * h); ctx.stroke();
-        if (!reduce && pulses.length < 7 && Math.random() < 0.0008) pulses.push({ a: i, b: j, t: 0, sp: 0.014 + Math.random() * 0.018 });
       }
       for (const n of nodes) {
         ctx.beginPath(); ctx.arc(n.x * w, n.y * h, n.r, 0, TAU);
-        ctx.fillStyle = n.cool ? 'rgba(123,92,255,0.45)' : 'rgba(232,132,43,0.5)'; ctx.fill();
+        ctx.fillStyle = n.cool ? 'rgba(123,92,255,0.42)' : 'rgba(232,132,43,0.48)'; ctx.fill();
       }
-      for (let k = pulses.length - 1; k >= 0; k--) {
-        const p = pulses[k]; p.t += p.sp; if (p.t >= 1) { pulses.splice(k, 1); continue; }
-        const a = nodes[p.a], b = nodes[p.b];
-        ctx.beginPath(); ctx.arc((a.x + (b.x - a.x) * p.t) * w, (a.y + (b.y - a.y) * p.t) * h, 2, 0, TAU);
-        ctx.fillStyle = 'rgba(255,190,110,0.95)'; ctx.fill();
+      for (const tr of travelers) {
+        const a = nodes[tr.from], b = nodes[tr.to];
+        if (!reduce) tr.t += 0.0075; // calm pace (~4.5s per hop)
+        if (tr.t >= 1) { blooms.push({ x: b.x, y: b.y, t: 0 }); tr.prev = tr.from; tr.from = tr.to; tr.to = nearest(tr.from, tr.prev); tr.t = 0; }
+        const x = (a.x + (b.x - a.x) * tr.t) * w, y = (a.y + (b.y - a.y) * tr.t) * h;
+        tr.trail.push({ x, y }); if (tr.trail.length > 16) tr.trail.shift();
+        for (let s = 0; s < tr.trail.length; s++) {
+          const pt = tr.trail[s];
+          ctx.beginPath(); ctx.arc(pt.x, pt.y, 1.5, 0, TAU); ctx.fillStyle = `rgba(${tr.col},${(s / tr.trail.length) * 0.5})`; ctx.fill();
+        }
+        ctx.beginPath(); ctx.arc(x, y, 2.7, 0, TAU); ctx.fillStyle = `rgba(${tr.col},0.95)`; ctx.fill();
+      }
+      for (let k = blooms.length - 1; k >= 0; k--) {
+        const bl = blooms[k]; bl.t += 0.045; if (bl.t >= 1) { blooms.splice(k, 1); continue; }
+        ctx.beginPath(); ctx.arc(bl.x * w, bl.y * h, 3 + bl.t * 17, 0, TAU);
+        ctx.strokeStyle = `rgba(232,132,43,${(1 - bl.t) * 0.4})`; ctx.lineWidth = 1.3; ctx.stroke();
       }
     };
     raf = requestAnimationFrame(draw);
@@ -573,7 +593,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, var(--h-surface-2) 60%, var(--h-surface-3) 100%)`, color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: 'radial-gradient(135% 100% at 50% -18%, var(--h-surface-2) 0%, var(--h-bg) 62%)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <ConnectionBackdrop />
 
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
