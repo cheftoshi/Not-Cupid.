@@ -368,6 +368,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   }
   const [matches, setMatches] = useState<any[]>([]);
   const [sealedCount, setSealedCount] = useState(0);
+  const [termsOk, setTermsOk] = useState(false);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
@@ -408,6 +409,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     const r = await fetch(`/api/friend/activities${filterCat ? `?category=${filterCat}` : ''}`);
     if (r.ok) setActs((await r.json()).activities || []);
   }, [filterCat]);
+  useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } }, []);
 
   useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
   useEffect(() => { loadActs(); }, [loadActs]);
@@ -469,9 +471,22 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     .sort((a, b) => (b.rsvpCount || 0) - (a.rsvpCount || 0) || (b.happens_at ? new Date(b.happens_at).getTime() : 0) - (a.happens_at ? new Date(a.happens_at).getTime() : 0))
     .slice(0, 6);
 
-  // Per-person pick / accept. First pick → they get notified; if they'd already
-  // picked you, this accept connects you both into the crew.
+  function agreeTerms() { setTermsOk(true); try { localStorage.setItem('nc-friend-terms', '1'); } catch { /* ignore */ } }
+
+  // Choose the whole pack — opt in to open the group chat with everyone in it.
+  // (The pack is the baseline; connections are what you build from it.)
+  async function choosePack() {
+    if (!termsOk) return;
+    setBusy(true);
+    await fetch('/api/friend/accept', { method: 'POST' });
+    await loadMatches(); await loadChat();
+    setBusy(false);
+    setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }
+  // Independent 1:1 connection with one person in the pack. First pick → they get
+  // notified; if they'd already picked you, this accept connects you both.
   async function connectOne(otherId: string) {
+    if (!termsOk) return;
     setBusy(true);
     await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
     await loadMatches(); await loadChat();
@@ -666,9 +681,32 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
         {view === 'crew' && (
         <div>
+          {/* T&C safeguard — agree once before connecting with anyone */}
+          {!termsOk && matches.length > 0 && !ghosted && (
+            <label style={{ ...card, display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.85rem 1.1rem', marginBottom: '1rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={termsOk} onChange={agreeTerms} style={{ width: 18, height: 18, marginTop: '0.15rem', accentColor: LINE, flexShrink: 0 }} />
+              <span style={{ fontFamily: 'Georgia,serif', fontSize: '0.86rem', color: 'var(--h-text-dim)', lineHeight: 1.5 }}>
+                before you connect — I agree to NotCupid&apos;s <a href="/terms" style={{ color: LINE_DEEP }}>terms</a> &amp; <a href="/safety" style={{ color: LINE_DEEP }}>community guidelines</a>: be kind, be real, and meet new people safely.
+              </span>
+            </label>
+          )}
+
+          {/* CHOOSE THE PACK — opt into the whole pack to open the group chat */}
+          {matches.some((m) => !m.connected && !m.iAccepted) && (
+            <div style={{ ...card, padding: '1rem 1.2rem', marginBottom: '1rem' }}>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', marginBottom: '0.6rem', color: 'var(--h-text-dim)', fontSize: '0.92rem' }}>
+                <b style={{ color: 'var(--h-text)' }}>choose your pack</b> to open the group chat with everyone in it — the pack is just the room you meet in.
+              </div>
+              <button onClick={choosePack} disabled={busy || !termsOk}
+                style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.45, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>
+                {busy ? '…' : '🎒 choose this pack — open the group chat →'}
+              </button>
+            </div>
+          )}
+
           {matches.some((m) => !m.connected) && (
             <div style={{ ...card, padding: '0.85rem 1.1rem', marginBottom: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>
-              🤝 tap <b>connect</b> on anyone in your pack — they get a ping, and once they accept you back, you&apos;re in each other&apos;s crew.
+              🤝 then make the real <b>connections</b>: tap <b>connect</b> on anyone for a 1:1 — they get a ping, and once they accept you&apos;re connected for good. connect with as many people as you like.
             </div>
           )}
 
@@ -730,8 +768,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                     {!m.connected && (m.iAccepted ? (
                       <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 9, padding: '0.45rem' }}>⏳ waiting on them</div>
                     ) : (
-                      <button onClick={() => connectOne(m.otherId)} disabled={busy}
-                        style={{ width: '100%', cursor: busy ? 'wait' : 'pointer', background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em', boxShadow: `2px 2px 0 ${INK}` }}>
+                      <button onClick={() => connectOne(m.otherId)} disabled={busy || !termsOk}
+                        style={{ width: '100%', cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em', boxShadow: `2px 2px 0 ${INK}` }}>
                         {busy ? '…' : m.theyAccepted ? '🤝 accept →' : '🤝 connect'}
                       </button>
                     ))}

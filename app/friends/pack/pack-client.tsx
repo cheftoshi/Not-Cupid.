@@ -27,10 +27,14 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [requested, setRequested] = useState<Set<string>>(new Set());
+  const [termsOk, setTermsOk] = useState(false);
+  useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } }, []);
+  function agreeTerms() { setTermsOk(true); try { localStorage.setItem('nc-friend-terms', '1'); } catch { /* ignore */ } }
 
   // Pick someone from the pack → they get pinged that you chose them. When they
   // accept you back, you become connections.
   async function connectFriend(otherId: string) {
+    if (!termsOk) return;
     setRequested((prev) => new Set(prev).add(otherId));
     try {
       await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
@@ -132,6 +136,14 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
         <div className={styles.reveal}>
           <div className={styles.kicker} style={{ marginBottom: '0.2rem' }}>your pack · {friends.length} new {friends.length === 1 ? 'friend' : 'friends'}</div>
           <h1 className={styles.headline} style={{ marginBottom: '1rem' }}>meet your people</h1>
+          {!termsOk && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem', maxWidth: 520, margin: '0 auto 1rem', padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 12, cursor: 'pointer', textAlign: 'left' }}>
+              <input type="checkbox" checked={termsOk} onChange={agreeTerms} style={{ width: 17, height: 17, marginTop: '0.1rem', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.45 }}>
+                before connecting — I agree to the <a href="/terms" style={{ color: '#fff', textDecoration: 'underline' }}>terms</a> &amp; <a href="/safety" style={{ color: '#fff', textDecoration: 'underline' }}>community guidelines</a>: be kind &amp; meet new people safely.
+              </span>
+            </label>
+          )}
           <div className={styles.cardGrid}>
             {friends.map((f, i) => {
               const r = rarity(f.score);
@@ -150,7 +162,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
                   )}
                   {requested.has(f.otherId)
                     ? <div style={{ marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9fe0b0' }}>✓ request sent</div>
-                    : <button onClick={() => connectFriend(f.otherId)} style={{ marginTop: '0.6rem', width: '100%', cursor: 'pointer', background: 'rgba(255,255,255,0.95)', color: '#1a1030', border: 'none', borderRadius: 999, padding: '0.45rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em' }}>🤝 connect</button>}
+                    : <button onClick={() => connectFriend(f.otherId)} disabled={!termsOk} style={{ marginTop: '0.6rem', width: '100%', cursor: termsOk ? 'pointer' : 'not-allowed', opacity: termsOk ? 1 : 0.5, background: 'rgba(255,255,255,0.95)', color: '#1a1030', border: 'none', borderRadius: 999, padding: '0.45rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em' }}>🤝 connect</button>}
                 </div>
               );
             })}

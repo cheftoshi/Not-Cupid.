@@ -61,7 +61,8 @@ export async function connectedFriendCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-// A friendship PACK holds 7–8 people to connect with — you pick who you want,
-// they accept, and you become connections. (Was 5, then 10; set to 8 on 6/24
-// when packs became per-person pick→accept.)
+// PACK SIZE — how many people a friendship pack shows you (paced DISCOVERY), and
+// the per-round top-up the matcher assigns. NOT a cap on connections: connections
+// are UNLIMITED (you can befriend everyone you're shown; open more packs to see
+// more people). Name kept for back-comat. (Was 5, then 10; 8 on 6/24.)
 export const FRIEND_MAX_CONNECTIONS = 8;

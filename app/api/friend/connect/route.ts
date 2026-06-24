@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { friendCompatibilityScore, friendGenderOk } from '@/lib/friend-matching';
-import { joinCircle, connectedFriendCount, FRIEND_MAX_CONNECTIONS } from '@/lib/friend-circles';
+import { joinCircle } from '@/lib/friend-circles';
 import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
@@ -21,10 +21,8 @@ export async function POST(req: NextRequest) {
   if (!cand || !cand.friend_opted_in_at) return NextResponse.json({ error: 'They’re not available.' }, { status: 404 });
   if (!friendGenderOk(user, cand)) return NextResponse.json({ error: 'Not a match on friend preferences.' }, { status: 409 });
 
-  // 5-max for the PICKER (we re-check the candidate only when it would become mutual).
-  if ((await connectedFriendCount(user.id)) >= FRIEND_MAX_CONNECTIONS) {
-    return NextResponse.json({ error: `You're at the ${FRIEND_MAX_CONNECTIONS}-friend max. Drop one to add another.` }, { status: 409 });
-  }
+  // CONNECTIONS ARE UNLIMITED — packs limit how many people you SEE (paced
+  // discovery), never how many friends you make. No connection cap here.
 
   // Canonical ordering so a pair has one row.
   const [aId, bId] = [user.id, candidateId].sort();
@@ -42,10 +40,7 @@ export async function POST(req: NextRequest) {
   const meFirst = (user.name || 'Someone').split(' ')[0];
 
   if (theyPicked) {
-    // Mutual! Re-check the candidate's cap at the moment it would connect.
-    if ((await connectedFriendCount(candidateId)) >= FRIEND_MAX_CONNECTIONS) {
-      return NextResponse.json({ error: 'They just hit their friend max — try someone else.' }, { status: 409 });
-    }
+    // Mutual! → connect + shared circle. (No cap — connections are unlimited.)
     const circleId = await joinCircle(aId, bId);
     await supabaseAdmin.from('friend_connections').upsert(
       { user_a_id: aId, user_b_id: bId, ...myPick, status: 'connected', circle_id: circleId, compatibility_score: score, connected_at: new Date().toISOString() },
