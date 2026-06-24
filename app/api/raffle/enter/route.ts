@@ -6,9 +6,10 @@ import { drawRaffle } from '@/lib/raffle-draw';
 
 export const dynamic = 'force-dynamic';
 
-// Enter the raffle. Needs a real profile (photo + finished quiz) and to be in the
-// event's city. The contest video is encouraged but not hard-required so a
-// storage hiccup never blocks a registration.
+// Enter the raffle. Needs established cred (a real, complete profile), the match
+// basics, an intro video, and to be in the event's city. New entrants also face
+// the deadline, the overall cap, and a per-gender balance cap so the pool can't
+// skew lopsided (keeps everyone's odds fair).
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,13 +45,25 @@ export async function POST(req: NextRequest) {
   if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
   if (!video_url) return NextResponse.json({ error: 'Your intro video is required to enter.' }, { status: 400 });
 
-  // New entrants face the deadline + the 50-cap; updating your own entry doesn't.
+  // New entrants face the deadline, the overall cap, and the per-gender balance
+  // cap; updating your own existing entry skips all three.
   const { data: mine } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
   const alreadyIn = !!mine;
   if (!alreadyIn) {
     if (raffleClosed()) return NextResponse.json({ error: 'Entries are closed for this one — watch the hub for the next.' }, { status: 400 });
-    const { count } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key);
-    if ((count ?? 0) >= RAFFLE.cap) return NextResponse.json({ error: 'The raffle just hit capacity — watch the hub for the next one.' }, { status: 400 });
+    const { data: ents } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('event_key', RAFFLE.key);
+    const ids = (ents ?? []).map((e: any) => e.user_id);
+    if (ids.length >= RAFFLE.cap) return NextResponse.json({ error: 'The raffle just hit capacity — watch the hub for the next one.' }, { status: 400 });
+    // Balance: neither men nor women can exceed 60% of the cap, so the pool can't
+    // go lopsided and crush one side's odds. (nb uncapped — small numbers.)
+    if ((g === 'm' || g === 'f') && ids.length) {
+      const { data: gs } = await supabaseAdmin.from('users').select('gender').in('id', ids);
+      const sameSide = (gs ?? []).filter((u: any) => u.gender === g).length;
+      if (sameSide >= Math.ceil(RAFFLE.cap * 0.6)) {
+        const side = g === 'm' ? 'men’s' : 'women’s';
+        return NextResponse.json({ error: `The ${side} side is full for this round — we balance the pool so the draw stays fair. Watch the hub for the next one.` }, { status: 400 });
+      }
+    }
   }
 
   const { error } = await supabaseAdmin.from('raffle_entries').upsert(

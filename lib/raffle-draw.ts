@@ -10,11 +10,13 @@ const COLS = 'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, 
 
 const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
-// The raffle draw — AUTO, no human picks. We raffle ONE date per round: draw the
-// single BEST-matched eligible pair (by the hobbies-weighted raffleScore), one
-// at a time. If they don't both accept, the willing one is re-drawn to the next
-// best — each entrant gets at most RAFFLE.maxAttempts (2) draws, then they're
-// out. Stops once a pair mutually accepts (the winner) or no pairs remain.
+// The raffle draw — AUTO, no human picks. We raffle ONE date per round, ONE live
+// pair at a time, via a WEIGHTED-RANDOM draw: every mutually-eligible pair can
+// win, with odds that scale with the hobbies-weighted raffleScore (luck, but
+// better matches win more often — fairer than always crowning the top pair).
+// If they don't both accept, the willing one is re-drawn — each entrant gets at
+// most RAFFLE.maxAttempts (2) draws, then they're out. Prior-round winners are
+// excluded. Stops once a pair mutually accepts (the winner) or no pairs remain.
 export async function drawRaffle(): Promise<{ ok: true; entrants: number; drawn: number; pair?: { a: string; b: string; score: number }; state: string }> {
   // Already a winner this round? done.
   const { data: won } = await supabaseAdmin.from('raffle_draws').select('id').eq('event_key', RAFFLE.key).eq('status', 'both_accepted').limit(1);
@@ -35,20 +37,31 @@ export async function drawRaffle(): Promise<{ ok: true; entrants: number; drawn:
   const { data: priorDraws } = await supabaseAdmin.from('raffle_draws').select('user_a_id, user_b_id').eq('event_key', RAFFLE.key);
   const seenPairs = new Set<string>((priorDraws ?? []).map((d: any) => pairKey(d.user_a_id, d.user_b_id)));
 
-  // Best mutually-eligible pair.
-  let best: { a: any; b: any; score: number } | null = null;
-  for (let i = 0; i < pool.length; i++) {
-    for (let j = i + 1; j < pool.length; j++) {
-      const a = pool[i], b = pool[j];
+  // Fairness across rounds: a prior-round winner can't win again.
+  const { data: priorWins } = await supabaseAdmin.from('raffle_draws').select('user_a_id, user_b_id').eq('status', 'both_accepted').neq('event_key', RAFFLE.key);
+  const wonBefore = new Set<string>();
+  (priorWins ?? []).forEach((d: any) => { wonBefore.add(d.user_a_id); wonBefore.add(d.user_b_id); });
+  const eligiblePool = pool.filter((u) => !wonBefore.has(u.id));
+
+  // Every mutually-eligible pair (not just the single best).
+  const pairs: { a: any; b: any; score: number }[] = [];
+  for (let i = 0; i < eligiblePool.length; i++) {
+    for (let j = i + 1; j < eligiblePool.length; j++) {
+      const a = eligiblePool[i], b = eligiblePool[j];
       if (seenPairs.has(pairKey(a.id, b.id))) continue;
       if ((a.is_test === true) !== (b.is_test === true)) continue; // realm segregation
       if (!isGenderMatch(a, b) || !isGenderMatch(b, a)) continue;
       if (!ageMutual(a, b)) continue;
-      const score = raffleScore(a, b);
-      if (!best || score > best.score) best = { a, b, score };
+      pairs.push({ a, b, score: raffleScore(a, b) });
     }
   }
-  if (!best) return { ok: true, entrants: pool.length, drawn: 0, state: 'no-eligible-pair' };
+  if (!pairs.length) return { ok: true, entrants: pool.length, drawn: 0, state: 'no-eligible-pair' };
+
+  // WEIGHTED-RANDOM pick — odds ∝ raffleScore, but every pair has a real shot.
+  const totalW = pairs.reduce((s, p) => s + Math.max(1, p.score), 0);
+  let r = Math.random() * totalW;
+  let best = pairs[0];
+  for (const p of pairs) { r -= Math.max(1, p.score); if (r <= 0) { best = p; break; } }
 
   await supabaseAdmin.from('raffle_draws').upsert(
     { event_key: RAFFLE.key, user_a_id: best.a.id, user_b_id: best.b.id, compatibility_score: best.score, status: 'pending' },
