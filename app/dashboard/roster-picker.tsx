@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
@@ -46,15 +46,6 @@ export default function RosterPicker({
   const [closePromptFor, setClosePromptFor] = useState<Candidate | null>(null);
   // Which existing conversation's end-dialog (reason picker) is open.
   const [endingMatchId, setEndingMatchId] = useState<string | null>(null);
-  // Carousel: roll through the roster one card at a time.
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  function rollBy(dir: 1 | -1) {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>('[data-card]');
-    const step = card ? card.offsetWidth + 16 : el.clientWidth * 0.8;
-    el.scrollBy({ left: dir * step, behavior: 'smooth' });
-  }
   async function unlock(matchId: string) {
     try {
       const res = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
@@ -170,7 +161,6 @@ export default function RosterPicker({
     );
   }
 
-  const total = activeCards.length + roster.length;
   return (
     <div>
       {/* slim header — count + roll arrows (no "roster" wording) */}
@@ -180,12 +170,6 @@ export default function RosterPicker({
             ? `${activeCards.length} chosen${roster.length ? ` · ${roster.length} more to meet` : ''}`
             : `your top ${roster.length} · you choose`}
         </span>
-        {total > 1 && (
-          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-            <button onClick={() => rollBy(-1)} aria-label="previous" style={rollArrow}>‹</button>
-            <button onClick={() => rollBy(1)} aria-label="next" style={rollArrow}>›</button>
-          </div>
-        )}
       </div>
 
       {atCapacity && (
@@ -200,13 +184,8 @@ export default function RosterPicker({
         </div>
       )}
 
-      {/* ONE horizontal carousel: your CHOSEN matches lead, then the rest */}
-      <style>{`.ncRoster::-webkit-scrollbar{height:6px}.ncRoster::-webkit-scrollbar-thumb{background:var(--h-border);border-radius:999px}.ncRoster::-webkit-scrollbar-track{background:transparent}`}</style>
-      <div
-        ref={scrollerRef}
-        className="ncRoster"
-        style={{ display: 'flex', gap: '0.85rem', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', padding: '0.25rem 0.1rem 1.1rem', scrollbarWidth: 'thin' }}
-      >
+      {/* GRID of compatible people — chosen lead, then the rest */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '1rem' }}>
         {/* CHOSEN / active matches — the leading cards */}
         {activeCards.map((a) => {
           const first = (a.name || 'your match').split(' ')[0];
@@ -263,6 +242,7 @@ export default function RosterPicker({
                 <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>
                   {first}{c.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {c.age}</span> : null}
                 </div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#2563ff', fontWeight: 700 }}>✦ {c.score}% compatible</div>
                 {c.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{c.archetype}</div>}
                 {style && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
                 {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
@@ -285,7 +265,7 @@ export default function RosterPicker({
       </div>
 
       <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
-        ← roll through · refreshes as new people join →
+        refreshes as new people join
       </p>
 
       {/* At-capacity: choosing prompts the user to close one existing chat. */}
@@ -346,15 +326,8 @@ const emptyWrap: React.CSSProperties = {
   marginBottom: '3rem',
 };
 
-// Shared carousel card box (chosen + candidate cards share this footprint).
+// Shared grid card box (chosen + candidate cards share this footprint).
 const cardBase: React.CSSProperties = {
-  flex: '0 0 auto', width: 'min(82vw, 270px)', scrollSnapAlign: 'center',
   background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 18,
   overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 16px 44px -28px rgba(0,0,0,0.5)',
-};
-// Roll arrows in the carousel header (not overlaid → no mobile overflow).
-const rollArrow: React.CSSProperties = {
-  width: 32, height: 32, borderRadius: '50%', background: 'var(--h-surface)', border: '1px solid var(--h-border)',
-  color: 'var(--h-text)', fontSize: '1.2rem', lineHeight: 1, cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', paddingBottom: 3,
 };
