@@ -37,7 +37,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   ];
   const credOk = cred.every((c) => c.ok);
   const basicsOk = !!gender && !!seeking && ageMin >= 18 && ageMax >= ageMin;
-  const canEnter = credOk && basicsOk;
+  const canEnter = credOk && basicsOk && !!videoUrl;
 
   async function onVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -48,11 +48,11 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
       const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
       const r = await fetch('/api/raffle/upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ext }) });
       const d = await r.json();
-      if (!r.ok) { setErr(d.error || 'upload not available — you can still enter without it.'); return; }
+      if (!r.ok) { setErr(d.error || 'upload not available — try again shortly.'); return; }
       const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': file.type || 'video/mp4' } });
-      if (!put.ok) { setErr('upload failed — you can still enter without a video.'); return; }
+      if (!put.ok) { setErr('upload failed — try again.'); return; }
       setVideoUrl(d.publicUrl);
-    } catch { setErr('upload failed — you can still enter without a video.'); }
+    } catch { setErr('upload failed — try again.'); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
@@ -142,8 +142,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
             {/* ③ contest video */}
             <div style={card}>
-              <div style={cardLabel}>③ your intro video <span style={{ color: 'var(--h-text-faint)' }}>· optional but it helps</span></div>
-              <p style={cardP}>a 15–30s “hi, I’m {firstName}” clip — your contest intro.</p>
+              <div style={cardLabel}>③ your intro video <span style={{ color: ORANGE_DEEP }}>· required</span></div>
+              <p style={cardP}>a 15–30s “hi, I’m {firstName}” clip — your contest intro. every entrant needs one.</p>
               {videoUrl ? (
                 <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: '#2d7a4f', letterSpacing: '0.06em' }}>✓ video added · <button onClick={() => setVideoUrl(null)} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: 'pointer', textDecoration: 'underline' }}>replace</button></div>
               ) : (
@@ -166,7 +166,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <button onClick={enter} disabled={busy || uploading || !canEnter} style={{ background: canEnter ? ORANGE : 'var(--h-surface-2)', color: canEnter ? '#fff' : 'var(--h-text-faint)', border: canEnter ? 'none' : '1px solid var(--h-border)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || !canEnter ? 'not-allowed' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
               {busy ? '…' : canEnter ? '🎟️ enter the raffle' : 'finish the steps above'}
             </button>
-            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : 'pick your match basics'}</p>}
+            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : 'upload your intro video'}</p>}
           </div>
         )}
         {err && <p style={{ color: ORANGE_DEEP, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', marginTop: '1rem' }}>{err}</p>}

@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
   if (!g) missing.push('your gender');
   if (!sk) missing.push('who to match you with');
   if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
+  if (!video_url) return NextResponse.json({ error: 'Your intro video is required to enter.' }, { status: 400 });
 
   // New entrants face the deadline + the 50-cap; updating your own entry doesn't.
   const { data: mine } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();

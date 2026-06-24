@@ -72,7 +72,7 @@ export default function RaffleCard() {
     return shell('#ff6a1f', (<>
       {eyebrow}
       {H('you’re in the raffle. ✓')}
-      {P(<>we draw the pairs <b>{ev.drawLabel}</b> and ping you if you’re picked for a <b>${ev.budget} date</b>.{!s.entry?.video_url ? ' add your intro video to stand out — ' : ' '}{!s.entry?.video_url && <Link href="/raffle" style={{ color: '#d2530f' }}>finish your entry →</Link>}</>)}
+      {P(<>we draw <b>{ev.drawLabel}</b> and ping you the second you’re picked for a <b>${ev.budget} date</b>.</>)}
       {!pushOn && <button onClick={enablePush} style={{ marginTop: '0.8rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: '#d2530f', borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on raffle notifications</button>}
     </>));
   }

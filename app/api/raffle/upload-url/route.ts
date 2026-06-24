@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabaseAdmin.storage.from('raffle-videos').createSignedUploadUrl(path);
   if (error || !data) {
     console.error('raffle upload-url error', error);
-    return NextResponse.json({ error: 'Video uploads not set up yet — you can still register and add your video later.' }, { status: 503 });
+    return NextResponse.json({ error: 'Video uploads are temporarily unavailable — please try again shortly.' }, { status: 503 });
   }
   const { data: pub } = supabaseAdmin.storage.from('raffle-videos').getPublicUrl(path);
   return NextResponse.json({ signedUrl: data.signedUrl, token: data.token, path, publicUrl: pub.publicUrl });
