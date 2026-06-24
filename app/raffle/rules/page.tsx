@@ -26,7 +26,7 @@ const SECTIONS: { h: string; b: string }[] = [
   },
   {
     h: '3. Eligibility',
-    b: `Open only to legal residents of the ${RAFFLE.city} metropolitan area (Massachusetts) who are 21 years of age or older at the time of entry and who have a complete, genuine NotCupid account. This prize is a restaurant dinner and is restricted to entrants 21 and over; you may be asked to show valid government ID confirming you are 21+ to receive the prize. Employees, contractors, and immediate family/household members of the Sponsor are not eligible. Void outside the eligible area and where prohibited or restricted by law.`,
+    b: `Open only to people who reside within ${RAFFLE.radiusMiles} miles of the prize venue (in or around ${RAFFLE.city}, Massachusetts) so a winner can actually attend, who are 21 years of age or older at the time of entry, and who have a complete, genuine NotCupid account. This prize is a restaurant dinner and is restricted to entrants 21 and over; you may be asked to show valid government ID confirming you are 21+ to receive the prize. Employees, contractors, and immediate family/household members of the Sponsor are not eligible. Void outside the eligible area and where prohibited or restricted by law.`,
   },
   {
     h: '4. Promotion period',

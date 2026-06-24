@@ -8,6 +8,8 @@ export const RAFFLE = {
   series: 'Summer of Connection',
   city: 'Boston',
   metro: 'boston',
+  centerZip: '02116', // The Berkeley, Back Bay — the meet-up anchor for the radius
+  radiusMiles: 50, // must live within this of the venue to enter (so winners can actually show up)
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // each entrant can be drawn at most twice (accept/reject, then re-draw)
   respondHours: 18, // a drawn pair has this long to accept before the draw expires + we re-draw (so a no-show can't deadlock the round)
@@ -27,9 +29,14 @@ export function raffleClosed(): boolean {
   return Date.now() > new Date(RAFFLE.entryClose).getTime();
 }
 
-// Is this user eligible for the raffle? (in the event's metro)
-import { metroOf } from '@/lib/quiz-data';
+// Is this user eligible for the raffle? They must live WITHIN RAFFLE.radiusMiles
+// of the venue so a winner can actually show up to the dinner. (metroOf labels the
+// nearest metro within ~150mi, which is far too wide for a single meet-up.) Falls
+// back to the metro check only when the zip can't be geocoded.
+import { metroOf, zipDistanceMiles } from '@/lib/quiz-data';
 export function raffleEligible(user: any): boolean {
+  const d = zipDistanceMiles(user?.zip, RAFFLE.centerZip);
+  if (d != null) return d <= RAFFLE.radiusMiles;
   return metroOf(user?.zip) === RAFFLE.metro;
 }
 

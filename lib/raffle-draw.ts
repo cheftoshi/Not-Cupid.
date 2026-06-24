@@ -1,7 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleScore, ageMutual, raffleClosed } from '@/lib/raffle';
+import { RAFFLE, raffleScore, ageMutual, raffleClosed, raffleEligible } from '@/lib/raffle';
 import { isGenderMatch } from '@/lib/matching';
-import { metroOf } from '@/lib/quiz-data';
 import { sendPushToUser } from '@/lib/push';
 
 const COLS = 'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, hobbies, music, food, sports, ' +
@@ -62,7 +61,7 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<{ ok: 
   if (eligibleIds.length < 2) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
 
   const { data: usersData } = await supabaseAdmin.from('users').select(COLS).in('id', eligibleIds);
-  const pool: any[] = ((usersData as any[]) ?? []).filter((u) => u.photo_url && u.archetype && metroOf(u.zip) === RAFFLE.metro);
+  const pool: any[] = ((usersData as any[]) ?? []).filter((u) => u.photo_url && u.archetype && raffleEligible(u));
 
   // Fairness across rounds: a prior-round winner can't win again.
   const { data: priorWins } = await supabaseAdmin.from('raffle_draws').select('user_a_id, user_b_id').eq('status', 'both_accepted').neq('event_key', RAFFLE.key);
