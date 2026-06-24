@@ -126,17 +126,18 @@ function ConnectionBackdrop() {
       vx: (Math.random() - 0.5) * 0.0003, vy: (Math.random() - 0.5) * 0.0003,
       r: 1.4 + Math.random() * 2.4, cool: Math.random() < 0.3,
     }));
-    // "travelers" — little comets that journey node→node along the network,
-    // leaving a fading trail and blooming each person they reach (a connection
-    // finding its way to someone). Pac-Man energy, abstract + elegant.
-    const nearest = (n: number, not: number) => {
-      let best = -1, bd = Infinity;
-      for (let k = 0; k < N; k++) { if (k === n || k === not) continue; const d = Math.hypot(nodes[n].x - nodes[k].x, nodes[n].y - nodes[k].y); if (d < bd) { bd = d; best = k; } }
-      return best < 0 ? (n + 1) % N : best;
+    // Comic speech bubbles — the language of how people connect now (texts +
+    // activity emojis that match the Scene categories), drifting up from people
+    // like little conversations happening across the city. Natural, fun, cultural.
+    const SAYS = ['coffee?', 'pickleball?', 'run club 🏃', 'gym sesh', '🎾 sat?', '📚 tonight?', '🎬 later?', 'lunch?', 'wyd', 'down?', 'new here!', 'let’s hang', '🧡', 'hi friend 👋', 'lets gooo', 'concert?', '🍜?', 'tennis?'];
+    type Bub = { x: number; y: number; text: string; t: number; warm: boolean; rot: number };
+    let bubs: Bub[] = [];
+    let nextSpawn = 8;
+    const roundRect = (x: number, y: number, bw: number, bh: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.arcTo(x + bw, y, x + bw, y + bh, r); ctx.arcTo(x + bw, y + bh, x, y + bh, r);
+      ctx.arcTo(x, y + bh, x, y, r); ctx.arcTo(x, y, x + bw, y, r); ctx.closePath();
     };
-    const travelers = Array.from({ length: 5 }, (_, i) => ({ from: i * 7 % N, to: -1, prev: -1, t: 0, col: i % 2 ? '95,184,255' : '79,224,210', trail: [] as { x: number; y: number }[] }));
-    for (const tr of travelers) tr.to = nearest(tr.from, -1);
-    const blooms: { x: number; y: number; t: number }[] = [];
     const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size();
     const ro = new ResizeObserver(size); ro.observe(cv);
@@ -169,28 +170,37 @@ function ConnectionBackdrop() {
         ctx.beginPath(); ctx.arc(n.x * w, n.y * h, n.r, 0, TAU);
         ctx.fillStyle = n.cool ? 'rgba(140,205,255,0.72)' : 'rgba(110,228,214,0.74)'; ctx.fill();
       }
-      // travelers — glowing comets that journey + bloom each person they reach
-      for (const tr of travelers) {
-        const a = nodes[tr.from], b = nodes[tr.to];
-        if (!reduce) tr.t += 0.013; // energetic — comets zip between people
-        if (tr.t >= 1) { blooms.push({ x: b.x, y: b.y, t: 0 }); tr.prev = tr.from; tr.from = tr.to; tr.to = nearest(tr.from, tr.prev); tr.t = 0; }
-        const x = (a.x + (b.x - a.x) * tr.t) * w, y = (a.y + (b.y - a.y) * tr.t) * h;
-        tr.trail.push({ x, y }); if (tr.trail.length > 18) tr.trail.shift();
-        ctx.shadowBlur = 0;
-        for (let s = 0; s < tr.trail.length; s++) {
-          const pt = tr.trail[s];
-          ctx.beginPath(); ctx.arc(pt.x, pt.y, 1.7, 0, TAU); ctx.fillStyle = `rgba(${tr.col},${(s / tr.trail.length) * 0.55})`; ctx.fill();
+      // comic speech bubbles — spawn from people, float up + fade, like little
+      // conversations across the city
+      ctx.shadowBlur = 0;
+      if (!reduce) {
+        nextSpawn -= 1;
+        if (nextSpawn <= 0 && bubs.length < 5) {
+          const n = nodes[(Math.random() * N) | 0];
+          bubs.push({ x: n.x, y: n.y, text: SAYS[(Math.random() * SAYS.length) | 0], t: 0, warm: Math.random() < 0.28, rot: (Math.random() - 0.5) * 0.16 });
+          nextSpawn = 26 + ((Math.random() * 40) | 0);
         }
-        ctx.shadowBlur = 12; ctx.shadowColor = `rgba(${tr.col},0.95)`;
-        ctx.beginPath(); ctx.arc(x, y, 3.3, 0, TAU); ctx.fillStyle = `rgba(${tr.col},1)`; ctx.fill();
       }
-      // blooms — an expanding ring as a connection lands on someone
-      for (let k = blooms.length - 1; k >= 0; k--) {
-        const bl = blooms[k]; bl.t += 0.045; if (bl.t >= 1) { blooms.splice(k, 1); continue; }
-        ctx.shadowBlur = 9; ctx.shadowColor = 'rgba(79,214,200,0.7)';
-        ctx.beginPath(); ctx.arc(bl.x * w, bl.y * h, 3 + bl.t * 18, 0, TAU);
-        ctx.strokeStyle = `rgba(110,228,214,${(1 - bl.t) * 0.5})`; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.font = "600 13px ui-sans-serif, system-ui, -apple-system, sans-serif";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let k = bubs.length - 1; k >= 0; k--) {
+        const bb = bubs[k];
+        if (!reduce) bb.t += 0.006;
+        if (bb.t >= 1) { bubs.splice(k, 1); continue; }
+        const px = bb.x * w, py = bb.y * h - bb.t * 46; // float up
+        const alpha = bb.t < 0.16 ? bb.t / 0.16 : bb.t > 0.72 ? (1 - bb.t) / 0.28 : 1; // fade in/out
+        const pop = bb.t < 0.16 ? 0.82 + (bb.t / 0.16) * 0.18 : 1; // little pop-in
+        const bw = ctx.measureText(bb.text).width + 18, bh = 26, r = 13;
+        ctx.save();
+        ctx.translate(px, py); ctx.rotate(bb.rot); ctx.scale(pop, pop); ctx.globalAlpha = Math.max(0, alpha);
+        const fill = bb.warm ? 'rgba(40,30,22,0.92)' : 'rgba(18,46,55,0.94)';
+        const line = bb.warm ? 'rgba(255,170,80,0.7)' : 'rgba(95,214,210,0.7)';
+        roundRect(-bw / 2, -bh - 8, bw, bh, r); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = 1.4; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-5, -8); ctx.lineTo(0, -1); ctx.lineTo(5, -8); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); // tail
+        ctx.fillStyle = bb.warm ? '#ffd9b0' : '#d6f5f1'; ctx.fillText(bb.text, 0, -bh / 2 - 8);
+        ctx.restore();
       }
+      ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
     };
     raf = requestAnimationFrame(draw);
