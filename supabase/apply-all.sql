@@ -464,6 +464,10 @@ alter table users add column if not exists friend_opted_in_at timestamptz;
 alter table users add column if not exists friend_vibes jsonb;
 alter table users add column if not exists friend_seeking text[] not null default '{}';
 create index if not exists users_friend_pool_idx on users(friend_opted_in_at) where friend_opted_in_at is not null;
+-- 20260624_friend_cooldown.sql — 3 ignored packs → 15-day friend-line break
+alter table users add column if not exists friend_skips int not null default 0;
+alter table users add column if not exists friend_pack_seen_at timestamptz;
+alter table users add column if not exists friend_cooldown_until timestamptz;
 
 create table if not exists friend_connections (
   id uuid primary key default gen_random_uuid(),

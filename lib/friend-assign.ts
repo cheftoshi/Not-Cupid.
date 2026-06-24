@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { rankFriendCandidates } from '@/lib/friend-matching';
 import { FRIEND_MAX_CONNECTIONS } from '@/lib/friend-circles';
+import { isFriendCooled } from '@/lib/friend-cooldown';
 import { sendPushToUser } from '@/lib/push';
 import { metroOf } from '@/lib/quiz-data';
 
@@ -16,6 +17,8 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   // profile (which clears the flag). Don't assign them any new friend matches.
   if (me.matching_disabled_at) return 0;
   if (me.matching_cooldown_until && new Date(me.matching_cooldown_until).getTime() > Date.now()) return 0;
+  // On a friend-pack break (ignored too many packs) → no new packs until it lifts.
+  if (isFriendCooled(me)) return 0;
 
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')

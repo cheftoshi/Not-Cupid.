@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { assignFriendMatches, matchCapFor } from '@/lib/friend-assign';
+import { evaluatePackEngagement } from '@/lib/friend-cooldown';
 import { isHardLocked } from '@/lib/ghost';
 
 export const dynamic = 'force-dynamic';
@@ -78,5 +79,10 @@ export async function GET() {
     const otherId = c.user_a_id === user.id ? c.user_b_id : c.user_a_id;
     return visibleIds.has(otherId) && 'opened_at' in c && (c as any).opened_at == null;
   }).length;
+
+  // Engagement cooldown: keep ignoring your packs (no opt-in) → a 15-day break.
+  const engage = await evaluatePackEngagement(user, visible);
+  if (engage.cooled) return NextResponse.json({ optedIn: true, matches: [], sealedCount: 0, friendCooled: true, cooledUntil: engage.until });
+
   return NextResponse.json({ optedIn: true, matches: visible, sealedCount });
 }

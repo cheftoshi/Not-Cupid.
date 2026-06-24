@@ -368,6 +368,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   }
   const [matches, setMatches] = useState<any[]>([]);
   const [sealedCount, setSealedCount] = useState(0);
+  const [cooledUntil, setCooledUntil] = useState<string | null>(null);
   const [termsOk, setTermsOk] = useState(false);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
@@ -397,7 +398,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
   const loadMatches = useCallback(async () => {
     const r = await fetch('/api/friend/roster');
-    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); }
+    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); setCooledUntil(d.friendCooled ? (d.cooledUntil || '') : null); }
   }, []);
   const loadChat = useCallback(async () => {
     const r = await fetch('/api/friend/messages'); if (r.ok) setChat(await r.json());
@@ -444,15 +445,23 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   // The chat is free now — it's live once the crew (circle) exists. Until then
   // we still show the box with the prospective members so the section is visible.
   const chatLive = !!(chat.circleId && chat.chatLive);
-  // Who's in the chat — a labeled roster (avatar + first name + in/invited dot).
-  // Live circle → the actual members; pre-circle → me + prospective matches.
+  // Who's in the chat — a labeled roster (avatar + first name + active/invited dot).
+  // ACTIVE (here:true) = opted into the pack (in the circle) → can message. Everyone
+  // else in the pack is still ACCOUNTED FOR (here:false = invited) so non-opters
+  // show up greyed until they opt in. Active members come first.
   type CrewMember = { id: string; name: string; photo_url: string | null; here: boolean; you: boolean };
-  const crewRoster: CrewMember[] = chat.circleId
-    ? (chat.members || []).map((u: any) => ({ id: u.id, name: u.name, photo_url: u.photo_url, here: true, you: !!u.isMe }))
-    : [
-        ...(me ? [{ id: 'me', name: me.name, photo_url: me.photo_url, here: iAmIn, you: true }] : []),
-        ...matches.map((m) => ({ id: m.otherId, name: m.name, photo_url: m.photo_url, here: !!m.theyAccepted, you: false })),
-      ];
+  const crewRoster: CrewMember[] = (() => {
+    const out: CrewMember[] = [];
+    const seen = new Set<string>();
+    if (chat.circleId) {
+      (chat.members || []).forEach((u: any) => { seen.add(u.id); out.push({ id: u.id, name: u.name, photo_url: u.photo_url, here: true, you: !!u.isMe }); });
+    } else if (me) {
+      out.push({ id: 'me', name: me.name, photo_url: me.photo_url, here: iAmIn, you: true }); seen.add('me');
+    }
+    // Account for everyone else in the pack who hasn't opted in yet (invited, inactive).
+    matches.forEach((m) => { if (!seen.has(m.otherId)) { seen.add(m.otherId); out.push({ id: m.otherId, name: m.name, photo_url: m.photo_url, here: false, you: false }); } });
+    return out.sort((a, b) => (a.you === b.you ? (a.here === b.here ? 0 : a.here ? -1 : 1) : a.you ? -1 : 1));
+  })();
 
   // ── derived data for the FB-style shell ──
   const activeGroups = pulse?.activeGroups ?? 0;
@@ -745,6 +754,13 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   <ReactivateButton accent={LINE} />
                 </>
               )}
+            </div>
+          ) : cooledUntil !== null ? (
+            <div style={{ ...card, padding: '1.4rem 1.25rem', textAlign: 'center' }}>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ taking a little break</div>
+              <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.55, margin: 0 }}>
+                you got a few packs and didn&apos;t open up to anyone, so we&apos;ve paused new packs to keep things fresh for everyone.{cooledUntil ? ` you're back on ${new Date(cooledUntil).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}.` : ''} your existing chats &amp; connections stay put — and turn on notifications so you don&apos;t miss the next pack.
+              </p>
             </div>
           ) : matches.length === 0 ? (
             <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>the algo is still finding your people — check back soon.</div>
