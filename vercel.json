@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/cron/raffle-draw",
-      "schedule": "0 4 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleScore, ageMutual } from '@/lib/raffle';
+import { RAFFLE, raffleScore, ageMutual, raffleClosed } from '@/lib/raffle';
 import { isGenderMatch } from '@/lib/matching';
 import { metroOf } from '@/lib/quiz-data';
 import { sendPushToUser } from '@/lib/push';
@@ -17,25 +17,52 @@ const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 // If they don't both accept, the willing one is re-drawn — each entrant gets at
 // most RAFFLE.maxAttempts (2) draws, then they're out. Prior-round winners are
 // excluded. Stops once a pair mutually accepts (the winner) or no pairs remain.
-export async function drawRaffle(): Promise<{ ok: true; entrants: number; drawn: number; pair?: { a: string; b: string; score: number }; state: string }> {
+export async function drawRaffle(opts: { force?: boolean } = {}): Promise<{ ok: true; entrants: number; drawn: number; pair?: { a: string; b: string; score: number }; state: string }> {
+  const force = opts.force === true;
+
   // Already a winner this round? done.
   const { data: won } = await supabaseAdmin.from('raffle_draws').select('id').eq('event_key', RAFFLE.key).eq('status', 'both_accepted').limit(1);
   if (won && won.length) return { ok: true, entrants: 0, drawn: 0, state: 'winner-locked' };
-  // A pair is already out there awaiting a yes/no — only one live pair at a time.
-  const { data: pend } = await supabaseAdmin.from('raffle_draws').select('id').eq('event_key', RAFFLE.key).eq('status', 'pending').limit(1);
-  if (pend && pend.length) return { ok: true, entrants: 0, drawn: 0, state: 'awaiting-response' };
+
+  // A pair is awaiting a yes/no — only one live pair at a time. Give them their
+  // window; if it's gone STALE, expire it and move on so a no-show can't deadlock
+  // the round. (A side that already accepted re-enters if under the attempt cap; a
+  // no-show side is set aside.)
+  const { data: pendRows } = await supabaseAdmin.from('raffle_draws')
+    .select('id, created_at, a_accepted, b_accepted, user_a_id, user_b_id')
+    .eq('event_key', RAFFLE.key).eq('status', 'pending').limit(1);
+  const pendingDraw = (pendRows ?? [])[0] as any;
+  if (pendingDraw) {
+    const ageMs = Date.now() - new Date(pendingDraw.created_at).getTime();
+    if (ageMs < RAFFLE.respondHours * 3_600_000) return { ok: true, entrants: 0, drawn: 0, state: 'awaiting-response' };
+    await supabaseAdmin.from('raffle_draws').update({ status: 'expired' }).eq('id', pendingDraw.id);
+    for (const [uid, accepted] of [[pendingDraw.user_a_id, pendingDraw.a_accepted], [pendingDraw.user_b_id, pendingDraw.b_accepted]] as [string, boolean][]) {
+      let next: 'entered' | 'passed' = 'passed';
+      if (accepted) {
+        const { data: e } = await supabaseAdmin.from('raffle_entries').select('attempts').eq('event_key', RAFFLE.key).eq('user_id', uid).maybeSingle();
+        next = ((e as any)?.attempts ?? 0) < RAFFLE.maxAttempts ? 'entered' : 'passed';
+      }
+      await supabaseAdmin.from('raffle_entries').update({ status: next }).eq('event_key', RAFFLE.key).eq('user_id', uid);
+    }
+  }
+
+  // Prior draws this round — for seen-pairs AND the "round has started" trigger.
+  const { data: priorDraws } = await supabaseAdmin.from('raffle_draws').select('user_a_id, user_b_id').eq('event_key', RAFFLE.key);
+  const seenPairs = new Set<string>((priorDraws ?? []).map((d: any) => pairKey(d.user_a_id, d.user_b_id)));
 
   // Eligible entrants: still in, under the attempt cap.
   const { data: entries } = await supabaseAdmin.from('raffle_entries').select('user_id, attempts').eq('event_key', RAFFLE.key).eq('status', 'entered');
   const eligibleIds = (entries ?? []).filter((e: any) => (e.attempts ?? 0) < RAFFLE.maxAttempts).map((e: any) => e.user_id);
+
+  // Only draw when it's time: admin force, entries closed, the cap is reached, or
+  // the round already started (so post-decline / post-expiry re-draws flow through).
+  const { count: totalEntries } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key);
+  const canDraw = force || raffleClosed() || (totalEntries ?? 0) >= RAFFLE.cap || (priorDraws?.length ?? 0) > 0;
+  if (!canDraw) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'waiting-for-trigger' };
   if (eligibleIds.length < 2) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
 
   const { data: usersData } = await supabaseAdmin.from('users').select(COLS).in('id', eligibleIds);
   const pool: any[] = ((usersData as any[]) ?? []).filter((u) => u.photo_url && u.archetype && metroOf(u.zip) === RAFFLE.metro);
-
-  // Never re-draw the same two people.
-  const { data: priorDraws } = await supabaseAdmin.from('raffle_draws').select('user_a_id, user_b_id').eq('event_key', RAFFLE.key);
-  const seenPairs = new Set<string>((priorDraws ?? []).map((d: any) => pairKey(d.user_a_id, d.user_b_id)));
 
   // Fairness across rounds: a prior-round winner can't win again.
   const { data: priorWins } = await supabaseAdmin.from('raffle_draws').select('user_a_id, user_b_id').eq('status', 'both_accepted').neq('event_key', RAFFLE.key);
