@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CorpFooter from '@/components/corp-footer';
+import { RAFFLE } from '@/lib/raffle';
 
 export const dynamic = 'force-static';
 
@@ -18,6 +19,14 @@ const STEPS = [
   { n: '3', emoji: '🚉', title: 'pick your line', body: 'board the Love Line (dating), the Friend Line (platonic crews), or both. your core quiz powers both sides.' },
   { n: '4', emoji: '🎯', title: 'go a little deeper', body: 'each line asks a few questions of its own — Love: what you want in a partner, how you connect, what matters. Friend: how you like to hang. that’s what the matching actually weighs.' },
   { n: '5', emoji: '💘', title: 'meet people, not profiles', body: 'the algo curates a small roster of your most compatible people. you pick. no swiping, no endless feed — just someone worth the first message.' },
+];
+
+// The Summer of Connection raffle — every point, for the featured slide below.
+const RAFFLE_POINTS = [
+  { e: '✅', t: 'how to enter', b: `be in ${RAFFLE.city} with a complete profile (photo, quiz, bio, a few interests), set your match basics (who you’re into + your age range), and add a 15–30s intro video — that’s your contest entry. entering is free.` },
+  { e: '🎲', t: 'how we pick', b: 'a weighted-random draw — it’s luck, but the odds scale with compatibility. every eligible pair can win; better-matched pairs (shared hobbies, music, food, plus personality and values) just win more often. no human picks.' },
+  { e: '⚖️', t: 'kept fair', b: 'the entrant pool is balanced by gender so it can’t skew, anyone who already won a past round sits out the next, and if your match passes you get re-drawn — up to two shots.' },
+  { e: '🤝', t: 'drawn? accept or reject', b: `you and your match each say yes or no. both yes and your $${RAFFLE.budget} dinner is locked — we send the spot and the time. turn on notifications so you know the second you’re picked.` },
 ];
 
 export default function HowItWorks() {
@@ -74,6 +83,27 @@ export default function HowItWorks() {
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent-2)', margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
             or go <b>Pro</b> — every love unlock, unlimited friendship packs, and events, all for <b>$3.99/mo</b>. no swiping, ever.
           </p>
+        </div>
+
+        {/* featured: the Summer of Connection raffle */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.13), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.4rem 1.4rem 1.5rem', margin: '0 0 1.75rem', boxShadow: '0 18px 50px -30px rgba(255,106,31,0.55)' }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🎟️ now live · {RAFFLE.city}</div>
+          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0.3rem 0 0.2rem' }}>{RAFFLE.series}</div>
+          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1rem' }}>
+            {RAFFLE.tagline} each round raffles <b>one fully-covered date</b> — up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant — and entering is <b>free</b>.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {RAFFLE_POINTS.map((p) => (
+              <div key={p.t} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '1.05rem', flexShrink: 0, lineHeight: 1.4 }}>{p.e}</span>
+                <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}><b style={{ color: 'var(--h-text)' }}>{p.t}</b> — {p.b}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.06em', color: ORANGE_DEEP, marginTop: '1rem', fontWeight: 700 }}>
+            capped at {RAFFLE.cap} entrants · entry closes {RAFFLE.entryCloseLabel} · dinner {RAFFLE.dateLabel}
+          </div>
+          <Link href="/raffle" style={{ display: 'inline-block', marginTop: '0.9rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', textDecoration: 'none' }}>enter the raffle →</Link>
         </div>
 
         <div style={{ textAlign: 'center' }}>
