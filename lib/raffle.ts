@@ -1,18 +1,27 @@
 import { compatibilityScore } from '@/lib/matching';
 
 // Summer of Connection — the live event raffle. v1 = Boston, one date.
+// The draw is AUTOMATIC: it fires the moment entries hit `cap`, or via the daily
+// cron once `entryClose` passes — no human picks. (Confirm the dates below.)
 export const RAFFLE = {
   key: 'boston-2026-06-27',
   series: 'Summer of Connection',
   city: 'Boston',
   metro: 'boston',
+  cap: 50, // entry closes at 50 entrants → auto-draw fires
+  entryClose: '2026-06-25T23:59:00.000Z', // last entry point (Thursday before the event)
+  entryCloseLabel: 'Thursday, June 25',
   happensAt: '2026-06-27T23:00:00.000Z', // Sat Jun 27, 7pm ET (EDT = UTC-4)
   dateLabel: 'Saturday, June 27 · 7pm',
-  drawLabel: 'Friday night', // when we draw the pair
+  drawLabel: 'the moment we hit 50 (or Thursday night)',
   budget: 200,
   restaurant: "a spot we love in Boston — we'll email you the address + time",
   tagline: 'Two Bostonians. One $200 dinner. On us.',
 };
+
+export function raffleClosed(): boolean {
+  return Date.now() > new Date(RAFFLE.entryClose).getTime();
+}
 
 // Is this user eligible for the raffle? (in the event's metro)
 import { metroOf } from '@/lib/quiz-data';

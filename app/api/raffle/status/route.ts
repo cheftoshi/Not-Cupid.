@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleEligible } from '@/lib/raffle';
+import { RAFFLE, raffleEligible, raffleClosed } from '@/lib/raffle';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,8 +39,18 @@ export async function GET() {
     }
   } catch { /* tables not migrated yet — show the register state */ }
 
+  let spotsLeft = RAFFLE.cap;
+  try {
+    const { count } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key);
+    spotsLeft = Math.max(0, RAFFLE.cap - (count ?? 0));
+  } catch { /* not migrated */ }
+
   return NextResponse.json({
-    event: { series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget, tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel },
+    event: {
+      series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget,
+      tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: RAFFLE.cap, entryCloseLabel: RAFFLE.entryCloseLabel,
+      spotsLeft, closed: raffleClosed() || spotsLeft === 0,
+    },
     eligible, hasProfile, entered, entry, draw, other,
   });
 }

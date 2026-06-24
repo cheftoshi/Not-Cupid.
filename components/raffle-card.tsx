@@ -76,11 +76,18 @@ export default function RaffleCard() {
       {!pushOn && <button onClick={enablePush} style={{ marginTop: '0.8rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: '#d2530f', borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on raffle notifications</button>}
     </>));
   }
+  // ── entries closed (full or past deadline) ──
+  if (ev.closed) {
+    return shell('#ff6a1f', (<>{eyebrow}{H('entries are closed.')}{P(<>this round filled up — keep an eye here for the next <b>{ev.series}</b> drop.</>)}</>));
+  }
   // ── not entered → register ──
   return shell('#ff6a1f', (<>
     {eyebrow}
     {H(ev.tagline)}
-    {P(<>enter the raffle for a shot at a fully-covered <b>${ev.budget} dinner</b> with someone you’re actually compatible with · <b>{ev.dateLabel}</b>.</>)}
+    {P(<>a fully-covered <b>${ev.budget} dinner</b> with someone you’re actually compatible with · <b>{ev.dateLabel}</b>.</>)}
+    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.06em', color: '#d2530f', marginTop: '0.5rem', fontWeight: 700 }}>
+      {ev.spotsLeft} of {ev.cap} spots left · closes {ev.entryCloseLabel}
+    </div>
     {cta('/raffle', 'enter the raffle →')}
   </>));
 }
