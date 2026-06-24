@@ -79,6 +79,33 @@ function PulseRanked({ areas, line, ink, deep, onPick, active }: { areas: any[];
   );
 }
 
+// City Pulse zones as BUBBLES — each neighborhood a teal bubble sized + glowing by
+// how much is happening (members + events). Tap one to load its active events.
+function ZoneBubbles({ areas, onPick, active }: { areas: any[]; onPick: (a: string) => void; active: string }) {
+  const scored = [...areas]
+    .map((a) => ({ ...a, score: (a.members || 0) + (a.activities || 0) }))
+    .filter((a) => a.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 18);
+  if (!scored.length) return <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>quiet out there right now — be the first to start something.</div>;
+  const max = Math.max(1, ...scored.map((a) => a.score));
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center', justifyContent: 'center', padding: '0.4rem 0' }}>
+      {scored.map((a) => {
+        const sel = active === a.area;
+        const size = 56 + Math.round((a.score / max) * 58); // 56–114px
+        return (
+          <button key={a.area} onClick={() => onPick(a.area)} title={`${a.activities || 0} events · ${a.members || 0} here`}
+            style={{ width: size, height: size, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: 'pointer', border: `1px solid ${sel ? 'var(--h-accent)' : 'var(--h-border)'}`, background: sel ? 'var(--h-accent)' : 'var(--h-surface-2)', color: sel ? '#0c2029' : 'var(--h-text)', boxShadow: sel ? '0 0 0 4px rgba(79,214,200,0.22)' : `0 0 ${10 + Math.round((a.score / max) * 22)}px -4px rgba(79,214,200,0.45)`, padding: '0.3rem' }}>
+            <span style={{ fontFamily: 'ui-sans-serif, system-ui, sans-serif', fontSize: size > 84 ? '0.74rem' : '0.6rem', fontWeight: 600, lineHeight: 1.04, overflow: 'hidden' }}>{a.area}</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', opacity: 0.82, marginTop: '0.15rem' }}>{a.activities ? `${a.activities} ev` : `${a.members || 0}👥`}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // A LIVING, CITY-AGNOSTIC connection field (canvas). Nodes drift slowly; a link
 // forms between any two that wander near each other and fades as they part; every
 // so often a "signal" pulse travels a link — a connection sparking in real time.
@@ -921,6 +948,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         {view === 'pulse' && (
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
+          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1rem', fontSize: '0.92rem' }}>
+            the city&apos;s social life — where it&apos;s happening, what&apos;s on, who&apos;s gathering. tap a zone to dive in.
+          </p>
           {!pulse ? (
             <div style={{ ...card, padding: '1.1rem 1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>reading the city&apos;s pulse…</div>
           ) : (
@@ -930,17 +960,17 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 line={LINE} ink={INK} deep={LINE_DEEP}
                 stats={[
                   { n: pulse.totalMembers, label: 'on the line', icon: '👥' },
-                  { n: pulse.activeGroups, label: pulse.activeGroups === 1 ? 'crew rolling' : 'crews rolling', icon: '🫂' },
+                  { n: pulse.activeGroups, label: pulse.activeGroups === 1 ? 'circle live' : 'circles live', icon: '🫂' },
                   { n: pulse.liveActivities, label: 'things to do', icon: '📣', onClick: () => { setKindFilter('event'); setView('scene'); } },
                 ]}
               />
-              {/* where it's buzzing — ranked intensity */}
-              <div style={{ ...card, padding: '1rem 1.1rem', marginTop: '0.9rem' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.7rem' }}>
-                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', letterSpacing: '0.03em' }}>where it&apos;s buzzing</span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginLeft: 'auto' }}>tap to explore</span>
+              {/* where it's happening — neighborhoods as bubbles (tap → events) */}
+              <div style={{ ...card, padding: '1.1rem 1.1rem 1.25rem', marginTop: '0.9rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', letterSpacing: '0.03em' }}>where it&apos;s happening</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginLeft: 'auto' }}>tap a zone</span>
                 </div>
-                <PulseRanked areas={pulse.areas} line={LINE} ink={INK} deep={LINE_DEEP} onPick={(a) => setAreaFilter(areaFilter === a ? '' : a)} active={areaFilter} />
+                <ZoneBubbles areas={pulse.areas} onPick={(a) => setAreaFilter(areaFilter === a ? '' : a)} active={areaFilter} />
               </div>
             </>
           )}
