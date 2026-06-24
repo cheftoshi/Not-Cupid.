@@ -4,15 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import CorpFooter from '@/components/corp-footer';
 import { compressImage } from '@/lib/compress-image';
-import { ARCHETYPES, VIBE_HEADS, vibeLabel, METRO_CENTERS, METRO_ZIP } from '@/lib/quiz-data';
+import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import { signLabel } from '@/lib/astrology';
 import styles from './hub.module.css';
-
-// Cities a user can switch to, grouped by state for the picker.
-const CITY_OPTIONS = (Object.keys(METRO_ZIP) as Array<keyof typeof METRO_ZIP>)
-  .map((key) => ({ key: key as string, ...METRO_CENTERS[key] }))
-  .sort((a, b) => (a.state === b.state ? a.city.localeCompare(b.city) : a.state.localeCompare(b.state)));
 
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
@@ -58,10 +53,6 @@ export default function HubClient({
   firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean; profile: Profile;
   city?: string | null; currentMetro?: string | null; matchRadius?: number; loveMatches?: LoveMatch[];
 }) {
-  const [cityPicker, setCityPicker] = useState(false);
-  const [cityBusy, setCityBusy] = useState<string | null>(null);
-  const [radius, setRadius] = useState<number>(matchRadius ?? 15);
-  const [radiusBusy, setRadiusBusy] = useState(false);
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
   const [uploading, setUploading] = useState(false);
@@ -110,28 +101,6 @@ export default function HubClient({
     } catch { setMsg('failed'); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   }
-
-  async function changeCity(metro: string) {
-    setCityBusy(metro);
-    try {
-      const r = await fetch('/api/profile/set-city', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ metro }) });
-      if (r.ok) window.location.reload();
-      else setCityBusy(null);
-    } catch { setCityBusy(null); }
-  }
-
-  // Love-line match radius (distance-based). Friends ignore this — they match
-  // across the whole metro. Persists immediately; the love roster picks it up.
-  async function changeRadius(r: number) {
-    const prev = radius;
-    setRadius(r); setRadiusBusy(true);
-    try {
-      const res = await fetch('/api/profile/set-radius', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radius: r }) });
-      if (!res.ok) setRadius(prev);
-    } catch { setRadius(prev); }
-    finally { setRadiusBusy(false); }
-  }
-  const RADIUS_LADDER = [5, 10, 15, 25, 50, 75];
 
   const loveHref = !hasArchetype ? '/quiz' : needsLoveDeep ? '/quiz?line=love' : '/profile';
   const meta = ARCHETYPES.find((a) => a.name === profile.archetype);
@@ -186,9 +155,7 @@ export default function HubClient({
                 ? <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.85rem', color: BLUE, marginTop: '0.15rem' }}>{profile.archetype}</div>
                 : <Link href="/quiz?retake=1" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>finish your quiz →</Link>}
               {profile.sun_sign && <div style={{ marginTop: '0.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', color: '#7a7590' }}>{signLabel(profile.sun_sign)}</div>}
-              <button type="button" onClick={() => setCityPicker(true)} style={{ marginTop: '0.5rem', background: 'rgba(37,99,255,0.07)', border: '1px solid rgba(37,99,255,0.18)', borderRadius: 999, padding: '0.3rem 0.7rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: BLUE_DEEP }}>
-                📍 {city || 'set your city'} <span style={{ opacity: 0.6 }}>· change</span>
-              </button>
+              {city && <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: 'var(--h-text-dim)' }}>📍 {city}</div>}
               {msg && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', color: msg.startsWith('✓') ? '#2d7a4f' : '#d2530f', marginTop: '0.4rem' }}>{msg}</div>}
             </div>
 
@@ -199,16 +166,6 @@ export default function HubClient({
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em' }}>💘 love line</div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', opacity: 0.85, marginTop: '0.1rem' }}>{needsLoveDeep ? 'finish your love profile →' : 'pick your people →'}</div>
               </Link>
-              {/* match radius lives WITH the love line (love is distance-based) */}
-              <div style={{ marginBottom: '0.6rem', padding: '0 0.1rem' }}>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>match within {radiusBusy ? '…' : `${radius} mi`}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                  {RADIUS_LADDER.map((r) => (
-                    <button key={r} type="button" onClick={() => changeRadius(r)} disabled={radiusBusy}
-                      style={{ flex: '1 1 auto', minWidth: 0, background: r === radius ? '#2563ff' : 'rgba(37,99,255,0.08)', color: r === radius ? '#fff' : BLUE_DEEP, border: `1px solid ${r === radius ? '#2563ff' : 'rgba(37,99,255,0.2)'}`, borderRadius: 8, padding: '0.28rem 0', cursor: radiusBusy ? 'wait' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.02em' }}>{r}</button>
-                  ))}
-                </div>
-              </div>
               <Link href="/friends" style={{ display: 'block', background: '#ff6a1f', color: '#fff', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em' }}>🧡 friend line</div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', opacity: 0.9, marginTop: '0.1rem' }}>{city ? `all of ${city.split(',')[0]} · by neighborhood →` : 'crews · the scene →'}</div>
@@ -411,35 +368,6 @@ export default function HubClient({
           </aside>
         </div>
       </div>
-
-      {/* CITY PICKER — change which city's pool you're in */}
-      {cityPicker && (
-        <div onClick={() => setCityPicker(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(10,8,16,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '82vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>your home base</span>
-              <button onClick={() => setCityPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--h-text-faint)' }}>✕</button>
-            </div>
-            <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
-              we’re live in <b>{CITY_OPTIONS.length} cities</b> across New England, NYC &amp; North Jersey. tap any to set where you match &amp; see events — your matches &amp; friends stay put.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              {CITY_OPTIONS.map((c) => {
-                const isCurrent = c.key === currentMetro;
-                return (
-                  <button key={c.key} onClick={() => { if (!isCurrent) changeCity(c.key); }} disabled={!!cityBusy || isCurrent}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', background: isCurrent ? 'rgba(37,99,255,0.1)' : 'var(--h-surface-2)', border: `1px solid ${isCurrent ? 'rgba(37,99,255,0.4)' : 'rgba(11,11,11,0.08)'}`, borderRadius: 10, padding: '0.6rem 0.85rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer') }}>
-                    <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.95rem', color: 'var(--h-text)' }}>{c.city}<span style={{ color: 'var(--h-text-faint)', fontSize: '0.78rem' }}>, {c.state}</span></span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: isCurrent ? BLUE_DEEP : '#b4b0c2' }}>
-                      {cityBusy === c.key ? '…' : isCurrent ? '✓ current' : 'switch →'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       <CorpFooter />
     </main>

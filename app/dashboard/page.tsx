@@ -6,7 +6,8 @@ import ActiveChats from './active-chats';
 import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
 import CorpFooter from '@/components/corp-footer';
-import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS } from '@/lib/quiz-data';
+import LocationControls from '@/components/location-controls';
+import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
 import { isPro } from '@/lib/pro';
 import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
@@ -125,6 +126,10 @@ export default async function DashboardPage({
 
   const newest = connections[0] || null;
 
+  // Location (dates): the city + radius controls live HERE, not on the hub.
+  const dashMetro = metroOf(user.zip);
+  const dashCity = dashMetro && METRO_CENTERS[dashMetro] ? `${METRO_CENTERS[dashMetro].city}, ${METRO_CENTERS[dashMetro].state}` : null;
+
   // Your chosen/active matches → the leading cards of the unified carousel.
   const activeCards = connections.map((c: any) => {
     const m = c.match;
@@ -154,6 +159,11 @@ export default async function DashboardPage({
             ? `up to ${MAX_CONNECTIONS} conversations at once · you set the pace →`
             : 'pick who you connect with · you set the pace →'}
         </p>
+
+        {/* dates: change your city + match radius (was on the hub) */}
+        <div style={{ marginBottom: '2.5rem' }}>
+          <LocationControls city={dashCity} currentMetro={dashMetro} radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} showRadius />
+        </div>
 
         {/* One-time cinematic reveal for the newest connection. */}
         {newest && (

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { NEIGHBORHOODS } from '@/lib/neighborhoods';
 import ReactivateButton from '@/components/reactivate-button';
+import LocationControls from '@/components/location-controls';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#241d12';           // warm near-black (signage)
@@ -349,7 +350,7 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
 }
 
 type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null };
-export default function FriendHubClient({ firstName, me }: { firstName: string; me?: Me; accessTier?: string; daysLeft?: number }) {
+export default function FriendHubClient({ firstName, me, city, metro }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
   // An event defaults to the audience the poster set on the Friend Line quiz
   // (who they want to meet + their age range). 'o' = everyone → no gender limit.
@@ -589,11 +590,13 @@ export default function FriendHubClient({ firstName, me }: { firstName: string; 
       `}</style>
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
             <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}`, textDecoration: 'none' }}>FRIEND LINE</a>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>notcupid · greater boston</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{city ? `all of ${city.split(',')[0].toLowerCase()}` : 'your metro'}</span>
           </div>
+          {/* friends: change your city (metro-wide; no radius) */}
+          <LocationControls city={city} currentMetro={metro} accent={LINE} />
         </div>
 
         {/* the route line under the header */}
