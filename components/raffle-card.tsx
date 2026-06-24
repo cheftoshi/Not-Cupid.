@@ -43,9 +43,12 @@ export default function RaffleCard() {
       )}
       {fine && (
         <div style={{ marginTop: '0.6rem', fontSize: '0.62rem', color: 'var(--h-text-faint)', lineHeight: 1.4 }}>
-          * No purchase necessary · 21+ · winner by chance · <Link href="/raffle/rules" style={{ color: '#d2530f' }}>Official Rules</Link>
+          * No purchase necessary · 21+ · winner by chance
         </div>
       )}
+      <div style={{ marginTop: fine ? '0.3rem' : '0.7rem', fontSize: '0.56rem', letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
+        <Link href="/raffle/rules" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>*terms &amp; conditions apply</Link>
+      </div>
     </div>
   );
 }
