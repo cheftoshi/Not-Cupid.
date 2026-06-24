@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
 
 type Event = { series: string; city: string; dateLabel: string; budget: number; tagline: string; drawLabel: string };
-type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seeking: string; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
+type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seeking: string; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null; isPro: boolean };
 
 const ORANGE = '#ff6a1f';
 const ORANGE_DEEP = '#d2530f';
@@ -162,6 +162,18 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         ) : (
           // ── register ──
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+            {/* Pro = dual entry (better odds). The bonus is also free on request — see the rules. */}
+            {profile.isPro ? (
+              <div style={{ background: 'linear-gradient(135deg, rgba(37,99,255,0.12), var(--h-surface))', border: '1.5px solid #2563ff', borderRadius: 14, padding: '0.8rem 1rem', fontSize: '0.85rem', color: 'var(--h-text)' }}>
+                ✨ <b>Pro perk:</b> you get <b>double entry</b> in this draw — 2× the odds. you’re all set.
+              </div>
+            ) : (
+              <Link href="/pro" style={{ display: 'block', background: 'linear-gradient(135deg, rgba(37,99,255,0.1), var(--h-surface))', border: '1.5px solid rgba(37,99,255,0.5)', borderRadius: 14, padding: '0.8rem 1rem', fontSize: '0.85rem', color: 'var(--h-text)', textDecoration: 'none' }}>
+                ✨ <b>NotCupid Pro members get double entry</b> — 2× the odds in every raffle. <span style={{ color: '#2563ff', fontWeight: 700 }}>go Pro for $3.99/mo →</span>
+                <div style={{ fontSize: '0.66rem', color: 'var(--h-text-faint)', marginTop: '0.25rem' }}>no purchase necessary — the bonus entry is also free on request (see the <span style={{ textDecoration: 'underline' }}>Official Rules</span>).</div>
+              </Link>
+            )}
+
             {/* ① cred check — pulled from the profile */}
             <div style={card}>
               <div style={cardLabel}>① your cred</div>

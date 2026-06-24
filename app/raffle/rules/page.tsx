@@ -18,7 +18,7 @@ const CONTACT = 'match@notcupid.com';
 const SECTIONS: { h: string; b: string }[] = [
   {
     h: '1. No purchase necessary',
-    b: `No purchase or payment of any kind is necessary to enter or win. A purchase will not improve your chances of winning. Entry is free. This promotion is a sweepstakes (a prize awarded by chance among eligible entrants) — it is not a lottery or a paid raffle, and no consideration is required to participate.`,
+    b: `No purchase or payment of any kind is necessary to enter or win, and you can enter and win with a free NotCupid account. NotCupid Pro members automatically receive one bonus entry (see “Entries & bonus entries” below), which increases their odds — but NO PURCHASE IS NECESSARY to receive that bonus entry: any eligible entrant may obtain the same bonus entry for free, on request, during the entry period. Because the bonus entry is available without any purchase, this promotion is a sweepstakes (a prize awarded by chance among eligible entrants), not a lottery or a paid raffle.`,
   },
   {
     h: '2. Sponsor',
@@ -37,8 +37,8 @@ const SECTIONS: { h: string; b: string }[] = [
     b: `During the entry period, open the raffle in the NotCupid app, complete the required steps (a complete profile, your match basics, and a short intro video), agree to these Official Rules, and submit. Limit one (1) entry per person per round. Entries that are incomplete, fraudulent, automated, or that misrepresent your identity are void. The intro video must be your own original content and must not contain third-party material, other identifiable people without their consent, or anything unlawful, obscene, or offensive.`,
   },
   {
-    h: '6. How the winner is selected',
-    b: `Selection is automatic and made by chance. Among entrants who are mutually compatible (by the gender and age preferences each entrant provides), the system enumerates every eligible pair and draws one pair at random, weighted by a compatibility score. Every eligible pair has a chance to be drawn; better-matched pairs are weighted to be drawn more often. No human chooses the winner. Both members of a drawn pair must accept within the stated response window for the prize to be awarded. If either declines or does not respond, that pair is dissolved and another eligible pair is drawn (each entrant may be drawn up to two times per round). Odds of being selected depend on the number and compatibility of eligible entrants.`,
+    h: '6. Entries, bonus entries & how the winner is selected',
+    b: `Each eligible entrant receives one (1) entry. NotCupid Pro members receive two (2) entries, which doubles their weighting in the random draw. NO PURCHASE IS NECESSARY for the bonus entry: any eligible entrant who is not a Pro member may obtain the same second entry, free of charge, by emailing ${CONTACT} from their account email address during the entry period with the subject line “BONUS ENTRY” and their full name; the Sponsor will apply the bonus entry at no cost. Limit one (1) bonus entry per person. Selection is then automatic and made by chance: among entrants who are mutually compatible (by the gender and age preferences each provides), the system enumerates every eligible pair and draws one pair at random, weighted by a compatibility score and by each entrant’s number of entries. Every eligible pair has a chance to be drawn; better-matched pairs and pairs with more entries are weighted to be drawn more often. No human chooses the winner. Both members of a drawn pair must accept within the stated response window for the prize to be awarded. If either declines or does not respond, that pair is dissolved and another eligible pair is drawn (each entrant may be drawn up to two times per round). More entries increase your odds but do not guarantee winning; odds depend on the number, compatibility, and entry count of eligible entrants.`,
   },
   {
     h: '7. Prize',

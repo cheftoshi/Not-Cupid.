@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { RAFFLE, raffleEligible } from '@/lib/raffle';
+import { isPro } from '@/lib/pro';
 import RaffleClient from './raffle-client';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,7 @@ export default async function RafflePage() {
     ageMax: user.age_max ?? 38,
     interests,
     archetype: user.archetype || null,
+    isPro: isPro(user),
   };
 
   return (

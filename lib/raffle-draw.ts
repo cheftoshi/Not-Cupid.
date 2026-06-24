@@ -1,11 +1,17 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleScore, ageMutual, raffleClosed, raffleEligible } from '@/lib/raffle';
 import { isGenderMatch } from '@/lib/matching';
+import { isPro } from '@/lib/pro';
 import { sendPushToUser } from '@/lib/push';
 
 const COLS = 'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, hobbies, music, food, sports, ' +
   'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, ' +
-  'vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, is_test';
+  'vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, is_test, friend_pro_until';
+
+// A Pro member (or a free-AMOE-granted bonus, both = isPro) gets RAFFLE.proEntries
+// entries — i.e. that many times the draw weight. So a pair's weight scales by the
+// entry count of BOTH people.
+const entriesFor = (u: any) => (isPro(u) ? RAFFLE.proEntries : 1);
 
 const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
@@ -83,11 +89,14 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<{ ok: 
   }
   if (!pairs.length) return { ok: true, entrants: pool.length, drawn: 0, state: 'no-eligible-pair' };
 
-  // WEIGHTED-RANDOM pick — odds ∝ raffleScore, but every pair has a real shot.
-  const totalW = pairs.reduce((s, p) => s + Math.max(1, p.score), 0);
+  // WEIGHTED-RANDOM pick — odds ∝ raffleScore × each person's entry count (Pro =
+  // dual entry). Every pair still has a real shot; more entries just means better
+  // odds.
+  const weightOf = (p: { a: any; b: any; score: number }) => Math.max(1, p.score) * entriesFor(p.a) * entriesFor(p.b);
+  const totalW = pairs.reduce((s, p) => s + weightOf(p), 0);
   let r = Math.random() * totalW;
   let best = pairs[0];
-  for (const p of pairs) { r -= Math.max(1, p.score); if (r <= 0) { best = p; break; } }
+  for (const p of pairs) { r -= weightOf(p); if (r <= 0) { best = p; break; } }
 
   await supabaseAdmin.from('raffle_draws').upsert(
     { event_key: RAFFLE.key, user_a_id: best.a.id, user_b_id: best.b.id, compatibility_score: best.score, status: 'pending' },

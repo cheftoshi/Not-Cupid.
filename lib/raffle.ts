@@ -10,6 +10,7 @@ export const RAFFLE = {
   metro: 'boston',
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // each entrant can be drawn at most twice (accept/reject, then re-draw)
+  proEntries: 2, // NotCupid Pro members get this many entries (dual entry = 2× draw weight). NO PURCHASE NECESSARY: the same bonus is free on request (AMOE) so it stays a sweepstakes, not a paid lottery.
   respondHours: 18, // a drawn pair has this long to accept before the draw expires + we re-draw (so a no-show can't deadlock the round)
   entryClose: '2026-06-30T03:59:59.000Z', // last entry point: Mon Jun 29, 11:59pm ET (EDT = UTC-4)
   entryCloseLabel: 'Monday, June 29',
