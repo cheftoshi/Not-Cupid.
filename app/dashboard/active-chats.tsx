@@ -28,11 +28,11 @@ export default function ActiveChats({ cards }: { cards: Card[] }) {
   }
 
   return (
-    <div style={{ marginBottom: '1.75rem' }}>
+    <div>
       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.7rem' }}>
         your chats · {cards.length}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
         {cards.map((a) => {
           const first = (a.name || 'your match').split(' ')[0];
           const s = STATUS[a.status];

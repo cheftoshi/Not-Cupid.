@@ -165,19 +165,26 @@ export default async function DashboardPage({
           />
         )}
 
-        {/* YOUR CHATS — active matches, openable, in a distributed row */}
-        <ActiveChats cards={activeCards} />
-
-        {/* WHO'S NEXT — the compatible people you can pick (carousel) */}
-        <RosterPicker
-          radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
-          maxRadius={MAX_MATCH_RADIUS}
-          maxConnections={MAX_CONNECTIONS}
-          liveConnections={connections.map((c: any) => ({
-            matchId: c.match.id,
-            name: c.otherUser.name || 'your match',
-          }))}
-        />
+        {/* DISTRIBUTED: your chats on the LEFT, the roster on the RIGHT. */}
+        {(() => {
+          const roster = (
+            <RosterPicker
+              radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
+              maxRadius={MAX_MATCH_RADIUS}
+              maxConnections={MAX_CONNECTIONS}
+              liveConnections={connections.map((c: any) => ({
+                matchId: c.match.id,
+                name: c.otherUser.name || 'your match',
+              }))}
+            />
+          );
+          return activeCards.length > 0 ? (
+            <div className={styles.dashSplit}>
+              <div className={styles.chatsCol}><ActiveChats cards={activeCards} /></div>
+              <div style={{ minWidth: 0 }}>{roster}</div>
+            </div>
+          ) : roster;
+        })()}
 
         {historyMatches && historyMatches.length > 0 && (
           <div className={styles.history}>

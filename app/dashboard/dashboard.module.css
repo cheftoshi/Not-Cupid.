@@ -396,3 +396,11 @@
   .matchCard { padding: 1.25rem; }
   .title { font-size: 2.5rem; }
 }
+
+/* two-column dashboard: your chats (left) · the roster (right) */
+.dashSplit { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; gap: 1.75rem; align-items: start; }
+.dashSplit > .chatsCol { position: sticky; top: 68px; }
+@media (max-width: 900px) {
+  .dashSplit { grid-template-columns: 1fr; gap: 1.5rem; }
+  .dashSplit > .chatsCol { position: static; }
+}
