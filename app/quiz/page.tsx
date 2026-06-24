@@ -88,6 +88,7 @@ function QuizInner() {
   const [screen, setScreen] = useState<Screen>('intro')
   const [retakeReady, setRetakeReady] = useState(false)
   const [form, setForm] = useState<FormData>({ name:'', age:'', gender:'', seek:'', zip:'', email:'', ageMin:'22', ageMax:'38' })
+  const [agreed, setAgreed] = useState(false)
   const [zipStatus, setZipStatus] = useState<'idle'|'valid'|'invalid'|'outofrange'>('idle')
   const [otp, setOtp] = useState(['','','','','',''])
   const [otpError, setOtpError] = useState('')
@@ -624,8 +625,18 @@ function QuizInner() {
                 </div>
               </div>
 
+              <label style={{display:'flex',alignItems:'flex-start',gap:'0.55rem',margin:'0.9rem 0 0.2rem',cursor:'pointer',textAlign:'left'}}>
+                <input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}
+                  style={{width:17,height:17,marginTop:'0.15rem',flexShrink:0,accentColor:'var(--h-accent)'}} />
+                <span style={{fontFamily:"'DM Mono', ui-monospace, monospace",fontSize:'0.66rem',letterSpacing:'0.03em',lineHeight:1.5,color:'var(--h-text-dim)'}}>
+                  I&apos;m 18 or older and I agree to NotCupid&apos;s{' '}
+                  <a href="/terms" target="_blank" style={{color:'var(--h-accent)'}}>Terms</a>,{' '}
+                  <a href="/privacy" target="_blank" style={{color:'var(--h-accent)'}}>Privacy Policy</a> &amp;{' '}
+                  <a href="/safety" target="_blank" style={{color:'var(--h-accent)'}}>community guidelines</a>.
+                </span>
+              </label>
               <button className="btn-primary" onClick={sendOtp}
-                disabled={!formValid || otpSending}
+                disabled={!formValid || !agreed || otpSending}
                 style={{width:'100%',justifyContent:'center',marginTop:'0.5rem'}}>
                 {otpSending ? 'sending code...' : 'verify my email →'}
               </button>
