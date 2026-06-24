@@ -9,7 +9,7 @@ export const RAFFLE = {
   city: 'Boston',
   metro: 'boston',
   centerZip: '02116', // The Berkeley, Back Bay — the meet-up anchor for the radius
-  radiusMiles: 50, // must live within this of the venue to enter (so winners can actually show up)
+  radiusMiles: 30, // must live within this of the venue to enter (so winners can actually show up)
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // each entrant can be drawn at most twice (accept/reject, then re-draw)
   respondHours: 18, // a drawn pair has this long to accept before the draw expires + we re-draw (so a no-show can't deadlock the round)

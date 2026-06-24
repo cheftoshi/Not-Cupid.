@@ -111,7 +111,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         {!eligible ? (
           <div style={card}>
             <h2 style={cardH}>this one’s for the {ev.city} area.</h2>
-            <p style={cardP}>you need to live within ~{ev.radiusMiles ?? 50} miles of the venue to enter, so you can actually make the dinner. set your city to {ev.city} on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> if you’re nearby — more cities coming.</p>
+            <p style={cardP}>you need to live within ~{ev.radiusMiles ?? 30} miles of the venue to enter, so you can actually make the dinner. set your city to {ev.city} on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> if you’re nearby — more cities coming.</p>
           </div>
         ) : !loaded ? (
           <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>
