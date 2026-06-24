@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
 
@@ -9,9 +9,13 @@ type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; se
 
 const ORANGE = '#ff6a1f';
 const ORANGE_DEEP = '#d2530f';
+const BLUE = '#2563ff';
+const GREEN = '#2d7a4f';
 const GENDERS = [['m', 'a man'], ['f', 'a woman'], ['nb', 'non-binary']];
 const SEEKING = [['f', 'women'], ['m', 'men'], ['both', 'anyone']];
 
+// The /raffle page IS the raffle — every state lives here (register → entered →
+// drawn/accept-or-reject → it's-a-date). The hub just links in.
 export default function RaffleClient({ firstName, eligible, profile, event }: {
   firstName: string; eligible: boolean; profile: Profile; event: Event;
 }) {
@@ -26,6 +30,19 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // live raffle state (entered / drawn / accepted / it's-a-date)
+  const [st, setSt] = useState<any>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [pushOn, setPushOn] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/raffle/status').then((r) => (r.ok ? r.json() : null)).then((d) => { setSt(d); setLoaded(true); }).catch(() => setLoaded(true));
+    if (typeof Notification !== 'undefined') setPushOn(Notification.permission === 'granted');
+  }, []);
+
+  const ev = { ...event, ...(st?.event || {}) } as any;
+  const other = st?.other?.name ? st.other.name.split(' ')[0] : 'your match';
 
   // "Established cred" from the real profile — entry isn't one click.
   const cred = [
@@ -72,30 +89,74 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     finally { setBusy(false); }
   }
 
+  async function respond(accept: boolean) {
+    setBusy(true); setErr('');
+    const r = await fetch('/api/raffle/respond', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accept }) });
+    if (r.ok) window.location.reload(); else { setBusy(false); setErr('try again'); }
+  }
+  async function enablePush() { const ok = await subscribeToPush(); setPushOn(ok); if (!ok) setErr('couldn’t enable — on iPhone, install the app first'); }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <Link href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← hub</Link>
 
-        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {event.series} · {event.city}</div>
-        <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{event.tagline}</h1>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
+        <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
-          we draw the most compatible pair from the entrants, and if you both accept, dinner’s on us — up to <b>${event.budget}</b>, <b>{event.dateLabel}</b>.
+          a fully-covered dinner — up to <b>${ev.budget}</b> — drawn from everyone who enters. <b>{ev.dateLabel}</b>.
         </p>
 
-        {done ? (
+        {!eligible ? (
+          <div style={card}>
+            <h2 style={cardH}>this one’s {ev.city}-only.</h2>
+            <p style={cardP}>change your city to {ev.city} on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> to enter — more cities coming.</p>
+          </div>
+        ) : !loaded ? (
+          <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>
+        ) : st?.draw?.bothAccepted ? (
+          // ── it's a date ──
+          <div style={{ ...card, border: `2px solid ${GREEN}`, textAlign: 'center' }}>
+            <div style={{ fontSize: '2.2rem' }}>✦</div>
+            <h2 style={cardH}>it’s a date with {other}.</h2>
+            <p style={cardP}>your <b>${ev.budget} dinner</b> is locked in · <b>{ev.dateLabel}</b>. {st.draw.restaurant}</p>
+            <Link href="/hub" style={backLink}>back to hub →</Link>
+          </div>
+        ) : (st?.draw && st.draw.status === 'pending' && !st.draw.myAccepted) ? (
+          // ── you've been drawn → accept / reject ──
+          <div style={{ ...card, border: `2px solid ${BLUE}`, textAlign: 'center' }}>
+            <div style={{ fontSize: '2.2rem' }}>🎉</div>
+            <h2 style={cardH}>you’ve been picked — meet {other}.</h2>
+            <p style={cardP}>you two scored <b>{st.draw.score}%</b>. accept to lock in your <b>${ev.budget} date</b> on <b>{ev.dateLabel}</b>.{st.draw.theyAccepted ? ` ${other} already said yes 👀` : ''}</p>
+            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', marginTop: '1rem' }}>
+              <button onClick={() => respond(true)} disabled={busy} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 999, padding: '0.7rem 1.9rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', letterSpacing: '0.04em', cursor: busy ? 'wait' : 'pointer' }}>{busy ? '…' : 'accept →'}</button>
+              <button onClick={() => respond(false)} disabled={busy} style={{ background: 'none', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>reject</button>
+            </div>
+          </div>
+        ) : (st?.draw?.myAccepted && !st.draw.bothAccepted) ? (
+          // ── you accepted, waiting on them ──
+          <div style={{ ...card, border: `2px solid ${BLUE}`, textAlign: 'center' }}>
+            <h2 style={cardH}>you’re in — waiting on {other}.</h2>
+            <p style={cardP}>you said yes to your <b>${ev.budget} date</b>. as soon as {other} accepts, it’s locked for {ev.dateLabel}.</p>
+            <Link href="/hub" style={backLink}>back to hub →</Link>
+          </div>
+        ) : (done || st?.entered) ? (
+          // ── entered, not yet drawn ──
           <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.12), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2.2rem' }}>🎉</div>
-            <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', margin: '0.3rem 0' }}>you’re in, {firstName.toLowerCase()}.</h2>
-            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>we draw <b>{event.drawLabel}</b> and we’ll ping you if you’re picked. good luck ✦</p>
+            <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', margin: '0.3rem 0' }}>you’re in{done ? `, ${firstName.toLowerCase()}` : ''}.</h2>
+            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>we draw <b>{ev.drawLabel}</b> and ping you the second you’re picked. good luck ✦</p>
+            {!pushOn && <button onClick={enablePush} style={{ display: 'block', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: ORANGE_DEEP, borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on raffle notifications</button>}
             <Link href="/hub" style={{ display: 'inline-block', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', textDecoration: 'none' }}>back to hub →</Link>
           </div>
-        ) : !eligible ? (
+        ) : ev.closed ? (
+          // ── entries closed ──
           <div style={card}>
-            <h2 style={cardH}>this one’s {event.city}-only.</h2>
-            <p style={cardP}>change your city to {event.city} on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> to enter — more cities coming.</p>
+            <h2 style={cardH}>entries are closed.</h2>
+            <p style={cardP}>this round filled up — watch the hub for the next {ev.series} drop.</p>
           </div>
         ) : (
+          // ── register ──
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             {/* ① cred check — pulled from the profile */}
             <div style={card}>
@@ -104,7 +165,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.7rem' }}>
                 {cred.map((c) => (
                   <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: c.ok ? 'var(--h-text)' : 'var(--h-text-dim)' }}>
-                    <span style={{ color: c.ok ? '#2d7a4f' : ORANGE_DEEP, fontWeight: 700 }}>{c.ok ? '✓' : '○'}</span>
+                    <span style={{ color: c.ok ? GREEN : ORANGE_DEEP, fontWeight: 700 }}>{c.ok ? '✓' : '○'}</span>
                     <span style={{ flex: 1 }}>{c.label}</span>
                     {!c.ok && <Link href={c.fix} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>fix →</Link>}
                   </div>
@@ -145,7 +206,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <div style={cardLabel}>③ your intro video <span style={{ color: ORANGE_DEEP }}>· required</span></div>
               <p style={cardP}>a 15–30s “hi, I’m {firstName}” clip — your contest intro. every entrant needs one.</p>
               {videoUrl ? (
-                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: '#2d7a4f', letterSpacing: '0.06em' }}>✓ video added · <button onClick={() => setVideoUrl(null)} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: 'pointer', textDecoration: 'underline' }}>replace</button></div>
+                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: GREEN, letterSpacing: '0.06em' }}>✓ video added · <button onClick={() => setVideoUrl(null)} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: 'pointer', textDecoration: 'underline' }}>replace</button></div>
               ) : (
                 <label style={{ ...btnGhost, display: 'inline-block', marginTop: '0.7rem', cursor: uploading ? 'wait' : 'pointer' }}>
                   {uploading ? 'uploading…' : '🎬 upload a video'}
@@ -182,6 +243,7 @@ const cardLabel: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fon
 const qLabel: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' };
 const btnGhost: React.CSSProperties = { background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.55rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const numIn: React.CSSProperties = { width: 60, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.5rem', color: 'var(--h-text)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem' };
+const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 function chip(on: boolean): React.CSSProperties {
   return { background: on ? ORANGE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? ORANGE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', cursor: 'pointer' };
 }
