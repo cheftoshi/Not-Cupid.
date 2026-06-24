@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
-    const { data: users } = await supabaseAdmin.from('users').select('*').order('created_at', { ascending: false })
+    const { data: users } = await supabaseAdmin.from('users').select('*').not('is_test', 'is', true).order('created_at', { ascending: false })
     const { data: matches } = await supabaseAdmin.from('matches').select('*').order('created_at', { ascending: false })
     // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):
     //   • match_unlocks.amount_cents = current love-profile unlocks ($0.99)

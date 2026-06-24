@@ -20,6 +20,7 @@ async function getStatsInner() {
       .select('id', { count: 'exact', head: true })
       .eq('pool_active', true)
       .is('deleted_at', null)
+      .not('is_test', 'is', true) // test accounts are never counted as real members
 
     // Mutual accepts this week
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()

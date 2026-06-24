@@ -11,6 +11,14 @@ const CITY_OPTIONS = (Object.keys(METRO_ZIP) as Array<keyof typeof METRO_ZIP>)
   .map((key) => ({ key: key as string, ...METRO_CENTERS[key] }))
   .sort((a, b) => (a.state === b.state ? a.city.localeCompare(b.city) : a.state.localeCompare(b.state)));
 
+// State-wise sections, major markets first.
+const STATE_NAME: Record<string, string> = { MA: 'Massachusetts', NY: 'New York', NJ: 'New Jersey', CT: 'Connecticut', RI: 'Rhode Island', NH: 'New Hampshire', ME: 'Maine', VT: 'Vermont' };
+const STATE_ORDER = ['MA', 'NY', 'NJ', 'CT', 'RI', 'NH', 'ME', 'VT'];
+const _states = Array.from(new Set(CITY_OPTIONS.map((c) => c.state)));
+const BY_STATE = [...STATE_ORDER.filter((s) => _states.includes(s)), ..._states.filter((s) => !STATE_ORDER.includes(s))]
+  .map((st) => ({ st, cities: CITY_OPTIONS.filter((c) => c.state === st) }))
+  .filter((g) => g.cities.length);
+
 const RADIUS_LADDER = [5, 10, 15, 25, 50, 75];
 
 export default function LocationControls({
@@ -58,25 +66,31 @@ export default function LocationControls({
 
       {picker && (
         <div onClick={() => setPicker(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(10,8,16,0.55)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '82vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 540, width: '100%', maxHeight: '82vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>your city</span>
+              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>where are you?</span>
               <button onClick={() => setPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--h-text-faint)' }}>✕</button>
             </div>
-            <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
-              we’re live in <b>{CITY_OPTIONS.length} cities</b> across New England + NYC. tap any to set where you match &amp; see events — your matches &amp; friends stay put.
+            <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1.1rem' }}>
+              live in <b>{CITY_OPTIONS.length} cities</b> across New England + NYC. tap one to set where you match &amp; see events — your connections stay put.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              {CITY_OPTIONS.map((c) => {
-                const isCurrent = c.key === currentMetro;
-                return (
-                  <button key={c.key} onClick={() => { if (!isCurrent) changeCity(c.key); }} disabled={!!cityBusy || isCurrent}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', background: isCurrent ? 'var(--h-surface-2)' : 'var(--h-surface)', border: `1px solid ${isCurrent ? accent : 'var(--h-border)'}`, borderRadius: 10, padding: '0.6rem 0.85rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer') }}>
-                    <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.95rem', color: 'var(--h-text)' }}>{c.city}<span style={{ color: 'var(--h-text-faint)', fontSize: '0.78rem' }}>, {c.state}</span></span>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: isCurrent ? accent : 'var(--h-text-faint)' }}>{cityBusy === c.key ? '…' : isCurrent ? '✓ current' : 'switch →'}</span>
-                  </button>
-                );
-              })}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.05rem' }}>
+              {BY_STATE.map(({ st, cities }) => (
+                <div key={st}>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.5rem' }}>{STATE_NAME[st] || st}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {cities.map((c) => {
+                      const isCurrent = c.key === currentMetro;
+                      return (
+                        <button key={c.key} onClick={() => { if (!isCurrent) changeCity(c.key); }} disabled={!!cityBusy || isCurrent}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', background: isCurrent ? accent : 'var(--h-surface-2)', color: isCurrent ? '#fff' : 'var(--h-text)', border: `1px solid ${isCurrent ? accent : 'var(--h-border)'}`, borderRadius: 999, padding: '0.42rem 0.9rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer'), fontFamily: 'ui-sans-serif, system-ui, sans-serif', fontSize: '0.85rem' }}>
+                          {cityBusy === c.key ? '…' : c.city}{isCurrent && <span style={{ fontSize: '0.7rem' }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

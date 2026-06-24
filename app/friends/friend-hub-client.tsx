@@ -178,12 +178,11 @@ function ConnectionBackdrop() {
 }
 
 // ── old-school-FB shell pieces (warm transit palette) ──
-type NavKey = 'home' | 'map' | 'scene' | 'crew' | 'pulse';
+type NavKey = 'home' | 'scene' | 'crew' | 'pulse';
 const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
   { key: 'home', icon: '🏠', label: 'home' },
-  { key: 'map', icon: '🗺️', label: 'the map' },
-  { key: 'scene', icon: '🚇', label: 'the scene' },
-  { key: 'crew', icon: '🎒', label: 'my crew' },
+  { key: 'scene', icon: '🎟️', label: 'the scene' },
+  { key: 'crew', icon: '🧡', label: 'my circle' },
   { key: 'pulse', icon: '🌆', label: 'city pulse' },
 ];
 const sideHd: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, fontWeight: 700 };
@@ -442,7 +441,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [view, setView] = useState<NavKey>(() => {
     if (typeof window === 'undefined') return 'home';
     const v = new URLSearchParams(window.location.search).get('view');
-    return (['home', 'map', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home';
+    return (['home', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home';
   });
   const [chatOpen, setChatOpen] = useState(true);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -678,18 +677,11 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           <LocationControls city={city} currentMetro={metro} accent={LINE} />
         </div>
 
-        {/* the route line under the header */}
-        <div style={{ height: 6, background: LINE, borderRadius: 999, margin: '0 0 1.5rem', position: 'relative' }}>
-          <span style={{ position: 'absolute', left: '8%', top: -5, width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}` }} />
-          <span style={{ position: 'absolute', left: '50%', top: -5, width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}` }} />
-          <span style={{ position: 'absolute', left: '88%', top: -5, width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}` }} />
-        </div>
-
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.6rem,9vw,4rem)', lineHeight: 0.88, color: LINE, WebkitTextStroke: `2px ${INK}`, textShadow: `4px 4px 0 rgba(36,29,18,0.18)`, margin: 0 }}>
-          find your <span style={{ color: '#3f7d57', WebkitTextStroke: `2px ${INK}` }}>next friend.</span>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.6rem)', lineHeight: 0.92, color: 'var(--h-text)', margin: '0.6rem 0 0' }}>
+          connect with <span style={{ color: 'var(--h-accent)' }}>your people.</span>
         </h1>
-        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.5rem 0 0' }}>
-          hey {firstName.toLowerCase()} — next stop, your people.
+        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '0.5rem 0 1.4rem' }}>
+          hey {firstName.toLowerCase()} — here&apos;s who&apos;s around and the connections waiting to happen. come say hi.
         </p>
 
         {/* mobile: the nav rides up top as a horizontal toggle */}
@@ -716,32 +708,6 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         {view === 'home' && (
           <HomeFeed firstName={firstName} activeGroups={activeGroups} popular={popular} hasCrew={matches.length > 0}
             onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} />
-        )}
-
-        {view === 'map' && (
-          /* ───── THE MAP — three stops spread along the line, each its own page ───── */
-          <div className="fmMap">
-            <svg className="fmMapLine" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-              {/* a zig-zag route weaving through the three stops… */}
-              <polyline points="-6,46 16,15 50,48 84,15 106,46" fill="none" stroke={LINE} strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.9} />
-              {/* …plus a crossing interchange line so they inter-cross */}
-              <line x1="12" y1="49" x2="88" y2="18" stroke={LINE} strokeWidth={3} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.4} strokeDasharray="3 4" />
-            </svg>
-            {([
-              { key: 'scene', icon: '🚇', name: 'the scene', tag: "what's the move around town", stat: `${acts.length || 0} on the board`, badge: false, pos: { left: '16%', top: '15%' } },
-              { key: 'crew', icon: '🎒', name: 'my crew', tag: 'your people + the group chat', stat: matches.length ? `${matches.length} matched` : 'finding your people', badge: matches.some((m) => m.theyAccepted && !m.iAccepted), pos: { left: '50%', top: '48%' } },
-              { key: 'pulse', icon: '🌆', name: 'city pulse', tag: 'which neighborhoods are buzzing', stat: pulse ? `${activeGroups} ${activeGroups === 1 ? 'crew' : 'crews'} live · ${pulse.totalMembers} on the line` : 'loading…', badge: activeGroups > 0, pos: { left: '84%', top: '15%' } },
-            ] as const).map((s) => (
-              <button key={s.key} className="fmStop" style={{ left: s.pos.left, top: s.pos.top }} onClick={() => setView(s.key)}>
-                <span className="fmStopDot" />
-                {s.badge && <span style={{ position: 'absolute', top: 14, right: 14, width: 15, height: 15, borderRadius: '50%', background: '#da291c', border: `1px solid var(--h-border)` }} />}
-                <div style={{ fontSize: '2.4rem', lineHeight: 1 }}>{s.icon}</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.95rem', letterSpacing: '0.03em', marginTop: '0.45rem' }}>{s.name}</div>
-                <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.9rem', margin: '0.25rem 0 0.9rem' }}>{s.tag}</div>
-                <span style={{ ...chip, marginTop: 'auto', alignSelf: 'flex-start', background: '#ffd23d' }}>{s.stat} →</span>
-              </button>
-            ))}
-          </div>
         )}
 
         {view === 'crew' && (

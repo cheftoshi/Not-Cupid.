@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic'
 // into memory (it used to `select('*')` everything and tally in JS, which would
 // OOM/timeout once the tables get large).
 async function countUsers(filter?: (q: any) => any): Promise<number> {
-  let q = supabaseAdmin.from('users').select('id', { count: 'exact', head: true })
+  // Test accounts never count as real users (they're realm-segregated out of every
+  // matching pool too, so this just keeps the KPIs honest).
+  let q = supabaseAdmin.from('users').select('id', { count: 'exact', head: true }).not('is_test', 'is', true)
   if (filter) q = filter(q)
   const { count } = await q
   return count ?? 0
