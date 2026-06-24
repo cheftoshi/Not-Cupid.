@@ -117,3 +117,11 @@ body{
 
 /* dark base: prevents any unconverted gap from flashing white */
 html[data-theme="dark"] body { background: #0c0a12; color: var(--h-text); }
+
+/* Friend Line: a committed deep teal-dark surface (regardless of global theme) so
+   the connection field + content + teal-tinted borders pop. */
+.friendDark{
+  --h-bg:#06121a; --h-surface:#0d1c24; --h-surface-2:#12262f; --h-surface-3:#173039;
+  --h-text:#e9f5f7; --h-text-dim:#90aab2; --h-text-faint:#5e757e;
+  --h-border:rgba(95,214,210,0.20); --h-accent:#4fd6c8; --h-accent-2:#5fb8ff;
+}
