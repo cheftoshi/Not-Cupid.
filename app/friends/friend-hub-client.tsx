@@ -274,10 +274,10 @@ function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, 
         </div>
       </div>
 
-      <h2 style={sectionLabel}><StationDot />🔥 what&apos;s popping</h2>
+      <h2 style={sectionLabel}><StationDot />📅 your events</h2>
       {popular.length === 0 ? (
         <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
-          nothing on the board yet — <button onClick={onScene} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>be the first to post →</button>
+          nothing on your calendar yet — <button onClick={onScene} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>find something on the scene →</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -534,6 +534,11 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const popular = [...acts]
     .sort((a, b) => (b.rsvpCount || 0) - (a.rsvpCount || 0) || (b.happens_at ? new Date(b.happens_at).getTime() : 0) - (a.happens_at ? new Date(a.happens_at).getTime() : 0))
     .slice(0, 6);
+  // The HUB is YOUR stuff: events you're going to (the Scene shows the whole city).
+  const myEvents = acts
+    .filter((a) => a.myResponse === 'yes' || a.myResponse === 'maybe' || a.mine)
+    .sort((a, b) => (a.happens_at ? new Date(a.happens_at).getTime() : Infinity) - (b.happens_at ? new Date(b.happens_at).getTime() : Infinity))
+    .slice(0, 6);
 
   function agreeTerms() { setTermsOk(true); try { localStorage.setItem('nc-friend-terms', '1'); } catch { /* ignore */ } }
 
@@ -623,22 +628,14 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
       <style>{`
         @keyframes fbToastIn { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
-        /* old-school-FB shell: left rail + main column */
-        .fbShell { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.25rem; }
-        @media (max-width: 879px) {
-          /* stack: feed first, then people/zones rail; top-nav handles nav */
-          .fbSide { order: 2; }
-          .fbMain { order: 1; }
-          .fbSideNav { display: none; }
-        }
+        /* nav floats on top (all viewports); content = main feed + a right rail */
+        .fbTopNav { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.4rem 0 0.2rem; }
+        .fbShell { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.25rem; }
+        @media (max-width: 879px) { .fbRail { order: 2; } .fbMain { order: 1; } }
         @media (min-width: 880px) {
-          .fbShell { grid-template-columns: 248px minmax(0,1fr); align-items: start; }
-          .fbSide { position: sticky; top: 1rem; }
-          .fbTopNav { display: none; }
+          .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
+          .fbRail { position: sticky; top: 1rem; }
         }
-        /* on mobile the nav rides along the top as a horizontal toggle */
-        .fbTopNav { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.3rem; margin-top: 1rem; scrollbar-width: none; }
-        .fbTopNav::-webkit-scrollbar { display: none; }
         .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
         @media (min-width: 880px) {
           .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
@@ -684,13 +681,13 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           hey {firstName.toLowerCase()} — here&apos;s who&apos;s around and the connections waiting to happen. come say hi.
         </p>
 
-        {/* mobile: the nav rides up top as a horizontal toggle */}
+        {/* the nav — a floating pill bar across the top */}
         <div className="fbTopNav">
           {NAV.map((n) => {
             const active = view === n.key;
             return (
               <button key={n.key} onClick={() => setView(n.key)}
-                style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.03em', padding: '0.4rem 0.85rem', borderRadius: 10, border: "1px solid var(--h-border)", cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text)', boxShadow: active ? `3px 3px 0 ${INK}` : 'none' }}>
+                style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em', padding: '0.45rem 1.1rem', borderRadius: 999, border: `1px solid ${active ? LINE : 'var(--h-border)'}`, cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text-dim)', boxShadow: active ? '0 8px 20px -10px rgba(232,132,43,0.7)' : 'none' }}>
                 {n.icon} {n.label}
                 {n.key === 'crew' && crewBadge && <span style={{ position: 'absolute', top: -5, right: -5, width: 12, height: 12, borderRadius: '50%', background: '#da291c', border: `1px solid var(--h-border)` }} />}
                 {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{newScene}</span>}
@@ -700,13 +697,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         </div>
 
         <div className="fbShell">
-          <aside className="fbSide">
-            <FriendSidebar view={view} setView={setView} activeGroups={activeGroups} people={people} zones={pulse?.areas || []} crewBadge={crewBadge} sceneBadge={newScene}
-              onZone={(a) => { setAreaFilter(a); setView('scene'); }} />
-          </aside>
           <main className="fbMain">
         {view === 'home' && (
-          <HomeFeed firstName={firstName} activeGroups={activeGroups} popular={popular} hasCrew={matches.length > 0}
+          <HomeFeed firstName={firstName} activeGroups={activeGroups} popular={myEvents} hasCrew={matches.length > 0}
             onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} />
         )}
 
@@ -1072,6 +1065,43 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         </div>
         )}
           </main>
+          <aside className="fbRail">
+            <div style={{ ...card, padding: '0.9rem 1rem' }}>
+              <div style={sideHd}>🧡 your connections</div>
+              {matches.filter((m) => m.connected).length === 0 ? (
+                <div style={sideEmpty}>no connections yet — pick someone in your circle to connect.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
+                  {matches.filter((m) => m.connected).slice(0, 8).map((m) => (
+                    <button key={m.otherId} onClick={() => setView('crew')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, color: 'var(--h-text)', textAlign: 'left' }}>
+                      {m.photo_url
+                        ? <img src={m.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+                        : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
+            </div>
+
+            <div style={{ ...card, padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
+              <div style={sideHd}>📍 around in {city ? city.split(',')[0].toLowerCase() : 'your city'}</div>
+              {people.length === 0 ? <div style={sideEmpty}>finding who&apos;s around…</div> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
+                  {people.slice(0, 8).map((p) => (
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {p.photo_url
+                        ? <img src={p.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+                        : <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name?.split(' ')[0] || '—'}</span>
+                      {p.tag && <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-accent)', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.1rem 0.4rem', flexShrink: 0 }}>{p.tag}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
 
         <div style={{ maxWidth: 470, margin: '2.75rem auto 0', background: 'var(--h-surface)', border: `1px solid var(--h-border)`, borderRadius: 16, boxShadow: `4px 4px 0 ${INK}`, padding: '1rem 1.25rem', position: 'relative', zIndex: 1 }}>
