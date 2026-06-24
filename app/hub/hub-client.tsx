@@ -187,72 +187,86 @@ export default function HubClient({
               hey {firstName.toLowerCase()}.
             </p>
 
-            {/* YOUR MATCHES — live love-line connections (parity with friends) */}
-            {hasArchetype && (
-              <div className={styles.dCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span className={styles.dLabel}>your matches{loveMatches.length ? ` · ${loveMatches.length}` : ''}</span>
-                  <Link href="/dashboard" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>{loveMatches.length ? 'all →' : 'the roster →'}</Link>
-                </div>
-                {loveMatches.length === 0 ? (
-                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
-                    no live conversations — <Link href="/dashboard" style={{ color: BLUE_DEEP }}>pick from your roster →</Link>
-                  </p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {loveMatches.map((m) => {
-                      const status = m.bothAccepted ? 'chatting' : m.iAccepted ? 'waiting on them' : 'your move';
-                      return (
-                        <Link key={m.matchId} href={`/match/${m.matchId}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: 'var(--h-surface-2)', border: '1.5px solid rgba(37,99,255,0.2)', borderRadius: 12, padding: '0.55rem 0.8rem', textDecoration: 'none' }}>
-                          {m.photo_url
-                            // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                            : <span style={{ width: 38, height: 38, borderRadius: '50%', background: '#e8edff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: BLUE, fontSize: '0.95rem', flexShrink: 0 }}>{(m.name || '?').charAt(0)}</span>}
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)' }}>{(m.name || 'match').split(' ')[0]}{m.age ? `, ${m.age}` : ''}</div>
-                            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: m.bothAccepted ? '#2d7a4f' : BLUE_DEEP }}>● {status}{m.score ? ` · ${m.score}%` : ''}</div>
-                          </div>
-                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE_DEEP, flexShrink: 0 }}>{m.bothAccepted ? 'open →' : 'say hi →'}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* YOUR CONNECTIONS — love + friend people, together in one place */}
+            <div className={styles.dCard}>
+              <span className={styles.dLabel}>your connections{(loveMatches.length + (friends?.length || 0)) ? ` · ${loveMatches.length + (friends?.length || 0)}` : ''}</span>
 
-            {/* YOUR FRIENDS — persist across packs (opening a new pack only adds) */}
-            {friendOptedIn && friends !== null && (
-              <div className={styles.dCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span className={styles.dLabel}>your friends{friends.length ? ` · ${friends.length}` : ''}</span>
-                  {friends.length > 0 && <Link href="/friends?view=crew" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>group chat →</Link>}
-                </div>
-                {friends.length === 0 ? (
-                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
-                    no friends opened yet — <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>open your first pack 🎒 →</Link>
-                  </p>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-                      {friends.slice(0, 12).map((f) => (
-                        <Link key={f.otherId} href="/friends?view=crew" title={f.sharedActivities.length ? `both into ${f.sharedActivities.slice(0, 2).join(', ')}` : undefined}
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.22)', borderRadius: 999, padding: '0.25rem 0.7rem 0.25rem 0.25rem', textDecoration: 'none' }}>
-                          {f.photo_url
-                            // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={f.photo_url} alt="" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover' }} />
-                            : <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#ffe6c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: ORANGE_DEEP, fontSize: '0.85rem' }}>{(f.name || '?').charAt(0)}</span>}
-                          <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.9rem', color: 'var(--h-text)' }}>{(f.name || 'friend').split(' ')[0]}</span>
-                          {f.connected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3f7d57' }} title="in your crew" />}
-                        </Link>
-                      ))}
-                      {friends.length > 12 && <span style={{ alignSelf: 'center', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'var(--h-text-faint)' }}>+{friends.length - 12} more</span>}
+              {/* 💘 LOVE */}
+              {hasArchetype && (
+                <div style={{ marginBottom: friendOptedIn ? '1.1rem' : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, fontWeight: 700 }}>💘 love{loveMatches.length ? ` · ${loveMatches.length}` : ''}</span>
+                    <Link href="/dashboard" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>{loveMatches.length ? 'all →' : 'the roster →'}</Link>
+                  </div>
+                  {loveMatches.length === 0 ? (
+                    <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.88rem', margin: 0 }}>
+                      no live conversations — <Link href="/dashboard" style={{ color: BLUE_DEEP }}>pick from your roster →</Link>
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {loveMatches.map((m) => {
+                        const status = m.bothAccepted ? 'chatting' : m.iAccepted ? 'waiting on them' : 'your move';
+                        return (
+                          <Link key={m.matchId} href={`/match/${m.matchId}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: 'var(--h-surface-2)', border: '1.5px solid rgba(37,99,255,0.2)', borderRadius: 12, padding: '0.55rem 0.8rem', textDecoration: 'none' }}>
+                            {m.photo_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                              : <span style={{ width: 38, height: 38, borderRadius: '50%', background: '#e8edff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: BLUE, fontSize: '0.95rem', flexShrink: 0 }}>{(m.name || '?').charAt(0)}</span>}
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)' }}>{(m.name || 'match').split(' ')[0]}{m.age ? `, ${m.age}` : ''}</div>
+                              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: m.bothAccepted ? '#2d7a4f' : BLUE_DEEP }}>● {status}{m.score ? ` · ${m.score}%` : ''}</div>
+                            </div>
+                            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE_DEEP, flexShrink: 0 }}>{m.bothAccepted ? 'open →' : 'say hi →'}</span>
+                          </Link>
+                        );
+                      })}
                     </div>
-                    <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '0.8rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>🎒 open another pack →</Link>
-                  </>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+
+              {/* 🧡 FRIENDS */}
+              {friendOptedIn ? (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🧡 friends{friends && friends.length ? ` · ${friends.length}` : ''}</span>
+                    {friends && friends.length > 0 && <Link href="/friends?view=crew" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>group chat →</Link>}
+                  </div>
+                  {friends === null ? (
+                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', margin: 0 }}>loading…</p>
+                  ) : friends.length === 0 ? (
+                    <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.88rem', margin: 0 }}>
+                      no friends opened yet — <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>open your first pack 🎒 →</Link>
+                    </p>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                        {friends.slice(0, 12).map((f) => (
+                          <Link key={f.otherId} href="/friends?view=crew" title={f.sharedActivities.length ? `both into ${f.sharedActivities.slice(0, 2).join(', ')}` : undefined}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.22)', borderRadius: 999, padding: '0.25rem 0.7rem 0.25rem 0.25rem', textDecoration: 'none' }}>
+                            {f.photo_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={f.photo_url} alt="" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover' }} />
+                              : <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#ffe6c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: ORANGE_DEEP, fontSize: '0.85rem' }}>{(f.name || '?').charAt(0)}</span>}
+                            <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.9rem', color: 'var(--h-text)' }}>{(f.name || 'friend').split(' ')[0]}</span>
+                            {f.connected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3f7d57' }} title="in your crew" />}
+                          </Link>
+                        ))}
+                        {friends.length > 12 && <span style={{ alignSelf: 'center', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'var(--h-text-faint)' }}>+{friends.length - 12} more</span>}
+                      </div>
+                      <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '0.8rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>🎒 open another pack →</Link>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div style={{ borderTop: hasArchetype ? '1px solid var(--h-border)' : 'none', paddingTop: hasArchetype ? '1rem' : 0 }}>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🧡 friends</span>
+                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.88rem', margin: '0.4rem 0 0' }}>
+                    make platonic ones too — <Link href="/friends" style={{ color: ORANGE_DEEP }}>join the Friend Line →</Link>
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* YOUR EVENTS (RSVP'd) */}
             <div className={styles.dCard}>
