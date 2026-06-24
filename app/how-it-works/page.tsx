@@ -104,6 +104,9 @@ export default function HowItWorks() {
             capped at {RAFFLE.cap} entrants · entry closes {RAFFLE.entryCloseLabel} · dinner {RAFFLE.dateLabel}
           </div>
           <Link href="/raffle" style={{ display: 'inline-block', marginTop: '0.9rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', textDecoration: 'none' }}>enter the raffle →</Link>
+          <p style={{ fontSize: '0.66rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.85rem 0 0' }}>
+            * No purchase necessary. Open to {RAFFLE.city}-area residents 18+. Winner selected by chance; odds depend on entries. Void where prohibited. <Link href="/raffle/rules" style={{ color: ORANGE_DEEP, textDecoration: 'underline' }}>Official Rules</Link>.
+          </p>
         </div>
 
         <div style={{ textAlign: 'center' }}>

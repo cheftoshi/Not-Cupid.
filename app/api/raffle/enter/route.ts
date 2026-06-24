@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
   if (!sk) missing.push('who to match you with');
   if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
   if (!video_url) return NextResponse.json({ error: 'Your intro video is required to enter.' }, { status: 400 });
+  if (body.agreed !== true) return NextResponse.json({ error: 'Please agree to the Official Rules to enter.' }, { status: 400 });
 
   // New entrants face the deadline, the overall cap, and the per-gender balance
   // cap; updating your own existing entry skips all three.
@@ -66,10 +67,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { error } = await supabaseAdmin.from('raffle_entries').upsert(
-    { user_id: user.id, event_key: RAFFLE.key, video_url, notify, status: 'entered' },
-    { onConflict: 'user_id,event_key' }
-  );
+  const row: any = { user_id: user.id, event_key: RAFFLE.key, video_url, notify, status: 'entered', agreed_at: new Date().toISOString() };
+  let { error } = await supabaseAdmin.from('raffle_entries').upsert(row, { onConflict: 'user_id,event_key' });
+  if (error && /agreed_at/i.test(error.message || '')) { // pre-migration fallback
+    delete row.agreed_at;
+    ({ error } = await supabaseAdmin.from('raffle_entries').upsert(row, { onConflict: 'user_id,event_key' }));
+  }
   if (error) {
     console.error('raffle enter error', error);
     return NextResponse.json({ error: 'Could not enter — try again.' }, { status: 500 });

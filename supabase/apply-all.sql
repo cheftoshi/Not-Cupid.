@@ -715,11 +715,14 @@ create table if not exists raffle_entries (
   video_url text,
   notify boolean not null default true,
   attempts int not null default 0,
+  agreed_at timestamptz,
   status text not null default 'entered' check (status in ('entered','picked','passed')),
   created_at timestamptz not null default now(),
   unique (user_id, event_key)
 );
 create index if not exists raffle_entries_event_idx on raffle_entries(event_key, status);
+alter table if exists raffle_entries add column if not exists attempts int not null default 0;
+alter table if exists raffle_entries add column if not exists agreed_at timestamptz;
 create table if not exists raffle_draws (
   id uuid primary key default gen_random_uuid(),
   event_key text not null,

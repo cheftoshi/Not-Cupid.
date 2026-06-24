@@ -17,7 +17,7 @@ export default function RaffleCard() {
 
   const ev = s.event;
   const other = s.other?.name ? s.other.name.split(' ')[0] : 'your match';
-  let border = '#ff6a1f', accent = '#ff6a1f', head = ev.tagline, sub = '', label = 'enter the raffle →';
+  let border = '#ff6a1f', accent = '#ff6a1f', head = ev.tagline, sub = '', label = 'enter the raffle →', fine = false;
 
   if (s.draw?.bothAccepted) {
     border = accent = '#2d7a4f'; head = `it’s a date with ${other}. ✦`; sub = `your $${ev.budget} dinner is locked · ${ev.dateLabel}`; label = 'see the details →';
@@ -30,7 +30,7 @@ export default function RaffleCard() {
   } else if (ev.closed) {
     head = 'raffle entries are closed.'; sub = `watch here for the next ${ev.series} drop.`; label = '';
   } else {
-    head = ev.tagline; sub = `a fully-covered $${ev.budget} dinner · ${ev.dateLabel} · ${ev.spotsLeft} of ${ev.cap} spots left.`; label = 'enter the raffle →';
+    head = ev.tagline; sub = `a fully-covered $${ev.budget}* dinner · ${ev.dateLabel} · ${ev.spotsLeft} of ${ev.cap} spots left.`; label = 'enter the raffle →'; fine = true;
   }
 
   return (
@@ -40,6 +40,11 @@ export default function RaffleCard() {
       <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: 0 }}>{sub}</p>
       {label && (
         <Link href="/raffle" style={{ display: 'inline-block', marginTop: '0.9rem', background: accent, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.04em', textDecoration: 'none' }}>{label}</Link>
+      )}
+      {fine && (
+        <div style={{ marginTop: '0.6rem', fontSize: '0.62rem', color: 'var(--h-text-faint)', lineHeight: 1.4 }}>
+          * No purchase necessary · 18+ · winner by chance · <Link href="/raffle/rules" style={{ color: '#d2530f' }}>Official Rules</Link>
+        </div>
       )}
     </div>
   );

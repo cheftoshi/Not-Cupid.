@@ -26,6 +26,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [notify, setNotify] = useState(true);
+  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
@@ -54,7 +55,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   ];
   const credOk = cred.every((c) => c.ok);
   const basicsOk = !!gender && !!seeking && ageMin >= 18 && ageMax >= ageMin;
-  const canEnter = credOk && basicsOk && !!videoUrl;
+  const canEnter = credOk && basicsOk && !!videoUrl && agreed;
 
   async function onVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -80,7 +81,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
       if (notify) await subscribeToPush().catch(() => {});
       const r = await fetch('/api/raffle/enter', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ video_url: videoUrl, notify, gender, seeking, ageMin, ageMax }),
+        body: JSON.stringify({ video_url: videoUrl, notify, gender, seeking, ageMin, ageMax, agreed }),
       });
       const d = await r.json();
       if (!r.ok) { setErr(d.error || 'could not enter'); return; }
@@ -104,7 +105,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
         <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
-          a fully-covered dinner — up to <b>${ev.budget}</b> — drawn from everyone who enters. <b>{ev.dateLabel}</b>.
+          a fully-covered dinner — up to <b>${ev.budget}*</b> — drawn from everyone who enters. <b>{ev.dateLabel}</b>.
         </p>
 
         {!eligible ? (
@@ -224,10 +225,25 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               </label>
             </div>
 
+            {/* ⑤ agree to the rules — required */}
+            <div style={card}>
+              <div style={cardLabel}>⑤ the fine print <span style={{ color: ORANGE_DEEP }}>· required</span></div>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.6rem' }}>
+                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ width: 18, height: 18, accentColor: ORANGE, marginTop: '0.15rem', flexShrink: 0 }} />
+                <span style={{ fontSize: '0.85rem', color: 'var(--h-text)', lineHeight: 1.5 }}>
+                  I’m <b>18 or older</b>, a {ev.city}-area resident, and I agree to the{' '}
+                  <Link href="/raffle/rules" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Official Rules</Link>, including the photo/video likeness release. I understand this is a free-to-enter sweepstakes and I’ll be meeting someone in person at my own risk.
+                </span>
+              </label>
+            </div>
+
             <button onClick={enter} disabled={busy || uploading || !canEnter} style={{ background: canEnter ? ORANGE : 'var(--h-surface-2)', color: canEnter ? '#fff' : 'var(--h-text-faint)', border: canEnter ? 'none' : '1px solid var(--h-border)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || !canEnter ? 'not-allowed' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
               {busy ? '…' : canEnter ? '🎟️ enter the raffle' : 'finish the steps above'}
             </button>
-            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : 'upload your intro video'}</p>}
+            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !videoUrl ? 'upload your intro video' : 'agree to the official rules'}</p>}
+            <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
+              <b>*</b> No purchase necessary. Open to {ev.city}-area residents 18+. Winner selected by chance; odds depend on entries. Prize ARV up to ${ev.budget}. Void where prohibited. <Link href="/raffle/rules" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
+            </p>
           </div>
         )}
         {err && <p style={{ color: ORANGE_DEEP, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', marginTop: '1rem' }}>{err}</p>}
