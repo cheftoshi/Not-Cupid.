@@ -9,7 +9,7 @@ const ORANGE = '#ff6a1f';
 
 const PERKS = [
   { icon: '💘', t: 'Every love profile, unlocked', d: 'See any match’s full profile — bio, photos, the works — no $0.99 per unlock.' },
-  { icon: '🎒', t: 'Unlimited friendship packs', d: 'Open as many packs as you want, free. Each one is up to 10 new friends.' },
+  { icon: '🎒', t: 'Unlimited friendship packs', d: 'Open as many packs as you want, free. Each one is 7–8 new people to connect with.' },
   { icon: '🎟️', t: 'The whole Scene', d: 'Events, crews, the city pulse — all of it, all the time.' },
   { icon: '🍀', t: 'Double raffle entry', d: 'Members get 2× entries in the Summer of Connection raffles — double the odds of winning the dinner. (No purchase necessary; a free bonus entry is available on request.)' },
   { icon: '✦', t: 'One price, everything', d: 'No à-la-carte. One subscription across the Love Line and the Friend Line.' },

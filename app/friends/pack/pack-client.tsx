@@ -26,6 +26,16 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
   const [flash, setFlash] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [requested, setRequested] = useState<Set<string>>(new Set());
+
+  // Pick someone from the pack → they get pinged that you chose them. When they
+  // accept you back, you become connections.
+  async function connectFriend(otherId: string) {
+    setRequested((prev) => new Set(prev).add(otherId));
+    try {
+      await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
+    } catch { /* optimistic — leave the ✓ even if the ping retries */ }
+  }
 
   const sparks = useMemo(
     () => Array.from({ length: 26 }, (_, i) => ({
@@ -104,6 +114,15 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
             <div className={styles.packEmoji}>🎒</div>
             <div className={styles.packLogo}>not<span style={{ opacity: 0.85 }}>cupid</span></div>
             <div className={styles.packTag}>friendship pack · {friends.length} inside</div>
+            {/* blurred faces peeking through — you can't quite make them out yet */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.3rem', marginTop: '0.7rem' }}>
+              {friends.slice(0, 6).map((f) => (
+                f.photo_url
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img key={f.otherId} src={f.photo_url} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', filter: 'blur(5px)', border: '2px solid rgba(255,255,255,0.55)', opacity: 0.9 }} />
+                  : <div key={f.otherId} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.35)', filter: 'blur(4px)', border: '2px solid rgba(255,255,255,0.45)' }} />
+              ))}
+            </div>
           </div>
           {phase === 'ready' && <div className={styles.tapHint}>tap to rip it open</div>}
         </div>
@@ -129,12 +148,16 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
                   {f.sharedActivities.length > 0 && (
                     <div className={styles.fshared}>both into {f.sharedActivities.slice(0, 2).join(' · ')}</div>
                   )}
+                  {requested.has(f.otherId)
+                    ? <div style={{ marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9fe0b0' }}>✓ request sent</div>
+                    : <button onClick={() => connectFriend(f.otherId)} style={{ marginTop: '0.6rem', width: '100%', cursor: 'pointer', background: 'rgba(255,255,255,0.95)', color: '#1a1030', border: 'none', borderRadius: 999, padding: '0.45rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em' }}>🤝 connect</button>}
                 </div>
               );
             })}
           </div>
           <div className={styles.center}>
-            <Link href="/friends?view=crew" className={styles.cta}>say hi to your pack →</Link>
+            <div className={styles.subtle} style={{ marginBottom: '0.5rem' }}>tap <b>connect</b> on anyone — they’ll get a ping, and once they accept you’re friends.</div>
+            <Link href="/friends?view=crew" className={styles.cta}>see them on the friend line →</Link>
             <button onClick={anotherPack} disabled={busy} className={`${styles.cta} ${styles.ctaGhost}`} style={{ marginTop: '0.8rem' }}>
               {busy ? '…' : pro ? '✦ open another pack · free' : '🎁 open another pack · $1.99'}
             </button>

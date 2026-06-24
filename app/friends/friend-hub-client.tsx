@@ -438,7 +438,6 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   // Auto-dismiss the toast after a few seconds (the badge persists until viewed).
   useEffect(() => { if (!evToast) return; const t = setTimeout(() => setEvToast(null), 7000); return () => clearTimeout(t); }, [evToast]);
 
-  const pendingToJoin = matches.some((m) => !m.iAccepted);
   const iAmIn = matches.some((m) => m.iAccepted);
   // The chat is free now — it's live once the crew (circle) exists. Until then
   // we still show the box with the prospective members so the section is visible.
@@ -470,13 +469,13 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     .sort((a, b) => (b.rsvpCount || 0) - (a.rsvpCount || 0) || (b.happens_at ? new Date(b.happens_at).getTime() : 0) - (a.happens_at ? new Date(a.happens_at).getTime() : 0))
     .slice(0, 6);
 
-  async function join() {
+  // Per-person pick / accept. First pick → they get notified; if they'd already
+  // picked you, this accept connects you both into the crew.
+  async function connectOne(otherId: string) {
     setBusy(true);
-    await fetch('/api/friend/accept', { method: 'POST' });
+    await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
     await loadMatches(); await loadChat();
     setBusy(false);
-    // Jump to the chat block so the user sees their accepted / waiting state.
-    setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
   }
   async function leaveCrew() {
     if (!confirm("Opt out of this crew? You'll leave the group for everyone in it and the algo will route you to a fresh one.")) return;
@@ -667,10 +666,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
         {view === 'crew' && (
         <div>
-          {pendingToJoin && (
-            <div style={{ ...card, padding: '1rem 1.25rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>say you&apos;re in to lock in your crew.</div>
-              <button style={poppyBtn} onClick={join} disabled={busy}>{busy ? '…' : "I'M IN →"}</button>
+          {matches.some((m) => !m.connected) && (
+            <div style={{ ...card, padding: '0.85rem 1.1rem', marginBottom: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>
+              🤝 tap <b>connect</b> on anyone in your pack — they get a ping, and once they accept you back, you&apos;re in each other&apos;s crew.
             </div>
           )}
 
@@ -725,10 +723,18 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   </div>
                   <div style={{ padding: '0.7rem 0.8rem' }}>
                     <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem' }}>{m.name} <span style={{ color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>· {m.age}</span></div>
-                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : LINE_DEEP, marginBottom: '0.4rem' }}>● {m.connected ? 'in your crew' : m.iAccepted ? 'waiting on them' : 'new match'}</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : (m.theyAccepted && !m.iAccepted) ? '#ff2d8e' : LINE_DEEP, marginBottom: '0.4rem' }}>● {m.connected ? 'in your crew' : m.iAccepted ? 'waiting on them' : m.theyAccepted ? 'wants to connect with you' : 'new match'}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: m.connected ? 0 : '0.55rem' }}>
                       {(m.sharedActivities || []).slice(0, 3).map((a: string) => <span key={a} style={chip}>{a}</span>)}
                     </div>
+                    {!m.connected && (m.iAccepted ? (
+                      <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 9, padding: '0.45rem' }}>⏳ waiting on them</div>
+                    ) : (
+                      <button onClick={() => connectOne(m.otherId)} disabled={busy}
+                        style={{ width: '100%', cursor: busy ? 'wait' : 'pointer', background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em', boxShadow: `2px 2px 0 ${INK}` }}>
+                        {busy ? '…' : m.theyAccepted ? '🤝 accept →' : '🤝 connect'}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -738,7 +744,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               <a href="/friends/pack" style={{ ...poppyBtn, textDecoration: 'none', textAlign: 'center' }}>
                 🎒 open another pack · $1.99
               </a>
-              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>group chats are free — a pack is a fresh batch of up to 10 friends. <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free.</span>
+              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>group chats are free — a pack is a fresh batch of 7–8 people. <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free.</span>
               <button onClick={leaveCrew} disabled={busy}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
                 {busy ? '…' : 'not your crew? opt out of the group →'}

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { friendCompatibilityScore, friendGenderOk } from '@/lib/friend-matching';
 import { joinCircle, connectedFriendCount, FRIEND_MAX_CONNECTIONS } from '@/lib/friend-circles';
+import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
   const myPick = iAmA ? { a_picked: true } : { b_picked: true };
   const theyPicked = iAmA ? existing?.b_picked : existing?.a_picked;
   const score = friendCompatibilityScore(user, cand);
+  const meFirst = (user.name || 'Someone').split(' ')[0];
 
   if (theyPicked) {
     // Mutual! Re-check the candidate's cap at the moment it would connect.
@@ -49,13 +51,24 @@ export async function POST(req: NextRequest) {
       { user_a_id: aId, user_b_id: bId, ...myPick, status: 'connected', circle_id: circleId, compatibility_score: score, connected_at: new Date().toISOString() },
       { onConflict: 'user_a_id,user_b_id' }
     );
+    // They picked you earlier and you just accepted → tell them you're connected.
+    await sendPushToUser(candidateId, {
+      title: `you’re connected with ${meFirst} 🧡`,
+      body: `${meFirst} accepted — your friend chat is open. say hi.`,
+      url: '/friends?view=crew', tag: `friend-conn-${aId}-${bId}`,
+    }).catch(() => {});
     return NextResponse.json({ ok: true, connected: true, circleId });
   }
 
-  // First pick → pending, nudge stored. (Email nudge can be added later.)
+  // First pick → pending. Notify the chosen person that someone selected them.
   await supabaseAdmin.from('friend_connections').upsert(
     { user_a_id: aId, user_b_id: bId, ...myPick, status: 'pending', compatibility_score: score },
     { onConflict: 'user_a_id,user_b_id' }
   );
+  await sendPushToUser(candidateId, {
+    title: `${meFirst} wants to connect 🧡`,
+    body: `${meFirst} picked you on the Friend Line — accept to become friends.`,
+    url: '/friends', tag: `friend-pick-${candidateId}`,
+  }).catch(() => {});
   return NextResponse.json({ ok: true, connected: false });
 }
