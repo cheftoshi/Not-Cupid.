@@ -10,7 +10,9 @@ const INK = '#241d12';           // warm near-black (signage)
 const LINE = '#e8842b';          // the Friend Line — warm orange
 const LINE_DEEP = '#c96a18';     // deeper orange for shadows/hover
 const CREAM = 'var(--h-surface)'; // warm station-tile cream → themed surface
-const CATS = ['food', 'drinks', 'active', 'outdoors', 'culture', 'nightlife', 'games', 'chill', 'hang'];
+// Activity-rich categories — what people actually do together (fitness/sports
+// lead, then social/culture). Drives the Scene filter chips + the post composer.
+const CATS = ['fitness', 'gym', 'running', 'tennis', 'pickleball', 'sports', 'outdoors', 'food', 'coffee', 'drinks', 'movies', 'concerts', 'music', 'arts', 'books', 'games', 'chill'];
 
 // Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px offset
 // shadows — too loud). Surfaces read quiet so the content + connections lead.
@@ -91,11 +93,11 @@ function ConnectionBackdrop() {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const dpr = Math.min(1.4, window.devicePixelRatio || 1);
     let w = 1, h = 1;
-    const N = 30, LINK = 0.19, TAU = Math.PI * 2;
+    const N = 40, LINK = 0.21, TAU = Math.PI * 2;
     const nodes = Array.from({ length: N }, () => ({
       x: Math.random(), y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.00015, vy: (Math.random() - 0.5) * 0.00015,
-      r: 1.4 + Math.random() * 2.4, cool: Math.random() < 0.28,
+      vx: (Math.random() - 0.5) * 0.0003, vy: (Math.random() - 0.5) * 0.0003,
+      r: 1.4 + Math.random() * 2.4, cool: Math.random() < 0.3,
     }));
     // "travelers" — little comets that journey node→node along the network,
     // leaving a fading trail and blooming each person they reach (a connection
@@ -105,7 +107,7 @@ function ConnectionBackdrop() {
       for (let k = 0; k < N; k++) { if (k === n || k === not) continue; const d = Math.hypot(nodes[n].x - nodes[k].x, nodes[n].y - nodes[k].y); if (d < bd) { bd = d; best = k; } }
       return best < 0 ? (n + 1) % N : best;
     };
-    const travelers = Array.from({ length: 3 }, (_, i) => ({ from: i * 7 % N, to: -1, prev: -1, t: 0, col: i % 2 ? '95,184,255' : '79,224,210', trail: [] as { x: number; y: number }[] }));
+    const travelers = Array.from({ length: 5 }, (_, i) => ({ from: i * 7 % N, to: -1, prev: -1, t: 0, col: i % 2 ? '95,184,255' : '79,224,210', trail: [] as { x: number; y: number }[] }));
     for (const tr of travelers) tr.to = nearest(tr.from, -1);
     const blooms: { x: number; y: number; t: number }[] = [];
     const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
@@ -143,7 +145,7 @@ function ConnectionBackdrop() {
       // travelers — glowing comets that journey + bloom each person they reach
       for (const tr of travelers) {
         const a = nodes[tr.from], b = nodes[tr.to];
-        if (!reduce) tr.t += 0.0075; // calm pace (~4.5s per hop)
+        if (!reduce) tr.t += 0.013; // energetic — comets zip between people
         if (tr.t >= 1) { blooms.push({ x: b.x, y: b.y, t: 0 }); tr.prev = tr.from; tr.from = tr.to; tr.to = nearest(tr.from, tr.prev); tr.t = 0; }
         const x = (a.x + (b.x - a.x) * tr.t) * w, y = (a.y + (b.y - a.y) * tr.t) * h;
         tr.trail.push({ x, y }); if (tr.trail.length > 18) tr.trail.shift();
@@ -369,11 +371,11 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
           </div>
         )}
       </div>
-      <div style={{ borderTop: `2px solid rgba(36,29,18,0.12)`, padding: '0.45rem 0.6rem' }}>
+      <div style={{ borderTop: '1px solid var(--h-border)', padding: '0.45rem 0.6rem' }}>
         {!isEvent ? (
           <button onClick={() => onRsvp(a.id)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', background: a.iRsvped ? '#ffd23d' : 'transparent', border: 'none', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: a.iRsvped ? INK : 'var(--h-text)', fontWeight: 700 }}>
-            {a.iRsvped ? '👍 liked' : '👍 like'}{a.rsvpCount ? <span style={{ ...miniCount, background: a.iRsvped ? INK : LINE }}>{a.rsvpCount}</span> : null}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', background: a.iRsvped ? 'var(--h-accent)' : 'transparent', border: 'none', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: a.iRsvped ? '#0c2029' : 'var(--h-text-dim)', fontWeight: 700 }}>
+            {a.iRsvped ? '✦ starred' : '✦ star'}{a.rsvpCount ? <span style={{ ...miniCount, background: a.iRsvped ? '#0c2029' : 'var(--h-accent)', color: a.iRsvped ? 'var(--h-accent)' : '#0c2029' }}>{a.rsvpCount}</span> : null}
           </button>
         ) : eligible ? (
           <div>
@@ -608,7 +610,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   }
 
   return (
-    <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(130% 95% at 50% -12%, #0e2a34 0%, #050d12 58%)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
+    <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(135% 100% at 50% -10%, #1e4350 0%, #0c2029 60%)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <ConnectionBackdrop />
 
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
@@ -967,8 +969,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                           <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', color: 'var(--h-text-dim)', alignSelf: 'center' }}>by {a.authorName?.split(' ')[0] || '—'}</span>
                         </div>
                       </div>
-                      <button onClick={() => rsvp(a.id)} style={{ ...chip, cursor: 'pointer', fontSize: '0.8rem', padding: '0.35rem 0.7rem', background: a.iRsvped ? '#ffd23d' : 'var(--h-surface-3)', flexShrink: 0 }}>
-                        {a.kind === 'post' ? `👍 ${a.rsvpCount || ''}` : (a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`)}
+                      <button onClick={() => rsvp(a.id)} style={{ ...chip, cursor: 'pointer', fontSize: '0.8rem', padding: '0.35rem 0.7rem', background: a.iRsvped ? 'var(--h-accent)' : 'var(--h-surface-3)', color: a.iRsvped ? '#0c2029' : 'var(--h-text-dim)', flexShrink: 0 }}>
+                        {a.kind === 'post' ? `✦ ${a.rsvpCount || ''}` : (a.iRsvped ? `in · ${a.rsvpCount}` : `i'm in${a.rsvpCount ? ` · ${a.rsvpCount}` : ''}`)}
                       </button>
                     </div>
                   ))}
