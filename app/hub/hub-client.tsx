@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import CorpFooter from '@/components/corp-footer';
+import RaffleCard from '@/components/raffle-card';
 import { compressImage } from '@/lib/compress-image';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
@@ -48,10 +49,10 @@ function whenLabel(iso: string | null): string {
 }
 
 export default function HubClient({
-  firstName, hasArchetype, needsLoveDeep, profile, city, currentMetro, matchRadius, loveMatches = [],
+  firstName, hasArchetype, needsLoveDeep, profile, city, loveMatches = [],
 }: {
   firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean; profile: Profile;
-  city?: string | null; currentMetro?: string | null; matchRadius?: number; loveMatches?: LoveMatch[];
+  city?: string | null; loveMatches?: LoveMatch[];
 }) {
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
@@ -186,6 +187,9 @@ export default function HubClient({
             <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(1.5rem,4vw,2rem)', color: 'var(--h-text)', margin: '0 0 0.25rem' }}>
               hey {firstName.toLowerCase()}.
             </p>
+
+            {/* SUMMER OF CONNECTION — the raffle pop-up (shows only for eligible cities) */}
+            <RaffleCard />
 
             {/* YOUR CONNECTIONS — love + friend people, together in one place */}
             <div className={styles.dCard}>

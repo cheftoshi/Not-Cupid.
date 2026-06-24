@@ -595,6 +595,13 @@ export default function AdminClient() {
                 if (!d.ok) { alert('Failed: ' + (d.error || 'unknown')); return; }
                 setSeedAccounts(d.accounts || []);
               }}>🧪 Seed full test world + login links</button>
+              <button className={`${s.btn} ${s.btnDeep}`} onClick={async () => {
+                if (!confirm('Draw the Summer of Connection raffle now? Pairs eligible entrants by the hobbies-weighted algo, creates pending matches, and notifies both sides.')) return;
+                const res = await fetch('/api/admin/raffle-draw', { method: 'POST' });
+                const d = await parseResponse<any>(res);
+                if (!d.ok) { alert('Failed: ' + (d.error || d.message || 'unknown')); return; }
+                alert(`Drew ${d.drawn} pair(s) from ${d.entrants} entrant(s).${d.pairs?.length ? '\n\n' + d.pairs.map((p: any) => `${p.a} ✕ ${p.b} · ${p.score}`).join('\n') : (d.message ? '\n\n' + d.message : '')}`);
+              }}>🎟️ Draw raffle</button>
             </div>
             <div className={`${s.actionsGrid} ${s.actions3}`} style={{ marginBottom: '1.5rem' }}>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {

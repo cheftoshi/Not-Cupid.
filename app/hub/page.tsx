@@ -65,5 +65,5 @@ export default async function HubPage() {
     })
     .filter(Boolean);
 
-  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} currentMetro={metro} matchRadius={user.match_radius ?? 15} loveMatches={loveMatches as any} />;
+  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} loveMatches={loveMatches as any} />;
 }
