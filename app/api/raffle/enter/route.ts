@@ -13,11 +13,35 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!raffleEligible(user)) return NextResponse.json({ error: `${RAFFLE.city} only for this one — change your city to ${RAFFLE.city} to enter.` }, { status: 400 });
-  if (!user.photo_url || !user.archetype) return NextResponse.json({ error: 'Add a photo + finish the quiz first so we can match you.' }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
   const video_url = body.video_url ? String(body.video_url).slice(0, 2000) : null;
   const notify = body.notify !== false;
+
+  // Match basics from the form — set them on the real profile (the matcher reads
+  // user.gender/seeking/age) so they're not raffle-only.
+  const gender = ['m', 'f', 'nb'].includes(body.gender) ? body.gender : null;
+  const seeking = ['m', 'f', 'both'].includes(body.seeking) ? body.seeking : null;
+  const ageMin = Number(body.ageMin), ageMax = Number(body.ageMax);
+  const ageOk = ageMin >= 18 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
+  const profilePatch: any = {};
+  if (gender) profilePatch.gender = gender;
+  if (seeking) profilePatch.seeking = seeking;
+  if (ageOk) { profilePatch.age_min = ageMin; profilePatch.age_max = ageMax; }
+  if (Object.keys(profilePatch).length) await supabaseAdmin.from('users').update(profilePatch).eq('id', user.id);
+
+  // "Established cred" gate — pull from the (now-updated) profile.
+  const g = gender || user.gender, sk = seeking || user.seeking;
+  const interests = (user.hobbies?.length || 0) + (user.music?.length || 0) + (user.food?.length || 0) + (user.sports?.length || 0);
+  const missing: string[] = [];
+  if (!user.photo_url) missing.push('a profile photo');
+  if (!user.archetype || typeof user.score_honesty !== 'number') missing.push('the personality quiz');
+  if (!(user.bio || '').trim()) missing.push('a bio');
+  if (interests < 3) missing.push('3+ interests');
+  if (user.age == null) missing.push('your age');
+  if (!g) missing.push('your gender');
+  if (!sk) missing.push('who to match you with');
+  if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
 
   // New entrants face the deadline + the 50-cap; updating your own entry doesn't.
   const { data: mine } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
