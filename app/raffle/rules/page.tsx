@@ -6,8 +6,9 @@ export const dynamic = 'force-static';
 
 // Official Rules for the Summer of Connection giveaway. Structured as a NO-
 // PURCHASE-NECESSARY sweepstakes (free entry + chance) — NOT a paid raffle/
-// lottery. ⚠️ This is a template: have counsel review before each round, and
-// fill the Sponsor's legal name + mailing address below.
+// lottery. ⚠️ This is a template: have counsel review before launch. Lemon Labs
+// has no separate registered entity name, so the Sponsor is "NotCupid (a Lemon
+// Labs property)" with match@notcupid.com as the point of contact (no address).
 const ORANGE = '#ff6a1f';
 const ORANGE_DEEP = '#d2530f';
 
@@ -21,7 +22,7 @@ const SECTIONS: { h: string; b: string }[] = [
   },
   {
     h: '2. Sponsor',
-    b: `This promotion is sponsored and run solely by ${SPONSOR} (the “Sponsor”), [Sponsor legal mailing address]. Questions: ${CONTACT}. The Sponsor is the only party responsible for the promotion — there are no co-sponsors, partners, or third-party administrators. The restaurant where the prize dinner takes place is not a sponsor of, or a participant in, this promotion; it is simply the venue the Sponsor pays. This promotion is not sponsored, endorsed, or administered by Apple, Google, Meta, or any other platform.`,
+    b: `This promotion is sponsored and run solely by ${SPONSOR} (the “Sponsor”). Questions, and requests for a copy of these Official Rules or the winner’s name, may be sent to ${CONTACT}. The Sponsor is the only party responsible for the promotion — there are no co-sponsors, partners, or third-party administrators. The restaurant where the prize dinner takes place is not a sponsor of, or a participant in, this promotion; it is simply the venue the Sponsor pays. This promotion is not sponsored, endorsed, or administered by Apple, Google, Meta, or any other platform.`,
   },
   {
     h: '3. Eligibility',
