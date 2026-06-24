@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
 
-type Event = { series: string; city: string; dateLabel: string; budget: number; tagline: string; drawLabel: string; radiusMiles?: number };
+type Event = { series: string; city: string; dateLabel: string; budget: number; tagline: string; drawLabel: string };
 type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seeking: string; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
 
 const ORANGE = '#ff6a1f';
@@ -110,8 +110,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
         {!eligible ? (
           <div style={card}>
-            <h2 style={cardH}>this one’s for the {ev.city} area.</h2>
-            <p style={cardP}>you need to live within ~{ev.radiusMiles ?? 30} miles of the venue to enter, so you can actually make the dinner. set your city to {ev.city} on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> if you’re nearby — more cities coming.</p>
+            <h2 style={cardH}>this one’s for Bostonians.</h2>
+            <p style={cardP}>you need to live in {ev.city} or a next-door neighborhood (Cambridge, Somerville, Brookline, and the rest of the inner city) to enter — so you can actually make the dinner. set your city on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> if that’s you — more cities coming.</p>
           </div>
         ) : !loaded ? (
           <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>

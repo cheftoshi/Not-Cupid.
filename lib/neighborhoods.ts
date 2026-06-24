@@ -103,6 +103,19 @@ export function neighborhoodOf(zip: string | null | undefined): string {
   return 'Greater Boston';
 }
 
+// Is this ZIP one of the named Boston neighborhoods or inner-ring towns (Back
+// Bay, Cambridge, Somerville, Brookline, Quincy, …)? ZIP_AREA also holds other
+// metros' areas (Providence, NYC, Worcester…), so we additionally require the
+// Boston metro. Used to keep the raffle "city based" — you're an actual Bostonian.
+export function isBostonAreaZip(zip: string | null | undefined): boolean {
+  return !!zip && !!ZIP_AREA[zip] && metroOf(zip) === 'boston';
+}
+
+// The named Boston-area neighborhoods/towns themselves (for copy that lists them).
+export function bostonAreaLabels(): string[] {
+  return Array.from(new Set(Object.entries(ZIP_AREA).filter(([z]) => metroOf(z) === 'boston').map(([, a]) => a)));
+}
+
 // Distinct area labels for the activity-board picker — neighborhoods + every
 // metro city, so anyone in New England has a sensible area to choose.
 export const NEIGHBORHOODS: string[] = Array.from(new Set([

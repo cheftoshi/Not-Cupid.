@@ -48,7 +48,7 @@ export async function GET() {
   return NextResponse.json({
     event: {
       series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget,
-      tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: RAFFLE.cap, entryCloseLabel: RAFFLE.entryCloseLabel, radiusMiles: RAFFLE.radiusMiles,
+      tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: RAFFLE.cap, entryCloseLabel: RAFFLE.entryCloseLabel,
       spotsLeft, closed: raffleClosed() || spotsLeft === 0,
     },
     eligible, hasProfile, entered, entry, draw, other,
