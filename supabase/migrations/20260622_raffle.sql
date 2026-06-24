@@ -6,6 +6,7 @@ create table if not exists raffle_entries (
   event_key text not null default 'boston-2026-07-02',
   video_url text,
   notify boolean not null default true,
+  attempts int not null default 0, -- how many times drawn (capped at 2)
   status text not null default 'entered' check (status in ('entered','picked','passed')),
   created_at timestamptz not null default now(),
   unique (user_id, event_key)

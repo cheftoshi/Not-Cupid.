@@ -58,8 +58,8 @@ export default function RaffleCard() {
       {H(`🎉 you’ve been picked — meet ${otherName}.`)}
       {P(<>you two scored <b>{s.draw.score}%</b>. say yes to lock in a <b>${ev.budget} date</b> on <b>{ev.dateLabel}</b>. {s.draw.theyAccepted ? `${otherName} already said yes 👀` : ''}</>)}
       <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.9rem' }}>
-        <button onClick={() => respond(true)} disabled={busy} style={{ background: '#2563ff', color: '#fff', border: 'none', borderRadius: 999, padding: '0.65rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.25rem', letterSpacing: '0.04em', cursor: busy ? 'wait' : 'pointer' }}>{busy ? '…' : 'yes, I’m in →'}</button>
-        <button onClick={() => respond(false)} disabled={busy} style={{ background: 'none', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.65rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>can’t make it</button>
+        <button onClick={() => respond(true)} disabled={busy} style={{ background: '#2563ff', color: '#fff', border: 'none', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.25rem', letterSpacing: '0.04em', cursor: busy ? 'wait' : 'pointer' }}>{busy ? '…' : 'accept →'}</button>
+        <button onClick={() => respond(false)} disabled={busy} style={{ background: 'none', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.65rem 1.4rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>reject</button>
       </div>
     </>));
   }

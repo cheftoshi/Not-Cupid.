@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE } from '@/lib/raffle';
 import { sendPushToUser } from '@/lib/push';
+import { drawRaffle } from '@/lib/raffle-draw';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +26,20 @@ export async function POST(req: NextRequest) {
   const myFirst = (user.name || 'Someone').split(' ')[0];
 
   if (!accept) {
+    // The rejecter is out of the round. The other person (who was willing) goes
+    // back in the pool for a re-draw IF they're still under the attempt cap.
     await supabaseAdmin.from('raffle_draws').update({ status: 'declined' }).eq('id', d.id);
-    await sendPushToUser(otherId, { title: 'Raffle update', body: `Your ${RAFFLE.series} match couldn't make it — we'll redraw.`, url: '/hub', tag: `raffle-${d.id}` }).catch(() => {});
+    await supabaseAdmin.from('raffle_entries').update({ status: 'passed' }).eq('event_key', RAFFLE.key).eq('user_id', user.id);
+
+    const { data: oe } = await supabaseAdmin.from('raffle_entries').select('attempts').eq('event_key', RAFFLE.key).eq('user_id', otherId).maybeSingle();
+    const otherAttempts = (oe as any)?.attempts ?? 0;
+    if (otherAttempts < RAFFLE.maxAttempts) {
+      await supabaseAdmin.from('raffle_entries').update({ status: 'entered' }).eq('event_key', RAFFLE.key).eq('user_id', otherId);
+      await sendPushToUser(otherId, { title: 'Finding you another match…', body: `Your ${RAFFLE.series} pick passed — we're drawing you someone new.`, url: '/hub', tag: 'raffle-redraw' }).catch(() => {});
+    } else {
+      await supabaseAdmin.from('raffle_entries').update({ status: 'passed' }).eq('event_key', RAFFLE.key).eq('user_id', otherId);
+    }
+    await drawRaffle().catch((e) => console.error('redraw failed', e)); // advance to the next pair
     return NextResponse.json({ ok: true, status: 'declined' });
   }
 

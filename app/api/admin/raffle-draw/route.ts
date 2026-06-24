@@ -10,5 +10,5 @@ export async function POST() {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const res = await drawRaffle();
-  return NextResponse.json(res.drawn === 0 ? { ...res, message: 'No new pairs (need ≥2 fresh eligible entrants).' } : res);
+  return NextResponse.json({ ok: true, drawn: res.drawn, entrants: res.entrants, pairs: res.pair ? [res.pair] : [], message: res.state });
 }
