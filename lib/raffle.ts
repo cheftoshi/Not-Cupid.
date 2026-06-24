@@ -4,16 +4,16 @@ import { compatibilityScore } from '@/lib/matching';
 // The draw is AUTOMATIC: it fires the moment entries hit `cap`, or via the daily
 // cron once `entryClose` passes — no human picks. (Confirm the dates below.)
 export const RAFFLE = {
-  key: 'boston-2026-06-27',
+  key: 'boston-2026-07-02',
   series: 'Summer of Connection',
   city: 'Boston',
   metro: 'boston',
   cap: 50, // entry closes at 50 entrants → auto-draw fires
-  entryClose: '2026-06-25T23:59:00.000Z', // last entry point (Thursday before the event)
-  entryCloseLabel: 'Thursday, June 25',
-  happensAt: '2026-06-27T23:00:00.000Z', // Sat Jun 27, 7pm ET (EDT = UTC-4)
-  dateLabel: 'Saturday, June 27 · 7pm',
-  drawLabel: 'the moment we hit 50 (or Thursday night)',
+  entryClose: '2026-06-30T03:59:59.000Z', // last entry point: Mon Jun 29, 11:59pm ET (EDT = UTC-4)
+  entryCloseLabel: 'Monday, June 29',
+  happensAt: '2026-07-02T23:00:00.000Z', // Thu Jul 2, 7pm ET
+  dateLabel: 'Thursday, July 2 · 7pm',
+  drawLabel: 'the moment we hit 50 (or Monday June 29)',
   budget: 200,
   restaurant: "a spot we love in Boston — we'll email you the address + time",
   tagline: 'Two Bostonians. One $200 dinner. On us.',

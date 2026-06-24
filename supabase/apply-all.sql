@@ -711,7 +711,7 @@ alter table users add column if not exists sports text[] not null default '{}'::
 create table if not exists raffle_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references users(id) on delete cascade,
-  event_key text not null default 'boston-2026-06-27',
+  event_key text not null default 'boston-2026-07-02',
   video_url text,
   notify boolean not null default true,
   status text not null default 'entered' check (status in ('entered','picked','passed')),
