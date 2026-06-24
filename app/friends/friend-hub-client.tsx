@@ -12,25 +12,16 @@ const LINE_DEEP = '#c96a18';     // deeper orange for shadows/hover
 const CREAM = 'var(--h-surface)'; // warm station-tile cream → themed surface
 const CATS = ['food', 'drinks', 'active', 'outdoors', 'culture', 'nightlife', 'games', 'chill', 'hang'];
 
-const card: React.CSSProperties = { background: 'var(--h-surface)', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}` };
-const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', background: 'var(--h-surface-3)', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.2rem 0.55rem' };
-// Section headers look like station stops: a Friend-Line dot on the route.
-const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', letterSpacing: '0.04em', margin: '2rem 0 0.9rem', display: 'flex', gap: '0.55rem', alignItems: 'center' };
-const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: `3px solid ${INK}`, borderRadius: 12, padding: '0.55rem 1.4rem', boxShadow: `4px 4px 0 ${INK}`, cursor: 'pointer' };
-// A station dot to prefix section labels (the route runs through the page).
-const StationDot = () => <span style={{ width: 16, height: 16, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}`, flexShrink: 0, display: 'inline-block' }} />;
+// Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px offset
+// shadows — too loud). Surfaces read quiet so the content + connections lead.
+const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 16, boxShadow: '0 12px 36px -26px rgba(0,0,0,0.6)' };
+const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.04em', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.22rem 0.6rem', color: 'var(--h-text-dim)' };
+// Section headers: a small connection-node + a calmer (smaller) display size.
+const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.05em', margin: '1.7rem 0 0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--h-text)' };
+const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: 'none', borderRadius: 999, padding: '0.6rem 1.5rem', boxShadow: '0 12px 26px -14px rgba(232,132,43,0.7)', cursor: 'pointer' };
+// A small filled node (the connection motif), not a chunky station ring.
+const StationDot = () => <span style={{ width: 7, height: 7, borderRadius: '50%', background: LINE, flexShrink: 0, display: 'inline-block' }} />;
 
-// Faint transit map behind everything: T-line colors criss-crossing + iconic
-// Boston station/spot names as ghost labels. Decorative, pointer-events:none.
-const T_RED = '#da291c', T_BLUE = '#003da5', T_GREEN = '#00843d', T_ORANGE = '#ed8b00';
-// Funky Boston phrases/places as ghost accents (not literal T stops).
-const SPOTS: Array<[string, string, string]> = [
-  ['wicked pissah', '6%', '13%'], ['the Citgo sign', '60%', '8%'], ['Dunkies run', '30%', '19%'],
-  ['the Common', '80%', '25%'], ['Sully’s on Castle Is.', '10%', '39%'], ['Newbury St', '70%', '37%'],
-  ['the Esplanade', '40%', '51%'], ['Tasty Burger', '85%', '57%'], ['the Gahden', '8%', '66%'],
-  ['cannoli @ Mike’s', '54%', '72%'], ['Wally’s jazz', '78%', '80%'], ['Spectacle Island', '20%', '86%'],
-  ['Davis porchfest', '46%', '90%'], ['Charles river', '88%', '12%'],
-];
 // City Pulse — a live "departure board" of three headline stats.
 function PulseBoard({ stats, line, ink, deep }: { stats: { n: number; label: string; icon: string; onClick?: () => void }[]; line: string; ink: string; deep: string }) {
   return (
@@ -39,7 +30,7 @@ function PulseBoard({ stats, line, ink, deep }: { stats: { n: number; label: str
         const Tag: any = t.onClick ? 'button' : 'div';
         return (
           <Tag key={t.label} onClick={t.onClick}
-            style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', background: 'var(--h-surface)', border: `3px solid ${ink}`, borderRadius: 14, boxShadow: `4px 4px 0 ${ink}`, padding: '0.7rem 0.75rem 0.6rem', cursor: t.onClick ? 'pointer' : 'default', font: 'inherit', color: ink }}>
+            style={{ position: 'relative', overflow: 'hidden', textAlign: 'left', background: 'var(--h-surface)', border: `1px solid var(--h-border)`, borderRadius: 14, boxShadow: `0 8px 22px -16px rgba(0,0,0,0.5)`, padding: '0.7rem 0.75rem 0.6rem', cursor: t.onClick ? 'pointer' : 'default', font: 'inherit', color: ink }}>
             <span style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: line }} />
             <div style={{ fontSize: '1rem', marginTop: '0.2rem' }}>{t.icon}</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.4rem', lineHeight: 0.9, color: deep }}>{t.n}</div>
@@ -68,11 +59,11 @@ function PulseRanked({ areas, line, ink, deep, onPick, active }: { areas: any[];
         const pct = Math.max(8, Math.round((a.score / max) * 100));
         return (
           <button key={a.area} onClick={() => onPick(a.area)} title={`see what's happening in ${a.area}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', background: sel ? 'var(--h-surface-3)' : 'var(--h-surface)', border: `2.5px solid ${ink}`, borderRadius: 12, boxShadow: sel ? `3px 3px 0 ${ink}` : `2px 2px 0 ${ink}`, padding: '0.5rem 0.7rem', cursor: 'pointer', font: 'inherit', color: ink }}>
+            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', background: sel ? 'var(--h-surface-3)' : 'var(--h-surface)', border: `1px solid var(--h-border)`, borderRadius: 12, boxShadow: sel ? `0 8px 22px -16px rgba(0,0,0,0.5)` : `0 8px 22px -16px rgba(0,0,0,0.5)`, padding: '0.5rem 0.7rem', cursor: 'pointer', font: 'inherit', color: ink }}>
             <span style={{ width: 96, flexShrink: 0, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {hot && '🔥 '}{a.area}
             </span>
-            <span style={{ flex: 1, height: 12, background: 'var(--h-surface-3)', borderRadius: 999, border: `1.5px solid ${ink}`, overflow: 'hidden' }}>
+            <span style={{ flex: 1, height: 12, background: 'var(--h-surface-3)', borderRadius: 999, border: `1px solid var(--h-border)`, overflow: 'hidden' }}>
               <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: sel ? '#ffce4d' : hot ? line : 'rgba(232,132,43,0.55)' }} />
             </span>
             <span style={{ flexShrink: 0, display: 'inline-flex', gap: '0.4rem', alignItems: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: deep }}>
@@ -86,37 +77,71 @@ function PulseRanked({ areas, line, ink, deep, onPick, active }: { areas: any[];
   );
 }
 
-// SVG paper-grain (fractal noise) data-URI — gives the flat cream a crafted,
-// printed-poster texture without loading an image.
-const GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
-
-function TransitBackdrop() {
+// A LIVING, CITY-AGNOSTIC connection field (canvas). Nodes drift slowly; a link
+// forms between any two that wander near each other and fades as they part; every
+// so often a "signal" pulse travels a link — a connection sparking in real time.
+// Branded orange with a ~1-in-5 violet duotone for a funky/artsy color story.
+// Calm by design: low density, ~30fps, low opacity. Reduced-motion → a still
+// frame; pauses when the tab's hidden. Same anywhere — it's people, not a map.
+function ConnectionBackdrop() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const ctx = cv.getContext('2d'); if (!ctx) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const dpr = Math.min(1.4, window.devicePixelRatio || 1);
+    let w = 1, h = 1;
+    const N = 30, LINK = 0.19, TAU = Math.PI * 2;
+    const nodes = Array.from({ length: N }, () => ({
+      x: Math.random(), y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.00015, vy: (Math.random() - 0.5) * 0.00015,
+      r: 0.9 + Math.random() * 1.9, cool: Math.random() < 0.2,
+    }));
+    let pulses: { a: number; b: number; t: number; sp: number }[] = [];
+    const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    size();
+    const ro = new ResizeObserver(size); ro.observe(cv);
+    let raf = 0, last = 0, on = true;
+    const draw = (ts: number) => {
+      if (!on) return;
+      raf = requestAnimationFrame(draw);
+      if (ts - last < 34) return; last = ts; // ~30fps — calm, easy on battery
+      ctx.clearRect(0, 0, w, h);
+      if (!reduce) for (const n of nodes) {
+        n.x += n.vx; n.y += n.vy;
+        if (n.x < -0.02) n.x = 1.02; else if (n.x > 1.02) n.x = -0.02;
+        if (n.y < -0.02) n.y = 1.02; else if (n.y > 1.02) n.y = -0.02;
+      }
+      for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dn = Math.hypot(a.x - b.x, a.y - b.y);
+        if (dn >= LINK) continue;
+        const o = (1 - dn / LINK) * 0.2;
+        ctx.strokeStyle = (a.cool && b.cool) ? `rgba(123,92,255,${o})` : `rgba(232,132,43,${o})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(a.x * w, a.y * h); ctx.lineTo(b.x * w, b.y * h); ctx.stroke();
+        if (!reduce && pulses.length < 7 && Math.random() < 0.0008) pulses.push({ a: i, b: j, t: 0, sp: 0.014 + Math.random() * 0.018 });
+      }
+      for (const n of nodes) {
+        ctx.beginPath(); ctx.arc(n.x * w, n.y * h, n.r, 0, TAU);
+        ctx.fillStyle = n.cool ? 'rgba(123,92,255,0.45)' : 'rgba(232,132,43,0.5)'; ctx.fill();
+      }
+      for (let k = pulses.length - 1; k >= 0; k--) {
+        const p = pulses[k]; p.t += p.sp; if (p.t >= 1) { pulses.splice(k, 1); continue; }
+        const a = nodes[p.a], b = nodes[p.b];
+        ctx.beginPath(); ctx.arc((a.x + (b.x - a.x) * p.t) * w, (a.y + (b.y - a.y) * p.t) * h, 2, 0, TAU);
+        ctx.fillStyle = 'rgba(255,190,110,0.95)'; ctx.fill();
+      }
+    };
+    raf = requestAnimationFrame(draw);
+    const onVis = () => { on = !document.hidden; if (on) { last = 0; raf = requestAnimationFrame(draw); } };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { on = false; cancelAnimationFrame(raf); ro.disconnect(); document.removeEventListener('visibilitychange', onVis); };
+  }, []);
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      {/* warm radial glow so it isn't flat beige */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% -10%, rgba(232,132,43,0.14), transparent 60%), radial-gradient(100% 70% at 100% 100%, rgba(63,125,87,0.10), transparent 55%)' }} />
-      {/* the T map — richer, softly blurred so it reads as ambient */}
-      <svg viewBox="0 0 1000 1400" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.3, filter: 'blur(0.4px)' }}>
-        <g fill="none" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M-40 180 L260 180 L420 340 L420 1100 L600 1280 L1100 1280" stroke={T_RED} />
-          <path d="M-40 420 L380 420 L520 560 L1100 560" stroke={T_BLUE} />
-          <path d="M120 -40 L120 520 L320 720 L320 1450" stroke={T_GREEN} />
-          <path d="M1080 120 L720 120 L560 280 L560 1450" stroke={T_ORANGE} />
-        </g>
-        {[[260,180,T_RED],[420,340,T_RED],[380,420,T_BLUE],[520,560,T_BLUE],[120,520,T_GREEN],[320,720,T_GREEN],[720,120,T_ORANGE],[560,280,T_ORANGE]].map(([x,y,c],i)=>(
-          <circle key={i} cx={x as number} cy={y as number} r="15" fill="var(--h-surface)" stroke={c as string} strokeWidth="7" opacity="0.7" />
-        ))}
-      </svg>
-      {SPOTS.map(([name, left, top], i) => (
-        <span key={name} style={{
-          position: 'absolute', left, top,
-          fontFamily: "'Bebas Neue', sans-serif", fontSize: i % 3 === 0 ? '2.1rem' : '1.45rem',
-          letterSpacing: '0.05em', color: i % 2 ? LINE_DEEP : '#3f7d57', opacity: 0.2,
-          transform: `rotate(${i % 2 ? -5 : 4}deg)`, whiteSpace: 'nowrap',
-        }}>◉ {name}</span>
-      ))}
-      {/* paper grain on top, multiplied so it textures everything below */}
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: GRAIN, opacity: 0.12, mixBlendMode: 'multiply' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 60% at 50% -12%, rgba(232,132,43,0.07), transparent 60%), radial-gradient(90% 50% at 100% 112%, rgba(123,92,255,0.05), transparent 55%)' }} />
+      <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
     </div>
   );
 }
@@ -132,7 +157,7 @@ const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
 ];
 const sideHd: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, fontWeight: 700 };
 const sideEmpty: React.CSSProperties = { fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.4rem' };
-const miniCount: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', minWidth: 20, height: 18, padding: '0 5px', borderRadius: 999, background: LINE, color: '#fff', border: `1.5px solid ${INK}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
+const miniCount: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', minWidth: 20, height: 18, padding: '0 5px', borderRadius: 999, background: LINE, color: '#fff', border: `1px solid var(--h-border)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
 
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
 
@@ -172,10 +197,10 @@ function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, cre
             {people.slice(0, 8).map((p) => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {p.photo_url
-                  ? <img src={p.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${INK}`, flexShrink: 0 }} />
-                  : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: `2px solid ${INK}`, flexShrink: 0, display: 'inline-block' }} />}
+                  ? <img src={p.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: `1px solid var(--h-border)`, flexShrink: 0 }} />
+                  : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, flexShrink: 0, display: 'inline-block' }} />}
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name?.split(' ')[0] || '—'}</span>
-                {p.tag && <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, background: 'var(--h-surface-3)', border: `1.5px solid ${INK}`, borderRadius: 999, padding: '0.1rem 0.4rem', flexShrink: 0 }}>{p.tag}</span>}
+                {p.tag && <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.1rem 0.4rem', flexShrink: 0 }}>{p.tag}</span>}
               </div>
             ))}
           </div>
@@ -215,7 +240,7 @@ function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, 
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
           {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my crew →</button>}
-          <button onClick={onScene} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: `3px solid ${INK}`, borderRadius: 12, padding: '0.45rem 0.95rem', boxShadow: `3px 3px 0 ${INK}`, cursor: 'pointer' }}>📣 post →</button>
+          <button onClick={onScene} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: "1px solid var(--h-border)", borderRadius: 12, padding: '0.45rem 0.95rem', boxShadow: `3px 3px 0 ${INK}`, cursor: 'pointer' }}>📣 post →</button>
         </div>
       </div>
 
@@ -287,8 +312,8 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
     <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
         {a.authorPhoto
-          ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} />
-          : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
+          ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
+          : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}</div>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>
@@ -549,12 +574,12 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
   return (
     <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, var(--h-surface-2) 60%, var(--h-surface-3) 100%)`, color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
-      <TransitBackdrop />
+      <ConnectionBackdrop />
 
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
       {evToast && (
         <button onClick={() => { setView('scene'); setEvToast(null); setNewScene(0); }}
-          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'min(440px, 92vw)', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', background: LINE, color: '#fff', border: `3px solid ${INK}`, borderRadius: 14, boxShadow: `4px 4px 0 ${INK}`, padding: '0.7rem 0.95rem', cursor: 'pointer', font: 'inherit', animation: 'fbToastIn 0.25s ease' }}>
+          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'min(440px, 92vw)', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', background: LINE, color: '#fff', border: "1px solid var(--h-border)", borderRadius: 14, boxShadow: `4px 4px 0 ${INK}`, padding: '0.7rem 0.95rem', cursor: 'pointer', font: 'inherit', animation: 'fbToastIn 0.25s ease' }}>
           <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔔</span>
           <span style={{ minWidth: 0 }}>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
@@ -592,7 +617,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         }
         .fmMap { position: relative; min-height: min(72vh, 600px); margin: 1.25rem 0 0; }
         .fmMapLine { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-        .fmStop { position: absolute; transform: translateX(-50%); width: min(300px, 84vw); text-align: left; display: flex; flex-direction: column; background: var(--h-surface); border: 3px solid ${INK}; border-radius: 18px; box-shadow: 6px 6px 0 ${INK}; padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: var(--h-text); font: inherit; min-height: 190px; z-index: 1; transition: transform .12s ease, box-shadow .12s ease; }
+        .fmStop { position: absolute; transform: translateX(-50%); width: min(300px, 84vw); text-align: left; display: flex; flex-direction: column; background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 18px; box-shadow: 6px 6px 0 ${INK}; padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: var(--h-text); font: inherit; min-height: 190px; z-index: 1; transition: transform .12s ease, box-shadow .12s ease; }
         .fmStop:hover { transform: translate(calc(-50% - 2px), -3px); box-shadow: 9px 9px 0 ${INK}; }
         .fmStopDot { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: ${CREAM}; border: 5px solid ${LINE}; box-shadow: 0 0 0 3px var(--h-surface); }
         @media (max-width: 759px) {
@@ -615,7 +640,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}`, textDecoration: 'none' }}>FRIEND LINE</a>
+            <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `1px solid var(--h-border)`, textDecoration: 'none' }}>FRIEND LINE</a>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{city ? `all of ${city.split(',')[0].toLowerCase()}` : 'your metro'}</span>
           </div>
           {/* friends: change your city (metro-wide; no radius) */}
@@ -642,10 +667,10 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             const active = view === n.key;
             return (
               <button key={n.key} onClick={() => setView(n.key)}
-                style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.03em', padding: '0.4rem 0.85rem', borderRadius: 10, border: `3px solid ${INK}`, cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text)', boxShadow: active ? `3px 3px 0 ${INK}` : 'none' }}>
+                style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.03em', padding: '0.4rem 0.85rem', borderRadius: 10, border: "1px solid var(--h-border)", cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text)', boxShadow: active ? `3px 3px 0 ${INK}` : 'none' }}>
                 {n.icon} {n.label}
-                {n.key === 'crew' && crewBadge && <span style={{ position: 'absolute', top: -5, right: -5, width: 12, height: 12, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />}
-                {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${INK}` }}>{newScene}</span>}
+                {n.key === 'crew' && crewBadge && <span style={{ position: 'absolute', top: -5, right: -5, width: 12, height: 12, borderRadius: '50%', background: '#da291c', border: `1px solid var(--h-border)` }} />}
+                {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{newScene}</span>}
               </button>
             );
           })}
@@ -678,7 +703,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             ] as const).map((s) => (
               <button key={s.key} className="fmStop" style={{ left: s.pos.left, top: s.pos.top }} onClick={() => setView(s.key)}>
                 <span className="fmStopDot" />
-                {s.badge && <span style={{ position: 'absolute', top: 14, right: 14, width: 15, height: 15, borderRadius: '50%', background: '#da291c', border: `2px solid ${INK}` }} />}
+                {s.badge && <span style={{ position: 'absolute', top: 14, right: 14, width: 15, height: 15, borderRadius: '50%', background: '#da291c', border: `1px solid var(--h-border)` }} />}
                 <div style={{ fontSize: '2.4rem', lineHeight: 1 }}>{s.icon}</div>
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.95rem', letterSpacing: '0.03em', marginTop: '0.45rem' }}>{s.name}</div>
                 <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.9rem', margin: '0.25rem 0 0.9rem' }}>{s.tag}</div>
@@ -721,7 +746,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
           {/* SEALED PACK — a friendship pack waiting to be opened cinematically */}
           {sealedCount > 0 && !ghosted && (
-            <a href="/friends/pack" style={{ display: 'block', textDecoration: 'none', marginBottom: '1.25rem', background: 'linear-gradient(135deg,#ff6a1f,#ff2d8e 55%,#7b3cff)', border: `3px solid ${INK}`, borderRadius: 16, padding: '1.1rem 1.25rem', boxShadow: `5px 5px 0 ${INK}`, color: '#fff' }}>
+            <a href="/friends/pack" style={{ display: 'block', textDecoration: 'none', marginBottom: '1.25rem', background: 'linear-gradient(135deg, #e8842b, #c96a18)', border: 'none', borderRadius: 16, padding: '1.1rem 1.25rem', boxShadow: '0 16px 40px -20px rgba(232,132,43,0.6)', color: '#fff' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                 <div>
                   <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.02em' }}>🎒 you have a pack to open</div>
@@ -742,7 +767,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
                     this has happened a few times now, so we&apos;ve paused your account on both lines. if you think that&apos;s a mistake, email us and we&apos;ll take a look.
                   </p>
-                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: `3px 3px 0 ${LINE_DEEP}`, textDecoration: 'none' }}>
+                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: `3px 3px 0 ${LINE_DEEP}`, textDecoration: 'none' }}>
                     email match@notcupid.com →
                   </a>
                 </>
@@ -771,9 +796,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 <div key={m.otherId} style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
                   <div style={{ position: 'relative' }}>
                     {m.photo_url
-                      ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', borderBottom: `3px solid ${INK}` }} />
-                      : <div style={{ width: '100%', aspectRatio: '1', borderBottom: `3px solid ${INK}`, background: 'var(--h-surface-3)' }} />}
-                    <span style={{ position: 'absolute', top: 8, left: 8, background: '#ffce4d', border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.1rem 0.5rem', fontFamily: "'Bebas Neue',sans-serif", fontSize: '1rem', transform: 'rotate(-6deg)', boxShadow: `2px 2px 0 ${INK}` }}>{m.score}%</span>
+                      ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', borderBottom: "1px solid var(--h-border)" }} />
+                      : <div style={{ width: '100%', aspectRatio: '1', borderBottom: "1px solid var(--h-border)", background: 'var(--h-surface-3)' }} />}
+                    <span style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(10,8,12,0.72)', backdropFilter: 'blur(4px)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 999, padding: '0.12rem 0.55rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em' }}>{m.score}% match</span>
                   </div>
                   <div style={{ padding: '0.7rem 0.8rem' }}>
                     <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem' }}>{m.name} <span style={{ color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>· {m.age}</span></div>
@@ -785,7 +810,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                       <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 9, padding: '0.45rem' }}>⏳ waiting on them</div>
                     ) : (
                       <button onClick={() => connectOne(m.otherId)} disabled={busy || !termsOk}
-                        style={{ width: '100%', cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: `2.5px solid ${INK}`, borderRadius: 10, padding: '0.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em', boxShadow: `2px 2px 0 ${INK}` }}>
+                        style={{ width: '100%', cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em', boxShadow: `2px 2px 0 ${INK}` }}>
                         {busy ? '…' : m.theyAccepted ? '🤝 accept →' : '🤝 connect'}
                       </button>
                     ))}
@@ -813,8 +838,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               <div style={{ ...card, padding: '1rem 1.1rem' }}>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.5rem' }}>your friend card</div>
                 {me.photo_url
-                  ? <img src={me.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 12, border: `3px solid ${INK}` }} />
-                  : <div style={{ width: '100%', aspectRatio: '1', borderRadius: 12, border: `3px solid ${INK}`, background: 'var(--h-surface-3)' }} />}
+                  ? <img src={me.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 12, border: "1px solid var(--h-border)" }} />
+                  : <div style={{ width: '100%', aspectRatio: '1', borderRadius: 12, border: "1px solid var(--h-border)", background: 'var(--h-surface-3)' }} />}
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', lineHeight: 1, marginTop: '0.5rem' }}>{me.name}</div>
                 {me.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>{me.archetype}</div>}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', margin: '0.5rem 0' }}>
@@ -843,7 +868,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   {chatOpen && (
                     <div style={{ ...card, overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
                       {/* header + who's-here roster — names, not just avatars */}
-                      <div style={{ background: LINE, color: '#fff', padding: '0.6rem 0.85rem 0.7rem', borderBottom: `3px solid ${INK}` }}>
+                      <div style={{ background: LINE, color: '#fff', padding: '0.6rem 0.85rem 0.7rem', borderBottom: "1px solid var(--h-border)" }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem' }}>
                           💬 your crew · {crewRoster.length}
                           <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: chatLive ? '#3f7d57' : 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, padding: '0.18rem 0.55rem' }}>
@@ -853,10 +878,10 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                         <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', marginTop: '0.55rem', paddingBottom: '0.1rem' }} className="crewWho">
                           {crewRoster.map((u) => (
                             <span key={u.id} title={u.here ? `${u.name} · in the chat` : `${u.name} · invited`}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, background: 'var(--h-surface)', color: 'var(--h-text)', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.18rem 0.55rem 0.18rem 0.22rem' }}>
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, background: 'var(--h-surface)', color: 'var(--h-text)', border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.18rem 0.55rem 0.18rem 0.22rem' }}>
                               {u.photo_url
-                                ? <img src={u.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: `1.5px solid ${INK}` }} />
-                                : <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1.5px solid ${INK}`, display: 'inline-block' }} />}
+                                ? <img src={u.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: `1px solid var(--h-border)` }} />
+                                : <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, display: 'inline-block' }} />}
                               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: u.here ? '#3f7d57' : '#c9a06a', flexShrink: 0 }} />
                             </span>
@@ -870,15 +895,15 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                             const sender = chat.members.find((u: any) => u.id === mm.sender_id);
                             return (
                               <div key={mm.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                                {sender?.photo_url ? <img src={sender.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover' }} /> : <div style={{ width: 26, height: 26, borderRadius: '50%', border: `2px solid ${INK}`, background: 'var(--h-surface-3)' }} />}
+                                {sender?.photo_url ? <img src={sender.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover' }} /> : <div style={{ width: 26, height: 26, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)' }} />}
                                 <div><span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.5rem', color: 'var(--h-text-dim)' }}>{sender?.name?.split(' ')[0] || '—'}</span>
-                                  <div style={{ background: 'var(--h-surface-3)', border: `2px solid ${INK}`, borderRadius: 12, padding: '0.45rem 0.75rem', fontSize: '0.9rem', maxWidth: 520 }}>{mm.body}</div></div>
+                                  <div style={{ background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, borderRadius: 12, padding: '0.45rem 0.75rem', fontSize: '0.9rem', maxWidth: 520 }}>{mm.body}</div></div>
                               </div>
                             );
                           })}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', padding: '0.8rem 1.1rem', borderTop: `3px dashed rgba(36,29,18,0.25)` }}>
-                          <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something to the crew…" style={{ flex: 1, border: `2px solid ${INK}`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '0.9rem' }} />
+                          <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something to the crew…" style={{ flex: 1, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '0.9rem' }} />
                           <button onClick={send} style={{ ...poppyBtn, fontSize: '1.1rem', padding: '0 1rem' }}>→</button>
                         </div>
                       </>) : (
@@ -943,7 +968,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   {shown.map((a) => (
                     <div key={a.id} style={{ ...card, padding: '0.8rem 1rem', display: 'flex', gap: '0.7rem', alignItems: 'center' }}>
-                      {a.authorPhoto ? <img src={a.authorPhoto} alt="" style={{ width: 34, height: 34, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', border: `2px solid ${INK}`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
+                      {a.authorPhoto ? <img src={a.authorPhoto} alt="" style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{a.title}</div>
                         <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
@@ -972,29 +997,29 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1.1rem' }}>
           <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
             {me?.photo_url
-              ? <img src={me.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, objectFit: 'cover', flexShrink: 0 }} />
-              : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${INK}`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
+              ? <img src={me.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
+              : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
             <input value={newAct.title} onChange={(e) => setNewAct({ ...newAct, title: e.target.value })}
               onKeyDown={(e) => e.key === 'Enter' && !busy && newAct.title.trim() && createAct()}
               placeholder={newAct.kind === 'post' ? `what's on your mind, ${firstName.toLowerCase()}?` : "wanna plan a hang? what's the move?"}
-              style={{ flex: 1, minWidth: 0, border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem' }} />
+              style={{ flex: 1, minWidth: 0, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem' }} />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.7rem' }}>
-            <div style={{ display: 'flex', border: `2.5px solid ${INK}`, borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
               {([['post', '💬 saying'], ['event', '📅 plan']] as const).map(([k, label]) => (
                 <button key={k} onClick={() => setNewAct({ ...newAct, kind: k })}
                   style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.05em', padding: '0.4rem 0.75rem', border: 'none', cursor: 'pointer', background: newAct.kind === k ? LINE : 'var(--h-surface)', color: newAct.kind === k ? '#fff' : 'var(--h-text)' }}>{label}</button>
               ))}
             </div>
-            <select value={newAct.category} onChange={(e) => setNewAct({ ...newAct, category: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
+            <select value={newAct.category} onChange={(e) => setNewAct({ ...newAct, category: e.target.value })} style={{ border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
               {CATS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
+            <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
               <option value="">📍 my area</option>
               {NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
             {newAct.kind === 'event' && (
-              <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `2.5px solid ${INK}`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+              <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
             )}
             <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '1.05rem', padding: '0.45rem 1.1rem', opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{newAct.kind === 'post' ? 'post →' : 'plan it →'}</button>
           </div>
@@ -1011,9 +1036,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 })}
                 {newAct.audGenders.length === 0 && <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--h-text-dim)' }}>everyone</span>}
                 <span style={{ marginLeft: '0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>age</span>
-                <input type="number" min={18} max={120} placeholder="18" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 54, border: `2px solid ${INK}`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <input type="number" min={18} max={120} placeholder="18" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 54, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
                 <span style={{ color: 'var(--h-text-dim)' }}>–</span>
-                <input type="number" min={18} max={120} placeholder="99" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 54, border: `2px solid ${INK}`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <input type="number" min={18} max={120} placeholder="99" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 54, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
               </div>
               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>pre-filled from who you set out to meet — tweak it per event. only people in range can RSVP. leave blank for everyone.</div>
             </div>
@@ -1024,7 +1049,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
         {/* filters: kind segmented control + active-area chip */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.7rem' }}>
-          <div style={{ display: 'flex', border: `2.5px solid ${INK}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
             {([['all', 'all'], ['event', '📅 plans'], ['post', '💬 talk']] as const).map(([k, label]) => (
               <button key={k} onClick={() => setKindFilter(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: kindFilter === k ? LINE : 'var(--h-surface)', color: kindFilter === k ? '#fff' : 'var(--h-text)' }}>{label}</button>
             ))}
@@ -1052,7 +1077,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           </main>
         </div>
 
-        <div style={{ maxWidth: 470, margin: '2.75rem auto 0', background: 'var(--h-surface)', border: `2px solid ${INK}`, borderRadius: 16, boxShadow: `4px 4px 0 ${INK}`, padding: '1rem 1.25rem', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: 470, margin: '2.75rem auto 0', background: 'var(--h-surface)', border: `1px solid var(--h-border)`, borderRadius: 16, boxShadow: `4px 4px 0 ${INK}`, padding: '1rem 1.25rem', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
             <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text)', textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
             <a href="/friends/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text)', textDecoration: 'underline', textUnderlineOffset: 4 }}>✨ what&apos;s new</a>
