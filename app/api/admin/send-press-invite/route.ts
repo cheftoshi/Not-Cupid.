@@ -3,7 +3,7 @@
 // PRESS-STORY INVITE — emails everyone who has left DATE feedback, asking (with
 // consent) if they'd be open to sharing their NotCupid dating experience with a
 // publication/press. This is purely an INVITATION: it signs nobody up for
-// anything. Interested people reply / email press@notcupid.com.
+// anything. Interested people reply / email match@notcupid.com.
 //
 // Recipients = distinct user_ids from `date_feedback`, then those users
 // (excluding is_test, email_notifications=false, no email, and — unless
@@ -26,7 +26,7 @@ const BATCH_DELAY_MS = 1100
 const MAX_RUN_MS = 55_000
 const MAX_RETRIES = 2
 
-const PRESS_EMAIL = 'press@notcupid.com'
+const PRESS_EMAIL = 'match@notcupid.com'
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)) }
 
