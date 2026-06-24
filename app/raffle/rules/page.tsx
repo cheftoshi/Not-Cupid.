@@ -25,7 +25,7 @@ const SECTIONS: { h: string; b: string }[] = [
   },
   {
     h: '3. Eligibility',
-    b: `Open only to legal residents of the ${RAFFLE.city} metropolitan area (Massachusetts) who are 18 years of age or older at the time of entry and who have a complete, genuine NotCupid account. Employees, contractors, and immediate family/household members of the Sponsor are not eligible. Void outside the eligible area and where prohibited or restricted by law.`,
+    b: `Open only to legal residents of the ${RAFFLE.city} metropolitan area (Massachusetts) who are 21 years of age or older at the time of entry and who have a complete, genuine NotCupid account. This prize is a restaurant dinner and is restricted to entrants 21 and over; you may be asked to show valid government ID confirming you are 21+ to receive the prize. Employees, contractors, and immediate family/household members of the Sponsor are not eligible. Void outside the eligible area and where prohibited or restricted by law.`,
   },
   {
     h: '4. Promotion period',
@@ -56,8 +56,8 @@ const SECTIONS: { h: string; b: string }[] = [
     b: `Except where prohibited by law, by entering you grant the Sponsor a non-exclusive, royalty-free, worldwide license to use your name, first initial, city, photo, the intro video you submit, and any statements you make in connection with the promotion, for advertising, marketing, and promotional purposes in any media, without additional notice, compensation, review, or approval. You represent that you own or control all rights in the video you submit and that its use as described will not infringe any third party’s rights.`,
   },
   {
-    h: '11. Meeting safety & assumption of risk',
-    b: `The prize involves meeting another person in real life. The Sponsor does not conduct background checks and is not responsible for the conduct of any participant. You participate, communicate, and meet entirely at your own risk. Follow the in-app safety guidance: meet in a public place, tell a friend, and trust your instincts. To the fullest extent permitted by law, you release the Sponsor and its affiliates from any and all claims, injuries, losses, or damages arising out of participation, the prize, or any meeting.`,
+    h: '11. Meeting safety, assumption of risk & release',
+    b: `The prize is an in-person meeting between two adults who are strangers. The Sponsor does NOT conduct background checks, is NOT a party to, host of, or chaperone of the meeting, and makes no representation or warranty about any participant. You participate, communicate, and meet entirely AT YOUR OWN RISK. Follow the in-app safety guidance: meet in a public place, arrange your own transportation, tell a friend where you’ll be, and trust your instincts. To the fullest extent permitted by law, you — on behalf of yourself, your heirs, and your representatives — hereby release, waive, and forever discharge the Sponsor, its parent, affiliates, partners, restaurants/venues, and their respective officers, directors, employees, and agents (the “Released Parties”) from any and all claims, demands, liabilities, injuries, losses, costs, or damages of any kind, whether known or unknown, arising out of or relating to your entry, the promotion, the prize, the venue, or any meeting, communication, or interaction with another participant.`,
   },
   {
     h: '12. Conduct & disqualification',
@@ -68,8 +68,8 @@ const SECTIONS: { h: string; b: string }[] = [
     b: `Information you submit is handled in accordance with the NotCupid Privacy Policy. By entering, you consent to the Sponsor using your information to administer the promotion and contact you about it.`,
   },
   {
-    h: '14. Limitation of liability',
-    b: `The promotion and prize are provided “as is” without warranty of any kind. To the fullest extent permitted by law, the Sponsor is not liable for any indirect, incidental, special, or consequential damages arising from participation or the prize.`,
+    h: '14. Limitation of liability & indemnification',
+    b: `The promotion and prize are provided “AS IS” and “AS AVAILABLE” without warranty of any kind, express or implied. The Released Parties are not responsible for the food, beverages, service, premises, or conduct of any third party, including the restaurant/venue. To the fullest extent permitted by law, the Released Parties will not be liable for any indirect, incidental, special, punitive, or consequential damages, or for any personal injury, property damage, or loss, arising out of or relating to the promotion, the prize, or any meeting. You agree to indemnify, defend, and hold harmless the Released Parties from and against any claim, loss, liability, or expense (including reasonable attorneys’ fees) arising out of or relating to your participation, your conduct, your intro video, your interactions with another participant, or your breach of these Official Rules. Nothing in these rules limits any liability that cannot be limited under applicable law.`,
   },
   {
     h: '15. Governing law & disputes',
@@ -93,7 +93,7 @@ export default function RaffleRules() {
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, marginBottom: '0.5rem', fontWeight: 700 }}>🎟️ {RAFFLE.series} · {RAFFLE.city}</div>
         <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2rem,7vw,3rem)', lineHeight: 1.05, margin: '0 0 0.5rem' }}>Official Rules</h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1rem', margin: '0 0 1.5rem' }}>
-          No purchase necessary. Open to {RAFFLE.city}-area residents 18+. A sweepstakes — free to enter, winner by chance.
+          No purchase necessary. Open to {RAFFLE.city}-area residents 21+. A sweepstakes — free to enter, winner by chance.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -106,7 +106,7 @@ export default function RaffleRules() {
         </div>
 
         <p style={{ marginTop: '2rem', fontSize: '0.78rem', lineHeight: 1.6, color: 'var(--h-text-faint)', fontStyle: 'italic' }}>
-          By entering, you confirm that you are 18 or older, eligible, and agree to these Official Rules and the{' '}
+          By entering, you confirm that you are 21 or older, eligible, and agree to these Official Rules and the{' '}
           <Link href="/terms" style={{ color: ORANGE_DEEP }}>NotCupid Terms</Link> and{' '}
           <Link href="/privacy" style={{ color: ORANGE_DEEP }}>Privacy Policy</Link>.
         </p>

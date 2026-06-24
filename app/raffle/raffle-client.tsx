@@ -51,7 +51,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     { ok: profile.quiz, label: 'the personality quiz', fix: '/quiz?retake=1' },
     { ok: profile.bio, label: 'a bio (a few words about you)', fix: '/profile' },
     { ok: profile.interests >= 3, label: '3+ interests (music, food, hobbies, sports)', fix: '/profile' },
-    { ok: profile.age != null, label: 'your age', fix: '/profile' },
+    { ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/profile' : undefined },
   ];
   const credOk = cred.every((c) => c.ok);
   const basicsOk = !!gender && !!seeking && ageMin >= 18 && ageMax >= ageMin;
@@ -168,7 +168,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: c.ok ? 'var(--h-text)' : 'var(--h-text-dim)' }}>
                     <span style={{ color: c.ok ? GREEN : ORANGE_DEEP, fontWeight: 700 }}>{c.ok ? '✓' : '○'}</span>
                     <span style={{ flex: 1 }}>{c.label}</span>
-                    {!c.ok && <Link href={c.fix} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>fix →</Link>}
+                    {!c.ok && c.fix && <Link href={c.fix} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>fix →</Link>}
                   </div>
                 ))}
               </div>
@@ -231,8 +231,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.6rem' }}>
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ width: 18, height: 18, accentColor: ORANGE, marginTop: '0.15rem', flexShrink: 0 }} />
                 <span style={{ fontSize: '0.85rem', color: 'var(--h-text)', lineHeight: 1.5 }}>
-                  I’m <b>18 or older</b>, a {ev.city}-area resident, and I agree to the{' '}
-                  <Link href="/raffle/rules" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Official Rules</Link>, including the photo/video likeness release. I understand this is a free-to-enter sweepstakes and I’ll be meeting someone in person at my own risk.
+                  I’m <b>21 or older</b> (this dinner is 21+), a {ev.city}-area resident, and I agree to the{' '}
+                  <Link href="/raffle/rules" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Official Rules</Link>, including the photo/video likeness release and the release of liability. I understand this is a free-to-enter sweepstakes and that I’ll be meeting someone in person entirely at my own risk.
                 </span>
               </label>
             </div>
@@ -242,7 +242,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             </button>
             {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !videoUrl ? 'upload your intro video' : 'agree to the official rules'}</p>}
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
-              <b>*</b> No purchase necessary. Open to {ev.city}-area residents 18+. Winner selected by chance; odds depend on entries. Prize ARV up to ${ev.budget}. Void where prohibited. <Link href="/raffle/rules" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
+              <b>*</b> No purchase necessary. Open to {ev.city}-area residents 21+. Winner selected by chance; odds depend on entries. Prize ARV up to ${ev.budget}. Void where prohibited. <Link href="/raffle/rules" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
             </p>
           </div>
         )}

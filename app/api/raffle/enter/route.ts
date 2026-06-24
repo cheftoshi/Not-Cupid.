@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
   if (!g) missing.push('your gender');
   if (!sk) missing.push('who to match you with');
   if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
+  if (user.age < 21) return NextResponse.json({ error: 'This dinner is 21 and over — you’re not eligible for this round.' }, { status: 400 });
   if (!video_url) return NextResponse.json({ error: 'Your intro video is required to enter.' }, { status: 400 });
   if (body.agreed !== true) return NextResponse.json({ error: 'Please agree to the Official Rules to enter.' }, { status: 400 });
 

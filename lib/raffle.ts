@@ -16,7 +16,9 @@ export const RAFFLE = {
   dateLabel: 'Thursday, July 2 · 7pm',
   drawLabel: 'the moment we hit 100 (or Monday June 29)',
   budget: 200,
-  restaurant: "a spot we love in Boston — we'll email you the address + time",
+  // The actual venue — revealed ONLY to a winning pair (set on the draw at mutual
+  // accept; never in the public status payload). Kept secret until someone wins.
+  restaurant: 'The Berkeley · Back Bay, Boston — we’ll text you the exact address + time.',
   tagline: 'Two Bostonians. One $200 dinner. On us.',
 };
 
