@@ -18,7 +18,7 @@ export const RAFFLE = {
   budget: 200,
   // The actual venue — revealed ONLY to a winning pair (set on the draw at mutual
   // accept; never in the public status payload). Kept secret until someone wins.
-  restaurant: 'The Berkeley · Back Bay, Boston — we’ll text you the exact address + time.',
+  restaurant: 'The Berkeley · 154 Berkeley Street, Back Bay, Boston — we’ll confirm the time with you.',
   tagline: 'Two Bostonians. One $200 dinner. On us.',
 };
 

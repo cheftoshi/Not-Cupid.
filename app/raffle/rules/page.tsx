@@ -21,7 +21,7 @@ const SECTIONS: { h: string; b: string }[] = [
   },
   {
     h: '2. Sponsor',
-    b: `This promotion is sponsored by ${SPONSOR} (the “Sponsor”), [Sponsor legal mailing address]. Questions: ${CONTACT}. The Sponsor is solely responsible for the promotion. It is not sponsored, endorsed, or administered by Apple, Google, Meta, or any other platform.`,
+    b: `This promotion is sponsored and run solely by ${SPONSOR} (the “Sponsor”), [Sponsor legal mailing address]. Questions: ${CONTACT}. The Sponsor is the only party responsible for the promotion — there are no co-sponsors, partners, or third-party administrators. The restaurant where the prize dinner takes place is not a sponsor of, or a participant in, this promotion; it is simply the venue the Sponsor pays. This promotion is not sponsored, endorsed, or administered by Apple, Google, Meta, or any other platform.`,
   },
   {
     h: '3. Eligibility',
@@ -57,7 +57,7 @@ const SECTIONS: { h: string; b: string }[] = [
   },
   {
     h: '11. Meeting safety, assumption of risk & release',
-    b: `The prize is an in-person meeting between two adults who are strangers. The Sponsor does NOT conduct background checks, is NOT a party to, host of, or chaperone of the meeting, and makes no representation or warranty about any participant. You participate, communicate, and meet entirely AT YOUR OWN RISK. Follow the in-app safety guidance: meet in a public place, arrange your own transportation, tell a friend where you’ll be, and trust your instincts. To the fullest extent permitted by law, you — on behalf of yourself, your heirs, and your representatives — hereby release, waive, and forever discharge the Sponsor, its parent, affiliates, partners, restaurants/venues, and their respective officers, directors, employees, and agents (the “Released Parties”) from any and all claims, demands, liabilities, injuries, losses, costs, or damages of any kind, whether known or unknown, arising out of or relating to your entry, the promotion, the prize, the venue, or any meeting, communication, or interaction with another participant.`,
+    b: `The prize is an in-person meeting between two adults who are strangers. The Sponsor does NOT conduct background checks, is NOT a party to, host of, or chaperone of the meeting, and makes no representation or warranty about any participant. You participate, communicate, and meet entirely AT YOUR OWN RISK. Follow the in-app safety guidance: meet in a public place, arrange your own transportation, tell a friend where you’ll be, and trust your instincts. To the fullest extent permitted by law, you — on behalf of yourself, your heirs, and your representatives — hereby release, waive, and forever discharge the Sponsor (NotCupid and its parent company, Lemon Labs) and their respective officers, directors, employees, and agents (the “Released Parties”) from any and all claims, demands, liabilities, injuries, losses, costs, or damages of any kind, whether known or unknown, arising out of or relating to your entry, the promotion, the prize, the venue, or any meeting, communication, or interaction with another participant.`,
   },
   {
     h: '12. Conduct & disqualification',
