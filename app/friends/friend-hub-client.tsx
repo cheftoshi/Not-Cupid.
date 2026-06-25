@@ -167,7 +167,8 @@ function ConnectionBackdrop() {
       'tennis at the park? 🎾', 'pottery class — join me 🎨', 'find your people 🧡',
       'who wants to grab a drink?', 'farmers market sunday? 🥕', 'climbing gym buddy?',
     ];
-    type Bub = { x: number; y: number; text: string; warm: boolean; rot: number; speed: number };
+    const PAL = ['#ff6a1f', '#2563ff', '#e0457f', '#1f9e6e', '#8b46d6']; // vibey bubble colors
+    type Bub = { x: number; y: number; text: string; c: number; rot: number; speed: number };
     let bubs: Bub[] = [];
     let nextSpawn = 0;
     const roundRect = (x: number, y: number, bw: number, bh: number, r: number) => {
@@ -179,7 +180,7 @@ function ConnectionBackdrop() {
       x: 0.06 + Math.random() * 0.88,
       y: seed ? 0.12 + Math.random() * 0.8 : 1.08,
       text: SAYS[(Math.random() * SAYS.length) | 0],
-      warm: Math.random() < 0.45, rot: (Math.random() - 0.5) * 0.12,
+      c: (Math.random() * 5) | 0, rot: (Math.random() - 0.5) * 0.12,
       speed: 0.0016 + Math.random() * 0.0013,
     });
     const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
@@ -203,11 +204,13 @@ function ConnectionBackdrop() {
         const bw = ctx.measureText(bb.text).width + 22, bh = 30, r = 15;
         ctx.save();
         ctx.translate(bb.x * w, bb.y * h); ctx.rotate(bb.rot); ctx.globalAlpha = Math.max(0, alpha);
-        const fill = bb.warm ? 'rgba(46,32,22,0.95)' : 'rgba(20,48,57,0.95)';
-        const line = bb.warm ? 'rgba(255,170,80,0.85)' : 'rgba(95,214,210,0.85)';
-        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(0, -1); ctx.lineTo(6, -9); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); // tail
-        ctx.fillStyle = bb.warm ? '#ffdcb5' : '#d6f5f1'; ctx.fillText(bb.text, 0, -bh / 2 - 9);
+        const col = PAL[bb.c];
+        ctx.shadowColor = 'rgba(120,70,30,0.16)'; ctx.shadowBlur = 9; ctx.shadowOffsetY = 3;
+        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(0, -1); ctx.lineTo(6, -9); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); // tail
+        ctx.fillStyle = col; ctx.fillText(bb.text, 0, -bh / 2 - 9);
         ctx.restore();
       }
       ctx.globalAlpha = 1;
@@ -219,7 +222,7 @@ function ConnectionBackdrop() {
   }, []);
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 60% at 50% -12%, rgba(79,214,200,0.10), transparent 60%), radial-gradient(90% 55% at 100% 112%, rgba(95,184,255,0.07), transparent 55%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(100% 55% at 50% -10%, rgba(255,150,70,0.10), transparent 60%), radial-gradient(85% 50% at 100% 110%, rgba(37,99,255,0.06), transparent 55%)' }} />
       <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
     </div>
   );
@@ -419,10 +422,15 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
       </div>
       <div style={{ borderTop: '1px solid var(--h-border)', padding: '0.45rem 0.6rem' }}>
         {!isEvent ? (
-          <button onClick={() => onRsvp(a.id)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', background: a.iRsvped ? 'var(--h-accent)' : 'transparent', border: 'none', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: a.iRsvped ? '#0c2029' : 'var(--h-text-dim)', fontWeight: 700 }}>
-            {a.iRsvped ? '✦ starred' : '✦ star'}{a.rsvpCount ? <span style={{ ...miniCount, background: a.iRsvped ? '#0c2029' : 'var(--h-accent)', color: a.iRsvped ? 'var(--h-accent)' : '#0c2029' }}>{a.rsvpCount}</span> : null}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+            {(a.rsvpCount || 0) >= 3
+              ? <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#d2530f', background: 'rgba(255,106,31,0.12)', border: '1px solid rgba(255,106,31,0.32)', borderRadius: 999, padding: '0.18rem 0.55rem' }}>🔥 popular</span>
+              : <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)' }}>{a.rsvpCount ? `${a.rsvpCount} into this` : 'be the first'}</span>}
+            <button onClick={() => onRsvp(a.id)} title={a.iRsvped ? 'you’re into this' : 'i’m into this'}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: a.iRsvped ? 'var(--h-accent)' : 'var(--h-surface-2)', color: a.iRsvped ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${a.iRsvped ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 999, padding: '0.3rem 0.75rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700 }}>
+              {a.iRsvped ? '♥' : '♡'} {a.rsvpCount || 0}
+            </button>
+          </div>
         ) : eligible ? (
           <div>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -481,6 +489,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [filterCat, setFilterCat] = useState<string>(''); // selected sub-tag (exact category)
   const [filterMain, setFilterMain] = useState<string>(''); // selected main category bubble
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
+  const [sceneSort, setSceneSort] = useState<'new' | 'popular'>('new');
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
@@ -657,7 +666,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   }
 
   return (
-    <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(135% 100% at 50% -10%, #1e4350 0%, #0c2029 60%)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
+    <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(110% 80% at 8% 0%, #ffe6cf 0%, transparent 45%), radial-gradient(100% 75% at 96% 8%, #ffdcec 0%, transparent 42%), radial-gradient(120% 90% at 50% 112%, #dfeaff 0%, transparent 52%), #fff6ee', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <ConnectionBackdrop />
 
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
@@ -709,8 +718,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         .crewDeck > * { flex: 0 0 210px; scroll-snap-align: start; }
         .crewWho { scrollbar-width: none; }
         .crewWho::-webkit-scrollbar { display: none; }
-        .crewLower { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.5rem; align-items: start; }
-        @media (min-width: 820px) { .crewLower { grid-template-columns: 280px minmax(0,1fr); } }
+        .crewLower { margin-top: 1.5rem; }
       `}</style>
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
@@ -796,6 +804,29 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </a>
           )}
 
+          {/* YOUR FRIEND CARD — on top, so the page leads with you */}
+          {profileSet && me ? (
+            <div style={{ ...card, padding: '0.85rem 1rem', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+              {me.photo_url
+                ? <img src={me.photo_url} alt="" style={{ width: 66, height: 66, borderRadius: 14, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+                : <div style={{ width: 66, height: 66, borderRadius: 14, border: '1px solid var(--h-border)', background: 'var(--h-surface-3)', flexShrink: 0 }} />}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>your friend card</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.75rem', lineHeight: 1.05 }}>{me.name}{me.archetype && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, marginLeft: '0.5rem' }}>{me.archetype}</span>}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.35rem' }}>
+                  {[...me.hobbies, ...me.music, ...me.food].slice(0, 5).map((t) => <span key={t} style={chip}>{t}</span>)}
+                </div>
+              </div>
+              <a href="/friends/profile" style={{ flexShrink: 0, alignSelf: 'flex-start', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>edit →</a>
+            </div>
+          ) : (
+            <a href="/friends/profile" style={{ ...card, display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.9rem 1rem', marginBottom: '1.2rem', textDecoration: 'none', color: 'var(--h-text)' }}>
+              <span style={{ fontSize: '1.6rem' }}>📸</span>
+              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>set up your friend card so crews know it&apos;s you.</span>
+              <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
+            </a>
+          )}
+
           {/* CREW — a deck you swipe through (frees the room below for the chat) */}
           <h2 style={sectionLabel}><StationDot />🎒 your pack</h2>
           {ghosted ? (
@@ -871,30 +902,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </>
           )}
 
-          {/* LOWER — your card on the left, a roomy group chat on the right */}
+          {/* LOWER — the group chat, full-width now (friend card lives up top) */}
           <div className="crewLower">
-            {profileSet && me ? (
-              <div style={{ ...card, padding: '1rem 1.1rem' }}>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.5rem' }}>your friend card</div>
-                {me.photo_url
-                  ? <img src={me.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 12, border: "1px solid var(--h-border)" }} />
-                  : <div style={{ width: '100%', aspectRatio: '1', borderRadius: 12, border: "1px solid var(--h-border)", background: 'var(--h-surface-3)' }} />}
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', lineHeight: 1, marginTop: '0.5rem' }}>{me.name}</div>
-                {me.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>{me.archetype}</div>}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', margin: '0.5rem 0' }}>
-                  {[...me.hobbies, ...me.music, ...me.food].slice(0, 5).map((t) => <span key={t} style={chip}>{t}</span>)}
-                </div>
-                <a href="/friends/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>edit card →</a>
-              </div>
-            ) : (
-              <a href="/friends/profile" style={{ ...card, display: 'block', padding: '1.1rem', textDecoration: 'none', color: 'var(--h-text)', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.8rem' }}>📸</div>
-                <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', margin: '0.4rem 0' }}>set up your friend card so crews know it&apos;s you.</div>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
-              </a>
-            )}
-
-            {/* CHAT — roomy now that the crew is a deck */}
+            {/* CHAT — roomy, full-width */}
             <div>
               {(chat.circleId || matches.length > 0) && (
                 <>
@@ -1098,6 +1108,11 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   <button key={k} onClick={() => setKindFilter(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: kindFilter === k ? LINE : 'var(--h-surface)', color: kindFilter === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
                 ))}
               </div>
+              <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
+                {([['new', '🆕 new'], ['popular', '🔥 popular']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setSceneSort(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
+                ))}
+              </div>
               {(filterMain || filterCat) && (
                 <button onClick={() => { setFilterMain(''); setFilterCat(''); }} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
                   {filterCat || filterMain} <span style={{ fontWeight: 800 }}>×</span>
@@ -1115,7 +1130,10 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               const shown = acts.filter((a) =>
                 (kindFilter === 'all' || (a.kind || 'event') === kindFilter) &&
                 (!areaFilter || a.area === areaFilter) &&
-                (filterCat ? a.category === filterCat : filterMain ? subTags.includes(a.category) : true));
+                (filterCat ? a.category === filterCat : filterMain ? subTags.includes(a.category) : true))
+                .sort((a, b) => sceneSort === 'popular'
+                  ? ((b.rsvpCount || 0) - (a.rsvpCount || 0)) || String(b.created_at || '').localeCompare(String(a.created_at || ''))
+                  : String(b.created_at || '').localeCompare(String(a.created_at || '')));
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
@@ -1151,6 +1169,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               <button onClick={() => setView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
             </div>
 
+            {view !== 'crew' && (
             <div style={{ ...card, padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
               <div style={sideHd}>📍 around in {city ? city.split(',')[0].toLowerCase() : 'your city'}</div>
               {people.length === 0 ? <div style={sideEmpty}>finding who&apos;s around…</div> : (
@@ -1167,6 +1186,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 </div>
               )}
             </div>
+            )}
           </aside>
         </div>
 
