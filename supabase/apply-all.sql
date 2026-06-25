@@ -511,6 +511,18 @@ create table if not exists friend_messages (
 );
 create index if not exists friend_messages_circle_idx on friend_messages(circle_id, created_at);
 
+-- 20260624_friend_dms.sql — private 1:1 DMs between connected friends (separate from the group circle)
+create table if not exists friend_dms (
+  id uuid primary key default gen_random_uuid(),
+  user_a_id uuid not null,   -- canonical: user_a_id < user_b_id
+  user_b_id uuid not null,
+  sender_id uuid not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_dms_pair_idx on friend_dms (user_a_id, user_b_id, created_at);
+alter table if exists friend_dms enable row level security;
+
 create table if not exists friend_match_history (
   user_a_id uuid not null,
   user_b_id uuid not null,

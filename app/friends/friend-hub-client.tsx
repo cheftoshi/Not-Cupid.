@@ -525,6 +525,11 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   });
   const [chatOpen, setChatOpen] = useState(true);
   const chatRef = useRef<HTMLDivElement>(null);
+  // Private 1:1 DM with a connection (separate from the pack/crew group chat).
+  const [dmWith, setDmWith] = useState<any | null>(null);
+  const [dmMsgs, setDmMsgs] = useState<any[]>([]);
+  const [dmText, setDmText] = useState('');
+  const dmEndRef = useRef<HTMLDivElement>(null);
   // In-app "new event" notification (no email — the daily digest covers that).
   const [evToast, setEvToast] = useState<{ id: string; title: string; author: string } | null>(null);
   const [newScene, setNewScene] = useState(0);
@@ -661,6 +666,36 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     await fetch('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
     await loadChat();
   }
+  // ── Private 1:1 DM with a connection ──
+  const loadDm = useCallback(async (otherId: string) => {
+    try { const r = await fetch('/api/friend/dm?with=' + otherId); if (r.ok) setDmMsgs((await r.json()).messages || []); } catch { /* ignore */ }
+  }, []);
+  async function openDm(m: any) {
+    setCardMember(null); setConfirmDrop(false); setDmText(''); setDmMsgs([]); setDmWith(m);
+    await loadDm(m.otherId);
+    setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 90);
+  }
+  async function sendDm() {
+    const body = dmText.trim(); if (!body || !dmWith) return; setDmText('');
+    try { await fetch('/api/friend/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId: dmWith.otherId, body }) }); } catch { /* ignore */ }
+    await loadDm(dmWith.otherId);
+    setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 60);
+  }
+  // poll the open DM thread for new messages
+  useEffect(() => {
+    if (!dmWith) return;
+    const id = setInterval(() => { if (!document.hidden) loadDm(dmWith.otherId); }, 5000);
+    return () => clearInterval(id);
+  }, [dmWith, loadDm]);
+  // arriving from a DM push (/friends?dm=<id>) → open that thread once matches load
+  const dmParamDone = useRef(false);
+  useEffect(() => {
+    if (dmParamDone.current) return;
+    const id = new URLSearchParams(window.location.search).get('dm');
+    if (!id) { dmParamDone.current = true; return; }
+    const conn = matches.find((mm) => mm.connected && mm.otherId === id);
+    if (conn) { dmParamDone.current = true; openDm(conn); }
+  }, [matches]); // eslint-disable-line react-hooks/exhaustive-deps
   async function createAct() {
     if (!newAct.title.trim()) return; setBusy(true);
     const payload = {
@@ -742,7 +777,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   </>
                 ) : (
                   <>
-                    <button onClick={() => { setCardMember(null); setConfirmDrop(false); setView('crew'); setChatOpen(true); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180); }} style={{ ...poppyBtn, width: '100%' }}>💬 open the chat →</button>
+                    <button onClick={() => openDm(m)} style={{ ...poppyBtn, width: '100%' }}>💬 message {first} →</button>
                     <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
                   </>
                 )) : m.theyAccepted ? (
@@ -757,6 +792,38 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 )}
                 {!termsOk && !m.connected && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.74rem', textAlign: 'center' }}>agree to the terms (on the page) before you connect.</div>}
               </div>
+            </div>
+          </div>
+        </div>
+      ); })()}
+
+      {/* PRIVATE DM — a 1:1 thread with a connection, as a bottom sheet (not a page) */}
+      {dmWith && (() => { const m = dmWith; const first = (m.name || '').split(' ')[0]; return (
+        <div onClick={() => setDmWith(null)} style={{ position: 'fixed', inset: 0, zIndex: 195, background: 'rgba(24,14,6,0.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82vh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1rem', borderBottom: '1px solid var(--h-border)', background: 'var(--h-surface-2)', flexShrink: 0 }}>
+              {m.photo_url
+                ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} />
+                : <span style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', display: 'inline-block' }} />}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', lineHeight: 1 }}>{m.name}</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>🔒 private message · just you two</div>
+              </div>
+              <button onClick={() => setDmWith(null)} aria-label="close" style={{ marginLeft: 'auto', width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'var(--h-surface-3)', color: 'var(--h-text-dim)', fontSize: '0.9rem', flexShrink: 0 }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {dmMsgs.length === 0 && (
+                <div style={{ margin: 'auto', textAlign: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>you&apos;re connected with {first} 🧡<br />say hi — this chat is just the two of you.</div>
+              )}
+              {dmMsgs.map((msg: any) => (
+                <div key={msg.id} style={{ alignSelf: msg.isMe ? 'flex-end' : 'flex-start', maxWidth: '78%', background: msg.isMe ? LINE : 'var(--h-surface-2)', color: msg.isMe ? '#fff' : 'var(--h-text)', border: msg.isMe ? 'none' : '1px solid var(--h-border)', borderRadius: msg.isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '0.5rem 0.8rem', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'break-word' }}>{msg.body}</div>
+              ))}
+              <div ref={dmEndRef} />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.7rem', borderTop: '1px solid var(--h-border)', flexShrink: 0 }}>
+              <input value={dmText} onChange={(e) => setDmText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendDm()} placeholder={`message ${first}…`}
+                style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+              <button onClick={sendDm} disabled={!dmText.trim()} style={{ ...poppyBtn, opacity: dmText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
             </div>
           </div>
         </div>
@@ -1273,7 +1340,11 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                         ? <img src={p.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                         : <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
                       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name?.split(' ')[0] || '—'}</span>
-                      {p.tag && <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-accent)', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.1rem 0.4rem', flexShrink: 0 }}>{p.tag}</span>}
+                      {(() => { const conn = matches.find((mm) => mm.connected && mm.otherId === p.id); return conn ? (
+                        <button onClick={() => openDm(conn)} title={`message ${(p.name || '').split(' ')[0]}`} style={{ marginLeft: 'auto', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#fff', background: LINE, border: 'none', borderRadius: 999, padding: '0.12rem 0.45rem', flexShrink: 0 }}>🧡 connection</button>
+                      ) : p.tag ? (
+                        <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-accent)', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.1rem 0.4rem', flexShrink: 0 }}>{p.tag}</span>
+                      ) : null; })()}
                     </div>
                   ))}
                 </div>
