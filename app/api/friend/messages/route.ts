@@ -51,16 +51,21 @@ export async function GET() {
 
   // Withhold message bodies unless the chat is fully live (so the UI can show
   // either "unlock to join" or "waiting on N crewmates to unlock").
-  const { data: messages } = canSee
+  // Bound the payload — fetch the most recent 200 (desc + limit), then show
+  // oldest-first. A long-running crew thread no longer re-ships every message
+  // on each 4s poll.
+  const { data: recentMsgs } = canSee
     ? await supabaseAdmin
         .from('friend_messages')
         .select('id, sender_id, body, created_at')
         .eq('circle_id', circleId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(200)
     : { data: [] };
+  const messages = (recentMsgs ?? []).slice().reverse();
 
   return NextResponse.json({
-    circleId, members: members ?? [], messages: messages ?? [],
+    circleId, members: members ?? [], messages,
     locked: !canSee,
     iHaveAccess,
     chatLive: status.live,

@@ -260,70 +260,6 @@ const miniCount: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif",
 
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
 
-// The left rail: FB-style nav + active-crew stat + people + zones. Uses the
-// module palette directly so the call site stays clean.
-function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, crewBadge, sceneBadge = 0 }: {
-  view: NavKey; setView: (v: NavKey) => void; activeGroups: number; people: Person[]; zones: any[]; onZone: (a: string) => void; crewBadge: boolean; sceneBadge?: number;
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-      <nav className="fbSideNav" style={{ ...card, padding: '0.45rem' }}>
-        {NAV.map((n) => {
-          const active = view === n.key;
-          return (
-            <button key={n.key} onClick={() => setView(n.key)}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', background: active ? LINE : 'transparent', color: active ? '#fff' : 'var(--h-text)', border: 'none', borderRadius: 10, padding: '0.5rem 0.7rem', cursor: 'pointer', font: 'inherit', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.03em' }}>
-              <span style={{ fontSize: '1.05rem' }}>{n.icon}</span>{n.label}
-              {n.key === 'crew' && crewBadge && <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: '#da291c', border: `2px solid ${active ? '#fff' : INK}` }} />}
-              {n.key === 'scene' && sceneBadge > 0 && <span style={{ marginLeft: 'auto', minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${active ? '#fff' : INK}` }}>{sceneBadge}</span>}
-            </button>
-          );
-        })}
-      </nav>
-
-      <div style={{ ...card, padding: '0.75rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-        <span style={{ width: 11, height: 11, borderRadius: '50%', flexShrink: 0, background: activeGroups > 0 ? '#3f7d57' : '#c9a06a', boxShadow: activeGroups > 0 ? '0 0 0 4px rgba(63,125,87,0.18)' : 'none' }} />
-        <div>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', lineHeight: 1 }}>{activeGroups} {activeGroups === 1 ? 'crew' : 'crews'} live</div>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>hanging right now</div>
-        </div>
-      </div>
-
-      <div style={{ ...card, padding: '0.8rem 0.9rem' }}>
-        <div style={sideHd}>👥 on the line</div>
-        {people.length === 0 ? <div style={sideEmpty}>finding your people…</div> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
-            {people.slice(0, 8).map((p) => (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {p.photo_url
-                  ? <img src={p.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: `1px solid var(--h-border)`, flexShrink: 0 }} />
-                  : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, flexShrink: 0, display: 'inline-block' }} />}
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name?.split(' ')[0] || '—'}</span>
-                {p.tag && <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.1rem 0.4rem', flexShrink: 0 }}>{p.tag}</span>}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ ...card, padding: '0.8rem 0.9rem' }}>
-        <div style={sideHd}>📍 zones</div>
-        {(!zones || zones.length === 0) ? <div style={sideEmpty}>no zones yet.</div> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', marginTop: '0.5rem' }}>
-            {[...zones].sort((a, b) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 8).map((z, i) => (
-              <button key={z.area} onClick={() => onZone(z.area)} title={`see ${z.area}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: '0.3rem 0.1rem', color: 'var(--h-text)', borderRadius: 6 }}>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
-                <span style={{ marginLeft: 'auto', ...miniCount }}>{z.members}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // The center "home" hub — auto-pulls what's popular on the scene + your crew.
 function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen }: {
   me?: any; firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void;
@@ -340,7 +276,7 @@ function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onSce
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
           {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my crew →</button>}
-          <button onClick={onScene} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: "1px solid var(--h-border)", borderRadius: 12, padding: '0.45rem 0.95rem', boxShadow: `3px 3px 0 ${INK}`, cursor: 'pointer' }}>📣 post →</button>
+          <button onClick={onScene} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: "1px solid var(--h-border)", borderRadius: 12, padding: '0.45rem 0.95rem', boxShadow: '0 6px 16px -8px rgba(180,130,40,0.55)', cursor: 'pointer' }}>📣 post →</button>
         </div>
       </div>
 
@@ -556,7 +492,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
   useEffect(() => { loadActs(); }, [loadActs]);
   // light polling for the group chat
-  useEffect(() => { const t = setInterval(loadChat, 4000); return () => clearInterval(t); }, [loadChat]);
+  // only poll the group chat when it's actually on screen + the tab is visible
+  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(); }, 4000); return () => clearInterval(t); }, [loadChat, view]);
   // poll the Scene so new posts/events surface live (and can notify)
   useEffect(() => { const t = setInterval(loadActs, 45000); return () => clearInterval(t); }, [loadActs]);
 
@@ -854,7 +791,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
       {evToast && (
         <button onClick={() => { setView('scene'); setEvToast(null); setNewScene(0); }}
-          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'min(440px, 92vw)', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', background: LINE, color: '#fff', border: "1px solid var(--h-border)", borderRadius: 14, boxShadow: `4px 4px 0 ${INK}`, padding: '0.7rem 0.95rem', cursor: 'pointer', font: 'inherit', animation: 'fbToastIn 0.25s ease' }}>
+          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'min(440px, 92vw)', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', background: LINE, color: '#fff', border: "1px solid var(--h-border)", borderRadius: 14, boxShadow: '0 16px 38px -14px rgba(232,132,43,0.6)', padding: '0.7rem 0.95rem', cursor: 'pointer', font: 'inherit', animation: 'fbToastIn 0.25s ease' }}>
           <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔔</span>
           <span style={{ minWidth: 0 }}>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
@@ -899,11 +836,6 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           .fmStop:hover { transform: translate(-2px,-3px); }
           .fmMapLine { display: none; }
         }
-        /* crew as a deck you swipe through, so the chat gets real room below */
-        .crewDeck { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0.4rem 0.2rem 1rem; scrollbar-width: thin; }
-        .crewDeck::-webkit-scrollbar { height: 8px; }
-        .crewDeck::-webkit-scrollbar-thumb { background: rgba(36,29,18,0.3); border-radius: 999px; }
-        .crewDeck > * { flex: 0 0 210px; scroll-snap-align: start; }
         .crewWho { scrollbar-width: none; }
         .crewWho::-webkit-scrollbar { display: none; }
         .crewLower { margin-top: 1.5rem; }
@@ -982,7 +914,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
                     this has happened a few times now, so we&apos;ve paused your account on both lines. if you think that&apos;s a mistake, email us and we&apos;ll take a look.
                   </p>
-                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: `3px 3px 0 ${LINE_DEEP}`, textDecoration: 'none' }}>
+                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: '0 10px 24px -12px rgba(0,0,0,0.45)', textDecoration: 'none' }}>
                     email match@notcupid.com →
                   </a>
                 </>

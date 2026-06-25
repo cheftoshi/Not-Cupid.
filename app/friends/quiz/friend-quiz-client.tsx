@@ -91,7 +91,7 @@ export default function FriendQuizClient() {
 
   const inputStyle: React.CSSProperties = {
     flex: 1, padding: '0.85rem 1rem', borderRadius: '0.3rem',
-    border: '1.5px solid var(--h-border)', fontFamily: "'Syne', sans-serif",
+    border: '1.5px solid var(--h-border)', fontFamily: "'Inter', sans-serif",
     fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)',
   };
 

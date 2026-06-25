@@ -33,6 +33,17 @@
   --green:#2d7a4f;
   --red-err:#c0392b;
 
+  /* Quiz accent vars — Love (blue) defaults. The friend quiz overrides these to
+     orange inline on .screen (friend-quiz-client ORANGE_VARS). They were defined
+     NOWHERE, so the Love quiz rendered colorless (no selected-option fill, a
+     colorless progress bar, broken result accents). */
+  --accent:#2563ff;
+  --accent-dim:rgba(37,99,255,0.12);
+  --accent-mid:rgba(37,99,255,0.40);
+  --gold:#1b46c9;
+  --gold-dim:rgba(27,70,201,0.14);
+  --bg-dark:#14111c;
+
   /* ── Boutique polish: soft elevation, radii, easing ───────────
      Layered low-opacity shadows (not hard offsets) read as craft.
      Use these instead of `Npx Npx 0 #ink` going forward. */
@@ -87,9 +98,6 @@ body{
 @keyframes ncCardIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
-@keyframes fnodePulse{0%,100%{fill-opacity:.4}50%{fill-opacity:.85}}
-.fnode{animation:fnodePulse 3.8s ease-in-out infinite;animation-delay:var(--d,0s)}
-@media (prefers-reduced-motion: reduce){.fnode{animation:none}}
 @keyframes shake{
   0%,100%{transform:translateX(0)}
   20%{transform:translateX(-6px)}
