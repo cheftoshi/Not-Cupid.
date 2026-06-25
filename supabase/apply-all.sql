@@ -522,6 +522,7 @@ create table if not exists friend_dms (
 );
 create index if not exists friend_dms_pair_idx on friend_dms (user_a_id, user_b_id, created_at);
 alter table if exists friend_dms enable row level security;
+grant all on table friend_dms to anon, authenticated, service_role;  -- or the server hits "permission denied for table friend_dms"
 
 create table if not exists friend_match_history (
   user_a_id uuid not null,

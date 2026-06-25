@@ -12,3 +12,7 @@ create index if not exists friend_dms_pair_idx on friend_dms (user_a_id, user_b_
 
 -- Deny-by-default RLS (service key bypasses; the anon client never queries this).
 alter table friend_dms enable row level security;
+
+-- Table privileges — the server (service_role) needs these or every query is
+-- "permission denied for table friend_dms". RLS still blocks anon/authenticated.
+grant all on table friend_dms to anon, authenticated, service_role;
