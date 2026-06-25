@@ -273,16 +273,31 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
   const [cText, setCText] = useState('');
   const [cBusy, setCBusy] = useState(false);
   const [cCount, setCCount] = useState<number>(a.commentCount || 0);
+  const [cErr, setCErr] = useState<string | null>(null);
   async function loadComments() {
     try { const res = await fetch(`/api/friend/activities/${a.id}/comments`); if (res.ok) { const d = await res.json(); setComments(d.comments || []); setCCount((d.comments || []).length); } } catch { /* ignore */ }
   }
-  function toggleComments() { const next = !showC; setShowC(next); if (next) loadComments(); }
+  function toggleComments() { const next = !showC; setShowC(next); if (next) { setCErr(null); loadComments(); } }
   async function postComment() {
-    const body = cText.trim(); if (!body || cBusy) return; setCBusy(true); setCText('');
+    const body = cText.trim(); if (!body || cBusy) return; setCBusy(true); setCText(''); setCErr(null);
+    // optimistic — show it immediately so it never just "vanishes"
+    const tmpId = 'tmp-' + Date.now();
+    setComments((prev) => [...prev, { id: tmpId, body, isMe: true, name: 'you', pending: true }]);
+    setCCount((n) => n + 1);
     try {
       const res = await fetch(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
-      if (res.ok) { const d = await res.json(); if (d.comment) { setComments((prev) => [...prev, d.comment]); setCCount((n) => n + 1); } }
-    } catch { /* ignore */ } finally { setCBusy(false); }
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setComments((prev) => prev.filter((c) => c.id !== tmpId)); setCCount((n) => Math.max(0, n - 1));
+        setCErr(j.error || 'couldn’t post — try again.');
+        return;
+      }
+      const d = await res.json();
+      if (d.comment) setComments((prev) => prev.map((c) => (c.id === tmpId ? d.comment : c)));
+    } catch {
+      setComments((prev) => prev.filter((c) => c.id !== tmpId)); setCCount((n) => Math.max(0, n - 1));
+      setCErr('couldn’t post — check your connection.');
+    } finally { setCBusy(false); }
   }
   return (
     <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
@@ -349,6 +364,7 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
                   </div>
                 ))}
               </div>
+              {cErr && <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.7rem', background: 'rgba(192,57,43,0.1)', color: '#c0392b', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.78rem', borderRadius: 8 }}>{cErr}</div>}
               <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
                 <input value={cText} onChange={(e) => setCText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder="add a comment…"
                   style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.45rem 0.85rem', fontSize: '0.85rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
