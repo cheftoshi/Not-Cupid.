@@ -324,6 +324,11 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}><Countdown to={a.happens_at} /></span>
           </div>
         )}
+        {isEvent && a.location && (
+          <div style={{ marginTop: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', letterSpacing: '0.03em', color: 'var(--h-text)' }}>
+            📍 <b>{a.location}</b>{a.area ? <span style={{ color: 'var(--h-text-faint)' }}>· {a.area}</span> : null}
+          </div>
+        )}
         {isEvent && aud && (
           <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: LINE_DEEP }}>
             👥 open to {aud}
@@ -438,7 +443,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
-  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax });
+  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; location: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax });
   const [busy, setBusy] = useState(false);
   // Deep-link: a crew push opens /friends?view=crew straight into the chat.
   const [view, setView] = useState<NavKey>(() => {
@@ -653,7 +658,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
       setBusy(false);
       return;
     }
-    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax }); await loadActs(); await loadPulse(); setBusy(false);
+    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax }); await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
@@ -1119,6 +1124,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </select>
             {newAct.kind === 'event' && (
               <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+            )}
+            {newAct.kind === 'event' && (
+              <input type="text" value={newAct.location} onChange={(e) => setNewAct({ ...newAct, location: e.target.value })} maxLength={120} placeholder="📍 where? (e.g. tatte, charles river loop)" style={{ flex: '1 1 180px', minWidth: 0, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.4rem 0.85rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
             )}
             <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '1.05rem', padding: '0.45rem 1.1rem', opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{newAct.kind === 'post' ? 'post →' : 'plan it →'}</button>
           </div>

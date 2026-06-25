@@ -98,6 +98,7 @@ export async function GET(req: NextRequest) {
     const author: any = aById.get(a.author_id) || {};
     return {
       id: a.id, title: a.title, body: a.body, category: a.category, area: a.area,
+      location: a.location ?? null,
       kind: a.kind || 'event',
       happens_at: a.happens_at, created_at: a.created_at,
       authorName: author.name, authorPhoto: author.photo_url,
@@ -151,6 +152,9 @@ export async function POST(req: NextRequest) {
   const audMin = kind === 'event' ? clampAge(body.audience_age_min) : null;
   const audMax = kind === 'event' ? clampAge(body.audience_age_max) : null;
 
+  // Events can name a specific place/venue (free text), separate from the zone.
+  const location = kind === 'event' ? ((body.location || '').toString().trim().slice(0, 120) || null) : null;
+
   const baseRow: any = {
     author_id: user.id, title, kind,
     body: (body.body || '').toString().slice(0, 1000) || null,
@@ -160,13 +164,15 @@ export async function POST(req: NextRequest) {
   };
   const audienceRow = { audience_gender: audienceGender, audience_age_min: audMin, audience_age_max: audMax };
 
-  let { data: act, error } = await supabaseAdmin
-    .from('friend_activities').insert({ ...baseRow, ...audienceRow }).select('id').single();
-  // Graceful fallback: if the audience columns aren't migrated yet, still post
-  // the event (without targeting) instead of failing into the void.
+  const ins = (row: any) => supabaseAdmin.from('friend_activities').insert(row).select('id').single();
+  let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location });
+  // Graceful fallbacks for un-migrated columns: drop location first, then audience,
+  // so the event still posts instead of failing into the void.
+  if (error && /location|column|schema cache/i.test(error.message || '')) {
+    ({ data: act, error } = await ins({ ...baseRow, ...audienceRow }));
+  }
   if (error && /audience_|column|schema cache/i.test(error.message || '')) {
-    console.warn('friend_activities: audience columns missing — run 20260607 migration. Posting without targeting.');
-    ({ data: act, error } = await supabaseAdmin.from('friend_activities').insert(baseRow).select('id').single());
+    ({ data: act, error } = await ins(baseRow));
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!act) return NextResponse.json({ error: 'Could not create activity.' }, { status: 500 });
