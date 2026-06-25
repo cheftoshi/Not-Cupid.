@@ -195,13 +195,18 @@ export async function POST(req: NextRequest) {
       { circle_id: circleId, sender_id: alex, body: 'perfect. coffee after at tatte' },
     ]);
   }
-  // Sealed pack — connected but UN-opened (opened_at null) → the cinematic reveal.
+  // Sealed pack — a batch to DISCOVER (opened_at null → the cinematic reveal).
+  // They picked Alex but Alex hasn't connected yet → status 'pending', NOT a
+  // connection: they show a "connect" button and are NOT DM-able (a DM only
+  // opens after an explicit 1:1 connect). This is what keeps "pack" distinct
+  // from "connections" in the test world.
   const sealed = [dev, iris, jules, maya];
   const sealedScores = [80, 74, 70, 66];
   for (let i = 0; i < sealed.length; i++) {
     const [ua, ub] = [alex, sealed[i]].sort();
+    const alexIsA = ua === alex;
     await supabaseAdmin.from('friend_connections').upsert(
-      { user_a_id: ua, user_b_id: ub, status: 'connected', a_picked: true, b_picked: true, compatibility_score: sealedScores[i], connected_at: now, opened_at: null },
+      { user_a_id: ua, user_b_id: ub, status: 'pending', a_picked: alexIsA ? false : true, b_picked: alexIsA ? true : false, compatibility_score: sealedScores[i], opened_at: null },
       { onConflict: 'user_a_id,user_b_id' }
     );
   }

@@ -978,6 +978,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                                 ? <img src={u.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: `1px solid var(--h-border)` }} />
                                 : <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, display: 'inline-block' }} />}
                               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
+                              {!u.you && matches.find((x) => x.otherId === u.id)?.connected && <span title="your connection — message them" style={{ fontSize: '0.7rem', flexShrink: 0 }}>🧡</span>}
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: u.here ? '#3f7d57' : '#c9a06a', flexShrink: 0 }} />
                             </button>
                           ))}
@@ -1238,13 +1239,13 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                         : <span style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>· {m.age}</span></div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : (m.theyAccepted && !m.iAccepted) ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? 'in your crew' : m.iAccepted ? 'waiting' : m.theyAccepted ? 'wants you' : 'new'}</div>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? LINE_DEEP : m.theyAccepted ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? '🧡 connection' : m.theyAccepted ? 'wants to connect' : m.iAccepted ? 'pending' : 'new'}</div>
                       </div>
                     </button>
                     {m.connected ? (
-                      <span style={{ flexShrink: 0, fontSize: '0.95rem', color: '#3f7d57' }}>✓</span>
-                    ) : m.iAccepted ? (
-                      <span style={{ flexShrink: 0, fontSize: '0.85rem' }}>⏳</span>
+                      <span style={{ flexShrink: 0, fontSize: '0.85rem' }} title="connected — message them">🧡</span>
+                    ) : (m.iAccepted && !m.theyAccepted) ? (
+                      <span style={{ flexShrink: 0, fontSize: '0.85rem' }} title="waiting on them">⏳</span>
                     ) : (
                       <button onClick={() => connectOne(m.otherId)} disabled={busy || !termsOk}
                         style={{ flexShrink: 0, cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: 'none', borderRadius: 8, padding: '0.32rem 0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>

@@ -51,10 +51,11 @@ async function notifyCrewGroup(circleIds: Set<string>, joinerId: string, joinerN
   }
 }
 
-// "I'm in" — the user joins their matches as a SET (no per-friend curation).
-// Marks the caller accepted on every non-declined connection; any pair where
-// both have now joined becomes connected and shares the group circle. Per-person
-// removal is the separate /api/friend/disconnect (symmetric opt-out).
+// "I'm in" — the user opts into their pack as a SET (no per-friend curation).
+// Marks the caller picked on every non-declined connection; any pair where both
+// have now opted in shares the group CIRCLE (the crew chat) — but this does NOT
+// make them a 1:1 connection. A private DM only opens via an explicit
+// /api/friend/connect. Per-person removal is /api/friend/disconnect.
 export async function POST() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -74,10 +75,13 @@ export async function POST() {
     const theyPicked = iAmA ? c.b_picked : c.a_picked;
 
     if (theyPicked) {
-      // Both joined → connect + share a circle.
+      // Both opted in → share the GROUP circle (the crew chat). This is NOT a
+      // 1:1 connection — a private DM only opens via an explicit /api/friend/connect.
+      // (Choosing the pack used to mass-set status='connected', which made every
+      // pack member DM-able; connections are now only made one at a time.)
       const circleId = await joinCircle(c.user_a_id, c.user_b_id);
       await supabaseAdmin.from('friend_connections')
-        .update({ [myField]: true, status: 'connected', circle_id: circleId, connected_at: new Date().toISOString() })
+        .update({ [myField]: true, circle_id: circleId })
         .eq('id', c.id);
       connected++;
       touchedCircles.add(circleId);
