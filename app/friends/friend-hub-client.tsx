@@ -120,88 +120,62 @@ function ConnectionBackdrop() {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const dpr = Math.min(1.4, window.devicePixelRatio || 1);
     let w = 1, h = 1;
-    const N = 40, LINK = 0.21, TAU = Math.PI * 2;
-    const nodes = Array.from({ length: N }, () => ({
-      x: Math.random(), y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.0003, vy: (Math.random() - 0.5) * 0.0003,
-      r: 1.4 + Math.random() * 2.4, cool: Math.random() < 0.3,
-    }));
-    // Comic speech bubbles — the language of how people connect now (texts +
-    // activity emojis that match the Scene categories), drifting up from people
-    // like little conversations happening across the city. Natural, fun, cultural.
-    const SAYS = ['coffee?', 'pickleball?', 'run club 🏃', 'gym sesh', '🎾 sat?', '📚 tonight?', '🎬 later?', 'lunch?', 'wyd', 'down?', 'new here!', 'let’s hang', '🧡', 'hi friend 👋', 'lets gooo', 'concert?', '🍜?', 'tennis?'];
-    type Bub = { x: number; y: number; text: string; t: number; warm: boolean; rot: number };
+    // The backdrop IS the conversation — catchy, real things people say to make
+    // plans, rising like the whole city's group chat. (Dropped the tech node-
+    // network — it read "crypto dashboard," not a warm social app. This is human.)
+    const SAYS = [
+      'who’s down for pickleball? 🎾', 'coffee this week? ☕', 'new in town — say hi 👋',
+      'sat morning run? 🏃', 'movie night, who’s in? 🎬', 'starting a book club 📚',
+      'let’s actually hang irl', 'friends > swiping', 'gym buddy wanted 💪',
+      'concert friday? 🎶', 'taco tuesday? 🌮', 'beach day this weekend? 🏖️',
+      'looking for a hiking crew ⛰️', 'board game night? 🎲', 'ramen run, anyone? 🍜',
+      'tennis at the park? 🎾', 'pottery class — join me 🎨', 'find your people 🧡',
+      'who wants to grab a drink?', 'farmers market sunday? 🥕', 'climbing gym buddy?',
+    ];
+    type Bub = { x: number; y: number; text: string; warm: boolean; rot: number; speed: number };
     let bubs: Bub[] = [];
-    let nextSpawn = 8;
+    let nextSpawn = 0;
     const roundRect = (x: number, y: number, bw: number, bh: number, r: number) => {
       ctx.beginPath();
       ctx.moveTo(x + r, y); ctx.arcTo(x + bw, y, x + bw, y + bh, r); ctx.arcTo(x + bw, y + bh, x, y + bh, r);
       ctx.arcTo(x, y + bh, x, y, r); ctx.arcTo(x, y, x + bw, y, r); ctx.closePath();
     };
+    const spawn = (seed = false) => bubs.push({
+      x: 0.06 + Math.random() * 0.88,
+      y: seed ? 0.12 + Math.random() * 0.8 : 1.08,
+      text: SAYS[(Math.random() * SAYS.length) | 0],
+      warm: Math.random() < 0.45, rot: (Math.random() - 0.5) * 0.12,
+      speed: 0.0016 + Math.random() * 0.0013,
+    });
     const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size();
     const ro = new ResizeObserver(size); ro.observe(cv);
+    if (!reduce) for (let i = 0; i < 8; i++) spawn(true);
     let raf = 0, last = 0, on = true;
     const draw = (ts: number) => {
       if (!on) return;
       raf = requestAnimationFrame(draw);
-      if (ts - last < 34) return; last = ts; // ~30fps — calm, easy on battery
+      if (ts - last < 34) return; last = ts; // ~30fps
       ctx.clearRect(0, 0, w, h);
-      if (!reduce) for (const n of nodes) {
-        n.x += n.vx; n.y += n.vy;
-        if (n.x < -0.02) n.x = 1.02; else if (n.x > 1.02) n.x = -0.02;
-        if (n.y < -0.02) n.y = 1.02; else if (n.y > 1.02) n.y = -0.02;
-      }
-      // links — teal/blue, brighter so they actually read (no shadow = fast)
-      ctx.shadowBlur = 0;
-      for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
-        const a = nodes[i], b = nodes[j];
-        const dn = Math.hypot(a.x - b.x, a.y - b.y);
-        if (dn >= LINK) continue;
-        const o = (1 - dn / LINK) * 0.32;
-        ctx.strokeStyle = (a.cool && b.cool) ? `rgba(95,184,255,${o})` : `rgba(79,214,200,${o})`;
-        ctx.lineWidth = 1.1;
-        ctx.beginPath(); ctx.moveTo(a.x * w, a.y * h); ctx.lineTo(b.x * w, b.y * h); ctx.stroke();
-      }
-      // nodes — neon teal glow (the un-flimsy part)
-      ctx.shadowBlur = 8;
-      for (const n of nodes) {
-        ctx.shadowColor = n.cool ? 'rgba(95,184,255,0.85)' : 'rgba(79,214,200,0.85)';
-        ctx.beginPath(); ctx.arc(n.x * w, n.y * h, n.r, 0, TAU);
-        ctx.fillStyle = n.cool ? 'rgba(140,205,255,0.72)' : 'rgba(110,228,214,0.74)'; ctx.fill();
-      }
-      // comic speech bubbles — spawn from people, float up + fade, like little
-      // conversations across the city
-      ctx.shadowBlur = 0;
-      if (!reduce) {
-        nextSpawn -= 1;
-        if (nextSpawn <= 0 && bubs.length < 5) {
-          const n = nodes[(Math.random() * N) | 0];
-          bubs.push({ x: n.x, y: n.y, text: SAYS[(Math.random() * SAYS.length) | 0], t: 0, warm: Math.random() < 0.28, rot: (Math.random() - 0.5) * 0.16 });
-          nextSpawn = 26 + ((Math.random() * 40) | 0);
-        }
-      }
-      ctx.font = "600 13px ui-sans-serif, system-ui, -apple-system, sans-serif";
+      if (!reduce) { nextSpawn -= 1; if (nextSpawn <= 0 && bubs.length < 15) { spawn(); nextSpawn = 14 + ((Math.random() * 20) | 0); } }
+      ctx.font = "600 13.5px ui-sans-serif, system-ui, -apple-system, sans-serif";
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (let k = bubs.length - 1; k >= 0; k--) {
         const bb = bubs[k];
-        if (!reduce) bb.t += 0.006;
-        if (bb.t >= 1) { bubs.splice(k, 1); continue; }
-        const px = bb.x * w, py = bb.y * h - bb.t * 46; // float up
-        const alpha = bb.t < 0.16 ? bb.t / 0.16 : bb.t > 0.72 ? (1 - bb.t) / 0.28 : 1; // fade in/out
-        const pop = bb.t < 0.16 ? 0.82 + (bb.t / 0.16) * 0.18 : 1; // little pop-in
-        const bw = ctx.measureText(bb.text).width + 18, bh = 26, r = 13;
+        if (!reduce) bb.y -= bb.speed; // rise
+        if (bb.y < -0.08) { bubs.splice(k, 1); continue; }
+        const alpha = bb.y > 0.96 ? (1.08 - bb.y) / 0.12 : bb.y < 0.12 ? bb.y / 0.12 : 0.95;
+        const bw = ctx.measureText(bb.text).width + 22, bh = 30, r = 15;
         ctx.save();
-        ctx.translate(px, py); ctx.rotate(bb.rot); ctx.scale(pop, pop); ctx.globalAlpha = Math.max(0, alpha);
-        const fill = bb.warm ? 'rgba(40,30,22,0.92)' : 'rgba(18,46,55,0.94)';
-        const line = bb.warm ? 'rgba(255,170,80,0.7)' : 'rgba(95,214,210,0.7)';
-        roundRect(-bw / 2, -bh - 8, bw, bh, r); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = 1.4; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-5, -8); ctx.lineTo(0, -1); ctx.lineTo(5, -8); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); // tail
-        ctx.fillStyle = bb.warm ? '#ffd9b0' : '#d6f5f1'; ctx.fillText(bb.text, 0, -bh / 2 - 8);
+        ctx.translate(bb.x * w, bb.y * h); ctx.rotate(bb.rot); ctx.globalAlpha = Math.max(0, alpha);
+        const fill = bb.warm ? 'rgba(46,32,22,0.95)' : 'rgba(20,48,57,0.95)';
+        const line = bb.warm ? 'rgba(255,170,80,0.85)' : 'rgba(95,214,210,0.85)';
+        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(0, -1); ctx.lineTo(6, -9); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); // tail
+        ctx.fillStyle = bb.warm ? '#ffdcb5' : '#d6f5f1'; ctx.fillText(bb.text, 0, -bh / 2 - 9);
         ctx.restore();
       }
       ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
     };
     raf = requestAnimationFrame(draw);
     const onVis = () => { on = !document.hidden; if (on) { last = 0; raf = requestAnimationFrame(draw); } };
