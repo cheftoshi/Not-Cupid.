@@ -32,6 +32,15 @@
   --border-md:rgba(11,11,11,0.13);
   --green:#2d7a4f;
   --red-err:#c0392b;
+
+  /* ── Boutique polish: soft elevation, radii, easing ───────────
+     Layered low-opacity shadows (not hard offsets) read as craft.
+     Use these instead of `Npx Npx 0 #ink` going forward. */
+  --shadow-sm: 0 1px 2px rgba(11,11,11,0.05), 0 2px 8px -2px rgba(11,11,11,0.06);
+  --shadow-md: 0 4px 14px -6px rgba(11,11,11,0.12), 0 12px 28px -14px rgba(11,11,11,0.10);
+  --shadow-lg: 0 10px 26px -10px rgba(11,11,11,0.16), 0 26px 60px -24px rgba(11,11,11,0.20);
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-pill: 999px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html{scroll-behavior:smooth}
@@ -51,23 +60,27 @@ body{
 
 .btn-primary{
   background:var(--ink);color:var(--bg);border:none;
-  padding:.9rem 1.75rem;font-family:'DM Mono',monospace;
-  font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;
-  cursor:pointer;transition:all .15s;display:inline-block;
-  text-align:center;text-decoration:none;
+  padding:.95rem 1.9rem;font-family:'DM Mono',monospace;
+  font-size:.65rem;letter-spacing:.16em;text-transform:uppercase;
+  cursor:pointer;display:inline-block;text-align:center;text-decoration:none;
+  border-radius:var(--r-pill);box-shadow:var(--shadow-md);
+  transition:transform .22s var(--ease),box-shadow .22s var(--ease),background .2s var(--ease);
 }
-.btn-primary:hover{background:var(--lav)}
-.btn-primary:disabled{opacity:.28;cursor:not-allowed}
+.btn-primary:hover{background:var(--lav);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.btn-primary:active{transform:translateY(0);box-shadow:var(--shadow-sm)}
+.btn-primary:disabled{opacity:.28;cursor:not-allowed;transform:none;box-shadow:none}
 
 .btn-ghost{
   background:transparent;color:var(--ink2);
-  border:1px solid var(--border-md);padding:.85rem 1.75rem;
+  border:1px solid var(--border-md);padding:.9rem 1.9rem;
   font-family:'DM Mono',monospace;font-size:.65rem;
-  letter-spacing:.14em;text-transform:uppercase;
-  cursor:pointer;transition:all .15s;display:inline-block;
-  text-align:center;text-decoration:none;
+  letter-spacing:.16em;text-transform:uppercase;
+  cursor:pointer;display:inline-block;text-align:center;text-decoration:none;
+  border-radius:var(--r-pill);
+  transition:transform .22s var(--ease),border-color .2s var(--ease),color .2s var(--ease);
 }
-.btn-ghost:hover{border-color:var(--lav);color:var(--lav)}
+.btn-ghost:hover{border-color:var(--lav);color:var(--lav);transform:translateY(-2px)}
+.btn-ghost:active{transform:translateY(0)}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes ncRevealIn{from{opacity:0}to{opacity:1}}
@@ -98,6 +111,7 @@ body{
   --h-border: rgba(37,99,255,0.16);
   --h-accent: #1b46c9;
   --h-accent-2: #d2530f;
+  --h-glass: rgba(255,255,255,0.78); /* frosted chrome (nav) */
   /* interest category colors (adapt per theme) */
   --c-music: #1b46c9; --c-food: #d2530f; --c-hobby: #5a2bc4; --c-sport: #1f7a52; --c-vibe: #c01f6f;
 }
@@ -110,6 +124,7 @@ body{
   --h-text-dim: #aaa4ba;
   --h-text-faint: #7d7890;
   --h-border: rgba(255,255,255,0.10);
+  --h-glass: rgba(20,18,28,0.72); /* frosted chrome (nav) */
   --h-accent: #7fa0ff;
   --h-accent-2: #ff9a5c;
   --c-music: #6f9bff; --c-food: #ff9a5c; --c-hobby: #b794ff; --c-sport: #4fce93; --c-vibe: #ff7ab3;

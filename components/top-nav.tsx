@@ -36,9 +36,11 @@ export default function TopNav() {
     return (
       <Link href={href} style={{
         fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase',
-        textDecoration: 'none', padding: '0.4rem 0.7rem', borderRadius: 999, whiteSpace: 'nowrap',
+        textDecoration: 'none', padding: '0.42rem 0.8rem', borderRadius: 999, whiteSpace: 'nowrap',
         color: on ? '#fff' : 'var(--h-text-dim)', background: on ? color : 'transparent',
         border: on ? '1px solid transparent' : '1px solid var(--h-border)',
+        boxShadow: on ? `0 6px 16px -8px ${color}` : 'none',
+        transition: 'transform .2s var(--ease), background .2s var(--ease), color .2s var(--ease)',
       }}>{label}</Link>
     );
   };
@@ -48,8 +50,9 @@ export default function TopNav() {
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 45, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: '0.6rem', padding: '0.55rem 0.9rem', background: 'var(--h-surface)', borderBottom: '1px solid var(--h-border)',
-      boxShadow: '0 2px 16px -12px rgba(0,0,0,0.4)', flexWrap: 'wrap',
+      gap: '0.6rem', padding: '0.6rem 1rem', background: 'var(--h-glass)',
+      backdropFilter: 'saturate(180%) blur(14px)', WebkitBackdropFilter: 'saturate(180%) blur(14px)',
+      borderBottom: '1px solid var(--h-border)', boxShadow: '0 4px 20px -14px rgba(0,0,0,0.45)', flexWrap: 'wrap',
     }}>
       <Wordmark size={1.05} href="/hub" />
       <nav style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexShrink: 0 }}>
