@@ -69,6 +69,17 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Comment counts per shown post (Scene posts are commentable). Graceful if the
+  // comments table isn't migrated yet.
+  const commentCountByAct = new Map<string, number>();
+  if (ids.length) {
+    try {
+      const { data: cRows } = await supabaseAdmin
+        .from('friend_activity_comments').select('activity_id').in('activity_id', ids);
+      (cRows ?? []).forEach((c: any) => commentCountByAct.set(c.activity_id, (commentCountByAct.get(c.activity_id) || 0) + 1));
+    } catch { /* not migrated yet */ }
+  }
+
   // Is this responder inside an event's audience (gender + age)? Author always is.
   const eligibleFor = (a: any) => {
     if (a.author_id === user.id) return true;
@@ -92,6 +103,7 @@ export async function GET(req: NextRequest) {
       authorName: author.name, authorPhoto: author.photo_url,
       isMine: a.author_id === user.id,
       rsvpCount: countByAct.get(a.id) || 0,
+      commentCount: commentCountByAct.get(a.id) || 0,
       iRsvped: myRespByAct.has(a.id),
       // event extras
       audienceGender: a.audience_gender || null,

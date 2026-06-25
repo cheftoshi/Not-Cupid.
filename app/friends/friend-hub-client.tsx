@@ -344,6 +344,23 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
   const r = a.responses || { yes: 0, maybe: 0, no: 0 };
   const eligible = a.eligible !== false;
   const RESP: Array<['yes' | 'maybe' | 'no', string]> = [['yes', '✅ in'], ['maybe', '🤔 maybe'], ['no', '🚫 out']];
+  // Comments (talk posts become a little thread).
+  const [showC, setShowC] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [cText, setCText] = useState('');
+  const [cBusy, setCBusy] = useState(false);
+  const [cCount, setCCount] = useState<number>(a.commentCount || 0);
+  async function loadComments() {
+    try { const res = await fetch(`/api/friend/activities/${a.id}/comments`); if (res.ok) { const d = await res.json(); setComments(d.comments || []); setCCount((d.comments || []).length); } } catch { /* ignore */ }
+  }
+  function toggleComments() { const next = !showC; setShowC(next); if (next) loadComments(); }
+  async function postComment() {
+    const body = cText.trim(); if (!body || cBusy) return; setCBusy(true); setCText('');
+    try {
+      const res = await fetch(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
+      if (res.ok) { const d = await res.json(); if (d.comment) { setComments((prev) => [...prev, d.comment]); setCCount((n) => n + 1); } }
+    } catch { /* ignore */ } finally { setCBusy(false); }
+  }
   return (
     <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
@@ -377,15 +394,46 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
       </div>
       <div style={{ borderTop: '1px solid var(--h-border)', padding: '0.45rem 0.6rem' }}>
         {!isEvent ? (
+          <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-            {(a.rsvpCount || 0) >= 3
-              ? <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#d2530f', background: 'rgba(255,106,31,0.12)', border: '1px solid rgba(255,106,31,0.32)', borderRadius: 999, padding: '0.18rem 0.55rem' }}>🔥 popular</span>
-              : <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)' }}>{a.rsvpCount ? `${a.rsvpCount} into this` : 'be the first'}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+              {(a.rsvpCount || 0) >= 3
+                ? <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#d2530f', background: 'rgba(255,106,31,0.12)', border: '1px solid rgba(255,106,31,0.32)', borderRadius: 999, padding: '0.18rem 0.55rem' }}>🔥 popular</span>
+                : <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)' }}>{a.rsvpCount ? `${a.rsvpCount} into this` : 'be the first'}</span>}
+              <button onClick={toggleComments} title="comments"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: showC ? 'var(--h-surface-3)' : 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.2rem 0.6rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', fontWeight: 700 }}>
+                💬 {cCount > 0 ? cCount : 'comment'}
+              </button>
+            </div>
             <button onClick={() => onRsvp(a.id)} title={a.iRsvped ? 'you’re into this' : 'i’m into this'}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: a.iRsvped ? 'var(--h-accent)' : 'var(--h-surface-2)', color: a.iRsvped ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${a.iRsvped ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 999, padding: '0.3rem 0.75rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700 }}>
               {a.iRsvped ? '♥' : '♡'} {a.rsvpCount || 0}
             </button>
           </div>
+          {showC && (
+            <div style={{ marginTop: '0.6rem', borderTop: '1px solid var(--h-border)', paddingTop: '0.6rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', maxHeight: 240, overflowY: 'auto' }}>
+                {comments.length === 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'var(--h-text-faint)' }}>no comments yet — say something.</div>}
+                {comments.map((c) => (
+                  <div key={c.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                    {c.photo_url
+                      ? <img src={c.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+                      : <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.04em', color: LINE_DEEP, marginRight: '0.4rem' }}>{(c.name || 'someone').split(' ')[0]}</span>
+                      <span style={{ fontSize: '0.86rem', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.body}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
+                <input value={cText} onChange={(e) => setCText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder="add a comment…"
+                  style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.45rem 0.85rem', fontSize: '0.85rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                <button onClick={postComment} disabled={cBusy || !cText.trim()} style={{ ...poppyBtn, opacity: cText.trim() ? 1 : 0.5, padding: '0.4rem 0.9rem', fontSize: '0.9rem' }}>{cBusy ? '…' : 'post'}</button>
+              </div>
+            </div>
+          )}
+          </>
         ) : eligible ? (
           <div>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
