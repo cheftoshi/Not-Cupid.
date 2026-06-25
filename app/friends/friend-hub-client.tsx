@@ -436,7 +436,6 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
   const [sceneSort, setSceneSort] = useState<'new' | 'popular'>('new');
   const [areaFilter, setAreaFilter] = useState<string>('');
-  const [pulseCat, setPulseCat] = useState<string>(''); // city-pulse activity filter
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax });
@@ -1010,54 +1009,58 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         {view === 'pulse' && (
         <div>
           <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
-          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.1rem', fontSize: '0.92rem' }}>
-            everything happening in {city ? city.split(',')[0].toLowerCase() : 'the city'} right now — classes, runs, clubs, hangs. the whole city&apos;s plans, in one place.
+          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
+            city vibes — find your tribe. the people of {city ? city.split(',')[0].toLowerCase() : 'your city'}, gathering around what they love.
           </p>
 
-          {/* WHAT'S HAPPENING — the city's activity, grouped by what it is */}
+          {/* FIND YOUR TRIBE — the city grouped by interest (who's into what). The
+              feed itself lives on the Scene; this is the discovery layer over it. */}
           {(() => {
-            const byCat: Record<string, number> = {};
-            acts.forEach((a) => { const c = a.category || 'hang'; byCat[c] = (byCat[c] || 0) + 1; });
-            const groups = Object.entries(byCat).sort((a, b) => (b[1] as number) - (a[1] as number));
-            if (groups.length === 0) return null;
-            return (
-              <div style={{ marginBottom: '1.2rem' }}>
-                <div style={sideHd}>what&apos;s happening</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.6rem' }}>
-                  {groups.map(([cat, n]) => {
-                    const on = pulseCat === cat;
-                    return (
-                      <button key={cat} onClick={() => setPulseCat(on ? '' : cat)} title={`${n} ${cat}`}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: on ? LINE : 'var(--h-surface)', color: on ? '#fff' : 'var(--h-text)', border: `1px solid ${on ? LINE : 'var(--h-border)'}`, borderRadius: 14, padding: '0.45rem 0.85rem', cursor: 'pointer', font: 'inherit', boxShadow: on ? 'none' : 'var(--shadow-sm)' }}>
-                        <span style={{ fontSize: '1.1rem' }}>{CAT_EMOJI[cat] || '✨'}</span>
-                        <b style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.25rem', lineHeight: 1 }}>{n}</b>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}>{cat}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+            const myInts = [...((me?.hobbies as string[]) || []), ...((me?.music as string[]) || []), ...((me?.food as string[]) || [])].map((s) => String(s).toLowerCase());
+            const isMine = (cat: string) => myInts.some((i) => i && (i.includes(cat) || cat.includes(i)));
+            const map: Record<string, { cat: string; count: number; people: { name: string; photo: string | null }[]; seen: Set<string> }> = {};
+            acts.forEach((a) => {
+              const c = a.category || 'hang';
+              if (!map[c]) map[c] = { cat: c, count: 0, people: [], seen: new Set() };
+              const t = map[c]; t.count++;
+              const k = a.authorName || a.id;
+              if (a.authorName && !t.seen.has(k)) { t.seen.add(k); t.people.push({ name: a.authorName, photo: a.authorPhoto || null }); }
+            });
+            const tribes = Object.values(map).sort((x, y) => ((isMine(y.cat) ? 1 : 0) - (isMine(x.cat) ? 1 : 0)) || (y.count - x.count));
+            if (tribes.length === 0) return (
+              <div style={{ ...card, padding: '1.5rem 1.25rem', textAlign: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
+                no tribes forming yet — <button onClick={() => setView('scene')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something on the scene →</button> and be the first.
               </div>
             );
-          })()}
-
-          {(pulseCat || areaFilter) && (
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
-              {pulseCat && <button onClick={() => setPulseCat('')} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#fff', border: 'none' }}>{CAT_EMOJI[pulseCat] || ''} {pulseCat} ✕</button>}
-              {areaFilter && <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#fff', border: 'none' }}>📍 {areaFilter} ✕</button>}
-            </div>
-          )}
-
-          {/* THE FEED — the whole city's posts & plans, like a dashboard */}
-          {(() => {
-            const shown = acts.filter((a) => (!pulseCat || a.category === pulseCat) && (!areaFilter || a.area === areaFilter));
-            return shown.length === 0 ? (
-              <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
-                {pulseCat || areaFilter ? 'nothing here yet — ' : 'the city is quiet right now — '}
-                <button onClick={() => setView('scene')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something on the scene →</button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} />)}
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {tribes.map((t) => {
+                  const mine = isMine(t.cat);
+                  return (
+                    <div key={t.cat} style={{ ...card, padding: '0.9rem 1rem', border: mine ? `1px solid ${LINE}` : '1px solid var(--h-border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                        <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{CAT_EMOJI[t.cat] || '✨'}</span>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.45rem', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {t.cat} {mine && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', background: LINE, borderRadius: 999, padding: '0.14rem 0.5rem' }}>✨ your vibe</span>}
+                          </div>
+                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.22rem' }}>{t.count} happening · {t.people.length} {t.people.length === 1 ? 'person' : 'people'} into it</div>
+                        </div>
+                        <button onClick={() => { setFilterCat(t.cat); setFilterMain(''); setView('scene'); }} style={{ ...poppyBtn, flexShrink: 0, fontSize: '0.95rem', padding: '0.4rem 0.9rem' }}>see it →</button>
+                      </div>
+                      {t.people.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.65rem', paddingLeft: '0.1rem' }}>
+                          {t.people.slice(0, 7).map((p, i) => (
+                            p.photo
+                              ? <img key={i} src={p.photo} alt="" title={p.name.split(' ')[0]} style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--h-surface)', marginLeft: i === 0 ? 0 : -8 }} />
+                              : <span key={i} title={p.name.split(' ')[0]} style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--h-surface-3)', border: '2px solid var(--h-surface)', marginLeft: i === 0 ? 0 : -8, display: 'inline-block' }} />
+                          ))}
+                          {t.people.length > 7 && <span style={{ marginLeft: '0.55rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--h-text-faint)' }}>+{t.people.length - 7}</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })()}
@@ -1190,10 +1193,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.55rem' }}>
                   {[...pulse.areas].sort((a: any, b: any) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 12).map((z: any, i: number) => {
-                    const on = areaFilter === z.area;
                     return (
-                      <button key={z.area} onClick={() => setAreaFilter(on ? '' : z.area)} title={`${z.activities || 0} happening · ${z.members} around`}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: on ? 'var(--h-surface-3)' : 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: '0.34rem 0.4rem', borderRadius: 8, color: on ? LINE_DEEP : 'var(--h-text)', textAlign: 'left' }}>
+                      <button key={z.area} onClick={() => { setAreaFilter(z.area); setView('scene'); }} title={`${z.activities || 0} happening · ${z.members} around — see it on the scene`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: '0.34rem 0.4rem', borderRadius: 8, color: 'var(--h-text)', textAlign: 'left' }}>
                         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
                         <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: 'var(--h-text-faint)' }}>{z.activities ? `${z.activities} ev` : ''}{z.members ? `${z.activities ? ' · ' : ''}${z.members}👤` : ''}</span>
                       </button>
