@@ -742,7 +742,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   </>
                 ) : (
                   <>
-                    <button onClick={() => { close(); setView('crew'); setChatOpen(true); }} style={{ ...poppyBtn, width: '100%' }}>💬 open the chat →</button>
+                    <button onClick={() => { setCardMember(null); setConfirmDrop(false); setView('crew'); setChatOpen(true); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180); }} style={{ ...poppyBtn, width: '100%' }}>💬 open the chat →</button>
                     <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
                   </>
                 )) : m.theyAccepted ? (
