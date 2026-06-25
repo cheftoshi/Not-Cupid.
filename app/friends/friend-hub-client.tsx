@@ -168,7 +168,8 @@ function ConnectionBackdrop() {
       'who wants to grab a drink?', 'farmers market sunday? 🥕', 'climbing gym buddy?',
     ];
     const PAL = ['#ff6a1f', '#2563ff', '#e0457f', '#1f9e6e', '#8b46d6']; // vibey bubble colors
-    type Bub = { x: number; y: number; text: string; c: number; rot: number; speed: number };
+    const EMOJI = /[\uD800-\uDBFF☀-➿⬀-⯿]/; // emoji surrogates + symbol ranges (no /u flag — ES5 target)
+    type Bub = { x: number; y: number; text: string; emoji: boolean; c: number; rot: number; speed: number };
     let bubs: Bub[] = [];
     let nextSpawn = 0;
     const roundRect = (x: number, y: number, bw: number, bh: number, r: number) => {
@@ -176,13 +177,16 @@ function ConnectionBackdrop() {
       ctx.moveTo(x + r, y); ctx.arcTo(x + bw, y, x + bw, y + bh, r); ctx.arcTo(x + bw, y + bh, x, y + bh, r);
       ctx.arcTo(x, y + bh, x, y, r); ctx.arcTo(x, y, x + bw, y, r); ctx.closePath();
     };
-    const spawn = (seed = false) => bubs.push({
-      x: 0.06 + Math.random() * 0.88,
-      y: seed ? 0.12 + Math.random() * 0.8 : 1.08,
-      text: SAYS[(Math.random() * SAYS.length) | 0],
-      c: (Math.random() * 5) | 0, rot: (Math.random() - 0.5) * 0.12,
-      speed: 0.0016 + Math.random() * 0.0013,
-    });
+    const spawn = (seed = false) => {
+      const text = SAYS[(Math.random() * SAYS.length) | 0];
+      bubs.push({
+        x: 0.08 + Math.random() * 0.84,
+        y: seed ? 0.12 + Math.random() * 0.8 : 1.08,
+        text, emoji: EMOJI.test(text),
+        c: (Math.random() * 5) | 0, rot: (Math.random() - 0.5) * 0.1,
+        speed: 0.0016 + Math.random() * 0.0013,
+      });
+    };
     const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size();
     const ro = new ResizeObserver(size); ro.observe(cv);
@@ -200,16 +204,20 @@ function ConnectionBackdrop() {
         const bb = bubs[k];
         if (!reduce) bb.y -= bb.speed; // rise
         if (bb.y < -0.08) { bubs.splice(k, 1); continue; }
-        const alpha = bb.y > 0.96 ? (1.08 - bb.y) / 0.12 : bb.y < 0.12 ? bb.y / 0.12 : 0.95;
-        const bw = ctx.measureText(bb.text).width + 22, bh = 30, r = 15;
+        const alpha = Math.max(0, Math.min(1, bb.y > 0.96 ? (1.08 - bb.y) / 0.12 : bb.y < 0.12 ? bb.y / 0.12 : 0.95));
+        // canvas measureText under-reports emoji advance width → pad extra when the
+        // line has one, cap to the viewport, and keep the whole bubble on-screen.
+        const bw = Math.min(w - 18, ctx.measureText(bb.text).width + (bb.emoji ? 44 : 26));
+        const bh = 32, r = Math.min(16, bw / 2 - 1);
+        const cx = Math.max(bw / 2 + 8, Math.min(w - bw / 2 - 8, bb.x * w));
         ctx.save();
-        ctx.translate(bb.x * w, bb.y * h); ctx.rotate(bb.rot); ctx.globalAlpha = Math.max(0, alpha);
+        ctx.translate(Math.round(cx), Math.round(bb.y * h)); ctx.rotate(bb.rot); ctx.globalAlpha = alpha;
         const col = PAL[bb.c];
-        ctx.shadowColor = 'rgba(120,70,30,0.16)'; ctx.shadowBlur = 9; ctx.shadowOffsetY = 3;
-        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.shadowColor = 'rgba(120,70,30,0.18)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
+        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.fillStyle = '#fffaf3'; ctx.fill();
         ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-        ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(0, -1); ctx.lineTo(6, -9); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); // tail
+        ctx.beginPath(); ctx.moveTo(-7, -10); ctx.lineTo(0, -1); ctx.lineTo(7, -10); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); // tail nub
+        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.stroke();
         ctx.fillStyle = col; ctx.fillText(bb.text, 0, -bh / 2 - 9);
         ctx.restore();
       }
