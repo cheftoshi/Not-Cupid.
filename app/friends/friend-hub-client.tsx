@@ -501,6 +501,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [cooledUntil, setCooledUntil] = useState<string | null>(null);
   const [termsOk, setTermsOk] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false); // localStorage read done? (avoids a modal flash)
+  const [cardMember, setCardMember] = useState<any | null>(null); // friend-card popup (click a connection)
+  const [confirmDrop, setConfirmDrop] = useState(false);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
@@ -647,6 +649,13 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     await loadMatches(); await loadChat();
     setBusy(false);
   }
+  // Drop a single 1:1 connection (leaves the shared chat if it was your last tie there).
+  async function dropConnection(otherId: string) {
+    setBusy(true);
+    await fetch('/api/friend/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId }) });
+    await loadMatches(); await loadChat();
+    setBusy(false); setCardMember(null); setConfirmDrop(false);
+  }
   async function send() {
     const body = msg.trim(); if (!body) return; setMsg('');
     await fetch('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
@@ -702,6 +711,56 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           </div>
         </div>
       )}
+
+      {/* FRIEND CARD pop-up — click a connection / pack member → their card + connect/drop */}
+      {cardMember && (() => { const m = cardMember; const first = (m.name || 'they').split(' ')[0]; const close = () => { setCardMember(null); setConfirmDrop(false); }; return (
+        <div onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 190, background: 'rgba(24,14,6,0.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 380, width: '100%', overflow: 'hidden', boxShadow: '0 34px 90px -22px rgba(0,0,0,0.55)', border: '1px solid var(--h-border)' }}>
+            <div style={{ position: 'relative' }}>
+              {m.photo_url
+                ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1.25', objectFit: 'cover', display: 'block' }} />
+                : <div style={{ width: '100%', aspectRatio: '1.25', background: 'var(--h-surface-3)' }} />}
+              <button onClick={close} aria-label="close" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(10,8,12,0.55)', color: '#fff', fontSize: '0.95rem' }}>✕</button>
+              {typeof m.score === 'number' && <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(10,8,12,0.72)', backdropFilter: 'blur(4px)', color: '#fff', borderRadius: 999, padding: '0.15rem 0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem' }}>{m.score}% match</span>}
+            </div>
+            <div style={{ padding: '1rem 1.2rem 1.25rem' }}>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.9rem', lineHeight: 1 }}>{m.name}{m.age ? <span style={{ color: 'var(--h-text-dim)', fontSize: '1rem' }}> · {m.age}</span> : null}</div>
+              {m.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.2rem' }}>{m.archetype}</div>}
+              {m.metro && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.2rem' }}>📍 {m.metro}</div>}
+              {(m.sharedActivities || []).length > 0 && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>you both like</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{m.sharedActivities.map((a: string) => <span key={a} style={chip}>{a}</span>)}</div>
+                </div>
+              )}
+              <div style={{ marginTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                {m.connected ? (confirmDrop ? (
+                  <>
+                    <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>drop your connection with {first}? you&apos;ll leave the shared chat if they were your last tie there.</div>
+                    <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: '#c0392b', color: '#fff', border: 'none', borderRadius: 12, padding: '0.7rem', cursor: busy ? 'wait' : 'pointer', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.02em' }}>{busy ? '…' : 'yes, drop the connection'}</button>
+                    <button onClick={() => setConfirmDrop(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>keep {first}</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => { close(); setView('crew'); setChatOpen(true); }} style={{ ...poppyBtn, width: '100%' }}>💬 open the chat →</button>
+                    <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
+                  </>
+                )) : m.theyAccepted ? (
+                  <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} style={{ background: '#ff2d8e', color: '#fff', border: 'none', borderRadius: 12, padding: '0.75rem', cursor: termsOk && !busy ? 'pointer' : 'not-allowed', opacity: termsOk ? 1 : 0.5, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em' }}>{busy ? '…' : `🤝 accept — connect with ${first} →`}</button>
+                ) : m.iAccepted ? (
+                  <>
+                    <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 10, padding: '0.6rem' }}>⏳ waiting on {first} to accept</div>
+                    <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>cancel request</button>
+                  </>
+                ) : (
+                  <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.5, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>{busy ? '…' : `🤝 connect with ${first}`}</button>
+                )}
+                {!termsOk && !m.connected && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.74rem', textAlign: 'center' }}>agree to the terms (on the page) before you connect.</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+      ); })()}
 
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
       {evToast && (
@@ -892,14 +951,14 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                         </div>
                         <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', marginTop: '0.55rem', paddingBottom: '0.1rem' }} className="crewWho">
                           {crewRoster.map((u) => (
-                            <span key={u.id} title={u.here ? `${u.name} · in the chat` : `${u.name} · invited`}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, background: 'var(--h-surface)', color: 'var(--h-text)', border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.18rem 0.55rem 0.18rem 0.22rem' }}>
+                            <button key={u.id} onClick={() => { if (u.you) return; const mm = matches.find((x) => x.otherId === u.id); if (mm) setCardMember(mm); }} title={u.here ? `${u.name} · in the chat` : `${u.name} · invited`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, cursor: u.you ? 'default' : 'pointer', font: 'inherit', background: 'var(--h-surface)', color: 'var(--h-text)', border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.18rem 0.55rem 0.18rem 0.22rem' }}>
                               {u.photo_url
                                 ? <img src={u.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: `1px solid var(--h-border)` }} />
                                 : <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, display: 'inline-block' }} />}
                               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: u.here ? '#3f7d57' : '#c9a06a', flexShrink: 0 }} />
-                            </span>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -1132,7 +1191,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
                   {matches.filter((m) => m.connected).slice(0, 8).map((m) => (
-                    <button key={m.otherId} onClick={() => setView('crew')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, color: 'var(--h-text)', textAlign: 'left' }}>
+                    <button key={m.otherId} onClick={() => setCardMember(m)} title={`view ${(m.name || '').split(' ')[0]}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, color: 'var(--h-text)', textAlign: 'left' }}>
                       {m.photo_url
                         ? <img src={m.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                         : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
@@ -1152,13 +1211,15 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.6rem' }}>
                 {matches.map((m) => (
                   <div key={m.otherId} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                    {m.photo_url
-                      ? <img src={m.photo_url} alt="" style={{ width: 42, height: 42, borderRadius: 11, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
-                      : <span style={{ width: 42, height: 42, borderRadius: 11, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>· {m.age}</span></div>
-                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : (m.theyAccepted && !m.iAccepted) ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? 'in your crew' : m.iAccepted ? 'waiting' : m.theyAccepted ? 'wants you' : 'new'}</div>
-                    </div>
+                    <button onClick={() => setCardMember(m)} title={`view ${(m.name || '').split(' ')[0]}`} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flex: 1, minWidth: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit', color: 'var(--h-text)', textAlign: 'left' }}>
+                      {m.photo_url
+                        ? <img src={m.photo_url} alt="" style={{ width: 42, height: 42, borderRadius: 11, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+                        : <span style={{ width: 42, height: 42, borderRadius: 11, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>· {m.age}</span></div>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : (m.theyAccepted && !m.iAccepted) ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? 'in your crew' : m.iAccepted ? 'waiting' : m.theyAccepted ? 'wants you' : 'new'}</div>
+                      </div>
+                    </button>
                     {m.connected ? (
                       <span style={{ flexShrink: 0, fontSize: '0.95rem', color: '#3f7d57' }}>✓</span>
                     ) : m.iAccepted ? (
