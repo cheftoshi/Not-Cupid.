@@ -106,12 +106,47 @@ function ZoneBubbles({ areas, onPick, active }: { areas: any[]; onPick: (a: stri
   );
 }
 
-// A LIVING, CITY-AGNOSTIC connection field (canvas). Nodes drift slowly; a link
-// forms between any two that wander near each other and fades as they part; every
-// so often a "signal" pulse travels a link — a connection sparking in real time.
-// Branded orange with a ~1-in-5 violet duotone for a funky/artsy color story.
-// Calm by design: low density, ~30fps, low opacity. Reduced-motion → a still
-// frame; pauses when the tab's hidden. Same anywhere — it's people, not a map.
+// Scene categories — the activity filter as choice "bubbles" with mini sub-tags
+// (movies, concerts, fitness, sports… each opens its own tags). Tags map to the
+// stored activity `category` values (CATS).
+const SCENE_CATS: { key: string; icon: string; label: string; tags: string[] }[] = [
+  { key: 'fitness', icon: '💪', label: 'fitness', tags: ['fitness', 'gym', 'running', 'yoga'] },
+  { key: 'sports', icon: '🎾', label: 'sports', tags: ['sports', 'tennis', 'pickleball'] },
+  { key: 'movies', icon: '🎬', label: 'movies', tags: ['movies'] },
+  { key: 'concerts', icon: '🎶', label: 'concerts', tags: ['concerts', 'music'] },
+  { key: 'food', icon: '🍜', label: 'food & drink', tags: ['food', 'coffee', 'drinks'] },
+  { key: 'culture', icon: '🎨', label: 'culture', tags: ['arts', 'books', 'games', 'chill', 'outdoors'] },
+];
+function SceneCats({ main, setMain, sub, setSub }: { main: string; setMain: (m: string) => void; sub: string; setSub: (s: string) => void }) {
+  return (
+    <div style={{ ...card, padding: '0.95rem 1rem' }}>
+      <div style={sideHd}>🎟️ what are you into?</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.65rem' }}>
+        {SCENE_CATS.map((c) => {
+          const on = main === c.key;
+          return (
+            <div key={c.key}>
+              <button onClick={() => { setMain(on ? '' : c.key); setSub(''); }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: on ? 'var(--h-accent)' : 'var(--h-surface-2)', color: on ? '#0c2029' : 'var(--h-text)', border: `1px solid ${on ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 999, padding: '0.45rem 0.95rem', cursor: 'pointer', fontFamily: 'ui-sans-serif, system-ui, sans-serif', fontSize: '0.88rem', fontWeight: 600 }}>
+                {c.icon} {c.label}
+              </button>
+              {on && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.32rem', margin: '0.5rem 0 0.3rem 0.4rem' }}>
+                  {c.tags.map((t) => (
+                    <button key={t} onClick={() => setSub(sub === t ? '' : t)} style={{ ...chip, cursor: 'pointer', background: sub === t ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sub === t ? '#0c2029' : 'var(--h-text-dim)' }}>{sub === t ? '✓ ' : ''}{t}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// The backdrop IS the conversation — rising comic speech bubbles (the city's group
+// chat). Canvas; reduced-motion still-frame; pauses when the tab's hidden.
 function ConnectionBackdrop() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -443,7 +478,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
   const [pulse, setPulse] = useState<any>(null);
   const [acts, setActs] = useState<any[]>([]);
-  const [filterCat, setFilterCat] = useState<string>('');
+  const [filterCat, setFilterCat] = useState<string>(''); // selected sub-tag (exact category)
+  const [filterMain, setFilterMain] = useState<string>(''); // selected main category bubble
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
@@ -475,9 +511,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     const r = await fetch('/api/friend/city-pulse'); if (r.ok) setPulse(await r.json());
   }, []);
   const loadActs = useCallback(async () => {
-    const r = await fetch(`/api/friend/activities${filterCat ? `?category=${filterCat}` : ''}`);
+    const r = await fetch('/api/friend/activities'); // fetch all; category filtering is client-side now (mains group several)
     if (r.ok) setActs((await r.json()).activities || []);
-  }, [filterCat]);
+  }, []);
   useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } }, []);
 
   useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
@@ -1053,31 +1089,45 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
         <div ref={feedRef} />
 
-        {/* filters: kind segmented control + active-area chip */}
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.7rem' }}>
-          <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
-            {([['all', 'all'], ['event', '📅 plans'], ['post', '💬 talk']] as const).map(([k, label]) => (
-              <button key={k} onClick={() => setKindFilter(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: kindFilter === k ? LINE : 'var(--h-surface)', color: kindFilter === k ? '#fff' : 'var(--h-text)' }}>{label}</button>
-            ))}
+        <div className="fmGrid">
+          <div className="fmMain">
+            {/* filters: kind segmented control + active filter chips */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
+              <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
+                {([['all', 'all'], ['event', '📅 plans'], ['post', '💬 talk']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setKindFilter(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: kindFilter === k ? LINE : 'var(--h-surface)', color: kindFilter === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
+                ))}
+              </div>
+              {(filterMain || filterCat) && (
+                <button onClick={() => { setFilterMain(''); setFilterCat(''); }} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
+                  {filterCat || filterMain} <span style={{ fontWeight: 800 }}>×</span>
+                </button>
+              )}
+              {areaFilter && (
+                <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
+                  📍 {areaFilter} <span style={{ fontWeight: 800 }}>×</span>
+                </button>
+              )}
+            </div>
+
+            {(() => {
+              const subTags = filterMain ? (SCENE_CATS.find((c) => c.key === filterMain)?.tags || []) : [];
+              const shown = acts.filter((a) =>
+                (kindFilter === 'all' || (a.kind || 'event') === kindFilter) &&
+                (!areaFilter || a.area === areaFilter) &&
+                (filterCat ? a.category === filterCat : filterMain ? subTags.includes(a.category) : true));
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
+                  {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} />)}
+                </div>
+              );
+            })()}
           </div>
-          {areaFilter && (
-            <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', background: '#ffd23d', display: 'inline-flex', gap: '0.4rem' }}>
-              📍 {areaFilter} <span style={{ fontWeight: 800, color: LINE_DEEP }}>×</span>
-            </button>
-          )}
+          <aside className="fmRail">
+            <SceneCats main={filterMain} setMain={setFilterMain} sub={filterCat} setSub={setFilterCat} />
+          </aside>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-          <button onClick={() => setFilterCat('')} style={{ ...chip, cursor: 'pointer', background: filterCat === '' ? '#ffd23d' : 'var(--h-surface-3)' }}>all</button>
-          {CATS.map((c) => <button key={c} onClick={() => setFilterCat(c)} style={{ ...chip, cursor: 'pointer', background: filterCat === c ? '#ffd23d' : 'var(--h-surface-3)' }}>{c}</button>)}
-        </div>
-
-        {(() => { const shown = acts.filter((a) => (kindFilter === 'all' || (a.kind || 'event') === kindFilter) && (!areaFilter || a.area === areaFilter)); return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>{kindFilter === 'event' ? 'no hangs planned yet — plan one above!' : 'nothing here yet — be the one to start something.'}</div>}
-          {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} />)}
-        </div>
-        ); })()}
         </div>
         )}
           </main>
