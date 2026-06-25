@@ -67,14 +67,26 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   const meFirst = ((me as any).name || 'Someone').split(' ')[0];
   const pushes: Promise<void>[] = [];
   let created = 0;
+  // Batch every ranked candidate's active-connection count in ONE query (was an
+  // N+1 — one friend_connections lookup per candidate inside the loop below).
+  const candIds = ranked.map((r) => r.user.id);
+  const candActiveCount = new Map<string, number>();
+  if (candIds.length) {
+    const { data: allConns } = await supabaseAdmin
+      .from('friend_connections')
+      .select('user_a_id, user_b_id, status')
+      .neq('status', 'declined')
+      .or(`user_a_id.in.(${candIds.join(',')}),user_b_id.in.(${candIds.join(',')})`);
+    const candSet = new Set(candIds);
+    for (const c of allConns ?? []) {
+      if (candSet.has(c.user_a_id)) candActiveCount.set(c.user_a_id, (candActiveCount.get(c.user_a_id) || 0) + 1);
+      if (candSet.has(c.user_b_id)) candActiveCount.set(c.user_b_id, (candActiveCount.get(c.user_b_id) || 0) + 1);
+    }
+  }
   for (const { user: cand, score } of ranked) {
     if (created >= need) break;
     // Respect the candidate's own active-cap so we don't overload popular users.
-    const { data: candConns } = await supabaseAdmin
-      .from('friend_connections')
-      .select('status')
-      .or(`user_a_id.eq.${cand.id},user_b_id.eq.${cand.id}`);
-    const candActive = (candConns ?? []).filter((c) => c.status !== 'declined').length;
+    const candActive = candActiveCount.get(cand.id) || 0;
     // Protect the candidate by their BASE cap (not the buyer's expanded cap), so
     // buying extra rounds never overloads someone else's roster.
     if (candActive >= FRIEND_MAX_CONNECTIONS) continue;

@@ -163,8 +163,8 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
 }
 
 async function sendItsAMatchEmails(user1Id: string, user2Id: string) {
-  const { data: user1 } = await supabaseAdmin.from('users').select('*').eq('id', user1Id).single();
-  const { data: user2 } = await supabaseAdmin.from('users').select('*').eq('id', user2Id).single();
+  const { data: user1 } = await supabaseAdmin.from('users').select('id, name, email').eq('id', user1Id).single();
+  const { data: user2 } = await supabaseAdmin.from('users').select('id, name, email').eq('id', user2Id).single();
   if (!user1 || !user2) return;
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';

@@ -15,18 +15,20 @@ export async function GET() {
 
   // Realm segregation: a test viewer sees the test world's pulse; real users
   // see the real one (test accounts never inflate real counts).
-  let memberQuery = supabaseAdmin
-    .from('users').select('zip').not('friend_opted_in_at', 'is', null).is('deleted_at', null);
-  memberQuery = (user as any).is_test
-    ? memberQuery.eq('is_test', true)
-    : memberQuery.or('is_test.is.null,is_test.eq.false');
-  const { data: members } = await memberQuery;
+  const realm = (q: any) => ((user as any).is_test ? q.eq('is_test', true) : q.or('is_test.is.null,is_test.eq.false'));
+  // Bound the per-area aggregation scan; keep the headline total exact via a head count.
+  const { data: members } = await realm(
+    supabaseAdmin.from('users').select('zip').not('friend_opted_in_at', 'is', null).is('deleted_at', null)
+  ).limit(5000);
+  const { count: totalMembers } = await realm(
+    supabaseAdmin.from('users').select('id', { count: 'exact', head: true }).not('friend_opted_in_at', 'is', null).is('deleted_at', null)
+  );
 
   const { data: acts } = await supabaseAdmin
-    .from('friend_activities').select('area, kind').or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+    .from('friend_activities').select('area, kind').or(`expires_at.is.null,expires_at.gt.${nowIso}`).limit(2000);
 
   const { data: activeMembers } = await supabaseAdmin
-    .from('friend_circle_members').select('circle_id').is('left_at', null);
+    .from('friend_circle_members').select('circle_id').is('left_at', null).limit(5000);
   const activeGroups = new Set((activeMembers ?? []).map((m) => m.circle_id)).size;
 
   const byArea: Record<string, { area: string; members: number; activities: number }> = {};
@@ -34,13 +36,13 @@ export async function GET() {
     if (!byArea[area]) byArea[area] = { area, members: 0, activities: 0 };
     byArea[area][key]++;
   };
-  (members ?? []).forEach((m) => bump(neighborhoodOf(m.zip), 'members'));
+  (members ?? []).forEach((m: any) => bump(neighborhoodOf(m.zip), 'members'));
   (acts ?? []).forEach((a) => bump(a.area || 'Greater Boston', 'activities'));
 
   const areas = Object.values(byArea).sort((a, b) => b.members - a.members || b.activities - a.activities);
 
   return NextResponse.json({
-    totalMembers: members?.length ?? 0,
+    totalMembers: totalMembers ?? 0,
     activeGroups,
     // "things to do" = events/hangs only (posts aren't plans).
     liveActivities: (acts ?? []).filter((a: any) => (a.kind || 'event') !== 'post').length,
