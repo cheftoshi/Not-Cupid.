@@ -172,11 +172,6 @@ function ConnectionBackdrop() {
     type Bub = { x: number; y: number; text: string; emoji: boolean; c: number; rot: number; speed: number };
     let bubs: Bub[] = [];
     let nextSpawn = 0;
-    const roundRect = (x: number, y: number, bw: number, bh: number, r: number) => {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y); ctx.arcTo(x + bw, y, x + bw, y + bh, r); ctx.arcTo(x + bw, y + bh, x, y + bh, r);
-      ctx.arcTo(x, y + bh, x, y, r); ctx.arcTo(x, y, x + bw, y, r); ctx.closePath();
-    };
     const spawn = (seed = false) => {
       const text = SAYS[(Math.random() * SAYS.length) | 0];
       bubs.push({
@@ -187,10 +182,10 @@ function ConnectionBackdrop() {
         speed: 0.0016 + Math.random() * 0.0013,
       });
     };
-    const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    const size = () => { w = cv.clientWidth || window.innerWidth; h = cv.clientHeight || window.innerHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size();
     const ro = new ResizeObserver(size); ro.observe(cv);
-    if (!reduce) for (let i = 0; i < 8; i++) spawn(true);
+    for (let i = 0; i < 9; i++) spawn(true); // seed always → reduced-motion still shows a frame
     let raf = 0, last = 0, on = true;
     const draw = (ts: number) => {
       if (!on) return;
@@ -207,17 +202,29 @@ function ConnectionBackdrop() {
         const alpha = Math.max(0, Math.min(1, bb.y > 0.96 ? (1.08 - bb.y) / 0.12 : bb.y < 0.12 ? bb.y / 0.12 : 0.95));
         // canvas measureText under-reports emoji advance width → pad extra when the
         // line has one, cap to the viewport, and keep the whole bubble on-screen.
-        const bw = Math.min(w - 18, ctx.measureText(bb.text).width + (bb.emoji ? 44 : 26));
-        const bh = 32, r = Math.min(16, bw / 2 - 1);
+        const bw = Math.max(64, Math.min(w - 18, ctx.measureText(bb.text).width + (bb.emoji ? 44 : 26)));
+        const bh = 32, r = Math.min(15, bw / 2 - 1), tx = -bw / 2 + 24;
         const cx = Math.max(bw / 2 + 8, Math.min(w - bw / 2 - 8, bb.x * w));
+        // one continuous path: rounded body + an integrated pointer tail (a real
+        // speech bubble, not a colored nub stuck on the bottom).
+        const path = () => {
+          ctx.beginPath();
+          ctx.moveTo(-bw / 2 + r, -bh - 9);
+          ctx.arcTo(bw / 2, -bh - 9, bw / 2, -9, r);
+          ctx.arcTo(bw / 2, -9, -bw / 2, -9, r);
+          ctx.lineTo(tx + 8, -9); ctx.lineTo(tx, -1); ctx.lineTo(tx - 8, -9);
+          ctx.lineTo(-bw / 2 + r, -9);
+          ctx.arcTo(-bw / 2, -9, -bw / 2, -bh - 9, r);
+          ctx.arcTo(-bw / 2, -bh - 9, bw / 2, -bh - 9, r);
+          ctx.closePath();
+        };
         ctx.save();
         ctx.translate(Math.round(cx), Math.round(bb.y * h)); ctx.rotate(bb.rot); ctx.globalAlpha = alpha;
         const col = PAL[bb.c];
-        ctx.shadowColor = 'rgba(120,70,30,0.18)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
-        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.fillStyle = '#fffaf3'; ctx.fill();
+        ctx.shadowColor = 'rgba(120,70,30,0.20)'; ctx.shadowBlur = 11; ctx.shadowOffsetY = 4;
+        path(); ctx.fillStyle = '#fffaf3'; ctx.fill();
         ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-        ctx.beginPath(); ctx.moveTo(-7, -10); ctx.lineTo(0, -1); ctx.lineTo(7, -10); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); // tail nub
-        roundRect(-bw / 2, -bh - 9, bw, bh, r); ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.stroke();
+        path(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
         ctx.fillStyle = col; ctx.fillText(bb.text, 0, -bh / 2 - 9);
         ctx.restore();
       }
