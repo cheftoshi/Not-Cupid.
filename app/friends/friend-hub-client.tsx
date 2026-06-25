@@ -163,7 +163,7 @@ function ConnectionBackdrop() {
       'sat morning run? 🏃', 'movie night, who’s in? 🎬', 'starting a book club 📚',
       'let’s actually hang irl', 'friends > swiping', 'gym buddy wanted 💪',
       'concert friday? 🎶', 'taco tuesday? 🌮', 'beach day this weekend? 🏖️',
-      'looking for a hiking crew ⛰️', 'board game night? 🎲', 'ramen run, anyone? 🍜',
+      'looking for a hiking crew 🌲', 'board game night? 🎲', 'ramen run, anyone? 🍜',
       'tennis at the park? 🎾', 'pottery class — join me 🎨', 'find your people 🧡',
       'who wants to grab a drink?', 'farmers market sunday? 🥕', 'climbing gym buddy?',
     ];
