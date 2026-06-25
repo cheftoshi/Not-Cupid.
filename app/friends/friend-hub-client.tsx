@@ -493,6 +493,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [sealedCount, setSealedCount] = useState(0);
   const [cooledUntil, setCooledUntil] = useState<string | null>(null);
   const [termsOk, setTermsOk] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false); // localStorage read done? (avoids a modal flash)
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
@@ -535,7 +536,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     const r = await fetch('/api/friend/activities'); // fetch all; category filtering is client-side now (mains group several)
     if (r.ok) setActs((await r.json()).activities || []);
   }, []);
-  useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } }, []);
+  useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } setTermsChecked(true); }, []);
 
   useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
   useEffect(() => { loadActs(); }, [loadActs]);
@@ -681,6 +682,20 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(95% 65% at 4% 0%, #f6d4b4 0%, transparent 46%), radial-gradient(90% 60% at 99% 5%, #f4cadd 0%, transparent 44%), radial-gradient(120% 80% at 50% 116%, #c9d9f5 0%, transparent 54%), #f0e4d0', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <ConnectionBackdrop />
 
+      {/* T&C GATE — a blocking pop-up; you agree once before you can use the friend line */}
+      {termsChecked && !termsOk && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(24,14,6,0.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 440, width: '100%', padding: '1.7rem 1.6rem', boxShadow: '0 34px 90px -22px rgba(0,0,0,0.55)', border: '1px solid var(--h-border)' }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.1rem', color: 'var(--h-text)', lineHeight: 1 }}>before you dive in 🧡</div>
+            <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.95rem', color: 'var(--h-text-dim)', lineHeight: 1.6, margin: '0.7rem 0 1.2rem' }}>
+              the friend line is about meeting real people. by continuing you agree to NotCupid&apos;s <a href="/terms" style={{ color: LINE_DEEP }}>terms</a> &amp; <a href="/safety" style={{ color: LINE_DEEP }}>community guidelines</a> — be kind, be real, and meet new people safely.
+            </p>
+            <button onClick={agreeTerms} style={{ ...poppyBtn, width: '100%', fontSize: '1.25rem' }}>I agree — let me in →</button>
+            <a href="/hub" style={{ display: 'block', textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'none' }}>not now — back to hub</a>
+          </div>
+        </div>
+      )}
+
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
       {evToast && (
         <button onClick={() => { setView('scene'); setEvToast(null); setNewScene(0); }}
@@ -780,48 +795,6 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
         {view === 'crew' && (
         <div>
-          {/* T&C safeguard — agree once before connecting with anyone */}
-          {!termsOk && matches.length > 0 && !ghosted && (
-            <label style={{ ...card, display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.85rem 1.1rem', marginBottom: '1rem', cursor: 'pointer' }}>
-              <input type="checkbox" checked={termsOk} onChange={agreeTerms} style={{ width: 18, height: 18, marginTop: '0.15rem', accentColor: LINE, flexShrink: 0 }} />
-              <span style={{ fontFamily: 'Georgia,serif', fontSize: '0.86rem', color: 'var(--h-text-dim)', lineHeight: 1.5 }}>
-                before you connect — I agree to NotCupid&apos;s <a href="/terms" style={{ color: LINE_DEEP }}>terms</a> &amp; <a href="/safety" style={{ color: LINE_DEEP }}>community guidelines</a>: be kind, be real, and meet new people safely.
-              </span>
-            </label>
-          )}
-
-          {/* CHOOSE THE PACK — opt into the whole pack to open the group chat */}
-          {matches.some((m) => !m.connected && !m.iAccepted) && (
-            <div style={{ ...card, padding: '1rem 1.2rem', marginBottom: '1rem' }}>
-              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', marginBottom: '0.6rem', color: 'var(--h-text-dim)', fontSize: '0.92rem' }}>
-                <b style={{ color: 'var(--h-text)' }}>choose your pack</b> to open the group chat with everyone in it — the pack is just the room you meet in.
-              </div>
-              <button onClick={choosePack} disabled={busy || !termsOk}
-                style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.45, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>
-                {busy ? '…' : '🎒 choose this pack — open the group chat →'}
-              </button>
-            </div>
-          )}
-
-          {matches.some((m) => !m.connected) && (
-            <div style={{ ...card, padding: '0.85rem 1.1rem', marginBottom: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>
-              🤝 then make the real <b>connections</b>: tap <b>connect</b> on anyone for a 1:1 — they get a ping, and once they accept you&apos;re connected for good. connect with as many people as you like.
-            </div>
-          )}
-
-          {/* SEALED PACK — a friendship pack waiting to be opened cinematically */}
-          {sealedCount > 0 && !ghosted && (
-            <a href="/friends/pack" style={{ display: 'block', textDecoration: 'none', marginBottom: '1.25rem', background: 'linear-gradient(135deg, #e8842b, #c96a18)', border: 'none', borderRadius: 16, padding: '1.1rem 1.25rem', boxShadow: '0 16px 40px -20px rgba(232,132,43,0.6)', color: '#fff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                <div>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.02em' }}>🎒 you have a pack to open</div>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.92 }}>{sealedCount} new friend{sealedCount > 1 ? 's' : ''} sealed inside</div>
-                </div>
-                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', whiteSpace: 'nowrap' }}>open it →</span>
-              </div>
-            </a>
-          )}
-
           {/* YOUR FRIEND CARD — on top, so the page leads with you */}
           {profileSet && me ? (
             <div style={{ ...card, padding: '0.85rem 1rem', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
@@ -845,8 +818,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </a>
           )}
 
-          {/* CREW — a deck you swipe through (frees the room below for the chat) */}
-          <h2 style={sectionLabel}><StationDot />🎒 your pack</h2>
+          {/* PAUSED / EMPTY / CHOOSE-PACK — your pack itself lives in the right rail */}
           {ghosted ? (
             <div style={{ ...card, padding: '1.25rem' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ your matching is paused</div>
@@ -877,48 +849,17 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </div>
           ) : matches.length === 0 ? (
             <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>the algo is still finding your people — check back soon.</div>
-          ) : (
-            <>
-            <div className="crewDeck">
-              {matches.map((m) => (
-                <div key={m.otherId} style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ position: 'relative' }}>
-                    {m.photo_url
-                      ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', borderBottom: "1px solid var(--h-border)" }} />
-                      : <div style={{ width: '100%', aspectRatio: '1', borderBottom: "1px solid var(--h-border)", background: 'var(--h-surface-3)' }} />}
-                    <span style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(10,8,12,0.72)', backdropFilter: 'blur(4px)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 999, padding: '0.12rem 0.55rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em' }}>{m.score}% match</span>
-                  </div>
-                  <div style={{ padding: '0.7rem 0.8rem' }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem' }}>{m.name} <span style={{ color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>· {m.age}</span></div>
-                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : (m.theyAccepted && !m.iAccepted) ? '#ff2d8e' : LINE_DEEP, marginBottom: '0.4rem' }}>● {m.connected ? 'in your crew' : m.iAccepted ? 'waiting on them' : m.theyAccepted ? 'wants to connect with you' : 'new match'}</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: m.connected ? 0 : '0.55rem' }}>
-                      {(m.sharedActivities || []).slice(0, 3).map((a: string) => <span key={a} style={chip}>{a}</span>)}
-                    </div>
-                    {!m.connected && (m.iAccepted ? (
-                      <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 9, padding: '0.45rem' }}>⏳ waiting on them</div>
-                    ) : (
-                      <button onClick={() => connectOne(m.otherId)} disabled={busy || !termsOk}
-                        style={{ width: '100%', cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em', boxShadow: `2px 2px 0 ${INK}` }}>
-                        {busy ? '…' : m.theyAccepted ? '🤝 accept →' : '🤝 connect'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '-0.2rem' }}>← deck through your crew →</div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <a href="/friends/pack" style={{ ...poppyBtn, textDecoration: 'none', textAlign: 'center' }}>
-                🎒 open another pack · $1.99
-              </a>
-              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.82rem' }}>group chats are free — a pack is a fresh batch of 7–8 people. <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free.</span>
-              <button onClick={leaveCrew} disabled={busy}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 4 }}>
-                {busy ? '…' : 'not your crew? opt out of the group →'}
+          ) : matches.some((m) => !m.connected && !m.iAccepted) ? (
+            <div style={{ ...card, padding: '1rem 1.2rem', marginBottom: '1.1rem' }}>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', marginBottom: '0.6rem', color: 'var(--h-text-dim)', fontSize: '0.92rem' }}>
+                <b style={{ color: 'var(--h-text)' }}>choose your pack</b> to open the group chat with everyone — then tap <b>connect</b> on anyone in <b>your pack</b> (over on the right) for a 1:1.
+              </div>
+              <button onClick={choosePack} disabled={busy || !termsOk}
+                style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.45, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>
+                {busy ? '…' : '🎒 choose this pack — open the group chat →'}
               </button>
             </div>
-            </>
-          )}
+          ) : null}
 
           {/* LOWER — the group chat, full-width now (friend card lives up top) */}
           <div className="crewLower">
@@ -1194,6 +1135,42 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 </div>
               )}
               <button onClick={() => setView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
+            </div>
+            )}
+
+            {/* CREW VIEW — your pack lives here on the right */}
+            {view === 'crew' && !ghosted && cooledUntil === null && matches.length > 0 && (
+            <div style={{ ...card, padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
+              <div style={sideHd}>🎒 your pack</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.6rem' }}>
+                {matches.map((m) => (
+                  <div key={m.otherId} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                    {m.photo_url
+                      ? <img src={m.photo_url} alt="" style={{ width: 42, height: 42, borderRadius: 11, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+                      : <span style={{ width: 42, height: 42, borderRadius: 11, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>· {m.age}</span></div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : (m.theyAccepted && !m.iAccepted) ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? 'in your crew' : m.iAccepted ? 'waiting' : m.theyAccepted ? 'wants you' : 'new'}</div>
+                    </div>
+                    {m.connected ? (
+                      <span style={{ flexShrink: 0, fontSize: '0.95rem', color: '#3f7d57' }}>✓</span>
+                    ) : m.iAccepted ? (
+                      <span style={{ flexShrink: 0, fontSize: '0.85rem' }}>⏳</span>
+                    ) : (
+                      <button onClick={() => connectOne(m.otherId)} disabled={busy || !termsOk}
+                        style={{ flexShrink: 0, cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: 'none', borderRadius: 8, padding: '0.32rem 0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
+                        {m.theyAccepted ? 'accept' : 'connect'}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {sealedCount > 0 && (
+                <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #e8842b, #c96a18)', color: '#fff', borderRadius: 10, padding: '0.55rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em' }}>🎒 open sealed pack ({sealedCount}) →</a>
+              )}
+              <a href="/friends/pack" style={{ ...poppyBtn, display: 'block', marginTop: '0.7rem', textAlign: 'center', textDecoration: 'none', fontSize: '0.95rem', padding: '0.5rem' }}>open another pack · $1.99</a>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.66rem', marginTop: '0.5rem', textAlign: 'center' }}>first pack free · <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free</div>
+              <button onClick={leaveCrew} disabled={busy} style={{ display: 'block', width: '100%', marginTop: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>{busy ? '…' : 'opt out of the group →'}</button>
             </div>
             )}
 
