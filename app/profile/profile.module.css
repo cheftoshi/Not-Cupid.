@@ -270,7 +270,7 @@
 }
 
 .personalityType {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.875rem;
   font-weight: 400;
@@ -368,7 +368,7 @@
   color: #2563ff;
 }
 .dashGreet {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: clamp(3rem, 8vw, 4.75rem);
   line-height: 0.92;
@@ -414,7 +414,7 @@
   opacity: 0.55;
 }
 .dashArchetypeName {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.4rem;
 }

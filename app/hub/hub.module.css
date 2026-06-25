@@ -23,7 +23,7 @@
 }
 .brand {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.05rem; letter-spacing: 0.18em; color: #0a0a0a;
+  font-size: 1.05rem; letter-spacing: 0.18em; color: var(--h-text);
 }
 .brandDot { color: #2563ff; margin: 0 0.35rem; font-weight: 700; }
 .logout {
@@ -73,16 +73,16 @@
 }
 
 .card {
-  background: rgba(255,255,255,0.7);
+  background: var(--h-glass);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(37,99,255,0.3);
   border-radius: 22px;
   padding: 2rem;
   display: flex; flex-direction: column;
   text-decoration: none; color: inherit;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
-.card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -16px rgba(27,70,201,0.25); }
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 
 .cardLove { border-color: rgba(27,70,201,0.4); }
 .cardLove:hover { border-color: #1b46c9; }
@@ -138,7 +138,7 @@
 }
 .specV {
   font-family: Georgia, ui-serif, serif;
-  font-style: italic; font-size: 0.9rem; color: #0a0a0a;
+  font-style: italic; font-size: 0.9rem; color: var(--h-text);
 }
 
 .cardCta {
@@ -215,7 +215,7 @@
 .dashRail { grid-area: rail; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
 .dashMain { grid-area: main; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
 .dashAside { grid-area: aside; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
-.dCard { background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 16px; box-shadow: 0 14px 40px -30px rgba(0,0,0,0.5); padding: 1.1rem 1.2rem; }
+.dCard { background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 16px; box-shadow: var(--shadow-md); padding: 1.1rem 1.2rem; }
 .dLabel { font-family: 'DM Mono', ui-monospace, monospace; font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--h-text-dim); margin-bottom: 0.7rem; display: block; }
 /* tablet: drop the aside under the feed */
 @media (max-width: 1024px) {

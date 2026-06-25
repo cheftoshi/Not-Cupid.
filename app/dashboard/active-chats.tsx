@@ -37,7 +37,7 @@ export default function ActiveChats({ cards }: { cards: Card[] }) {
           const first = (a.name || 'your match').split(' ')[0];
           const s = STATUS[a.status];
           return (
-            <div key={a.matchId} style={{ display: 'flex', gap: '0.9rem', alignItems: 'center', background: 'var(--h-surface)', border: '2px solid #2563ff', borderRadius: 16, padding: '0.85rem 0.95rem', boxShadow: '0 14px 40px -28px rgba(0,0,0,0.5)' }}>
+            <div key={a.matchId} style={{ display: 'flex', gap: '0.9rem', alignItems: 'center', background: 'var(--h-surface)', border: '2px solid var(--blue)', borderRadius: 16, padding: '0.85rem 0.95rem', boxShadow: 'var(--shadow-md)' }}>
               <div style={{ width: 76, height: 76, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'var(--h-surface-2)' }}>
                 {a.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element

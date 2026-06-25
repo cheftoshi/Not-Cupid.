@@ -356,11 +356,12 @@
   text-decoration: none;
   background: #0a0a0a;
   padding: 0.95rem 2.1rem;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid #0a0a0a;
-  transition: all 0.15s;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
-.landAuthPrimary:hover { background: #2563ff; border-color: #2563ff; transform: translateY(-1px); }
+.landAuthPrimary:hover { background: var(--blue); border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .landAuthGhost {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.74rem;

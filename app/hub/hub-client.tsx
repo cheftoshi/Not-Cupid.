@@ -183,7 +183,7 @@ export default function HubClient({
 
           {/* ── MAIN: what you're into + your activity ── */}
           <section className={styles.dashMain}>
-            <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(1.5rem,4vw,2rem)', color: 'var(--h-text)', margin: '0 0 0.25rem' }}>
+            <p style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.5rem,4vw,2rem)', color: 'var(--h-text)', margin: '0 0 0.25rem' }}>
               hey {firstName.toLowerCase()}.
             </p>
 

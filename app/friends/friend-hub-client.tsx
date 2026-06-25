@@ -275,7 +275,7 @@ function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onSce
           {me?.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>{me.archetype}</div>}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
-          {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my crew →</button>}
+          {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my circle →</button>}
           <button onClick={onScene} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: "1px solid var(--h-border)", borderRadius: 12, padding: '0.45rem 0.95rem', boxShadow: '0 6px 16px -8px rgba(180,130,40,0.55)', cursor: 'pointer' }}>📣 post →</button>
         </div>
       </div>
@@ -1234,8 +1234,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   <div key={m.otherId} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
                     <button onClick={() => setCardMember(m)} title={`view ${(m.name || '').split(' ')[0]}`} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flex: 1, minWidth: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit', color: 'var(--h-text)', textAlign: 'left' }}>
                       {m.photo_url
-                        ? <img src={m.photo_url} alt="" style={{ width: 42, height: 42, borderRadius: 11, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
-                        : <span style={{ width: 42, height: 42, borderRadius: 11, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
+                        ? <img src={m.photo_url} alt="" style={{ width: 42, height: 42, borderRadius: 12, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+                        : <span style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>· {m.age}</span></div>
                         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? '#3f7d57' : (m.theyAccepted && !m.iAccepted) ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? 'in your crew' : m.iAccepted ? 'waiting' : m.theyAccepted ? 'wants you' : 'new'}</div>
@@ -1265,7 +1265,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
             {view === 'scene' && (
             <div style={{ ...card, padding: '0.9rem 1rem' }}>
-              <div style={sideHd}>🎒 my pack</div>
+              <div style={sideHd}>🎒 your pack</div>
               {matches.length === 0 ? (
                 <div style={sideEmpty}>your pack is forming — check back soon.</div>
               ) : (

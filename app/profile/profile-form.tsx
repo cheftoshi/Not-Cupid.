@@ -183,7 +183,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
         {/* GALLERY — up to 3 extra photos, revealed with the $2.99 unlock */}
         <div className={styles.galleryBlock}>
           <div className={styles.galleryHead}>
-            <span className={styles.galleryTitle}>more photos · <span className={styles.galleryHint}>{gallery.length}/3 — unlocked by your match for $2.99</span></span>
+            <span className={styles.galleryTitle}>more photos · <span className={styles.galleryHint}>{gallery.length}/3 — unlocked by your match for $0.99</span></span>
           </div>
           <div className={styles.galleryGrid}>
             {gallery.map((url) => (

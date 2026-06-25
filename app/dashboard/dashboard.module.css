@@ -26,7 +26,7 @@
 .navLinkActive { color: var(--h-text); font-weight: 600; }
 
 .title {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 3.5rem;
   font-weight: 400;
@@ -35,7 +35,7 @@
   letter-spacing: -0.02em;
 }
 
-.titleAccent { font-weight: 700; color: #2563ff; }
+.titleAccent { font-weight: 700; color: var(--blue); }
 
 .subtitle {
   font-size: 0.875rem;
@@ -46,10 +46,10 @@
 
 .matchCard {
   background: var(--h-surface);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   padding: 1.75rem;
   border: 1px solid var(--h-border);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow-md);
   margin-bottom: 2rem;
   animation: ncCardIn 0.5s cubic-bezier(.2,.7,.2,1) both;
 }
@@ -75,13 +75,13 @@
   font-size: 0.75rem;
   font-style: italic;
   font-family: Georgia, ui-serif, serif;
-  color: #2563ff;
+  color: var(--h-accent);
 }
 
 .photoWrap {
   width: 100%;
   aspect-ratio: 4/5;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   overflow: hidden;
   margin-bottom: 1.5rem;
   background: var(--h-surface-2);
@@ -90,7 +90,7 @@
 .photo { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .matchName {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.5rem;
@@ -113,7 +113,7 @@
   background: #0a0a0a;
   color: #fff;
   padding: 1.25rem 1.5rem;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   margin-bottom: 1.5rem;
 }
 
@@ -200,7 +200,7 @@
 }
 
 .unlockButton {
-  background: #2563ff;
+  background: var(--blue);
   color: #fff;
   border: none;
   padding: 0.85rem 1.75rem;
@@ -208,11 +208,11 @@
   text-transform: uppercase;
   letter-spacing: 0.15em;
   font-weight: 700;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.15s;
-  box-shadow: 0 4px 12px rgba(37,99,255,0.3);
+  transition: transform .2s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease);
+  box-shadow: var(--shadow-md);
 }
 
 .unlockButton:hover:not(:disabled) { background: #1b46c9; transform: translateY(-1px); }
@@ -348,7 +348,7 @@
 }
 
 .emptyTitle {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.75rem;
   margin: 0 0 0.5rem;

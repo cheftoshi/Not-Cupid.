@@ -73,7 +73,7 @@
   border-bottom: 1px solid rgba(37,99,255,0.2);
 }
 .coverName {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: clamp(2.4rem, 7vw, 3.6rem);
   font-weight: 700;
@@ -157,7 +157,7 @@
   margin-bottom: 0.35rem;
 }
 .archeName {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.55rem;
   line-height: 1.15;
