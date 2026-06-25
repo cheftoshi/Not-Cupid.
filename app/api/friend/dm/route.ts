@@ -14,8 +14,8 @@ async function areConnected(userId: string, otherId: string): Promise<boolean> {
     .from('friend_connections')
     .select('status')
     .eq('user_a_id', aId).eq('user_b_id', bId)
-    .maybeSingle();
-  return data?.status === 'connected';
+    .limit(1);
+  return data?.[0]?.status === 'connected';
 }
 
 // GET ?with=<otherId> → the 1:1 thread (messages) + the other person's basics.
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     .insert({ user_a_id: aId, user_b_id: bId, sender_id: user.id, body: text })
     .select('id, sender_id, body, created_at')
     .single();
-  if (error) return NextResponse.json({ error: 'Could not send' }, { status: 500 });
+  if (error) return NextResponse.json({ error: error.message || 'Could not send' }, { status: 500 });
 
   const meFirst = (user.name || 'A friend').split(' ')[0];
   await sendPushToUser(otherId, {
