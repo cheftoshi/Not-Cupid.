@@ -122,7 +122,7 @@ html[data-theme="dark"] body { background: #0c0a12; color: var(--h-text); }
    the connection field + content + teal-tinted borders pop. */
 /* Friend Line = a LIGHT, warm, vibey surface (class name kept for back-compat). */
 .friendDark{
-  --h-bg:#fff6ee; --h-surface:#ffffff; --h-surface-2:#fff1e6; --h-surface-3:#ffe7d6;
+  --h-bg:#f4ead9; --h-surface:#fffaf3; --h-surface-2:#f7eddd; --h-surface-3:#f0e3cf;
   --h-text:#2a1c13; --h-text-dim:#8a6f5c; --h-text-faint:#b39a8a;
-  --h-border:rgba(232,132,43,0.24); --h-accent:#ff6a1f; --h-accent-2:#2563ff;
+  --h-border:rgba(180,130,70,0.26); --h-accent:#ff6a1f; --h-accent-2:#2563ff;
 }

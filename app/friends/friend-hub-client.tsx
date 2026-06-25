@@ -223,6 +223,9 @@ function ConnectionBackdrop() {
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(100% 55% at 50% -10%, rgba(255,150,70,0.10), transparent 60%), radial-gradient(85% 50% at 100% 110%, rgba(37,99,255,0.06), transparent 55%)' }} />
+      {/* faint warm dot-grid + grain so the field has texture, not a plain wash */}
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(150,110,60,0.13) 1px, transparent 1.5px)', backgroundSize: '23px 23px', WebkitMaskImage: 'radial-gradient(135% 110% at 50% -8%, #000 50%, transparent 92%)', maskImage: 'radial-gradient(135% 110% at 50% -8%, #000 50%, transparent 92%)' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.5, mixBlendMode: 'multiply', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")", backgroundSize: '160px 160px' }} />
       <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
     </div>
   );
@@ -307,14 +310,18 @@ function FriendSidebar({ view, setView, activeGroups, people, zones, onZone, cre
 }
 
 // The center "home" hub — auto-pulls what's popular on the scene + your crew.
-function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen }: {
-  firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void;
+function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen }: {
+  me?: any; firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void;
 }) {
   return (
     <div>
-      <div style={{ ...card, padding: '1rem 1.15rem', marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.9rem', flexWrap: 'wrap' }}>
+      <div style={{ ...card, padding: '0.85rem 1rem', marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+        {me?.photo_url
+          ? <img src={me.photo_url} alt="" style={{ width: 58, height: 58, borderRadius: 14, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
+          : <div style={{ width: 58, height: 58, borderRadius: 14, border: '1px solid var(--h-border)', background: 'var(--h-surface-3)', flexShrink: 0 }} />}
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', lineHeight: 1 }}>welcome back, {firstName.toLowerCase()}.</div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.55rem', lineHeight: 1.05 }}>{me?.name || firstName}</div>
+          {me?.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>{me.archetype}</div>}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
           {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my crew →</button>}
@@ -663,7 +670,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   }
 
   return (
-    <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(110% 80% at 8% 0%, #ffe6cf 0%, transparent 45%), radial-gradient(100% 75% at 96% 8%, #ffdcec 0%, transparent 42%), radial-gradient(120% 90% at 50% 112%, #dfeaff 0%, transparent 52%), #fff6ee', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
+    <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(95% 65% at 4% 0%, #f6d4b4 0%, transparent 46%), radial-gradient(90% 60% at 99% 5%, #f4cadd 0%, transparent 44%), radial-gradient(120% 80% at 50% 116%, #c9d9f5 0%, transparent 54%), #f0e4d0', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <ConnectionBackdrop />
 
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
@@ -696,6 +703,12 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
           .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
           .fmMain { grid-column: 1; grid-row: 1; }
+        }
+        /* Scene = filters/categories on the LEFT, the feed in the MIDDLE (pack + around live in the shared right rail). */
+        .sceneGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+        @media (min-width: 760px) {
+          .sceneGrid { grid-template-columns: 215px minmax(0,1fr); align-items: start; }
+          .sceneLeft { position: sticky; top: 1rem; }
         }
         .fmMap { position: relative; min-height: min(72vh, 600px); margin: 1.25rem 0 0; }
         .fmMapLine { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
@@ -753,7 +766,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         <div className="fbShell">
           <main className="fbMain">
         {view === 'home' && (
-          <HomeFeed firstName={firstName} activeGroups={activeGroups} popular={myEvents} hasCrew={matches.length > 0}
+          <HomeFeed me={me} firstName={firstName} activeGroups={activeGroups} popular={myEvents} hasCrew={matches.length > 0}
             onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} />
         )}
 
@@ -1042,6 +1055,27 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         <div>
         <h2 style={sectionLabel}><StationDot />📣 the scene</h2>
 
+        <div className="sceneGrid">
+          <aside className="sceneLeft">
+            <div style={{ ...card, padding: '0.85rem 0.9rem' }}>
+              <div style={sideHd}>show</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.55rem' }}>
+                {([['all', 'all'], ['event', '📅 plans'], ['post', '💬 talk']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setKindFilter(k)} style={{ textAlign: 'left', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', letterSpacing: '0.05em', padding: '0.45rem 0.7rem', border: `1px solid ${kindFilter === k ? LINE : 'var(--h-border)'}`, borderRadius: 9, cursor: 'pointer', background: kindFilter === k ? LINE : 'var(--h-surface-2)', color: kindFilter === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.7rem' }}>
+                {([['new', '🆕 new'], ['popular', '🔥 popular']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setSceneSort(k)} style={{ flex: 1, fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.02em', padding: '0.4rem 0.3rem', border: `1px solid ${sceneSort === k ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 9, cursor: 'pointer', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface-2)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginTop: '0.85rem' }}>
+              <SceneCats main={filterMain} setMain={setFilterMain} sub={filterCat} setSub={setFilterCat} />
+            </div>
+          </aside>
+
+          <div className="sceneMid">
         {/* FB-style status composer */}
         <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1.1rem' }}>
           <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
@@ -1096,20 +1130,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
         <div ref={feedRef} />
 
-        <div className="fmGrid">
-          <div className="fmMain">
-            {/* filters: kind segmented control + active filter chips */}
+            {/* active filter chips — the kind/sort/category controls live in the left rail */}
+            {(filterMain || filterCat || areaFilter) && (
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
-              <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
-                {([['all', 'all'], ['event', '📅 plans'], ['post', '💬 talk']] as const).map(([k, label]) => (
-                  <button key={k} onClick={() => setKindFilter(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: kindFilter === k ? LINE : 'var(--h-surface)', color: kindFilter === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
-                {([['new', '🆕 new'], ['popular', '🔥 popular']] as const).map(([k, label]) => (
-                  <button key={k} onClick={() => setSceneSort(k)} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', letterSpacing: '0.05em', padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
-                ))}
-              </div>
               {(filterMain || filterCat) && (
                 <button onClick={() => { setFilterMain(''); setFilterCat(''); }} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
                   {filterCat || filterMain} <span style={{ fontWeight: 800 }}>×</span>
@@ -1121,6 +1144,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 </button>
               )}
             </div>
+            )}
 
             {(() => {
               const subTags = filterMain ? (SCENE_CATS.find((c) => c.key === filterMain)?.tags || []) : [];
@@ -1139,14 +1163,12 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               );
             })()}
           </div>
-          <aside className="fmRail">
-            <SceneCats main={filterMain} setMain={setFilterMain} sub={filterCat} setSub={setFilterCat} />
-          </aside>
         </div>
         </div>
         )}
           </main>
           <aside className="fbRail">
+            {view !== 'scene' && (
             <div style={{ ...card, padding: '0.9rem 1rem' }}>
               <div style={sideHd}>🧡 your connections</div>
               {matches.filter((m) => m.connected).length === 0 ? (
@@ -1165,8 +1187,29 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               )}
               <button onClick={() => setView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
             </div>
+            )}
 
-            {view !== 'crew' && (
+            {view === 'scene' && (
+            <div style={{ ...card, padding: '0.9rem 1rem' }}>
+              <div style={sideHd}>🎒 my pack</div>
+              {matches.length === 0 ? (
+                <div style={sideEmpty}>your pack is forming — check back soon.</div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.55rem' }}>
+                    {matches.slice(0, 8).map((m) => (
+                      m.photo_url
+                        ? <img key={m.otherId} src={m.photo_url} alt="" title={(m.name || '').split(' ')[0]} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} />
+                        : <span key={m.otherId} title={(m.name || '').split(' ')[0]} style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', display: 'inline-block' }} />
+                    ))}
+                  </div>
+                  <button onClick={() => setView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
+                </>
+              )}
+            </div>
+            )}
+
+            {view === 'scene' && (
             <div style={{ ...card, padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
               <div style={sideHd}>📍 around in {city ? city.split(',')[0].toLowerCase() : 'your city'}</div>
               {people.length === 0 ? <div style={sideEmpty}>finding who&apos;s around…</div> : (
