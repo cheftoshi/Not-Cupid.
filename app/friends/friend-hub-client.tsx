@@ -529,6 +529,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [dmWith, setDmWith] = useState<any | null>(null);
   const [dmMsgs, setDmMsgs] = useState<any[]>([]);
   const [dmText, setDmText] = useState('');
+  const [dmError, setDmError] = useState<string | null>(null);
   const dmEndRef = useRef<HTMLDivElement>(null);
   // In-app "new event" notification (no email — the daily digest covers that).
   const [evToast, setEvToast] = useState<{ id: string; title: string; author: string } | null>(null);
@@ -667,18 +668,35 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     await loadChat();
   }
   // ── Private 1:1 DM with a connection ──
-  const loadDm = useCallback(async (otherId: string) => {
-    try { const r = await fetch('/api/friend/dm?with=' + otherId); if (r.ok) setDmMsgs((await r.json()).messages || []); } catch { /* ignore */ }
+  const loadDm = useCallback(async (otherId: string): Promise<boolean> => {
+    try { const r = await fetch('/api/friend/dm?with=' + otherId); if (r.ok) { setDmMsgs((await r.json()).messages || []); return true; } return false; } catch { return false; }
   }, []);
   async function openDm(m: any) {
-    setCardMember(null); setConfirmDrop(false); setDmText(''); setDmMsgs([]); setDmWith(m);
-    await loadDm(m.otherId);
+    setCardMember(null); setConfirmDrop(false); setDmText(''); setDmMsgs([]); setDmError(null); setDmWith(m);
+    const ok = await loadDm(m.otherId);
+    if (!ok) setDmError('Couldn’t open this chat. If you just connected, give it a second and reopen.');
     setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 90);
   }
   async function sendDm() {
-    const body = dmText.trim(); if (!body || !dmWith) return; setDmText('');
-    try { await fetch('/api/friend/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId: dmWith.otherId, body }) }); } catch { /* ignore */ }
-    await loadDm(dmWith.otherId);
+    const body = dmText.trim(); if (!body || !dmWith) return;
+    setDmText(''); setDmError(null);
+    // optimistic — show it immediately so it never just "vanishes"
+    const tmpId = 'tmp-' + Date.now();
+    setDmMsgs((prev) => [...prev, { id: tmpId, body, isMe: true, pending: true }]);
+    setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 40);
+    try {
+      const res = await fetch('/api/friend/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId: dmWith.otherId, body }) });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setDmMsgs((prev) => prev.map((mm) => (mm.id === tmpId ? { ...mm, pending: false, failed: true } : mm)));
+        setDmError(res.status === 403 ? 'You can only message a connection.' : (j.error || 'Couldn’t send — try again.'));
+        return;
+      }
+      await loadDm(dmWith.otherId); // reconcile with the server (replaces the optimistic row)
+    } catch {
+      setDmMsgs((prev) => prev.map((mm) => (mm.id === tmpId ? { ...mm, pending: false, failed: true } : mm)));
+      setDmError('Couldn’t send — check your connection and try again.');
+    }
     setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 60);
   }
   // poll the open DM thread for new messages
@@ -816,10 +834,14 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 <div style={{ margin: 'auto', textAlign: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>you&apos;re connected with {first} 🧡<br />say hi — this chat is just the two of you.</div>
               )}
               {dmMsgs.map((msg: any) => (
-                <div key={msg.id} style={{ alignSelf: msg.isMe ? 'flex-end' : 'flex-start', maxWidth: '78%', background: msg.isMe ? LINE : 'var(--h-surface-2)', color: msg.isMe ? '#fff' : 'var(--h-text)', border: msg.isMe ? 'none' : '1px solid var(--h-border)', borderRadius: msg.isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '0.5rem 0.8rem', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'break-word' }}>{msg.body}</div>
+                <div key={msg.id} style={{ alignSelf: msg.isMe ? 'flex-end' : 'flex-start', maxWidth: '78%', display: 'flex', flexDirection: 'column', alignItems: msg.isMe ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ background: msg.failed ? 'var(--h-surface-3)' : msg.isMe ? LINE : 'var(--h-surface-2)', color: msg.failed ? 'var(--h-text-dim)' : msg.isMe ? '#fff' : 'var(--h-text)', border: msg.isMe && !msg.failed ? 'none' : '1px solid var(--h-border)', borderRadius: msg.isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '0.5rem 0.8rem', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'break-word', opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
+                  {msg.failed && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#c0392b', marginTop: '0.15rem' }}>not sent</span>}
+                </div>
               ))}
               <div ref={dmEndRef} />
             </div>
+            {dmError && <div style={{ padding: '0.5rem 1rem', background: 'rgba(192,57,43,0.1)', color: '#c0392b', fontFamily: 'Georgia,serif', fontSize: '0.82rem', textAlign: 'center', flexShrink: 0 }}>{dmError}</div>}
             <div style={{ display: 'flex', gap: '0.5rem', padding: '0.7rem', borderTop: '1px solid var(--h-border)', flexShrink: 0 }}>
               <input value={dmText} onChange={(e) => setDmText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendDm()} placeholder={`message ${first}…`}
                 style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
