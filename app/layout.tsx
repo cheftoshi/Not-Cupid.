@@ -4,6 +4,7 @@ import PageTracker from '@/components/page-tracker'
 import SwRegister from '@/components/sw-register'
 import PwaPrompt from '@/components/pwa-prompt'
 import TopNav from '@/components/top-nav'
+import SiteFooter from '@/components/site-footer'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://notcupid.com'),
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* No-flash theme: apply the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('nc-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}` }} />
       </head>
-      <body><TopNav />{children}<PwaPrompt /><PageTracker /><SwRegister /></body>
+      <body><TopNav />{children}<SiteFooter /><PwaPrompt /><PageTracker /><SwRegister /></body>
     </html>
   )
 }

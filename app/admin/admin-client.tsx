@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Nav from '@/components/Nav'
-import CorpFooter from '@/components/corp-footer'
 import { parseResponse } from '@/lib/fetch-helpers'
 import s from './admin.module.css'
 
@@ -937,7 +936,6 @@ export default function AdminClient() {
 
         </div>
       </div>
-      <CorpFooter />
 
       {seedAccounts && (
         <div

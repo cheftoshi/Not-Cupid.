@@ -5,8 +5,9 @@ export default function CorpFooter() {
       style={{
         marginTop: 'auto', // sticks to the bottom in any flex-column page
         textAlign: 'center',
-        padding: '2rem 1rem 2.25rem',
+        padding: '2.4rem 1rem 2.6rem',
         borderTop: '1px solid var(--h-border)',
+        background: 'var(--h-surface)',
         fontFamily: "'DM Mono', ui-monospace, monospace",
       }}
     >
@@ -49,6 +50,8 @@ export default function CorpFooter() {
       <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         {[
           { label: 'about', href: '/about' },
+          { label: 'how it works', href: '/how-it-works' },
+          { label: 'faq', href: '/faq' },
           { label: 'safety', href: '/safety' },
           { label: 'privacy', href: '/privacy' },
           { label: 'terms', href: '/terms' },

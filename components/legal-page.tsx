@@ -1,4 +1,3 @@
-import CorpFooter from '@/components/corp-footer';
 
 // Shared, branded shell for the trust pages (privacy / terms / safety / about).
 // Server component — plain content, readable, on-brand.
@@ -34,7 +33,6 @@ export default function LegalPage({ title, subtitle, updated, children }: {
         `}</style>
       </main>
 
-      <CorpFooter />
     </div>
   );
 }

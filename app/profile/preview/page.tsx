@@ -3,7 +3,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import Link from 'next/link';
-import CorpFooter from '@/components/corp-footer';
 import styles from './preview.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -170,7 +169,6 @@ export default async function ProfilePreviewPage() {
           <Link href="/profile" className={styles.backButton}>back to dashboard →</Link>
         </div>
       </div>
-      <CorpFooter />
     </div>
   );
 }

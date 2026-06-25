@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
-import CorpFooter from '@/components/corp-footer';
 import Wordmark from '@/components/wordmark';
 import { suggestEmailCorrection } from '@/lib/email-typos';
 import { parseResponse } from '@/lib/fetch-helpers';
@@ -193,7 +192,6 @@ function LoginInner() {
           new here? take the quiz to sign up →
         </Link>
       </div>
-      <CorpFooter />
     </div>
   );
 }

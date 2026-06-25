@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import ProfileShell from './profile-shell';
 import Wordmark from '@/components/wordmark';
-import CorpFooter from '@/components/corp-footer';
 import styles from './profile.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +25,6 @@ export default async function ProfilePage() {
         </nav>
         <ProfileShell initialUser={user} />
       </div>
-      <CorpFooter />
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import CorpFooter from '@/components/corp-footer';
 import RaffleCard from '@/components/raffle-card';
 import { compressImage } from '@/lib/compress-image';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
@@ -387,7 +386,6 @@ export default function HubClient({
         </div>
       </div>
 
-      <CorpFooter />
     </main>
   );
 }

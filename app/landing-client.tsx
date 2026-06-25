@@ -87,25 +87,6 @@ export default function LandingClient({ stats }: { stats: Stats }) {
 
         <Link href="/how-it-works" className={styles.landLearn}>learn how it works ↓</Link>
       </section>
-
-      <footer className={styles.landFoot}>
-        <div className={styles.landFootTop}>
-          <span>built in boston</span>
-        </div>
-        <div style={{ display: 'flex', gap: '1.1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
-          {[['instagram', 'https://instagram.com/notcupidapp'], ['tiktok', 'https://tiktok.com/@notcupid11'], ['x', 'https://x.com/notcupidapp']].map(([label, href]) => (
-            <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'lowercase', color: '#2563ff', textDecoration: 'none' }}>↗ {label}</a>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
-          {[['about', '/about'], ['faq', '/faq'], ['safety', '/safety'], ['privacy', '/privacy'], ['terms', '/terms']].map(([label, href]) => (
-            <Link key={label} href={href} style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'lowercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>{label}</Link>
-          ))}
-        </div>
-        <div className={styles.landFootCorp}>
-          © {new Date().getFullYear()} notcupid · a lemon labs property
-        </div>
-      </footer>
     </main>
   )
 }

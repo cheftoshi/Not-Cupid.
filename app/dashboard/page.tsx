@@ -5,7 +5,6 @@ import MatchReveal from './match-reveal';
 import ActiveChats from './active-chats';
 import RosterPicker from './roster-picker';
 import DashboardExtras from './dashboard-extras';
-import CorpFooter from '@/components/corp-footer';
 import LocationControls from '@/components/location-controls';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
@@ -216,7 +215,6 @@ export default async function DashboardPage({
           </div>
         )}
       </div>
-      <CorpFooter />
     </div>
   );
 }

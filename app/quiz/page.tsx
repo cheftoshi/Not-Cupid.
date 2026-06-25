@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
-import CorpFooter from '@/components/corp-footer'
 import { suggestEmailCorrection } from '@/lib/email-typos'
 import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype, ATTACHMENT_QUESTIONS, computeAttachment, VALUES_QUESTIONS, valuesFromAnswers, RAPID_FIRE, rapidFromAnswers, PARTNER_QUESTIONS, partnerFromAnswers } from '@/lib/quiz-data'
 import type { VibeKey } from '@/lib/quiz-data'
@@ -1051,7 +1050,6 @@ function QuizInner() {
         </div>
       )}
 
-      <CorpFooter />
     </>
   )
 }

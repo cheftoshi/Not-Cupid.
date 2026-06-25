@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import CorpFooter from '@/components/corp-footer';
 import { RAFFLE } from '@/lib/raffle';
 
 export const dynamic = 'force-static';
@@ -112,7 +111,6 @@ export default function RaffleRules() {
           <Link href="/privacy" style={{ color: ORANGE_DEEP }}>Privacy Policy</Link>.
         </p>
       </div>
-      <CorpFooter />
     </div>
   );
 }

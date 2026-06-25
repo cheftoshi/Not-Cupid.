@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import CorpFooter from '@/components/corp-footer';
 import { RAFFLE } from '@/lib/raffle';
 
 export const dynamic = 'force-static';
@@ -150,7 +149,6 @@ export default function HowItWorks() {
           </Link>
         </div>
       </div>
-      <CorpFooter />
     </div>
   );
 }
