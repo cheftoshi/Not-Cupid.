@@ -315,9 +315,6 @@ function HomeFeed({ firstName, activeGroups, popular, hasCrew, onCrew, onScene, 
       <div style={{ ...card, padding: '1rem 1.15rem', marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.9rem', flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', lineHeight: 1 }}>welcome back, {firstName.toLowerCase()}.</div>
-          <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.92rem' }}>
-            {activeGroups > 0 ? `${activeGroups} ${activeGroups === 1 ? 'crew is' : 'crews are'} hanging right now.` : 'the line is warming up — post something to get it going.'}
-          </div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
           {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my crew →</button>}
