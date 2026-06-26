@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getCurrentAdmin } from '@/lib/admin';
+import { sendPushToUser } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,11 @@ export async function POST(req: NextRequest) {
   const { id, action } = await req.json().catch(() => ({}));
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   if (action === 'approve') {
+    const { data: link } = await supabaseAdmin.from('friend_community_links').select('submitter_id, title').eq('id', id).maybeSingle();
     await supabaseAdmin.from('friend_community_links').update({ approved: true, approved_at: new Date().toISOString() }).eq('id', id);
+    if (link?.submitter_id) {
+      await sendPushToUser(link.submitter_id, { title: 'your community hub is live 🎉', body: `“${link.title}” is now in City Pulse — others can join it.`, url: '/friends?view=pulse', tag: `comlink-${id}` }).catch(() => {});
+    }
   } else {
     await supabaseAdmin.from('friend_community_links').delete().eq('id', id);
   }

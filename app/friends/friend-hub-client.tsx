@@ -1137,7 +1137,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         <div>
           <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
-            city vibes — find your tribe. the clubs, crews &amp; community chats of {city ? city.split(',')[0].toLowerCase() : 'your city'}.
+            city vibes — find your tribe. the clubs, crews &amp; community hubs of {city ? city.split(',')[0].toLowerCase() : 'your city'}.
           </p>
 
           {/* CLUBS — user-run groups (book club, run club). Join by request → the
@@ -1192,7 +1192,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
           {/* COMMUNITY CHATS — submitted Discord/group-chat links (admin-approved). */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '1.7rem 0 0.75rem' }}>
-            <h3 style={{ ...sectionLabel, margin: 0, fontSize: '1.3rem' }}>💬 community chats</h3>
+            <h3 style={{ ...sectionLabel, margin: 0, fontSize: '1.3rem' }}>💬 community hubs</h3>
             <button onClick={() => setShowNewLink((v) => !v)} style={{ ...pulseBtnGhost, marginLeft: 'auto' }}>{showNewLink ? '✕ cancel' : '+ submit a link'}</button>
           </div>
           {showNewLink && (
@@ -1207,7 +1207,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </div>
           )}
           {comLinks.length === 0 ? (
-            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>no community chats yet — submit a Discord or group-chat link (we review before it shows).</div>
+            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>no community hubs yet — submit a Discord or group-chat link (we review before it shows).</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {comLinks.map((l) => (

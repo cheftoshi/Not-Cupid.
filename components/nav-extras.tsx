@@ -11,23 +11,44 @@ const SEEN_KEY = 'nc_changelog_seen';
 export default function NavExtras() {
   const [open, setOpen] = useState<null | 'whatsnew' | 'feedback'>(null);
   const [hasNew, setHasNew] = useState(false);
+  const [menu, setMenu] = useState(false); // mobile "•••" dropdown
 
   useEffect(() => {
     try { setHasNew(localStorage.getItem(SEEN_KEY) !== CHANGELOG_VERSION); } catch { /* ignore */ }
   }, []);
 
   function openWhatsNew() {
-    setOpen('whatsnew');
+    setMenu(false); setOpen('whatsnew');
     try { localStorage.setItem(SEEN_KEY, CHANGELOG_VERSION); } catch { /* ignore */ }
     setHasNew(false);
   }
+  function openFeedback() { setMenu(false); setOpen('feedback'); }
 
   return (
     <>
-      <button onClick={openWhatsNew} style={navLink} title="what's new">
-        ✦ new{hasNew && <span style={dot} aria-label="new" />}
-      </button>
-      <button onClick={() => setOpen('feedback')} style={navLink} title="send feedback">💬 feedback</button>
+      {/* inline on desktop; collapses into a ••• menu on narrow screens */}
+      <style>{`
+        .nxInline { display: inline-flex; align-items: center; gap: 0.7rem; }
+        .nxMore { display: none; position: relative; }
+        @media (max-width: 600px) { .nxInline { display: none; } .nxMore { display: inline-block; } }
+      `}</style>
+
+      <span className="nxInline">
+        <button onClick={openWhatsNew} style={navLink} title="what's new">✦ new{hasNew && <span style={dot} aria-label="new" />}</button>
+        <button onClick={openFeedback} style={navLink} title="send feedback">💬 feedback</button>
+      </span>
+
+      <span className="nxMore">
+        <button onClick={() => setMenu((v) => !v)} style={{ ...navLink, fontSize: '0.9rem', letterSpacing: '0.05em' }} aria-label="more">•••{hasNew && <span style={dot} aria-label="new" />}</button>
+        {menu && (<>
+          <div onClick={() => setMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 119 }} />
+          <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 12, boxShadow: 'var(--shadow-md)', padding: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.1rem', zIndex: 120, minWidth: 150 }}>
+            <button onClick={openWhatsNew} style={menuItem}>✦ what&apos;s new{hasNew && <span style={dot} />}</button>
+            <button onClick={openFeedback} style={menuItem}>💬 feedback</button>
+          </div>
+        </>)}
+      </span>
+
       {open === 'whatsnew' && <WhatsNewModal onClose={() => setOpen(null)} />}
       {open === 'feedback' && <FeedbackModal onClose={() => setOpen(null)} />}
     </>
@@ -108,6 +129,7 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
 }
 
 const navLink: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', whiteSpace: 'nowrap' };
+const menuItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '0.5rem 0.7rem', borderRadius: 8, fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text)', whiteSpace: 'nowrap' };
 const dot: React.CSSProperties = { display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#ff6a1f', marginLeft: 4, verticalAlign: 'middle' };
 const primaryBtn: React.CSSProperties = { background: '#0b0b0b', color: '#fff', border: 'none', borderRadius: 999, padding: '12px 22px', fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' };
 const ghostBtn: React.CSSProperties = { background: 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '12px 18px', fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' };
