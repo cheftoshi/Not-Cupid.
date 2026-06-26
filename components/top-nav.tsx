@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Wordmark from '@/components/wordmark';
 import ThemeToggle from '@/components/theme-toggle';
+import NavExtras from '@/components/nav-extras';
 
 // One persistent top bar across the logged-in app: Hub · Love · Friend tabs +
 // theme toggle + log out. Mounted once in the root layout; it hides itself on
@@ -60,7 +61,8 @@ export default function TopNav() {
         {tab('/dashboard', '💘 Love', 'love', '#2563ff')}
         {tab('/friends', '🧡 Friend', 'friend', '#ff6a1f')}
       </nav>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexShrink: 0, flexWrap: 'wrap' }}>
+        <NavExtras />
         <Link href="/profile" style={linkStyle}>profile</Link>
         <ThemeToggle style={{ width: 28, height: 28 }} />
         <button onClick={logout} style={{ ...linkStyle, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>log out</button>

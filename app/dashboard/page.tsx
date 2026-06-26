@@ -4,7 +4,6 @@ import { supabaseAdmin } from '@/lib/supabase';
 import MatchReveal from './match-reveal';
 import ActiveChats from './active-chats';
 import RosterPicker from './roster-picker';
-import DashboardExtras from './dashboard-extras';
 import LocationControls from '@/components/location-controls';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
@@ -148,7 +147,6 @@ export default async function DashboardPage({
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <DashboardExtras />
 
         <h1 className={styles.title}>
           your <span className={styles.titleAccent}>matches.</span>

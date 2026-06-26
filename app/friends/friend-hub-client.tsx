@@ -424,12 +424,6 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     audMax: me?.friendAgeMax != null ? String(me.friendAgeMax) : '',
   };
   // Buying / opening packs now lives on the cinematic /friends/pack page.
-  async function sendFeedback() {
-    const fb = window.prompt('what would make the friend line better? (bugs, ideas, anything)');
-    if (!fb || !fb.trim()) return;
-    await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: fb }) });
-    alert('got it — thank you! 🙏');
-  }
   const [matches, setMatches] = useState<any[]>([]);
   const [sealedCount, setSealedCount] = useState(0);
   const [cooledUntil, setCooledUntil] = useState<string | null>(null);
@@ -1475,13 +1469,6 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </div>
             )}
           </aside>
-        </div>
-
-        <div style={{ maxWidth: 470, margin: '2.75rem auto 0', background: 'var(--h-surface)', border: `1px solid var(--h-border)`, borderRadius: 16, boxShadow: '0 12px 32px -20px rgba(60,40,20,0.4)', padding: '1rem 1.25rem', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
-            <button onClick={sendFeedback} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text)', textDecoration: 'underline', textUnderlineOffset: 4 }}>💬 send feedback</button>
-            <a href="/friends/how-it-works" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text)', textDecoration: 'underline', textUnderlineOffset: 4 }}>✨ what&apos;s new</a>
-          </div>
         </div>
       </div>
     </div>
