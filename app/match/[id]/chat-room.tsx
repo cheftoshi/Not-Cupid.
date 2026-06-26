@@ -258,6 +258,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           <h1 className={styles.headerName}>{otherUser?.name || 'Match'}</h1>
           <div className={styles.headerMeta}>
             {otherUser?.archetype && <span className={styles.headerArch}>{otherUser.archetype}</span>}
+            {otherUser?.occupation && <span className={styles.headerArch}>💼 {otherUser.occupation}</span>}
             <span className={`${styles.headerStatus} ${chatExpired ? styles.headerStatusExpired : ''}`}>
               {status}
             </span>

@@ -78,7 +78,7 @@ export async function GET() {
   // every column (email, bio, gallery, roster_snapshot…) for the whole active
   // pool on every roster load: a PII over-fetch that scales with user count.
   const POOL_COLS =
-    'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, ' +
+    'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, occupation, ' +
     'relationship_style, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
     'score_conscientiousness, score_openness, last_matched_at, is_test';
@@ -199,6 +199,7 @@ export async function GET() {
       age: c.user.age,
       photo_url: c.user.photo_url,
       archetype: c.user.archetype,
+      occupation: c.user.occupation || null,
       // Privacy: never expose the exact ZIP. Show the metro label only.
       metro: metroLabel(c.user.zip),
       relationship_style: c.user.relationship_style,

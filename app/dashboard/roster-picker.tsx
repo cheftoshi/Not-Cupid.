@@ -20,7 +20,7 @@ type ActiveCard = {
 // match (you pre-accepted) and notifies them.
 type Candidate = {
   id: string; name: string; age: number | null; photo_url: string | null;
-  archetype: string | null; metro: string | null; relationship_style: string | null; score: number;
+  archetype: string | null; metro: string | null; relationship_style: string | null; occupation?: string | null; score: number;
 };
 
 export default function RosterPicker({
@@ -244,6 +244,7 @@ export default function RosterPicker({
                 </div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#2563ff', fontWeight: 700 }}>✦ {c.score}% compatible</div>
                 {c.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{c.archetype}</div>}
+                {c.occupation && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>💼 {c.occupation}</div>}
                 {style && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
                 {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
                 <button

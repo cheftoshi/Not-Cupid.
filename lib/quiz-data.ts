@@ -130,7 +130,7 @@ export const RELATIONSHIP_STYLES: Array<{
     desc: 'ethical non-monogamy, multiple partners by agreement' },
   { value: 'casual',          short: 'casual',        label: 'Casual / right-now',
     desc: 'dating without long-term expectations' },
-  { value: 'open',            short: 'open',          label: 'Open to anything',
+  { value: 'open',            short: 'open to anything', label: 'Open to anything',
     desc: 'no strong preference yet' },
 ]
 

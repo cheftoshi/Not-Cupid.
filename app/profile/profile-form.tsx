@@ -328,8 +328,8 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
         </div>
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Occupation</label>
-            <input className={styles.input} type="text" value={user.occupation || ''} onChange={e => setUser({ ...user, occupation: e.target.value })} placeholder="what you do" />
+            <label className={styles.label}>Career</label>
+            <input className={styles.input} type="text" value={user.occupation || ''} onChange={e => setUser({ ...user, occupation: e.target.value })} placeholder="what you do — e.g. nurse, engineer, teacher" />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Education</label>

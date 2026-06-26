@@ -600,7 +600,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
   function agreeTerms() { setTermsOk(true); try { localStorage.setItem('nc-friend-terms', '1'); } catch { /* ignore */ } }
 
-  // Choose the whole pack — opt in to open the group chat with everyone in it.
+  // Choose the whole pack — opt in to open the pack chat with everyone in it.
   // (The pack is the baseline; connections are what you build from it.)
   async function choosePack() {
     if (!termsOk) return;
@@ -1026,14 +1026,14 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </div>
           ) : matches.length === 0 ? (
             <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>the algo is still finding your people — check back soon.</div>
-          ) : matches.some((m) => !m.connected && !m.iAccepted) ? (
+          ) : (!chat.circleId && matches.some((m) => !m.connected && !m.iAccepted)) ? (
             <div style={{ ...card, padding: '1rem 1.2rem', marginBottom: '1.1rem' }}>
               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', marginBottom: '0.6rem', color: 'var(--h-text-dim)', fontSize: '0.92rem' }}>
-                <b style={{ color: 'var(--h-text)' }}>choose your pack</b> to open the group chat with everyone — then tap <b>connect</b> on anyone in <b>your pack</b> (over on the right) for a 1:1.
+                a <b style={{ color: 'var(--h-text)' }}>pack</b> is a batch of people to meet. <b>choose your pack</b> to open one group chat with everyone — then tap <b>connect</b> on anyone in <b>your pack</b> (over on the right) for a private 1:1.
               </div>
               <button onClick={choosePack} disabled={busy || !termsOk}
                 style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.45, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>
-                {busy ? '…' : '🎒 choose this pack — open the group chat →'}
+                {busy ? '…' : '🎒 choose this pack — open the pack chat →'}
               </button>
             </div>
           ) : null}
@@ -1067,7 +1067,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 <>
                   <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
                     style={{ ...poppyBtn, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>💬 group chat</span>
+                    <span>💬 pack chat</span>
                     <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewRoster.length}`}</span>
                   </button>
                   <div ref={chatRef} />
@@ -1076,7 +1076,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                       {/* header + who's-here roster — names, not just avatars */}
                       <div style={{ background: LINE, color: '#fff', padding: '0.6rem 0.85rem 0.7rem', borderBottom: "1px solid var(--h-border)" }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem' }}>
-                          💬 your crew · {crewRoster.length}
+                          💬 your pack · {crewRoster.length}
                           <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: chatLive ? '#3f7d57' : 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, padding: '0.18rem 0.55rem' }}>
                             {chatLive ? '● live' : '○ forming'}
                           </span>
@@ -1110,7 +1110,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                           })}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', padding: '0.8rem 1.1rem', borderTop: `3px dashed rgba(36,29,18,0.25)` }}>
-                          <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something to the crew…" style={{ flex: 1, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '0.9rem' }} />
+                          <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something to the pack…" style={{ flex: 1, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '0.9rem' }} />
                           <button onClick={send} style={{ ...poppyBtn, fontSize: '1.1rem', padding: '0 1rem' }}>→</button>
                         </div>
                       </>) : (
@@ -1434,7 +1434,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 ))}
               </div>
               {sealedCount > 0 && (
-                <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #e8842b, #c96a18)', color: '#fff', borderRadius: 10, padding: '0.55rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em' }}>🎒 open sealed pack ({sealedCount}) →</a>
+                <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #e8842b, #c96a18)', color: '#fff', borderRadius: 10, padding: '0.55rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em' }}>🎒 open sealed pack · {sealedCount} new to meet →</a>
               )}
               <a href="/friends/pack" style={{ ...poppyBtn, display: 'block', marginTop: '0.7rem', textAlign: 'center', textDecoration: 'none', fontSize: '0.95rem', padding: '0.5rem' }}>open another pack · $1.99</a>
               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.66rem', marginTop: '0.5rem', textAlign: 'center' }}>first pack free · <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free</div>
