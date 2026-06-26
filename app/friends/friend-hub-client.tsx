@@ -16,8 +16,11 @@ const CATS = ['fitness', 'gym', 'running', 'tennis', 'pickleball', 'sports', 'ou
 const CAT_EMOJI: Record<string, string> = {
   fitness: '🏋️', gym: '💪', running: '🏃', tennis: '🎾', pickleball: '🥒', sports: '⚽', outdoors: '⛰️',
   food: '🍜', coffee: '☕', drinks: '🍸', movies: '🎬', concerts: '🎶', music: '🎵', arts: '🎨',
-  books: '📚', games: '🎲', chill: '🛋️', hang: '🧡',
+  books: '📚', games: '🎲', chill: '🛋️', hang: '🧡', other: '✨',
 };
+const CLUB_CATS = ['running', 'books', 'fitness', 'sports', 'food', 'coffee', 'movies', 'music', 'arts', 'games', 'outdoors', 'other'];
+const LINK_KINDS = ['discord', 'whatsapp', 'groupme', 'telegram', 'slack', 'other'];
+const KIND_EMOJI: Record<string, string> = { discord: '🎮', whatsapp: '💬', groupme: '👥', telegram: '✈️', slack: '💼', other: '🔗' };
 
 // Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px offset
 // shadows — too loud). Surfaces read quiet so the content + connections lead.
@@ -26,6 +29,9 @@ const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize
 // Section headers: a small connection-node + a calmer (smaller) display size.
 const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.05em', margin: '1.7rem 0 0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--h-text)' };
 const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: 'none', borderRadius: 999, padding: '0.6rem 1.5rem', boxShadow: '0 12px 26px -14px rgba(232,132,43,0.7)', cursor: 'pointer' };
+const inputStyle: React.CSSProperties = { border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.5rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', background: 'var(--h-surface)', color: 'var(--h-text)', outline: 'none' };
+const pulseBtn: React.CSSProperties = { background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)', fontWeight: 700 };
+const pulseBtnGhost: React.CSSProperties = { background: 'transparent', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)' };
 // A small filled node (the connection motif), not a chunky station ring.
 const StationDot = () => <span style={{ width: 7, height: 7, borderRadius: '50%', background: LINE, flexShrink: 0, display: 'inline-block' }} />;
 
@@ -479,6 +485,46 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     const r = await fetch('/api/friend/activities'); // fetch all; category filtering is client-side now (mains group several)
     if (r.ok) setActs((await r.json()).activities || []);
   }, []);
+
+  // ── City Pulse communities: user-run clubs + submitted community links ──
+  const [clubs, setClubs] = useState<any[]>([]);
+  const [comLinks, setComLinks] = useState<any[]>([]);
+  const [clubBusy, setClubBusy] = useState(false);
+  const [showNewClub, setShowNewClub] = useState(false);
+  const [newClub, setNewClub] = useState({ name: '', category: 'books', description: '', area: '' });
+  const [showNewLink, setShowNewLink] = useState(false);
+  const [newLink, setNewLink] = useState({ title: '', url: '', kind: 'discord', description: '' });
+  const [clubChat, setClubChat] = useState<{ id: string; name: string } | null>(null);
+  const [clubMsgs, setClubMsgs] = useState<any[]>([]);
+  const [clubText, setClubText] = useState('');
+  const clubEndRef = useRef<HTMLDivElement>(null);
+  const [clubManage, setClubManage] = useState<{ id: string; name: string } | null>(null);
+  const [clubReqs, setClubReqs] = useState<any[]>([]);
+  const loadClubs = useCallback(async () => { try { const r = await fetch('/api/friend/clubs'); if (r.ok) setClubs((await r.json()).clubs || []); } catch { /* ignore */ } }, []);
+  const loadComLinks = useCallback(async () => { try { const r = await fetch('/api/friend/community-links'); if (r.ok) setComLinks((await r.json()).links || []); } catch { /* ignore */ } }, []);
+  const loadClubChat = useCallback(async (id: string) => { try { const r = await fetch(`/api/friend/clubs/${id}/messages`); if (r.ok) setClubMsgs((await r.json()).messages || []); } catch { /* ignore */ } }, []);
+  async function createClub() {
+    const name = newClub.name.trim(); if (!name || clubBusy) return; setClubBusy(true);
+    try { const r = await fetch('/api/friend/clubs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newClub) });
+      if (r.ok) { setShowNewClub(false); setNewClub({ name: '', category: 'books', description: '', area: '' }); await loadClubs(); }
+      else { const d = await r.json().catch(() => ({})); alert(d.error || 'Could not create the club.'); }
+    } catch { /* ignore */ } finally { setClubBusy(false); }
+  }
+  async function clubAct(id: string, action: string, userId?: string) {
+    try { await fetch(`/api/friend/clubs/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, userId }) }); } catch { /* ignore */ }
+  }
+  async function openClubChat(c: { id: string; name: string }) { setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); await loadClubChat(c.id); setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 90); }
+  async function sendClubMsg() { const body = clubText.trim(); if (!body || !clubChat) return; setClubText(''); try { await fetch(`/api/friend/clubs/${clubChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) }); } catch { /* ignore */ } await loadClubChat(clubChat.id); setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 60); }
+  async function openClubManage(c: { id: string; name: string }) { setClubChat(null); setClubManage(c); setClubReqs([]); try { const r = await fetch(`/api/friend/clubs/${c.id}`); if (r.ok) setClubReqs((await r.json()).requests || []); } catch { /* ignore */ } }
+  async function reqAction(clubId: string, userId: string, action: 'approve' | 'decline') { setClubReqs((prev) => prev.filter((x) => x.id !== userId)); await clubAct(clubId, action, userId); await loadClubs(); }
+  async function submitLink() {
+    const title = newLink.title.trim(); const url = newLink.url.trim(); if (!title || !url || clubBusy) return; setClubBusy(true);
+    try { const r = await fetch('/api/friend/community-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newLink) });
+      if (r.ok) { setShowNewLink(false); setNewLink({ title: '', url: '', kind: 'discord', description: '' }); alert('Submitted! It shows up once the team approves it.'); }
+      else { const d = await r.json().catch(() => ({})); alert(d.error || 'Could not submit.'); }
+    } catch { /* ignore */ } finally { setClubBusy(false); }
+  }
+
   useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } setTermsChecked(true); }, []);
 
   useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
@@ -508,6 +554,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   }, [acts]);
   // Opening the Scene clears the badge + toast.
   useEffect(() => { if (view === 'scene') { setNewScene(0); setEvToast(null); } }, [view]);
+  useEffect(() => { if (view === 'pulse' || view === 'crew') loadClubs(); }, [view, loadClubs]);
+  useEffect(() => { if (view === 'pulse') loadComLinks(); }, [view, loadComLinks]);
+  useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, 5000); return () => clearInterval(t); }, [clubChat, loadClubChat]);
   // Auto-dismiss the toast after a few seconds (the badge persists until viewed).
   useEffect(() => { if (!evToast) return; const t = setTimeout(() => setEvToast(null), 7000); return () => clearTimeout(t); }, [evToast]);
 
@@ -780,6 +829,64 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         </div>
       ); })()}
 
+      {/* CLUB CHAT — a member-only bottom-sheet thread for a club */}
+      {clubChat && (
+        <div onClick={() => setClubChat(null)} style={{ position: 'fixed', inset: 0, zIndex: 195, background: 'rgba(24,14,6,0.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82vh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1rem', borderBottom: '1px solid var(--h-border)', background: 'var(--h-surface-2)', flexShrink: 0 }}>
+              <span style={{ fontSize: '1.4rem' }}>🤝</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', lineHeight: 1 }}>{clubChat.name}</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>club chat · members only</div>
+              </div>
+              <button onClick={() => setClubChat(null)} aria-label="close" style={{ marginLeft: 'auto', width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'var(--h-surface-3)', color: 'var(--h-text-dim)', fontSize: '0.9rem', flexShrink: 0 }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {clubMsgs.length === 0 && <div style={{ margin: 'auto', textAlign: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>say hi to the club 👋</div>}
+              {clubMsgs.map((msg: any) => (
+                <div key={msg.id} style={{ alignSelf: msg.isMe ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                  {!msg.isMe && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.04em', color: LINE_DEEP, margin: '0 0 0.1rem 0.5rem' }}>{(msg.name || 'someone').split(' ')[0]}</div>}
+                  <div style={{ background: msg.isMe ? LINE : 'var(--h-surface-2)', color: msg.isMe ? '#fff' : 'var(--h-text)', border: msg.isMe ? 'none' : '1px solid var(--h-border)', borderRadius: msg.isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '0.5rem 0.8rem', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'break-word' }}>{msg.body}</div>
+                </div>
+              ))}
+              <div ref={clubEndRef} />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.7rem', borderTop: '1px solid var(--h-border)', flexShrink: 0 }}>
+              <input value={clubText} onChange={(e) => setClubText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendClubMsg()} placeholder="message the club…" style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+              <button onClick={sendClubMsg} disabled={!clubText.trim()} style={{ ...poppyBtn, opacity: clubText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CLUB MANAGE — the owner approves/declines join requests */}
+      {clubManage && (
+        <div onClick={() => setClubManage(null)} style={{ position: 'fixed', inset: 0, zIndex: 196, background: 'rgba(24,14,6,0.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 420, width: '100%', maxHeight: '80vh', overflow: 'auto', padding: '1.4rem 1.4rem 1.2rem', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem' }}>{clubManage.name}</div>
+              <button onClick={() => setClubManage(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--h-text-faint)' }}>✕</button>
+            </div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.9rem' }}>join requests</div>
+            {clubReqs.length === 0 ? (
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>no pending requests right now.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {clubReqs.map((r: any) => (
+                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    {r.photo_url ? <img src={r.photo_url} alt="" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} /> : <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', display: 'inline-block' }} />}
+                    <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name || 'someone'}</span>
+                    <button onClick={() => reqAction(clubManage.id, r.id, 'approve')} style={{ ...poppyBtn, fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}>approve</button>
+                    <button onClick={() => reqAction(clubManage.id, r.id, 'decline')} style={pulseBtnGhost}>decline</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => openClubChat(clubManage)} style={{ ...pulseBtnGhost, width: '100%', marginTop: '1rem', padding: '0.5rem' }}>💬 open the club chat →</button>
+          </div>
+        </div>
+      )}
+
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
       {evToast && (
         <button onClick={() => { setView('scene'); setEvToast(null); setNewScene(0); }}
@@ -937,6 +1044,27 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             </div>
           ) : null}
 
+          {/* YOUR CLUBS — clubs you're in show up in your circle too, each with its chat */}
+          {(() => { const mine = clubs.filter((c: any) => c.myStatus === 'member' || c.myStatus === 'owner'); return mine.length > 0 && (
+            <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+              <div style={sideHd}>🤝 your clubs</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.6rem' }}>
+                {mine.map((c: any) => (
+                  <button key={c.id} onClick={() => openClubChat({ id: c.id, name: c.name })}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.5rem 0.75rem', cursor: 'pointer', font: 'inherit', color: 'var(--h-text)', textAlign: 'left' }}>
+                    <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>{CAT_EMOJI[c.category] || '✨'}</span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}{c.myStatus === 'owner' ? ' · you run it' : ''}</div>
+                    </div>
+                    {c.myStatus === 'owner' && c.pendingCount > 0 && <span onClick={(e) => { e.stopPropagation(); openClubManage({ id: c.id, name: c.name }); }} style={{ flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', color: '#fff', background: '#da291c', borderRadius: 999, padding: '0.12rem 0.45rem' }}>{c.pendingCount} req</span>}
+                    <span style={{ flexShrink: 0, fontSize: '0.9rem', color: LINE_DEEP }}>💬</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ); })()}
+
           {/* LOWER — the group chat, full-width now (friend card lives up top) */}
           <div className="crewLower">
             {/* CHAT — roomy, full-width */}
@@ -1015,60 +1143,91 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         <div>
           <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
-            city vibes — find your tribe. the people of {city ? city.split(',')[0].toLowerCase() : 'your city'}, gathering around what they love.
+            city vibes — find your tribe. the clubs, crews &amp; community chats of {city ? city.split(',')[0].toLowerCase() : 'your city'}.
           </p>
 
-          {/* FIND YOUR TRIBE — the city grouped by interest (who's into what). The
-              feed itself lives on the Scene; this is the discovery layer over it. */}
-          {(() => {
-            const myInts = [...((me?.hobbies as string[]) || []), ...((me?.music as string[]) || []), ...((me?.food as string[]) || [])].map((s) => String(s).toLowerCase());
-            const isMine = (cat: string) => myInts.some((i) => i && (i.includes(cat) || cat.includes(i)));
-            const map: Record<string, { cat: string; count: number; people: { name: string; photo: string | null }[]; seen: Set<string> }> = {};
-            acts.forEach((a) => {
-              const c = a.category || 'hang';
-              if (!map[c]) map[c] = { cat: c, count: 0, people: [], seen: new Set() };
-              const t = map[c]; t.count++;
-              const k = a.authorName || a.id;
-              if (a.authorName && !t.seen.has(k)) { t.seen.add(k); t.people.push({ name: a.authorName, photo: a.authorPhoto || null }); }
-            });
-            const tribes = Object.values(map).sort((x, y) => ((isMine(y.cat) ? 1 : 0) - (isMine(x.cat) ? 1 : 0)) || (y.count - x.count));
-            if (tribes.length === 0) return (
-              <div style={{ ...card, padding: '1.5rem 1.25rem', textAlign: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
-                no tribes forming yet — <button onClick={() => setView('scene')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something on the scene →</button> and be the first.
+          {/* CLUBS — user-run groups (book club, run club). Join by request → the
+              creator approves, then it's in your circle with its own chat. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '0 0 0.75rem' }}>
+            <h3 style={{ ...sectionLabel, margin: 0, fontSize: '1.3rem' }}>🤝 clubs</h3>
+            <button onClick={() => setShowNewClub((v) => !v)} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '0.95rem', padding: '0.38rem 0.9rem' }}>{showNewClub ? '✕ cancel' : '+ start a club'}</button>
+          </div>
+          {showNewClub && (
+            <div style={{ ...card, padding: '1rem 1.1rem', marginBottom: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+              <input value={newClub.name} onChange={(e) => setNewClub({ ...newClub, name: e.target.value })} maxLength={80} placeholder="club name (e.g. sunday run club)" style={inputStyle} />
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <select value={newClub.category} onChange={(e) => setNewClub({ ...newClub, category: e.target.value })} style={{ ...inputStyle, flex: '0 0 auto' }}>{CLUB_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                <input value={newClub.area} onChange={(e) => setNewClub({ ...newClub, area: e.target.value })} maxLength={60} placeholder="📍 area (optional)" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
               </div>
-            );
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {tribes.map((t) => {
-                  const mine = isMine(t.cat);
-                  return (
-                    <div key={t.cat} style={{ ...card, padding: '0.9rem 1rem', border: mine ? `1px solid ${LINE}` : '1px solid var(--h-border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-                        <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{CAT_EMOJI[t.cat] || '✨'}</span>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.45rem', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {t.cat} {mine && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', background: LINE, borderRadius: 999, padding: '0.14rem 0.5rem' }}>✨ your vibe</span>}
-                          </div>
-                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.22rem' }}>{t.count} happening · {t.people.length} {t.people.length === 1 ? 'person' : 'people'} into it</div>
-                        </div>
-                        <button onClick={() => { setFilterCat(t.cat); setFilterMain(''); setView('scene'); }} style={{ ...poppyBtn, flexShrink: 0, fontSize: '0.95rem', padding: '0.4rem 0.9rem' }}>see it →</button>
-                      </div>
-                      {t.people.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.65rem', paddingLeft: '0.1rem' }}>
-                          {t.people.slice(0, 7).map((p, i) => (
-                            p.photo
-                              ? <img key={i} src={p.photo} alt="" title={p.name.split(' ')[0]} style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--h-surface)', marginLeft: i === 0 ? 0 : -8 }} />
-                              : <span key={i} title={p.name.split(' ')[0]} style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--h-surface-3)', border: '2px solid var(--h-surface)', marginLeft: i === 0 ? 0 : -8, display: 'inline-block' }} />
-                          ))}
-                          {t.people.length > 7 && <span style={{ marginLeft: '0.55rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--h-text-faint)' }}>+{t.people.length - 7}</span>}
-                        </div>
-                      )}
+              <textarea value={newClub.description} onChange={(e) => setNewClub({ ...newClub, description: e.target.value })} maxLength={400} placeholder="what's it about? when do you meet?" rows={2} style={{ ...inputStyle, resize: 'vertical', borderRadius: 12 }} />
+              <button onClick={createClub} disabled={clubBusy || !newClub.name.trim() || !termsOk} style={{ ...poppyBtn, alignSelf: 'flex-start', opacity: newClub.name.trim() && termsOk ? 1 : 0.5 }}>{clubBusy ? '…' : 'create the club →'}</button>
+            </div>
+          )}
+          {clubs.length === 0 ? (
+            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>no clubs in your city yet — start the first one ☝️</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+              {clubs.map((c) => (
+                <div key={c.id} style={{ ...card, padding: '0.9rem 1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
+                    <span style={{ fontSize: '1.7rem', flexShrink: 0 }}>{CAT_EMOJI[c.category] || '✨'}</span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', lineHeight: 1 }}>{c.name}</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{c.category} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'} · by {(c.creatorName || '').split(' ')[0]}{c.area ? ` · 📍 ${c.area}` : ''}</div>
                     </div>
-                  );
-                })}
+                    <button onClick={async () => { if (confirm(`report "${c.name}" to the team?`)) { await clubAct(c.id, 'report'); await loadClubs(); } }} title="report this club" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontSize: '0.85rem', flexShrink: 0 }}>⚑</button>
+                  </div>
+                  {c.description && <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}>{c.description}</p>}
+                  <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
+                    {c.myStatus === 'owner' ? (<>
+                      <button onClick={() => openClubManage(c)} style={pulseBtn}>👀 requests{c.pendingCount ? ` (${c.pendingCount})` : ''}</button>
+                      <button onClick={() => openClubChat(c)} style={{ ...poppyBtn, fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>💬 chat →</button>
+                    </>) : c.myStatus === 'member' ? (<>
+                      <button onClick={() => openClubChat(c)} style={{ ...poppyBtn, fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>💬 chat →</button>
+                      <button onClick={async () => { await clubAct(c.id, 'leave'); await loadClubs(); }} style={pulseBtnGhost}>leave</button>
+                    </>) : c.myStatus === 'pending' ? (
+                      <span style={{ ...pulseBtnGhost, opacity: 0.7 }}>⏳ requested</span>
+                    ) : (
+                      <button onClick={async () => { await clubAct(c.id, 'join'); await loadClubs(); }} disabled={!termsOk} style={{ ...poppyBtn, fontSize: '0.9rem', padding: '0.35rem 0.85rem', opacity: termsOk ? 1 : 0.5 }}>🙋 request to join</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* COMMUNITY CHATS — submitted Discord/group-chat links (admin-approved). */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '1.7rem 0 0.75rem' }}>
+            <h3 style={{ ...sectionLabel, margin: 0, fontSize: '1.3rem' }}>💬 community chats</h3>
+            <button onClick={() => setShowNewLink((v) => !v)} style={{ ...pulseBtnGhost, marginLeft: 'auto' }}>{showNewLink ? '✕ cancel' : '+ submit a link'}</button>
+          </div>
+          {showNewLink && (
+            <div style={{ ...card, padding: '1rem 1.1rem', marginBottom: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+              <input value={newLink.title} onChange={(e) => setNewLink({ ...newLink, title: e.target.value })} maxLength={100} placeholder="what is it? (e.g. boston runners discord)" style={inputStyle} />
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <select value={newLink.kind} onChange={(e) => setNewLink({ ...newLink, kind: e.target.value })} style={{ ...inputStyle, flex: '0 0 auto' }}>{LINK_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}</select>
+                <input value={newLink.url} onChange={(e) => setNewLink({ ...newLink, url: e.target.value })} maxLength={400} placeholder="paste the invite link" style={{ ...inputStyle, flex: 1, minWidth: 160 }} />
               </div>
-            );
-          })()}
+              <button onClick={submitLink} disabled={clubBusy || !newLink.title.trim() || !newLink.url.trim()} style={{ ...poppyBtn, alignSelf: 'flex-start', opacity: newLink.title.trim() && newLink.url.trim() ? 1 : 0.5 }}>{clubBusy ? '…' : 'submit for review →'}</button>
+              <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-faint)' }}>we review every link before it goes live — keeps the spam out.</span>
+            </div>
+          )}
+          {comLinks.length === 0 ? (
+            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>no community chats yet — submit a Discord or group-chat link (we review before it shows).</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {comLinks.map((l) => (
+                <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ ...card, padding: '0.8rem 1rem', display: 'flex', alignItems: 'center', gap: '0.7rem', textDecoration: 'none', color: 'var(--h-text)' }}>
+                  <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{KIND_EMOJI[l.kind] || '🔗'}</span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', lineHeight: 1 }}>{l.title}</div>
+                    {l.description && <div style={{ fontSize: '0.82rem', color: 'var(--h-text-dim)', marginTop: '0.1rem' }}>{l.description}</div>}
+                  </div>
+                  <span style={{ ...poppyBtn, fontSize: '0.85rem', padding: '0.32rem 0.8rem', flexShrink: 0 }}>join →</span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
         )}
 
@@ -1192,25 +1351,25 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         )}
           </main>
           <aside className="fbRail">
-            {/* CITY PULSE — active zones on the right (no connections here) */}
+            {/* CITY PULSE — your clubs on the right (quick chat access) */}
             {view === 'pulse' && (
             <div style={{ ...card, padding: '0.9rem 1rem' }}>
-              <div style={sideHd}>📍 active zones</div>
-              {(!pulse || !pulse.areas || pulse.areas.length === 0) ? (
-                <div style={sideEmpty}>no zones buzzing yet — be the first to post.</div>
+              <div style={sideHd}>🤝 your clubs</div>
+              {(() => { const mine = clubs.filter((c: any) => c.myStatus === 'member' || c.myStatus === 'owner'); return mine.length === 0 ? (
+                <div style={sideEmpty}>not in any clubs yet — join one, or start your own.</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.55rem' }}>
-                  {[...pulse.areas].sort((a: any, b: any) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 12).map((z: any, i: number) => {
-                    return (
-                      <button key={z.area} onClick={() => { setAreaFilter(z.area); setView('scene'); }} title={`${z.activities || 0} happening · ${z.members} around — see it on the scene`}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: '0.34rem 0.4rem', borderRadius: 8, color: 'var(--h-text)', textAlign: 'left' }}>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
-                        <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: 'var(--h-text-faint)' }}>{z.activities ? `${z.activities} ev` : ''}{z.members ? `${z.activities ? ' · ' : ''}${z.members}👤` : ''}</span>
-                      </button>
-                    );
-                  })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.55rem' }}>
+                  {mine.map((c: any) => (
+                    <button key={c.id} onClick={() => openClubChat({ id: c.id, name: c.name })} title={`open ${c.name}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: '0.34rem 0.4rem', borderRadius: 8, color: 'var(--h-text)', textAlign: 'left' }}>
+                      <span style={{ fontSize: '0.95rem', flexShrink: 0 }}>{CAT_EMOJI[c.category] || '✨'}</span>
+                      <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                      {c.myStatus === 'owner' && c.pendingCount > 0 && <span style={{ flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', color: '#fff', background: '#da291c', borderRadius: 999, padding: '0.05rem 0.35rem' }}>{c.pendingCount}</span>}
+                      <span style={{ flexShrink: 0, fontSize: '0.8rem', color: LINE_DEEP }}>💬</span>
+                    </button>
+                  ))}
                 </div>
-              )}
+              ); })()}
             </div>
             )}
 

@@ -5,6 +5,39 @@ import Nav from '@/components/Nav'
 import { parseResponse } from '@/lib/fetch-helpers'
 import s from './admin.module.css'
 
+// Pending community-link submissions (Discord/group-chat) awaiting approval.
+// Hidden entirely when there's nothing to review.
+function CommunityLinksAdmin() {
+  const [pending, setPending] = useState<any[]>([])
+  const [loaded, setLoaded] = useState(false)
+  async function load() { try { const r = await fetch('/api/admin/community-links'); if (r.ok) setPending((await r.json()).pending || []) } catch { /* ignore */ } setLoaded(true) }
+  useEffect(() => { load() }, [])
+  async function act(id: string, action: 'approve' | 'reject') {
+    setPending((p) => p.filter((x) => x.id !== id))
+    try { await fetch('/api/admin/community-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) }) } catch { /* ignore */ }
+  }
+  if (loaded && pending.length === 0) return null
+  return (
+    <div style={{ background: '#fff', border: '2px solid #ff6a1f', borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.5rem' }}>
+      <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.2rem', marginBottom: '0.2rem' }}>💬 Community links — pending review ({pending.length})</div>
+      <div style={{ fontSize: '0.8rem', color: '#6b6b76', marginBottom: '0.8rem' }}>Submitted Discord/group-chat links for City Pulse. Approve to publish, reject to drop.</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        {pending.map((l) => (
+          <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.6rem 0.7rem', background: '#faf7f3', borderRadius: 10, flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{l.title} <span style={{ fontWeight: 400, color: '#6b6b76', fontSize: '0.75rem' }}>· {l.kind}{l.metro ? ` · ${l.metro}` : ''}{l.is_test ? ' · TEST' : ''}</span></div>
+              <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.78rem', color: '#2563ff', wordBreak: 'break-all' }}>{l.url}</a>
+              {l.description && <div style={{ fontSize: '0.78rem', color: '#6b6b76' }}>{l.description}</div>}
+            </div>
+            <button onClick={() => act(l.id, 'approve')} style={{ background: '#2d7a4f', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem 0.85rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem' }}>approve</button>
+            <button onClick={() => act(l.id, 'reject')} style={{ background: 'transparent', color: '#c0392b', border: '1px solid #c0392b', borderRadius: 8, padding: '0.4rem 0.85rem', cursor: 'pointer', fontSize: '0.78rem' }}>reject</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminClient() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -233,6 +266,8 @@ export default function AdminClient() {
         </div>
 
         <div className={s.wrap}>
+
+          <CommunityLinksAdmin />
 
           {/* KPI row */}
           <div className={s.kpis}>

@@ -571,6 +571,44 @@ create index if not exists friend_activity_comments_act_idx on friend_activity_c
 alter table if exists friend_activity_comments enable row level security;
 grant all on table friend_activity_comments to anon, authenticated, service_role;
 
+-- 20260625_friend_clubs.sql — City Pulse communities: clubs (join-by-request + own chat) + submitted community links (admin-approved)
+create table if not exists friend_clubs (
+  id uuid primary key default gen_random_uuid(),
+  name text not null, category text, description text,
+  creator_id uuid not null, area text, metro text,
+  is_test boolean not null default false, report_count int not null default 0,
+  hidden_at timestamptz, created_at timestamptz not null default now()
+);
+create index if not exists friend_clubs_metro_idx on friend_clubs (metro, created_at desc);
+create table if not exists friend_club_members (
+  club_id uuid not null references friend_clubs(id) on delete cascade,
+  user_id uuid not null, status text not null default 'pending',
+  created_at timestamptz not null default now(), primary key (club_id, user_id)
+);
+create table if not exists friend_club_messages (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references friend_clubs(id) on delete cascade,
+  sender_id uuid not null, body text not null, created_at timestamptz not null default now()
+);
+create index if not exists friend_club_messages_idx on friend_club_messages (club_id, created_at);
+create table if not exists friend_club_reports (
+  club_id uuid not null references friend_clubs(id) on delete cascade,
+  user_id uuid not null, created_at timestamptz not null default now(), primary key (club_id, user_id)
+);
+create table if not exists friend_community_links (
+  id uuid primary key default gen_random_uuid(),
+  title text not null, url text not null, kind text, description text,
+  submitter_id uuid not null, metro text, is_test boolean not null default false,
+  approved boolean not null default false, approved_at timestamptz, created_at timestamptz not null default now()
+);
+create index if not exists friend_community_links_idx on friend_community_links (metro, approved);
+alter table if exists friend_clubs enable row level security;
+alter table if exists friend_club_members enable row level security;
+alter table if exists friend_club_messages enable row level security;
+alter table if exists friend_club_reports enable row level security;
+alter table if exists friend_community_links enable row level security;
+grant all on table friend_clubs, friend_club_members, friend_club_messages, friend_club_reports, friend_community_links to anon, authenticated, service_role;
+
 -- ==================== 20260604_friend_match_rounds.sql ====================
 -- The $0.99 "another round of matches" purchases (idempotent per Stripe payment).
 create table if not exists friend_match_rounds (
