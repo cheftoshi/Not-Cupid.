@@ -123,6 +123,12 @@ export default async function DashboardPage({
     .filter(Boolean) as any[];
 
   const newest = connections[0] || null;
+  // Only run the cinematic for a GENUINELY new match (created in the last ~12
+  // min). localStorage already plays it once per match, but a blocked/evicted
+  // localStorage write (Safari) would otherwise re-fire it on every visit — this
+  // hard-stops an existing chat (e.g. one you've been talking in) from re-playing.
+  const newestFresh = !!newest?.match?.created_at &&
+    Date.now() - new Date(newest.match.created_at).getTime() < 12 * 60 * 1000;
 
   // Location (dates): the city + radius controls live HERE, not on the hub.
   const dashMetro = metroOf(user.zip);
@@ -162,8 +168,8 @@ export default async function DashboardPage({
           <LocationControls city={dashCity} currentMetro={dashMetro} radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} showRadius />
         </div>
 
-        {/* One-time cinematic reveal for the newest connection. */}
-        {newest && (
+        {/* One-time cinematic reveal — only for a genuinely fresh match. */}
+        {newest && newestFresh && (
           <MatchReveal
             matchId={newest.match.id}
             name={newest.otherUser.name || 'your match'}

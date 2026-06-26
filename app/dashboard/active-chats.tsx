@@ -43,11 +43,11 @@ export default function ActiveChats({ cards }: { cards: Card[] }) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={a.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#2563ff', fontSize: '0.7rem' }}>no photo</div>
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 32% 28%, rgba(37,99,255,0.2), transparent 60%), var(--h-surface-2)', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 700, color: 'var(--blue)', fontSize: '1.7rem' }}>{(first?.[0] || '✦').toUpperCase()}</div>
                 )}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.15rem', fontWeight: 700, color: 'var(--h-text)' }}>
+                <div style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--h-text)' }}>
                   {first}{a.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {a.age}</span> : null}
                   {a.score != null && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', color: 'var(--h-text-faint)', marginLeft: '0.5rem' }}>{a.score}%</span>}
                 </div>

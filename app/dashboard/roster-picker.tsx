@@ -163,6 +163,12 @@ export default function RosterPicker({
 
   return (
     <div>
+      <style>{`
+        [data-card] { transition: transform .22s var(--ease), box-shadow .22s var(--ease); }
+        [data-card]:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+        [data-card] .ncCardImg { transition: transform .4s var(--ease); }
+        [data-card]:hover .ncCardImg { transform: scale(1.04); }
+      `}</style>
       {/* slim header — count + roll arrows (no "roster" wording) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.9rem' }}>
         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
@@ -196,9 +202,9 @@ export default function RosterPicker({
               <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
                 {a.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={a.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <img className="ncCardImg" src={a.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#2563ff', fontSize: '0.9rem' }}>no photo</div>
+                  <Monogram first={first} />
                 )}
                 <div style={{ position: 'absolute', top: 10, left: 10, background: 'var(--h-surface)', color: statusColor, borderRadius: 999, padding: '3px 9px', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>{statusLabel}</div>
                 {a.score != null && (
@@ -230,9 +236,9 @@ export default function RosterPicker({
               <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
                 {c.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <img className="ncCardImg" src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#2563ff', fontSize: '0.9rem' }}>no photo</div>
+                  <Monogram first={first} />
                 )}
                 <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 11px', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', fontWeight: 600 }}>
                   {c.score}<span style={{ color: '#ff6a1f' }}>%</span>
@@ -332,3 +338,18 @@ const cardBase: React.CSSProperties = {
   background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 18,
   overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-md)',
 };
+
+// No-photo state → a soft brand-tinted gradient with a big serif initial, instead
+// of an empty "no photo" void. Adapts to dark mode via the surface token.
+function Monogram({ first }: { first: string }) {
+  return (
+    <div style={{
+      width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'radial-gradient(circle at 30% 26%, rgba(37,99,255,0.18), transparent 58%), radial-gradient(circle at 78% 82%, rgba(255,106,31,0.13), transparent 55%), var(--h-surface-2)',
+    }}>
+      <span style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '3.6rem', color: 'var(--h-accent)', opacity: 0.92, lineHeight: 1 }}>
+        {(first?.[0] || '✦').toUpperCase()}
+      </span>
+    </div>
+  );
+}
