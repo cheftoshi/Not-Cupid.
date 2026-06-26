@@ -194,11 +194,11 @@
 .galleryRemove:hover { background: #d94f3d; }
 .galleryAdd {
   width: 92px; height: 92px; border-radius: 12px; border: 1.5px dashed var(--h-border);
-  background: var(--h-surface); color: #2563ff; cursor: pointer; display: flex;
+  background: var(--h-surface); color: var(--blue); cursor: pointer; display: flex;
   align-items: center; justify-content: center; font-size: 0.7rem;
   text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
 }
-.galleryAdd:hover { border-color: #2563ff; background: var(--h-surface-2); }
+.galleryAdd:hover { border-color: var(--blue); background: var(--h-surface-2); }
 
 .field { margin-bottom: 1.5rem; }
 
@@ -248,7 +248,7 @@
   color: var(--h-text);
 }
 
-.checkbox input { accent-color: #2563ff; width: 16px; height: 16px; }
+.checkbox input { accent-color: var(--blue); width: 16px; height: 16px; }
 
 .charCount { font-size: 0.6875rem; color: var(--h-text-faint); text-align: right; margin-top: 0.4rem; letter-spacing: 0.05em; }
 
@@ -365,7 +365,7 @@
   font-size: 0.6rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: var(--blue);
 }
 .dashGreet {
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
@@ -378,7 +378,7 @@
 .dashGreet em {
   font-style: italic;
   font-weight: 700;
-  background: linear-gradient(120deg, #2563ff 0%, #ff6a1f 130%);
+  background: linear-gradient(120deg, var(--blue) 0%, #ff6a1f 130%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -423,7 +423,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: var(--blue);
   margin-top: 0.4rem;
 }
 .dashArchetypeDesc {
@@ -471,7 +471,7 @@
   font-size: 0.6rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: var(--blue);
   cursor: pointer;
   background: transparent;
   border: none;
@@ -531,7 +531,7 @@
   box-shadow: 0 6px 18px -12px rgba(14,12,26,0.22);
 }
 .dashStatCard:hover {
-  border-color: #2563ff;
+  border-color: var(--blue);
   transform: translateY(-4px);
   box-shadow: 0 16px 32px -12px rgba(27,70,201,0.32);
 }
@@ -560,7 +560,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: var(--blue);
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -570,7 +570,7 @@
   content: '';
   width: 1.5rem;
   height: 1px;
-  background: #2563ff;
+  background: var(--blue);
 }
 
 .dashBioCard {
@@ -592,7 +592,7 @@
 .dashBioQuote {
   font-family: Georgia, ui-serif, serif;
   font-size: 2.5rem;
-  color: #2563ff;
+  color: var(--blue);
   line-height: 0;
   vertical-align: -0.4em;
   margin: 0 0.15em;
@@ -611,7 +611,7 @@
 .dashEmptyText {
   font-family: Georgia, ui-serif, serif;
   font-size: 1rem;
-  color: #2563ff;
+  color: var(--blue);
   margin: 0;
 }
 .dashEmptyText em { font-style: italic; color: var(--h-accent); }
@@ -640,7 +640,7 @@
   font-size: 0.55rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: var(--blue);
 }
 .dashBasicV {
   font-family: Georgia, ui-serif, serif;
@@ -681,14 +681,14 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #2563ff, #1b46c9);
+  background: linear-gradient(90deg, var(--blue), #1b46c9);
 }
 .hexacoPct {
   flex: 0 0 1.8rem;
   text-align: right;
   font-family: 'DM Mono', monospace;
   font-size: 0.62rem;
-  color: #2563ff;
+  color: var(--blue);
   font-weight: 600;
 }
 @media (max-width: 520px) {
@@ -762,7 +762,7 @@
 .dashLogout {
   background: none;
   border: none;
-  color: #2563ff;
+  color: var(--blue);
   cursor: pointer;
   font-family: inherit;
   font-size: 0.85rem;
@@ -788,7 +788,9 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2.25rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--h-border);
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -797,11 +799,11 @@
   font-size: 0.55rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: var(--blue);
   margin-bottom: 0.4rem;
 }
 .editTitle {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: clamp(2rem, 5vw, 2.8rem);
   line-height: 0.95;
@@ -826,7 +828,7 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.editClose:hover { border-color: #2563ff; color: var(--h-accent); }
+.editClose:hover { border-color: var(--blue); color: var(--h-accent); }
 
 .labelHint {
   font-family: Georgia, ui-serif, serif;
@@ -862,7 +864,7 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.cancelButton:hover:not(:disabled) { border-color: #2563ff; color: var(--h-accent); }
+.cancelButton:hover:not(:disabled) { border-color: var(--blue); color: var(--h-accent); }
 .cancelButton:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* =========================================================
