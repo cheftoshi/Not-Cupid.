@@ -6,9 +6,9 @@ import ReactivateButton from '@/components/reactivate-button';
 import LocationControls from '@/components/location-controls';
 
 // ── Friend Line theme (warm MBTA transit) ──
-const INK = '#241d12';           // warm near-black (signage)
-const LINE = '#e8842b';          // the Friend Line — warm orange
-const LINE_DEEP = '#c96a18';     // deeper orange for shadows/hover
+const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
+const LINE = '#ff6a1f';          // the Friend Line — BRAND orange (was off-brand #e8842b)
+const LINE_DEEP = '#d2530f';     // brand orange-deep for shadows/hover
 const CREAM = 'var(--h-surface)'; // warm station-tile cream → themed surface
 // Activity-rich categories — what people actually do together (fitness/sports
 // lead, then social/culture). Drives the Scene filter chips + the post composer.
@@ -24,11 +24,11 @@ const KIND_EMOJI: Record<string, string> = { discord: '🎮', whatsapp: '💬', 
 
 // Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px offset
 // shadows — too loud). Surfaces read quiet so the content + connections lead.
-const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 16, boxShadow: '0 12px 36px -26px rgba(0,0,0,0.6)' };
+const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-md)' };
 const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.04em', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.22rem 0.6rem', color: 'var(--h-text-dim)' };
 // Section headers: a small connection-node + a calmer (smaller) display size.
 const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.05em', margin: '1.7rem 0 0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--h-text)' };
-const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: 'none', borderRadius: 999, padding: '0.6rem 1.5rem', boxShadow: '0 12px 26px -14px rgba(232,132,43,0.7)', cursor: 'pointer' };
+const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: 'none', borderRadius: 'var(--r-pill)', padding: '0.6rem 1.5rem', boxShadow: '0 12px 26px -14px rgba(255,106,31,0.55)', cursor: 'pointer', transition: 'transform .2s var(--ease), box-shadow .2s var(--ease)' };
 const inputStyle: React.CSSProperties = { border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.5rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', background: 'var(--h-surface)', color: 'var(--h-text)', outline: 'none' };
 const pulseBtn: React.CSSProperties = { background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)', fontWeight: 700 };
 const pulseBtnGhost: React.CSSProperties = { background: 'transparent', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)' };
@@ -920,8 +920,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         }
         .fmMap { position: relative; min-height: min(72vh, 600px); margin: 1.25rem 0 0; }
         .fmMapLine { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-        .fmStop { position: absolute; transform: translateX(-50%); width: min(300px, 84vw); text-align: left; display: flex; flex-direction: column; background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 18px; box-shadow: 6px 6px 0 ${INK}; padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: var(--h-text); font: inherit; min-height: 190px; z-index: 1; transition: transform .12s ease, box-shadow .12s ease; }
-        .fmStop:hover { transform: translate(calc(-50% - 2px), -3px); box-shadow: 9px 9px 0 ${INK}; }
+        .fmStop { position: absolute; transform: translateX(-50%); width: min(300px, 84vw); text-align: left; display: flex; flex-direction: column; background: var(--h-surface); border: 1px solid var(--h-border); border-radius: var(--r-lg); box-shadow: var(--shadow-md); padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: var(--h-text); font: inherit; min-height: 190px; z-index: 1; transition: transform .12s ease, box-shadow .12s ease; }
+        .fmStop:hover { transform: translate(calc(-50% - 2px), -3px); box-shadow: var(--shadow-lg); }
         .fmStopDot { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: ${CREAM}; border: 5px solid ${LINE}; box-shadow: 0 0 0 3px var(--h-surface); }
         @media (max-width: 759px) {
           .fmMap { min-height: 0; display: flex; flex-direction: column; gap: 1.6rem; padding-top: 0.6rem; }
@@ -1434,7 +1434,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                 ))}
               </div>
               {sealedCount > 0 && (
-                <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #e8842b, #c96a18)', color: '#fff', borderRadius: 10, padding: '0.55rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em' }}>🎒 open sealed pack · {sealedCount} new to meet →</a>
+                <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #ff6a1f, #d2530f)', color: '#fff', borderRadius: 'var(--r-sm)', padding: '0.55rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em', boxShadow: '0 12px 26px -16px rgba(255,106,31,0.6)' }}>🎒 open sealed pack · {sealedCount} new to meet →</a>
               )}
               <a href="/friends/pack" style={{ ...poppyBtn, display: 'block', marginTop: '0.7rem', textAlign: 'center', textDecoration: 'none', fontSize: '0.95rem', padding: '0.5rem' }}>open another pack · $1.99</a>
               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.66rem', marginTop: '0.5rem', textAlign: 'center' }}>first pack free · <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free</div>
