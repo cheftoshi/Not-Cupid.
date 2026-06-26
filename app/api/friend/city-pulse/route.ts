@@ -24,8 +24,16 @@ export async function GET() {
     supabaseAdmin.from('users').select('id', { count: 'exact', head: true }).not('friend_opted_in_at', 'is', null).is('deleted_at', null)
   );
 
-  const { data: acts } = await supabaseAdmin
-    .from('friend_activities').select('area, kind').or(`expires_at.is.null,expires_at.gt.${nowIso}`).limit(2000);
+  const { data: rawActs } = await supabaseAdmin
+    .from('friend_activities').select('area, kind, author_id').or(`expires_at.is.null,expires_at.gt.${nowIso}`).limit(2000);
+  // Realm-filter activities by author so test events never inflate a real user's
+  // zone counts (matching the realm-segregated Scene feed).
+  const actAuthorIds = Array.from(new Set((rawActs ?? []).map((a: any) => a.author_id)));
+  const { data: actAuthors } = actAuthorIds.length
+    ? await realm(supabaseAdmin.from('users').select('id').in('id', actAuthorIds))
+    : { data: [] as any[] };
+  const realmAuthors = new Set((actAuthors ?? []).map((u: any) => u.id));
+  const acts = (rawActs ?? []).filter((a: any) => realmAuthors.has(a.author_id));
 
   const { data: activeMembers } = await supabaseAdmin
     .from('friend_circle_members').select('circle_id').is('left_at', null).limit(5000);

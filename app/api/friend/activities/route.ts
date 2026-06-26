@@ -22,17 +22,25 @@ export async function GET(req: NextRequest) {
     .select('*')
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order('created_at', { ascending: false })
-    .limit(60);
+    .limit(120); // headroom for the realm filter below
   if (area) q = q.eq('area', area);
   if (category) q = q.eq('category', category);
-  const { data: acts } = await q;
+  const { data: rawActs } = await q;
+
+  // REALM SEGREGATION: real users only see real-authored activity, test only test.
+  // The Scene is public WITHIN a realm — test dummies never surface in the real app
+  // (and vice-versa). This also keeps the derived "around in {city}" people clean.
+  const rawAuthorIds = Array.from(new Set((rawActs ?? []).map((a) => a.author_id)));
+  const { data: authors } = await supabaseAdmin
+    .from('users').select('id, name, photo_url, is_test')
+    .in('id', rawAuthorIds.length ? rawAuthorIds : ['00000000-0000-0000-0000-000000000000']);
+  const aById = new Map((authors ?? []).map((u) => [u.id, u]));
+  const meTest = (user as any).is_test === true;
+  const acts = (rawActs ?? [])
+    .filter((a) => ((((aById.get(a.author_id) as any)?.is_test === true)) === meTest))
+    .slice(0, 60);
 
   const ids = (acts ?? []).map((a) => a.id);
-  const authorIds = Array.from(new Set((acts ?? []).map((a) => a.author_id)));
-  const { data: authors } = await supabaseAdmin
-    .from('users').select('id, name, photo_url')
-    .in('id', authorIds.length ? authorIds : ['00000000-0000-0000-0000-000000000000']);
-  const aById = new Map((authors ?? []).map((u) => [u.id, u]));
 
   const countByAct = new Map<string, number>();
   const respByAct = new Map<string, { yes: number; maybe: number; no: number }>();
