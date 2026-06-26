@@ -166,6 +166,13 @@ export default async function DashboardPage({
   return (
     <div className={styles.page}>
       <div className={styles.container}>
+        <style>{`
+          .dashGrid { display: grid; grid-template-columns: minmax(0,1fr) 286px; gap: 2.6rem; align-items: start; }
+          .dashAside { position: sticky; top: 84px; }
+          @media (max-width: 900px) { .dashGrid { grid-template-columns: 1fr; gap: 2rem; } .dashAside { position: static; } }
+        `}</style>
+        <div className="dashGrid">
+        <div style={{ minWidth: 0 }}>
 
         <h1 className={styles.title}>
           your <span className={styles.titleAccent}>matches.</span>
@@ -229,6 +236,32 @@ export default async function DashboardPage({
             </div>
           </div>
         )}
+        </div>{/* /left */}
+
+        {/* RIGHT: your own profile — a quick jump to /profile. */}
+        <aside className="dashAside">
+          <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 20, padding: '1.4rem 1.3rem', boxShadow: 'var(--shadow-md)', textAlign: 'center' }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '1rem', textAlign: 'left' }}>your profile</div>
+            <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '2px solid var(--blue)' }}>
+              {user.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 32% 28%, rgba(37,99,255,0.2), transparent 60%), var(--h-surface-2)', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 700, color: 'var(--blue)', fontSize: '2.2rem' }}>{(user.name?.[0] || '✦').toUpperCase()}</div>
+              )}
+            </div>
+            <div style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontSize: '1.35rem', fontWeight: 700, color: 'var(--h-text)', lineHeight: 1.1 }}>{user.name || 'you'}</div>
+            {user.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>{user.archetype}</div>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.3rem 0.7rem', marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)' }}>
+              {dashCity && <span>📍 {dashCity}</span>}
+              {user.occupation && <span>💼 {user.occupation}</span>}
+              {user.intro_video_url && <span style={{ color: 'var(--h-accent)' }}>🎬 video</span>}
+            </div>
+            <a href="/profile" style={{ display: 'block', marginTop: '1.2rem', textDecoration: 'none', background: '#0b0b0b', color: '#fff', borderRadius: 999, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>view / edit profile →</a>
+            <a href="/profile/preview" style={{ display: 'block', marginTop: '0.55rem', textDecoration: 'none', border: '1px solid var(--h-border)', color: 'var(--h-text-dim)', borderRadius: 999, padding: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>preview as a match →</a>
+          </div>
+        </aside>
+        </div>{/* /dashGrid */}
       </div>
     </div>
   );

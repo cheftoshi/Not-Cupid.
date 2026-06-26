@@ -20,7 +20,7 @@ export async function PUT(req: NextRequest) {
     'bio', 'height_cm', 'occupation', 'education',
     'music', 'food', 'hobbies', 'sports', 'prompts',
     'age_min', 'age_max', 'auto_rematch',
-    'vibes', 'relationship_style', 'sun_sign',
+    'vibes', 'relationship_style', 'sun_sign', 'intro_video_url',
     'email_notifications',
   ];
 
@@ -61,6 +61,14 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid sun sign' }, { status: 400 });
   }
   if (updates.sun_sign === '') updates.sun_sign = null;
+  // intro_video_url: a Supabase-storage https URL, or null to clear it.
+  if ('intro_video_url' in updates) {
+    const v = updates.intro_video_url;
+    if (v == null || v === '') updates.intro_video_url = null;
+    else if (typeof v !== 'string' || v.length > 600 || !/^https:\/\//i.test(v)) {
+      return NextResponse.json({ error: 'Invalid video' }, { status: 400 });
+    }
+  }
 
   // email_notifications and pool_active are coupled: turning emails off
   // pulls you from the matching pool (you can't be notified of matches);

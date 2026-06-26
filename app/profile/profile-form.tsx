@@ -23,6 +23,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   const [message, setMessage] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   const needsQuiz = !user.archetype || !user.score_honesty;
   const gallery: string[] = Array.isArray(user.gallery) ? user.gallery : [];
@@ -128,6 +129,36 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
     }
   }
 
+  // Short intro video — signed direct-to-storage upload (bypasses the 4.5MB body
+  // cap), saved to the profile on "save & done".
+  async function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 80 * 1024 * 1024) { setMessage('that video is over 80MB — keep it short (15–30s)'); e.target.value = ''; return; }
+    setUploadingVideo(true);
+    setMessage('');
+    try {
+      const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
+      const r = await fetch('/api/profile/video-upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ext }) });
+      const d = await parseResponse<any>(r);
+      if (!r.ok) throw new Error(d.error || 'upload not available — try again shortly');
+      const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': file.type || 'video/mp4' } });
+      if (!put.ok) throw new Error('upload failed — try again');
+      setUser({ ...user, intro_video_url: d.publicUrl });
+      setMessage('✓ video added — hit save to keep it');
+      setTimeout(() => setMessage(''), 3500);
+    } catch (err: any) {
+      setMessage(err.message || 'upload failed');
+    } finally {
+      setUploadingVideo(false);
+      e.target.value = '';
+    }
+  }
+
+  function handleVideoRemove() {
+    setUser({ ...user, intro_video_url: null });
+  }
+
   async function handleDelete() {
     if (!confirm('Delete your account? Active matches will end. This cannot be undone.')) return;
     if (!confirm('Really sure? This removes you from NotCupid permanently.')) return;
@@ -199,6 +230,25 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
               </label>
             )}
           </div>
+        </div>
+
+        {/* SHORT VIDEO — an optional 15–30s intro clip */}
+        <div className={styles.galleryBlock}>
+          <div className={styles.galleryHead}>
+            <span className={styles.galleryTitle}>short video · <span className={styles.galleryHint}>optional — a 15–30s hello so you&apos;re more than a photo</span></span>
+          </div>
+          {user.intro_video_url ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-start' }}>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video src={user.intro_video_url} controls playsInline style={{ width: '100%', maxWidth: 280, borderRadius: 14, background: '#000', display: 'block', border: '1px solid var(--h-border)' }} />
+              <button type="button" onClick={handleVideoRemove} style={{ background: 'none', border: 'none', color: 'var(--h-accent)', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'underline' }}>remove video</button>
+            </div>
+          ) : (
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', cursor: uploadingVideo ? 'wait' : 'pointer', background: 'var(--h-surface-2)', border: '1.5px dashed var(--h-border)', borderRadius: 14, padding: '0.85rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text)' }}>
+              {uploadingVideo ? 'uploading…' : '🎬 add a short video'}
+              <input type="file" accept="video/*" className={styles.fileInput} onChange={handleVideoUpload} disabled={uploadingVideo} />
+            </label>
+          )}
         </div>
       </div>
 
