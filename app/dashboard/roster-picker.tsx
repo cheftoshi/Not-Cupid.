@@ -29,12 +29,16 @@ export default function RosterPicker({
   maxConnections = 2,
   liveConnections = [],
   activeCards = [],
+  horizontal = false,
+  hasActive = false,
 }: {
   radius: number;
   maxRadius: number;
   maxConnections?: number;
   liveConnections?: LiveConnection[];
   activeCards?: ActiveCard[];
+  horizontal?: boolean;
+  hasActive?: boolean;
 }) {
   const [roster, setRoster] = useState<Candidate[] | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
@@ -169,13 +173,16 @@ export default function RosterPicker({
         [data-card] .ncCardImg { transition: transform .4s var(--ease); }
         [data-card]:hover .ncCardImg { transform: scale(1.04); }
       `}</style>
-      {/* slim header — count + roll arrows (no "roster" wording) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.9rem' }}>
+      {/* slim header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.9rem' }}>
         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
-          {activeCards.length > 0
-            ? `${activeCards.length} chosen${roster.length ? ` · ${roster.length} more to meet` : ''}`
+          {hasActive
+            ? `${roster.length} more to meet · you choose`
             : `your top ${roster.length} · you choose`}
         </span>
+        {horizontal && roster.length > 0 && (
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>scroll →</span>
+        )}
       </div>
 
       {atCapacity && (
@@ -190,15 +197,17 @@ export default function RosterPicker({
         </div>
       )}
 
-      {/* GRID of compatible people — chosen lead, then the rest */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '1rem' }}>
+      {/* compatible people — a horizontal row (dashboard) or a responsive grid */}
+      <div style={horizontal
+        ? { display: 'flex', gap: '1rem', overflowX: 'auto', overflowY: 'visible', padding: '0.5rem 0.2rem 1.1rem', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }
+        : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '1rem' }}>
         {/* CHOSEN / active matches — the leading cards */}
         {activeCards.map((a) => {
           const first = (a.name || 'your match').split(' ')[0];
           const statusLabel = a.status === 'chatting' ? '● chatting' : a.status === 'your-move' ? '● your move' : '● waiting on them';
           const statusColor = a.status === 'chatting' ? '#2d7a4f' : a.status === 'your-move' ? '#2563ff' : 'var(--h-text-dim)';
           return (
-            <div key={a.matchId} data-card style={{ ...cardBase, border: '2px solid #2563ff' }}>
+            <div key={a.matchId} data-card style={{ ...cardBase, border: '2px solid #2563ff', ...(horizontal ? { width: 210, flexShrink: 0, scrollSnapAlign: 'start' } : {}) }}>
               <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
                 {a.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -232,7 +241,7 @@ export default function RosterPicker({
           const first = (c.name || 'someone').split(' ')[0];
           const style = relationshipStyleLabel(c.relationship_style);
           return (
-            <div key={c.id} data-card style={cardBase}>
+            <div key={c.id} data-card style={{ ...cardBase, ...(horizontal ? { width: 210, flexShrink: 0, scrollSnapAlign: 'start' } : {}) }}>
               <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
                 {c.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element

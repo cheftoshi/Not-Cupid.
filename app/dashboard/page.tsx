@@ -75,7 +75,7 @@ export default async function DashboardPage({
   ));
   // MatchCard needs profile + HEXACO fields — but not email/roster_snapshot/etc.
   const CARD_COLS =
-    'id, name, age, photo_url, archetype, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
+    'id, name, age, photo_url, archetype, occupation, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
   const [{ data: unlockRows }, { data: others }, { data: historyOthers }] = await Promise.all([
     liveIds.length
@@ -134,7 +134,11 @@ export default async function DashboardPage({
   const dashMetro = metroOf(user.zip);
   const dashCity = dashMetro && METRO_CENTERS[dashMetro] ? `${METRO_CENTERS[dashMetro].city}, ${METRO_CENTERS[dashMetro].state}` : null;
 
-  // Your chosen/active matches → the leading cards of the unified carousel.
+  // Your chosen/active matches → the rich cards at the TOP of the dashboard.
+  const cityLabel = (zip: string | null | undefined): string | null => {
+    const mt = metroOf(zip);
+    return mt && METRO_CENTERS[mt] ? `${METRO_CENTERS[mt].city}, ${METRO_CENTERS[mt].state}` : null;
+  };
   const activeCards = connections.map((c: any) => {
     const m = c.match;
     const isU1 = m.user_1_id === user.id;
@@ -142,9 +146,18 @@ export default async function DashboardPage({
     const both = m.user_1_accepted && m.user_2_accepted;
     const o = c.otherUser;
     const hasContent = !!(o.bio || '').trim() || (Array.isArray(o.gallery) && o.gallery.length > 0);
+    // Interests (music/food/hobbies) + bio are part of the $0.99 unlock — only
+    // surface them once the profile is unlocked; the rest (archetype, career,
+    // city, style, sign) is free.
+    const interests = c.profileUnlocked
+      ? [...(o.music || []), ...(o.food || []), ...(o.hobbies || [])].filter(Boolean).slice(0, 5)
+      : [];
     return {
       matchId: m.id, name: o.name || 'your match', photo_url: o.photo_url || null,
-      age: o.age ?? null, archetype: o.archetype || null, score: m.compatibility_score ?? null,
+      age: o.age ?? null, archetype: o.archetype || null, occupation: o.occupation || null,
+      city: cityLabel(o.zip), relationship_style: o.relationship_style || null, sun_sign: o.sun_sign || null,
+      score: m.compatibility_score ?? null,
+      bio: c.profileUnlocked ? (o.bio || null) : null, interests,
       status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
       profileUnlocked: c.profileUnlocked, hasContent,
     };
@@ -178,26 +191,24 @@ export default async function DashboardPage({
           />
         )}
 
-        {/* DISTRIBUTED: your chats on the LEFT, the roster on the RIGHT. */}
-        {(() => {
-          const roster = (
-            <RosterPicker
-              radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
-              maxRadius={MAX_MATCH_RADIUS}
-              maxConnections={MAX_CONNECTIONS}
-              liveConnections={connections.map((c: any) => ({
-                matchId: c.match.id,
-                name: c.otherUser.name || 'your match',
-              }))}
-            />
-          );
-          return activeCards.length > 0 ? (
-            <div className={styles.dashSplit}>
-              <div className={styles.chatsCol}><ActiveChats cards={activeCards} /></div>
-              <div style={{ minWidth: 0 }}>{roster}</div>
-            </div>
-          ) : roster;
-        })()}
+        {/* STACKED: your active chats on TOP (rich, full-width), then the people
+            to pick from BELOW as a horizontal row. */}
+        {activeCards.length > 0 && (
+          <div style={{ marginBottom: '3rem' }}>
+            <ActiveChats cards={activeCards} />
+          </div>
+        )}
+        <RosterPicker
+          radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
+          maxRadius={MAX_MATCH_RADIUS}
+          maxConnections={MAX_CONNECTIONS}
+          horizontal
+          hasActive={activeCards.length > 0}
+          liveConnections={connections.map((c: any) => ({
+            matchId: c.match.id,
+            name: c.otherUser.name || 'your match',
+          }))}
+        />
 
         {historyMatches && historyMatches.length > 0 && (
           <div className={styles.history}>
