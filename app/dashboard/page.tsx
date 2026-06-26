@@ -174,17 +174,20 @@ export default async function DashboardPage({
         <div className="dashGrid">
         <div style={{ minWidth: 0 }}>
 
-        <h1 className={styles.title}>
-          your <span className={styles.titleAccent}>matches.</span>
-        </h1>
-        <p className={styles.subtitle}>
-          {connections.length > 0
-            ? `up to ${MAX_CONNECTIONS} conversations at once · you set the pace →`
-            : 'pick who you connect with · you set the pace →'}
-        </p>
+        <div className={styles.head}>
+          <div className={styles.eyebrow}><span>💘</span> the love line</div>
+          <h1 className={styles.title}>
+            your <span className={styles.titleAccent}>matches.</span>
+          </h1>
+          <p className={styles.subtitle}>
+            {connections.length > 0
+              ? `${activeCards.length} ${activeCards.length === 1 ? 'conversation' : 'conversations'} going · up to ${MAX_CONNECTIONS} at once · you set the pace`
+              : 'pick who you connect with · you set the pace'}
+          </p>
+        </div>
 
         {/* dates: change your city + match radius (was on the hub) */}
-        <div style={{ marginBottom: '2.5rem' }}>
+        <div style={{ marginBottom: '2rem' }}>
           <LocationControls city={dashCity} currentMetro={dashMetro} radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} showRadius />
         </div>
 

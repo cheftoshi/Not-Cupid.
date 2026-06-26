@@ -2,13 +2,38 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--h-bg);
+  /* ambient brand depth — soft, large, low-opacity glows over the base so the
+     page reads "designed", not flat white/black. Works in both themes. */
+  background:
+    radial-gradient(1100px 500px at 10% -10%, rgba(37,99,255,0.07), transparent 58%),
+    radial-gradient(820px 440px at 100% 0%, rgba(255,106,31,0.045), transparent 52%),
+    var(--h-bg);
   color: var(--h-text);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 1.5rem 1.5rem 0;
 }
 
-.container { max-width: 1080px; margin: 0 auto; }
+.container { max-width: 1080px; margin: 0 auto; padding-top: 1rem; }
+
+/* page header — eyebrow + title + meta, grounded with a hairline rule so the
+   serif title doesn't float over dead space. */
+.head {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--h-border);
+}
+.eyebrow {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--blue);
+  font-weight: 500;
+  margin-bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
 
 .nav {
   display: flex;
@@ -41,7 +66,7 @@
   font-size: 0.875rem;
   text-transform: lowercase;
   color: var(--h-text-dim);
-  margin: 0 0 3rem;
+  margin: 0;
 }
 
 .matchCard {
