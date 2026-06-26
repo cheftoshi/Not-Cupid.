@@ -187,9 +187,6 @@ export default function HubClient({
               hey {firstName.toLowerCase()}.
             </p>
 
-            {/* SUMMER OF CONNECTION — the raffle pop-up (shows only for eligible cities) */}
-            <RaffleCard />
-
             {/* YOUR CONNECTIONS — love + friend people, together in one place */}
             <div className={styles.dCard}>
               <span className={styles.dLabel}>your connections{(loveMatches.length + (friends?.length || 0)) ? ` · ${loveMatches.length + (friends?.length || 0)}` : ''}</span>
@@ -340,8 +337,10 @@ export default function HubClient({
             )}
           </section>
 
-          {/* ── RIGHT ASIDE: what you're into — color-coded bubble sets per category ── */}
+          {/* ── RIGHT ASIDE: the raffle promo (when running) + what you're into ── */}
           <aside className={styles.dashAside}>
+            {/* SUMMER OF CONNECTION raffle — a promotion, in the side rail (renders null when not eligible/closed) */}
+            <RaffleCard />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 0.2rem' }}>
               <span className={styles.dLabel} style={{ marginBottom: 0 }}>what you’re into</span>
               <Link href="/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>edit →</Link>
