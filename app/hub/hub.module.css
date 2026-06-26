@@ -1,7 +1,11 @@
 .hub {
   position: relative;
   min-height: 100vh;
-  background: var(--h-bg);
+  /* ambient brand depth — soft, large, low-opacity glows over the base. */
+  background:
+    radial-gradient(1100px 520px at 8% -10%, rgba(37,99,255,0.07), transparent 56%),
+    radial-gradient(900px 460px at 100% 2%, rgba(255,106,31,0.05), transparent 52%),
+    var(--h-bg);
   color: var(--h-text);
   display: flex;
   flex-direction: column;

@@ -6,6 +6,11 @@
   justify-content: center;
   padding: 6rem 1.5rem 3rem;
   animation: fadeUp 0.4s ease both;
+  /* ambient brand depth — subtle, so the focused quiz still reads designed. */
+  background:
+    radial-gradient(900px 460px at 12% -6%, rgba(37,99,255,0.05), transparent 55%),
+    radial-gradient(760px 400px at 96% 4%, rgba(255,106,31,0.04), transparent 52%),
+    var(--h-bg);
 }
 
 .introWrap { max-width: 540px; width: 100%; }

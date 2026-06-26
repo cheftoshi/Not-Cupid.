@@ -2,7 +2,11 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--h-bg);
+  /* ambient brand depth — soft, large, low-opacity glows over the base. */
+  background:
+    radial-gradient(1000px 480px at 10% -8%, rgba(37,99,255,0.06), transparent 55%),
+    radial-gradient(800px 420px at 100% 0%, rgba(255,106,31,0.04), transparent 50%),
+    var(--h-bg);
   color: var(--h-text);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
