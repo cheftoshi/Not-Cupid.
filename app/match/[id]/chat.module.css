@@ -43,7 +43,9 @@
 
 /* ============= HEADER ============= */
 .header {
-  background: var(--h-surface);
+  background: var(--h-glass);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
   border-bottom: 1px solid var(--h-border);
   padding: 0.85rem 1.25rem;
   display: flex;
@@ -52,7 +54,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 2px 12px -8px rgba(27,70,201,0.18);
+  box-shadow: var(--shadow-sm);
 }
 
 .back {
@@ -68,9 +70,9 @@
 .headerInfo { flex: 1; min-width: 0; }
 
 .headerName {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   font-weight: 400;
   margin: 0;
   line-height: 1.1;
@@ -171,9 +173,9 @@
   align-items: center;
 }
 .emptyTitle {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
-  font-size: 1.6rem;
+  font-size: 1.7rem;
   color: var(--h-text);
   line-height: 1.1;
 }
