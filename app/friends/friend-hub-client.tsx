@@ -549,7 +549,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   // Opening the Scene clears the badge + toast.
   useEffect(() => { if (view === 'scene') { setNewScene(0); setEvToast(null); } }, [view]);
   useEffect(() => { if (view === 'pulse' || view === 'crew') loadClubs(); }, [view, loadClubs]);
-  useEffect(() => { if (view === 'pulse') loadComLinks(); }, [view, loadComLinks]);
+  useEffect(() => { if (view === 'pulse') { loadComLinks(); loadPulse(); } }, [view, loadComLinks, loadPulse]);
   useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, 5000); return () => clearInterval(t); }, [clubChat, loadClubChat]);
   // Auto-dismiss the toast after a few seconds (the badge persists until viewed).
   useEffect(() => { if (!evToast) return; const t = setTimeout(() => setEvToast(null), 7000); return () => clearTimeout(t); }, [evToast]);
@@ -1364,6 +1364,22 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   ))}
                 </div>
               ); })()}
+            </div>
+            )}
+
+            {/* CITY PULSE — where it's happening (city hubs / active zones) */}
+            {view === 'pulse' && pulse && pulse.areas && pulse.areas.length > 0 && (
+            <div style={{ ...card, padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
+              <div style={sideHd}>📍 where it&apos;s happening</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.55rem' }}>
+                {[...pulse.areas].sort((a: any, b: any) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 12).map((z: any, i: number) => (
+                  <button key={z.area} onClick={() => { setAreaFilter(z.area); setView('scene'); }} title={`${z.members} around · ${z.activities || 0} happening — see it on the scene`}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: '0.34rem 0.4rem', borderRadius: 8, color: 'var(--h-text)', textAlign: 'left' }}>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
+                    <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: 'var(--h-text-faint)' }}>{z.members ? `${z.members}👤` : ''}{z.activities ? `${z.members ? ' · ' : ''}${z.activities} ev` : ''}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             )}
 
