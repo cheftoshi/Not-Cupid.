@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   // (and vice-versa). This also keeps the derived "around in {city}" people clean.
   const rawAuthorIds = Array.from(new Set((rawActs ?? []).map((a) => a.author_id)));
   const { data: authors } = await supabaseAdmin
-    .from('users').select('id, name, photo_url, is_test')
+    .from('users').select('id, name, photo_url, is_test, gender, age, archetype, music, food, hobbies')
     .in('id', rawAuthorIds.length ? rawAuthorIds : ['00000000-0000-0000-0000-000000000000']);
   const aById = new Map((authors ?? []).map((u) => [u.id, u]));
   const meTest = (user as any).is_test === true;
@@ -110,6 +110,10 @@ export async function GET(req: NextRequest) {
       kind: a.kind || 'event',
       happens_at: a.happens_at, created_at: a.created_at,
       authorName: author.name, authorPhoto: author.photo_url,
+      // Author vetting card — so you can see WHO is behind a post/event before engaging.
+      authorId: a.author_id, authorGender: author.gender ?? null, authorAge: author.age ?? null,
+      authorArchetype: author.archetype ?? null,
+      authorInterests: [...(author.music || []), ...(author.food || []), ...(author.hobbies || [])].filter(Boolean).slice(0, 6),
       isMine: a.author_id === user.id,
       rsvpCount: countByAct.get(a.id) || 0,
       commentCount: commentCountByAct.get(a.id) || 0,
@@ -148,13 +152,19 @@ export async function POST(req: NextRequest) {
       ? new Date(happensAt.getTime() + 12 * 60 * 60 * 1000)
       : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-  // Audience targeting (events only). Gender = subset of m/f/nb (empty/null =
-  // everyone). Age bounds clamped to 18–120. Posts ignore all this.
+  // Audience targeting (events only). Age bounds clamped to 18–120. Posts ignore this.
+  // ⚠️ SAFETY: you can ONLY restrict an event to your OWN gender/identity (or leave it
+  // open to everyone). This structurally blocks the predatory pattern of, e.g., a man
+  // creating a "women only" event — a women-only space stays women-run. Enforced here
+  // server-side so a crafted request can't bypass the UI.
   const GENDERS = ['m', 'f', 'nb', 'lgbtq'];
   let audienceGender: string[] | null = null;
   if (kind === 'event' && Array.isArray(body.audience_gender)) {
-    const g = body.audience_gender.filter((x: any) => GENDERS.includes(x));
-    audienceGender = g.length && g.length < GENDERS.length ? g : null; // all-or-empty = everyone
+    const own = new Set<string>();
+    if (user.gender && GENDERS.includes(user.gender)) own.add(user.gender);
+    if ((user as any).is_lgbtq === true) own.add('lgbtq');
+    const g = body.audience_gender.filter((x: any) => GENDERS.includes(x) && own.has(x));
+    audienceGender = g.length ? g : null; // empty = everyone
   }
   const clampAge = (v: any) => { const n = parseInt(v); return Number.isFinite(n) ? Math.max(18, Math.min(120, n)) : null; };
   const audMin = kind === 'event' ? clampAge(body.audience_age_min) : null;

@@ -190,8 +190,8 @@ const miniCount: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif",
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
 
 // The center "home" hub — auto-pulls what's popular on the scene + your crew.
-function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen }: {
-  me?: any; firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void;
+function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen, onAuthor }: {
+  me?: any; firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void; onAuthor?: (a: any) => void;
 }) {
   return (
     <div>
@@ -216,7 +216,7 @@ function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onSce
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {popular.map((a) => <ActivityPost key={a.id} a={a} onRsvp={onRsvp} onDelete={onDelete} />)}
+          {popular.map((a) => <ActivityPost key={a.id} a={a} onRsvp={onRsvp} onDelete={onDelete} onAuthor={onAuthor} />)}
           <button onClick={() => onOpen('scene')} style={{ alignSelf: 'center', marginTop: '0.2rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 4 }}>
             see everything on the scene →
           </button>
@@ -267,7 +267,7 @@ function audienceLabel(a: any): string | null {
 // One Scene post, FB-post structured: header (who/when) · body · action bar.
 // Events carry an audience (gender+age) and a live countdown; eligible people
 // get yes/maybe/no, everyone else sees who it's open to. Posts keep a 👍 like.
-function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void }) {
+function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onAuthor?: (a: any) => void }) {
   const isEvent = (a.kind || 'event') !== 'post';
   const aud = isEvent ? audienceLabel(a) : null;
   const r = a.responses || { yes: 0, maybe: 0, no: 0 };
@@ -308,15 +308,19 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
   return (
     <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
-        {a.authorPhoto
-          ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
-          : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}</div>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>
-            {isEvent ? '📅 plan' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
+        {/* author is clickable → their friend card (vet who's behind a post/event) */}
+        <button onClick={() => onAuthor && !a.isMine && onAuthor(a)} title={a.isMine ? '' : `see ${a.authorName?.split(' ')[0] || 'who'}'s card`}
+          style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: onAuthor && !a.isMine ? 'pointer' : 'default', font: 'inherit', color: 'inherit' }}>
+          {a.authorPhoto
+            ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
+            : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}{onAuthor && !a.isMine && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', color: LINE_DEEP, marginLeft: '0.4rem', verticalAlign: 'middle' }}>view ›</span>}</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>
+              {isEvent ? '📅 plan' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
+            </div>
           </div>
-        </div>
+        </button>
         <span style={{ ...chip, flexShrink: 0 }}>{a.category}</span>
         {a.isMine && <button onClick={() => onDelete(a.id)} title="delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>✕</button>}
       </div>
@@ -413,16 +417,23 @@ function ActivityPost({ a, onRsvp, onDelete }: { a: any; onRsvp: (id: string, re
   );
 }
 
-type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null };
+type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null; gender?: string | null; isLgbtq?: boolean };
 export default function FriendHubClient({ firstName, me, city, metro }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
-  // An event defaults to the audience the poster set on the Friend Line quiz
-  // (who they want to meet + their age range). 'o' = everyone → no gender limit.
-  const prefAud = {
-    audGenders: (me?.friendSeeking || []).includes('all') ? [] : (me?.friendSeeking || []).filter((g) => ['m', 'f', 'nb', 'lgbtq'].includes(g)),
-    audMin: me?.friendAgeMin != null ? String(me.friendAgeMin) : '',
-    audMax: me?.friendAgeMax != null ? String(me.friendAgeMax) : '',
-  };
+  // ⚠️ SAFETY: events default to EVERYONE. We no longer pre-fill the audience from
+  // "who you set out to meet" — that's exactly what let a man's event auto-target
+  // women. Restricting an event is now opt-in AND limited to your own gender/identity
+  // (see the audience picker + the server enforcement in /api/friend/activities).
+  const ownAudienceOpts: [string, string][] = (() => {
+    const g = me?.gender;
+    const out: [string, string][] = [];
+    if (g === 'm') out.push(['m', 'men only']);
+    else if (g === 'f') out.push(['f', 'women only']);
+    else if (g === 'nb') out.push(['nb', 'non-binary only']);
+    if (me?.isLgbtq) out.push(['lgbtq', 'LGBTQ+ only']);
+    return out;
+  })();
+  const prefAud = { audGenders: [] as string[], audMin: '', audMax: '' };
   // Buying / opening packs now lives on the cinematic /friends/pack page.
   const [matches, setMatches] = useState<any[]>([]);
   const [sealedCount, setSealedCount] = useState(0);
@@ -619,6 +630,29 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     await loadMatches(); await loadChat();
     setBusy(false);
   }
+  // Vet who's behind a post/event — open their friend card. If they're already a
+  // match/connection, show the real card; otherwise build it from the post's author data.
+  function openAuthorCard(a: any) {
+    if (!a?.authorId || a.isMine) return;
+    const match = matches.find((m: any) => m.otherId === a.authorId);
+    if (match) { setConfirmDrop(false); setCardMember(match); return; }
+    setConfirmDrop(false);
+    setCardMember({
+      otherId: a.authorId, name: a.authorName, age: a.authorAge ?? null, photo_url: a.authorPhoto || null,
+      archetype: a.authorArchetype || null, sharedActivities: a.authorInterests || [],
+      gender: a.authorGender || null, connected: false, iAccepted: false, theyAccepted: false,
+    });
+  }
+  // Safety: flag a person to the team (routes to the feedback inbox admins read).
+  async function reportUser(m: any) {
+    const who = (m?.name || 'this person');
+    if (!confirm(`Report ${who} to the NotCupid team? We review every report. (For anything urgent or unsafe, email match@notcupid.com.)`)) return;
+    try {
+      await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: `[FRIEND SAFETY REPORT] ${who} (id ${m?.otherId || m?.id || '?'}) flagged from a Scene post/card.` }) });
+      alert('Thanks — our team will review this. You can also just not connect; they can’t message you unless you do.');
+    } catch { alert('Could not send that report — please email match@notcupid.com.'); }
+    setCardMember(null);
+  }
   async function leaveCrew() {
     if (!confirm("Opt out of this crew? You'll leave the group for everyone in it and the algo will route you to a fresh one.")) return;
     setBusy(true);
@@ -751,6 +785,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             <div style={{ padding: '1rem 1.2rem 1.25rem' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.9rem', lineHeight: 1 }}>{m.name}{m.age ? <span style={{ color: 'var(--h-text-dim)', fontSize: '1rem' }}> · {m.age}</span> : null}</div>
               {m.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.2rem' }}>{m.archetype}</div>}
+              {(m.gender === 'm' || m.gender === 'f' || m.gender === 'nb') && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.25rem' }}>{m.gender === 'f' ? '♀ woman' : m.gender === 'm' ? '♂ man' : '⚧ non-binary'}</div>}
               {m.metro && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.2rem' }}>📍 {m.metro}</div>}
               {(m.sharedActivities || []).length > 0 && (
                 <div style={{ marginTop: '0.75rem' }}>
@@ -781,6 +816,11 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
                   <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.5, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>{busy ? '…' : `🤝 connect with ${first}`}</button>
                 )}
                 {!termsOk && !m.connected && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.74rem', textAlign: 'center' }}>agree to the terms (on the page) before you connect.</div>}
+              </div>
+              {/* safety: vet + report. Connecting is opt-in; they can't DM you unless you connect. */}
+              <div style={{ marginTop: '0.9rem', paddingTop: '0.7rem', borderTop: '1px solid var(--h-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>they can only message you if you connect.</span>
+                <button onClick={() => reportUser(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', flexShrink: 0 }}>⚑ report</button>
               </div>
             </div>
           </div>
@@ -967,7 +1007,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           <main className="fbMain">
         {view === 'home' && (
           <HomeFeed me={me} firstName={firstName} activeGroups={activeGroups} popular={myEvents} hasCrew={matches.length > 0}
-            onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} />
+            onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} onAuthor={openAuthorCard} />
         )}
 
         {view === 'crew' && (
@@ -1287,20 +1327,22 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
             <div style={{ marginTop: '0.7rem', borderTop: `2px dashed rgba(36,29,18,0.18)`, paddingTop: '0.7rem' }}>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>who&apos;s it open to?</div>
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {([['m', 'men'], ['f', 'women'], ['lgbtq', 'LGBTQ+'], ['nb', 'non-binary']] as const).map(([v, label]) => {
+                {/* default = everyone; you can only narrow to your OWN community (safety) */}
+                <button onClick={() => setNewAct((s) => ({ ...s, audGenders: [] }))}
+                  style={{ ...chip, cursor: 'pointer', background: newAct.audGenders.length === 0 ? '#ffd23d' : 'var(--h-surface-3)' }}>{newAct.audGenders.length === 0 ? '✓ ' : ''}everyone</button>
+                {ownAudienceOpts.map(([v, label]) => {
                   const on = newAct.audGenders.includes(v);
                   return (
-                    <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: on ? s.audGenders.filter((x) => x !== v) : [...s.audGenders, v] }))}
+                    <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: on ? s.audGenders.filter((x) => x !== v) : [...s.audGenders.filter((x) => x !== 'all'), v] }))}
                       style={{ ...chip, cursor: 'pointer', background: on ? '#ffd23d' : 'var(--h-surface-3)' }}>{on ? '✓ ' : ''}{label}</button>
                   );
                 })}
-                {newAct.audGenders.length === 0 && <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--h-text-dim)' }}>everyone</span>}
                 <span style={{ marginLeft: '0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>age</span>
                 <input type="number" min={18} max={120} placeholder="18" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 54, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
                 <span style={{ color: 'var(--h-text-dim)' }}>–</span>
                 <input type="number" min={18} max={120} placeholder="99" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 54, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
               </div>
-              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>pre-filled from who you set out to meet — tweak it per event. only people in range can RSVP. leave blank for everyone.</div>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>open to everyone by default. you can narrow it to your <b>own community</b> ({(me?.gender === 'f' ? 'women' : me?.gender === 'm' ? 'men' : me?.gender === 'nb' ? 'non-binary' : 'your group')}{me?.isLgbtq ? ' / LGBTQ+' : ''}) — so, e.g., a women-only meetup stays women-run. only people in range can RSVP.</div>
             </div>
           )}
         </div>
@@ -1335,7 +1377,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
-                  {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} />)}
+                  {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} />)}
                 </div>
               );
             })()}

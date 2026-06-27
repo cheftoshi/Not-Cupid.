@@ -45,6 +45,10 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: {
     friendSeeking: Array.isArray(user.friend_seeking) ? user.friend_seeking : [],
     friendAgeMin: user.friend_age_min ?? null,
     friendAgeMax: user.friend_age_max ?? null,
+    // The poster's OWN gender/identity — used to constrain event audience targeting
+    // (you can only restrict an event to your own gender; safety, see friend-hub).
+    gender: user.gender || null,
+    isLgbtq: user.is_lgbtq === true,
   };
   // Location (friends): the change-city control lives here, not on the hub.
   const metro = metroOf(user.zip);
