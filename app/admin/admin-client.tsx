@@ -38,6 +38,54 @@ function CommunityLinksAdmin() {
   )
 }
 
+// Scene moderation — review & DELETE friend-line events/posts that look off.
+// Flagged items (e.g. legacy gender-targeted events) float to the top.
+function SceneModerationAdmin() {
+  const [items, setItems] = useState<any[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [show, setShow] = useState(false)
+  async function load() { try { const r = await fetch('/api/admin/friend-activities'); if (r.ok) setItems((await r.json()).activities || []) } catch { /* ignore */ } setLoaded(true) }
+  useEffect(() => { load() }, [])
+  async function del(id: string, title: string) {
+    if (!confirm(`Delete this Scene post for everyone?\n\n"${title || 'untitled'}"`)) return
+    setItems((p) => p.filter((x) => x.id !== id))
+    try { await fetch('/api/admin/friend-activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }) } catch { /* ignore */ }
+  }
+  if (!loaded) return null
+  const flagged = items.filter((i) => i.flag).length
+  const sorted = [...items].sort((a, b) => (b.flag ? 1 : 0) - (a.flag ? 1 : 0))
+  return (
+    <div style={{ background: '#fff', border: `2px solid ${flagged ? '#c0392b' : '#e6e6ea'}`, borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.5rem' }}>
+      <div onClick={() => setShow((v) => !v)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.2rem' }}>🚩 Scene moderation <span style={{ fontSize: '0.85rem', color: '#6b6b76' }}>· {items.length} recent{flagged ? `, ${flagged} flagged` : ''}</span></div>
+        <span style={{ color: '#6b6b76', fontSize: '0.9rem' }}>{show ? '▲ hide' : '▼ review'}</span>
+      </div>
+      {show && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.85rem' }}>
+          {sorted.length === 0 && <div style={{ fontSize: '0.82rem', color: '#6b6b76' }}>No Scene posts.</div>}
+          {sorted.map((a) => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.6rem 0.7rem', background: a.flag ? '#fdecea' : '#faf7f3', border: a.flag ? '1px solid #e8a99f' : '1px solid transparent', borderRadius: 10, flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>
+                  {a.flag && <span style={{ color: '#c0392b' }}>⚑ </span>}{a.kind === 'post' ? '💬' : '📅'} {a.title || '—'}
+                  <span style={{ fontWeight: 400, color: '#6b6b76', fontSize: '0.75rem' }}> · {a.category}{a.area ? ` · ${a.area}` : ''}{a.isTest ? ' · TEST' : ''}</span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#6b6b76' }}>
+                  by {a.author?.name}{a.author?.gender ? ` · ${a.author.gender}` : ''}{a.author?.age ? ` · ${a.author.age}` : ''}{a.author?.email ? ` · ${a.author.email}` : ''}
+                  {a.audienceGender?.length > 0 && <span style={{ color: '#c0392b' }}> · targets {a.audienceGender.join('/')}</span>}
+                  {a.capacity ? ` · cap ${a.capacity}` : ''}
+                </div>
+                {a.body && <div style={{ fontSize: '0.78rem', color: '#6b6b76', fontStyle: 'italic' }}>“{String(a.body).slice(0, 120)}”</div>}
+              </div>
+              <button onClick={() => del(a.id, a.title)} style={{ background: 'transparent', color: '#c0392b', border: '1px solid #c0392b', borderRadius: 8, padding: '0.4rem 0.85rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>delete</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminClient() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -268,6 +316,7 @@ export default function AdminClient() {
         <div className={s.wrap}>
 
           <CommunityLinksAdmin />
+          <SceneModerationAdmin />
 
           {/* KPI row */}
           <div className={s.kpis}>
