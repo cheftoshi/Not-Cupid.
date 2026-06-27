@@ -119,6 +119,7 @@ export async function GET(req: NextRequest) {
       commentCount: commentCountByAct.get(a.id) || 0,
       iRsvped: myRespByAct.has(a.id),
       // event extras
+      capacity: a.capacity ?? null,
       audienceGender: a.audience_gender || null,
       audienceAgeMin: a.audience_age_min ?? null,
       audienceAgeMax: a.audience_age_max ?? null,
@@ -163,6 +164,8 @@ export async function POST(req: NextRequest) {
 
   // Events can name a specific place/venue (free text), separate from the zone.
   const location = kind === 'event' ? ((body.location || '').toString().trim().slice(0, 120) || null) : null;
+  // Optional headcount cap (events). 1–1000, or null = unlimited.
+  const capacity = kind === 'event' ? (() => { const n = parseInt(body.capacity); return Number.isFinite(n) && n > 0 ? Math.min(1000, n) : null; })() : null;
 
   const baseRow: any = {
     author_id: user.id, title, kind,
@@ -174,9 +177,12 @@ export async function POST(req: NextRequest) {
   const audienceRow = { audience_gender: audienceGender, audience_age_min: audMin, audience_age_max: audMax };
 
   const ins = (row: any) => supabaseAdmin.from('friend_activities').insert(row).select('id').single();
-  let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location });
-  // Graceful fallbacks for un-migrated columns: drop location first, then audience,
-  // so the event still posts instead of failing into the void.
+  let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity });
+  // Graceful fallbacks for un-migrated columns: drop capacity, then location, then
+  // audience, so the event still posts instead of failing into the void.
+  if (error && /capacity|column|schema cache/i.test(error.message || '')) {
+    ({ data: act, error } = await ins({ ...baseRow, ...audienceRow, location }));
+  }
   if (error && /location|column|schema cache/i.test(error.message || '')) {
     ({ data: act, error } = await ins({ ...baseRow, ...audienceRow }));
   }

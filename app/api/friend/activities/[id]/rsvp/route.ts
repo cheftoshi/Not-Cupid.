@@ -22,7 +22,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const { data: activity } = await supabaseAdmin
     .from('friend_activities')
-    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max')
+    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max, capacity')
     .eq('id', activityId)
     .maybeSingle();
   if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
@@ -51,6 +51,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await supabaseAdmin.from('friend_activity_rsvps').delete().eq('activity_id', activityId).eq('user_id', user.id);
     myResponse = null;
   } else {
+    // Capacity cap (events): once the plan is full you can't RSVP 'yes' (but you
+    // can still say maybe/no, and anyone already 'yes' keeps their spot).
+    const cap = (activity as any).capacity;
+    if (desired === 'yes' && cap && (!existing || existing.response !== 'yes')) {
+      const { count: yesCount } = await supabaseAdmin
+        .from('friend_activity_rsvps').select('*', { count: 'exact', head: true })
+        .eq('activity_id', activityId).eq('response', 'yes');
+      if ((yesCount ?? 0) >= cap) {
+        return NextResponse.json({ error: 'This plan is full.', full: true }, { status: 409 });
+      }
+    }
     await supabaseAdmin.from('friend_activity_rsvps').upsert(
       { activity_id: activityId, user_id: user.id, response: desired },
       { onConflict: 'activity_id,user_id' }

@@ -701,6 +701,8 @@ alter table friend_activities add column if not exists audience_age_min int;
 alter table friend_activities add column if not exists audience_age_max int;
 -- 20260625_friend_event_location.sql — events can tag a specific place/venue
 alter table friend_activities add column if not exists location text;
+-- 20260627_event_capacity.sql — optional headcount cap for events (null = unlimited)
+alter table friend_activities add column if not exists capacity int;
 alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
   check (response in ('yes', 'maybe', 'no'));
 alter table users add column if not exists friend_digest_sent_at timestamptz;

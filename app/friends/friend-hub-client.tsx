@@ -394,28 +394,34 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
             </div>
           )}
           </>
-        ) : eligible ? (
+        ) : eligible ? (() => {
+          const cap = a.capacity || null;
+          const full = !!cap && r.yes >= cap; // all spots taken
+          return (
           <div>
             <div style={{ display: 'flex', gap: '0.4rem' }}>
               {RESP.map(([val, label]) => {
                 const on = a.myResponse === val;
+                const blocked = val === 'yes' && full && !on; // can't join a full plan
                 return (
-                  <button key={val} onClick={() => onRsvp(a.id, val)}
-                    style={{ flex: 1, background: on ? (val === 'no' ? '#f0d2c8' : '#ffd23d') : 'transparent', border: `2px solid ${on ? INK : 'rgba(36,29,18,0.2)'}`, borderRadius: 8, padding: '0.45rem 0.3rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: on ? INK : 'var(--h-text)', fontWeight: on ? 700 : 500 }}>
-                    {label}{val === 'yes' && r.yes ? ` · ${r.yes}` : val === 'maybe' && r.maybe ? ` · ${r.maybe}` : ''}
+                  <button key={val} onClick={() => !blocked && onRsvp(a.id, val)} disabled={blocked} title={blocked ? 'this plan is full' : ''}
+                    style={{ flex: 1, background: on ? (val === 'no' ? '#f0d2c8' : '#ffd23d') : 'transparent', border: `2px solid ${on ? INK : 'rgba(36,29,18,0.2)'}`, borderRadius: 8, padding: '0.45rem 0.3rem', cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.45 : 1, font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: on ? INK : 'var(--h-text)', fontWeight: on ? 700 : 500 }}>
+                    {blocked ? '🔒 full' : label}{val === 'yes' && r.yes ? ` · ${r.yes}` : val === 'maybe' && r.maybe ? ` · ${r.maybe}` : ''}
                   </button>
                 );
               })}
             </div>
-            {(r.yes > 0 || r.maybe > 0) && (
-              <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>
-                {r.yes} going{r.maybe ? ` · ${r.maybe} maybe` : ''}
+            {(r.yes > 0 || r.maybe > 0 || cap) && (
+              <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: full ? '#c0392b' : 'var(--h-text-dim)' }}>
+                {cap ? `${r.yes}/${cap} spots filled` : `${r.yes} going`}{full ? ' · full' : ''}{r.maybe ? ` · ${r.maybe} maybe` : ''}
               </div>
             )}
           </div>
-        ) : (
+          );
+        })()
+        : (
           <div style={{ textAlign: 'center', padding: '0.4rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'var(--h-text-dim)' }}>
-            🔒 open to {aud || 'a specific group'}{r.yes ? ` · ${r.yes} going` : ''}
+            🔒 {a.capacity && (a.responses?.yes ?? 0) >= a.capacity ? 'this plan is full' : `open to ${aud || 'a specific group'}`}{r.yes ? ` · ${r.yes} going` : ''}
           </div>
         )}
       </div>
@@ -449,7 +455,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
-  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; location: string; audGenders: string[]; audMin: string; audMax: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax });
+  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; location: string; audGenders: string[]; audMin: string; audMax: string; capacity: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '' });
   const [busy, setBusy] = useState(false);
   // Deep-link: a crew push opens /friends?view=crew straight into the chat.
   const [view, setView] = useState<NavKey>(() => {
@@ -722,6 +728,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
       audience_gender: newAct.kind === 'event' ? newAct.audGenders : undefined,
       audience_age_min: newAct.kind === 'event' && newAct.audMin ? parseInt(newAct.audMin) : undefined,
       audience_age_max: newAct.kind === 'event' && newAct.audMax ? parseInt(newAct.audMax) : undefined,
+      capacity: newAct.kind === 'event' && newAct.capacity ? parseInt(newAct.capacity) : undefined,
     };
     const res = await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) {
@@ -730,7 +737,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
       setBusy(false);
       return;
     }
-    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax }); await loadActs(); await loadPulse(); setBusy(false);
+    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '' }); await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
@@ -740,6 +747,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
     if (r.ok) {
       const d = await r.json();
       setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
+    } else {
+      const d = await r.json().catch(() => ({} as any));
+      if (d?.full) { alert('This plan is full — the host capped the headcount. You can say “maybe” in case a spot opens.'); await loadActs(); }
     }
   }
   async function deleteAct(id: string) {
@@ -1320,12 +1330,14 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           </div>
           {newAct.kind === 'event' && (
             <div style={{ marginTop: '0.7rem', borderTop: `2px dashed rgba(36,29,18,0.18)`, paddingTop: '0.7rem' }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>open to everyone · optional age range</div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>open to everyone · optional age + cap</div>
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>age</span>
-                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 60, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 56, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
                 <span style={{ color: 'var(--h-text-dim)' }}>–</span>
-                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 60, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 56, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <span style={{ marginLeft: '0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>👥 max</span>
+                <input type="number" min={1} max={1000} placeholder="∞" value={newAct.capacity} onChange={(e) => setNewAct({ ...newAct, capacity: e.target.value })} title="cap how many can RSVP yes (blank = no limit)" style={{ width: 64, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
               </div>
               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>plans are open to everyone — that&apos;s how people connect. leave age blank for all ages. whoever taps your name can see your card, so anyone joining knows who&apos;s organizing.</div>
             </div>
