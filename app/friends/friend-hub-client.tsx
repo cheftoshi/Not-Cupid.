@@ -316,8 +316,8 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
             : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}{onAuthor && !a.isMine && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', color: LINE_DEEP, marginLeft: '0.4rem', verticalAlign: 'middle' }}>view ›</span>}</div>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>
-              {isEvent ? '📅 plan' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: isEvent ? LINE_DEEP : 'var(--h-text-dim)', marginTop: '0.2rem' }}>
+              {isEvent ? '📅 organizing this' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
             </div>
           </div>
         </button>
@@ -342,6 +342,12 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
         {isEvent && aud && (
           <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: LINE_DEEP }}>
             👥 open to {aud}
+          </div>
+        )}
+        {isEvent && !a.isMine && (
+          <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.4, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.5rem 0.65rem' }}>
+            <span style={{ flexShrink: 0 }}>🛡</span>
+            <span>before you go — <button onClick={() => onAuthor && onAuthor(a)} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', fontStyle: 'italic', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>see who&apos;s organizing</button>, and keep the first hang somewhere public.</span>
           </div>
         )}
       </div>
@@ -420,19 +426,8 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
 type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null; gender?: string | null; isLgbtq?: boolean };
 export default function FriendHubClient({ firstName, me, city, metro }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
-  // ⚠️ SAFETY: events default to EVERYONE. We no longer pre-fill the audience from
-  // "who you set out to meet" — that's exactly what let a man's event auto-target
-  // women. Restricting an event is now opt-in AND limited to your own gender/identity
-  // (see the audience picker + the server enforcement in /api/friend/activities).
-  const ownAudienceOpts: [string, string][] = (() => {
-    const g = me?.gender;
-    const out: [string, string][] = [];
-    if (g === 'm') out.push(['m', 'men only']);
-    else if (g === 'f') out.push(['f', 'women only']);
-    else if (g === 'nb') out.push(['nb', 'non-binary only']);
-    if (me?.isLgbtq) out.push(['lgbtq', 'LGBTQ+ only']);
-    return out;
-  })();
+  // Events are open to EVERYONE (gender targeting removed — it walled off connections).
+  // The only optional narrowing is an age range. Safety = host transparency, not locks.
   const prefAud = { audGenders: [] as string[], audMin: '', audMax: '' };
   // Buying / opening packs now lives on the cinematic /friends/pack page.
   const [matches, setMatches] = useState<any[]>([]);
@@ -1325,24 +1320,14 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
           </div>
           {newAct.kind === 'event' && (
             <div style={{ marginTop: '0.7rem', borderTop: `2px dashed rgba(36,29,18,0.18)`, paddingTop: '0.7rem' }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>who&apos;s it open to?</div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>open to everyone · optional age range</div>
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {/* default = everyone; you can only narrow to your OWN community (safety) */}
-                <button onClick={() => setNewAct((s) => ({ ...s, audGenders: [] }))}
-                  style={{ ...chip, cursor: 'pointer', background: newAct.audGenders.length === 0 ? '#ffd23d' : 'var(--h-surface-3)' }}>{newAct.audGenders.length === 0 ? '✓ ' : ''}everyone</button>
-                {ownAudienceOpts.map(([v, label]) => {
-                  const on = newAct.audGenders.includes(v);
-                  return (
-                    <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: on ? s.audGenders.filter((x) => x !== v) : [...s.audGenders.filter((x) => x !== 'all'), v] }))}
-                      style={{ ...chip, cursor: 'pointer', background: on ? '#ffd23d' : 'var(--h-surface-3)' }}>{on ? '✓ ' : ''}{label}</button>
-                  );
-                })}
-                <span style={{ marginLeft: '0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>age</span>
-                <input type="number" min={18} max={120} placeholder="18" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 54, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>age</span>
+                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 60, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
                 <span style={{ color: 'var(--h-text-dim)' }}>–</span>
-                <input type="number" min={18} max={120} placeholder="99" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 54, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
+                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 60, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
               </div>
-              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>open to everyone by default. you can narrow it to your <b>own community</b> ({(me?.gender === 'f' ? 'women' : me?.gender === 'm' ? 'men' : me?.gender === 'nb' ? 'non-binary' : 'your group')}{me?.isLgbtq ? ' / LGBTQ+' : ''}) — so, e.g., a women-only meetup stays women-run. only people in range can RSVP.</div>
+              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>plans are open to everyone — that&apos;s how people connect. leave age blank for all ages. whoever taps your name can see your card, so anyone joining knows who&apos;s organizing.</div>
             </div>
           )}
         </div>

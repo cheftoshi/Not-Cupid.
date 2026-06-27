@@ -152,20 +152,11 @@ export async function POST(req: NextRequest) {
       ? new Date(happensAt.getTime() + 12 * 60 * 60 * 1000)
       : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-  // Audience targeting (events only). Age bounds clamped to 18–120. Posts ignore this.
-  // ⚠️ SAFETY: you can ONLY restrict an event to your OWN gender/identity (or leave it
-  // open to everyone). This structurally blocks the predatory pattern of, e.g., a man
-  // creating a "women only" event — a women-only space stays women-run. Enforced here
-  // server-side so a crafted request can't bypass the UI.
-  const GENDERS = ['m', 'f', 'nb', 'lgbtq'];
-  let audienceGender: string[] | null = null;
-  if (kind === 'event' && Array.isArray(body.audience_gender)) {
-    const own = new Set<string>();
-    if (user.gender && GENDERS.includes(user.gender)) own.add(user.gender);
-    if ((user as any).is_lgbtq === true) own.add('lgbtq');
-    const g = body.audience_gender.filter((x: any) => GENDERS.includes(x) && own.has(x));
-    audienceGender = g.length ? g : null; // empty = everyone
-  }
+  // Events are open to EVERYONE — gender-based audience targeting was removed. Walling
+  // events off by gender defeats the point (connections = meeting people across the
+  // board), and the safety answer is transparency about the HOST, not restriction.
+  // (Age range is still allowed — it's not a safety lever.) Posts ignore all this.
+  const audienceGender: string[] | null = null;
   const clampAge = (v: any) => { const n = parseInt(v); return Number.isFinite(n) ? Math.max(18, Math.min(120, n)) : null; };
   const audMin = kind === 'event' ? clampAge(body.audience_age_min) : null;
   const audMax = kind === 'event' ? clampAge(body.audience_age_max) : null;
