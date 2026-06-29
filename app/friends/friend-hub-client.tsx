@@ -178,7 +178,7 @@ function ConnectionBackdrop() {
 // ── old-school-FB shell pieces (warm transit palette) ──
 type NavKey = 'home' | 'scene' | 'crew' | 'pulse';
 const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
-  { key: 'home', icon: '🏠', label: 'home' },
+  { key: 'home', icon: '✨', label: 'today' },
   { key: 'scene', icon: '🎟️', label: 'the scene' },
   { key: 'crew', icon: '🧡', label: 'my circle' },
   { key: 'pulse', icon: '🌆', label: 'city pulse' },
@@ -189,39 +189,162 @@ const miniCount: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif",
 
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
 
-// The center "home" hub — auto-pulls what's popular on the scene + your crew.
-function HomeFeed({ me, firstName, activeGroups, popular, hasCrew, onCrew, onScene, onRsvp, onDelete, onOpen, onAuthor }: {
-  me?: any; firstName: string; activeGroups: number; popular: any[]; hasCrew: boolean; onCrew: () => void; onScene: () => void; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onOpen: (v: NavKey) => void; onAuthor?: (a: any) => void;
+// Friendly "when" — Tonight · 6:30 PM / Tomorrow / Saturday · 10 AM / Jul 8.
+function friendlyWhen(iso?: string | null): string {
+  if (!iso) return 'anytime';
+  const d = new Date(iso);
+  const now = new Date();
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(':00', '');
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((startOf(d) - startOf(now)) / 86400000);
+  if (diff === 0) return `${d.getHours() >= 17 ? 'Tonight' : 'Today'} · ${time}`;
+  if (diff === 1) return `Tomorrow · ${time}`;
+  if (diff > 1 && diff < 7) return `${d.toLocaleDateString('en-US', { weekday: 'long' })} · ${time}`;
+  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`;
+}
+// "For: …" vibe descriptor from the plan's category.
+const VIBE_FOR: Record<string, string> = {
+  coffee: 'low-pressure first hangs', chill: 'low-key, no pressure', food: 'food & drink people',
+  drinks: 'after-work crowd', running: 'active mornings', tennis: 'beginner-friendly',
+  pickleball: 'beginner-friendly', sports: 'active crowd', fitness: 'active crowd', gym: 'gym crowd',
+  outdoors: 'outdoorsy types', movies: 'culture nights', concerts: 'live-music people',
+  music: 'music heads', arts: 'arts & culture', books: 'book-club energy', games: 'game-night crowd',
+};
+function vibeFor(a: any): string { return VIBE_FOR[String(a.category || '').toLowerCase()] || 'open invite · new faces welcome'; }
+// Headcount status badge for a plan: forming / needs N more / N interested.
+function planStatus(a: any): { label: string; cta: string; hot: boolean } {
+  const yes = a.responses?.yes ?? a.rsvpCount ?? 0;
+  const cap = a.capacity || null;
+  if (cap && yes < cap) {
+    const need = cap - yes;
+    return { label: need <= 2 ? `needs ${need} more` : 'group forming', cta: 'join the plan', hot: need <= 2 };
+  }
+  if (yes <= 1) return { label: 'group forming', cta: 'ask to join', hot: false };
+  return { label: `${yes} interested`, cta: "i'm interested", hot: yes >= 4 };
+}
+
+// A compact, lively "vibe card" for the Today page recommendation rails.
+function VibeCard({ a, onRsvp, onAuthor }: { a: any; onRsvp: (id: string, r?: 'yes' | 'maybe' | 'no') => void; onAuthor?: (a: any) => void }) {
+  const st = planStatus(a);
+  const joined = a.myResponse === 'yes';
+  const yes = a.responses?.yes ?? a.rsvpCount ?? 0;
+  return (
+    <div style={{ ...card, padding: '0.95rem 1.05rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 230 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', lineHeight: 1.05, letterSpacing: '0.01em' }}>{a.title || 'a plan'}</div>
+        <span style={{ flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.2rem 0.5rem', fontWeight: 700 }}>{st.label}</span>
+      </div>
+      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.03em', color: 'var(--h-text)' }}>
+        {a.happens_at ? friendlyWhen(a.happens_at) : (a.area || 'your city')}{a.area && a.happens_at ? ` · ${a.area}` : ''}{yes ? ` · ${yes} interested` : ''}
+      </div>
+      <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>for: {vibeFor(a)}</div>
+      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.1rem' }}>
+        <button onClick={() => onRsvp(a.id, joined ? 'no' : 'yes')} style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 0.95rem', background: joined ? 'var(--h-surface-3)' : LINE, color: joined ? LINE_DEEP : '#fff', boxShadow: joined ? 'none' : poppyBtn.boxShadow }}>{joined ? '✓ you’re in' : `${st.cta} →`}</button>
+        {onAuthor && a.authorName && <button onClick={() => onAuthor(a)} title="who's organizing" style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 2 }}>by {(a.authorName).split(' ')[0]}</button>}
+      </div>
+    </div>
+  );
+}
+
+// TODAY / VIBES — the entry point: what can I do on NotCupid today? Recommendation
+// rails (today's vibe / drop / near you / people / your plans / start something).
+function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onScene, onStart, onRsvp, onAuthor, city }: {
+  me?: any; firstName: string; acts: any[]; people: Person[]; myEvents: any[]; hasCrew: boolean;
+  onCrew: () => void; onScene: () => void; onStart: () => void;
+  onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onAuthor?: (a: any) => void; city?: string | null;
 }) {
+  const now = Date.now();
+  const myInterests = new Set([...(me?.hobbies || []), ...(me?.food || []), ...(me?.music || []), ...(me?.sports || [])].map((x: any) => String(x).toLowerCase()));
+  const open = acts.filter((a) => !a.mine && a.myResponse !== 'yes' && a.eligible !== false);
+  const upcoming = open.filter((a) => (a.kind || 'event') === 'event' && a.happens_at && new Date(a.happens_at).getTime() > now);
+  const score = (a: any) => (myInterests.has(String(a.category || '').toLowerCase()) ? 100 : 0) + (a.responses?.yes ?? a.rsvpCount ?? 0);
+  const ranked = [...upcoming].sort((a, b) => score(b) - score(a) || new Date(a.happens_at).getTime() - new Date(b.happens_at).getTime());
+  const recs = ranked.slice(0, 5);
+  const recIds = new Set(recs.map((a) => a.id));
+  const drop = ranked.find((a) => !recIds.has(a.id)) || [...open].sort((a, b) => (b.rsvpCount ?? 0) - (a.rsvpCount ?? 0))[0] || null;
+  const nearYou = ranked.filter((a) => !recIds.has(a.id) && a.id !== drop?.id).slice(0, 4);
+  const vibePeople = people.filter((p) => p.tag !== 'crew').slice(0, 8);
+  const QUICK: [string, string][] = [['☕', 'coffee / walk'], ['🍜', 'grab food'], ['🍸', 'drinks'], ['🎾', 'sports'], ['🎬', 'movie / show'], ['💬', 'just talk']];
+
+  const railHd = (emoji: string, text: string, sub?: string) => (
+    <div style={{ margin: '1.6rem 0 0.7rem' }}>
+      <h2 style={{ ...sectionLabel, margin: 0 }}><StationDot />{emoji} {text}</h2>
+      {sub && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{sub}</div>}
+    </div>
+  );
+  const scrollRow: React.CSSProperties = { display: 'flex', gap: '0.85rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollSnapType: 'x mandatory' };
+
   return (
     <div>
-      <div style={{ ...card, padding: '0.85rem 1rem', marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
-        {me?.photo_url
-          ? <img src={me.photo_url} alt="" style={{ width: 58, height: 58, borderRadius: 14, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
-          : <div style={{ width: 58, height: 58, borderRadius: 14, border: '1px solid var(--h-border)', background: 'var(--h-surface-3)', flexShrink: 0 }} />}
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.55rem', lineHeight: 1.05 }}>{me?.name || firstName}</div>
-          {me?.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>{me.archetype}</div>}
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
-          {hasCrew && <button onClick={onCrew} style={{ ...poppyBtn, fontSize: '1rem', padding: '0.45rem 0.95rem' }}>🎒 my circle →</button>}
-          <button onClick={onScene} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: "1px solid var(--h-border)", borderRadius: 12, padding: '0.45rem 0.95rem', boxShadow: '0 6px 16px -8px rgba(180,130,40,0.55)', cursor: 'pointer' }}>📣 post →</button>
-        </div>
+      {/* header */}
+      <div style={{ marginBottom: '0.4rem' }}>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.1rem, 6vw, 3rem)', lineHeight: 0.95, letterSpacing: '0.01em', margin: 0 }}>Today’s Vibes</h1>
+        <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.95rem', color: 'var(--h-text-dim)', margin: '0.3rem 0 0' }}>Your people are out there. Find plans, people and crews in {city || 'your city'}.</p>
       </div>
 
-      <h2 style={sectionLabel}><StationDot />📅 your events</h2>
-      {popular.length === 0 ? (
+      {/* TODAY'S VIBE — recommended cards */}
+      {railHd('✨', 'today’s vibe', 'hand-picked for you')}
+      {recs.length === 0 ? (
         <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
-          nothing on your calendar yet — <button onClick={onScene} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>find something on the scene →</button>
+          quiet right now — <button onClick={onStart} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something →</button> and others will join.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {popular.map((a) => <ActivityPost key={a.id} a={a} onRsvp={onRsvp} onDelete={onDelete} onAuthor={onAuthor} />)}
-          <button onClick={() => onOpen('scene')} style={{ alignSelf: 'center', marginTop: '0.2rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 4 }}>
-            see everything on the scene →
-          </button>
-        </div>
+        <div style={scrollRow}>{recs.map((a) => <div key={a.id} style={{ flex: '0 0 260px', scrollSnapAlign: 'start' }}><VibeCard a={a} onRsvp={onRsvp} onAuthor={onAuthor} /></div>)}</div>
       )}
+
+      {/* TODAY'S DROP — one featured plan */}
+      {drop && (<>
+        {railHd('🎁', 'today’s drop', 'the one the city’s eyeing')}
+        <div style={{ ...card, padding: '1.2rem 1.3rem', borderColor: LINE, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>{planStatus(drop).label}</div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2rem', lineHeight: 0.95 }}>{drop.title}</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', color: 'var(--h-text)' }}>{drop.happens_at ? friendlyWhen(drop.happens_at) : (drop.area || city)}{drop.area && drop.happens_at ? ` · ${drop.area}` : ''}</div>
+          <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', color: 'var(--h-text-dim)' }}>for: {vibeFor(drop)}</div>
+          <div><button onClick={() => onRsvp(drop.id, drop.myResponse === 'yes' ? 'no' : 'yes')} style={{ ...poppyBtn }}>{drop.myResponse === 'yes' ? '✓ you’re in' : 'i’m interested →'}</button></div>
+        </div>
+      </>)}
+
+      {/* PLANS NEAR YOU */}
+      {nearYou.length > 0 && (<>
+        {railHd('📍', 'plans near you', `happening around ${city || 'your city'}`)}
+        <div style={scrollRow}>{nearYou.map((a) => <div key={a.id} style={{ flex: '0 0 260px', scrollSnapAlign: 'start' }}><VibeCard a={a} onRsvp={onRsvp} onAuthor={onAuthor} /></div>)}</div>
+      </>)}
+
+      {/* PEOPLE YOU MIGHT VIBE WITH */}
+      {vibePeople.length > 0 && (<>
+        {railHd('🧑‍🤝‍🧑', 'people you might vibe with')}
+        <div style={scrollRow}>
+          {vibePeople.map((p) => (
+            <div key={p.id} style={{ ...card, flex: '0 0 130px', scrollSnapAlign: 'start', padding: '0.9rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', textAlign: 'center' }}>
+              {p.photo_url ? <img src={p.photo_url} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} /> : <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--h-surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue',sans-serif", fontSize: '1.4rem', color: LINE_DEEP }}>{(p.name || '?').charAt(0)}</div>}
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1 }}>{(p.name || 'someone').split(' ')[0]}</div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>{p.tag === 'match' ? 'in your pack' : p.tag === 'crew' ? 'connected' : 'around town'}</div>
+            </div>
+          ))}
+        </div>
+      </>)}
+
+      {/* YOUR UPCOMING PLANS */}
+      {myEvents.length > 0 && (<>
+        {railHd('📅', 'your upcoming plans')}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {myEvents.map((a) => <ActivityPost key={a.id} a={a} onRsvp={onRsvp} onDelete={() => {}} onAuthor={onAuthor} />)}
+        </div>
+      </>)}
+
+      {/* START SOMETHING */}
+      {railHd('➕', 'start something', 'be the one who makes the plan')}
+      <div style={{ ...card, padding: '1.1rem 1.2rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
+          {QUICK.map(([emoji, label]) => (
+            <button key={label} onClick={onStart} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.8rem', background: 'var(--h-surface-3)' }}>{emoji} {label}</button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button onClick={onStart} style={{ ...poppyBtn }}>📣 post a plan →</button>
+          {hasCrew && <button onClick={onCrew} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.5rem 1.1rem', cursor: 'pointer' }}>🎒 my circle →</button>}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1021,8 +1144,8 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         <div className="fbShell">
           <main className="fbMain">
         {view === 'home' && (
-          <HomeFeed me={me} firstName={firstName} activeGroups={activeGroups} popular={myEvents} hasCrew={matches.length > 0}
-            onCrew={() => setView('crew')} onScene={() => setView('scene')} onRsvp={rsvp} onDelete={deleteAct} onOpen={setView} onAuthor={openAuthorCard} />
+          <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} city={city}
+            onCrew={() => setView('crew')} onScene={() => setView('scene')} onStart={() => setView('scene')} onRsvp={rsvp} onAuthor={openAuthorCard} />
         )}
 
         {view === 'crew' && (
