@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { hasFriendVibes } from '@/lib/friend-quiz';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
+import { neighborhoodOf } from '@/lib/neighborhoods';
 import FriendHubClient from './friend-hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -53,5 +54,5 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: {
   // Location (friends): the change-city control lives here, not on the hub.
   const metro = metroOf(user.zip);
   const city = metro && METRO_CENTERS[metro] ? `${METRO_CENTERS[metro].city}, ${METRO_CENTERS[metro].state}` : null;
-  return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} me={me} city={city} metro={metro} />;
+  return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} me={me} city={city} metro={metro} myArea={neighborhoodOf(user.zip)} />;
 }

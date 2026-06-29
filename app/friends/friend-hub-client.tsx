@@ -13,6 +13,18 @@ const CREAM = 'var(--h-surface)'; // warm station-tile cream → themed surface
 // Activity-rich categories — what people actually do together (fitness/sports
 // lead, then social/culture). Drives the Scene filter chips + the post composer.
 const CATS = ['fitness', 'gym', 'running', 'tennis', 'pickleball', 'sports', 'outdoors', 'food', 'coffee', 'drinks', 'movies', 'concerts', 'music', 'arts', 'books', 'games', 'chill'];
+// Flat interest chips for the Scene — each maps to a set of stored categories
+// (the last two are vibe-based: low-pressure = coffee/chill, new-in-town = chill).
+const SCENE_INTERESTS: { label: string; emoji: string; cats: string[] }[] = [
+  { label: 'Food & Drink', emoji: '🍜', cats: ['food', 'coffee', 'drinks'] },
+  { label: 'Sports', emoji: '🎾', cats: ['sports', 'tennis', 'pickleball', 'running', 'outdoors'] },
+  { label: 'Movies', emoji: '🎬', cats: ['movies'] },
+  { label: 'Concerts', emoji: '🎵', cats: ['concerts', 'music'] },
+  { label: 'Art & Culture', emoji: '🎨', cats: ['arts', 'books'] },
+  { label: 'Fitness', emoji: '💪', cats: ['fitness', 'gym'] },
+  { label: 'New in town', emoji: '🧭', cats: ['chill', 'coffee'] },
+  { label: 'Low-pressure hangs', emoji: '☕', cats: ['coffee', 'chill'] },
+];
 const CAT_EMOJI: Record<string, string> = {
   fitness: '🏋️', gym: '💪', running: '🏃', tennis: '🎾', pickleball: '🥒', sports: '⚽', outdoors: '⛰️',
   food: '🍜', coffee: '☕', drinks: '🍸', movies: '🎬', concerts: '🎶', music: '🎵', arts: '🎨',
@@ -395,7 +407,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
   const aud = isEvent ? audienceLabel(a) : null;
   const r = a.responses || { yes: 0, maybe: 0, no: 0 };
   const eligible = a.eligible !== false;
-  const RESP: Array<['yes' | 'maybe' | 'no', string]> = [['yes', '✅ in'], ['maybe', '🤔 maybe'], ['no', '🚫 out']];
+  const RESP: Array<['yes' | 'maybe' | 'no', string]> = [['yes', '✅ i’m interested'], ['maybe', '🔖 save'], ['no', '🚫 pass']];
   // Comments (talk posts become a little thread).
   const [showC, setShowC] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
@@ -449,6 +461,15 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
       </div>
       <div style={{ padding: '0 1rem 0.75rem' }}>
         <div style={{ fontSize: '1.02rem', lineHeight: 1.4 }}>{a.title}</div>
+        {isEvent && (() => {
+          const st = planStatus(a);
+          return (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}` }}>{st.label}</span>
+              {a.location && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#2d7a4f', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.3)' }}>✓ host confirmed</span>}
+            </div>
+          );
+        })()}
         {isEvent && a.happens_at && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center', marginTop: '0.55rem' }}>
             <span style={{ ...chip, background: 'var(--h-surface-3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -553,7 +574,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
 }
 
 type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null; gender?: string | null; isLgbtq?: boolean };
-export default function FriendHubClient({ firstName, me, city, metro }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; accessTier?: string; daysLeft?: number }) {
+export default function FriendHubClient({ firstName, me, city, metro, myArea }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; myArea?: string | null; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
   // Events default to EVERYONE. You CAN make a same-gender space (some people want
   // same-gender friendships) — but only for a group you're part of, so a woman can
@@ -585,6 +606,9 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
   const [filterMain, setFilterMain] = useState<string>(''); // selected main category bubble
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
   const [sceneSort, setSceneSort] = useState<'new' | 'popular'>('new');
+  const [sceneTime, setSceneTime] = useState<'all' | 'tonight' | 'weekend'>('all'); // quick time filter
+  const [nearMe, setNearMe] = useState(false); // only plans in my neighborhood
+  const [interest, setInterest] = useState<string>(''); // selected interest chip (label)
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
@@ -1093,8 +1117,7 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
         /* Scene = filters/categories on the LEFT, the feed in the MIDDLE (pack + around live in the shared right rail). */
         .sceneGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
         @media (min-width: 760px) {
-          .sceneGrid { grid-template-columns: 215px minmax(0,1fr); align-items: start; }
-          .sceneLeft { position: sticky; top: 1rem; }
+          .sceneGrid { grid-template-columns: minmax(0,1fr); align-items: start; }
         }
         .fmMap { position: relative; min-height: min(72vh, 600px); margin: 1.25rem 0 0; }
         .fmMapLine { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
@@ -1405,28 +1428,38 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
         {view === 'scene' && (
         <div>
-        <h2 style={sectionLabel}><StationDot />📣 the scene</h2>
+        <div style={{ marginBottom: '1rem' }}>
+          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2rem, 5.5vw, 2.8rem)', lineHeight: 0.95, letterSpacing: '0.01em', margin: 0 }}>The Scene</h1>
+          <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.9rem', color: 'var(--h-text-dim)', margin: '0.25rem 0 0' }}>Plans, posts and open invites from people in and around {city || 'your city'}.</p>
+        </div>
+
+        {/* unified filter bar — kind · time · near me */}
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.85rem' }}>
+          {([['all', 'All'], ['event', 'Plans'], ['post', 'Talk']] as const).map(([k, label]) => {
+            const on = kindFilter === k;
+            return <button key={k} onClick={() => setKindFilter(k)} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? LINE : 'var(--h-surface-3)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? LINE : 'var(--h-border)'}` }}>{label}</button>;
+          })}
+          <span style={{ width: 1, height: 18, background: 'var(--h-border)', margin: '0 0.2rem' }} />
+          {([['tonight', '🌙 Tonight'], ['weekend', '🗓 This Weekend']] as const).map(([k, label]) => {
+            const on = sceneTime === k;
+            return <button key={k} onClick={() => setSceneTime(on ? 'all' : k)} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? '#ffd23d' : 'var(--h-surface-3)', color: on ? INK : 'var(--h-text-dim)', border: `1px solid ${on ? '#ffd23d' : 'var(--h-border)'}` }}>{label}</button>;
+          })}
+          <button onClick={() => setNearMe((v) => !v)} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: nearMe ? '#ffd23d' : 'var(--h-surface-3)', color: nearMe ? INK : 'var(--h-text-dim)', border: `1px solid ${nearMe ? '#ffd23d' : 'var(--h-border)'}` }}>📍 Near me</button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem' }}>
+            {([['new', '🆕'], ['popular', '🔥']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => setSceneSort(k)} title={k} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.7rem', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${sceneSort === k ? 'var(--h-accent)' : 'var(--h-border)'}` }}>{label} {k}</button>
+            ))}
+          </div>
+        </div>
+        {/* interest chips */}
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.1rem' }}>
+          {SCENE_INTERESTS.map((it) => {
+            const on = interest === it.label;
+            return <button key={it.label} onClick={() => setInterest(on ? '' : it.label)} style={{ ...chip, cursor: 'pointer', fontSize: '0.64rem', padding: '0.35rem 0.75rem', background: on ? LINE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? LINE : 'var(--h-border)'}` }}>{it.emoji} {it.label}</button>;
+          })}
+        </div>
 
         <div className="sceneGrid">
-          <aside className="sceneLeft">
-            <div style={{ ...card, padding: '0.85rem 0.9rem' }}>
-              <div style={sideHd}>show</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.55rem' }}>
-                {([['all', 'all'], ['event', '📅 plans'], ['post', '💬 talk']] as const).map(([k, label]) => (
-                  <button key={k} onClick={() => setKindFilter(k)} style={{ textAlign: 'left', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', letterSpacing: '0.05em', padding: '0.45rem 0.7rem', border: `1px solid ${kindFilter === k ? LINE : 'var(--h-border)'}`, borderRadius: 9, cursor: 'pointer', background: kindFilter === k ? LINE : 'var(--h-surface-2)', color: kindFilter === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.7rem' }}>
-                {([['new', '🆕 new'], ['popular', '🔥 popular']] as const).map(([k, label]) => (
-                  <button key={k} onClick={() => setSceneSort(k)} style={{ flex: 1, fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.02em', padding: '0.4rem 0.3rem', border: `1px solid ${sceneSort === k ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 9, cursor: 'pointer', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface-2)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)' }}>{label}</button>
-                ))}
-              </div>
-            </div>
-            <div style={{ marginTop: '0.85rem' }}>
-              <SceneCats main={filterMain} setMain={setFilterMain} sub={filterCat} setSub={setFilterCat} />
-            </div>
-          </aside>
-
           <div className="sceneMid">
         {/* FB-style status composer */}
         <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1.1rem' }}>
@@ -1508,9 +1541,16 @@ export default function FriendHubClient({ firstName, me, city, metro }: { firstN
 
             {(() => {
               const subTags = filterMain ? (SCENE_CATS.find((c) => c.key === filterMain)?.tags || []) : [];
+              const interestCats = interest ? (SCENE_INTERESTS.find((i) => i.label === interest)?.cats || []) : [];
+              const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+              const isTonight = (a: any) => !!a.happens_at && startOf(new Date(a.happens_at)) === startOf(new Date());
+              const isWeekend = (a: any) => { if (!a.happens_at) return false; const d = new Date(a.happens_at); const day = d.getDay(); const days = (startOf(d) - startOf(new Date())) / 86400000; return (day === 0 || day === 6) && days >= 0 && days <= 8; };
               const shown = acts.filter((a) =>
                 (kindFilter === 'all' || (a.kind || 'event') === kindFilter) &&
                 (!areaFilter || a.area === areaFilter) &&
+                (!nearMe || !myArea || a.area === myArea) &&
+                (sceneTime === 'all' || (sceneTime === 'tonight' ? isTonight(a) : isWeekend(a))) &&
+                (interestCats.length ? interestCats.includes(a.category) : true) &&
                 (filterCat ? a.category === filterCat : filterMain ? subTags.includes(a.category) : true))
                 .sort((a, b) => sceneSort === 'popular'
                   ? ((b.rsvpCount || 0) - (a.rsvpCount || 0)) || String(b.created_at || '').localeCompare(String(a.created_at || ''))
