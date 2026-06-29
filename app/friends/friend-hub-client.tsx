@@ -13,6 +13,22 @@ const CREAM = 'var(--h-surface)'; // warm station-tile cream → themed surface
 // Activity-rich categories — what people actually do together (fitness/sports
 // lead, then social/culture). Drives the Scene filter chips + the post composer.
 const CATS = ['fitness', 'gym', 'running', 'tennis', 'pickleball', 'sports', 'outdoors', 'food', 'coffee', 'drinks', 'movies', 'concerts', 'music', 'arts', 'books', 'games', 'chill'];
+// Guided composer — "what do you want to do?" cards (set category + kind + a title hint).
+const WHAT_CARDS: { label: string; emoji: string; category: string; kind: 'post' | 'event'; ph: string }[] = [
+  { label: 'Grab food', emoji: '🍜', category: 'food', kind: 'event', ph: 'grabbing food — who’s in?' },
+  { label: 'Coffee / walk', emoji: '☕', category: 'coffee', kind: 'event', ph: 'coffee + a walk?' },
+  { label: 'Drinks', emoji: '🍸', category: 'drinks', kind: 'event', ph: 'drinks later?' },
+  { label: 'Sports', emoji: '🎾', category: 'sports', kind: 'event', ph: 'pickup game — beginners welcome' },
+  { label: 'Movie / Show', emoji: '🎬', category: 'movies', kind: 'event', ph: 'movie night?' },
+  { label: 'Explore the city', emoji: '🧭', category: 'outdoors', kind: 'event', ph: 'wander the city?' },
+  { label: 'Just talk', emoji: '💬', category: 'chill', kind: 'post', ph: 'what’s on your mind?' },
+  { label: 'Custom', emoji: '✨', category: 'chill', kind: 'event', ph: 'what’s the move?' },
+];
+// Format a Date → datetime-local string (YYYY-MM-DDTHH:mm), for the composer.
+function localDT(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 // Flat interest chips for the Scene — each maps to a set of stored categories
 // (the last two are vibe-based: low-pressure = coffee/chill, new-in-town = chill).
 const SCENE_INTERESTS: { label: string; emoji: string; cats: string[] }[] = [
@@ -467,6 +483,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
               <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}` }}>{st.label}</span>
               {a.location && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#2d7a4f', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.3)' }}>✓ host confirmed</span>}
+              {a.datingFriendly && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#c2185b', background: 'rgba(194,24,91,0.1)', border: '1px solid rgba(194,24,91,0.3)' }}>💘 dating-friendly</span>}
             </div>
           );
         })()}
@@ -612,8 +629,10 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
-  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; location: string; audGenders: string[]; audMin: string; audMax: string; capacity: string }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '' });
+  const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; location: string; audGenders: string[]; audMin: string; audMax: string; capacity: string; datingFriendly: boolean }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
   const [busy, setBusy] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false); // guided post wizard
+  const [composerStep, setComposerStep] = useState(1);
   // Deep-link: a crew push opens /friends?view=crew straight into the chat.
   const [view, setView] = useState<NavKey>(() => {
     if (typeof window === 'undefined') return 'home';
@@ -886,6 +905,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
       audience_age_min: newAct.kind === 'event' && newAct.audMin ? parseInt(newAct.audMin) : undefined,
       audience_age_max: newAct.kind === 'event' && newAct.audMax ? parseInt(newAct.audMax) : undefined,
       capacity: newAct.kind === 'event' && newAct.capacity ? parseInt(newAct.capacity) : undefined,
+      dating_friendly: newAct.kind === 'event' ? newAct.datingFriendly : undefined,
     };
     const res = await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) {
@@ -894,7 +914,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
       setBusy(false);
       return;
     }
-    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '' }); await loadActs(); await loadPulse(); setBusy(false);
+    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
+    setComposerOpen(false); setComposerStep(1);
+    await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
@@ -932,6 +954,129 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           </div>
         </div>
       )}
+
+      {/* GUIDED COMPOSER — what → when → who → where → post */}
+      {composerOpen && (() => {
+        const close = () => setComposerOpen(false);
+        const isPost = newAct.kind === 'post';
+        const setWhen = (preset: 'tonight' | 'tomorrow' | 'weekend') => {
+          const d = new Date();
+          if (preset === 'tonight') d.setHours(19, 0, 0, 0);
+          else if (preset === 'tomorrow') { d.setDate(d.getDate() + 1); d.setHours(19, 0, 0, 0); }
+          else { const toSat = (6 - d.getDay() + 7) % 7; d.setDate(d.getDate() + toSat); d.setHours(12, 0, 0, 0); }
+          setNewAct((s) => ({ ...s, happens_at: localDT(d) }));
+        };
+        const stepBox: React.CSSProperties = { background: 'var(--h-surface)', borderRadius: 18, maxWidth: 520, width: '100%', maxHeight: '88vh', overflowY: 'auto', padding: '1.5rem', boxShadow: '0 24px 70px -20px rgba(0,0,0,0.45)' };
+        const q: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', lineHeight: 1, margin: '0 0 1rem' };
+        const opt = (active: boolean): React.CSSProperties => ({ cursor: 'pointer', textAlign: 'left', borderRadius: 12, padding: '0.8rem 1rem', border: `2px solid ${active ? LINE : 'var(--h-border)'}`, background: active ? 'rgba(255,106,31,0.08)' : 'var(--h-surface-2)', color: 'var(--h-text)', fontFamily: "'DM Mono', monospace", fontSize: '0.78rem' });
+        const navBtn: React.CSSProperties = { ...poppyBtn, fontSize: '1rem', padding: '0.5rem 1.2rem' };
+        const back = (to: number) => <button onClick={() => setComposerStep(to)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>← back</button>;
+        return (
+          <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 130 }}>
+            <div onClick={(e) => e.stopPropagation()} style={stepBox}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{isPost ? 'say something' : `step ${composerStep > 4 ? 4 : composerStep} of 4`}</span>
+                <button onClick={close} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--h-text-dim)' }}>✕</button>
+              </div>
+
+              {/* STEP 1 — what */}
+              {composerStep === 1 && (<>
+                <h3 style={q}>What do you want to do?</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
+                  {WHAT_CARDS.map((c) => (
+                    <button key={c.label} onClick={() => { setNewAct((s) => ({ ...s, kind: c.kind, category: c.category })); if (c.kind === 'post') setComposerStep(5); else setComposerStep(2); }}
+                      style={{ ...opt(false), display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '1.5rem' }}>{c.emoji}</span>
+                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.02em' }}>{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>)}
+
+              {/* STEP 2 — when */}
+              {composerStep === 2 && (<>
+                <h3 style={q}>When?</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {([['tonight', '🌙 Tonight'], ['tomorrow', '☀️ Tomorrow'], ['weekend', '🗓 This weekend']] as const).map(([k, label]) => (
+                    <button key={k} onClick={() => setWhen(k)} style={opt(false)}>{label}</button>
+                  ))}
+                  <div style={{ ...opt(false), display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    📅 pick a date
+                    <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ flex: 1, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.3rem 0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                  </div>
+                  {newAct.happens_at && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: LINE_DEEP }}>✓ {friendlyWhen(newAct.happens_at)}</div>}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>{back(1)}<button onClick={() => setComposerStep(3)} disabled={!newAct.happens_at} style={{ ...navBtn, opacity: newAct.happens_at ? 1 : 0.5 }}>next →</button></div>
+              </>)}
+
+              {/* STEP 3 — who */}
+              {composerStep === 3 && (<>
+                <h3 style={q}>Who can join?</h3>
+                <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.4rem' }}>open to</div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  <button onClick={() => setNewAct((s) => ({ ...s, audGenders: [] }))} style={opt(newAct.audGenders.length === 0)}>👥 Everyone</button>
+                  {ownAudienceOpts.map(([v, label]) => (
+                    <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: [v] }))} style={opt(newAct.audGenders.includes(v))}>{label}</button>
+                  ))}
+                </div>
+                <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.4rem' }}>vibe</div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  <button onClick={() => setNewAct((s) => ({ ...s, datingFriendly: false }))} style={opt(!newAct.datingFriendly)}>🧡 Just friends</button>
+                  <button onClick={() => setNewAct((s) => ({ ...s, datingFriendly: true }))} style={opt(newAct.datingFriendly)}>💘 Dating-friendly</button>
+                </div>
+                <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.4rem' }}>age range (optional)</div>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                  <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                  <span style={{ color: 'var(--h-text-dim)' }}>–</span>
+                  <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                </div>
+                {newAct.audGenders.length > 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.74rem', color: 'var(--h-text-dim)', marginTop: '0.7rem' }}>a same-gender plan stays {newAct.audGenders.includes('f') ? 'women' : newAct.audGenders.includes('m') ? 'men' : 'group'}-run — you can only open it to a group you’re part of.</div>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>{back(2)}<button onClick={() => setComposerStep(4)} style={navBtn}>next →</button></div>
+              </>)}
+
+              {/* STEP 4 — where */}
+              {composerStep === 4 && (<>
+                <h3 style={q}>Where?</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button onClick={() => { setNewAct((s) => ({ ...s, area: '', location: '' })); setComposerStep(5); }} style={opt(false)}>📍 My area{myArea ? ` (${myArea})` : ''}</button>
+                  <div style={{ ...opt(false) }}>
+                    <div style={{ marginBottom: '0.4rem' }}>🗺 Pick a neighborhood</div>
+                    <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }}>
+                      <option value="">— choose —</option>
+                      {NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <input type="text" value={newAct.location} onChange={(e) => setNewAct({ ...newAct, location: e.target.value })} maxLength={120} placeholder="exact spot? (e.g. Tatte, Charles River loop)" style={{ width: '100%', marginTop: '0.4rem', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.55rem', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                  </div>
+                  <button onClick={() => { setNewAct((s) => ({ ...s, area: '', location: '' })); setComposerStep(5); }} style={opt(false)}>🤷 Decide later</button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>{back(3)}<button onClick={() => setComposerStep(5)} style={navBtn}>next →</button></div>
+              </>)}
+
+              {/* STEP 5 — name it + post */}
+              {composerStep === 5 && (<>
+                <h3 style={q}>{isPost ? 'Say something' : 'Name your plan'}</h3>
+                <input value={newAct.title} autoFocus onChange={(e) => setNewAct({ ...newAct, title: e.target.value })}
+                  placeholder={isPost ? `what's on your mind, ${firstName.toLowerCase()}?` : (WHAT_CARDS.find((c) => c.category === newAct.category)?.ph || 'what’s the move?')}
+                  style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 1rem', fontSize: '1rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                {!isPost && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.8rem', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', color: 'var(--h-text-dim)' }}>
+                    👥 cap <input type="number" min={1} max={1000} placeholder="∞" value={newAct.capacity} onChange={(e) => setNewAct({ ...newAct, capacity: e.target.value })} style={{ width: 70, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.35rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} /> <span>people (blank = no limit)</span>
+                  </div>
+                )}
+                {!isPost && (
+                  <div style={{ marginTop: '1rem', padding: '0.7rem 0.85rem', background: 'var(--h-surface-2)', borderRadius: 10, fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
+                    {newAct.happens_at ? `🕒 ${friendlyWhen(newAct.happens_at)}` : '🕒 anytime'} · {newAct.audGenders.length ? `👥 ${newAct.audGenders.includes('f') ? 'women' : newAct.audGenders.includes('m') ? 'men' : newAct.audGenders[0]} only` : '👥 everyone'}{newAct.datingFriendly ? ' · 💘 dating-friendly' : ''} · 📍 {newAct.location || newAct.area || 'TBD'}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>
+                  {back(isPost ? 1 : 4)}
+                  <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...navBtn, opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{busy ? 'posting…' : 'post to the scene →'}</button>
+                </div>
+              </>)}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* FRIEND CARD pop-up — click a connection / pack member → their card + connect/drop */}
       {cardMember && (() => { const m = cardMember; const first = (m.name || 'they').split(' ')[0]; const close = () => { setCardMember(null); setConfirmDrop(false); }; return (
@@ -1168,7 +1313,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           <main className="fbMain">
         {view === 'home' && (
           <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} city={city}
-            onCrew={() => setView('crew')} onScene={() => setView('scene')} onStart={() => setView('scene')} onRsvp={rsvp} onAuthor={openAuthorCard} />
+            onCrew={() => setView('crew')} onScene={() => setView('scene')} onStart={() => { setView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard} />
         )}
 
         {view === 'crew' && (
@@ -1461,65 +1606,14 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
 
         <div className="sceneGrid">
           <div className="sceneMid">
-        {/* FB-style status composer */}
-        <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1.1rem' }}>
-          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
-            {me?.photo_url
-              ? <img src={me.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
-              : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
-            <input value={newAct.title} onChange={(e) => setNewAct({ ...newAct, title: e.target.value })}
-              onKeyDown={(e) => e.key === 'Enter' && !busy && newAct.title.trim() && createAct()}
-              placeholder={newAct.kind === 'post' ? `what's on your mind, ${firstName.toLowerCase()}?` : "wanna plan a hang? what's the move?"}
-              style={{ flex: 1, minWidth: 0, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem' }} />
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.7rem' }}>
-            <div style={{ display: 'flex', border: `1px solid var(--h-border)`, borderRadius: 10, overflow: 'hidden' }}>
-              {([['post', '💬 saying'], ['event', '📅 plan']] as const).map(([k, label]) => (
-                <button key={k} onClick={() => setNewAct({ ...newAct, kind: k })}
-                  style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.05em', padding: '0.4rem 0.75rem', border: 'none', cursor: 'pointer', background: newAct.kind === k ? LINE : 'var(--h-surface)', color: newAct.kind === k ? '#fff' : 'var(--h-text)' }}>{label}</button>
-              ))}
-            </div>
-            <select value={newAct.category} onChange={(e) => setNewAct({ ...newAct, category: e.target.value })} style={{ border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
-              {CATS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.4rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }}>
-              <option value="">📍 my area</option>
-              {NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-            {newAct.kind === 'event' && (
-              <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.35rem 0.7rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
-            )}
-            {newAct.kind === 'event' && (
-              <input type="text" value={newAct.location} onChange={(e) => setNewAct({ ...newAct, location: e.target.value })} maxLength={120} placeholder="📍 where? (e.g. tatte, charles river loop)" style={{ flex: '1 1 180px', minWidth: 0, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.4rem 0.85rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
-            )}
-            <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '1.05rem', padding: '0.45rem 1.1rem', opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{newAct.kind === 'post' ? 'post →' : 'plan it →'}</button>
-          </div>
-          {newAct.kind === 'event' && (
-            <div style={{ marginTop: '0.7rem', borderTop: `2px dashed rgba(36,29,18,0.18)`, paddingTop: '0.7rem' }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.45rem' }}>who&apos;s it open to?</div>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <button onClick={() => setNewAct((s) => ({ ...s, audGenders: [] }))}
-                  style={{ ...chip, cursor: 'pointer', background: newAct.audGenders.length === 0 ? '#ffd23d' : 'var(--h-surface-3)' }}>{newAct.audGenders.length === 0 ? '✓ ' : ''}everyone</button>
-                {ownAudienceOpts.map(([v, label]) => {
-                  const on = newAct.audGenders.includes(v);
-                  return (
-                    <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: on ? s.audGenders.filter((x) => x !== v) : [...s.audGenders, v] }))}
-                      style={{ ...chip, cursor: 'pointer', background: on ? '#ffd23d' : 'var(--h-surface-3)' }}>{on ? '✓ ' : ''}{label}</button>
-                  );
-                })}
-              </div>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>age</span>
-                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 56, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
-                <span style={{ color: 'var(--h-text-dim)' }}>–</span>
-                <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 56, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
-                <span style={{ marginLeft: '0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>👥 max</span>
-                <input type="number" min={1} max={1000} placeholder="∞" value={newAct.capacity} onChange={(e) => setNewAct({ ...newAct, capacity: e.target.value })} title="cap how many can RSVP yes (blank = no limit)" style={{ width: 64, border: `1px solid var(--h-border)`, borderRadius: 8, padding: '0.3rem 0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.62rem' }} />
-              </div>
-              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>open to everyone by default. you can make it a same-gender space — like women looking for women friends — but only for a group <b>you&apos;re part of</b> (a women-only plan stays women-run). leave age blank for all ages.</div>
-            </div>
-          )}
-        </div>
+        {/* composer trigger → guided wizard */}
+        <button onClick={() => { setComposerStep(1); setComposerOpen(true); }} style={{ ...card, width: '100%', textAlign: 'left', cursor: 'pointer', padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'flex', gap: '0.7rem', alignItems: 'center' }}>
+          {me?.photo_url
+            ? <img src={me.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
+            : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
+          <span style={{ flex: 1, fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.95rem', color: 'var(--h-text-dim)' }}>what do you want to do, {firstName.toLowerCase()}?</span>
+          <span style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 1rem' }}>📣 start a plan →</span>
+        </button>
 
         <div ref={feedRef} />
 

@@ -120,6 +120,7 @@ export async function GET(req: NextRequest) {
       iRsvped: myRespByAct.has(a.id),
       // event extras
       capacity: a.capacity ?? null,
+      datingFriendly: a.dating_friendly === true,
       audienceGender: a.audience_gender || null,
       audienceAgeMin: a.audience_age_min ?? null,
       audienceAgeMax: a.audience_age_max ?? null,
@@ -175,6 +176,8 @@ export async function POST(req: NextRequest) {
   const location = kind === 'event' ? ((body.location || '').toString().trim().slice(0, 120) || null) : null;
   // Optional headcount cap (events). 1–1000, or null = unlimited.
   const capacity = kind === 'event' ? (() => { const n = parseInt(body.capacity); return Number.isFinite(n) && n > 0 ? Math.min(1000, n) : null; })() : null;
+  // "Dating-friendly" — host is open to romantic sparks at this plan too.
+  const datingFriendly = kind === 'event' && body.dating_friendly === true;
 
   const baseRow: any = {
     author_id: user.id, title, kind,
@@ -186,9 +189,12 @@ export async function POST(req: NextRequest) {
   const audienceRow = { audience_gender: audienceGender, audience_age_min: audMin, audience_age_max: audMax };
 
   const ins = (row: any) => supabaseAdmin.from('friend_activities').insert(row).select('id').single();
-  let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity });
-  // Graceful fallbacks for un-migrated columns: drop capacity, then location, then
-  // audience, so the event still posts instead of failing into the void.
+  let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity, dating_friendly: datingFriendly });
+  // Graceful fallbacks for un-migrated columns: drop dating_friendly, then capacity,
+  // then location, then audience, so the event still posts instead of failing.
+  if (error && /dating_friendly|column|schema cache/i.test(error.message || '')) {
+    ({ data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity }));
+  }
   if (error && /capacity|column|schema cache/i.test(error.message || '')) {
     ({ data: act, error } = await ins({ ...baseRow, ...audienceRow, location }));
   }

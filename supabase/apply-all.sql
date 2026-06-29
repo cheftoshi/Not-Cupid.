@@ -703,6 +703,8 @@ alter table friend_activities add column if not exists audience_age_max int;
 alter table friend_activities add column if not exists location text;
 -- 20260627_event_capacity.sql — optional headcount cap for events (null = unlimited)
 alter table friend_activities add column if not exists capacity int;
+-- 20260627_event_dating_friendly.sql — host opts the plan as "dating-friendly"
+alter table friend_activities add column if not exists dating_friendly boolean not null default false;
 alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
   check (response in ('yes', 'maybe', 'no'));
 alter table users add column if not exists friend_digest_sent_at timestamptz;
