@@ -91,7 +91,6 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   // event APIs, so we don't poll it like messages).
   const [vibes, setVibes] = useState<any>(null);
   const [vibePending, setVibePending] = useState<string | null>(null);
-  const [showLive, setShowLive] = useState(false);
   // Live match status — seeded from the server, refreshed by the poll, so the
   // header stays accurate (countdown ticking, or "ended" if they bailed).
   const [liveMatch, setLiveMatch] = useState<any>(match);
@@ -371,11 +370,18 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
 
       <aside className={styles.vibesCol}>
         <div className={styles.vibesInner}>
-          <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>✦ date vibes</div>
-          <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.3rem', lineHeight: 1.1, color: 'var(--h-text)' }}>you &amp; {firstName}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>date vibes</div>
+              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.45rem', lineHeight: 1.08, color: 'var(--h-text)' }}>make it easier to meet.</div>
+            </div>
+            <button onClick={() => setFeedbackOpen(true)} className={styles.dateDoneButton}>
+              we went on a date
+            </button>
+          </div>
           {vibes?.dateNumber && (
             <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.3rem' }}>
-              date {vibes.dateNumber} · {TIER_LABEL[vibes.dateNumber] || ''}
+              you &amp; {firstName} · date {vibes.dateNumber} · {TIER_LABEL[vibes.dateNumber] || ''}
             </div>
           )}
 
@@ -403,7 +409,8 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             </div>
           )}
 
-          {/* MULTIPLE CHOICE — date ideas by default; live events are opt-in */}
+          {/* MULTIPLE CHOICE — curated date ideas stay primary while live-event
+              APIs are held back from the main chat surface. */}
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>pick what you&apos;d do</div>
           {!vibes ? (
             <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
@@ -413,7 +420,6 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
               ...(vibes.deck || []).map((a: any) => ({ ...a, _sel: false })),
             ];
             const curated = all.filter((o: any) => o.source === 'curated');
-            const live = all.filter((o: any) => o.source !== 'curated');
             return (
               <>
                 {curated.length === 0 ? (
@@ -424,18 +430,9 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
                     <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textAlign: 'center', marginTop: '0.2rem' }}>tap to pick · locks when you both choose it</div>
                   </div>
                 )}
-                <button onClick={() => setShowLive((v) => !v)} style={{ width: '100%', marginTop: '0.8rem', background: 'var(--h-surface)', border: '1px solid rgba(37,99,255,0.35)', color: 'var(--h-accent)', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.6rem', borderRadius: 12, cursor: 'pointer' }}>
-                  🎟️ {showLive ? 'hide live events' : `check out live events${live.length ? ` (${live.length})` : ''}`}
-                </button>
-                {showLive && (
-                  live.length === 0 ? (
-                    <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', lineHeight: 1.45, marginTop: '0.6rem' }}>nothing live right now — concerts &amp; events drop in when there&apos;s something on.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.6rem' }}>
-                      {live.slice(0, 12).map(renderVibeOption)}
-                    </div>
-                  )
-                )}
+                <div className={styles.liveHoldNote}>
+                  live events are being tuned. for now, use these curated prompts to find the first plan you both actually want.
+                </div>
               </>
             );
           })()}
@@ -451,10 +448,6 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           ) : (
             <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem' }}>they haven&apos;t picked their interests yet.</div>
           )}
-
-          <button onClick={() => setFeedbackOpen(true)} style={{ width: '100%', marginTop: '1.75rem', background: 'var(--h-surface)', border: '1px solid rgba(37,99,255,0.35)', color: 'var(--h-text)', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.7rem', borderRadius: 12, cursor: 'pointer' }}>
-            🍷 we went on a date
-          </button>
         </div>
       </aside>
 

@@ -171,7 +171,7 @@ export default async function DashboardPage({
       <div className={styles.container}>
         <div className={styles.head}>
           <div className={styles.eyebrow}>the love line</div>
-          <h1 className={styles.title}>choose the person worth starting with.</h1>
+          <h1 className={styles.title}>your matches, your move.</h1>
           <p className={styles.subtitle}>
             {connections.length > 0
               ? `${activeCards.length} ${activeCards.length === 1 ? 'conversation' : 'conversations'} going · up to ${MAX_CONNECTIONS} at once · you set the pace`
@@ -253,6 +253,30 @@ export default async function DashboardPage({
                 <p className={styles.loveEmpty}>No live conversations yet. Your next one starts in the roster.</p>
               )}
             </section>
+
+            {historyMatches && historyMatches.length > 0 && (
+              <section className={styles.loveHistoryPanel}>
+                <div>
+                  <div className={styles.panelKicker}>past conversations</div>
+                  <p>Revisit who you met, then come back to what is live now.</p>
+                </div>
+                <details className={styles.historyDetails}>
+                  <summary>look at past conversations</summary>
+                  <div className={styles.historyMiniList}>
+                    {historyMatches.map((m: any) => {
+                      const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
+                      const name = historyNameById.get(otherId) || 'a match';
+                      return (
+                        <a key={m.id} href={`/match/${m.id}`}>
+                          <span>{name}</span>
+                          <em>{new Date(m.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</em>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </details>
+              </section>
+            )}
           </aside>
 
           <main className={styles.loveMain}>
@@ -299,25 +323,6 @@ export default async function DashboardPage({
               />
             </div>
 
-            {historyMatches && historyMatches.length > 0 && (
-              <div className={styles.history}>
-                <h2 className={styles.historyTitle}>past conversations</h2>
-                <div className={styles.historyList}>
-                  {historyMatches.map((m: any) => {
-                    const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
-                    const name = historyNameById.get(otherId) || 'a match';
-                    return (
-                      <a key={m.id} href={`/match/${m.id}`} className={styles.historyItem}>
-                        <span className={styles.historyDate}>
-                          {new Date(m.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
-                        <span className={styles.historyOutcome}>{name} <span>read →</span></span>
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </main>
         </div>
       </div>

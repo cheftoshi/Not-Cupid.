@@ -28,16 +28,55 @@
 }
 .vibesInner { padding: 1.1rem 1.1rem 2.5rem; }
 
+.dateDoneButton {
+  flex: 0 0 auto;
+  max-width: 138px;
+  border: 1px solid #0b0b0b;
+  border-radius: 999px;
+  background: #0b0b0b;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  padding: 0.58rem 0.72rem;
+  text-align: center;
+}
+
+.liveHoldNote {
+  margin-top: 0.8rem;
+  border: 1px dashed color-mix(in srgb, var(--h-accent) 24%, var(--h-border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--h-surface) 82%, var(--blue-pale));
+  color: var(--h-text-dim);
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.84rem;
+  font-style: italic;
+  line-height: 1.42;
+  padding: 0.74rem 0.82rem;
+}
+
 @media (min-width: 880px) {
-  .page { flex-direction: row; align-items: stretch; height: 100vh; }
-  .chatCol { height: 100vh; min-height: 0; }
+  .page { flex-direction: row; align-items: stretch; justify-content: center; height: 100vh; }
+  .chatCol {
+    flex: 0 1 620px;
+    max-width: 620px;
+    height: 100vh;
+    min-height: 0;
+    border-right: 1px solid var(--h-border);
+    border-left: 1px solid color-mix(in srgb, var(--h-border) 72%, transparent);
+    background: color-mix(in srgb, var(--h-bg) 86%, var(--h-surface));
+  }
   .vibesCol {
-    width: 360px;
-    flex-shrink: 0;
+    width: min(42vw, 500px);
+    min-width: 400px;
+    flex: 0 1 500px;
     height: 100vh;
     overflow-y: auto;
     border-top: none;
-    border-left: 1px solid var(--h-border);
+    border-left: none;
   }
 }
 
