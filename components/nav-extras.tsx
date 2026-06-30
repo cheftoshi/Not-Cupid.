@@ -23,6 +23,10 @@ export default function NavExtras() {
     setHasNew(false);
   }
   function openFeedback() { setMenu(false); setOpen('feedback'); }
+  function openInstall() {
+    setMenu(false);
+    window.dispatchEvent(new Event('nc:show-install-prompt'));
+  }
 
   return (
     <>
@@ -30,6 +34,9 @@ export default function NavExtras() {
       <style>{`
         .nxInline { display: inline-flex; align-items: center; gap: 0.7rem; }
         .nxMore { display: none; position: relative; }
+        .nxMoreBtn { min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px !important; border: 1px solid var(--h-border) !important; background: var(--h-surface) !important; }
+        .nxMobileMenu { position: fixed; right: 0.75rem; top: calc(env(safe-area-inset-top, 0px) + 3.85rem); background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 14px; box-shadow: 0 18px 52px -18px rgba(0,0,0,0.48); padding: 0.4rem; display: flex; flex-direction: column; gap: 0.12rem; z-index: 220; min-width: 174px; }
+        .nxScrim { position: fixed; inset: 0; z-index: 210; background: transparent; }
         @media (max-width: 600px) { .nxInline { display: none; } .nxMore { display: inline-block; } }
       `}</style>
 
@@ -39,12 +46,13 @@ export default function NavExtras() {
       </span>
 
       <span className="nxMore">
-        <button onClick={() => setMenu((v) => !v)} style={{ ...navLink, fontSize: '0.9rem', letterSpacing: '0.05em' }} aria-label="more">•••{hasNew && <span style={dot} aria-label="new" />}</button>
+        <button className="nxMoreBtn" onClick={() => setMenu((v) => !v)} style={{ ...navLink, fontSize: '0.95rem', letterSpacing: '0.05em' }} aria-label="more options" aria-expanded={menu}>•••{hasNew && <span style={dot} aria-label="new" />}</button>
         {menu && (<>
-          <div onClick={() => setMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 119 }} />
-          <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 12, boxShadow: 'var(--shadow-md)', padding: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.1rem', zIndex: 120, minWidth: 150 }}>
+          <div className="nxScrim" onClick={() => setMenu(false)} />
+          <div className="nxMobileMenu">
             <button onClick={openWhatsNew} style={menuItem}>✦ what&apos;s new{hasNew && <span style={dot} />}</button>
             <button onClick={openFeedback} style={menuItem}>💬 feedback</button>
+            <button onClick={openInstall} style={menuItem}>📲 install app</button>
           </div>
         </>)}
       </span>
