@@ -3,9 +3,9 @@
   display: flex;
   flex-direction: column;
   background:
-    linear-gradient(115deg, rgba(37,99,255,0.05) 0 1px, transparent 1px 100%),
-    radial-gradient(900px 480px at 12% -10%, rgba(37,99,255,0.12), transparent 58%),
-    radial-gradient(700px 400px at 100% 3%, rgba(255,106,31,0.055), transparent 54%),
+    linear-gradient(115deg, rgba(29,24,18,0.024) 0 1px, transparent 1px 100%),
+    radial-gradient(900px 480px at 12% -10%, rgba(37,99,255,0.085), transparent 58%),
+    radial-gradient(700px 400px at 100% 3%, rgba(224,69,127,0.035), transparent 54%),
     var(--h-bg);
   background-size: 34px 34px, auto, auto, auto;
   color: var(--h-text);
@@ -77,9 +77,9 @@
   gap: 1rem;
   align-items: stretch;
   background:
-    radial-gradient(circle at 86% 18%, rgba(37,99,255,0.16), transparent 24%),
-    linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 86%, #e8edff) 0%, var(--h-surface) 72%);
-  border: 1px solid color-mix(in srgb, var(--blue) 26%, var(--h-border));
+    radial-gradient(circle at 86% 18%, rgba(37,99,255,0.10), transparent 24%),
+    linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 92%, var(--blue-pale)) 0%, var(--h-surface) 72%);
+  border: 1px solid color-mix(in srgb, var(--blue) 18%, var(--h-border));
   border-radius: 28px;
   box-shadow: 0 24px 70px -44px rgba(37,99,255,0.55), var(--shadow-md);
   padding: 1.25rem;
@@ -96,8 +96,8 @@
   border: 1px solid rgba(37,99,255,0.17);
   border-radius: 50%;
   box-shadow:
-    0 0 0 32px rgba(37,99,255,0.045),
-    0 0 0 68px rgba(37,99,255,0.025);
+    0 0 0 32px rgba(37,99,255,0.032),
+    0 0 0 68px rgba(224,69,127,0.018);
   pointer-events: none;
 }
 
@@ -157,7 +157,7 @@
 .loveNextTile {
   border: 1px solid var(--h-border);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--h-surface) 82%, #e8edff);
+  background: color-mix(in srgb, var(--h-surface) 84%, var(--blue-pale));
   padding: 0.75rem 0.5rem;
   text-align: center;
 }

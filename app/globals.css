@@ -6,7 +6,7 @@
   /* ── NotCupid Brand Kit v1 ──────────────────────────────
      Blue = primary / love side. Orange = friend / social side.
      Black #0B0B0B ink, #F6F6F6 paper. Lemon Labs property. */
-  --bg:#f6f6f6;
+  --bg:#f8f7f3;
 
   --blue:#2563ff;
   --blue-deep:#1b46c9;
@@ -17,6 +17,8 @@
   --orange-deep:#d2530f;
   --orange-pale:#fff1e8;
   --orange-mid:rgba(255,106,31,0.10);
+  --rose:#e0457f;
+  --rose-mid:rgba(224,69,127,0.10);
 
   /* Legacy --lav* aliases now point at brand blue so every existing
      var()-based surface shifts to the new palette automatically. */
@@ -109,17 +111,18 @@ body{
 /* ── Dark mode (hub-first; opt-in via [data-theme="dark"] on <html>) ──
    Scoped to --h-* / --c-* vars so non-converted pages are unaffected. */
 :root{
-  --h-bg: linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
-  --h-surface: #ffffff;
-  --h-surface-2: #f3f6ff;
-  --h-surface-3: #faf7f3;
+  --h-bg: linear-gradient(180deg, #fffdf8 0%, #f7f5ef 100%);
+  --h-surface: #fffdf8;
+  --h-surface-2: #f3f5f0;
+  --h-surface-3: #f8efe8;
   --h-text: #0a0a0a;
   --h-text-dim: #6b6975;
   --h-text-faint: #9a96a8;
-  --h-border: rgba(37,99,255,0.16);
+  --h-border: rgba(29,24,18,0.11);
   --h-accent: #1b46c9;
   --h-accent-2: #d2530f;
-  --h-glass: rgba(255,255,255,0.78); /* frosted chrome (nav) */
+  --h-human: #e0457f;
+  --h-glass: rgba(255,253,248,0.78); /* frosted chrome (nav) */
   /* interest category colors (adapt per theme) */
   --c-music: #1b46c9; --c-food: #d2530f; --c-hobby: #5a2bc4; --c-sport: #1f7a52; --c-vibe: #c01f6f;
 }
@@ -135,6 +138,7 @@ body{
   --h-glass: rgba(20,18,28,0.72); /* frosted chrome (nav) */
   --h-accent: #7fa0ff;
   --h-accent-2: #ff9a5c;
+  --h-human: #ff7ab3;
   --c-music: #6f9bff; --c-food: #ff9a5c; --c-hobby: #b794ff; --c-sport: #4fce93; --c-vibe: #ff7ab3;
 }
 
@@ -145,7 +149,8 @@ html[data-theme="dark"] body { background: #0c0a12; color: var(--h-text); }
    the connection field + content + teal-tinted borders pop. */
 /* Friend Line = a LIGHT, warm, vibey surface (class name kept for back-compat). */
 .friendDark{
-  --h-bg:#f4ead9; --h-surface:#fffaf3; --h-surface-2:#f7eddd; --h-surface-3:#f0e3cf;
-  --h-text:#2a1c13; --h-text-dim:#8a6f5c; --h-text-faint:#b39a8a;
-  --h-border:rgba(180,130,70,0.26); --h-accent:#ff6a1f; --h-accent-2:#2563ff;
+  --h-bg:linear-gradient(180deg, #fffdf8 0%, #f7f3ed 100%);
+  --h-surface:#fffdf8; --h-surface-2:#f4f2ec; --h-surface-3:#fff1e8;
+  --h-text:#16110d; --h-text-dim:#76695f; --h-text-faint:#a99b91;
+  --h-border:rgba(58,39,24,0.13); --h-accent:#d2530f; --h-accent-2:#1b46c9; --h-human:#e0457f;
 }

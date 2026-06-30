@@ -1290,8 +1290,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
           .fbRail { position: sticky; top: 1rem; }
         }
-        .friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 88% 18%, rgba(255,210,61,0.20), transparent 24%), linear-gradient(135deg, color-mix(in srgb, ${LINE} 16%, var(--h-surface)) 0%, var(--h-surface) 72%); border: 1px solid color-mix(in srgb, ${LINE} 30%, var(--h-border)); border-radius: 28px; box-shadow: 0 24px 70px -44px rgba(232,132,43,0.58), var(--shadow-md); padding: 1.25rem; margin-bottom: 1rem; }
-        .friendTodayHero::after { content: ''; position: absolute; right: -78px; bottom: -96px; width: 220px; height: 220px; border: 1px solid rgba(255,106,31,0.18); border-radius: 50%; box-shadow: 0 0 0 32px rgba(255,106,31,0.05), 0 0 0 66px rgba(255,210,61,0.04); pointer-events: none; }
+        .friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 88% 18%, rgba(224,69,127,0.07), transparent 24%), linear-gradient(135deg, color-mix(in srgb, ${LINE} 7%, var(--h-surface)) 0%, var(--h-surface) 72%); border: 1px solid color-mix(in srgb, ${LINE} 18%, var(--h-border)); border-radius: 28px; box-shadow: 0 24px 70px -48px rgba(232,132,43,0.42), var(--shadow-sm); padding: 1.25rem; margin-bottom: 1rem; }
+        .friendTodayHero::after { content: ''; position: absolute; right: -78px; bottom: -96px; width: 220px; height: 220px; border: 1px solid rgba(255,106,31,0.14); border-radius: 50%; box-shadow: 0 0 0 32px rgba(255,106,31,0.035), 0 0 0 66px rgba(224,69,127,0.018); pointer-events: none; }
         .friendHeroSignal { position: relative; z-index: 1; display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
         .friendHeroKicker { font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: ${LINE_DEEP}; }
         .friendHeroTitle { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.05rem, 6vw, 3rem); line-height: 0.95; letter-spacing: 0.01em; margin: 0; color: var(--h-text); }
@@ -1301,7 +1301,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
         .friendHeroPrimary { background: ${LINE}; color: #fff; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
         .friendHeroSecondary { background: var(--h-surface); color: var(--h-text); }
         .friendHeroStats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.55rem; }
-        .friendHeroStats div { background: color-mix(in srgb, var(--h-surface) 78%, ${LINE} 8%); border: 1px solid var(--h-border); border-radius: 14px; padding: 0.85rem; }
+        .friendHeroStats div { background: color-mix(in srgb, var(--h-surface) 88%, ${LINE} 5%); border: 1px solid var(--h-border); border-radius: 14px; padding: 0.85rem; }
         .friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; line-height: 0.9; color: ${LINE_DEEP}; }
         .friendHeroStats span { display: block; margin-top: 0.35rem; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--h-text-dim); }
         .friendFocus { position: relative; overflow: hidden; background: #101010; color: #fff; border: 1px solid var(--h-border); border-radius: 24px; box-shadow: var(--shadow-md); padding: 1rem; margin: 1rem 0 0.5rem; }
