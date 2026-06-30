@@ -38,6 +38,7 @@ const CAT_EMOJI: Record<string, string> = {
 const CLUB_CATS = ['running', 'books', 'fitness', 'sports', 'food', 'coffee', 'movies', 'music', 'arts', 'games', 'outdoors', 'other'];
 const LINK_KINDS = ['discord', 'whatsapp', 'groupme', 'telegram', 'slack', 'other'];
 const KIND_EMOJI: Record<string, string> = { discord: '🎮', whatsapp: '💬', groupme: '👥', telegram: '✈️', slack: '💼', other: '🔗' };
+const MAX_REWIPES = 3;
 
 // Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px offset
 // shadows — too loud). Surfaces read quiet so the content + connections lead.
@@ -653,7 +654,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
 }
 
 type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null; gender?: string | null; isLgbtq?: boolean };
-export default function FriendHubClient({ firstName, me, city, metro, myArea }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; myArea?: string | null; accessTier?: string; daysLeft?: number }) {
+export default function FriendHubClient({ firstName, me, city, metro, myArea, refreshCount = 0 }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; myArea?: string | null; refreshCount?: number; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
   // Events default to EVERYONE. You CAN make a same-gender space (some people want
   // same-gender friendships) — but only for a group you're part of, so a woman can
@@ -692,6 +693,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
   const [msg, setMsg] = useState('');
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; location: string; audGenders: string[]; audMin: string; audMax: string; capacity: string; datingFriendly: boolean }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
   const [busy, setBusy] = useState(false);
+  const [rewipesUsed, setRewipesUsed] = useState(refreshCount);
   const [composerOpen, setComposerOpen] = useState(false); // guided post wizard
   const [composerStep, setComposerStep] = useState(1);
   // Deep-link: a crew push opens /friends?view=crew straight into the chat.
@@ -821,6 +823,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
   useEffect(() => { if (!evToast) return; const t = setTimeout(() => setEvToast(null), 7000); return () => clearTimeout(t); }, [evToast]);
 
   const iAmIn = matches.some((m) => m.iAccepted);
+  const rewipesLeft = Math.max(0, MAX_REWIPES - rewipesUsed);
   // The chat is free now — it's live once the crew (circle) exists. Until then
   // we still show the box with the prospective members so the section is visible.
   const chatLive = !!(chat.circleId && chat.chatLive);
@@ -911,9 +914,17 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
     setBusy(false);
   }
   async function resetFriendScene() {
-    if (!confirm('Restart your Friend Line scene? This clears your current friend pack and connection requests so the next set can be fresh.')) return;
+    if (rewipesLeft <= 0) return;
+    if (!confirm(`Restart your Friend Line scene? This clears your current friend pack and connection requests so the next set can be fresh. You have ${rewipesLeft} rewipe${rewipesLeft === 1 ? '' : 's'} left.`)) return;
     setBusy(true);
-    await fetch('/api/friend/reset', { method: 'POST' });
+    const r = await fetch('/api/friend/reset', { method: 'POST' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      alert(d.error || 'Could not restart your Friend Line scene.');
+      setBusy(false);
+      return;
+    }
+    setRewipesUsed(MAX_REWIPES - (typeof d.remaining === 'number' ? d.remaining : Math.max(0, rewipesLeft - 1)));
     setChatOpen(false);
     await loadMatches(); await loadChat(); await loadPulse(); await loadActs();
     setBusy(false);
@@ -1473,12 +1484,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
             <div>
               <div style={sideHd}>tune your friend line</div>
               <p style={{ margin: '0.25rem 0 0', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.84rem', lineHeight: 1.45 }}>
-                Retake the friend quiz when your season changes, or restart the scene when the current pack is not it.
+                Retake the friend quiz when your season changes, or use a limited rewipe when the current friend scene is not it.
               </p>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               <a href="/friends/quiz?retake=1" style={{ ...pulseBtn, textDecoration: 'none', color: 'var(--h-text)' }}>retake quiz</a>
-              <button onClick={resetFriendScene} disabled={busy} style={{ ...pulseBtnGhost, color: '#c0392b', opacity: busy ? 0.6 : 1 }}>{busy ? 'refreshing…' : 'restart friend scene'}</button>
+              <button onClick={resetFriendScene} disabled={busy || rewipesLeft <= 0} style={{ ...pulseBtnGhost, color: rewipesLeft <= 0 ? 'var(--h-text-faint)' : '#c0392b', opacity: busy || rewipesLeft <= 0 ? 0.6 : 1, cursor: busy || rewipesLeft <= 0 ? 'not-allowed' : 'pointer' }}>{busy ? 'refreshing…' : rewipesLeft <= 0 ? 'rewipes locked' : `restart scene · ${rewipesLeft} left`}</button>
             </div>
           </div>
 

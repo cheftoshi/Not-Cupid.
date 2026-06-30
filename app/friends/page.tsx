@@ -54,5 +54,5 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: {
   // Location (friends): the change-city control lives here, not on the hub.
   const metro = metroOf(user.zip);
   const city = metro && METRO_CENTERS[metro] ? `${METRO_CENTERS[metro].city}, ${METRO_CENTERS[metro].state}` : null;
-  return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} me={me} city={city} metro={metro} myArea={neighborhoodOf(user.zip)} />;
+  return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} me={me} city={city} metro={metro} myArea={neighborhoodOf(user.zip)} refreshCount={user.profile_refresh_count ?? 0} />;
 }

@@ -4,12 +4,22 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+const MAX_REFRESHES = 3;
+
 // POST /api/friend/reset — restart just the Friend Line scene. This shelves the
-// current pack/connections into no-repeat history and clears pack cooldown state
-// so the roster endpoint can route the user toward fresh people.
+// current pack/connections into no-repeat history, clears pack cooldown state,
+// and consumes one of the account's 3 lifetime rewipes.
 export async function POST() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const used = user.profile_refresh_count ?? 0;
+  if (used >= MAX_REFRESHES) {
+    return NextResponse.json(
+      { error: `You've used all ${MAX_REFRESHES} rewipes for this account.` },
+      { status: 429 }
+    );
+  }
 
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')
@@ -38,9 +48,20 @@ export async function POST() {
       .eq('user_id', user.id);
   }
 
-  await supabaseAdmin.from('users')
-    .update({ friend_skips: 0, friend_pack_seen_at: null, friend_cooldown_until: null })
+  const { error } = await supabaseAdmin.from('users')
+    .update({
+      friend_skips: 0,
+      friend_pack_seen_at: null,
+      friend_cooldown_until: null,
+      profile_refresh_count: used + 1,
+    })
     .eq('id', user.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true, resetConnections: conns?.length ?? 0, leftCircles: circleIds.size });
+  return NextResponse.json({
+    ok: true,
+    resetConnections: conns?.length ?? 0,
+    leftCircles: circleIds.size,
+    remaining: MAX_REFRESHES - (used + 1),
+  });
 }
