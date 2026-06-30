@@ -34,7 +34,7 @@ const FRIEND_STEPS = [
   { emoji: '🤝', title: 'connect — your 1:1s', body: 'tap connect on anyone in a pack; they get a ping, and when they accept back you’re connected for good. connect with as many people as you like.' },
   { emoji: '💬', title: 'the group chat', body: 'choose the whole pack to open a group chat with everyone in it — the room you meet in. people who opt in are active; the rest show as invited.' },
   { emoji: '🪪', title: 'connections, added & dropped', body: 'click any connection to open their friend card — their interests, your match, and a button to connect or to drop the connection. drop one and you quietly leave the shared chat if they were your last tie there. only connections can message each other.' },
-  { emoji: '🎟️', title: 'the scene & city pulse', body: 'post a plan or a thought, RSVP to what’s happening, star what you’re into, and see which neighborhoods are buzzing — real plans (pickleball, a run club, movie night) with your whole city.' },
+  { emoji: '🎟️', title: 'the scene & city pulse', body: 'the Scene is the live board for plans and posts. City Pulse is the discovery layer: community hubs, clubs, and which neighborhoods have plans forming.' },
 ];
 
 function Chapter({ tag, title, accent, accentLight, steps }: { tag: string; title: string; accent: string; accentLight: string; steps: { emoji: string; title: string; body: string }[] }) {

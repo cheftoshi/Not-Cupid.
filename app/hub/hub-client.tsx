@@ -194,7 +194,7 @@ export default function HubClient({
               <div>
                 <span className={styles.homeKicker}>notcupid · a connection experiment</span>
                 <h1 className={styles.homeTitle}>what’s alive today.</h1>
-                <p className={styles.todayCopy}>530+ people are already in the experiment. Today is about turning that pool into real movement.</p>
+                <p className={styles.todayCopy}>Today is for turning the experiment into a real hello, a plan, or a conversation worth keeping warm.</p>
               </div>
             </div>
             <div className={styles.todayGrid}>

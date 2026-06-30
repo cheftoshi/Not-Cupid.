@@ -31,7 +31,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What’s the Friend Line?',
-    a: 'The platonic side, same personality engine. It’s for finding your people — small crews, a group chat, and a board of real plans and events happening around the city.',
+    a: 'The platonic side, same personality engine. It’s for finding your people — weekly packs, 1:1 connections, a pack chat, the Scene for real plans, and City Pulse for clubs, community hubs, and what neighborhoods are active.',
   },
   {
     q: 'What’s the quiz like?',
