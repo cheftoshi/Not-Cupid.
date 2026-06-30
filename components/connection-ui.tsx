@@ -27,14 +27,12 @@ export function ProfileStrengthMeter({ percent, label = 'profile strength' }: Pr
 }
 
 export function ConnectionSigil({ tone = 'mixed', label = 'connection field' }: ConnectionSigilProps) {
+  const copy = tone === 'love' ? 'love line' : tone === 'friend' ? 'friend line' : tone === 'profile' ? 'profile' : 'notcupid';
+
   return (
     <div className={`${styles.sigil} ${styles[`sigil${tone}`]}`} aria-label={label}>
-      <span className={styles.sigilRing} />
-      <span className={styles.sigilRing} />
-      <span className={styles.sigilCore} />
-      <span className={styles.sigilNodeA} />
-      <span className={styles.sigilNodeB} />
-      <span className={styles.sigilNodeC} />
+      <span>{copy}</span>
+      {tone === 'mixed' && <b>connection experiment</b>}
     </div>
   );
 }

@@ -139,29 +139,46 @@ export default function HubClient({
       <div className={styles.dashWrap}>
         <section className={styles.hubTop}>
           <Link href="/profile" className={styles.profileMini}>
-            <div className={styles.profileMiniAvatar}>
-              {photo
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={photo} alt="" />
-                : <span>{profile.name?.charAt(0) || '?'}</span>}
-              <label className={styles.profileMiniEdit} title="change photo" onClick={(e) => e.preventDefault()}>
-                {uploading ? '…' : '＋'}
-                <input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} disabled={uploading} style={{ display: 'none' }} />
-              </label>
+            <div className={styles.profileMiniTop}>
+              <div className={styles.profileMiniAvatar}>
+                {photo
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={photo} alt="" />
+                  : <span>{profile.name?.charAt(0) || '?'}</span>}
+                <label className={styles.profileMiniEdit} title="change photo" onClick={(e) => e.preventDefault()}>
+                  {uploading ? '…' : '＋'}
+                  <input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} disabled={uploading} style={{ display: 'none' }} />
+                </label>
+              </div>
+              <div className={styles.profileMiniBody}>
+                <span>your notcupid baseline</span>
+                <strong>{profile.name.split(' ')[0]}{profile.age ? `, ${profile.age}` : ''}</strong>
+                <em>{profile.archetype || 'core profile'}{city ? ` · ${city.split(',')[0]}` : ''}</em>
+              </div>
             </div>
-            <div className={styles.profileMiniBody}>
-              <strong>{profile.name.split(' ')[0]}{profile.age ? `, ${profile.age}` : ''}</strong>
+
+            <div className={styles.profileMiniMeter}>
               <span>{profilePercent}% profile strength</span>
               <i><b style={{ width: `${profilePercent}%` }} /></i>
               {msg && <em>{msg}</em>}
             </div>
+
+            <div className={styles.profileMiniTags}>
+              {[...(profile.music ?? []), ...(profile.food ?? []), ...(profile.hobbies ?? []), ...(profile.sports ?? [])].slice(0, 8).map((t, i) => (
+                <span key={`${t}-${i}`}>{t}</span>
+              ))}
+              {vibeTags.slice(0, 3).map((v) => <span key={v.k}>{v.label}</span>)}
+              {interestCount === 0 && vibeTags.length === 0 && <span>add interests</span>}
+            </div>
+
+            <div className={styles.profileMiniCta}>edit baseline profile →</div>
           </Link>
 
           <div className={styles.todayCard}>
             <div className={styles.todayHead}>
               <div>
-                <span className={styles.homeKicker}>happening today</span>
-                <h1 className={styles.homeTitle}>the good stuff, up top.</h1>
+                <span className={styles.homeKicker}>notcupid · a connection experiment</span>
+                <h1 className={styles.homeTitle}>what’s alive today.</h1>
               </div>
               <ConnectionSigil tone="mixed" />
             </div>

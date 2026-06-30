@@ -38,120 +38,48 @@
 }
 
 .sigil {
-  --sigil-a: #2563ff;
-  --sigil-b: #ff6a1f;
-  position: relative;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  isolation: isolate;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.12rem;
+  border-radius: 14px;
+  border: 1px solid var(--h-border);
+  background: color-mix(in srgb, var(--h-surface) 88%, transparent);
+  padding: 0.55rem 0.7rem;
+  min-width: 112px;
+  box-shadow: var(--shadow-sm);
 }
 
 .sigilmixed {
-  --sigil-a: #2563ff;
-  --sigil-b: #ff6a1f;
+  border-color: color-mix(in srgb, var(--h-human) 22%, var(--h-border));
 }
 
 .sigillove {
-  --sigil-a: #2563ff;
-  --sigil-b: #83a0ff;
+  border-color: color-mix(in srgb, var(--blue) 22%, var(--h-border));
 }
 
 .sigilfriend {
-  --sigil-a: #ff6a1f;
-  --sigil-b: #ffd23d;
+  border-color: color-mix(in srgb, var(--orange) 24%, var(--h-border));
 }
 
 .sigilprofile {
-  --sigil-a: #0b0b0b;
-  --sigil-b: #2563ff;
+  border-color: color-mix(in srgb, var(--ink) 16%, var(--h-border));
 }
 
-.sigilRing {
-  position: absolute;
-  inset: 8px;
-  border: 1px solid color-mix(in srgb, var(--sigil-a) 42%, transparent);
-  border-radius: 50%;
+.sigil span {
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--h-text);
 }
 
-.sigilRing:nth-child(2) {
-  inset: 0;
-  border-color: color-mix(in srgb, var(--sigil-b) 36%, transparent);
-  transform: rotate(24deg) scaleX(0.78);
-}
-
-.sigilCore {
-  position: absolute;
-  inset: 24px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.8), transparent 32%),
-    linear-gradient(135deg, var(--sigil-a), var(--sigil-b));
-  box-shadow: 0 12px 26px -18px var(--sigil-a);
-}
-
-.sigilNodeA,
-.sigilNodeB,
-.sigilNodeC {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--h-surface);
-  border: 1.5px solid var(--sigil-a);
-  box-shadow: 0 8px 18px -14px rgba(11,11,11,0.42);
-}
-
-.sigilNodeA {
-  top: 8px;
-  left: 30px;
-}
-
-.sigilNodeB {
-  right: 8px;
-  top: 42px;
-  border-color: var(--sigil-b);
-}
-
-.sigilNodeC {
-  left: 8px;
-  top: 46px;
-}
-
-@media (max-width: 560px) {
-  .sigil {
-    width: 56px;
-    height: 56px;
-    flex: 0 0 auto;
-  }
-
-  .sigilRing {
-    inset: 7px;
-  }
-
-  .sigilCore {
-    inset: 19px;
-  }
-
-  .sigilNodeA,
-  .sigilNodeB,
-  .sigilNodeC {
-    width: 8px;
-    height: 8px;
-  }
-
-  .sigilNodeA {
-    top: 6px;
-    left: 24px;
-  }
-
-  .sigilNodeB {
-    right: 6px;
-    top: 32px;
-  }
-
-  .sigilNodeC {
-    left: 6px;
-    top: 35px;
-  }
+.sigil b {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.48rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--h-text-dim);
+  font-weight: 500;
 }

@@ -328,7 +328,7 @@
 
 .hubTop {
   display: grid;
-  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(310px, 380px) minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
   margin-bottom: 1rem;
@@ -368,16 +368,22 @@
 }
 
 .profileMini {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  display: grid;
+  gap: 0.85rem;
   background: var(--h-surface);
   border: 1px solid var(--h-border);
-  border-radius: 24px;
+  border-radius: 26px;
   box-shadow: var(--shadow-sm);
-  padding: 1rem;
+  padding: 1.1rem;
   color: inherit;
   text-decoration: none;
+  min-width: 0;
+}
+
+.profileMiniTop {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
   min-width: 0;
 }
 
@@ -508,7 +514,26 @@
   font-style: normal;
 }
 
-.profileMiniBody i {
+.profileMiniBody span {
+  color: var(--h-accent);
+}
+
+.profileMiniBody em {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.profileMiniMeter span {
+  display: block;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--h-text-dim);
+}
+
+.profileMiniMeter i {
   display: block;
   height: 5px;
   margin-top: 0.4rem;
@@ -517,11 +542,48 @@
   background: var(--h-surface-2);
 }
 
-.profileMiniBody i b {
+.profileMiniMeter i b {
   display: block;
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--h-accent), var(--h-human));
+}
+
+.profileMiniMeter em {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--h-text-dim);
+  font-style: normal;
+}
+
+.profileMiniTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+.profileMiniTags span {
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  background: var(--h-surface-2);
+  color: var(--h-text-dim);
+  padding: 0.3rem 0.58rem;
+  font-size: 0.74rem;
+  line-height: 1.1;
+}
+
+.profileMiniCta {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--h-accent);
+  border-top: 1px solid var(--h-border);
+  padding-top: 0.78rem;
 }
 
 .connectionBoard {
