@@ -121,10 +121,10 @@ export default function HowItWorks() {
 
         {/* featured: the Summer of Connection raffle */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.13), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.4rem 1.4rem 1.5rem', margin: '0 0 1.75rem', boxShadow: '0 18px 50px -30px rgba(255,106,31,0.55)' }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🎟️ now live · {RAFFLE.city}</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🎟️ quiet mode · {RAFFLE.statusLabel}</div>
           <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0.3rem 0 0.2rem' }}>{RAFFLE.series}</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1rem' }}>
-            {RAFFLE.tagline} each round raffles <b>one fully-covered date</b> — up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant — and entering is <b>free</b>.
+            {RAFFLE.tagline} each round raffles <b>one fully-covered date</b> — up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant. Entries are paused while we tune the next round.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {RAFFLE_POINTS.map((p) => (
@@ -135,9 +135,9 @@ export default function HowItWorks() {
             ))}
           </div>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.06em', color: ORANGE_DEEP, marginTop: '1rem', fontWeight: 700 }}>
-            capped at {RAFFLE.cap} entrants · entry closes {RAFFLE.entryCloseLabel} · dinner {RAFFLE.dateLabel}
+            capped at {RAFFLE.cap} entrants · entry date {RAFFLE.entryCloseLabel} · dinner {RAFFLE.dateLabel}
           </div>
-          <Link href="/raffle" style={{ display: 'inline-block', marginTop: '0.9rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', textDecoration: 'none' }}>enter the raffle →</Link>
+          <Link href="/raffle" style={{ display: 'inline-block', marginTop: '0.9rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', textDecoration: 'none' }}>see raffle details →</Link>
           <p style={{ fontSize: '0.66rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.85rem 0 0' }}>
             * No purchase necessary. Open to {RAFFLE.city}-area residents 21+. Winner selected by chance; odds depend on entries. Void where prohibited. <Link href="/raffle/rules" style={{ color: ORANGE_DEEP, textDecoration: 'underline' }}>Official Rules</Link>.
           </p>

@@ -30,6 +30,9 @@ export default async function HubPage() {
   const profile = {
     name: user.name || 'friend',
     photo_url: user.photo_url ?? null,
+    gallery: Array.isArray(user.gallery) ? user.gallery.slice(0, 3) : [],
+    bio: user.bio ?? '',
+    relationship_style: user.relationship_style ?? null,
     archetype: user.archetype ?? null,
     age: user.age ?? null,
     score_honesty: user.score_honesty,

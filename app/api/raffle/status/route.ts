@@ -49,6 +49,7 @@ export async function GET() {
     event: {
       series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget,
       tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: RAFFLE.cap, entryCloseLabel: RAFFLE.entryCloseLabel,
+      statusLabel: RAFFLE.statusLabel, entriesOpen: RAFFLE.entriesOpen,
       spotsLeft, closed: raffleClosed() || spotsLeft === 0,
     },
     eligible, hasProfile, entered, entry, draw, other,

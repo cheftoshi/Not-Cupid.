@@ -31,7 +31,7 @@ export default async function RafflePage() {
       firstName={(user.name || 'friend').split(' ')[0]}
       eligible={raffleEligible(user)}
       profile={profile}
-      event={{ series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget, tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel }}
+      event={{ series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget, tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, entriesOpen: RAFFLE.entriesOpen, statusLabel: RAFFLE.statusLabel } as any}
     />
   );
 }

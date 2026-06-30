@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // Gallery = up to 3 extra photos beyond the primary photo_url, revealed as
-// part of the $2.99 unlock. Mirrors /api/profile/photo (same bucket, same
+// part of the $0.99 profile unlock. Mirrors /api/profile/photo (same bucket, same
 // 4MB ceiling that keeps us under Vercel's serverless body limit).
 
 const MAX_SIZE = 4 * 1024 * 1024; // 4MB — stay under Vercel's body limit

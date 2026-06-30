@@ -10,6 +10,7 @@ import styles from './hub.module.css';
 
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
+  gallery?: string[]; bio?: string | null; relationship_style?: string | null;
   attach_style?: string | null; vibes?: Record<string, number> | null; sun_sign?: string | null;
   music?: string[]; food?: string[]; hobbies?: string[]; sports?: string[];
 };
@@ -57,6 +58,7 @@ export default function HubClient({
 }) {
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
+  const gallery = Array.isArray(profile.gallery) ? profile.gallery.slice(0, 3) : [];
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -160,6 +162,26 @@ export default function HubClient({
                 <em>{profile.archetype || 'core profile'}{city ? ` · ${city.split(',')[0]}` : ''}</em>
               </div>
             </div>
+
+            <div className={styles.profileGalleryStrip}>
+              {[photo, ...gallery].filter(Boolean).slice(0, 3).map((url, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={`${url}-${i}`} src={url as string} alt="" />
+              ))}
+              {Array.from({ length: Math.max(0, 3 - [photo, ...gallery].filter(Boolean).slice(0, 3).length) }).map((_, i) => (
+                <span key={`empty-${i}`}>+</span>
+              ))}
+            </div>
+
+            {(profile.bio || profile.relationship_style || profile.attach_style) && (
+              <div className={styles.profileMiniAbout}>
+                {profile.bio && <p>{profile.bio.length > 118 ? `${profile.bio.slice(0, 118)}…` : profile.bio}</p>}
+                <div>
+                  {profile.relationship_style && <span>{profile.relationship_style}</span>}
+                  {profile.attach_style && <span>{profile.attach_style}</span>}
+                </div>
+              </div>
+            )}
 
             <div className={styles.profileMiniMeter}>
               <span>{profilePercent}% profile strength</span>

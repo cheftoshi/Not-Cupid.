@@ -33,23 +33,23 @@ function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)) }
 function emailHtml(name: string, recipientId: string): string {
   const first = (name || 'there').split(' ')[0]
   return renderEmail({
-    preheader: `${first}, a few people are sharing their NotCupid date stories with press — totally optional.`,
-    eyebrow: '📰 a small, optional ask',
-    headline: `${first}, would you share your date story?`,
+    preheader: `${first}, a quick optional note from NotCupid.`,
+    eyebrow: '📰 a quick optional note',
+    headline: `${first}, open to talking about NotCupid?`,
     bodyHtml: `
-      <p style="margin:0 0 16px 0;">You went on a date through NotCupid — and that's exactly the kind of real story a publication has asked us about. We're collecting a few honest accounts of what it's like to meet someone here instead of swiping.</p>
+      <p style="margin:0 0 16px 0;">You went on a date through NotCupid, and we're checking in with a few people who have actually used the app.</p>
 
-      <p style="margin:0 0 16px 0;"><strong style="color:${C.ink};">This is completely optional</strong>, and replying does <em>not</em> sign you up for anything. If you're open to it, you'd just chat with us (and possibly a journalist) about your experience — on your terms, and only with your say-so on anything that's shared.</p>
+      <p style="margin:0 0 16px 0;"><strong style="color:${C.ink};">This is completely optional.</strong> If you're open to it, just reply and we'll follow up. Nothing gets shared, quoted, or passed along unless you clearly say yes first.</p>
 
-      <p style="margin:0 0 16px 0;">No pressure at all if it's not your thing — your matches and account are unaffected either way. But if a few minutes sharing your story sounds good, we'd love to hear from you.</p>
+      <p style="margin:0 0 16px 0;">No pressure if it's not your thing — your matches and account are unchanged either way.</p>
 
       <div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.18em;text-transform:uppercase;margin:0 0 8px 0;">if you're in</div>
-      <p style="margin:0 0 22px 0;">Just reply to this email, or reach us at <a href="mailto:${PRESS_EMAIL}" style="color:${C.lav};text-decoration:underline;">${PRESS_EMAIL}</a>. We'll take it from there — and we won't share a single word without your okay.</p>
+      <p style="margin:0 0 22px 0;">Reply to this email, or reach us at <a href="mailto:${PRESS_EMAIL}" style="color:${C.lav};text-decoration:underline;">${PRESS_EMAIL}</a>. That's it.</p>
 
-      ${button({ href: `mailto:${PRESS_EMAIL}?subject=${encodeURIComponent('my NotCupid date story')}`, label: `i'm open to it →` })}
+      ${button({ href: `mailto:${PRESS_EMAIL}?subject=${encodeURIComponent('open to talking about NotCupid')}`, label: `i'm open to it →` })}
     `,
     recipientId,
-    footerNote: 'real people. real dates. only your story, only if you want.',
+    footerNote: 'meet people. not profiles. only if you want.',
   })
 }
 
@@ -66,7 +66,7 @@ async function sendOne(
         from: 'NotCupid <match@notcupid.com>',
         to: [user.email],
         reply_to: PRESS_EMAIL,
-        subject: 'would you share your NotCupid date story?',
+        subject: 'open to talking about NotCupid?',
         html: emailHtml(user.name || '', user.id),
       }),
     })
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   const force = url.searchParams.get('force') === '1'
 
   const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) return NextResponse.json({ error: 'RESEND_API_KEY not set' }, { status: 500 })
+  if (!dryRun && !apiKey) return NextResponse.json({ error: 'RESEND_API_KEY not set' }, { status: 500 })
 
   // 1) Distinct user_ids that have left date feedback.
   const { data: fbRows, error: fbErr } = await supabaseAdmin
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
   for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
     if (Date.now() - start > MAX_RUN_MS) break
     const batch = recipients.slice(i, i + BATCH_SIZE)
-    const results = await Promise.all(batch.map((u) => sendOne(u, apiKey)))
+    const results = await Promise.all(batch.map((u) => sendOne(u, apiKey as string)))
     const sentIds: string[] = []
     results.forEach((r, idx) => {
       processed++

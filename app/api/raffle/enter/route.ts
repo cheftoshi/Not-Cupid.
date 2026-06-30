@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!RAFFLE.entriesOpen) return NextResponse.json({ error: 'Entries are paused while we set up the next round.' }, { status: 403 });
   if (!raffleEligible(user)) return NextResponse.json({ error: `${RAFFLE.city} only for this one — change your city to ${RAFFLE.city} to enter.` }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));

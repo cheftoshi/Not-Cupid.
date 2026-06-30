@@ -27,6 +27,11 @@ export default function RaffleCard() {
     border = accent = '#2563ff'; head = `you’re in — waiting on ${other}.`; sub = `as soon as ${other} accepts, it’s locked for ${ev.dateLabel}.`; label = 'view your entry →';
   } else if (s.entered) {
     head = 'you’re in the raffle. ✓'; sub = `we draw ${ev.drawLabel} and ping you the second you’re picked.`; label = 'view your entry →';
+  } else if (!ev.entriesOpen) {
+    head = `${ev.series} is on pause.`;
+    sub = `The dinner round is being tuned quietly. Date: ${ev.dateLabel || 'TBD'}.`;
+    label = 'see details →';
+    fine = false;
   } else if (ev.closed) {
     head = 'raffle entries are closed.'; sub = `watch here for the next ${ev.series} drop.`; label = '';
   } else {
@@ -35,7 +40,7 @@ export default function RaffleCard() {
 
   return (
     <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.12), var(--h-surface))', border: `2px solid ${border}`, borderRadius: 18, padding: '1.2rem 1.35rem', boxShadow: '0 18px 50px -30px rgba(255,106,31,0.5)' }}>
-      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#d2530f', marginBottom: '0.4rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
+      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#d2530f', marginBottom: '0.4rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.statusLabel || ev.city}</div>
       <h3 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.3rem' }}>{head}</h3>
       <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: 0 }}>{sub}</p>
       {label && (

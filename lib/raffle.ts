@@ -8,15 +8,17 @@ export const RAFFLE = {
   series: 'Summer of Connection',
   city: 'Boston',
   metro: 'boston',
+  entriesOpen: false, // quiet mode: keep the flow/rules live, but block new public entries
+  statusLabel: 'TBD',
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // each entrant can be drawn at most twice (accept/reject, then re-draw)
   proEntries: 2, // NotCupid Pro members get this many entries (dual entry = 2× draw weight). NO PURCHASE NECESSARY: the same bonus is free on request (AMOE) so it stays a sweepstakes, not a paid lottery.
   respondHours: 18, // a drawn pair has this long to accept before the draw expires + we re-draw (so a no-show can't deadlock the round)
-  entryClose: '2026-06-30T03:59:59.000Z', // last entry point: Mon Jun 29, 11:59pm ET (EDT = UTC-4)
-  entryCloseLabel: 'Monday, June 29',
-  happensAt: '2026-07-02T23:00:00.000Z', // Thu Jul 2, 7pm ET
-  dateLabel: 'Thursday, July 2 · 7pm',
-  drawLabel: 'the moment we hit 100 (or Monday June 29)',
+  entryClose: '2099-12-31T04:59:59.000Z',
+  entryCloseLabel: 'TBD',
+  happensAt: '2099-12-31T23:00:00.000Z',
+  dateLabel: 'TBD',
+  drawLabel: 'TBD',
   budget: 200,
   // The actual venue — revealed ONLY to a winning pair (set on the draw at mutual
   // accept; never in the public status payload). Kept secret until someone wins.
@@ -25,7 +27,7 @@ export const RAFFLE = {
 };
 
 export function raffleClosed(): boolean {
-  return Date.now() > new Date(RAFFLE.entryClose).getTime();
+  return !RAFFLE.entriesOpen || Date.now() > new Date(RAFFLE.entryClose).getTime();
 }
 
 // Is this user eligible for the raffle? CITY-BASED: they must live in an actual

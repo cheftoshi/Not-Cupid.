@@ -1,6 +1,7 @@
 # NotCupid — project memory
 
 Boston-area social experiment. "Meet People. Not Profiles." A Lemon Labs property.
+**Raffle status (6/30): Summer of Connection is in quiet mode.** Keep the page/rules/status machinery live, but `RAFFLE.entriesOpen=false`, public date labels are **TBD**, `/api/raffle/enter` rejects new entries, and the cron draw returns `paused` unless manually forced by admin. Do not market it as live until the user explicitly reopens it.
 Two products: **Love Line** (dating, live) and **Friend Line** (platonic, BUILT). Both live. **Friend Line UI redesign IN PROGRESS (6/24): away from the loud Boston MBTA-transit/brutalist look → a CALM, CITY-AGNOSTIC "connection field" aesthetic** (see the Friend Line UI note below).
 Algorithm-curated, pick-from-a-roster, no swiping, no browsing.
 

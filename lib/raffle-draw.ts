@@ -24,6 +24,7 @@ const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 // excluded. Stops once a pair mutually accepts (the winner) or no pairs remain.
 export async function drawRaffle(opts: { force?: boolean } = {}): Promise<{ ok: true; entrants: number; drawn: number; pair?: { a: string; b: string; score: number }; state: string }> {
   const force = opts.force === true;
+  if (!RAFFLE.entriesOpen && !force) return { ok: true, entrants: 0, drawn: 0, state: 'paused' };
 
   // Already a winner this round? done.
   const { data: won } = await supabaseAdmin.from('raffle_draws').select('id').eq('event_key', RAFFLE.key).eq('status', 'both_accepted').limit(1);
@@ -62,7 +63,7 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<{ ok: 
   // Only draw when it's time: admin force, entries closed, the cap is reached, or
   // the round already started (so post-decline / post-expiry re-draws flow through).
   const { count: totalEntries } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key);
-  const canDraw = force || raffleClosed() || (totalEntries ?? 0) >= RAFFLE.cap || (priorDraws?.length ?? 0) > 0;
+  const canDraw = force || (RAFFLE.entriesOpen && raffleClosed()) || (totalEntries ?? 0) >= RAFFLE.cap || (priorDraws?.length ?? 0) > 0;
   if (!canDraw) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'waiting-for-trigger' };
   if (eligibleIds.length < 2) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
 
-type Event = { series: string; city: string; dateLabel: string; budget: number; tagline: string; drawLabel: string };
+type Event = { series: string; city: string; dateLabel: string; budget: number; tagline: string; drawLabel: string; entriesOpen?: boolean; statusLabel?: string };
 type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seeking: string; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null; isPro: boolean };
 
 const ORANGE = '#ff6a1f';
@@ -108,7 +108,13 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           a fully-covered dinner — up to <b>${ev.budget}*</b> — drawn from everyone who enters. <b>{ev.dateLabel}</b>.
         </p>
 
-        {!eligible ? (
+        {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
+          <div style={card}>
+            <h2 style={cardH}>quiet mode for now.</h2>
+            <p style={cardP}>we’re keeping the next {ev.series} round under wraps while we tune the app for more people. Date is <b>TBD</b>, and entries are paused for now.</p>
+            <Link href="/hub" style={backLink}>back to hub →</Link>
+          </div>
+        ) : !eligible ? (
           <div style={card}>
             <h2 style={cardH}>this one’s for Bostonians.</h2>
             <p style={cardP}>you need to live in {ev.city} or a next-door neighborhood (Cambridge, Somerville, Brookline, and the rest of the inner city) to enter — so you can actually make the dinner. set your city on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> if that’s you — more cities coming.</p>
