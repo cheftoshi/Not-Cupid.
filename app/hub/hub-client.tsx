@@ -138,15 +138,6 @@ export default function HubClient({
 
       <div className={styles.dashWrap}>
         <section className={styles.hubTop}>
-          <div className={styles.hubTopMain}>
-            <ConnectionSigil tone="mixed" />
-            <div>
-              <span className={styles.homeKicker}>today on notcupid</span>
-              <h1 className={styles.homeTitle}>hey {firstName.toLowerCase()}, choose a line.</h1>
-              <p className={styles.homeLede}>Love on one side. Friends and plans on the other. One clear next move in each.</p>
-            </div>
-          </div>
-
           <Link href="/profile" className={styles.profileMini}>
             <div className={styles.profileMiniAvatar}>
               {photo
@@ -165,6 +156,57 @@ export default function HubClient({
               {msg && <em>{msg}</em>}
             </div>
           </Link>
+
+          <div className={styles.todayCard}>
+            <div className={styles.todayHead}>
+              <div>
+                <span className={styles.homeKicker}>happening today</span>
+                <h1 className={styles.homeTitle}>the good stuff, up top.</h1>
+              </div>
+              <ConnectionSigil tone="mixed" />
+            </div>
+            <div className={styles.todayGrid}>
+              <RaffleCard />
+              <div className={styles.todayInterests}>
+                <div className={styles.asideHead}>
+                  <span className={styles.dLabel} style={{ marginBottom: 0 }}>what you’re into</span>
+                  <Link href="/profile">edit →</Link>
+                </div>
+                {interestCats.length === 0 && vibeTags.length === 0 ? (
+                  <p className={styles.emptyCopy}>Add interests so the app has better reasons to connect you.</p>
+                ) : (
+                  <div className={styles.interestDock}>
+                    {interestCats.slice(0, 3).map((c) => (
+                      <div key={c.head} className={styles.interestMini}>
+                        <div className={styles.interestHead}>
+                          <span>{c.emoji}</span>
+                          <b style={{ color: c.fg }}>{c.head}</b>
+                        </div>
+                        <div className={styles.tagCloud}>
+                          {c.items.slice(0, 5).map((t, i) => (
+                            <span key={`${t}-${i}`} style={{ background: c.bg, color: c.fg, borderColor: c.bd }}>{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {vibeTags.length > 0 && (
+                      <div className={styles.interestMini}>
+                        <div className={styles.interestHead}>
+                          <span>✨</span>
+                          <b style={{ color: 'var(--c-vibe)' }}>your vibe</b>
+                        </div>
+                        <div className={styles.tagCloud}>
+                          {vibeTags.slice(0, 4).map((v) => (
+                            <span key={v.k} style={{ background: 'rgba(255,45,142,0.08)', color: 'var(--c-vibe)', borderColor: 'rgba(255,45,142,0.28)' }}>{v.label}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className={styles.connectionBoard}>
@@ -341,49 +383,6 @@ export default function HubClient({
           </div>
         </section>
 
-        <section className={styles.hubDock}>
-          <RaffleCard />
-          <div className={styles.dCard}>
-            <div className={styles.asideHead}>
-              <span className={styles.dLabel} style={{ marginBottom: 0 }}>what you’re into</span>
-              <Link href="/profile">edit →</Link>
-            </div>
-            {interestCats.length === 0 && vibeTags.length === 0 ? (
-              <p className={styles.emptyCopy}>
-                Add your music, food, hobbies and sports so people have something real to start from.
-              </p>
-            ) : (
-              <div className={styles.interestDock}>
-                {interestCats.map((c) => (
-                  <div key={c.head} className={styles.interestMini}>
-                    <div className={styles.interestHead}>
-                      <span>{c.emoji}</span>
-                      <b style={{ color: c.fg }}>{c.head}</b>
-                    </div>
-                    <div className={styles.tagCloud}>
-                      {c.items.slice(0, 7).map((t, i) => (
-                        <span key={`${t}-${i}`} style={{ background: c.bg, color: c.fg, borderColor: c.bd }}>{t}</span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {vibeTags.length > 0 && (
-                  <div className={styles.interestMini}>
-                    <div className={styles.interestHead}>
-                      <span>✨</span>
-                      <b style={{ color: 'var(--c-vibe)' }}>your vibe</b>
-                    </div>
-                    <div className={styles.tagCloud}>
-                      {vibeTags.map((v) => (
-                        <span key={v.k} style={{ background: 'rgba(255,45,142,0.08)', color: 'var(--c-vibe)', borderColor: 'rgba(255,45,142,0.28)' }}>{v.label}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
       </div>
 
     </main>

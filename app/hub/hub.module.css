@@ -328,9 +328,9 @@
 
 .hubTop {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(230px, 300px);
+  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
   gap: 1rem;
-  align-items: stretch;
+  align-items: start;
   margin-bottom: 1rem;
 }
 
@@ -379,6 +379,66 @@
   color: inherit;
   text-decoration: none;
   min-width: 0;
+}
+
+.todayCard {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(224,69,127,0.07), transparent 24%),
+    color-mix(in srgb, var(--h-surface) 95%, var(--blue-pale));
+  border: 1px solid var(--h-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-sm);
+  padding: 1rem;
+  min-width: 0;
+}
+
+.todayCard::after {
+  content: '';
+  position: absolute;
+  right: -70px;
+  bottom: -88px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  border: 1px solid rgba(37,99,255,0.12);
+  box-shadow: 0 0 0 34px rgba(224,69,127,0.018);
+  pointer-events: none;
+}
+
+.todayCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.todayHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.todayCard .homeTitle {
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+  line-height: 1;
+  max-width: none;
+}
+
+.todayGrid {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.85fr) minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.todayInterests {
+  min-width: 0;
+  border: 1px solid var(--h-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--h-surface) 88%, transparent);
+  padding: 0.9rem;
 }
 
 .profileMiniAvatar {
@@ -1085,6 +1145,8 @@
 }
 /* tablet: drop the aside under the feed */
 @media (max-width: 1024px) {
+  .hubTop { grid-template-columns: 1fr; }
+  .todayGrid { grid-template-columns: 1fr; }
   .connectionBoard { grid-template-columns: 1fr; }
   .linePanel { min-height: 0; }
   .hubDock { grid-template-columns: 1fr; }
@@ -1095,7 +1157,6 @@
 /* mobile: single column — identity, then feed, then "into" */
 @media (max-width: 780px) {
   .dashWrap { padding-inline: 1rem; }
-  .hubTop { grid-template-columns: 1fr; }
   .hubTopMain { align-items: flex-start; }
   .linePanelHead { align-items: stretch; }
   .linePanelHead h2 { max-width: 18ch; }
@@ -1110,6 +1171,9 @@
   .eventRow span { padding-top: 0.18rem; }
 }
 @media (max-width: 520px) {
+  .todayHead { align-items: flex-start; }
+  .todayCard { border-radius: 22px; padding: 0.9rem; }
+  .todayInterests { padding: 0.75rem; }
   .hubTopMain { flex-direction: column; border-radius: 22px; }
   .profileMini { border-radius: 22px; }
   .linePanel { border-radius: 22px; padding: 1rem; }
