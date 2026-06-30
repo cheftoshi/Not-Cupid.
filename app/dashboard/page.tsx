@@ -162,6 +162,20 @@ export default async function DashboardPage({
       profileUnlocked: c.profileUnlocked, hasContent,
     };
   });
+  const yourMoveCount = activeCards.filter((card) => card.status === 'your-move').length;
+  const chattingCount = activeCards.filter((card) => card.status === 'chatting').length;
+  const waitingCount = activeCards.filter((card) => card.status === 'waiting').length;
+  const nextCard = activeCards.find((card) => card.status === 'your-move') || activeCards.find((card) => card.status === 'chatting') || null;
+  const nextTitle = yourMoveCount > 0
+    ? `${yourMoveCount} ${yourMoveCount === 1 ? 'person is' : 'people are'} waiting for your hello.`
+    : chattingCount > 0
+      ? 'keep one conversation warm today.'
+      : 'choose someone from your roster.';
+  const nextBody = yourMoveCount > 0
+    ? 'A small opener beats a perfect one. Pick the person you are most curious about and make it easy to answer.'
+    : chattingCount > 0
+      ? 'The app works best when a match becomes a rhythm. Reply, suggest a window, or ask the thing you actually want to know.'
+      : 'You can keep up to two live connections. Start with the profile that gives you a real reason to say yes.';
 
   return (
     <div className={styles.page}>
@@ -186,6 +200,24 @@ export default async function DashboardPage({
           </p>
         </div>
 
+        <section className={styles.loveNext}>
+          <div className={styles.loveNextCopy}>
+            <div className={styles.loveNextEyebrow}>next best move</div>
+            <h2>{nextTitle}</h2>
+            <p>{nextBody}</p>
+          </div>
+          <div className={styles.loveNextPanel}>
+            <div className={styles.loveNextTiles}>
+              <div className={styles.loveNextTile}><strong>{yourMoveCount}</strong><span>your move</span></div>
+              <div className={styles.loveNextTile}><strong>{chattingCount}</strong><span>chatting</span></div>
+              <div className={styles.loveNextTile}><strong>{waitingCount}</strong><span>waiting</span></div>
+            </div>
+            <a href={nextCard ? `/match/${nextCard.matchId}` : '#roster'} className={styles.loveNextButton}>
+              {nextCard ? `open ${nextCard.name.split(' ')[0]}` : 'see roster'} →
+            </a>
+          </div>
+        </section>
+
         {/* dates: change your city + match radius (was on the hub) */}
         <div style={{ marginBottom: '2rem' }}>
           <LocationControls city={dashCity} currentMetro={dashMetro} radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} showRadius />
@@ -208,17 +240,19 @@ export default async function DashboardPage({
             <ActiveChats cards={activeCards} />
           </div>
         )}
-        <RosterPicker
-          radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
-          maxRadius={MAX_MATCH_RADIUS}
-          maxConnections={MAX_CONNECTIONS}
-          horizontal
-          hasActive={activeCards.length > 0}
-          liveConnections={connections.map((c: any) => ({
-            matchId: c.match.id,
-            name: c.otherUser.name || 'your match',
-          }))}
-        />
+        <div id="roster">
+          <RosterPicker
+            radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
+            maxRadius={MAX_MATCH_RADIUS}
+            maxConnections={MAX_CONNECTIONS}
+            horizontal
+            hasActive={activeCards.length > 0}
+            liveConnections={connections.map((c: any) => ({
+              matchId: c.match.id,
+              name: c.otherUser.name || 'your match',
+            }))}
+          />
+        </div>
 
         {historyMatches && historyMatches.length > 0 && (
           <div className={styles.history}>

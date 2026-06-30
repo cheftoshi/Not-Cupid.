@@ -104,6 +104,80 @@
   font-weight: 600;
 }
 
+.qualityCard {
+  background: var(--h-surface);
+  border: 1px solid var(--h-border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-md);
+}
+
+.qualityTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.qualityEyebrow {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 0.45rem;
+}
+
+.qualityTitle {
+  font-family: Georgia, ui-serif, serif;
+  font-size: 1.15rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--h-text);
+  margin: 0;
+}
+
+.qualityNext {
+  flex: 0 0 auto;
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  background: var(--h-surface-2);
+  color: var(--h-text-dim);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.qualityList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.qualityItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  padding: 0.42rem 0.7rem;
+  background: var(--h-surface-2);
+  color: var(--h-text-dim);
+  font-size: 0.72rem;
+}
+
+.qualityItemDone {
+  color: var(--h-text);
+  background: color-mix(in srgb, var(--blue) 10%, var(--h-surface));
+  border-color: color-mix(in srgb, var(--blue) 30%, var(--h-border));
+}
+
 .section { margin-bottom: 3rem; }
 
 .sectionLabel {

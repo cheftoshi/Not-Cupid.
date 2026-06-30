@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import ChipInput from './chip-input';
 import RefreshProfileButton from '@/components/refresh-profile-button';
+import { ProfileStrengthMeter } from '@/components/connection-ui';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
 import { SUN_SIGNS } from '@/lib/astrology';
@@ -25,8 +26,25 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
 
-  const needsQuiz = !user.archetype || !user.score_honesty;
+  const needsQuiz = !user.archetype || typeof user.score_honesty !== 'number';
   const gallery: string[] = Array.isArray(user.gallery) ? user.gallery : [];
+  const interestsCount = [
+    ...(Array.isArray(user.hobbies) ? user.hobbies : []),
+    ...(Array.isArray(user.music) ? user.music : []),
+    ...(Array.isArray(user.food) ? user.food : []),
+  ].filter(Boolean).length;
+  const qualityItems = [
+    { label: 'face photo', done: Boolean(user.photo_url) },
+    { label: '2+ extra photos', done: gallery.length >= 2 },
+    { label: 'short hello video', done: Boolean(user.intro_video_url) },
+    { label: 'bio with texture', done: (user.bio || '').trim().length >= 80 },
+    { label: '3+ interests', done: interestsCount >= 3 },
+    { label: 'relationship style', done: Boolean(user.relationship_style) },
+    { label: 'basics filled', done: Boolean(user.age && user.gender && user.seeking && user.zip) },
+    { label: 'quiz complete', done: !needsQuiz },
+  ];
+  const qualityPercent = Math.round((qualityItems.filter((item) => item.done).length / qualityItems.length) * 100);
+  const nextQualityItem = qualityItems.find((item) => !item.done);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -183,6 +201,25 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
             ← back
           </button>
         )}
+      </div>
+
+      <div className={styles.qualityCard}>
+        <div className={styles.qualityTop}>
+          <div>
+            <div className={styles.qualityEyebrow}>connection readiness</div>
+            <h2 className={styles.qualityTitle}>make it easy to start with something real.</h2>
+          </div>
+          {nextQualityItem && <div className={styles.qualityNext}>next: {nextQualityItem.label}</div>}
+        </div>
+        <ProfileStrengthMeter percent={qualityPercent} />
+        <div className={styles.qualityList}>
+          {qualityItems.map((item) => (
+            <span key={item.label} className={`${styles.qualityItem} ${item.done ? styles.qualityItemDone : ''}`}>
+              <span aria-hidden="true">{item.done ? '✓' : '+'}</span>
+              {item.label}
+            </span>
+          ))}
+        </div>
       </div>
 
       {needsQuiz && (
