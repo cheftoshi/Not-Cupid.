@@ -2,10 +2,8 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import MatchReveal from './match-reveal';
-import ActiveChats from './active-chats';
 import RosterPicker from './roster-picker';
 import LocationControls from '@/components/location-controls';
-import { ConnectionSigil } from '@/components/connection-ui';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
 import { isPro } from '@/lib/pro';
@@ -23,7 +21,6 @@ export default async function DashboardPage({
   if (!user) redirect('/');
   if (!user.archetype) redirect('/quiz');
 
-  // If returning from Stripe checkout, verify the payment inline
   if (searchParams.unlock_session) {
     try {
       const stripeRes = await fetch(
@@ -49,12 +46,7 @@ export default async function DashboardPage({
     }
   }
 
-  // Capacity model: a user can run up to MAX_CONNECTIONS live conversations at
-  // once. Sweep any timed-out matches, then load ALL live matches as a list of
-  // "connections" (each gets its own card), plus the roster to discover more.
   await releaseTimedOutMatches(user.id);
-  // History is independent of the live set — fetch them in parallel (the
-  // dashboard was a 6-query sequential waterfall).
   const [liveMatches, { data: historyMatches }] = await Promise.all([
     liveMatchesFor(user.id),
     supabaseAdmin
@@ -74,7 +66,6 @@ export default async function DashboardPage({
   const historyOtherIds = Array.from(new Set(
     (historyMatches ?? []).map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
   ));
-  // MatchCard needs profile + HEXACO fields — but not email/roster_snapshot/etc.
   const CARD_COLS =
     'id, name, age, photo_url, archetype, occupation, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
@@ -93,19 +84,18 @@ export default async function DashboardPage({
       ? supabaseAdmin.from('users').select('id, name').in('id', historyOtherIds)
       : Promise.resolve({ data: [] as any[] }),
   ] as any[]);
+
   const unlockByMatch = new Map<string, any>((unlockRows ?? []).map((u: any) => [u.match_id, u]));
   const otherById = new Map<string, any>((others ?? []).map((u: any) => [u.id, u]));
   const historyNameById = new Map<string, any>((historyOthers ?? []).map((u: any) => [u.id, u.name]));
 
   const isTestViewer = (user as any).is_test === true;
-  // All-Access subscribers see every match's full profile, no per-unlock fee.
   const viewerIsPro = isPro(user);
   const connections = liveMatches
     .map((m: any) => {
       const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
       const other = otherById.get(otherId);
       if (!other) return null;
-      // Realm segregation: real users never see test matches & vice versa.
       if (((other as any).is_test === true) !== isTestViewer) return null;
       const u: any = unlockByMatch.get(m.id);
       const profileUnlocked = !!u?.profile_unlocked || viewerIsPro;
@@ -124,22 +114,16 @@ export default async function DashboardPage({
     .filter(Boolean) as any[];
 
   const newest = connections[0] || null;
-  // Only run the cinematic for a GENUINELY new match (created in the last ~12
-  // min). localStorage already plays it once per match, but a blocked/evicted
-  // localStorage write (Safari) would otherwise re-fire it on every visit — this
-  // hard-stops an existing chat (e.g. one you've been talking in) from re-playing.
   const newestFresh = !!newest?.match?.created_at &&
     Date.now() - new Date(newest.match.created_at).getTime() < 12 * 60 * 1000;
 
-  // Location (dates): the city + radius controls live HERE, not on the hub.
   const dashMetro = metroOf(user.zip);
   const dashCity = dashMetro && METRO_CENTERS[dashMetro] ? `${METRO_CENTERS[dashMetro].city}, ${METRO_CENTERS[dashMetro].state}` : null;
-
-  // Your chosen/active matches → the rich cards at the TOP of the dashboard.
   const cityLabel = (zip: string | null | undefined): string | null => {
     const mt = metroOf(zip);
     return mt && METRO_CENTERS[mt] ? `${METRO_CENTERS[mt].city}, ${METRO_CENTERS[mt].state}` : null;
   };
+
   const activeCards = connections.map((c: any) => {
     const m = c.match;
     const isU1 = m.user_1_id === user.id;
@@ -147,9 +131,6 @@ export default async function DashboardPage({
     const both = m.user_1_accepted && m.user_2_accepted;
     const o = c.otherUser;
     const hasContent = !!(o.bio || '').trim() || (Array.isArray(o.gallery) && o.gallery.length > 0);
-    // Interests (music/food/hobbies) + bio are part of the $0.99 unlock — only
-    // surface them once the profile is unlocked; the rest (archetype, career,
-    // city, style, sign) is free.
     const interests = c.profileUnlocked
       ? [...(o.music || []), ...(o.food || []), ...(o.hobbies || [])].filter(Boolean).slice(0, 5)
       : [];
@@ -163,6 +144,7 @@ export default async function DashboardPage({
       profileUnlocked: c.profileUnlocked, hasContent,
     };
   });
+
   const yourMoveCount = activeCards.filter((card) => card.status === 'your-move').length;
   const chattingCount = activeCards.filter((card) => card.status === 'chatting').length;
   const waitingCount = activeCards.filter((card) => card.status === 'waiting').length;
@@ -177,23 +159,19 @@ export default async function DashboardPage({
     : chattingCount > 0
       ? 'The app works best when a match becomes a rhythm. Reply, suggest a window, or ask the thing you actually want to know.'
       : 'You can keep up to two live connections. Start with the profile that gives you a real reason to say yes.';
+  const loveProfileTags = [
+    ...(Array.isArray((user as any).music) ? (user as any).music : []),
+    ...(Array.isArray((user as any).food) ? (user as any).food : []),
+    ...(Array.isArray((user as any).hobbies) ? (user as any).hobbies : []),
+    ...(Array.isArray((user as any).sports) ? (user as any).sports : []),
+  ].filter(Boolean).slice(0, 6);
 
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <style>{`
-          .dashGrid { display: grid; grid-template-columns: minmax(0,1fr) 286px; gap: 2.6rem; align-items: start; }
-          .dashAside { position: sticky; top: 84px; }
-          @media (max-width: 900px) { .dashGrid { grid-template-columns: 1fr; gap: 2rem; } .dashAside { position: static; } }
-        `}</style>
-        <div className="dashGrid">
-        <div style={{ minWidth: 0 }}>
-
         <div className={styles.head}>
-          <div className={styles.eyebrow}><span>💘</span> the love line</div>
-          <h1 className={styles.title}>
-            your <span className={styles.titleAccent}>matches.</span>
-          </h1>
+          <div className={styles.eyebrow}>the love line</div>
+          <h1 className={styles.title}>choose the person worth starting with.</h1>
           <p className={styles.subtitle}>
             {connections.length > 0
               ? `${activeCards.length} ${activeCards.length === 1 ? 'conversation' : 'conversations'} going · up to ${MAX_CONNECTIONS} at once · you set the pace`
@@ -201,108 +179,147 @@ export default async function DashboardPage({
           </p>
         </div>
 
-        <section className={styles.loveNext}>
-          <div className={styles.loveNextCopy}>
-            <div className={styles.loveNextSignal}>
-              <ConnectionSigil tone="love" />
-              <div className={styles.loveNextEyebrow}>next best move</div>
-            </div>
-            <h2>{nextTitle}</h2>
-            <p>{nextBody}</p>
-          </div>
-          <div className={styles.loveNextPanel}>
-            <div className={styles.loveNextTiles}>
-              <div className={styles.loveNextTile}><strong>{yourMoveCount}</strong><span>your move</span></div>
-              <div className={styles.loveNextTile}><strong>{chattingCount}</strong><span>chatting</span></div>
-              <div className={styles.loveNextTile}><strong>{waitingCount}</strong><span>waiting</span></div>
-            </div>
-            <a href={nextCard ? `/match/${nextCard.matchId}` : '#roster'} className={styles.loveNextButton}>
-              {nextCard ? `open ${nextCard.name.split(' ')[0]}` : 'see roster'} →
-            </a>
-          </div>
-        </section>
+        <div className={styles.loveGrid}>
+          <aside className={styles.loveSide}>
+            <section className={styles.loveProfileCard}>
+              <div className={styles.loveProfileTop}>
+                <div className={styles.loveAvatar}>
+                  {user.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.photo_url} alt="" />
+                  ) : (
+                    <span>{(user.name?.[0] || 'N').toUpperCase()}</span>
+                  )}
+                </div>
+                <div className={styles.loveProfileCopy}>
+                  <span>your love profile</span>
+                  <strong>{user.name || 'you'}</strong>
+                  {user.archetype && <em>{user.archetype}</em>}
+                </div>
+              </div>
 
-        {/* dates: change your city + match radius (was on the hub) */}
-        <div style={{ marginBottom: '2rem' }}>
-          <LocationControls city={dashCity} currentMetro={dashMetro} radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} showRadius />
-        </div>
+              <div className={styles.loveMiniStats}>
+                <div><strong>{activeCards.length}</strong><span>live</span></div>
+                <div><strong>{yourMoveCount}</strong><span>your move</span></div>
+                <div><strong>{MAX_CONNECTIONS}</strong><span>max chats</span></div>
+              </div>
 
-        {/* One-time cinematic reveal — only for a genuinely fresh match. */}
-        {newest && newestFresh && (
-          <MatchReveal
-            matchId={newest.match.id}
-            name={newest.otherUser.name || 'your match'}
-            score={newest.match.compatibility_score ?? null}
-            archetype={newest.otherUser.archetype}
-          />
-        )}
+              <div className={styles.loveProfileMeta}>
+                {dashCity && <span>{dashCity}</span>}
+                <span>{user.match_radius ?? DEFAULT_MATCH_RADIUS} mile radius</span>
+                {user.occupation && <span>{user.occupation}</span>}
+              </div>
 
-        {/* STACKED: your active chats on TOP (rich, full-width), then the people
-            to pick from BELOW as a horizontal row. */}
-        {activeCards.length > 0 && (
-          <div style={{ marginBottom: '3rem' }}>
-            <ActiveChats cards={activeCards} />
-          </div>
-        )}
-        <div id="roster">
-          <RosterPicker
-            radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
-            maxRadius={MAX_MATCH_RADIUS}
-            maxConnections={MAX_CONNECTIONS}
-            horizontal
-            hasActive={activeCards.length > 0}
-            liveConnections={connections.map((c: any) => ({
-              matchId: c.match.id,
-              name: c.otherUser.name || 'your match',
-            }))}
-          />
-        </div>
-
-        {historyMatches && historyMatches.length > 0 && (
-          <div className={styles.history}>
-            <h2 className={styles.historyTitle}>past conversations</h2>
-            <div className={styles.historyList}>
-              {historyMatches.map((m: any) => {
-                const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
-                const name = historyNameById.get(otherId) || 'a match';
-                return (
-                  <a key={m.id} href={`/match/${m.id}`} className={styles.historyItem} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
-                    <span className={styles.historyDate}>
-                      {new Date(m.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                    <span className={styles.historyOutcome}>{name} <span style={{ opacity: 0.5 }}>· read →</span></span>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        </div>{/* /left */}
-
-        {/* RIGHT: your own profile — a quick jump to /profile. */}
-        <aside className="dashAside">
-          <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 20, padding: '1.4rem 1.3rem', boxShadow: 'var(--shadow-md)', textAlign: 'center' }}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '1rem', textAlign: 'left' }}>your profile</div>
-            <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '2px solid var(--blue)' }}>
-              {user.photo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 32% 28%, rgba(37,99,255,0.2), transparent 60%), var(--h-surface-2)', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 700, color: 'var(--blue)', fontSize: '2.2rem' }}>{(user.name?.[0] || '✦').toUpperCase()}</div>
+              {loveProfileTags.length > 0 && (
+                <div className={styles.loveTags}>
+                  {loveProfileTags.map((tag: string, i: number) => <span key={`${tag}-${i}`}>{tag}</span>)}
+                </div>
               )}
+
+              <div className={styles.loveControls}>
+                <LocationControls city={dashCity} currentMetro={dashMetro} radius={user.match_radius ?? DEFAULT_MATCH_RADIUS} showRadius />
+              </div>
+
+              <div className={styles.loveLinks}>
+                <a href="/profile">edit baseline</a>
+                <a href="/profile/preview">preview</a>
+                <a href="/quiz?line=love">retake love setup</a>
+                <a href="/quiz?retake=1">restart core quiz</a>
+              </div>
+            </section>
+
+            <section className={styles.loveChatPanel}>
+              <div className={styles.panelKicker}>your conversations</div>
+              {activeCards.length > 0 ? (
+                <div className={styles.loveChatList}>
+                  {activeCards.map((card) => (
+                    <a key={card.matchId} href={`/match/${card.matchId}`} className={styles.loveChatRow}>
+                      <span className={styles.chatAvatar}>
+                        {card.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={card.photo_url} alt="" />
+                        ) : (
+                          <b>{card.name.charAt(0)}</b>
+                        )}
+                      </span>
+                      <span className={styles.chatCopy}>
+                        <strong>{card.name.split(' ')[0]}{card.age ? `, ${card.age}` : ''}</strong>
+                        <em>{card.status === 'chatting' ? 'chat open' : card.status === 'your-move' ? 'your move' : 'waiting on them'}</em>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.loveEmpty}>No live conversations yet. Your next one starts in the roster.</p>
+              )}
+            </section>
+          </aside>
+
+          <main className={styles.loveMain}>
+            <section className={styles.loveNext}>
+              <div className={styles.loveNextCopy}>
+                <div className={styles.loveNextSignal}>
+                  <div className={styles.loveNextEyebrow}>next best move</div>
+                </div>
+                <h2>{nextTitle}</h2>
+                <p>{nextBody}</p>
+              </div>
+              <div className={styles.loveNextPanel}>
+                <div className={styles.loveNextTiles}>
+                  <div className={styles.loveNextTile}><strong>{yourMoveCount}</strong><span>your move</span></div>
+                  <div className={styles.loveNextTile}><strong>{chattingCount}</strong><span>chatting</span></div>
+                  <div className={styles.loveNextTile}><strong>{waitingCount}</strong><span>waiting</span></div>
+                </div>
+                <a href={nextCard ? `/match/${nextCard.matchId}` : '#roster'} className={styles.loveNextButton}>
+                  {nextCard ? `open ${nextCard.name.split(' ')[0]}` : 'see roster'} →
+                </a>
+              </div>
+            </section>
+
+            {newest && newestFresh && (
+              <MatchReveal
+                matchId={newest.match.id}
+                name={newest.otherUser.name || 'your match'}
+                score={newest.match.compatibility_score ?? null}
+                archetype={newest.otherUser.archetype}
+              />
+            )}
+
+            <div id="roster">
+              <RosterPicker
+                radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
+                maxRadius={MAX_MATCH_RADIUS}
+                maxConnections={MAX_CONNECTIONS}
+                horizontal
+                hasActive={activeCards.length > 0}
+                liveConnections={connections.map((c: any) => ({
+                  matchId: c.match.id,
+                  name: c.otherUser.name || 'your match',
+                }))}
+              />
             </div>
-            <div style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontSize: '1.35rem', fontWeight: 700, color: 'var(--h-text)', lineHeight: 1.1 }}>{user.name || 'you'}</div>
-            {user.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.4rem' }}>{user.archetype}</div>}
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.3rem 0.7rem', marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)' }}>
-              {dashCity && <span>📍 {dashCity}</span>}
-              {user.occupation && <span>💼 {user.occupation}</span>}
-              {user.intro_video_url && <span style={{ color: 'var(--h-accent)' }}>🎬 video</span>}
-            </div>
-            <a href="/profile" style={{ display: 'block', marginTop: '1.2rem', textDecoration: 'none', background: '#0b0b0b', color: '#fff', borderRadius: 999, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>view / edit profile →</a>
-            <a href="/profile/preview" style={{ display: 'block', marginTop: '0.55rem', textDecoration: 'none', border: '1px solid var(--h-border)', color: 'var(--h-text-dim)', borderRadius: 999, padding: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>preview as a match →</a>
-          </div>
-        </aside>
-        </div>{/* /dashGrid */}
+
+            {historyMatches && historyMatches.length > 0 && (
+              <div className={styles.history}>
+                <h2 className={styles.historyTitle}>past conversations</h2>
+                <div className={styles.historyList}>
+                  {historyMatches.map((m: any) => {
+                    const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
+                    const name = historyNameById.get(otherId) || 'a match';
+                    return (
+                      <a key={m.id} href={`/match/${m.id}`} className={styles.historyItem}>
+                        <span className={styles.historyDate}>
+                          {new Date(m.ended_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                        <span className={styles.historyOutcome}>{name} <span>read →</span></span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );

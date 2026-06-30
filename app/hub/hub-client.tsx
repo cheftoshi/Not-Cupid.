@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import RaffleCard from '@/components/raffle-card';
-import { ConnectionSigil } from '@/components/connection-ui';
 import { compressImage } from '@/lib/compress-image';
 import { VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
@@ -171,6 +170,17 @@ export default function HubClient({
               {interestCount === 0 && vibeTags.length === 0 && <span>add interests</span>}
             </div>
 
+            {interestCats.length > 0 && (
+              <div className={styles.profileInterestGroups}>
+                {interestCats.slice(0, 3).map((c) => (
+                  <div key={c.head}>
+                    <b style={{ color: c.fg }}>{c.emoji} {c.head}</b>
+                    <span>{c.items.slice(0, 3).join(' · ')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className={styles.profileMiniCta}>edit baseline profile →</div>
           </Link>
 
@@ -179,48 +189,15 @@ export default function HubClient({
               <div>
                 <span className={styles.homeKicker}>notcupid · a connection experiment</span>
                 <h1 className={styles.homeTitle}>what’s alive today.</h1>
+                <p className={styles.todayCopy}>530+ people are already in the experiment. Today is about turning that pool into real movement.</p>
               </div>
-              <ConnectionSigil tone="mixed" />
             </div>
             <div className={styles.todayGrid}>
               <RaffleCard />
-              <div className={styles.todayInterests}>
-                <div className={styles.asideHead}>
-                  <span className={styles.dLabel} style={{ marginBottom: 0 }}>what you’re into</span>
-                  <Link href="/profile">edit →</Link>
-                </div>
-                {interestCats.length === 0 && vibeTags.length === 0 ? (
-                  <p className={styles.emptyCopy}>Add interests so the app has better reasons to connect you.</p>
-                ) : (
-                  <div className={styles.interestDock}>
-                    {interestCats.slice(0, 3).map((c) => (
-                      <div key={c.head} className={styles.interestMini}>
-                        <div className={styles.interestHead}>
-                          <span>{c.emoji}</span>
-                          <b style={{ color: c.fg }}>{c.head}</b>
-                        </div>
-                        <div className={styles.tagCloud}>
-                          {c.items.slice(0, 5).map((t, i) => (
-                            <span key={`${t}-${i}`} style={{ background: c.bg, color: c.fg, borderColor: c.bd }}>{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                    {vibeTags.length > 0 && (
-                      <div className={styles.interestMini}>
-                        <div className={styles.interestHead}>
-                          <span>✨</span>
-                          <b style={{ color: 'var(--c-vibe)' }}>your vibe</b>
-                        </div>
-                        <div className={styles.tagCloud}>
-                          {vibeTags.slice(0, 4).map((v) => (
-                            <span key={v.k} style={{ background: 'rgba(255,45,142,0.08)', color: 'var(--c-vibe)', borderColor: 'rgba(255,45,142,0.28)' }}>{v.label}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className={styles.todayBrand}>
+                <span>meet people. not profiles.</span>
+                <strong>Love, friendship, plans, and the follow-through.</strong>
+                <Link href="/how-it-works">how it works →</Link>
               </div>
             </div>
           </div>

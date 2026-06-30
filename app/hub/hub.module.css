@@ -264,11 +264,11 @@
   position: relative;
   z-index: 1;
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
-  font-size: clamp(2rem, 5.6vw, 4.2rem);
+  font-size: clamp(1.65rem, 3.6vw, 2.85rem);
   font-style: italic;
   font-weight: 400;
   letter-spacing: -0.02em;
-  line-height: 0.98;
+  line-height: 1.02;
   color: var(--h-text);
   margin: 0;
   max-width: 820px;
@@ -370,10 +370,11 @@
 .profileMini {
   display: grid;
   gap: 0.85rem;
-  background: var(--h-surface);
-  border: 1px solid var(--h-border);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--h-surface) 94%, var(--blue-pale)), var(--h-surface));
+  border: 1px solid color-mix(in srgb, var(--h-accent) 16%, var(--h-border));
   border-radius: 26px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   padding: 1.1rem;
   color: inherit;
   text-decoration: none;
@@ -401,16 +402,7 @@
 }
 
 .todayCard::after {
-  content: '';
-  position: absolute;
-  right: -70px;
-  bottom: -88px;
-  width: 190px;
-  height: 190px;
-  border-radius: 50%;
-  border: 1px solid rgba(37,99,255,0.12);
-  box-shadow: 0 0 0 34px rgba(224,69,127,0.018);
-  pointer-events: none;
+  content: none;
 }
 
 .todayCard > * {
@@ -427,9 +419,17 @@
 }
 
 .todayCard .homeTitle {
-  font-size: clamp(1.45rem, 3vw, 2.2rem);
-  line-height: 1;
+  font-size: clamp(1.35rem, 2.6vw, 1.95rem);
+  line-height: 1.04;
   max-width: none;
+}
+
+.todayCopy {
+  max-width: 58ch;
+  margin: 0.5rem 0 0;
+  color: var(--h-text-dim);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .todayGrid {
@@ -447,19 +447,58 @@
   padding: 0.9rem;
 }
 
+.todayBrand {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.62rem;
+  border: 1px solid color-mix(in srgb, var(--h-accent) 18%, var(--h-border));
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 88%, var(--blue-pale)), var(--h-surface));
+  padding: 1rem;
+}
+
+.todayBrand span,
+.todayBrand a {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.todayBrand span { color: var(--h-accent); }
+
+.todayBrand strong {
+  max-width: 26ch;
+  font-family: Georgia, ui-serif, serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.22;
+  color: var(--h-text);
+}
+
+.todayBrand a {
+  width: fit-content;
+  color: var(--h-text);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--h-accent) 34%, transparent);
+  padding-bottom: 0.14rem;
+}
+
 .profileMiniAvatar {
   position: relative;
   flex: 0 0 auto;
-  width: 58px;
-  height: 58px;
+  width: 72px;
+  height: 72px;
   border-radius: 18px;
   overflow: visible;
 }
 
 .profileMiniAvatar img,
 .profileMiniAvatar > span {
-  width: 58px;
-  height: 58px;
+  width: 72px;
+  height: 72px;
   border-radius: 18px;
   display: flex;
   align-items: center;
@@ -498,7 +537,7 @@
   display: block;
   font-family: Georgia, ui-serif, serif;
   font-style: italic;
-  font-size: 1.05rem;
+  font-size: 1.24rem;
   color: var(--h-text);
 }
 
@@ -576,6 +615,36 @@
   line-height: 1.1;
 }
 
+.profileInterestGroups {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.profileInterestGroups div {
+  display: grid;
+  gap: 0.16rem;
+  border: 1px solid var(--h-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--h-surface) 84%, transparent);
+  padding: 0.68rem 0.75rem;
+}
+
+.profileInterestGroups b {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.profileInterestGroups span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--h-text);
+  font-size: 0.84rem;
+}
+
 .profileMiniCta {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-size: 0.54rem;
@@ -609,14 +678,7 @@
 }
 
 .linePanel::after {
-  content: '';
-  position: absolute;
-  right: -70px;
-  top: -78px;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  pointer-events: none;
+  content: none;
 }
 
 .lovePanel {
@@ -650,13 +712,13 @@
 }
 
 .linePanelHead h2 {
-  max-width: 12ch;
+  max-width: 18ch;
   margin: 0;
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-style: italic;
   font-weight: 400;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  line-height: 0.98;
+  font-size: clamp(1.35rem, 2.8vw, 1.95rem);
+  line-height: 1.04;
   color: var(--h-text);
 }
 
@@ -1246,7 +1308,7 @@
   .interestDock { grid-template-columns: 1fr; }
   .homeHeroCopy { padding: 1.2rem; border-radius: 22px; }
   .homeSignal { align-items: flex-start; gap: 0.7rem; }
-  .homeTitle { font-size: 2.35rem; }
+  .homeTitle { font-size: 1.9rem; }
   .heroAction { border-radius: 22px; }
   .sectionHead { align-items: flex-start; flex-direction: column; gap: 0.1rem; }
   .sectionHead .dLabel { margin-bottom: 0; }
