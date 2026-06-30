@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import RaffleCard from '@/components/raffle-card';
+import { ConnectionSigil } from '@/components/connection-ui';
 import { compressImage } from '@/lib/compress-image';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
@@ -253,10 +254,13 @@ export default function HubClient({
       <div className={styles.dashWrap}>
         <section className={styles.homeHero}>
           <div className={styles.homeHeroCopy}>
-            <span className={styles.homeKicker}>today on notcupid</span>
+            <div className={styles.homeSignal}>
+              <ConnectionSigil tone="mixed" />
+              <span className={styles.homeKicker}>today on notcupid</span>
+            </div>
             <h1 className={styles.homeTitle}>hey {firstName.toLowerCase()}, who are we moving closer to?</h1>
             <p className={styles.homeLede}>
-              Your home base for love, friendship, plans and the small next step that turns strangers into people.
+              A living connection field for love, friendship, plans and the small next step that turns strangers into people.
             </p>
           </div>
           <Link href={heroAction.href} className={`${styles.heroAction} ${styles[`heroAction${heroAction.tone}`]}`}>

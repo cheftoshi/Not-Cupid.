@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { NEIGHBORHOODS } from '@/lib/neighborhoods';
 import ReactivateButton from '@/components/reactivate-button';
 import LocationControls from '@/components/location-controls';
+import { ConnectionSigil } from '@/components/connection-ui';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
@@ -309,7 +310,10 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
     <div>
       <div className="friendTodayHero">
         <div>
-          <div className="friendHeroKicker">today on friend line</div>
+          <div className="friendHeroSignal">
+            <ConnectionSigil tone="friend" />
+            <div className="friendHeroKicker">today on friend line</div>
+          </div>
           <h1 className="friendHeroTitle">what can we make happen today?</h1>
           <p className="friendHeroCopy">
             A softer daily home for {cityName}: join a plan, notice your people nearby, or be the one who gives the city something to say yes to.
@@ -1286,8 +1290,10 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
           .fbRail { position: sticky; top: 1rem; }
         }
-        .friendTodayHero { display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: linear-gradient(135deg, color-mix(in srgb, ${LINE} 12%, var(--h-surface)) 0%, var(--h-surface) 72%); border: 1px solid var(--h-border); border-radius: 18px; box-shadow: var(--shadow-md); padding: 1.25rem; margin-bottom: 1rem; }
-        .friendHeroKicker { font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: ${LINE_DEEP}; margin-bottom: 0.55rem; }
+        .friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 88% 18%, rgba(255,210,61,0.20), transparent 24%), linear-gradient(135deg, color-mix(in srgb, ${LINE} 16%, var(--h-surface)) 0%, var(--h-surface) 72%); border: 1px solid color-mix(in srgb, ${LINE} 30%, var(--h-border)); border-radius: 28px; box-shadow: 0 24px 70px -44px rgba(232,132,43,0.58), var(--shadow-md); padding: 1.25rem; margin-bottom: 1rem; }
+        .friendTodayHero::after { content: ''; position: absolute; right: -78px; bottom: -96px; width: 220px; height: 220px; border: 1px solid rgba(255,106,31,0.18); border-radius: 50%; box-shadow: 0 0 0 32px rgba(255,106,31,0.05), 0 0 0 66px rgba(255,210,61,0.04); pointer-events: none; }
+        .friendHeroSignal { position: relative; z-index: 1; display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
+        .friendHeroKicker { font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: ${LINE_DEEP}; }
         .friendHeroTitle { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.05rem, 6vw, 3rem); line-height: 0.95; letter-spacing: 0.01em; margin: 0; color: var(--h-text); }
         .friendHeroCopy { font-family: Georgia, serif; font-style: italic; font-size: 0.95rem; line-height: 1.5; color: var(--h-text-dim); margin: 0.55rem 0 0; max-width: 52ch; }
         .friendHeroActions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 1rem; }
@@ -1298,13 +1304,14 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
         .friendHeroStats div { background: color-mix(in srgb, var(--h-surface) 78%, ${LINE} 8%); border: 1px solid var(--h-border); border-radius: 14px; padding: 0.85rem; }
         .friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; line-height: 0.9; color: ${LINE_DEEP}; }
         .friendHeroStats span { display: block; margin-top: 0.35rem; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--h-text-dim); }
-        .friendFocus { background: #101010; color: #fff; border: 1px solid var(--h-border); border-radius: 18px; box-shadow: var(--shadow-md); padding: 1rem; margin: 1rem 0 0.5rem; }
+        .friendFocus { position: relative; overflow: hidden; background: #101010; color: #fff; border: 1px solid var(--h-border); border-radius: 24px; box-shadow: var(--shadow-md); padding: 1rem; margin: 1rem 0 0.5rem; }
+        .friendFocus::after { content: ''; position: absolute; right: -46px; top: -58px; width: 140px; height: 140px; border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; box-shadow: 0 0 0 28px rgba(255,255,255,0.06); pointer-events: none; }
         .friendFocusMeta { font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.66); margin-bottom: 0.65rem; }
-        .friendFocusBody { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .friendFocusBody { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
         .friendFocus h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; line-height: 0.95; letter-spacing: 0.01em; margin: 0; }
         .friendFocus p { font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; color: rgba(255,255,255,0.72); margin: 0.4rem 0 0; }
         @media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) 260px; align-items: stretch; } }
-        @media (max-width: 560px) { .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width: 560px) { .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
         .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
         @media (min-width: 880px) {
           .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }

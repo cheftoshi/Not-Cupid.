@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import ChipInput from './chip-input';
 import RefreshProfileButton from '@/components/refresh-profile-button';
-import { ProfileStrengthMeter } from '@/components/connection-ui';
+import { ConnectionSigil, ProfileStrengthMeter } from '@/components/connection-ui';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
 import { SUN_SIGNS } from '@/lib/astrology';
@@ -190,7 +190,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSave}>
+    <form onSubmit={handleSave} className={styles.profileForm}>
       <div className={styles.editTop}>
         <div>
           <div className={styles.editEyebrow}>edit profile</div>
@@ -205,9 +205,12 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
 
       <div className={styles.qualityCard}>
         <div className={styles.qualityTop}>
-          <div>
+          <div className={styles.qualityIntro}>
+            <ConnectionSigil tone="profile" />
+            <div>
             <div className={styles.qualityEyebrow}>connection readiness</div>
             <h2 className={styles.qualityTitle}>make it easy to start with something real.</h2>
+            </div>
           </div>
           {nextQualityItem && <div className={styles.qualityNext}>next: {nextQualityItem.label}</div>}
         </div>

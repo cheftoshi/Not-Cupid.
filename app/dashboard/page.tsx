@@ -5,6 +5,7 @@ import MatchReveal from './match-reveal';
 import ActiveChats from './active-chats';
 import RosterPicker from './roster-picker';
 import LocationControls from '@/components/location-controls';
+import { ConnectionSigil } from '@/components/connection-ui';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
 import { isPro } from '@/lib/pro';
@@ -202,7 +203,10 @@ export default async function DashboardPage({
 
         <section className={styles.loveNext}>
           <div className={styles.loveNextCopy}>
-            <div className={styles.loveNextEyebrow}>next best move</div>
+            <div className={styles.loveNextSignal}>
+              <ConnectionSigil tone="love" />
+              <div className={styles.loveNextEyebrow}>next best move</div>
+            </div>
             <h2>{nextTitle}</h2>
             <p>{nextBody}</p>
           </div>

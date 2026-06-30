@@ -1,11 +1,12 @@
 .hub {
   position: relative;
   min-height: 100vh;
-  /* ambient brand depth — soft, large, low-opacity glows over the base. */
   background:
-    radial-gradient(1100px 520px at 8% -10%, rgba(37,99,255,0.07), transparent 56%),
-    radial-gradient(900px 460px at 100% 2%, rgba(255,106,31,0.05), transparent 52%),
+    linear-gradient(115deg, rgba(37,99,255,0.055) 0 1px, transparent 1px 100%),
+    radial-gradient(900px 520px at 12% -10%, rgba(37,99,255,0.12), transparent 58%),
+    radial-gradient(760px 420px at 98% 8%, rgba(255,106,31,0.09), transparent 54%),
     var(--h-bg);
+  background-size: 34px 34px, auto, auto, auto;
   color: var(--h-text);
   display: flex;
   flex-direction: column;
@@ -218,12 +219,39 @@
   margin: 0 0 1.2rem;
 }
 .homeHeroCopy {
-  background: color-mix(in srgb, var(--h-surface) 82%, transparent);
-  border: 1px solid var(--h-border);
-  border-radius: 22px;
-  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255,106,31,0.14), transparent 24%),
+    linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 86%, #e8edff) 0%, var(--h-surface) 64%);
+  border: 1px solid color-mix(in srgb, var(--h-accent) 24%, var(--h-border));
+  border-radius: 28px;
+  box-shadow: 0 24px 70px -44px rgba(37,99,255,0.55), var(--shadow-md);
   padding: clamp(1.25rem, 4vw, 2rem);
 }
+
+.homeHeroCopy::after {
+  content: '';
+  position: absolute;
+  right: -72px;
+  bottom: -92px;
+  width: 230px;
+  height: 230px;
+  border: 1px solid rgba(37,99,255,0.18);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 28px rgba(37,99,255,0.04),
+    0 0 0 58px rgba(255,106,31,0.035);
+  pointer-events: none;
+}
+
+.homeSignal {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 0.85rem;
+}
+
 .homeKicker {
   display: block;
   font-family: 'DM Mono', ui-monospace, monospace;
@@ -231,9 +259,10 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--h-accent);
-  margin-bottom: 0.7rem;
 }
 .homeTitle {
+  position: relative;
+  z-index: 1;
   font-family: 'Playfair Display', Georgia, ui-serif, serif;
   font-size: clamp(2rem, 5.6vw, 4.2rem);
   font-style: italic;
@@ -245,6 +274,8 @@
   max-width: 820px;
 }
 .homeLede {
+  position: relative;
+  z-index: 1;
   margin: 0.85rem 0 0;
   max-width: 620px;
   color: var(--h-text-dim);
@@ -253,16 +284,29 @@
   line-height: 1.55;
 }
 .heroAction {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 190px;
-  border-radius: 22px;
+  border-radius: 28px;
   padding: 1.25rem;
   text-decoration: none;
   box-shadow: var(--shadow-lg);
   transition: transform .22s var(--ease), box-shadow .22s var(--ease);
 }
+.heroAction::before {
+  content: '';
+  position: absolute;
+  inset: auto -46px -70px auto;
+  width: 160px;
+  height: 160px;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(255,255,255,0.08);
+}
+.heroAction > * { position: relative; z-index: 1; }
 .heroAction:hover { transform: translateY(-3px); box-shadow: 0 16px 42px -20px rgba(11,11,11,.38); }
 .heroAction span,
 .heroAction em {
@@ -290,7 +334,7 @@
 .dashRail { grid-area: rail; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
 .dashMain { grid-area: main; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
 .dashAside { grid-area: aside; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
-.dCard { background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 16px; box-shadow: var(--shadow-md); padding: 1.1rem 1.2rem; }
+.dCard { background: color-mix(in srgb, var(--h-surface) 94%, transparent); border: 1px solid var(--h-border); border-radius: 18px; box-shadow: var(--shadow-md); padding: 1.1rem 1.2rem; }
 .dLabel { font-family: 'DM Mono', ui-monospace, monospace; font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--h-text-dim); margin-bottom: 0.7rem; display: block; }
 .identityCard { text-align: center; }
 .avatarWrap { position: relative; width: 88px; height: 88px; margin: 0 auto 0.75rem; }
@@ -453,16 +497,29 @@
 .nextCard { background: color-mix(in srgb, var(--h-surface) 92%, #fff); }
 .actionGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
 .actionCard {
+  position: relative;
+  overflow: hidden;
   min-height: 158px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 0.95rem;
   text-decoration: none;
   border: 1px solid var(--h-border);
   background: var(--h-surface-2);
   color: var(--h-text);
+}
+.actionCard::after {
+  content: '';
+  position: absolute;
+  right: -32px;
+  top: -36px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0.12;
 }
 .actionCard span,
 .actionCard em {
@@ -737,8 +794,10 @@
   .eventRow span { padding-top: 0.18rem; }
 }
 @media (max-width: 520px) {
-  .homeHeroCopy { padding: 1.2rem; }
+  .homeHeroCopy { padding: 1.2rem; border-radius: 22px; }
+  .homeSignal { align-items: flex-start; gap: 0.7rem; }
   .homeTitle { font-size: 2.35rem; }
+  .heroAction { border-radius: 22px; }
   .sectionHead { align-items: flex-start; flex-direction: column; gap: 0.1rem; }
   .sectionHead .dLabel { margin-bottom: 0; }
   .personRow,

@@ -2,12 +2,12 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  /* ambient brand depth — soft, large, low-opacity glows over the base so the
-     page reads "designed", not flat white/black. Works in both themes. */
   background:
-    radial-gradient(1100px 500px at 10% -10%, rgba(37,99,255,0.07), transparent 58%),
-    radial-gradient(820px 440px at 100% 0%, rgba(255,106,31,0.045), transparent 52%),
+    linear-gradient(115deg, rgba(37,99,255,0.05) 0 1px, transparent 1px 100%),
+    radial-gradient(900px 480px at 12% -10%, rgba(37,99,255,0.12), transparent 58%),
+    radial-gradient(700px 400px at 100% 3%, rgba(255,106,31,0.055), transparent 54%),
     var(--h-bg);
+  background-size: 34px 34px, auto, auto, auto;
   color: var(--h-text);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 1.5rem 1.5rem 0;
@@ -70,20 +70,48 @@
 }
 
 .loveNext {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 1rem;
   align-items: stretch;
-  background: var(--h-surface);
-  border: 1px solid var(--h-border);
-  border-radius: 18px;
-  box-shadow: var(--shadow-md);
+  background:
+    radial-gradient(circle at 86% 18%, rgba(37,99,255,0.16), transparent 24%),
+    linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 86%, #e8edff) 0%, var(--h-surface) 72%);
+  border: 1px solid color-mix(in srgb, var(--blue) 26%, var(--h-border));
+  border-radius: 28px;
+  box-shadow: 0 24px 70px -44px rgba(37,99,255,0.55), var(--shadow-md);
   padding: 1.25rem;
   margin: -0.6rem 0 1.5rem;
 }
 
+.loveNext::after {
+  content: '';
+  position: absolute;
+  right: -82px;
+  bottom: -98px;
+  width: 220px;
+  height: 220px;
+  border: 1px solid rgba(37,99,255,0.17);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 32px rgba(37,99,255,0.045),
+    0 0 0 68px rgba(37,99,255,0.025);
+  pointer-events: none;
+}
+
 .loveNextCopy {
+  position: relative;
+  z-index: 1;
   min-width: 0;
+}
+
+.loveNextSignal {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.7rem;
 }
 
 .loveNextEyebrow {
@@ -92,7 +120,6 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--blue);
-  margin-bottom: 0.55rem;
 }
 
 .loveNext h2 {
@@ -113,6 +140,8 @@
 }
 
 .loveNextPanel {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -127,8 +156,8 @@
 
 .loveNextTile {
   border: 1px solid var(--h-border);
-  border-radius: 12px;
-  background: var(--h-surface-2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--h-surface) 82%, #e8edff);
   padding: 0.75rem 0.5rem;
   text-align: center;
 }
@@ -168,6 +197,34 @@
 @media (max-width: 760px) {
   .loveNext {
     grid-template-columns: 1fr;
+  }
+
+  .loveNextSignal {
+    align-items: flex-start;
+  }
+
+  .loveNextPanel {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding: 1rem 1rem 0;
+  }
+
+  .loveNext {
+    border-radius: 22px;
+    padding: 1rem;
+  }
+
+  .loveNextTiles {
+    grid-template-columns: 1fr;
+  }
+
+  .loveNextButton {
+    white-space: normal;
+    line-height: 1.35;
   }
 }
 
