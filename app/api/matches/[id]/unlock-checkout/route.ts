@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   // Single wall for EVERY unlock: there must be real, user-added content
   // (bio and/or gallery). HEXACO is auto-generated and never sold on its own,
-  // so we force every purchase to the $1.99 profile tier and reject when the
+  // so we force every purchase to the $0.99 profile tier and reject when the
   // matched user hasn't actually added anything. Guards direct API hits too.
   const hasBio = !!(otherUser?.bio || '').trim();
   const hasGallery = Array.isArray(otherUser?.gallery) && otherUser!.gallery.length > 0;

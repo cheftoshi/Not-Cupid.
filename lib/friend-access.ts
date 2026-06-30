@@ -1,15 +1,15 @@
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Friend Line access model (v5 — packs, 6/21):
+// Friend Line access model (v6 — weekly packs, 6/30):
 //   • Your FIRST friendship pack (up to 10 friends) is FREE
-//   • Each ADDITIONAL pack = one-time $1.99 (a fresh batch of up to 10 friends)
-//   • Group chats are FREE for everyone in a pack — the $1.99 buys the pack
+//   • Each ADDITIONAL weekly pack = one-time $0.99 (a fresh batch of up to 10 friends)
+//   • Group chats are FREE for everyone in a pack — the $0.99 buys the pack
 //   • All-Access ($3.99/mo) → packs are free (see lib/pro.ts)
 export type FriendAccess = 'trial' | 'active' | 'expired';
 
 export const FRIEND_TRIAL_DAYS = 7;
-// One friendship pack = $1.99 (was a $0.99 "round"; renamed + repriced 6/21).
-export const FRIEND_PACK_CENTS = 199;
+// One weekly friendship pack = $0.99.
+export const FRIEND_PACK_CENTS = 99;
 // Back-compat alias — older imports referenced FRIEND_CHAT_UNLOCK_CENTS.
 export const FRIEND_CHAT_UNLOCK_CENTS = FRIEND_PACK_CENTS;
 
@@ -20,8 +20,8 @@ export function friendAccess(user: any): { tier: FriendAccess; daysLeft: number 
   return { tier: daysLeft > 0 ? 'trial' : 'active', daysLeft };
 }
 
-// Group chats are FREE for everyone in a crew now — the $0.99 is for extra
-// match rounds, not the chat. Kept as a function so the message routes stay
+// Group chats are FREE for everyone in a crew now — the $0.99 is for fresh
+// weekly packs, not the chat. Kept as a function so the message routes stay
 // stable (and so we could re-gate later without touching callers).
 export async function hasCircleAccess(_user: any, circleId: string): Promise<boolean> {
   return !!circleId;

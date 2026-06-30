@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { liveMatchesFor } from '@/lib/match-actions';
+import { isPro } from '@/lib/pro';
 import HubClient from './hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,10 @@ export default async function HubPage() {
   // Boarding Love runs the deeper romantic quiz (partner + attachment + values)
   // once. Done = they have an attachment style on file.
   const needsLoveDeep = !!user.archetype && !user.attach_style;
+  const pro = isPro(user);
+  const renewsOn = user.friend_pro_until
+    ? new Date(user.friend_pro_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null;
 
   // The hub is the user's home base — pass their own display fields so it can
   // show their photo, archetype, personality + vibes (NOT email/tokens/etc).
@@ -65,5 +70,5 @@ export default async function HubPage() {
     })
     .filter(Boolean);
 
-  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} loveMatches={loveMatches as any} />;
+  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} loveMatches={loveMatches as any} membership={{ pro, renewsOn }} />;
 }

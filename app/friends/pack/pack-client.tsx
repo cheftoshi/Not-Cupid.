@@ -70,7 +70,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
     setTimeout(() => setPhase('revealed'), 760);
   }
 
-  // "Open another pack": free for All-Access (grant + reload), else $1.99 checkout.
+  // "Open another pack": free for All-Access (grant + reload), else $0.99 checkout.
   async function anotherPack() {
     setBusy(true); setErr('');
     try {
@@ -171,7 +171,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
             <div className={styles.subtle} style={{ marginBottom: '0.5rem' }}>tap <b>connect</b> on anyone — they’ll get a ping, and once they accept you’re friends.</div>
             <Link href="/friends?view=crew" className={styles.cta}>see them on the friend line →</Link>
             <button onClick={anotherPack} disabled={busy} className={`${styles.cta} ${styles.ctaGhost}`} style={{ marginTop: '0.8rem' }}>
-              {busy ? '…' : pro ? '✦ open another pack · free' : '🎁 open another pack · $1.99'}
+              {busy ? '…' : pro ? '✦ open another pack · free' : '🎁 open another weekly pack · $0.99'}
             </button>
             {err && <p className={styles.subtle} style={{ color: '#ffb3b3' }}>{err}</p>}
           </div>
@@ -188,7 +188,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
               : 'we’re lining up your first batch of friends. check back in a bit, or pull a fresh pack now.'}
           </p>
           <button onClick={anotherPack} disabled={busy} className={styles.cta} style={{ marginTop: '1.4rem' }}>
-            {busy ? '…' : pro ? '✦ open a pack · free' : '🎁 open a pack · $1.99'}
+            {busy ? '…' : pro ? '✦ open a pack · free' : '🎁 open a weekly pack · $0.99'}
           </button>
           {!pro && <Link href="/pro" className={styles.subtle} style={{ textDecoration: 'underline', marginTop: '0.7rem' }}>or go Pro — unlimited packs, $3.99/mo →</Link>}
           {err && <p className={styles.subtle} style={{ color: '#ffb3b3' }}>{err}</p>}

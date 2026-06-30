@@ -1873,7 +1873,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
               {sealedCount > 0 && (
                 <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', background: 'linear-gradient(135deg, #ff6a1f, #d2530f)', color: '#fff', borderRadius: 'var(--r-sm)', padding: '0.55rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', letterSpacing: '0.02em', boxShadow: '0 12px 26px -16px rgba(255,106,31,0.6)' }}>🎒 open sealed pack · {sealedCount} new to meet →</a>
               )}
-              <a href="/friends/pack" style={{ ...poppyBtn, display: 'block', marginTop: '0.7rem', textAlign: 'center', textDecoration: 'none', fontSize: '0.95rem', padding: '0.5rem' }}>open another pack · $1.99</a>
+              <a href="/friends/pack" style={{ ...poppyBtn, display: 'block', marginTop: '0.7rem', textAlign: 'center', textDecoration: 'none', fontSize: '0.95rem', padding: '0.5rem' }}>open weekly pack · $0.99</a>
               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.66rem', marginTop: '0.5rem', textAlign: 'center' }}>first pack free · <a href="/pro" style={{ color: LINE_DEEP }}>Pro</a> makes packs free</div>
               <button onClick={leaveCrew} disabled={busy} style={{ display: 'block', width: '100%', marginTop: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>{busy ? '…' : 'opt out of the group →'}</button>
             </div>

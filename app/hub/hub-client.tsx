@@ -32,6 +32,11 @@ type LoveMatch = {
   archetype: string | null; score: number | null; bothAccepted: boolean; iAccepted: boolean;
 };
 
+type Membership = {
+  pro: boolean;
+  renewsOn: string | null;
+};
+
 const ORANGE_DEEP = 'var(--h-accent-2)';
 
 function whenLabel(iso: string | null): string {
@@ -45,10 +50,10 @@ function whenLabel(iso: string | null): string {
 }
 
 export default function HubClient({
-  firstName, hasArchetype, needsLoveDeep, profile, city, loveMatches = [],
+  firstName, hasArchetype, needsLoveDeep, profile, city, loveMatches = [], membership,
 }: {
   firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean; profile: Profile;
-  city?: string | null; loveMatches?: LoveMatch[];
+  city?: string | null; loveMatches?: LoveMatch[]; membership: Membership;
 }) {
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
@@ -194,6 +199,22 @@ export default function HubClient({
             </div>
             <div className={styles.todayGrid}>
               <RaffleCard />
+              <div className={`${styles.membershipCard} ${membership.pro ? styles.membershipPro : ''}`}>
+                <div className={styles.membershipTop}>
+                  <span>{membership.pro ? 'pro member' : 'free member'}</span>
+                  <strong>{membership.pro ? 'All-Access is on.' : 'Your first moves are included.'}</strong>
+                </div>
+                <p>
+                  {membership.pro
+                    ? `Love unlocks and friend packs are covered${membership.renewsOn ? ` through ${membership.renewsOn}` : ''}.`
+                    : 'First Love roster and first Friend pack are free. Pro opens the whole app for $3.99/mo.'}
+                </p>
+                <div className={styles.membershipPrices}>
+                  <span>Love profile unlocks · $0.99</span>
+                  <span>Weekly friend packs · $0.99</span>
+                </div>
+                <Link href="/pro">{membership.pro ? 'manage Pro →' : 'go Pro →'}</Link>
+              </div>
               <div className={styles.todayBrand}>
                 <span>meet people. not profiles.</span>
                 <strong>Love, friendship, plans, and the follow-through.</strong>

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     // ── Friend Maxxin metrics (wrapped so missing tables don't break the dashboard) ──
     // Hoisted so the top-level revenue total can fold in friend-side income.
-    let friendPaidPacks = 0   // $1.99 packs actually bought (excludes free pro grants)
+    let friendPaidPacks = 0   // $0.99 packs actually bought (excludes free pro grants)
     let friendChatUnlocks = 0 // legacy per-crew $0.99 unlocks
     let friend: any = null
     try {
@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
         optedIn: optedIn.length,
         matchRounds: friendPaidPacks,
         chatUnlocks: friendChatUnlocks,
-        // $1.99/pack + legacy $0.99 crew unlocks.
-        unlockRevenue: ((friendPaidPacks * 199 + friendChatUnlocks * 99) / 100).toFixed(2),
+        // $0.99/pack + legacy $0.99 crew unlocks.
+        unlockRevenue: ((friendPaidPacks * 99 + friendChatUnlocks * 99) / 100).toFixed(2),
         connectionsPending: connList.filter((c: any) => c.status === 'pending').length,
         connectionsMade: connList.filter((c: any) => c.status === 'connected').length,
         activeCircles: new Set((circleMembers ?? []).map((m: any) => m.circle_id)).size,
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     const loveUnlockCents =
       matchUnlocks.reduce((s: number, r: any) => s + (r.amount_cents ?? 0), 0) +
       (unlocks ?? []).reduce((s: number, r: any) => s + (r.amount ?? 0), 0)
-    const packCents = friendPaidPacks * 199
+    const packCents = friendPaidPacks * 99
     const friendLegacyCents = friendChatUnlocks * 99
     const oneTimeCents = loveUnlockCents + packCents + friendLegacyCents // collected to date
     // Active All-Access subscribers → monthly recurring revenue.

@@ -59,7 +59,7 @@ export async function GET(_req: NextRequest) {
       // Revenue — count EVERY stream by real amount, not a flat proxy.
       sumAmt('match_unlocks', 'amount_cents'), // current love unlocks
       sumAmt('unlocks', 'amount'),             // legacy unlock ledger
-      paidPacks(),                             // $1.99 packs (excl. free pro grants)
+      paidPacks(),                             // $0.99 packs (excl. free pro grants)
       supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true }).then((r) => r.count ?? 0),
       countUsers((q) => q.gt('friend_pro_until', nowIso)), // active All-Access subs
       supabaseAdmin.from('users')
@@ -72,7 +72,7 @@ export async function GET(_req: NextRequest) {
       supabaseAdmin.from('users').select('created_at').gte('created_at', weekAgoIso),
     ])
 
-    const oneTimeCents = loveCents + legacyCents + packs * 199 + chatUnlocks * 99
+    const oneTimeCents = loveCents + legacyCents + packs * 99 + chatUnlocks * 99
     const totalRevenue = (oneTimeCents / 100).toFixed(2)
     const mrr = (activeSubs * 399 / 100).toFixed(2)
     const decided = bothAccepted + passed

@@ -434,7 +434,7 @@
 
 .todayGrid {
   display: grid;
-  grid-template-columns: minmax(230px, 0.85fr) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 0.9fr) minmax(210px, 0.82fr) minmax(0, 1fr);
   gap: 0.85rem;
   align-items: start;
 }
@@ -483,6 +483,83 @@
   color: var(--h-text);
   text-decoration: none;
   border-bottom: 1px solid color-mix(in srgb, var(--h-accent) 34%, transparent);
+  padding-bottom: 0.14rem;
+}
+
+.membershipCard {
+  min-width: 0;
+  display: grid;
+  gap: 0.68rem;
+  border: 1px solid color-mix(in srgb, var(--orange) 24%, var(--h-border));
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 92% 18%, rgba(255,106,31,0.11), transparent 34%),
+    color-mix(in srgb, var(--h-surface) 90%, #fff0e5);
+  padding: 1rem;
+}
+
+.membershipPro {
+  border-color: color-mix(in srgb, var(--blue) 28%, var(--h-border));
+  background:
+    radial-gradient(circle at 92% 18%, rgba(37,99,255,0.12), transparent 34%),
+    color-mix(in srgb, var(--h-surface) 90%, var(--blue-pale));
+}
+
+.membershipTop span,
+.membershipCard a,
+.membershipPrices span {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.membershipTop span {
+  display: block;
+  color: var(--h-accent-2);
+  margin-bottom: 0.34rem;
+}
+
+.membershipPro .membershipTop span {
+  color: var(--h-accent);
+}
+
+.membershipTop strong {
+  display: block;
+  font-family: Georgia, ui-serif, serif;
+  font-size: 1.06rem;
+  font-style: italic;
+  line-height: 1.18;
+  color: var(--h-text);
+}
+
+.membershipCard p {
+  margin: 0;
+  color: var(--h-text-dim);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.membershipPrices {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.membershipPrices span {
+  display: block;
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--h-surface) 82%, transparent);
+  color: var(--h-text-dim);
+  padding: 0.38rem 0.55rem;
+  line-height: 1.2;
+}
+
+.membershipCard a {
+  width: fit-content;
+  color: var(--h-text);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--h-accent-2) 38%, transparent);
   padding-bottom: 0.14rem;
 }
 
