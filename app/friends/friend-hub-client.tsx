@@ -1339,6 +1339,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         /* nav floats on top (all viewports); content = main feed + a right rail */
         .fbTopNav { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.4rem 0 0.2rem; }
         .fbShell { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.25rem; }
+        .sceneFilterDock { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.85rem; }
         @media (max-width: 879px) { .fbRail { order: 2; } .fbMain { order: 1; } }
         @media (min-width: 880px) {
           .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
@@ -1398,7 +1399,20 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         @media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) 260px; align-items: stretch; } }
         @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } .friendTodayPeople { grid-column: 1 / -1; position: static; grid-template-columns: repeat(2,minmax(0,1fr)); } .friendTodayMain { grid-column: 1; } .friendTodayActions { grid-column: 2; } }
         @media (max-width: 760px) { .friendTodayLayout, .friendTodayPeople { grid-template-columns: 1fr; } .friendTodayMain, .friendTodayActions { grid-column: auto; } .friendTodaySide { position: static; } }
-        @media (max-width: 560px) { .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width: 560px) {
+          .fbTopNav { position: sticky; top: 0.45rem; z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
+          .fbTopNav::-webkit-scrollbar { display: none; }
+          .fbTopNav button { white-space: nowrap; }
+          .fbShell { gap: 0.95rem; margin-top: 0.9rem; }
+          .sceneFilterDock { position: sticky; top: 3.7rem; z-index: 24; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; margin: 0 -0.2rem 0.9rem; padding: 0.45rem 0.2rem; background: color-mix(in srgb, var(--h-bg) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
+          .sceneFilterDock::-webkit-scrollbar { display: none; }
+          .sceneFilterDock button, .sceneFilterDock span { flex: 0 0 auto; white-space: nowrap; }
+          .sceneFilterDock > div { margin-left: 0 !important; flex: 0 0 auto; }
+          .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+          .pulseGrid { gap: 0.8rem; }
+          .pulseAreaCard { min-height: 112px; }
+          .crewLower { margin-top: 1rem; }
+        }
         .pulseGrid { display: grid; grid-template-columns: 0.86fr 1.14fr; gap: 1rem; align-items: start; }
         @media (max-width: 780px) { .pulseGrid, .pulseAreasGrid { grid-template-columns: 1fr; } }
         .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
@@ -1761,7 +1775,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         </div>
 
         {/* unified filter bar — kind · time · near me */}
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.85rem' }}>
+        <div className="sceneFilterDock">
           {([['all', 'All'], ['event', 'Plans'], ['post', 'Talk']] as const).map(([k, label]) => {
             const on = kindFilter === k;
             return <button key={k} onClick={() => setKindFilter(k)} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? LINE : 'var(--h-surface-3)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? LINE : 'var(--h-border)'}` }}>{label}</button>;

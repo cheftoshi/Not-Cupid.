@@ -239,21 +239,24 @@
 }
 
 .photoSection {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 2rem;
+  gap: 1.25rem;
   margin-bottom: 1rem;
-  flex-wrap: wrap;
 }
 
 .photoFrame {
-  width: 128px;
-  height: 128px;
-  border-radius: 50%;
+  width: 148px;
+  height: 176px;
+  border-radius: 22px;
   overflow: hidden;
   background: var(--h-surface);
   border: 1px solid var(--h-border);
   flex-shrink: 0;
+  cursor: zoom-in;
+  padding: 0;
+  box-shadow: var(--shadow-sm);
 }
 
 .photo, .photoPlaceholder {
@@ -273,6 +276,7 @@
 
 .uploadButton {
   display: inline-block;
+  width: fit-content;
   cursor: pointer;
   background: #0a0a0a;
   color: #fff;
@@ -302,6 +306,15 @@
   position: relative; width: 92px; height: 92px; border-radius: 12px;
   overflow: hidden; border: 1px solid var(--h-border); background: var(--h-surface);
 }
+.galleryPreview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  padding: 0;
+}
 .galleryImg { width: 100%; height: 100%; object-fit: cover; display: block; }
 .galleryRemove {
   position: absolute; top: 4px; right: 4px; width: 22px; height: 22px;
@@ -317,6 +330,40 @@
   text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
 }
 .galleryAdd:hover { border-color: var(--blue); background: var(--h-surface-2); }
+
+.photoPreview {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 8, 12, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 1.25rem;
+}
+
+.photoPreviewImg {
+  max-width: min(92vw, 620px);
+  max-height: 86vh;
+  border-radius: 24px;
+  object-fit: contain;
+  box-shadow: 0 28px 80px rgba(0,0,0,0.38);
+}
+
+.photoPreviewClose {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  right: 1rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.35rem;
+}
 
 .field { margin-bottom: 1.5rem; }
 
@@ -933,7 +980,64 @@
 }
 
 @media (max-width: 680px) {
-  .page { padding: 1rem 1rem 3rem; }
+  .page { padding: 0.85rem 0.85rem 3rem; }
+  .nav {
+    margin-bottom: 1.35rem;
+    padding-bottom: 0.9rem;
+  }
+  .navLinks {
+    width: 100%;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding-bottom: 0.1rem;
+  }
+  .navLink {
+    flex: 0 0 auto;
+    border: 1px solid var(--h-border);
+    border-radius: 999px;
+    background: var(--h-surface);
+    padding: 0.48rem 0.7rem;
+    font-size: 0.56rem;
+  }
+  .editTop {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+  }
+  .qualityCard,
+  .section {
+    border-radius: 18px;
+    padding: 1rem;
+  }
+  .sectionLabel {
+    margin-bottom: 1rem;
+  }
+  .photoSection {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+  .photoFrame {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 0.86;
+    max-height: 420px;
+    border-radius: 24px;
+  }
+  .uploadButton,
+  .saveButton {
+    width: 100%;
+    text-align: center;
+  }
+  .galleryGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+  .galleryItem,
+  .galleryAdd {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
   .qualityTop,
   .qualityIntro {
     align-items: flex-start;

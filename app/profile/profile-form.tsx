@@ -25,6 +25,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const needsQuiz = !user.archetype || typeof user.score_honesty !== 'number';
   const gallery: string[] = Array.isArray(user.gallery) ? user.gallery : [];
@@ -238,13 +239,13 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
       <div className={styles.section}>
         <div className={styles.sectionLabel}>01 — Your face</div>
         <div className={styles.photoSection}>
-          <div className={styles.photoFrame}>
+          <button type="button" className={styles.photoFrame} onClick={() => user.photo_url && setPreviewUrl(user.photo_url)} aria-label="Preview main photo">
             {user.photo_url ? (
               <img src={user.photo_url} alt="" className={styles.photo} />
             ) : (
               <div className={styles.photoPlaceholder}>no photo yet</div>
             )}
-          </div>
+          </button>
           <label className={styles.uploadButton}>
             {uploadingPhoto ? 'uploading...' : (user.photo_url ? 'change photo' : 'upload photo')}
             <input type="file" accept="image/*" className={styles.fileInput} onChange={handlePhotoUpload} disabled={uploadingPhoto} />
@@ -259,7 +260,9 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           <div className={styles.galleryGrid}>
             {gallery.map((url) => (
               <div key={url} className={styles.galleryItem}>
-                <img src={url} alt="" className={styles.galleryImg} />
+                <button type="button" className={styles.galleryPreview} onClick={() => setPreviewUrl(url)} aria-label="Preview photo">
+                  <img src={url} alt="" className={styles.galleryImg} />
+                </button>
                 <button type="button" className={styles.galleryRemove} onClick={() => handleGalleryRemove(url)} aria-label="Remove photo">×</button>
               </div>
             ))}
@@ -512,6 +515,13 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           Delete my account
         </button>
       </div>
+
+      {previewUrl && (
+        <div className={styles.photoPreview} onClick={() => setPreviewUrl(null)} role="dialog" aria-modal="true" aria-label="Photo preview">
+          <button type="button" className={styles.photoPreviewClose} onClick={() => setPreviewUrl(null)} aria-label="Close photo preview">×</button>
+          <img src={previewUrl} alt="" className={styles.photoPreviewImg} onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </form>
   );
 }
