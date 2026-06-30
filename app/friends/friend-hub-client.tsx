@@ -143,15 +143,15 @@ function ConnectionBackdrop() {
     const size = () => { w = cv.clientWidth || window.innerWidth; h = cv.clientHeight || window.innerHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size();
     const ro = new ResizeObserver(size); ro.observe(cv);
-    for (let i = 0; i < 9; i++) spawn(true); // seed always → reduced-motion still shows a frame
+    for (let i = 0; i < 5; i++) spawn(true); // seed always → reduced-motion still shows a frame
     let raf = 0, last = 0, on = true;
     const draw = (ts: number) => {
       if (!on) return;
       raf = requestAnimationFrame(draw);
       if (ts - last < 34) return; last = ts; // ~30fps
       ctx.clearRect(0, 0, w, h);
-      if (!reduce) { nextSpawn -= 1; if (nextSpawn <= 0 && bubs.length < 15) { spawn(); nextSpawn = 14 + ((Math.random() * 20) | 0); } }
-      ctx.font = "600 13.5px ui-sans-serif, system-ui, -apple-system, sans-serif";
+      if (!reduce) { nextSpawn -= 1; if (nextSpawn <= 0 && bubs.length < 9) { spawn(); nextSpawn = 22 + ((Math.random() * 30) | 0); } }
+      ctx.font = "600 12px ui-sans-serif, system-ui, -apple-system, sans-serif";
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (let k = bubs.length - 1; k >= 0; k--) {
         const bb = bubs[k];
@@ -177,7 +177,7 @@ function ConnectionBackdrop() {
           ctx.closePath();
         };
         ctx.save();
-        ctx.translate(Math.round(cx), Math.round(bb.y * h)); ctx.rotate(bb.rot); ctx.globalAlpha = alpha;
+        ctx.translate(Math.round(cx), Math.round(bb.y * h)); ctx.rotate(bb.rot); ctx.globalAlpha = alpha * 0.55;
         const col = PAL[bb.c];
         ctx.shadowColor = 'rgba(120,70,30,0.20)'; ctx.shadowBlur = 11; ctx.shadowOffsetY = 4;
         path(); ctx.fillStyle = '#fffaf3'; ctx.fill();
@@ -199,7 +199,7 @@ function ConnectionBackdrop() {
       {/* faint warm dot-grid + grain so the field has texture, not a plain wash */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(150,110,60,0.13) 1px, transparent 1.5px)', backgroundSize: '23px 23px', WebkitMaskImage: 'radial-gradient(135% 110% at 50% -8%, #000 50%, transparent 92%)', maskImage: 'radial-gradient(135% 110% at 50% -8%, #000 50%, transparent 92%)' }} />
       <div style={{ position: 'absolute', inset: 0, opacity: 0.5, mixBlendMode: 'multiply', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")", backgroundSize: '160px 160px' }} />
-      <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+      <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.55 }} />
     </div>
   );
 }
@@ -297,6 +297,8 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
   const focus = recs[0] || drop;
   const cityName = city?.split(',')[0] || 'your city';
   const QUICK: [string, string][] = [['☕', 'coffee / walk'], ['🍜', 'grab food'], ['🍸', 'drinks'], ['🎾', 'sports'], ['🎬', 'movie / show'], ['💬', 'just talk']];
+  const connectedPeople = people.filter((p) => p.tag === 'crew').slice(0, 5);
+  const packPeople = people.filter((p) => p.tag === 'match').slice(0, 5);
 
   const railHd = (emoji: string, text: string, sub?: string) => (
     <div style={{ margin: '1.6rem 0 0.7rem' }}>
@@ -314,12 +316,12 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
             <ConnectionSigil tone="friend" />
             <div className="friendHeroKicker">today on friend line</div>
           </div>
-          <h1 className="friendHeroTitle">what can we make happen today?</h1>
+          <h1 className="friendHeroTitle">make a real plan, meet real people.</h1>
           <p className="friendHeroCopy">
-            A softer daily home for {cityName}: join a plan, notice your people nearby, or be the one who gives the city something to say yes to.
+            The Friend Line is your daily social board for {cityName}: your people, the plans that fit, and one easy way to start something.
           </p>
           <div className="friendHeroActions">
-            <button onClick={onStart} className="friendHeroPrimary">post a plan →</button>
+            <button onClick={onStart} className="friendHeroPrimary">start something →</button>
             {hasCrew && <button onClick={onCrew} className="friendHeroSecondary">open my circle</button>}
             <button onClick={onScene} className="friendHeroSecondary">browse scene</button>
           </div>
@@ -332,83 +334,117 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
         </div>
       </div>
 
-      {focus && (
-        <div className="friendFocus">
-          <div className="friendFocusMeta">best next move · {planStatus(focus).label}</div>
-          <div className="friendFocusBody">
-            <div>
-              <h2>{focus.title || 'a plan worth joining'}</h2>
-              <p>{focus.happens_at ? friendlyWhen(focus.happens_at) : (focus.area || cityName)}{focus.area && focus.happens_at ? ` · ${focus.area}` : ''} · for {vibeFor(focus)}</p>
-            </div>
-            <button onClick={() => onRsvp(focus.id, focus.myResponse === 'yes' ? 'no' : 'yes')} className="friendHeroPrimary">
-              {focus.myResponse === 'yes' ? 'you’re in ✓' : `${planStatus(focus).cta} →`}
-            </button>
+      <div className="friendTodayLayout">
+        <aside className="friendTodaySide friendTodayPeople">
+          <div className="friendPanel">
+            <div className="friendPanelKicker">your circle</div>
+            <h2>who you already have.</h2>
+            {connectedPeople.length === 0 ? (
+              <p>No locked-in connections yet. Your pack is where the first ones start.</p>
+            ) : (
+              <div className="friendFaceList">
+                {connectedPeople.map((p) => (
+                  <button key={p.id} onClick={onCrew}>
+                    {p.photo_url ? <img src={p.photo_url} alt="" /> : <span>{(p.name || '?').charAt(0)}</span>}
+                    <b>{(p.name || 'someone').split(' ')[0]}</b>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={onCrew} className="friendTextCta">open my circle →</button>
           </div>
-        </div>
-      )}
 
-      {/* TODAY'S VIBE — recommended cards */}
-      {railHd('✨', 'best fits', 'hand-picked from what is happening soon')}
-      {recs.length === 0 ? (
-        <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
-          quiet right now — <button onClick={onStart} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something →</button> and others will join.
-        </div>
-      ) : (
-        <div style={scrollRow}>{recs.map((a) => <div key={a.id} style={{ flex: '0 0 260px', scrollSnapAlign: 'start' }}><VibeCard a={a} onRsvp={onRsvp} onAuthor={onAuthor} /></div>)}</div>
-      )}
+          <div className="friendPanel">
+            <div className="friendPanelKicker">people you might vibe with</div>
+            <h2>new faces nearby.</h2>
+            {packPeople.length === 0 && vibePeople.length === 0 ? (
+              <p>Your next pack and the Scene will fill this in.</p>
+            ) : (
+              <div className="friendFaceList">
+                {[...packPeople, ...vibePeople.filter((p) => p.tag !== 'match')].slice(0, 7).map((p) => (
+                  <button key={p.id} onClick={p.tag === 'match' ? onCrew : onScene}>
+                    {p.photo_url ? <img src={p.photo_url} alt="" /> : <span>{(p.name || '?').charAt(0)}</span>}
+                    <b>{(p.name || 'someone').split(' ')[0]}</b>
+                    <em>{p.tag === 'match' ? 'pack' : p.tag || 'scene'}</em>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
 
-      {/* TODAY'S DROP — one featured plan */}
-      {drop && (<>
-        {railHd('🎁', 'city signal', 'the one people are noticing')}
-        <div style={{ ...card, padding: '1.2rem 1.3rem', borderColor: LINE, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>{planStatus(drop).label}</div>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2rem', lineHeight: 0.95 }}>{drop.title}</div>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', color: 'var(--h-text)' }}>{drop.happens_at ? friendlyWhen(drop.happens_at) : (drop.area || city)}{drop.area && drop.happens_at ? ` · ${drop.area}` : ''}</div>
-          <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', color: 'var(--h-text-dim)' }}>for: {vibeFor(drop)}</div>
-          <div><button onClick={() => onRsvp(drop.id, drop.myResponse === 'yes' ? 'no' : 'yes')} style={{ ...poppyBtn }}>{drop.myResponse === 'yes' ? '✓ you’re in' : 'i’m interested →'}</button></div>
-        </div>
-      </>)}
-
-      {/* PLANS NEAR YOU */}
-      {nearYou.length > 0 && (<>
-        {railHd('📍', 'easy ways in', `happening around ${cityName}`)}
-        <div style={scrollRow}>{nearYou.map((a) => <div key={a.id} style={{ flex: '0 0 260px', scrollSnapAlign: 'start' }}><VibeCard a={a} onRsvp={onRsvp} onAuthor={onAuthor} /></div>)}</div>
-      </>)}
-
-      {/* PEOPLE YOU MIGHT VIBE WITH */}
-      {vibePeople.length > 0 && (<>
-        {railHd('🧑‍🤝‍🧑', 'people you might vibe with', 'familiar faces before they become familiar')}
-        <div style={scrollRow}>
-          {vibePeople.map((p) => (
-            <div key={p.id} style={{ ...card, flex: '0 0 130px', scrollSnapAlign: 'start', padding: '0.9rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', textAlign: 'center' }}>
-              {p.photo_url ? <img src={p.photo_url} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} /> : <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--h-surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue',sans-serif", fontSize: '1.4rem', color: LINE_DEEP }}>{(p.name || '?').charAt(0)}</div>}
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1 }}>{(p.name || 'someone').split(' ')[0]}</div>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.46rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>{p.tag === 'match' ? 'in your pack' : p.tag === 'crew' ? 'connected' : 'around town'}</div>
+        <section className="friendTodayMain">
+          {focus && (
+            <div className="friendFocus">
+              <div className="friendFocusMeta">best next move · {planStatus(focus).label}</div>
+              <div className="friendFocusBody">
+                <div>
+                  <h2>{focus.title || 'a plan worth joining'}</h2>
+                  <p>{focus.happens_at ? friendlyWhen(focus.happens_at) : (focus.area || cityName)}{focus.area && focus.happens_at ? ` · ${focus.area}` : ''} · for {vibeFor(focus)}</p>
+                </div>
+                <button onClick={() => onRsvp(focus.id, focus.myResponse === 'yes' ? 'no' : 'yes')} className="friendHeroPrimary">
+                  {focus.myResponse === 'yes' ? 'you’re in ✓' : `${planStatus(focus).cta} →`}
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-      </>)}
+          )}
 
-      {/* YOUR UPCOMING PLANS */}
-      {myEvents.length > 0 && (<>
-        {railHd('📅', 'your upcoming plans')}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {myEvents.map((a) => <ActivityPost key={a.id} a={a} onRsvp={onRsvp} onDelete={() => {}} onAuthor={onAuthor} />)}
-        </div>
-      </>)}
+          {railHd('✨', 'best fits', 'plans pulled from the Scene that match your vibe')}
+          {recs.length === 0 ? (
+            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
+              quiet right now — <button onClick={onStart} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something →</button> and others will join.
+            </div>
+          ) : (
+            <div className="friendPlanStack">{recs.map((a) => <VibeCard key={a.id} a={a} onRsvp={onRsvp} onAuthor={onAuthor} />)}</div>
+          )}
 
-      {/* START SOMETHING */}
-      {railHd('➕', 'start something', 'be the one who makes the plan')}
-      <div style={{ ...card, padding: '1.1rem 1.2rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
-          {QUICK.map(([emoji, label]) => (
-            <button key={label} onClick={onStart} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.8rem', background: 'var(--h-surface-3)' }}>{emoji} {label}</button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button onClick={onStart} style={{ ...poppyBtn }}>📣 post a plan →</button>
-          {hasCrew && <button onClick={onCrew} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.04em', color: INK, background: '#ffd23d', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.5rem 1.1rem', cursor: 'pointer' }}>🎒 my circle →</button>}
-        </div>
+          {nearYou.length > 0 && (<>
+            {railHd('📍', 'easy ways in', `happening around ${cityName}`)}
+            <div style={scrollRow}>{nearYou.map((a) => <div key={a.id} style={{ flex: '0 0 260px', scrollSnapAlign: 'start' }}><VibeCard a={a} onRsvp={onRsvp} onAuthor={onAuthor} /></div>)}</div>
+          </>)}
+        </section>
+
+        <aside className="friendTodaySide friendTodayActions">
+          <div className="friendPanel friendActionPanel">
+            <div className="friendPanelKicker">make it happen</div>
+            <h2>start the move.</h2>
+            <div className="friendQuickGrid">
+              {QUICK.map(([emoji, label]) => (
+                <button key={label} onClick={onStart}>{emoji}<span>{label}</span></button>
+              ))}
+            </div>
+            <button onClick={onStart} className="friendHeroPrimary">post a plan →</button>
+          </div>
+
+          {drop && (
+            <div className="friendPanel">
+              <div className="friendPanelKicker">city signal</div>
+              <h2>{drop.title}</h2>
+              <p>{drop.happens_at ? friendlyWhen(drop.happens_at) : (drop.area || cityName)}{drop.area && drop.happens_at ? ` · ${drop.area}` : ''}</p>
+              <button onClick={() => onRsvp(drop.id, drop.myResponse === 'yes' ? 'no' : 'yes')} className="friendTextCta">
+                {drop.myResponse === 'yes' ? 'you’re in ✓' : 'i’m interested →'}
+              </button>
+            </div>
+          )}
+
+          <div className="friendPanel">
+            <div className="friendPanelKicker">today</div>
+            <h2>your plan board.</h2>
+            {myEvents.length === 0 ? (
+              <p>No saved plans yet. Join one from best fits or start your own.</p>
+            ) : (
+              <div className="friendMiniPlans">
+                {myEvents.slice(0, 4).map((a) => (
+                  <button key={a.id} onClick={onScene}>
+                    <b>{a.title}</b>
+                    <span>{a.happens_at ? friendlyWhen(a.happens_at) : a.area || cityName}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={onScene} className="friendTextCta">browse the scene →</button>
+          </div>
+        </aside>
       </div>
     </div>
   );
@@ -1288,10 +1324,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
         @media (max-width: 879px) { .fbRail { order: 2; } .fbMain { order: 1; } }
         @media (min-width: 880px) {
           .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
+          .fbShellHome { grid-template-columns: 1fr; }
+          .fbShellHome .fbRail { display: none; }
           .fbRail { position: sticky; top: 1rem; }
         }
         .friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 88% 18%, rgba(224,69,127,0.07), transparent 24%), linear-gradient(135deg, color-mix(in srgb, ${LINE} 7%, var(--h-surface)) 0%, var(--h-surface) 72%); border: 1px solid color-mix(in srgb, ${LINE} 18%, var(--h-border)); border-radius: 28px; box-shadow: 0 24px 70px -48px rgba(232,132,43,0.42), var(--shadow-sm); padding: 1.25rem; margin-bottom: 1rem; }
-        .friendTodayHero::after { content: ''; position: absolute; right: -78px; bottom: -96px; width: 220px; height: 220px; border: 1px solid rgba(255,106,31,0.14); border-radius: 50%; box-shadow: 0 0 0 32px rgba(255,106,31,0.035), 0 0 0 66px rgba(224,69,127,0.018); pointer-events: none; }
+        .friendTodayHero::after { content: none; }
         .friendHeroSignal { position: relative; z-index: 1; display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
         .friendHeroKicker { font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: ${LINE_DEEP}; }
         .friendHeroTitle { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.05rem, 6vw, 3rem); line-height: 0.95; letter-spacing: 0.01em; margin: 0; color: var(--h-text); }
@@ -1304,13 +1342,36 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
         .friendHeroStats div { background: color-mix(in srgb, var(--h-surface) 88%, ${LINE} 5%); border: 1px solid var(--h-border); border-radius: 14px; padding: 0.85rem; }
         .friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; line-height: 0.9; color: ${LINE_DEEP}; }
         .friendHeroStats span { display: block; margin-top: 0.35rem; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--h-text-dim); }
+        .friendTodayLayout { display: grid; grid-template-columns: minmax(210px, 250px) minmax(0,1fr) minmax(230px, 280px); gap: 1rem; align-items: start; }
+        .friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
+        .friendTodayMain { min-width: 0; }
+        .friendPanel { background: color-mix(in srgb, var(--h-surface) 96%, transparent); border: 1px solid var(--h-border); border-radius: 22px; box-shadow: var(--shadow-sm); padding: 1rem; }
+        .friendPanelKicker { font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase; color: ${LINE_DEEP}; font-weight: 700; }
+        .friendPanel h2 { font-family: Georgia, serif; font-style: italic; font-size: 1.18rem; line-height: 1.08; margin: 0.35rem 0 0.55rem; color: var(--h-text); }
+        .friendPanel p { margin: 0; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.84rem; line-height: 1.45; }
+        .friendFaceList { display: grid; gap: 0.48rem; }
+        .friendFaceList button { display: flex; align-items: center; gap: 0.55rem; min-width: 0; width: 100%; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); cursor: pointer; font: inherit; padding: 0.48rem 0.55rem; text-align: left; }
+        .friendFaceList img, .friendFaceList span { width: 34px; height: 34px; border-radius: 12px; object-fit: cover; border: 1px solid var(--h-border); background: var(--h-surface-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: ${LINE_DEEP}; font-family: 'Bebas Neue', sans-serif; }
+        .friendFaceList b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'DM Mono', monospace; font-size: 0.68rem; font-weight: 600; }
+        .friendFaceList em { margin-left: auto; flex-shrink: 0; font-family: 'DM Mono', monospace; font-size: 0.48rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--h-text-faint); font-style: normal; }
+        .friendTextCta { margin-top: 0.72rem; background: transparent; border: none; cursor: pointer; padding: 0; color: ${LINE_DEEP}; font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; }
+        .friendPlanStack { display: grid; gap: 0.8rem; }
+        .friendQuickGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.45rem; margin: 0.75rem 0 0.9rem; }
+        .friendQuickGrid button { min-height: 64px; border: 1px solid var(--h-border); border-radius: 16px; background: var(--h-surface-2); color: var(--h-text); cursor: pointer; display: grid; place-items: center; gap: 0.18rem; font-size: 1.25rem; }
+        .friendQuickGrid span { font-family: 'DM Mono', monospace; font-size: 0.48rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--h-text-dim); }
+        .friendMiniPlans { display: grid; gap: 0.45rem; }
+        .friendMiniPlans button { display: grid; gap: 0.2rem; width: 100%; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); cursor: pointer; font: inherit; padding: 0.58rem 0.68rem; text-align: left; }
+        .friendMiniPlans b { font-size: 0.84rem; line-height: 1.18; }
+        .friendMiniPlans span { font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.04em; color: var(--h-text-dim); }
         .friendFocus { position: relative; overflow: hidden; background: #101010; color: #fff; border: 1px solid var(--h-border); border-radius: 24px; box-shadow: var(--shadow-md); padding: 1rem; margin: 1rem 0 0.5rem; }
-        .friendFocus::after { content: ''; position: absolute; right: -46px; top: -58px; width: 140px; height: 140px; border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; box-shadow: 0 0 0 28px rgba(255,255,255,0.06); pointer-events: none; }
+        .friendFocus::after { content: none; }
         .friendFocusMeta { font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.66); margin-bottom: 0.65rem; }
         .friendFocusBody { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
         .friendFocus h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; line-height: 0.95; letter-spacing: 0.01em; margin: 0; }
         .friendFocus p { font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; color: rgba(255,255,255,0.72); margin: 0.4rem 0 0; }
         @media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) 260px; align-items: stretch; } }
+        @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } .friendTodayPeople { grid-column: 1 / -1; position: static; grid-template-columns: repeat(2,minmax(0,1fr)); } .friendTodayMain { grid-column: 1; } .friendTodayActions { grid-column: 2; } }
+        @media (max-width: 760px) { .friendTodayLayout, .friendTodayPeople { grid-template-columns: 1fr; } .friendTodayMain, .friendTodayActions { grid-column: auto; } .friendTodaySide { position: static; } }
         @media (max-width: 560px) { .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
         .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
         @media (min-width: 880px) {
@@ -1338,7 +1399,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
         .crewWho::-webkit-scrollbar { display: none; }
         .crewLower { margin-top: 1.5rem; }
       `}</style>
-      <div style={{ maxWidth: 1040, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1349,7 +1410,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           <LocationControls city={city} currentMetro={metro} accent={LINE} />
         </div>
 
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.6rem)', lineHeight: 0.92, color: 'var(--h-text)', margin: '0.6rem 0 1.4rem' }}>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2rem,6vw,3rem)', lineHeight: 0.96, color: 'var(--h-text)', margin: '0.6rem 0 1.2rem' }}>
           your people are <span style={{ color: 'var(--h-accent)' }}>out there.</span>
         </h1>
 
@@ -1368,7 +1429,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           })}
         </div>
 
-        <div className="fbShell">
+        <div className={`fbShell ${view === 'home' ? 'fbShellHome' : ''}`}>
           <main className="fbMain">
         {view === 'home' && (
           <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} city={city}
@@ -1759,7 +1820,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
             </div>
             )}
 
-            {view !== 'scene' && view !== 'pulse' && (
+            {view === 'crew' && (
             <div style={{ ...card, padding: '0.9rem 1rem' }}>
               <div style={sideHd}>🧡 your connections</div>
               {matches.filter((m) => m.connected).length === 0 ? (
