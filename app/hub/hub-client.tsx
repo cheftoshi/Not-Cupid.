@@ -123,100 +123,262 @@ export default function HubClient({
   const likedPosts = (feed ?? []).filter((a) => a.kind === 'post' && a.myResponse === 'yes').slice(0, 4);
   const forYourVibe = (feed ?? []).filter((a) => a.kind === 'event' && a.eligible && !a.iRsvped && upcoming(a)).slice(0, 5);
 
-  const railLink: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none', padding: '0.55rem 0', borderBottom: '1px solid rgba(37,99,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+  const openedFriends = friends ?? [];
+  const chattingLove = loveMatches.filter((m) => m.bothAccepted);
+  const yourMoveLove = loveMatches.filter((m) => !m.iAccepted);
+  const waitingLove = loveMatches.filter((m) => m.iAccepted && !m.bothAccepted);
+  const interestCount = interestCats.reduce((sum, c) => sum + c.items.length, 0);
+  const profileChecks = [
+    !!photo,
+    hasArchetype,
+    !needsLoveDeep,
+    interestCount >= 3,
+    vibeTags.length >= 3,
+  ];
+  const profilePercent = Math.round((profileChecks.filter(Boolean).length / profileChecks.length) * 100);
+  const nextActions: Array<{
+    key: string;
+    tone: 'love' | 'friend' | 'profile';
+    eyebrow: string;
+    title: string;
+    body: string;
+    cta: string;
+    href: string;
+  }> = [];
+  if (!hasArchetype) {
+    nextActions.push({
+      key: 'core-quiz',
+      tone: 'profile',
+      eyebrow: 'start here',
+      title: 'finish your core quiz',
+      body: 'The app needs your baseline before it can route you to people worth meeting.',
+      cta: 'take the quiz',
+      href: '/quiz',
+    });
+  } else if (needsLoveDeep) {
+    nextActions.push({
+      key: 'love-deep',
+      tone: 'love',
+      eyebrow: 'love line',
+      title: 'finish your Love profile',
+      body: 'Attachment, values and intent make the romantic matches feel less random.',
+      cta: 'finish love setup',
+      href: '/quiz?line=love',
+    });
+  }
+  if (yourMoveLove[0]) {
+    nextActions.push({
+      key: 'love-move',
+      tone: 'love',
+      eyebrow: 'your move',
+      title: `Say hi to ${(yourMoveLove[0].name || 'your match').split(' ')[0]}`,
+      body: 'A small opener keeps the connection warm and gives them something real to answer.',
+      cta: 'open match',
+      href: `/match/${yourMoveLove[0].matchId}`,
+    });
+  }
+  if (myEvents[0]) {
+    nextActions.push({
+      key: 'event',
+      tone: 'friend',
+      eyebrow: 'you have plans',
+      title: myEvents[0].title,
+      body: `${whenLabel(myEvents[0].happens_at)}${myEvents[0].area ? ` · ${myEvents[0].area}` : ''}`,
+      cta: 'view on the Scene',
+      href: '/friends?view=scene',
+    });
+  }
+  if (forYourVibe[0]) {
+    nextActions.push({
+      key: 'vibe-event',
+      tone: 'friend',
+      eyebrow: 'low-pressure way in',
+      title: forYourVibe[0].title,
+      body: `${forYourVibe[0].responses.yes} going · ${whenLabel(forYourVibe[0].happens_at)}`,
+      cta: 'rsvp',
+      href: '/friends?view=scene',
+    });
+  }
+  if (friendOptedIn && friends !== null && openedFriends.length === 0) {
+    nextActions.push({
+      key: 'open-pack',
+      tone: 'friend',
+      eyebrow: 'friend line',
+      title: 'open your first friend pack',
+      body: 'A curated batch gives you people to choose from without browsing strangers forever.',
+      cta: 'open pack',
+      href: '/friends/pack',
+    });
+  }
+  if (!friendOptedIn) {
+    nextActions.push({
+      key: 'join-friend',
+      tone: 'friend',
+      eyebrow: 'friend line',
+      title: 'make this about friendship too',
+      body: 'Friend Line is the lower-pressure path into plans, crews and people around you.',
+      cta: 'join friend line',
+      href: '/friends',
+    });
+  }
+  if (profilePercent < 80) {
+    nextActions.push({
+      key: 'profile',
+      tone: 'profile',
+      eyebrow: 'profile strength',
+      title: 'make your profile easier to say yes to',
+      body: 'Photos, interests and vibe tags give people a real starting point.',
+      cta: 'tune profile',
+      href: '/profile',
+    });
+  }
+  if (nextActions.length === 0) {
+    nextActions.push({
+      key: 'start-something',
+      tone: 'friend',
+      eyebrow: 'today',
+      title: 'start something small',
+      body: 'Coffee, a walk, a show, a game. The best social apps help one person make the plan.',
+      cta: 'post a plan',
+      href: '/friends?view=scene',
+    });
+  }
+  const heroAction = nextActions[0];
 
   return (
     <main className={styles.hub}>
       <div className={styles.glow} style={{ background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(37,99,255,0.20) 0%, rgba(255,106,31,0.08) 35%, transparent 60%)` }} aria-hidden />
       <div className={styles.grain} aria-hidden />
 
-
       <div className={styles.dashWrap}>
+        <section className={styles.homeHero}>
+          <div className={styles.homeHeroCopy}>
+            <span className={styles.homeKicker}>today on notcupid</span>
+            <h1 className={styles.homeTitle}>hey {firstName.toLowerCase()}, who are we moving closer to?</h1>
+            <p className={styles.homeLede}>
+              Your home base for love, friendship, plans and the small next step that turns strangers into people.
+            </p>
+          </div>
+          <Link href={heroAction.href} className={`${styles.heroAction} ${styles[`heroAction${heroAction.tone}`]}`}>
+            <span>{heroAction.eyebrow}</span>
+            <strong>{heroAction.title}</strong>
+            <em>{heroAction.cta} →</em>
+          </Link>
+        </section>
+
         <div className={styles.dashGrid}>
-          {/* ── LEFT RAIL: identity + line choice + nav ── */}
           <aside className={styles.dashRail}>
-            <div className={styles.dCard} style={{ textAlign: 'center' }}>
-              <div style={{ position: 'relative', width: 84, height: 84, margin: '0 auto 0.7rem' }}>
-                <div style={{ width: 84, height: 84, borderRadius: 18, overflow: 'hidden', background: '#e8edff', border: '2px solid rgba(37,99,255,0.25)' }}>
+            <div className={`${styles.dCard} ${styles.identityCard}`}>
+              <div className={styles.avatarWrap}>
+                <div className={styles.avatarFrame}>
                   {photo
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: BLUE, fontSize: '0.62rem' }}>no photo</div>}
+                    ? <img src={photo} alt="" className={styles.avatarImg} />
+                    : <div className={styles.avatarEmpty}>no photo</div>}
                 </div>
-                <label style={{ position: 'absolute', bottom: -6, right: -6, background: '#0b0b0b', color: '#fff', borderRadius: 999, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: uploading ? 'wait' : 'pointer', fontSize: '0.8rem' }} title="change photo">
+                <label className={styles.avatarEdit} title="change photo">
                   {uploading ? '…' : '＋'}
                   <input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} disabled={uploading} style={{ display: 'none' }} />
                 </label>
               </div>
-              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontWeight: 700, fontSize: '1.25rem', color: 'var(--h-text)' }}>
+              <div className={styles.identityName}>
                 {profile.name.split(' ')[0]}{profile.age ? <span style={{ fontWeight: 400, color: 'var(--h-text-dim)' }}>, {profile.age}</span> : null}
               </div>
               {meta
-                ? <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.85rem', color: BLUE, marginTop: '0.15rem' }}>{profile.archetype}</div>
-                : <Link href="/quiz?retake=1" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>finish your quiz →</Link>}
-              {profile.sun_sign && <div style={{ marginTop: '0.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', color: '#7a7590' }}>{signLabel(profile.sun_sign)}</div>}
-              {city && <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.08em', color: 'var(--h-text-dim)' }}>📍 {city}</div>}
-              {msg && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', color: msg.startsWith('✓') ? '#2d7a4f' : '#d2530f', marginTop: '0.4rem' }}>{msg}</div>}
+                ? <div className={styles.identityType}>{profile.archetype}</div>
+                : <Link href="/quiz?retake=1" className={styles.identityLink}>finish your quiz →</Link>}
+              {profile.sun_sign && <div className={styles.identityMeta}>{signLabel(profile.sun_sign)}</div>}
+              {city && <div className={styles.identityMeta}>📍 {city}</div>}
+              <div className={styles.profileMeter}>
+                <div><span>profile strength</span><b>{profilePercent}%</b></div>
+                <i><span style={{ width: `${profilePercent}%` }} /></i>
+              </div>
+              {msg && <div className={msg.startsWith('✓') ? styles.identityOk : styles.identityErr}>{msg}</div>}
             </div>
 
-            {/* line choice — compact, on the side */}
             <div className={styles.dCard}>
               <span className={styles.dLabel}>your lines</span>
-              <Link href={loveHref} style={{ display: 'block', background: '#2563ff', color: '#fff', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none', marginBottom: '0.4rem' }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em' }}>💘 love line</div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', opacity: 0.85, marginTop: '0.1rem' }}>{needsLoveDeep ? 'finish your love profile →' : 'pick your people →'}</div>
+              <Link href={loveHref} className={`${styles.lineCard} ${styles.lineLove}`}>
+                <strong>💘 love line</strong>
+                <span>{needsLoveDeep ? 'finish your love profile →' : loveMatches.length ? `${loveMatches.length} active →` : 'pick your people →'}</span>
               </Link>
-              <Link href="/friends" style={{ display: 'block', background: '#ff6a1f', color: '#fff', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.15rem', letterSpacing: '0.03em' }}>🧡 friend line</div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', opacity: 0.9, marginTop: '0.1rem' }}>{city ? `all of ${city.split(',')[0]} · by neighborhood →` : 'crews · the scene →'}</div>
+              <Link href="/friends" className={`${styles.lineCard} ${styles.lineFriend}`}>
+                <strong>🧡 friend line</strong>
+                <span>{friendOptedIn ? (city ? `${city.split(',')[0]} plans →` : 'crews · the scene →') : 'join for friends →'}</span>
               </Link>
             </div>
 
-            {/* quick nav */}
-            <div className={styles.dCard} style={{ paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
-              <Link href="/dashboard" style={railLink}><span>💘 your matches</span><span style={{ opacity: 0.5 }}>→</span></Link>
-              <Link href="/profile" style={railLink}><span>✎ full profile</span><span style={{ opacity: 0.5 }}>→</span></Link>
-              <Link href="/quiz?retake=1" style={railLink}><span>↻ retake quiz</span><span style={{ opacity: 0.5 }}>→</span></Link>
-              <Link href="/pro" style={{ ...railLink, borderBottom: 'none', color: ORANGE_DEEP, fontWeight: 700 }}><span>✦ go pro</span><span style={{ opacity: 0.5 }}>→</span></Link>
+            <div className={`${styles.dCard} ${styles.quickNav}`}>
+              <Link href="/dashboard"><span>💘 love matches</span><b>→</b></Link>
+              <Link href="/friends"><span>🧡 friend line</span><b>→</b></Link>
+              <Link href="/profile"><span>✎ profile</span><b>→</b></Link>
+              <Link href="/pro"><span>✦ all-access</span><b>→</b></Link>
             </div>
           </aside>
 
-          {/* ── MAIN: what you're into + your activity ── */}
           <section className={styles.dashMain}>
-            <p style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.5rem,4vw,2rem)', color: 'var(--h-text)', margin: '0 0 0.25rem' }}>
-              hey {firstName.toLowerCase()}.
-            </p>
+            <div className={`${styles.dCard} ${styles.nextCard}`}>
+              <div className={styles.sectionHead}>
+                <span className={styles.dLabel}>next best actions</span>
+                <Link href="/friends?view=scene">see the scene →</Link>
+              </div>
+              <div className={styles.actionGrid}>
+                {nextActions.slice(0, 3).map((a) => (
+                  <Link key={a.key} href={a.href} className={`${styles.actionCard} ${styles[`action${a.tone}`]}`}>
+                    <span>{a.eyebrow}</span>
+                    <strong>{a.title}</strong>
+                    <p>{a.body}</p>
+                    <em>{a.cta} →</em>
+                  </Link>
+                ))}
+              </div>
+            </div>
 
-            {/* YOUR CONNECTIONS — love + friend people, together in one place */}
+            <div className={styles.statStrip}>
+              <Link href="/dashboard" className={styles.statTile}>
+                <span>love</span>
+                <strong>{loveMatches.length}</strong>
+                <em>{chattingLove.length ? `${chattingLove.length} chatting` : yourMoveLove.length ? `${yourMoveLove.length} your move` : waitingLove.length ? `${waitingLove.length} waiting` : 'roster ready'}</em>
+              </Link>
+              <Link href="/friends?view=crew" className={styles.statTile}>
+                <span>friends</span>
+                <strong>{friends === null ? '…' : openedFriends.length}</strong>
+                <em>{friendOptedIn ? 'opened connections' : 'not joined yet'}</em>
+              </Link>
+              <Link href="/friends?view=scene" className={styles.statTile}>
+                <span>plans</span>
+                <strong>{feed === null ? '…' : myEvents.length}</strong>
+                <em>{myEvents.length ? 'on your calendar' : 'find one today'}</em>
+              </Link>
+            </div>
+
             <div className={styles.dCard}>
-              <span className={styles.dLabel}>your connections{(loveMatches.length + (friends?.length || 0)) ? ` · ${loveMatches.length + (friends?.length || 0)}` : ''}</span>
-
-              {/* 💘 LOVE */}
+              <div className={styles.sectionHead}>
+                <span className={styles.dLabel}>your people{(loveMatches.length + openedFriends.length) ? ` · ${loveMatches.length + openedFriends.length}` : ''}</span>
+                <Link href="/dashboard">manage love →</Link>
+              </div>
               {hasArchetype && (
-                <div style={{ marginBottom: friendOptedIn ? '1.1rem' : 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, fontWeight: 700 }}>💘 love{loveMatches.length ? ` · ${loveMatches.length}` : ''}</span>
-                    <Link href="/dashboard" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>{loveMatches.length ? 'all →' : 'the roster →'}</Link>
-                  </div>
+                <div className={styles.peopleBlock}>
+                  <div className={styles.miniHead}><span>💘 love{loveMatches.length ? ` · ${loveMatches.length}` : ''}</span><Link href="/dashboard">{loveMatches.length ? 'all →' : 'the roster →'}</Link></div>
                   {loveMatches.length === 0 ? (
-                    <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.88rem', margin: 0 }}>
+                    <p className={styles.emptyCopy}>
                       no live conversations — <Link href="/dashboard" style={{ color: BLUE_DEEP }}>pick from your roster →</Link>
                     </p>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div className={styles.personList}>
                       {loveMatches.map((m) => {
                         const status = m.bothAccepted ? 'chatting' : m.iAccepted ? 'waiting on them' : 'your move';
                         return (
-                          <Link key={m.matchId} href={`/match/${m.matchId}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: 'var(--h-surface-2)', border: '1.5px solid rgba(37,99,255,0.2)', borderRadius: 12, padding: '0.55rem 0.8rem', textDecoration: 'none' }}>
+                          <Link key={m.matchId} href={`/match/${m.matchId}`} className={styles.personRow}>
                             {m.photo_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                              : <span style={{ width: 38, height: 38, borderRadius: '50%', background: '#e8edff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: BLUE, fontSize: '0.95rem', flexShrink: 0 }}>{(m.name || '?').charAt(0)}</span>}
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)' }}>{(m.name || 'match').split(' ')[0]}{m.age ? `, ${m.age}` : ''}</div>
-                              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: m.bothAccepted ? '#2d7a4f' : BLUE_DEEP }}>● {status}{m.score ? ` · ${m.score}%` : ''}</div>
+                              ? <img src={m.photo_url} alt="" />
+                              : <span>{(m.name || '?').charAt(0)}</span>}
+                            <div>
+                              <strong>{(m.name || 'match').split(' ')[0]}{m.age ? `, ${m.age}` : ''}</strong>
+                              <em className={m.bothAccepted ? styles.statusGreen : styles.statusBlue}>● {status}{m.score ? ` · ${m.score}%` : ''}</em>
                             </div>
-                            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE_DEEP, flexShrink: 0 }}>{m.bothAccepted ? 'open →' : 'say hi →'}</span>
+                            <b>{m.bothAccepted ? 'open →' : 'say hi →'}</b>
                           </Link>
                         );
                       })}
@@ -225,156 +387,149 @@ export default function HubClient({
                 </div>
               )}
 
-              {/* 🧡 FRIENDS */}
               {friendOptedIn ? (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🧡 friends{friends && friends.length ? ` · ${friends.length}` : ''}</span>
-                    {friends && friends.length > 0 && <Link href="/friends?view=crew" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>group chat →</Link>}
-                  </div>
+                <div className={styles.peopleBlock}>
+                  <div className={`${styles.miniHead} ${styles.miniHeadFriend}`}><span>🧡 friends{friends && friends.length ? ` · ${friends.length}` : ''}</span>{friends && friends.length > 0 && <Link href="/friends?view=crew">group chat →</Link>}</div>
                   {friends === null ? (
-                    <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', margin: 0 }}>loading…</p>
+                    <p className={styles.loadingCopy}>loading…</p>
                   ) : friends.length === 0 ? (
-                    <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.88rem', margin: 0 }}>
+                    <p className={styles.emptyCopy}>
                       no friends opened yet — <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>open your first pack 🎒 →</Link>
                     </p>
                   ) : (
                     <>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                      <div className={styles.friendChips}>
                         {friends.slice(0, 12).map((f) => (
                           <Link key={f.otherId} href="/friends?view=crew" title={f.sharedActivities.length ? `both into ${f.sharedActivities.slice(0, 2).join(', ')}` : undefined}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.22)', borderRadius: 999, padding: '0.25rem 0.7rem 0.25rem 0.25rem', textDecoration: 'none' }}>
+                          >
                             {f.photo_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={f.photo_url} alt="" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover' }} />
-                              : <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#ffe6c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: ORANGE_DEEP, fontSize: '0.85rem' }}>{(f.name || '?').charAt(0)}</span>}
-                            <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.9rem', color: 'var(--h-text)' }}>{(f.name || 'friend').split(' ')[0]}</span>
-                            {f.connected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3f7d57' }} title="in your crew" />}
+                              ? <img src={f.photo_url} alt="" />
+                              : <i>{(f.name || '?').charAt(0)}</i>}
+                            <span>{(f.name || 'friend').split(' ')[0]}</span>
+                            {f.connected && <b title="in your crew" />}
                           </Link>
                         ))}
-                        {friends.length > 12 && <span style={{ alignSelf: 'center', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'var(--h-text-faint)' }}>+{friends.length - 12} more</span>}
+                        {friends.length > 12 && <span className={styles.moreChip}>+{friends.length - 12} more</span>}
                       </div>
-                      <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '0.8rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>🎒 open another pack →</Link>
+                      <Link href="/friends/pack" className={styles.inlineCta}>🎒 open another pack →</Link>
                     </>
                   )}
                 </div>
               ) : (
-                <div style={{ borderTop: hasArchetype ? '1px solid var(--h-border)' : 'none', paddingTop: hasArchetype ? '1rem' : 0 }}>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🧡 friends</span>
-                  <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.88rem', margin: '0.4rem 0 0' }}>
+                <div className={styles.peopleBlock}>
+                  <div className={`${styles.miniHead} ${styles.miniHeadFriend}`}><span>🧡 friends</span></div>
+                  <p className={styles.emptyCopy}>
                     make platonic ones too — <Link href="/friends" style={{ color: ORANGE_DEEP }}>join the Friend Line →</Link>
                   </p>
                 </div>
               )}
             </div>
 
-            {/* YOUR EVENTS (RSVP'd) */}
             <div className={styles.dCard}>
-              <span className={styles.dLabel}>your events</span>
+              <div className={styles.sectionHead}>
+                <span className={styles.dLabel}>your plans</span>
+                <Link href="/friends?view=scene">browse plans →</Link>
+              </div>
               {feed === null ? (
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', margin: 0 }}>loading…</p>
+                <p className={styles.loadingCopy}>loading…</p>
               ) : myEvents.length === 0 ? (
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
+                <p className={styles.emptyCopy}>
                   nothing on your calendar yet — <Link href="/friends?view=scene" style={{ color: ORANGE_DEEP }}>find something on the Scene →</Link>
                 </p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div className={styles.eventList}>
                   {myEvents.map((a) => (
-                    <Link key={a.id} href="/friends?view=scene" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', background: 'var(--h-surface-3)', border: '1.5px solid rgba(255,106,31,0.25)', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''}</div>
+                    <Link key={a.id} href="/friends?view=scene" className={styles.eventRow}>
+                      <div>
+                        <strong>{a.title}</strong>
+                        <em>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''}</em>
                       </div>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: a.myResponse === 'yes' ? '#2d7a4f' : ORANGE_DEEP, flexShrink: 0 }}>{a.myResponse === 'yes' ? "you're in" : 'maybe'}</span>
+                      <span className={a.myResponse === 'yes' ? styles.statusGreen : styles.statusOrange}>{a.myResponse === 'yes' ? "you're in" : 'maybe'}</span>
                     </Link>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* FOR YOUR VIBE (discover upcoming events) */}
             {feed !== null && forYourVibe.length > 0 && (
               <div className={styles.dCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <div className={styles.sectionHead}>
                   <span className={styles.dLabel}>for your vibe</span>
-                  <Link href="/friends?view=scene" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>all events →</Link>
+                  <Link href="/friends?view=scene">all events →</Link>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div className={styles.eventList}>
                   {forYourVibe.map((a) => (
-                    <Link key={a.id} href="/friends?view=scene" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', background: '#fff', border: '1px solid rgba(11,11,11,0.1)', borderRadius: 12, padding: '0.7rem 0.9rem', textDecoration: 'none' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
-                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''} · {a.responses.yes} going</div>
+                    <Link key={a.id} href="/friends?view=scene" className={styles.eventRow}>
+                      <div>
+                        <strong>{a.title}</strong>
+                        <em>{whenLabel(a.happens_at)}{a.area ? ` · ${a.area}` : ''} · {a.responses.yes} going</em>
                       </div>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: BLUE_DEEP, flexShrink: 0 }}>rsvp →</span>
+                      <span className={styles.statusBlue}>rsvp →</span>
                     </Link>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* LIKED ON THE SCENE */}
             {feed !== null && likedPosts.length > 0 && (
               <div className={styles.dCard}>
                 <span className={styles.dLabel}>you liked</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                <div className={styles.likedList}>
                   {likedPosts.map((a) => (
-                    <Link key={a.id} href="/friends?view=scene" style={{ background: 'rgba(255,106,31,0.1)', color: ORANGE_DEEP, border: '1px solid rgba(255,106,31,0.3)', borderRadius: 999, padding: '0.4rem 0.85rem', fontSize: '0.8rem', textDecoration: 'none' }}>♥ {a.title}</Link>
+                    <Link key={a.id} href="/friends?view=scene">♥ {a.title}</Link>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* empty-scene nudge (no friend activity at all) */}
             {feed !== null && myEvents.length === 0 && forYourVibe.length === 0 && likedPosts.length === 0 && (
-              <div className={styles.dCard} style={{ background: 'linear-gradient(135deg,#fff1e8,#fff)', borderColor: 'rgba(255,106,31,0.3)' }}>
+              <div className={`${styles.dCard} ${styles.sceneNudge}`}>
                 <span className={styles.dLabel} style={{ color: ORANGE_DEEP }}>the scene</span>
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#4a4754', fontSize: '0.92rem', margin: '0 0 0.8rem' }}>
+                <p>
                   events, plans and crews light up here once you’re on the Friend Line. it’s the low-pressure way in.
                 </p>
-                <Link href="/friends" style={{ display: 'inline-block', background: '#ff6a1f', color: '#fff', borderRadius: 999, padding: '0.55rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none' }}>explore the scene →</Link>
+                <Link href="/friends">explore the scene →</Link>
               </div>
             )}
           </section>
 
-          {/* ── RIGHT ASIDE: the raffle promo (when running) + what you're into ── */}
           <aside className={styles.dashAside}>
-            {/* SUMMER OF CONNECTION raffle — a promotion, in the side rail (renders null when not eligible/closed) */}
             <RaffleCard />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 0.2rem' }}>
+            <div className={styles.asideHead}>
               <span className={styles.dLabel} style={{ marginBottom: 0 }}>what you’re into</span>
-              <Link href="/profile" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: BLUE_DEEP, textDecoration: 'none' }}>edit →</Link>
+              <Link href="/profile">edit →</Link>
             </div>
             {interestCats.length === 0 && vibeTags.length === 0 ? (
               <div className={styles.dCard}>
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', margin: 0 }}>
+                <p className={styles.emptyCopy}>
                   add your music, food, hobbies &amp; sports on your <Link href="/profile" style={{ color: BLUE_DEEP }}>profile</Link> so matches see the real you.
                 </p>
               </div>
             ) : (
               <>
                 {interestCats.map((c) => (
-                  <div key={c.head} className={styles.dCard} style={{ borderColor: c.bd, padding: '0.95rem 1.05rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.55rem' }}>
-                      <span style={{ fontSize: '1rem' }}>{c.emoji}</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: c.fg }}>{c.head}</span>
+                  <div key={c.head} className={styles.dCard} style={{ borderColor: c.bd }}>
+                    <div className={styles.interestHead}>
+                      <span>{c.emoji}</span>
+                      <b style={{ color: c.fg }}>{c.head}</b>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    <div className={styles.tagCloud}>
                       {c.items.map((t, i) => (
-                        <span key={`${t}-${i}`} style={{ background: c.bg, color: c.fg, border: `1px solid ${c.bd}`, borderRadius: 999, padding: '0.34rem 0.8rem', fontSize: '0.82rem', fontWeight: 500 }}>{t}</span>
+                        <span key={`${t}-${i}`} style={{ background: c.bg, color: c.fg, borderColor: c.bd }}>{t}</span>
                       ))}
                     </div>
                   </div>
                 ))}
                 {vibeTags.length > 0 && (
-                  <div className={styles.dCard} style={{ borderColor: 'rgba(255,45,142,0.28)', padding: '0.95rem 1.05rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.55rem' }}>
-                      <span style={{ fontSize: '1rem' }}>✨</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--c-vibe)' }}>your vibe</span>
+                  <div className={styles.dCard} style={{ borderColor: 'rgba(255,45,142,0.28)' }}>
+                    <div className={styles.interestHead}>
+                      <span>✨</span>
+                      <b style={{ color: 'var(--c-vibe)' }}>your vibe</b>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    <div className={styles.tagCloud}>
                       {vibeTags.map((v) => (
-                        <span key={v.k} style={{ background: 'rgba(255,45,142,0.08)', color: 'var(--c-vibe)', border: '1px solid rgba(255,45,142,0.28)', borderRadius: 999, padding: '0.3rem 0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.04em' }}>{v.label}</span>
+                        <span key={v.k} style={{ background: 'rgba(255,45,142,0.08)', color: 'var(--c-vibe)', borderColor: 'rgba(255,45,142,0.28)' }}>{v.label}</span>
                       ))}
                     </div>
                   </div>
