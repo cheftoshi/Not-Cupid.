@@ -11,6 +11,7 @@ Algorithm-curated, pick-from-a-roster, no swiping, no browsing.
 - **Friend Line Today (`app/friends/friend-hub-client.tsx`)** now leads with "what can we make happen today?", stats for open plans/people/your plans/circle, a best-next-move card, and clearer rails for best fits, city signal, easy ways in, people, upcoming plans, and starting something.
 - **Love dashboard (`app/dashboard/page.tsx`)** now has a next-best-move panel above matches: your move/chatting/waiting counts plus one direct CTA into the match or roster.
 - **Profile edit (`app/profile/profile-form.tsx`)** now has a connection-readiness/profile-strength checklist so users know what to improve: face photo, gallery, video, bio texture, interests, relationship style, basics, and quiz. `needsQuiz` must use `typeof score_honesty !== 'number'` so a valid 0 score does not trigger a false incomplete state.
+- **6/30 refinement:** Hub profile card should use the first photo as the main identity signal, not a mini gallery strip. Friend Line has real in-app view history (`?view=` + browser Back), no persistent My Circle red-dot badge, Today/My Circle links to `/friends/quiz?retake=1`, and `/api/friend/reset` restarts only the Friend Line scene by shelving current friend connections into no-repeat history and clearing friend pack cooldown fields.
 - Shared UI seed: `components/connection-ui.tsx` currently contains `ProfileStrengthMeter`; keep shared primitives small and only promote repeated patterns that help the app feel coherent.
 
 ## ⚠️ PARALLEL-SESSION SYNC NOTE (read before building)

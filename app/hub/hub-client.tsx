@@ -58,7 +58,6 @@ export default function HubClient({
 }) {
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
-  const gallery = Array.isArray(profile.gallery) ? profile.gallery.slice(0, 3) : [];
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -161,16 +160,6 @@ export default function HubClient({
                 <strong>{profile.name.split(' ')[0]}{profile.age ? `, ${profile.age}` : ''}</strong>
                 <em>{profile.archetype || 'core profile'}{city ? ` · ${city.split(',')[0]}` : ''}</em>
               </div>
-            </div>
-
-            <div className={styles.profileGalleryStrip}>
-              {[photo, ...gallery].filter(Boolean).slice(0, 3).map((url, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={`${url}-${i}`} src={url as string} alt="" />
-              ))}
-              {Array.from({ length: Math.max(0, 3 - [photo, ...gallery].filter(Boolean).slice(0, 3).length) }).map((_, i) => (
-                <span key={`empty-${i}`}>+</span>
-              ))}
             </div>
 
             {(profile.bio || profile.relationship_style || profile.attach_style) && (

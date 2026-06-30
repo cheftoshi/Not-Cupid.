@@ -312,6 +312,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
             <button onClick={onStart} className="friendHeroPrimary">start something →</button>
             {hasCrew && <button onClick={onCrew} className="friendHeroSecondary">open my circle</button>}
             <button onClick={onScene} className="friendHeroSecondary">browse scene</button>
+            <a href="/friends/quiz?retake=1" className="friendHeroSecondary">retake friend quiz</a>
           </div>
         </div>
         <div className="friendHeroStats" aria-label="today's Friend Line stats">
@@ -699,6 +700,15 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
     const v = new URLSearchParams(window.location.search).get('view');
     return (['home', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home';
   });
+  function goView(next: NavKey, opts: { replace?: boolean } = {}) {
+    setView(next);
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (next === 'home') url.searchParams.delete('view');
+    else url.searchParams.set('view', next);
+    if (opts.replace) window.history.replaceState({ ncFriendView: next }, '', url.toString());
+    else window.history.pushState({ ncFriendView: next }, '', url.toString());
+  }
   const [chatOpen, setChatOpen] = useState(true);
   const chatRef = useRef<HTMLDivElement>(null);
   // Private 1:1 DM with a connection (separate from the pack/crew group chat).
@@ -768,6 +778,14 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
   }
 
   useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } setTermsChecked(true); }, []);
+  useEffect(() => {
+    const onPop = () => {
+      const v = new URLSearchParams(window.location.search).get('view');
+      setView((['home', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
   useEffect(() => { loadActs(); }, [loadActs]);
@@ -825,7 +843,6 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
   })();
 
   // ── derived data for the FB-style shell ──
-  const crewBadge = matches.some((m) => m.theyAccepted && !m.iAccepted);
   // "On the line" = your crew first, then recent faces posting on the scene
   // (deduped), so the rail feels alive even before you have a full crew.
   const people: Person[] = (() => {
@@ -891,6 +908,14 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
     await fetch('/api/friend/leave', { method: 'POST' });
     setChatOpen(false);
     await loadMatches(); await loadChat();
+    setBusy(false);
+  }
+  async function resetFriendScene() {
+    if (!confirm('Restart your Friend Line scene? This clears your current friend pack and connection requests so the next set can be fresh.')) return;
+    setBusy(true);
+    await fetch('/api/friend/reset', { method: 'POST' });
+    setChatOpen(false);
+    await loadMatches(); await loadChat(); await loadPulse(); await loadActs();
     setBusy(false);
   }
   // Drop a single 1:1 connection (leaves the shared chat if it was your last tie there).
@@ -1285,7 +1310,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
 
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
       {evToast && (
-        <button onClick={() => { setView('scene'); setEvToast(null); setNewScene(0); }}
+        <button onClick={() => { goView('scene'); setEvToast(null); setNewScene(0); }}
           style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'min(440px, 92vw)', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', background: LINE, color: '#fff', border: "1px solid var(--h-border)", borderRadius: 14, boxShadow: '0 16px 38px -14px rgba(232,132,43,0.6)', padding: '0.7rem 0.95rem', cursor: 'pointer', font: 'inherit', animation: 'fbToastIn 0.25s ease' }}>
           <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔔</span>
           <span style={{ minWidth: 0 }}>
@@ -1403,10 +1428,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           {NAV.map((n) => {
             const active = view === n.key;
             return (
-              <button key={n.key} onClick={() => setView(n.key)}
+              <button key={n.key} onClick={() => goView(n.key)}
                 style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em', padding: '0.45rem 1.1rem', borderRadius: 999, border: `1px solid ${active ? LINE : 'var(--h-border)'}`, cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text-dim)', boxShadow: active ? '0 8px 20px -10px rgba(232,132,43,0.7)' : 'none' }}>
                 {n.icon} {n.label}
-                {n.key === 'crew' && crewBadge && <span style={{ position: 'absolute', top: -5, right: -5, width: 12, height: 12, borderRadius: '50%', background: '#da291c', border: `1px solid var(--h-border)` }} />}
                 {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{newScene}</span>}
               </button>
             );
@@ -1417,7 +1441,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
           <main className="fbMain">
         {view === 'home' && (
           <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} city={city}
-            onCrew={() => setView('crew')} onScene={() => setView('scene')} onStart={() => { setView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard} />
+            onCrew={() => goView('crew')} onScene={() => goView('scene')} onStart={() => { goView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard} />
         )}
 
         {view === 'crew' && (
@@ -1444,6 +1468,19 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
               <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
             </a>
           )}
+
+          <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'grid', gap: '0.65rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff3e8)' }}>
+            <div>
+              <div style={sideHd}>tune your friend line</div>
+              <p style={{ margin: '0.25rem 0 0', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.84rem', lineHeight: 1.45 }}>
+                Retake the friend quiz when your season changes, or restart the scene when the current pack is not it.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <a href="/friends/quiz?retake=1" style={{ ...pulseBtn, textDecoration: 'none', color: 'var(--h-text)' }}>retake quiz</a>
+              <button onClick={resetFriendScene} disabled={busy} style={{ ...pulseBtnGhost, color: '#c0392b', opacity: busy ? 0.6 : 1 }}>{busy ? 'refreshing…' : 'restart friend scene'}</button>
+            </div>
+          </div>
 
           {/* PAUSED / EMPTY / CHOOSE-PACK — your pack itself lives in the right rail */}
           {ghosted ? (
@@ -1494,6 +1531,15 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
             <div>
               {(chat.circleId || matches.length > 0) && (
                 <>
+                  <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '0.75rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 92%, #fff0e5), var(--h-surface))' }}>
+                    <div style={sideHd}>bonding room</div>
+                    <p style={{ margin: '0.25rem 0 0.75rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
+                      Pack Chat is where the group warms up before people make a plan. Games and prompts are coming here next.
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      {['two truths', 'plan vote', 'coffee roulette'].map((x) => <span key={x} style={{ ...chip, background: 'var(--h-surface)' }}>{x}</span>)}
+                    </div>
+                  </div>
                   <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
                     style={{ ...poppyBtn, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>💬 pack chat</span>
@@ -1566,7 +1612,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
         <div>
           <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
-            city vibes — find your tribe. community hubs, clubs, and where people are actually gathering around {city ? city.split(',')[0].toLowerCase() : 'your city'}.
+            Community hubs, active groups, and where people are actually gathering around {city ? city.split(',')[0].toLowerCase() : 'your city'}.
           </p>
 
           <div className="pulseGrid">
@@ -1574,7 +1620,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
                 <div>
                   <div style={sideHd}>💬 community hubs</div>
-                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>the city&apos;s group chats.</h3>
+                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>the city&apos;s social points.</h3>
                 </div>
                 <button onClick={() => setShowNewLink((v) => !v)} style={{ ...pulseBtnGhost, marginLeft: 'auto' }}>{showNewLink ? '✕ cancel' : '+ submit'}</button>
               </div>
@@ -1609,7 +1655,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
                 <div>
                   <div style={sideHd}>🤝 clubs</div>
-                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>run clubs, book clubs, tennis crews.</h3>
+                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>active groups and recurring hangs.</h3>
                 </div>
                 <button onClick={() => setShowNewClub((v) => !v)} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '0.95rem', padding: '0.38rem 0.9rem' }}>{showNewClub ? '✕ cancel' : '+ start'}</button>
               </div>
@@ -1715,6 +1761,16 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
             </div>
             )}
 
+            {areaFilter && (
+              <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '0.9rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff4ea)' }}>
+                <div style={sideHd}>📍 {areaFilter}</div>
+                <p style={{ margin: '0.3rem 0 0.75rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
+                  This is the neighborhood board: plans, posts, and people trying to make something happen here.
+                </p>
+                <button onClick={() => { setNewAct((s) => ({ ...s, area: areaFilter })); setComposerStep(1); setComposerOpen(true); }} style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.45rem 0.95rem' }}>start something in {areaFilter} →</button>
+              </div>
+            )}
+
             {(() => {
               const subTags = filterMain ? (SCENE_CATS.find((c) => c.key === filterMain)?.tags || []) : [];
               const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -1746,18 +1802,19 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
             {view === 'pulse' && pulse && pulse.areas && pulse.areas.length > 0 && (
             <div style={{ ...card, padding: '0.9rem 1rem' }}>
               <div style={sideHd}>📍 where it&apos;s happening</div>
-              <p style={{ margin: '0.35rem 0 0', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.4 }}>Tap a neighborhood to see its plans on the Scene.</p>
+              <p style={{ margin: '0.35rem 0 0', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.4 }}>Tap a neighborhood to open its Scene board.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.55rem' }}>
                 {[...pulse.areas].sort((a: any, b: any) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 12).map((z: any, i: number) => {
                   const zonePlans = acts.filter((a: any) => a.area === z.area && (a.kind || 'event') === 'event').slice(0, 2);
                   return (
-                  <button key={z.area} onClick={() => { setAreaFilter(z.area); setView('scene'); }} title={`${z.members} around · ${z.activities || 0} happening — see it on the scene`}
+                  <button key={z.area} onClick={() => { setAreaFilter(z.area); goView('scene'); }} title={`${z.members} around · ${z.activities || 0} happening — see it on the scene`}
                     style={{ display: 'grid', gap: '0.24rem', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', cursor: 'pointer', font: 'inherit', padding: '0.55rem 0.62rem', borderRadius: 12, color: 'var(--h-text)', textAlign: 'left' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                       <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
                       <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', color: 'var(--h-text-faint)' }}>{z.members ? `${z.members} people` : 'new'}{z.activities ? ` · ${z.activities} plans` : ''}</span>
                     </span>
-                    {zonePlans.length > 0 && <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.35 }}>{zonePlans.map((p: any) => p.title).join(' · ')}</span>}
+                    {zonePlans.length > 0 ? <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.35 }}>{zonePlans.map((p: any) => p.title).join(' · ')}</span> : <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.35 }}>quiet right now — seed the first plan</span>}
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>open board →</span>
                   </button>
                   );
                 })}
@@ -1796,7 +1853,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea }: 
                   </div>
                 </div>
               )}
-              <button onClick={() => setView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
+              <button onClick={() => goView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
             </div>
             )}
 
