@@ -103,6 +103,11 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
 
   const firstName = (otherUser?.name || 'them').split(' ')[0];
   const score = match?.compatibility_score ?? null;
+  const profileTags = [
+    ...(Array.isArray(otherUser?.music) ? otherUser.music : []),
+    ...(Array.isArray(otherUser?.food) ? otherUser.food : []),
+    ...(Array.isArray(otherUser?.hobbies) ? otherUser.hobbies : []),
+  ].filter(Boolean).slice(0, 8);
 
   // Tick a clock so the countdown re-renders live (every 30s is plenty).
   useEffect(() => {
@@ -369,6 +374,32 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
       </div>
 
       <aside className={styles.vibesCol}>
+        <section className={styles.matchProfile}>
+          <div className={styles.matchPhotoWrap}>
+            {otherUser?.photo_url ? (
+              <img src={otherUser.photo_url} alt="" className={styles.matchPhoto} />
+            ) : (
+              <div className={styles.matchPhotoEmpty}>{firstName.charAt(0) || '?'}</div>
+            )}
+            {score != null && <span className={styles.matchScore}>{score}% match</span>}
+          </div>
+          <div className={styles.matchProfileBody}>
+            <div className={styles.matchKicker}>your match today</div>
+            <h2>{otherUser?.name || 'Match'}{otherUser?.age ? <span>, {otherUser.age}</span> : null}</h2>
+            <div className={styles.matchFacts}>
+              {otherUser?.archetype && <span>{otherUser.archetype}</span>}
+              {otherUser?.occupation && <span>{otherUser.occupation}</span>}
+              {otherUser?.relationship_style && <span>{otherUser.relationship_style}</span>}
+              {otherUser?.sun_sign && <span>{otherUser.sun_sign}</span>}
+            </div>
+            {otherUser?.bio && <p>{otherUser.bio}</p>}
+            {profileTags.length > 0 && (
+              <div className={styles.matchTags}>
+                {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}
+              </div>
+            )}
+          </div>
+        </section>
         <div className={styles.vibesInner}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
             <div>

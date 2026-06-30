@@ -28,6 +28,125 @@
 }
 .vibesInner { padding: 1.1rem 1.1rem 2.5rem; }
 
+.matchProfile {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.1rem;
+  border-bottom: 1px solid var(--h-border);
+  background:
+    radial-gradient(circle at 90% 8%, rgba(37,99,255,0.10), transparent 34%),
+    color-mix(in srgb, var(--h-surface) 94%, var(--blue-pale));
+}
+
+.matchPhotoWrap {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--h-border);
+  border-radius: 22px;
+  background: var(--h-surface-2);
+  aspect-ratio: 1.08;
+}
+
+.matchPhoto,
+.matchPhotoEmpty {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+}
+
+.matchPhotoEmpty {
+  color: var(--h-accent);
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: 4rem;
+  font-style: italic;
+  background: linear-gradient(135deg, var(--blue-pale), var(--h-surface));
+}
+
+.matchScore {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  border: 1px solid color-mix(in srgb, #2563ff 35%, var(--h-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--h-surface) 88%, transparent);
+  color: #1b46c9;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 0.36rem 0.62rem;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+}
+
+.matchProfileBody {
+  display: grid;
+  gap: 0.58rem;
+}
+
+.matchKicker,
+.matchFacts span,
+.matchTags span {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  text-transform: uppercase;
+}
+
+.matchKicker {
+  color: #2563ff;
+  font-size: 0.52rem;
+  letter-spacing: 0.18em;
+}
+
+.matchProfileBody h2 {
+  margin: 0;
+  color: var(--h-text);
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 0.95;
+}
+
+.matchProfileBody h2 span {
+  color: var(--h-text-dim);
+}
+
+.matchProfileBody p {
+  margin: 0;
+  color: var(--h-text-dim);
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.96rem;
+  font-style: italic;
+  line-height: 1.48;
+}
+
+.matchFacts,
+.matchTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+.matchFacts span,
+.matchTags span {
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  background: var(--h-surface);
+  color: var(--h-text-dim);
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+  padding: 0.32rem 0.58rem;
+}
+
+.matchTags span {
+  background: color-mix(in srgb, var(--h-surface) 86%, var(--blue-pale));
+  color: var(--h-text);
+  text-transform: none;
+}
+
 .dateDoneButton {
   flex: 0 0 auto;
   max-width: 138px;
@@ -61,6 +180,7 @@
 @media (min-width: 880px) {
   .page { flex-direction: row; align-items: stretch; justify-content: center; height: 100vh; }
   .chatCol {
+    order: 2;
     flex: 0 1 620px;
     max-width: 620px;
     height: 100vh;
@@ -70,6 +190,7 @@
     background: color-mix(in srgb, var(--h-bg) 86%, var(--h-surface));
   }
   .vibesCol {
+    order: 1;
     width: min(42vw, 500px);
     min-width: 400px;
     flex: 0 1 500px;
@@ -77,7 +198,9 @@
     overflow-y: auto;
     border-top: none;
     border-left: none;
+    border-right: 1px solid var(--h-border);
   }
+  .matchProfile { padding: 1.25rem; }
 }
 
 /* ============= HEADER ============= */

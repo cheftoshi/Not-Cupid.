@@ -27,7 +27,7 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
   const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
   const { data: otherUser } = await supabaseAdmin
     .from('users')
-    .select('id, name, photo_url, archetype, occupation, music, food, hobbies, relationship_style')
+    .select('id, name, age, photo_url, gallery, bio, archetype, occupation, music, food, hobbies, relationship_style, sun_sign')
     .eq('id', otherId)
     .single();
 

@@ -1363,6 +1363,14 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         .friendTodayLayout { display: grid; grid-template-columns: minmax(210px, 250px) minmax(0,1fr) minmax(230px, 280px); gap: 1rem; align-items: start; }
         .friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
         .friendTodayMain { min-width: 0; }
+        .pulseAreasGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.65rem; }
+        .pulseAreaCard { display: grid; gap: 0.38rem; min-height: 126px; background: var(--h-surface-2); border: 1px solid var(--h-border); cursor: pointer; font: inherit; padding: 0.75rem; border-radius: 16px; color: var(--h-text); text-align: left; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+        .pulseAreaCard:hover { transform: translateY(-2px); border-color: color-mix(in srgb, ${LINE} 34%, var(--h-border)); box-shadow: var(--shadow-sm); }
+        .pulseAreaTop { display: flex; align-items: flex-start; gap: 0.55rem; }
+        .pulseAreaName { min-width: 0; flex: 1; font-family: 'Bebas Neue', sans-serif; font-size: 1.22rem; line-height: 0.96; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pulseAreaCount { flex-shrink: 0; max-width: 46%; text-align: right; font-family: 'DM Mono', monospace; font-size: 0.48rem; color: var(--h-text-faint); line-height: 1.25; }
+        .pulseAreaHint { font-family: Georgia, serif; font-style: italic; font-size: 0.78rem; color: var(--h-text-dim); line-height: 1.35; }
+        .pulseAreaCta { align-self: end; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; color: ${LINE_DEEP}; }
         .friendPanel { background: color-mix(in srgb, var(--h-surface) 96%, transparent); border: 1px solid var(--h-border); border-radius: 22px; box-shadow: var(--shadow-sm); padding: 1rem; }
         .friendPanelKicker { font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase; color: ${LINE_DEEP}; font-weight: 700; }
         .friendPanel h2 { font-family: Georgia, serif; font-style: italic; font-size: 1.18rem; line-height: 1.08; margin: 0.35rem 0 0.55rem; color: var(--h-text); }
@@ -1392,7 +1400,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         @media (max-width: 760px) { .friendTodayLayout, .friendTodayPeople { grid-template-columns: 1fr; } .friendTodayMain, .friendTodayActions { grid-column: auto; } .friendTodaySide { position: static; } }
         @media (max-width: 560px) { .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
         .pulseGrid { display: grid; grid-template-columns: 0.86fr 1.14fr; gap: 1rem; align-items: start; }
-        @media (max-width: 780px) { .pulseGrid { grid-template-columns: 1fr; } }
+        @media (max-width: 780px) { .pulseGrid, .pulseAreasGrid { grid-template-columns: 1fr; } }
         .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
         @media (min-width: 880px) {
           .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
@@ -1715,6 +1723,33 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               )}
             </section>
           </div>
+
+          {pulse && pulse.areas && pulse.areas.length > 0 && (
+            <section style={{ ...card, padding: '1rem', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={sideHd}>📍 where it&apos;s happening</div>
+                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>neighborhood boards, not an endless rail.</h3>
+                </div>
+                <span style={{ ...chip, background: 'var(--h-surface-2)' }}>{pulse.areas.length} areas active</span>
+              </div>
+              <div className="pulseAreasGrid">
+                {[...pulse.areas].sort((a: any, b: any) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 9).map((z: any, i: number) => {
+                  const zonePlans = acts.filter((a: any) => a.area === z.area && (a.kind || 'event') === 'event').slice(0, 2);
+                  return (
+                    <button key={z.area} onClick={() => { setAreaFilter(z.area); goView('scene'); }} title={`${z.members} around · ${z.activities || 0} happening — see it on the scene`} className="pulseAreaCard">
+                      <span className="pulseAreaTop">
+                        <span className="pulseAreaName">{i === 0 ? '🔥 ' : ''}{z.area}</span>
+                        <span className="pulseAreaCount">{z.members ? `${z.members} people` : 'new'}{z.activities ? ` · ${z.activities} plans` : ''}</span>
+                      </span>
+                      <span className="pulseAreaHint">{zonePlans.length > 0 ? zonePlans.map((p: any) => p.title).join(' · ') : 'quiet right now — seed the first plan'}</span>
+                      <span className="pulseAreaCta">open board →</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
         )}
 
@@ -1809,30 +1844,6 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         )}
           </main>
           <aside className="fbRail">
-            {/* CITY PULSE — where it's happening (city hubs / active zones) */}
-            {view === 'pulse' && pulse && pulse.areas && pulse.areas.length > 0 && (
-            <div style={{ ...card, padding: '0.9rem 1rem' }}>
-              <div style={sideHd}>📍 where it&apos;s happening</div>
-              <p style={{ margin: '0.35rem 0 0', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.4 }}>Tap a neighborhood to open its Scene board.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.55rem' }}>
-                {[...pulse.areas].sort((a: any, b: any) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 12).map((z: any, i: number) => {
-                  const zonePlans = acts.filter((a: any) => a.area === z.area && (a.kind || 'event') === 'event').slice(0, 2);
-                  return (
-                  <button key={z.area} onClick={() => { setAreaFilter(z.area); goView('scene'); }} title={`${z.members} around · ${z.activities || 0} happening — see it on the scene`}
-                    style={{ display: 'grid', gap: '0.24rem', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', cursor: 'pointer', font: 'inherit', padding: '0.55rem 0.62rem', borderRadius: 12, color: 'var(--h-text)', textAlign: 'left' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                      <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
-                      <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', color: 'var(--h-text-faint)' }}>{z.members ? `${z.members} people` : 'new'}{z.activities ? ` · ${z.activities} plans` : ''}</span>
-                    </span>
-                    {zonePlans.length > 0 ? <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.35 }}>{zonePlans.map((p: any) => p.title).join(' · ')}</span> : <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.35 }}>quiet right now — seed the first plan</span>}
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>open board →</span>
-                  </button>
-                  );
-                })}
-              </div>
-            </div>
-            )}
-
             {view === 'crew' && (
             <div style={{ ...card, padding: '0.9rem 1rem' }}>
               <div style={sideHd}>🧡 your connections</div>
