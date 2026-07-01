@@ -11,7 +11,10 @@
 
 import type { FriendVibes } from '@/lib/friend-quiz';
 
-const HEXACO_MAX = 16;
+// Core quiz v2 is 2 questions per HEXACO dimension, each worth up to 4 points.
+// Keep this aligned with `lib/quiz-data.ts` / `/api/submit` or friend scoring
+// gets too mushy because personality differences are undercounted.
+const HEXACO_MAX = 8;
 
 function jaccard(a: string[] = [], b: string[] = []): number {
   if (!a.length && !b.length) return 0;
@@ -50,7 +53,7 @@ function hexacoFriendScore(a: any, b: any): number {
   for (const [k, w] of dims) {
     const av = a[k], bv = b[k];
     if (typeof av !== 'number' || typeof bv !== 'number') continue;
-    const sim = 1 - Math.abs(av - bv) / HEXACO_MAX;
+    const sim = Math.max(0, 1 - Math.min(HEXACO_MAX, Math.abs(av - bv)) / HEXACO_MAX);
     acc += sim * w; wsum += w;
   }
   return wsum === 0 ? 0.5 : acc / wsum;

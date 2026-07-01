@@ -7,8 +7,8 @@
  *  - Emotionality, Openness: moderate
  *  - Extraversion: light — complement is fine here
  *
- * Per the existing data model, each dimension's max raw score is ~16 points
- * (4 questions × 4 points each).
+ * Core quiz v2 scores each dimension out of 8 points
+ * (2 questions × 4 points each).
  */
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS } from './quiz-data';
 import { intentOf, intentCompatible, equityBonus } from './pools';
@@ -33,12 +33,13 @@ const VIBE_KEYS = ['chronotype', 'date_freq', 'future', 'comm', 'social', 'risk'
 const VIBE_MAX_DIFF_PER_KEY = 3; // each key on a 1..4 scale → max |diff| = 3
 
 function hexacoSubscore(a: any, b: any): number {
-  const dH = Math.abs((a.score_honesty ?? 0) - (b.score_honesty ?? 0));
-  const dA = Math.abs((a.score_agreeableness ?? 0) - (b.score_agreeableness ?? 0));
-  const dC = Math.abs((a.score_conscientiousness ?? 0) - (b.score_conscientiousness ?? 0));
-  const dE = Math.abs((a.score_emotionality ?? 0) - (b.score_emotionality ?? 0));
-  const dO = Math.abs((a.score_openness ?? 0) - (b.score_openness ?? 0));
-  const dX = Math.abs((a.score_extraversion ?? 0) - (b.score_extraversion ?? 0));
+  const diff = (x: any, y: any) => Math.min(DIM_MAX_DIFF, Math.abs((x ?? 0) - (y ?? 0)));
+  const dH = diff(a.score_honesty, b.score_honesty);
+  const dA = diff(a.score_agreeableness, b.score_agreeableness);
+  const dC = diff(a.score_conscientiousness, b.score_conscientiousness);
+  const dE = diff(a.score_emotionality, b.score_emotionality);
+  const dO = diff(a.score_openness, b.score_openness);
+  const dX = diff(a.score_extraversion, b.score_extraversion);
 
   const weighted =
     dH * W.honesty +

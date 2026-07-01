@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   // Base update never depends on the v2 columns, so the fallback below always
   // has something safe to write.
-  const base: any = { status: 'waiting', pool_active: true };
+  const base: any = { status: 'waiting', pool_active: true, roster_snapshot: [], roster_refreshed_at: null };
   if (relationship_style && VALID_RELATIONSHIP_STYLES.has(relationship_style)) {
     base.relationship_style = relationship_style;
   }

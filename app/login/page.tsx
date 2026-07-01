@@ -83,6 +83,8 @@ function LoginInner() {
         // Prefer ?next= if the user came from a gated page (e.g. /admin) and has an account
         if (nextPath && !data.needsQuiz) {
           router.push(nextPath);
+        } else if (data.needsQuiz && nextPath?.startsWith('/friends')) {
+          router.push('/quiz?next=friends');
         } else {
           router.push(data.redirect);
         }
@@ -91,7 +93,7 @@ function LoginInner() {
 
       // Legacy path: old verify-otp returned 404 + needsQuiz
       if (data.needsQuiz) {
-        router.push('/quiz');
+        router.push(nextPath?.startsWith('/friends') ? '/quiz?next=friends' : '/quiz');
         return;
       }
 

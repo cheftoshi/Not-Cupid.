@@ -82,6 +82,8 @@ export default function QuizPage() {
 function QuizInner() {
   const searchParams = useSearchParams()
   const isRetake = searchParams.get('retake') === '1'
+  const nextIntent = searchParams.get('next') === 'friends' ? 'friends' : null
+  const afterCorePath = nextIntent === 'friends' ? '/friends/quiz' : '/hub'
   // Love-line deep quiz: /quiz?line=love (logged-in users, after the core quiz).
   const isLoveDeep = searchParams.get('line') === 'love'
   const [screen, setScreen] = useState<Screen>('intro')
@@ -300,7 +302,7 @@ function QuizInner() {
           body: JSON.stringify(scorePayload),
         })
         if (res.ok) {
-          window.location.href = '/hub'
+          window.location.href = afterCorePath
           return
         }
         // IMPORTANT: do NOT fall through to /api/submit — their email already
@@ -333,14 +335,14 @@ function QuizInner() {
         // Session is created server-side in /api/submit, so the user is logged
         // in. Land them on /hub (the line chooser) so they board Love and/or
         // Friend — the core quiz they just finished powers both lines.
-        window.location.href = '/hub'
+        window.location.href = afterCorePath
       }
     } catch (err) {
       console.error('Failed to submit:', err)
       setScreen('result')
       setTimeout(() => setBarsVisible(true), 400)
     }
-  }, [form, isRetake])
+  }, [form, isRetake, afterCorePath])
 
   // LOVE-DEEP submit — partner prefs + attachment + values. Enriches the love
   // profile (best-effort) and lands on the love dashboard.

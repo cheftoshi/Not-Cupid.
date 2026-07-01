@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
     archetype,
     status: 'waiting',
     pool_active: true,
+    roster_snapshot: [],
+    roster_refreshed_at: null,
   };
   if (vibes && typeof vibes === 'object') updates.vibes = vibes;
   const v2: any = {};

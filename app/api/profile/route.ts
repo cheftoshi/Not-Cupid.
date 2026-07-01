@@ -82,6 +82,16 @@ export async function PUT(req: NextRequest) {
     }
   }
 
+  const MATCHING_INPUTS = new Set([
+    'age', 'gender', 'seeking', 'zip', 'age_min', 'age_max',
+    'vibes', 'relationship_style',
+  ]);
+  if (Object.keys(updates).some((key) => MATCHING_INPUTS.has(key))) {
+    updates.roster_snapshot = [];
+    updates.roster_refreshed_at = null;
+    updates.status = 'waiting';
+  }
+
   const { data, error } = await supabaseAdmin
     .from('users')
     .update(updates)
