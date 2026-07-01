@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ff6a1f" />
+    <title>NotCupid is offline</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: #16110d;
+        background:
+          radial-gradient(circle at 82% 12%, rgba(255,106,31,0.16), transparent 32%),
+          radial-gradient(circle at 8% 88%, rgba(37,99,255,0.09), transparent 34%),
+          #fffdf8;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main {
+        width: min(440px, 100%);
+        border: 1px solid rgba(58,39,24,0.13);
+        border-radius: 26px;
+        padding: 22px;
+        background: rgba(255,253,248,0.92);
+        box-shadow: 0 24px 70px -38px rgba(11,11,11,0.35);
+      }
+      img { width: 56px; height: 56px; border-radius: 16px; box-shadow: 0 12px 24px -18px rgba(11,11,11,0.5); }
+      .kicker {
+        margin-top: 18px;
+        color: #d2530f;
+        font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 8px 0 10px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: clamp(30px, 10vw, 46px);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+      p { margin: 0; color: #76695f; font-size: 15px; line-height: 1.55; }
+      button {
+        margin-top: 18px;
+        width: 100%;
+        border: 0;
+        border-radius: 999px;
+        padding: 14px 18px;
+        background: #ff6a1f;
+        color: white;
+        cursor: pointer;
+        font: 700 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="" />
+      <div class="kicker">NotCupid</div>
+      <h1>Connection needs a signal.</h1>
+      <p>You are offline right now. Come back when your connection is back and we will reopen your Hub, Friend Line, or chat.</p>
+      <button onclick="window.location.reload()">try again</button>
+    </main>
+  </body>
+</html>

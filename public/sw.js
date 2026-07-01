@@ -1,12 +1,16 @@
 // NotCupid service worker — deliberately minimal.
 // Handles: web push, notification clicks, and light caching of hashed static
-// assets. Pages and API calls always go to the network (a stale-cache bug in a
-// dating app is worse than no offline mode).
+// assets. Pages and API calls always go to the network; navigations only fall
+// back to a static offline screen when the network is unavailable.
 
-const STATIC_CACHE = 'nc-static-v1';
+const STATIC_CACHE = 'nc-static-v2';
+const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll([OFFLINE_URL, '/icons/icon-192.png']))
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -21,6 +25,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  if (event.request.mode === 'navigate' && url.origin === self.location.origin) {
+    event.respondWith(
+      fetch(event.request).catch(async () => {
+        const cache = await caches.open(STATIC_CACHE);
+        return (await cache.match(OFFLINE_URL)) || Response.error();
+      })
+    );
+    return;
+  }
+
   // Only cache Next's content-hashed build assets + our icons — these are
   // immutable by name, so cache-first is always safe.
   const cacheable =

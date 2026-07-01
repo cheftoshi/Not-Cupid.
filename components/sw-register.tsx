@@ -6,7 +6,14 @@ import { useEffect } from 'react';
 export default function SwRegister() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    let id: number | undefined;
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      reg.update().catch(() => {});
+      id = window.setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+    }).catch(() => {});
+    return () => {
+      if (id) window.clearInterval(id);
+    };
   }, []);
   return null;
 }
