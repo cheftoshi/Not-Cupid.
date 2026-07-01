@@ -39,6 +39,18 @@ const CLUB_CATS = ['running', 'books', 'fitness', 'sports', 'food', 'coffee', 'm
 const LINK_KINDS = ['discord', 'whatsapp', 'groupme', 'telegram', 'slack', 'other'];
 const KIND_EMOJI: Record<string, string> = { discord: '🎮', whatsapp: '💬', groupme: '👥', telegram: '✈️', slack: '💼', other: '🔗' };
 const MAX_REWIPES = 3;
+const PACK_GAMES: { label: string; text: string }[] = [
+  { label: 'two truths', text: "Game: two truths and a lie. I'll start: " },
+  { label: 'plan vote', text: 'Plan vote: coffee walk, food, drinks, or something active?' },
+  { label: 'city recs', text: "City rec swap: drop one place you'd take someone new here." },
+  { label: 'weekend check', text: "Weekend check: who's around and what kind of plan feels easy?" },
+];
+const PACK_PROMPTS = [
+  'What are you trying to do more of this month?',
+  'What is your easiest yes for a first hang?',
+  'What is one local spot you actually like?',
+  'What kind of group plan feels low-pressure this week?',
+];
 
 // Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px offset
 // shadows — too loud). Surfaces read quiet so the content + connections lead.
@@ -288,6 +300,19 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
   const QUICK: [string, string][] = [['☕', 'coffee / walk'], ['🍜', 'grab food'], ['🍸', 'drinks'], ['🎾', 'sports'], ['🎬', 'movie / show'], ['💬', 'just talk']];
   const connectedPeople = people.filter((p) => p.tag === 'crew').slice(0, 5);
   const packPeople = people.filter((p) => p.tag === 'match').slice(0, 5);
+  const todayMove = focus
+    ? {
+      eyebrow: 'best move today',
+      title: focus.title || 'join a real plan',
+      body: `${focus.happens_at ? friendlyWhen(focus.happens_at) : (focus.area || cityName)}${focus.area && focus.happens_at ? ` · ${focus.area}` : ''}. ${planStatus(focus).label}.`,
+      cta: focus.myResponse === 'yes' ? "you're in" : `${planStatus(focus).cta} →`,
+      action: () => onRsvp(focus.id, focus.myResponse === 'yes' ? 'no' : 'yes'),
+    }
+    : hasCrew
+      ? { eyebrow: 'best move today', title: 'warm up your circle', body: 'Drop one prompt in Pack Chat and turn the group from names into people.', cta: 'open my circle →', action: onCrew }
+      : packPeople.length
+        ? { eyebrow: 'best move today', title: 'open the pack', body: 'Your next friend scene starts with one group chat, then you choose who becomes a connection.', cta: 'open my circle →', action: onCrew }
+        : { eyebrow: 'best move today', title: 'start something simple', body: `Post a small plan in ${cityName}. Coffee, a walk, food, or a casual talk is enough.`, cta: 'post a plan →', action: onStart };
 
   const railHd = (emoji: string, text: string, sub?: string) => (
     <div style={{ margin: '1.6rem 0 0.7rem' }}>
@@ -305,9 +330,9 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
             <ConnectionSigil tone="friend" />
             <div className="friendHeroKicker">today on friend line</div>
           </div>
-          <h1 className="friendHeroTitle">find something real today.</h1>
+          <h1 className="friendHeroTitle">one easy social move today.</h1>
           <p className="friendHeroCopy">
-            The Friend Line is your daily social board for {cityName}: your people, the plans that fit, and one easy way to start something.
+            Friend Line turns {cityName} into a small set of people, plans, and prompts you can actually act on.
           </p>
           <div className="friendHeroActions">
             <button onClick={onStart} className="friendHeroPrimary">start something →</button>
@@ -321,6 +346,12 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
           <div><strong>{vibePeople.length}</strong><span>people nearby</span></div>
           <div><strong>{myEvents.length}</strong><span>your plans</span></div>
           <div><strong>{connectedCount}</strong><span>in circle</span></div>
+        </div>
+        <div className="friendDailyMove">
+          <div className="friendPanelKicker">{todayMove.eyebrow}</div>
+          <h2>{todayMove.title}</h2>
+          <p>{todayMove.body}</p>
+          <button onClick={todayMove.action}>{todayMove.cta}</button>
         </div>
       </div>
 
@@ -1361,6 +1392,11 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         .friendHeroStats div { background: color-mix(in srgb, var(--h-surface) 88%, ${LINE} 5%); border: 1px solid var(--h-border); border-radius: 14px; padding: 0.85rem; }
         .friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; line-height: 0.9; color: ${LINE_DEEP}; }
         .friendHeroStats span { display: block; margin-top: 0.35rem; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--h-text-dim); }
+        .friendDailyMove { grid-column: 1 / -1; background: #101010; color: #fff; border: 1px solid rgba(255,255,255,0.12); border-radius: 22px; padding: 1rem; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.75rem 1rem; align-items: end; }
+        .friendDailyMove .friendPanelKicker { color: rgba(255,255,255,0.66); grid-column: 1 / -1; }
+        .friendDailyMove h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.28rem, 3vw, 1.78rem); line-height: 1.06; letter-spacing: 0; margin: 0; }
+        .friendDailyMove p { margin: 0.32rem 0 0; color: rgba(255,255,255,0.72); font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; line-height: 1.45; }
+        .friendDailyMove button { border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; background: ${LINE}; color: #fff; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; padding: 0.62rem 1rem; white-space: nowrap; }
         .friendTodayLayout { display: grid; grid-template-columns: minmax(210px, 250px) minmax(0,1fr) minmax(230px, 280px); gap: 1rem; align-items: start; }
         .friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
         .friendTodayMain { min-width: 0; }
@@ -1408,7 +1444,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           .sceneFilterDock::-webkit-scrollbar { display: none; }
           .sceneFilterDock button, .sceneFilterDock span { flex: 0 0 auto; white-space: nowrap; }
           .sceneFilterDock > div { margin-left: 0 !important; flex: 0 0 auto; }
-          .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+          .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); } .friendDailyMove { grid-template-columns: 1fr; } .friendDailyMove button { width: 100%; }
           .pulseGrid { gap: 0.8rem; }
           .pulseAreaCard { min-height: 112px; }
           .crewLower { margin-top: 1rem; }
@@ -1567,10 +1603,15 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                   <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '0.75rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 92%, #fff0e5), var(--h-surface))' }}>
                     <div style={sideHd}>bonding room</div>
                     <p style={{ margin: '0.25rem 0 0.75rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
-                      Pack Chat is where the group warms up before people make a plan. Games and prompts are coming here next.
+                      Pack Chat should make the first move easy. Pick a tiny game, vote on a plan, or drop a prompt so the group has somewhere to start.
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                      {['two truths', 'plan vote', 'coffee roulette'].map((x) => <span key={x} style={{ ...chip, background: 'var(--h-surface)' }}>{x}</span>)}
+                      {PACK_GAMES.map((x) => (
+                        <button key={x.label} onClick={() => { setMsg(x.text); setChatOpen(true); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }} disabled={!chatLive}
+                          style={{ ...chip, background: 'var(--h-surface)', cursor: chatLive ? 'pointer' : 'not-allowed', opacity: chatLive ? 1 : 0.55 }}>
+                          {x.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
                   <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
@@ -1605,7 +1646,16 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                       </div>
                       {chatLive ? (<>
                         <div style={{ padding: '1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', minHeight: 240, maxHeight: 460, overflowY: 'auto' }}>
-                          {chat.messages.length === 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>say hi to the crew 👋</div>}
+                          {chat.messages.length === 0 && (
+                            <div style={{ border: '1px solid var(--h-border)', borderRadius: 16, padding: '0.85rem', background: 'var(--h-surface-2)' }}>
+                              <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', marginBottom: '0.65rem' }}>say hi to the crew, or start with one of these.</div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                {PACK_PROMPTS.map((p) => (
+                                  <button key={p} onClick={() => setMsg(p)} style={{ ...chip, cursor: 'pointer', background: 'var(--h-surface)' }}>{p}</button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           {chat.messages.map((mm: any) => {
                             const sender = chat.members.find((u: any) => u.id === mm.sender_id);
                             return (

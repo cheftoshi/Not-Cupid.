@@ -61,7 +61,10 @@ export default function LandingClient({ stats }: { stats: Stats }) {
 
       <header className={styles.landTop}>
         <Wordmark size={1.4} />
-        <Link href="/faq" className={styles.landNavBtn}>faq →</Link>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <Link href="/friend-line" className={styles.landNavBtn}>friend line</Link>
+          <Link href="/faq" className={styles.landNavBtn}>faq →</Link>
+        </div>
       </header>
 
       <section className={styles.landHero}>

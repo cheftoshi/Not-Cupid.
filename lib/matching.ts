@@ -227,7 +227,7 @@ export interface RankResult {
 export function rankCandidates(
   user: any,
   pool: any[],
-  opts: { waitDays?: number; nowMs?: number },
+  opts: { waitDays?: number; nowMs?: number; candidateAdjustments?: Map<string, number> },
 ): RankResult {
   const nowMs = opts.nowMs ?? Date.now();
   const radiusMiles = user.match_radius ?? DEFAULT_MATCH_RADIUS;
@@ -249,7 +249,10 @@ export function rankCandidates(
   const clearing = clusterCompatible
     .map((p) => ({ user: p, score: compatibilityScore(user, p) }))
     .filter((c) => c.score >= minScore)
-    .map((c) => ({ ...c, eff: c.score + equityBonus(c.user.last_matched_at, nowMs) }));
+    .map((c) => ({
+      ...c,
+      eff: c.score + equityBonus(c.user.last_matched_at, nowMs) + (opts.candidateAdjustments?.get(c.user.id) ?? 0),
+    }));
 
   const sameIntent = clearing.filter((c) => intentCompatible(uIntent, intentOf(c.user))).sort((a, b) => b.eff - a.eff);
   const rest = clearing.filter((c) => !intentCompatible(uIntent, intentOf(c.user))).sort((a, b) => b.eff - a.eff);

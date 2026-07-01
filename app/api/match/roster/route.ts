@@ -81,7 +81,7 @@ export async function GET() {
     'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, occupation, ' +
     'relationship_style, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
-    'score_conscientiousness, score_openness, last_matched_at, is_test';
+    'score_conscientiousness, score_openness, last_matched_at, ignored_picks, is_test';
   const nowIso = new Date().toISOString();
   // Responsiveness gate: bench chronic no-shows (ignored_picks > MAX_IGNORED_PICKS)
   // so the pool stops surfacing people who never accept. `applyIgnored` is dropped
@@ -135,6 +135,8 @@ export async function GET() {
 
   // Drop candidates who are already at the connection cap (no spare capacity).
   // Batch-fetch every live match touching the pool, then count per candidate.
+  const liveCount = new Map<string, number>();
+  const pendingIncoming = new Map<string, number>();
   if (freshPool.length > 0) {
     const poolIds = freshPool.map((p: any) => p.id);
     const [{ data: m1 }, { data: m2 }] = await Promise.all([
@@ -147,18 +149,41 @@ export async function GET() {
     ]);
     const byId = new Map<string, any>();
     for (const m of [...(m1 ?? []), ...(m2 ?? [])]) byId.set(m.id, m);
-    const liveCount = new Map<string, number>();
     const poolSet = new Set(poolIds);
     for (const m of byId.values()) {
       if (!isMatchLive(m)) continue;
       for (const uid of [m.user_1_id, m.user_2_id]) {
         if (poolSet.has(uid)) liveCount.set(uid, (liveCount.get(uid) || 0) + 1);
       }
+      if (m.status === 'pending') {
+        if (poolSet.has(m.user_1_id) && !m.user_1_accepted && m.user_2_accepted) {
+          pendingIncoming.set(m.user_1_id, (pendingIncoming.get(m.user_1_id) || 0) + 1);
+        }
+        if (poolSet.has(m.user_2_id) && !m.user_2_accepted && m.user_1_accepted) {
+          pendingIncoming.set(m.user_2_id, (pendingIncoming.get(m.user_2_id) || 0) + 1);
+        }
+      }
     }
     freshPool = freshPool.filter((p: any) => (liveCount.get(p.id) || 0) < MAX_CONNECTIONS);
   }
 
-  const { ranked } = rankCandidates(user, freshPool, { waitDays });
+  // Matching V3 adjustment: compatibility still leads, but we gently prefer
+  // people with enough room and response momentum so rosters feel alive.
+  const candidateAdjustments = new Map<string, number>();
+  for (const p of freshPool as any[]) {
+    const ignored = Math.max(0, p.ignored_picks ?? 0);
+    const live = liveCount.get(p.id) || 0;
+    const incoming = pendingIncoming.get(p.id) || 0;
+    const neverMatched = !p.last_matched_at;
+    const adj =
+      (neverMatched ? 2 : 0) +
+      (live === 0 ? 2 : 0) -
+      ignored * 4 -
+      incoming * 3;
+    if (adj) candidateAdjustments.set(p.id, adj);
+  }
+
+  const { ranked } = rankCandidates(user, freshPool, { waitDays, candidateAdjustments });
   // Bigger roster for women seeking men/anyone (scarce side); 5 otherwise.
   const size = user.gender === 'f' && user.seeking !== 'f' ? ROSTER_SIZE_SCARCE : ROSTER_SIZE;
 
