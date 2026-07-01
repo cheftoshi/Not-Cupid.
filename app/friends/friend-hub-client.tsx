@@ -325,27 +325,27 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
   return (
     <div>
       <div className="friendTodayHero">
-        <div>
+        <div className="friendHeroIntro">
           <div className="friendHeroSignal">
             <ConnectionSigil tone="friend" />
             <div className="friendHeroKicker">today on friend line</div>
           </div>
-          <h1 className="friendHeroTitle">one easy social move today.</h1>
+          <h1 className="friendHeroTitle">{firstName ? `${firstName}, ` : ''}what feels easy today?</h1>
           <p className="friendHeroCopy">
-            Friend Line turns {cityName} into a small set of people, plans, and prompts you can actually act on.
+            Start with one low-pressure move in {cityName}: join something forming, warm up your pack, or post the plan you wish existed.
           </p>
+          <div className="friendHeroStats" aria-label="today's Friend Line signals">
+            <div><strong>{open.length}</strong><span>open plans</span></div>
+            <div><strong>{vibePeople.length}</strong><span>nearby people</span></div>
+            <div><strong>{myEvents.length}</strong><span>saved</span></div>
+            <div><strong>{connectedCount}</strong><span>circle</span></div>
+          </div>
           <div className="friendHeroActions">
             <button onClick={onStart} className="friendHeroPrimary">start something →</button>
             {hasCrew && <button onClick={onCrew} className="friendHeroSecondary">open my circle</button>}
             <button onClick={onScene} className="friendHeroSecondary">browse scene</button>
             <a href="/friends/quiz?retake=1" className="friendHeroSecondary">retake friend quiz</a>
           </div>
-        </div>
-        <div className="friendHeroStats" aria-label="today's Friend Line stats">
-          <div><strong>{open.length}</strong><span>open plans</span></div>
-          <div><strong>{vibePeople.length}</strong><span>people nearby</span></div>
-          <div><strong>{myEvents.length}</strong><span>your plans</span></div>
-          <div><strong>{connectedCount}</strong><span>in circle</span></div>
         </div>
         <div className="friendDailyMove">
           <div className="friendPanelKicker">{todayMove.eyebrow}</div>
@@ -358,10 +358,10 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
       <div className="friendTodayLayout">
         <aside className="friendTodaySide friendTodayPeople">
           <div className="friendPanel">
-            <div className="friendPanelKicker">your circle</div>
-            <h2>who you already have.</h2>
+            <div className="friendPanelKicker">your people</div>
+            <h2>start from familiar faces.</h2>
             {connectedPeople.length === 0 ? (
-              <p>No locked-in connections yet. Your pack is where the first ones start.</p>
+              <p>No locked-in connections yet. Your first circle starts from the pack.</p>
             ) : (
               <div className="friendFaceList">
                 {connectedPeople.map((p) => (
@@ -376,10 +376,10 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
           </div>
 
           <div className="friendPanel">
-            <div className="friendPanelKicker">people you might vibe with</div>
-            <h2>new faces nearby.</h2>
+            <div className="friendPanelKicker">next few</div>
+            <h2>people with a possible overlap.</h2>
             {packPeople.length === 0 && vibePeople.length === 0 ? (
-              <p>Your next pack and the Scene will fill this in.</p>
+              <p>The next pack and the Scene will fill this in.</p>
             ) : (
               <div className="friendFaceList">
                 {[...packPeople, ...vibePeople.filter((p) => p.tag !== 'match')].slice(0, 7).map((p) => (
@@ -395,22 +395,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
         </aside>
 
         <section className="friendTodayMain">
-          {focus && (
-            <div className="friendFocus">
-              <div className="friendFocusMeta">best next move · {planStatus(focus).label}</div>
-              <div className="friendFocusBody">
-                <div>
-                  <h2>{focus.title || 'a plan worth joining'}</h2>
-                  <p>{focus.happens_at ? friendlyWhen(focus.happens_at) : (focus.area || cityName)}{focus.area && focus.happens_at ? ` · ${focus.area}` : ''} · for {vibeFor(focus)}</p>
-                </div>
-                <button onClick={() => onRsvp(focus.id, focus.myResponse === 'yes' ? 'no' : 'yes')} className="friendHeroPrimary">
-                  {focus.myResponse === 'yes' ? 'you’re in ✓' : `${planStatus(focus).cta} →`}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {railHd('✨', 'best fits', 'plans pulled from the Scene that match your vibe')}
+          {railHd('✨', 'plans that fit', 'pulled from the Scene, ranked by your interests and momentum')}
           {recs.length === 0 ? (
             <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
               quiet right now — <button onClick={onStart} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something →</button> and others will join.
@@ -427,8 +412,8 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
 
         <aside className="friendTodaySide friendTodayActions">
           <div className="friendPanel friendActionPanel">
-            <div className="friendPanelKicker">make it happen</div>
-            <h2>start the move.</h2>
+            <div className="friendPanelKicker">quick starts</div>
+            <h2>make the first move small.</h2>
             <div className="friendQuickGrid">
               {QUICK.map(([emoji, label]) => (
                 <button key={label} onClick={onStart}>{emoji}<span>{label}</span></button>
@@ -1378,28 +1363,31 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           .fbShellHome .fbRail { display: none; }
           .fbRail { position: sticky; top: 1rem; }
         }
-        .friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 88% 18%, rgba(224,69,127,0.07), transparent 24%), linear-gradient(135deg, color-mix(in srgb, ${LINE} 7%, var(--h-surface)) 0%, var(--h-surface) 72%); border: 1px solid color-mix(in srgb, ${LINE} 18%, var(--h-border)); border-radius: 28px; box-shadow: 0 24px 70px -48px rgba(232,132,43,0.42), var(--shadow-sm); padding: 1.25rem; margin-bottom: 1rem; }
+        .friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 92% 12%, rgba(255,106,31,0.10), transparent 30%), radial-gradient(circle at 0% 100%, rgba(37,99,255,0.06), transparent 34%), color-mix(in srgb, var(--h-surface) 96%, #fff7ef); border: 1px solid color-mix(in srgb, ${LINE} 18%, var(--h-border)); border-radius: 26px; box-shadow: 0 18px 60px -48px rgba(232,132,43,0.42), var(--shadow-sm); padding: clamp(1rem, 2.8vw, 1.45rem); margin-bottom: 1rem; }
         .friendTodayHero::after { content: none; }
+        .friendHeroIntro { min-width: 0; }
         .friendHeroSignal { position: relative; z-index: 1; display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
         .friendHeroKicker { font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: ${LINE_DEEP}; }
-        .friendHeroTitle { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.65rem, 4.5vw, 2.45rem); line-height: 1.02; letter-spacing: 0; margin: 0; color: var(--h-text); }
-        .friendHeroCopy { font-family: Georgia, serif; font-style: italic; font-size: 0.95rem; line-height: 1.5; color: var(--h-text-dim); margin: 0.55rem 0 0; max-width: 52ch; }
-        .friendHeroActions { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 1rem; }
+        .friendHeroTitle { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.55rem, 4vw, 2.25rem); line-height: 1.03; letter-spacing: 0; margin: 0; color: var(--h-text); max-width: 12ch; }
+        .friendHeroCopy { font-family: Georgia, serif; font-style: italic; font-size: 0.95rem; line-height: 1.52; color: var(--h-text-dim); margin: 0.58rem 0 0; max-width: 56ch; }
+        .friendHeroActions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
         .friendHeroPrimary, .friendHeroSecondary { border: 1px solid var(--h-border); border-radius: 999px; padding: 0.62rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; cursor: pointer; text-decoration: none; }
         .friendHeroPrimary { background: ${LINE}; color: #fff; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
         .friendHeroSecondary { background: var(--h-surface); color: var(--h-text); }
-        .friendHeroStats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.55rem; }
-        .friendHeroStats div { background: color-mix(in srgb, var(--h-surface) 88%, ${LINE} 5%); border: 1px solid var(--h-border); border-radius: 14px; padding: 0.85rem; }
-        .friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; line-height: 0.9; color: ${LINE_DEEP}; }
-        .friendHeroStats span { display: block; margin-top: 0.35rem; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--h-text-dim); }
-        .friendDailyMove { grid-column: 1 / -1; background: #101010; color: #fff; border: 1px solid rgba(255,255,255,0.12); border-radius: 22px; padding: 1rem; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.75rem 1rem; align-items: end; }
-        .friendDailyMove .friendPanelKicker { color: rgba(255,255,255,0.66); grid-column: 1 / -1; }
-        .friendDailyMove h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.28rem, 3vw, 1.78rem); line-height: 1.06; letter-spacing: 0; margin: 0; }
-        .friendDailyMove p { margin: 0.32rem 0 0; color: rgba(255,255,255,0.72); font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; line-height: 1.45; }
-        .friendDailyMove button { border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; background: ${LINE}; color: #fff; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; padding: 0.62rem 1rem; white-space: nowrap; }
-        .friendTodayLayout { display: grid; grid-template-columns: minmax(210px, 250px) minmax(0,1fr) minmax(230px, 280px); gap: 1rem; align-items: start; }
+        .friendHeroStats { display: flex; flex-wrap: wrap; gap: 0.42rem; margin-top: 0.95rem; }
+        .friendHeroStats div { display: inline-flex; align-items: baseline; gap: 0.32rem; background: color-mix(in srgb, var(--h-surface) 88%, ${LINE} 4%); border: 1px solid var(--h-border); border-radius: 999px; padding: 0.38rem 0.64rem; }
+        .friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; line-height: 0.9; color: ${LINE_DEEP}; }
+        .friendHeroStats span { display: block; font-family: 'DM Mono', monospace; font-size: 0.47rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--h-text-dim); }
+        .friendDailyMove { background: var(--h-surface); color: var(--h-text); border: 1px solid color-mix(in srgb, ${LINE} 24%, var(--h-border)); border-radius: 22px; padding: 1rem; display: grid; gap: 0.65rem; align-content: center; box-shadow: 0 18px 42px -34px rgba(255,106,31,0.55); }
+        .friendDailyMove h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.3rem, 3vw, 1.78rem); line-height: 1.06; letter-spacing: 0; margin: 0; }
+        .friendDailyMove p { margin: 0; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; line-height: 1.45; }
+        .friendDailyMove button { justify-self: start; border: 1px solid color-mix(in srgb, ${LINE} 32%, var(--h-border)); border-radius: 999px; background: ${LINE}; color: #fff; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; padding: 0.62rem 1rem; white-space: nowrap; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
+        .friendTodayLayout { display: grid; grid-template-columns: minmax(0,1fr) minmax(250px, 310px); gap: 1rem; align-items: start; }
         .friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
         .friendTodayMain { min-width: 0; }
+        .friendTodayPeople { grid-column: 2; grid-row: 1; }
+        .friendTodayActions { grid-column: 2; grid-row: 2; }
+        .friendTodayMain { grid-column: 1; grid-row: 1 / span 2; }
         .pulseAreasGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.65rem; }
         .pulseAreaCard { display: grid; gap: 0.38rem; min-height: 126px; background: var(--h-surface-2); border: 1px solid var(--h-border); cursor: pointer; font: inherit; padding: 0.75rem; border-radius: 16px; color: var(--h-text); text-align: left; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
         .pulseAreaCard:hover { transform: translateY(-2px); border-color: color-mix(in srgb, ${LINE} 34%, var(--h-border)); box-shadow: var(--shadow-sm); }
@@ -1432,9 +1420,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         .friendFocusBody { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
         .friendFocus h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; line-height: 0.95; letter-spacing: 0.01em; margin: 0; }
         .friendFocus p { font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; color: rgba(255,255,255,0.72); margin: 0.4rem 0 0; }
-        @media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) 260px; align-items: stretch; } }
-        @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } .friendTodayPeople { grid-column: 1 / -1; position: static; grid-template-columns: repeat(2,minmax(0,1fr)); } .friendTodayMain { grid-column: 1; } .friendTodayActions { grid-column: 2; } }
-        @media (max-width: 760px) { .friendTodayLayout, .friendTodayPeople { grid-template-columns: 1fr; } .friendTodayMain, .friendTodayActions { grid-column: auto; } .friendTodaySide { position: static; } }
+        @media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) minmax(270px, 360px); align-items: stretch; } }
+        @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } }
+        @media (max-width: 760px) { .friendTodayLayout { grid-template-columns: 1fr; } .friendTodayPeople, .friendTodayActions, .friendTodayMain { grid-column: auto; grid-row: auto; } .friendTodaySide { position: static; } }
         @media (max-width: 560px) {
           .fbTopNav { position: sticky; top: 0.45rem; z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
           .fbTopNav::-webkit-scrollbar { display: none; }
@@ -1444,7 +1432,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           .sceneFilterDock::-webkit-scrollbar { display: none; }
           .sceneFilterDock button, .sceneFilterDock span { flex: 0 0 auto; white-space: nowrap; }
           .sceneFilterDock > div { margin-left: 0 !important; flex: 0 0 auto; }
-          .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); } .friendDailyMove { grid-template-columns: 1fr; } .friendDailyMove button { width: 100%; }
+          .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendDailyMove button { width: 100%; }
           .pulseGrid { gap: 0.8rem; }
           .pulseAreaCard { min-height: 112px; }
           .crewLower { margin-top: 1rem; }
