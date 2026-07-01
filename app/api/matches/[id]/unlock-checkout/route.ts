@@ -6,7 +6,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Which tier: 'hexaco' ($0.99, personality bars) or 'profile' ($1.99, full profile).
+  // Which tier: 'hexaco' (legacy) or 'profile' ($0.99, full profile).
   let tier: 'hexaco' | 'profile' = 'profile';
   try {
     const b = await req.json();

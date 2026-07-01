@@ -142,7 +142,7 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
       })
       .eq('id', matchId);
 
-    await sendItsAMatchEmails(match.user_1_id, match.user_2_id).catch((e) =>
+    await sendItsAMatchEmails(matchId, match.user_1_id, match.user_2_id).catch((e) =>
       console.error('acceptMatch: its-a-match email failed', e)
     );
     // Push to both — lands on the lock screen instead of the Promotions tab.
@@ -162,7 +162,7 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
   return { ok: true, mutual: false };
 }
 
-async function sendItsAMatchEmails(user1Id: string, user2Id: string) {
+async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: string) {
   const { data: user1 } = await supabaseAdmin.from('users').select('id, name, email').eq('id', user1Id).single();
   const { data: user2 } = await supabaseAdmin.from('users').select('id, name, email').eq('id', user2Id).single();
   if (!user1 || !user2) return;
@@ -170,12 +170,13 @@ async function sendItsAMatchEmails(user1Id: string, user2Id: string) {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const html = (otherName: string, otherEmail: string, recipientId: string) =>
     renderEmail({
-      preheader: `Both of you said yes. ${otherName.split(' ')[0]}'s email is inside — reach out.`,
+      preheader: `Both of you said yes. Open the chat, or unlock ${otherName.split(' ')[0]}'s full profile if they added more.`,
       eyebrow: "it's a match ✦",
       headline: `${otherName.split(' ')[0]} said yes too.`,
       bodyHtml: `
         <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you. Chat's open in the app, and here's their email so you can take it wherever feels right.</p>
         ${infoCard({ eyebrow: `${otherName}'s email`, big: otherEmail })}
+        <p style="margin:0 0 18px 0;">Want more context before you write? Open the match room. If ${otherName.split(' ')[0]} added a bio or extra photos, their full profile unlock is there for $0.99.</p>
         <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
         <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
           <li>Message soon — the chat closes after 36 quiet hours (every message resets the clock).</li>
@@ -186,7 +187,7 @@ async function sendItsAMatchEmails(user1Id: string, user2Id: string) {
           <div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:${C.lav};margin-bottom:6px;">first date? play it smart</div>
           <div style="font-size:13px;color:${C.muted};line-height:1.6;">Meet somewhere public, tell a friend where you'll be, and arrange your own ride. Trust your gut — if something feels off, you owe nothing. (You can report anyone from the match.)</div>
         </td></tr></table>
-        ${button({ href: `${base}/dashboard`, label: 'Open the chat →' })}
+        ${button({ href: `${base}/match/${matchId}`, label: 'Open chat & profile →' })}
       `,
       recipientId,
       footerNote: 'mutual yes. you earned this one.',
