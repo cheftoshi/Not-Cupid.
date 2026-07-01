@@ -313,6 +313,42 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
       : packPeople.length
         ? { eyebrow: 'best move today', title: 'open the pack', body: 'Your next friend scene starts with one group chat, then you choose who becomes a connection.', cta: 'open my circle →', action: onCrew }
         : { eyebrow: 'best move today', title: 'start something simple', body: `Post a small plan in ${cityName}. Coffee, a walk, food, or a casual talk is enough.`, cta: 'post a plan →', action: onStart };
+  const friendPath = [
+    {
+      step: '1',
+      title: 'meet a few people',
+      body: connectedCount > 0
+        ? `${connectedCount} connection${connectedCount === 1 ? '' : 's'} in your circle. Keep building from there.`
+        : packPeople.length > 0
+          ? `${packPeople.length} people are waiting in your pack. Open the room and see who feels easy.`
+          : 'Your next pack gives you a small room of people instead of a giant feed.',
+      cta: packPeople.length > 0 || hasCrew ? 'open my circle' : 'browse scene',
+      done: connectedCount > 0,
+      action: packPeople.length > 0 || hasCrew ? onCrew : onScene,
+    },
+    {
+      step: '2',
+      title: 'warm the room',
+      body: hasCrew
+        ? 'Use a prompt or tiny vote in Pack Chat so the first message is not awkward.'
+        : 'Once a pack opens, start with a low-pressure prompt before anyone has to commit.',
+      cta: hasCrew ? 'open pack chat' : 'see people',
+      done: hasCrew && connectedCount > 0,
+      action: hasCrew ? onCrew : onScene,
+    },
+    {
+      step: '3',
+      title: 'make it real',
+      body: myEvents.length > 0
+        ? `${myEvents.length} plan${myEvents.length === 1 ? '' : 's'} on your board. The app is doing its job when this turns into time together.`
+        : focus
+          ? `${focus.title || 'A plan'} is already forming. Joining one thing is enough for today.`
+          : 'Post the small plan you wish someone else had posted.',
+      cta: myEvents.length > 0 ? 'open plan board' : focus ? `${planStatus(focus).cta}` : 'post a plan',
+      done: myEvents.length > 0,
+      action: myEvents.length > 0 ? onScene : focus ? () => onRsvp(focus.id, focus.myResponse === 'yes' ? 'no' : 'yes') : onStart,
+    },
+  ];
 
   const railHd = (emoji: string, text: string, sub?: string) => (
     <div style={{ margin: '1.6rem 0 0.7rem' }}>
@@ -354,6 +390,26 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
           <button onClick={todayMove.action}>{todayMove.cta}</button>
         </div>
       </div>
+
+      <section className="friendLoop" aria-label="Friend-making path">
+        <div className="friendLoopHead">
+          <div>
+            <div className="friendPanelKicker">why come back</div>
+            <h2>build one real friendship loop this week.</h2>
+          </div>
+          <p>Friend Line should help you move from “I should meet people” to a real plan with real names.</p>
+        </div>
+        <div className="friendLoopSteps">
+          {friendPath.map((item) => (
+            <button key={item.step} onClick={item.action} className={`friendLoopStep ${item.done ? 'done' : ''}`}>
+              <span>{item.done ? '✓' : item.step}</span>
+              <b>{item.title}</b>
+              <em>{item.body}</em>
+              <strong>{item.done ? 'keep going' : `${item.cta} →`}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="friendTodayLayout">
         <aside className="friendTodaySide friendTodayPeople">
@@ -1382,6 +1438,19 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         .friendDailyMove h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.3rem, 3vw, 1.78rem); line-height: 1.06; letter-spacing: 0; margin: 0; }
         .friendDailyMove p { margin: 0; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; line-height: 1.45; }
         .friendDailyMove button { justify-self: start; border: 1px solid color-mix(in srgb, ${LINE} 32%, var(--h-border)); border-radius: 999px; background: ${LINE}; color: #fff; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; padding: 0.62rem 1rem; white-space: nowrap; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
+        .friendLoop { border: 1px solid color-mix(in srgb, ${LINE} 16%, var(--h-border)); border-radius: 24px; background: color-mix(in srgb, var(--h-surface) 96%, #fff8ef); box-shadow: var(--shadow-sm); padding: 1rem; margin: 0 0 1rem; }
+        .friendLoopHead { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 0.85rem; }
+        .friendLoopHead h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.25rem, 3vw, 1.65rem); line-height: 1.08; letter-spacing: 0; margin: 0.28rem 0 0; color: var(--h-text); }
+        .friendLoopHead p { margin: 0; max-width: 36ch; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.86rem; line-height: 1.45; }
+        .friendLoopSteps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.65rem; }
+        .friendLoopStep { min-height: 168px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.45rem; text-align: left; color: var(--h-text); background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 18px; padding: 0.85rem; cursor: pointer; font: inherit; transition: transform .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease); }
+        .friendLoopStep:hover { transform: translateY(-2px); border-color: color-mix(in srgb, ${LINE} 34%, var(--h-border)); box-shadow: var(--shadow-sm); }
+        .friendLoopStep > span { width: 26px; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, ${LINE} 12%, var(--h-surface-2)); border: 1px solid color-mix(in srgb, ${LINE} 26%, var(--h-border)); color: ${LINE_DEEP}; font-family: 'DM Mono', monospace; font-size: 0.62rem; font-weight: 800; }
+        .friendLoopStep b { font-family: 'Bebas Neue', sans-serif; font-size: 1.28rem; line-height: 0.98; letter-spacing: 0.02em; font-weight: 400; }
+        .friendLoopStep em { color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.82rem; line-height: 1.42; }
+        .friendLoopStep strong { align-self: end; color: ${LINE_DEEP}; font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.1em; text-transform: uppercase; }
+        .friendLoopStep.done { background: color-mix(in srgb, var(--h-surface) 90%, #effaf3); border-color: color-mix(in srgb, #3f7d57 30%, var(--h-border)); }
+        .friendLoopStep.done > span { background: #3f7d57; border-color: #3f7d57; color: #fff; }
         .friendTodayLayout { display: grid; grid-template-columns: minmax(0,1fr) minmax(250px, 310px); gap: 1rem; align-items: start; }
         .friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
         .friendTodayMain { min-width: 0; }
@@ -1422,7 +1491,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         .friendFocus p { font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; color: rgba(255,255,255,0.72); margin: 0.4rem 0 0; }
         @media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) minmax(270px, 360px); align-items: stretch; } }
         @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } }
-        @media (max-width: 760px) { .friendTodayLayout { grid-template-columns: 1fr; } .friendTodayPeople, .friendTodayActions, .friendTodayMain { grid-column: auto; grid-row: auto; } .friendTodaySide { position: static; } }
+        @media (max-width: 760px) { .friendTodayLayout, .friendLoopSteps { grid-template-columns: 1fr; } .friendTodayPeople, .friendTodayActions, .friendTodayMain { grid-column: auto; grid-row: auto; } .friendTodaySide { position: static; } .friendLoopHead { align-items: flex-start; flex-direction: column; } }
         @media (max-width: 560px) {
           .fbTopNav { position: sticky; top: 0.45rem; z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
           .fbTopNav::-webkit-scrollbar { display: none; }
