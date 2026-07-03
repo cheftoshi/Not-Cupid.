@@ -282,7 +282,7 @@ export default function HubClient({
             )}
 
             {loveMatches.length === 0 ? (
-              <p className={styles.emptyCopy}>No live love conversations right now. Your roster is where the next one starts.</p>
+              <p className={styles.emptyCopy}>no live love conversations right now — your roster is where the next one starts.</p>
             ) : (
               <div className={styles.personList}>
                 {loveMatches.map((m) => {
@@ -357,7 +357,7 @@ export default function HubClient({
                 ) : friends === null ? (
                   <div><SkeletonStyles /><SkeletonRow /><SkeletonRow /></div>
                 ) : friends.length === 0 ? (
-                  <p className={styles.emptyCopy}>No friends opened yet. <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>Open a pack →</Link></p>
+                  <p className={styles.emptyCopy}>no friends opened yet. <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>open a pack →</Link></p>
                 ) : (
                   <div className={styles.friendChips}>
                     {friends.slice(0, 10).map((f) => (
@@ -403,7 +403,7 @@ export default function HubClient({
                     ))}
                   </div>
                 ) : (
-                  <p className={styles.emptyCopy}>No plans yet. <Link href="/friends?view=scene" style={{ color: ORANGE_DEEP }}>Start one →</Link></p>
+                  <p className={styles.emptyCopy}>no plans yet. <Link href="/friends?view=scene" style={{ color: ORANGE_DEEP }}>start one →</Link></p>
                 )}
               </div>
             </div>

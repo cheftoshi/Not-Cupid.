@@ -720,17 +720,20 @@ function QuizInner() {
               <div className={styles.progressFill} style={{width:`${progress}%`}} />
             </div>
 
-            <p className={styles.qText}>{q.q}</p>
+            {/* keyed by question index so each step slides in instead of hard-cutting */}
+            <div key={currentQ} className={styles.qStep}>
+              <p className={styles.qText}>{q.q}</p>
 
-            <div className={styles.qOptions}>
-              {q.opts.map((opt, i) => (
-                <button key={i}
-                  className={`${styles.qOpt} ${selectedOpt === i ? styles.qOptSelected : ''}`}
-                  onClick={() => setSelectedOpt(i)}>
-                  <span className={styles.qKey}>{String.fromCharCode(65+i)}</span>
-                  <span className={styles.qOptText}>{opt}</span>
-                </button>
-              ))}
+              <div className={styles.qOptions}>
+                {q.opts.map((opt, i) => (
+                  <button key={i}
+                    className={`${styles.qOpt} ${selectedOpt === i ? styles.qOptSelected : ''}`}
+                    onClick={() => setSelectedOpt(i)}>
+                    <span className={styles.qKey}>{String.fromCharCode(65+i)}</span>
+                    <span className={styles.qOptText}>{opt}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className={styles.qNav}>

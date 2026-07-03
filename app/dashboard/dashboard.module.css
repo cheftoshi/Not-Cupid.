@@ -567,6 +567,10 @@
   }
 }
 
+/* keyframes must live in-module (CSS Modules scope animation names — the
+   globals.css copy doesn't reach in here). */
+@keyframes ncCardIn { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
 .matchCard {
   background: var(--h-surface);
   border-radius: var(--r-lg);
