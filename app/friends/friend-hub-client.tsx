@@ -508,6 +508,29 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
             )}
             <button onClick={onScene} className="friendTextCta">browse the scene →</button>
           </div>
+
+          {/* PMF loop: friends bring friends — the friend line is better with
+              your actual people (and every invite densifies the pool). */}
+          <div className="friendPanel">
+            <div className="friendPanelKicker">bring your people</div>
+            <h2>friends &gt; algorithms.</h2>
+            <p>the friend line works best with people you already like. send your link — crews form faster when your people are in the pool.</p>
+            <button
+              onClick={async () => {
+                try {
+                  const r = await fetch('/api/invite');
+                  const d = await r.json();
+                  if (!r.ok || !d.url) { toast(d.error || 'couldn’t make your link — try again', 'error'); return; }
+                  if (typeof navigator !== 'undefined' && navigator.share) {
+                    await navigator.share({ title: 'join me on NotCupid', text: 'i’m on NotCupid — meet people, not profiles. join me:', url: d.url });
+                  } else {
+                    await navigator.clipboard.writeText(d.url);
+                    toast('your invite link is copied — send it to your people 🧡', 'success');
+                  }
+                } catch { /* share sheet closed */ }
+              }}
+              className="friendTextCta">share your invite link →</button>
+          </div>
         </aside>
       </div>
     </div>
@@ -593,6 +616,19 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
       setCErr('couldn’t post — check your connection.');
     } finally { setCBusy(false); }
   }
+  // Share → the public /p/<id> page: the acquisition loop. Native share sheet on
+  // mobile, clipboard elsewhere.
+  async function sharePlan() {
+    const url = `${window.location.origin}/p/${a.id}`;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: a.title, text: `${a.title} — a plan on NotCupid`, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast('link copied — send it to your people ↗', 'success');
+    } catch { /* user closed the share sheet */ }
+  }
   return (
     <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
@@ -610,6 +646,8 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
           </div>
         </button>
         <span style={{ ...chip, flexShrink: 0 }}>{a.category}</span>
+        <button onClick={sharePlan} title="share this — anyone with the link can see it and join"
+          style={{ ...chip, flexShrink: 0, cursor: 'pointer', background: 'var(--h-surface-2)' }}>↗</button>
         {a.isMine && <button onClick={() => onDelete(a.id)} title="delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>✕</button>}
       </div>
       <div style={{ padding: '0 1rem 0.75rem' }}>

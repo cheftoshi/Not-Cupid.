@@ -708,6 +708,9 @@ alter table friend_activities add column if not exists dating_friendly boolean n
 -- 20260630_typing.sql — live "typing…" indicator for the love chat
 alter table matches add column if not exists user_1_typing_at timestamptz;
 alter table matches add column if not exists user_2_typing_at timestamptz;
+-- 20260630_invites.sql — invite/referral loop (friends bring friends)
+alter table users add column if not exists invite_code text unique;
+alter table users add column if not exists referred_by uuid references users(id);
 alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
   check (response in ('yes', 'maybe', 'no'));
 alter table users add column if not exists friend_digest_sent_at timestamptz;

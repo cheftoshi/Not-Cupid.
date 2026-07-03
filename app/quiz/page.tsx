@@ -86,6 +86,18 @@ function QuizInner() {
   const afterCorePath = nextIntent === 'friends' ? '/friends/quiz' : '/hub'
   // Love-line deep quiz: /quiz?line=love (logged-in users, after the core quiz).
   const isLoveDeep = searchParams.get('line') === 'love'
+  // Invite attribution: /quiz?ref=<code> (from a /join/<code> link). Kept in
+  // localStorage so it survives the OTP round-trip, sent with /api/submit.
+  const refCode = (() => {
+    const fromUrl = (searchParams.get('ref') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)
+    if (typeof window !== 'undefined') {
+      try {
+        if (fromUrl) { localStorage.setItem('nc_ref', fromUrl); return fromUrl }
+        return localStorage.getItem('nc_ref') || ''
+      } catch { return fromUrl }
+    }
+    return fromUrl
+  })()
   const [screen, setScreen] = useState<Screen>('intro')
   const [retakeReady, setRetakeReady] = useState(false)
   const [form, setForm] = useState<FormData>({ name:'', age:'', gender:'', seek:'', zip:'', email:'', ageMin:'22', ageMax:'38' })
@@ -320,6 +332,7 @@ function QuizInner() {
         body: JSON.stringify({
           name: form.name, age: form.age, gender: form.gender, seeking: form.seek,
           zip: form.zip, email: form.email, age_min: parseInt(form.ageMin), age_max: parseInt(form.ageMax),
+          ...(refCode ? { ref: refCode } : {}),
           ...scorePayload,
         })
       })

@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       vibes,
       relationship_style,
       attach_anxiety, attach_avoidance, attach_style, values_profile,
+      ref,
     } = body
 
     const VALID_RELATIONSHIP_STYLES = new Set([
@@ -99,6 +100,14 @@ export async function POST(req: NextRequest) {
     if (['secure', 'anxious', 'avoidant', 'fearful'].includes(attach_style)) insertRow.attach_style = attach_style
     if (values_profile && typeof values_profile === 'object') insertRow.values_profile = values_profile
 
+    // Invite attribution — best-effort, never blocks signup. A valid ref code
+    // records who brought them (users.referred_by); anything else is ignored.
+    if (typeof ref === 'string' && /^[a-z0-9]{4,12}$/.test(ref)) {
+      const { data: inviter } = await supabaseAdmin
+        .from('users').select('id').eq('invite_code', ref).maybeSingle()
+      if (inviter?.id) insertRow.referred_by = inviter.id
+    }
+
     let { data, error } = await supabaseAdmin
       .from('users')
       .insert([insertRow])
@@ -106,8 +115,8 @@ export async function POST(req: NextRequest) {
 
     // Graceful fallback: if the quiz-v2 columns aren't migrated yet, retry
     // without them so signup never breaks (run 20260609_quiz_v2.sql to activate).
-    if (error && /attach_|values_profile|column|schema cache/i.test(error.message || '') && error.code !== '23505') {
-      delete insertRow.attach_anxiety; delete insertRow.attach_avoidance; delete insertRow.attach_style; delete insertRow.values_profile
+    if (error && /attach_|values_profile|referred_by|column|schema cache/i.test(error.message || '') && error.code !== '23505') {
+      delete insertRow.attach_anxiety; delete insertRow.attach_avoidance; delete insertRow.attach_style; delete insertRow.values_profile; delete insertRow.referred_by
       console.warn('Submit: quiz-v2 columns missing — run 20260609 migration. Saving without them.')
       ;({ data, error } = await supabaseAdmin.from('users').insert([insertRow]).select().single())
     }
