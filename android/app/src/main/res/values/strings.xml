@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NotCupid</string>
+    <string name="title_activity_main">NotCupid</string>
+    <string name="package_name">com.notcupid.app</string>
+    <string name="custom_url_scheme">com.notcupid.app</string>
+</resources>
