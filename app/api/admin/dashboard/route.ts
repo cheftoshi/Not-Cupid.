@@ -36,7 +36,8 @@ export async function GET(_req: NextRequest) {
       catch { return 0 }
     }
     const paidPacks = async () => {
-      try { const { data } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id'); return (data ?? []).filter((r: any) => !String(r.stripe_payment_id ?? '').startsWith('pro-')).length }
+      // pro-… (All-Access grants) and drop-… (free weekly drops) are not revenue.
+      try { const { data } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id'); return (data ?? []).filter((r: any) => { const id = String(r.stripe_payment_id ?? ''); return !id.startsWith('pro-') && !id.startsWith('drop-') }).length }
       catch { return 0 }
     }
 

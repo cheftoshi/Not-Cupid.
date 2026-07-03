@@ -38,9 +38,10 @@ export async function GET(req: NextRequest) {
       const connList = conns ?? []
       friendChatUnlocks = unlockCount ?? 0
       try {
-        // PAID packs only — pro-granted free packs carry a synthetic `pro-…` id.
+        // PAID packs only — pro grants carry a synthetic `pro-…` id and the free
+        // weekly drops a `drop-…` id; neither is revenue.
         const { data: roundRows } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id')
-        friendPaidPacks = (roundRows ?? []).filter((r: any) => !String(r.stripe_payment_id ?? '').startsWith('pro-')).length
+        friendPaidPacks = (roundRows ?? []).filter((r: any) => { const id = String(r.stripe_payment_id ?? ''); return !id.startsWith('pro-') && !id.startsWith('drop-') }).length
       } catch { /* friend_match_rounds not migrated yet */ }
       friend = {
         optedIn: optedIn.length,

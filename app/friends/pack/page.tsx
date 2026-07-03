@@ -11,7 +11,7 @@ export default async function PackPage({ searchParams }: { searchParams: { bough
   if (!user) redirect('/login?next=/friends/pack');
   if (!user.friend_opted_in_at) redirect('/friends/quiz');
 
-  // Returning from a $1.99 pack checkout → grant the round inline so the fresh
+  // Returning from a $0.99 pack checkout → grant the round inline so the fresh
   // pack is ready (the webhook is the durable path). Idempotent on the payment id.
   if (searchParams.bought) {
     try {
