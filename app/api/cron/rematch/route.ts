@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { releaseBalanceHolds } from '@/lib/balance'
 import { ignoringParty } from '@/lib/match-actions'
+import { sendPushToUser } from '@/lib/push'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,42 @@ export async function GET(req: NextRequest) {
 
   try {
     const nowIso = new Date().toISOString()
+
+    // ============== 0) Daily heartbeat: "fresh faces" nudge ==============
+    // The roster recomputes lazily (12h TTL) — nobody hears about it unless they
+    // open the app. Once a day (the 16:00 UTC ≈ noon-ET run of this 20-min cron),
+    // push love-line users whose roster is stale, throttled to one nudge per 72h
+    // per user (users.roster_nudged_at — graceful if unmigrated).
+    let heartbeatPushed = 0
+    const hbNow = new Date()
+    if (hbNow.getUTCHours() === 16 && hbNow.getUTCMinutes() < 20) {
+      try {
+        const staleIso = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+        const throttleIso = new Date(Date.now() - 72 * 3600 * 1000).toISOString()
+        const { data: staleUsers, error: hbErr } = await supabaseAdmin
+          .from('users')
+          .select('id, roster_nudged_at')
+          .is('deleted_at', null)
+          .not('is_test', 'is', true)
+          .is('matching_disabled_at', null)
+          .not('archetype', 'is', null) // finished the quiz → actually has a roster
+          .lt('roster_refreshed_at', staleIso)
+          .limit(200)
+        if (!hbErr) {
+          for (const u of staleUsers ?? []) {
+            if (u.roster_nudged_at && u.roster_nudged_at > throttleIso) continue
+            const pushed = await sendPushToUser(u.id, {
+              title: 'fresh faces on your roster ✦',
+              body: 'your picks refreshed — see who’s new this week.',
+              url: '/dashboard',
+              tag: 'roster-nudge',
+            }).catch(() => false)
+            await supabaseAdmin.from('users').update({ roster_nudged_at: nowIso }).eq('id', u.id)
+            if (pushed !== false) heartbeatPushed++
+          }
+        }
+      } catch { /* roster_nudged_at not migrated yet — heartbeat stays dormant */ }
+    }
 
     // ============== Pool rotation: DISABLED ==============
     // Activity-based ejection (no login in 7 days -> pool_active=false) was wrong

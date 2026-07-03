@@ -711,6 +711,8 @@ alter table matches add column if not exists user_2_typing_at timestamptz;
 -- 20260630_invites.sql — invite/referral loop (friends bring friends)
 alter table users add column if not exists invite_code text unique;
 alter table users add column if not exists referred_by uuid references users(id);
+-- 20260702_roster_nudge.sql — daily "fresh faces" push throttle
+alter table users add column if not exists roster_nudged_at timestamptz;
 alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
   check (response in ('yes', 'maybe', 'no'));
 alter table users add column if not exists friend_digest_sent_at timestamptz;

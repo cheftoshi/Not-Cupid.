@@ -537,7 +537,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
           <div className="friendPanel">
             <div className="friendPanelKicker">bring your people</div>
             <h2>friends &gt; algorithms.</h2>
-            <p>the friend line works best with people you already like. send your link — crews form faster when your people are in the pool.</p>
+            <p>the friend line works best with people you already like. send your link — <b>you both get a free pack</b> when they join.</p>
             <button
               onClick={async () => {
                 try {

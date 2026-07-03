@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Nav from '@/components/Nav'
 import { suggestEmailCorrection } from '@/lib/email-typos'
-import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype, ATTACHMENT_QUESTIONS, computeAttachment, VALUES_QUESTIONS, valuesFromAnswers, RAPID_FIRE, rapidFromAnswers, PARTNER_QUESTIONS, partnerFromAnswers } from '@/lib/quiz-data'
+import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype, ATTACHMENT_QUESTIONS, computeAttachment, VALUES_QUESTIONS, valuesFromAnswers, RAPID_FIRE, rapidFromAnswers, PARTNER_QUESTIONS, partnerFromAnswers, typeSlug } from '@/lib/quiz-data'
 import type { VibeKey } from '@/lib/quiz-data'
 import { parseResponse } from '@/lib/fetch-helpers'
+import { toast } from '@/components/feedback'
 import styles from './quiz.module.css'
 
 type Screen = 'intro' | 'verify' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result'
@@ -101,6 +102,13 @@ function QuizInner() {
   const [screen, setScreen] = useState<Screen>('intro')
   const [retakeReady, setRetakeReady] = useState(false)
   const [form, setForm] = useState<FormData>({ name:'', age:'', gender:'', seek:'', zip:'', email:'', ageMin:'22', ageMax:'38' })
+  // Live pool teaser for the entered ZIP ("214 people in the Boston experiment").
+  const [poolPeek, setPoolPeek] = useState<{ city: string; count: number; recent: number } | null>(null)
+  // ONE-FLOW ONBOARDING: "what are you here for?" — asked at signup so the core
+  // quiz can route STRAIGHT into the right deep quiz (no hub fork mid-flow).
+  // State (not a ref) so the result screen re-renders when signup completes.
+  const [intent, setIntent] = useState<'' | 'love' | 'friends' | 'both'>('')
+  const [postQuizPath, setPostQuizPath] = useState<string | null>(null)
   const [agreed, setAgreed] = useState(false)
   const [zipStatus, setZipStatus] = useState<'idle'|'valid'|'invalid'|'outofrange'>('idle')
   const [otp, setOtp] = useState(['','','','','',''])
@@ -216,9 +224,16 @@ function QuizInner() {
 
   function handleZip(z: string) {
     setForm(f => ({...f, zip: z}))
-    if (z.length < 5) { setZipStatus('idle'); return }
+    if (z.length < 5) { setZipStatus('idle'); setPoolPeek(null); return }
     const result = validateZip(z)
     setZipStatus(result === 'incomplete' ? 'idle' : result as any)
+    // The "who's waiting" teaser — show the pool is real the moment the ZIP is in.
+    if (result === 'valid') {
+      fetch(`/api/pool-preview?zip=${z}`)
+        .then((r) => r.json())
+        .then((d) => { if (d?.ok) setPoolPeek(d) })
+        .catch(() => {})
+    } else setPoolPeek(null)
   }
 
   async function sendOtp() {
@@ -345,17 +360,23 @@ function QuizInner() {
       }
       if (data.userId) {
         userIdRef.current = data.userId
-        // Session is created server-side in /api/submit, so the user is logged
-        // in. Land them on /hub (the line chooser) so they board Love and/or
-        // Friend — the core quiz they just finished powers both lines.
-        window.location.href = afterCorePath
+        // Session exists server-side. Do NOT redirect — let the loading screen
+        // finish into the RESULT screen (the archetype reveal is the quiz's
+        // payoff + share moment). The result's continue button routes by the
+        // intent they picked at signup: straight into the right deep quiz, no
+        // hub fork mid-flow.
+        setPostQuizPath(
+          intent === 'friends' ? '/friends/quiz'
+          : intent === 'love' || intent === 'both' ? '/quiz?line=love'
+          : afterCorePath
+        )
       }
     } catch (err) {
       console.error('Failed to submit:', err)
       setScreen('result')
       setTimeout(() => setBarsVisible(true), 400)
     }
-  }, [form, isRetake, afterCorePath])
+  }, [form, isRetake, afterCorePath, intent])
 
   // LOVE-DEEP submit — partner prefs + attachment + values. Enriches the love
   // profile (best-effort) and lands on the love dashboard.
@@ -505,10 +526,11 @@ function QuizInner() {
       if (step >= LOADING_MSGS.length) {
         clearInterval(interval)
         setTimeout(() => {
-          if (!userIdRef.current) {
-            setScreen('result')
-            setTimeout(() => setBarsVisible(true), 400)
-          }
+          // Fresh signups now ALWAYS land on the result (the payoff + share
+          // moment) — the continue button routes onward. Retakes/errors redirect
+          // before this fires, in which case navigation has already left.
+          setScreen('result')
+          setTimeout(() => setBarsVisible(true), 400)
         }, 2000)
       }
     }, 800)
@@ -591,6 +613,18 @@ function QuizInner() {
                 </div>
 
                 <div className={`${styles.field} ${styles.fieldFull}`}>
+                  <label className={styles.label}>what are you here for?</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {([['love', '💘 dates'], ['friends', '🧡 friends'], ['both', '✨ both']] as const).map(([v, label]) => (
+                      <button key={v} type="button" onClick={() => setIntent(intent === v ? '' : v)}
+                        style={{ flex: '1 1 30%', minWidth: 100, padding: '0.7rem 0.5rem', borderRadius: 12, cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', letterSpacing: '0.06em', border: intent === v ? '2px solid var(--blue)' : '1.5px solid var(--h-border)', background: intent === v ? 'rgba(37,99,255,0.1)' : 'var(--h-surface)', color: intent === v ? 'var(--blue)' : 'var(--h-text)', fontWeight: intent === v ? 700 : 400 }}>
+                        {intent === v ? '✓ ' : ''}{label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`${styles.field} ${styles.fieldFull}`}>
                   <label className={styles.label}>match age range</label>
                   <div className={styles.ageRangeWrap}>
                     <input className={styles.input} type="number" placeholder="22" min={18} max={99}
@@ -610,6 +644,11 @@ function QuizInner() {
                     {zipStatus === 'outofrange' && <span className={styles.zipBad}>outside range — <a href="/out-of-range" style={{color:'var(--lav)'}}>join waitlist</a></span>}
                     {zipStatus === 'invalid' && <span className={styles.zipBad}>not in our area</span>}
                   </div>
+                  {poolPeek && poolPeek.count > 0 && zipStatus === 'valid' && (
+                    <div style={{ marginTop: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: 'rgba(37,99,255,0.08)', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-accent)' }}>
+                      ✦ {poolPeek.count.toLocaleString()} {poolPeek.count === 1 ? 'person is' : 'people are'} in the {poolPeek.city} experiment{poolPeek.recent > 0 ? ` · ${poolPeek.recent} joined this month` : ''}
+                    </div>
+                  )}
                 </div>
 
                 <div className={`${styles.field} ${styles.fieldFull}`}>
@@ -994,6 +1033,25 @@ function QuizInner() {
               <p className={styles.resultDesc}>{archetype.desc}</p>
             </div>
 
+            {/* share your type — the viral surface (unfurls the OG card) */}
+            <button
+              type="button"
+              onClick={async () => {
+                const url = `${window.location.origin}/type/${typeSlug(archetype.name)}`
+                try {
+                  if (typeof navigator !== 'undefined' && navigator.share) {
+                    await navigator.share({ title: `I'm ${archetype.name}`, text: `the NotCupid algorithm says I'm ${archetype.name}. find your type:`, url })
+                  } else {
+                    await navigator.clipboard.writeText(url)
+                    toast('link copied — post your type ✦', 'success')
+                  }
+                } catch { /* share sheet closed */ }
+              }}
+              style={{ display: 'block', margin: '0.9rem auto 0', background: 'transparent', border: '1.5px solid var(--h-border)', color: 'var(--h-text)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+            >
+              ↗ share your type
+            </button>
+
             <div className={styles.profileCard}>
               <div className={styles.profileHeader}>
                 <span className={styles.profileTitle}>your hexaco profile</span>
@@ -1059,6 +1117,15 @@ function QuizInner() {
               </p>
             </div>
 
+            {postQuizPath && (
+              <button className="btn-primary"
+                onClick={() => { window.location.href = postQuizPath }}
+                style={{marginTop:'1.25rem',width:'100%',justifyContent:'center'}}>
+                {postQuizPath === '/friends/quiz' ? 'continue → the friend quiz'
+                  : postQuizPath.includes('line=love') ? 'continue → the love quiz'
+                  : 'continue → your hub'}
+              </button>
+            )}
             <button className="btn-ghost"
               onClick={() => { setScreen('intro'); setAnswers([]); setCurrentQ(0); setOtp(['','','','','','']) }}
               style={{marginTop:'1rem',width:'100%',justifyContent:'center'}}>

@@ -1,0 +1,70 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glowWine" cx="18%" cy="72%" r="55%">
+      <stop offset="0%" stop-color="#6e2430" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#6e2430" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowOrange" cx="88%" cy="70%" r="50%">
+      <stop offset="0%" stop-color="#ff6a1f" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#ff6a1f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="route" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8c2f39"/>
+      <stop offset="55%" stop-color="#c4502c"/>
+      <stop offset="100%" stop-color="#ff6a1f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="#100e13"/>
+  <rect width="1600" height="900" fill="url(#glowWine)"/>
+  <rect width="1600" height="900" fill="url(#glowOrange)"/>
+
+  <!-- eyebrow -->
+  <text x="86" y="128" font-family="Helvetica, Arial, sans-serif" font-size="20" letter-spacing="7" fill="#b98d63">HOSPITALITY &#183; 2026</text>
+
+  <!-- ===== title ===== -->
+  <text x="82" y="268" font-family="Georgia, serif" font-size="94" fill="#f4efe6">Run clubs are <tspan font-style="italic" fill="#ff6a1f">eating</tspan></text>
+  <text x="82" y="388" font-family="Georgia, serif" font-size="94" fill="#f4efe6">the restaurant industry.</text>
+
+  <text x="86" y="466" font-family="Georgia, serif" font-style="italic" font-size="29" fill="#9d918a">The table lost its monopoly on the evening. Here&#8217;s where it went.</text>
+
+  <!-- ===== wine glass lying on its side, opening to the right ===== -->
+  <g stroke="#e8e1d6" stroke-width="4" fill="none" stroke-linecap="round">
+    <!-- base disc, seen edge-on -->
+    <ellipse cx="102" cy="688" rx="11" ry="50"/>
+    <!-- stem -->
+    <line x1="113" y1="689" x2="200" y2="694"/>
+    <!-- bowl: top profile -->
+    <path d="M 336 632 C 244 634, 204 660, 200 694"/>
+    <!-- bowl: bottom profile -->
+    <path d="M 336 756 C 244 754, 204 728, 200 694"/>
+    <!-- rim opening, seen at an angle -->
+    <ellipse cx="336" cy="694" rx="14" ry="62" opacity="0.55"/>
+  </g>
+  <!-- wine left in the bowl, pooling toward the rim -->
+  <path d="M 336 756 C 268 754, 236 736, 228 712 C 268 728, 306 736, 336 738 Z" fill="#8c2f39" opacity="0.85"/>
+
+  <!-- spill puddle at the rim -->
+  <path d="M 344 742 C 374 720 434 718 462 740 C 490 762 466 784 424 782 C 382 790 328 768 344 742 Z" fill="#8c2f39" opacity="0.9"/>
+  <path d="M 366 748 C 388 736 424 736 440 748 C 456 762 440 772 414 770 C 390 774 354 762 366 748 Z" fill="#a83a44" opacity="0.7"/>
+
+  <!-- the spill becomes a running route (dotted) -->
+  <path d="M 466 752 C 590 720 620 640 750 660 C 885 680 905 780 1045 760 C 1165 744 1185 640 1310 640"
+        fill="none" stroke="url(#route)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0.1 30"/>
+
+  <!-- finish flag -->
+  <g transform="translate(1358,640)">
+    <line x1="0" y1="4" x2="0" y2="-92" stroke="#e8e1d6" stroke-width="4" stroke-linecap="round"/>
+    <g stroke="#e8e1d6" stroke-width="2.5">
+      <rect x="0" y="-92" width="22" height="18" fill="#e8e1d6"/>
+      <rect x="22" y="-92" width="22" height="18" fill="none"/>
+      <rect x="44" y="-92" width="22" height="18" fill="#e8e1d6"/>
+      <rect x="0" y="-74" width="22" height="18" fill="none"/>
+      <rect x="22" y="-74" width="22" height="18" fill="#e8e1d6"/>
+      <rect x="44" y="-74" width="22" height="18" fill="none"/>
+    </g>
+  </g>
+
+  <!-- chang quote -->
+  <text x="86" y="846" font-family="Georgia, serif" font-style="italic" font-size="26" fill="#8a7d74">&#8220;Kids just don&#8217;t drink anymore.&#8221; &#8212; David Chang</text>
+</svg>

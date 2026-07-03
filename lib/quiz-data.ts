@@ -429,6 +429,11 @@ export function rapidFromAnswers(answers: number[]): Record<string, number> {
   return out
 }
 
+// URL slug for an archetype's public /type/<slug> share page ("The Grounded
+// Optimist" → "grounded-optimist").
+export const typeSlug = (name: string) =>
+  name.toLowerCase().replace(/^the /, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
 export const ARCHETYPES = [
   {
     name: 'The Curious Realist',

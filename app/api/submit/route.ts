@@ -4,6 +4,7 @@ import { createSession } from '@/lib/auth'
 import { metroOf } from '@/lib/quiz-data'
 import { metroGenderCounts, shouldHoldForBalance } from '@/lib/balance'
 import { renderEmail, sendEmail, button, C } from '@/lib/email'
+import { sendPushToUser } from '@/lib/push'
 
 async function sendCoreCompletionEmail(user: { id: string; email: string; name?: string | null; archetype?: string | null }, held: boolean) {
   if (!user.email) return
@@ -132,6 +133,30 @@ if (error) {
   console.error('Submit: supabase error:', error)
   return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
 }
+    // Referral reward — BOTH sides get a free friend pack when an invite lands
+    // (a free match round each; idempotent per referred signup via the unique
+    // synthetic payment ids). Best-effort: never blocks signup.
+    if (insertRow.referred_by && data?.id) {
+      try {
+        await supabaseAdmin.from('friend_match_rounds').upsert(
+          [
+            { user_id: insertRow.referred_by, stripe_payment_id: `ref-${data.id}` },
+            { user_id: data.id, stripe_payment_id: `refwelcome-${data.id}` },
+          ],
+          { onConflict: 'stripe_payment_id', ignoreDuplicates: true }
+        )
+        const first = (cleanName || 'someone').split(' ')[0]
+        await sendPushToUser(insertRow.referred_by, {
+          title: 'your invite worked 🧡',
+          body: `${first} just joined — you both got a free friend pack.`,
+          url: '/friends/pack',
+          tag: 'ref-reward',
+        }).catch(() => {})
+      } catch (e) {
+        console.error('Submit: referral reward failed (signup unaffected):', e)
+      }
+    }
+
     // Gender-balance intake gate: if this signup would push their metro's
     // active pool past the ratio ceiling, hold them in a soft "early access"
     // state (pool_active=false) instead of matching. The cron releases them

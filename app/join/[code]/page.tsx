@@ -47,7 +47,7 @@ export default async function JoinPage({ params }: { params: { code: string } })
           join {first} on notcupid →
         </a>
         <div style={{ marginTop: '1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
-          free to join · love line + friend line
+          free to join · you both get a free friend pack
         </div>
       </div>
     </div>

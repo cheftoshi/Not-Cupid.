@@ -180,7 +180,7 @@ export default function RosterPicker({
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>✦</div>
         <h2 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>in the queue.</h2>
         <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 440, margin: '0 auto' }}>
-          the algorithm re-runs every 20 minutes, scanning the pool for your people. fresh picks land here the moment they do.
+          the algorithm re-runs every 20 minutes, and new people join your city every week — your roster fills as they do. we&apos;ll ping you when fresh picks land.
         </p>
         <ExpandRadiusButton radius={radius} maxRadius={maxRadius} />
       </div>
