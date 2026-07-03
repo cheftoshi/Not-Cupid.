@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import { signLabel } from '@/lib/astrology';
+import { toast } from '@/components/feedback';
 
 // Your active/chosen matches — the rich cards at the TOP of the dashboard. Shows
 // the free details (archetype, career, city, style, sign) always, plus the
@@ -22,24 +24,38 @@ const STATUS = {
 } as const;
 
 export default function ActiveChats({ cards }: { cards: Card[] }) {
-  if (!cards.length) return null;
+  const [checkingOut, setCheckingOut] = useState(false);
 
   async function unlock(matchId: string) {
+    setCheckingOut(true);
     try {
       const res = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: 'profile' }),
       });
       const d = await res.json();
-      if (res.ok && d.url) window.location.href = d.url;
-    } catch { /* ignore */ }
+      if (res.ok && d.url) { window.location.href = d.url; return; }
+      setCheckingOut(false);
+      toast(d.error || 'checkout didn’t open — try again', 'error');
+    } catch { setCheckingOut(false); toast('checkout didn’t open — try again', 'error'); }
   }
+
+  if (!cards.length) return null;
 
   return (
     <div>
       <style>{`
         [data-chat] { transition: box-shadow .22s var(--ease), transform .22s var(--ease); }
         [data-chat]:hover { box-shadow: var(--shadow-lg); }
+        [data-chat]:active { transform: scale(.995); }
       `}</style>
+      {checkingOut && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90 }}>
+          <div style={{ background: 'var(--h-surface)', borderRadius: 18, padding: '1.6rem 2rem', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>🔒</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>taking you to secure checkout…</div>
+          </div>
+        </div>
+      )}
       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.85rem' }}>
         your chats · {cards.length}
       </div>

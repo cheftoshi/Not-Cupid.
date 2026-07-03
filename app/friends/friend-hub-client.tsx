@@ -5,6 +5,7 @@ import { NEIGHBORHOODS } from '@/lib/neighborhoods';
 import ReactivateButton from '@/components/reactivate-button';
 import LocationControls from '@/components/location-controls';
 import { ConnectionSigil } from '@/components/connection-ui';
+import { toast, confirmDialog } from '@/components/feedback';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
@@ -832,8 +833,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   async function createClub() {
     const name = newClub.name.trim(); if (!name || clubBusy) return; setClubBusy(true);
     try { const r = await fetch('/api/friend/clubs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newClub) });
-      if (r.ok) { setShowNewClub(false); setNewClub({ name: '', category: 'books', description: '', area: '' }); await loadClubs(); }
-      else { const d = await r.json().catch(() => ({})); alert(d.error || 'Could not create the club.'); }
+      if (r.ok) { setShowNewClub(false); setNewClub({ name: '', category: 'books', description: '', area: '' }); toast('your club is live 🎉', 'success'); await loadClubs(); }
+      else { const d = await r.json().catch(() => ({})); toast(d.error || 'could not create the club — try again', 'error'); }
     } catch { /* ignore */ } finally { setClubBusy(false); }
   }
   async function clubAct(id: string, action: string, userId?: string) {
@@ -846,8 +847,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   async function submitLink() {
     const title = newLink.title.trim(); const url = newLink.url.trim(); if (!title || !url || clubBusy) return; setClubBusy(true);
     try { const r = await fetch('/api/friend/community-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newLink) });
-      if (r.ok) { setShowNewLink(false); setNewLink({ title: '', url: '', kind: 'discord', description: '' }); alert('Submitted! It shows up once the team approves it.'); }
-      else { const d = await r.json().catch(() => ({})); alert(d.error || 'Could not submit.'); }
+      if (r.ok) { setShowNewLink(false); setNewLink({ title: '', url: '', kind: 'discord', description: '' }); toast('submitted — it shows up once the team approves it ✨', 'success'); }
+      else { const d = await r.json().catch(() => ({})); toast(d.error || 'could not submit — try again', 'error'); }
     } catch { /* ignore */ } finally { setClubBusy(false); }
   }
 
@@ -970,15 +971,25 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   // Safety: flag a person to the team (routes to the feedback inbox admins read).
   async function reportUser(m: any) {
     const who = (m?.name || 'this person');
-    if (!confirm(`Report ${who} to the NotCupid team? We review every report. (For anything urgent or unsafe, email match@notcupid.com.)`)) return;
+    const ok = await confirmDialog({
+      title: `report ${who}?`,
+      body: 'We review every report. For anything urgent or unsafe, email match@notcupid.com directly.',
+      confirmLabel: 'send report', danger: true,
+    });
+    if (!ok) return;
     try {
       await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: `[FRIEND SAFETY REPORT] ${who} (id ${m?.otherId || m?.id || '?'}) flagged from a Scene post/card.` }) });
-      alert('Thanks — our team will review this. You can also just not connect; they can’t message you unless you do.');
-    } catch { alert('Could not send that report — please email match@notcupid.com.'); }
+      toast('thanks — our team will review this. they can’t message you unless you connect.', 'success');
+    } catch { toast('could not send that report — please email match@notcupid.com', 'error'); }
     setCardMember(null);
   }
   async function leaveCrew() {
-    if (!confirm("Opt out of this crew? You'll leave the group for everyone in it and the algo will route you to a fresh one.")) return;
+    const ok = await confirmDialog({
+      title: 'opt out of this crew?',
+      body: "You'll leave the group for everyone in it, and the algo will route you to a fresh one.",
+      confirmLabel: 'leave crew', danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     await fetch('/api/friend/leave', { method: 'POST' });
     setChatOpen(false);
@@ -987,12 +998,17 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   }
   async function resetFriendScene() {
     if (rewipesLeft <= 0) return;
-    if (!confirm(`Restart your Friend Line scene? This clears your current friend pack and connection requests so the next set can be fresh. You have ${rewipesLeft} rewipe${rewipesLeft === 1 ? '' : 's'} left.`)) return;
+    const ok = await confirmDialog({
+      title: 'restart your friend scene?',
+      body: `This clears your current friend pack and connection requests so the next set can be fresh. You have ${rewipesLeft} rewipe${rewipesLeft === 1 ? '' : 's'} left.`,
+      confirmLabel: 'restart it',
+    });
+    if (!ok) return;
     setBusy(true);
     const r = await fetch('/api/friend/reset', { method: 'POST' });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
-      alert(d.error || 'Could not restart your Friend Line scene.');
+      toast(d.error || 'could not restart your friend scene — try again', 'error');
       setBusy(false);
       return;
     }
@@ -1072,13 +1088,15 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
     };
     const res = await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) {
+      // Draft-safe: the wizard stays open with everything filled — nothing is lost.
       const d = await res.json().catch(() => ({}));
-      alert(d?.error || "Couldn't post that — try again.");
+      toast(d?.error || 'couldn’t post that — your draft is safe, try again', 'error');
       setBusy(false);
       return;
     }
     setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
     setComposerOpen(false); setComposerStep(1);
+    toast(newAct.kind === 'event' ? 'your plan is on the scene 🎟️' : 'posted to the scene ✨', 'success');
     await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
@@ -1091,13 +1109,14 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
       setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
     } else {
       const d = await r.json().catch(() => ({} as any));
-      if (d?.full) { alert('This plan is full — the host capped the headcount. You can say “maybe” in case a spot opens.'); await loadActs(); }
+      if (d?.full) { toast('this plan is full — say “maybe” in case a spot opens', 'error'); await loadActs(); }
     }
   }
   async function deleteAct(id: string) {
-    if (!confirm('Delete this post?')) return;
+    const ok = await confirmDialog({ title: 'delete this post?', body: 'It disappears for everyone — RSVPs and comments go with it.', confirmLabel: 'delete', danger: true });
+    if (!ok) return;
     const r = await fetch(`/api/friend/activities/${id}`, { method: 'DELETE' });
-    if (r.ok) setActs((a) => a.filter((x) => x.id !== id));
+    if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); toast('post deleted', 'success'); }
   }
 
   return (
@@ -1822,7 +1841,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.28rem', lineHeight: 1 }}>{c.name}</div>
                           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{c.category} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}{c.area ? ` · 📍 ${c.area}` : ''}</div>
                         </div>
-                        <button onClick={async () => { if (confirm(`report "${c.name}" to the team?`)) { await clubAct(c.id, 'report'); await loadClubs(); } }} title="report this club" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontSize: '0.85rem', flexShrink: 0 }}>⚑</button>
+                        <button onClick={async () => { if (await confirmDialog({ title: `report "${c.name}"?`, body: 'The team reviews every report. Clubs with repeat reports are hidden automatically.', confirmLabel: 'report it', danger: true })) { await clubAct(c.id, 'report'); await loadClubs(); toast('thanks — the team will take a look', 'success'); } }} title="report this club" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontSize: '0.85rem', flexShrink: 0 }}>⚑</button>
                       </div>
                       {c.description && <p style={{ margin: '0.5rem 0 0', fontSize: '0.86rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}>{c.description}</p>}
                       <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>

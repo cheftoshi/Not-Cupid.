@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { parseResponse } from '@/lib/fetch-helpers';
+import { toast } from '@/components/feedback';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
 import ReactivateButton from '@/components/reactivate-button';
@@ -40,24 +42,32 @@ export default function RosterPicker({
   horizontal?: boolean;
   hasActive?: boolean;
 }) {
+  const router = useRouter();
   const [roster, setRoster] = useState<Candidate[] | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
+  // The just-picked candidate — their card flips to a "it's on" moment in place
+  // (no hard reload; router.refresh() brings the new chat in behind it).
+  const [pickedId, setPickedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [atCapacity, setAtCapacity] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
   // When at capacity, picking opens a "close one first" prompt for this person.
   const [closePromptFor, setClosePromptFor] = useState<Candidate | null>(null);
   // Which existing conversation's end-dialog (reason picker) is open.
   const [endingMatchId, setEndingMatchId] = useState<string | null>(null);
   async function unlock(matchId: string) {
+    setCheckingOut(true);
     try {
       const res = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: 'profile' }),
       });
       const data = await parseResponse<any>(res);
-      if (res.ok && data.url) window.location.href = data.url;
-    } catch { /* ignore */ }
+      if (res.ok && data.url) { window.location.href = data.url; return; }
+      setCheckingOut(false);
+      toast(data.error || 'checkout didn’t open — try again', 'error');
+    } catch { setCheckingOut(false); toast('checkout didn’t open — try again', 'error'); }
   }
 
   useEffect(() => { load(); }, []);
@@ -92,8 +102,12 @@ export default function RosterPicker({
       });
       const data = await parseResponse<any>(res);
       if (res.ok && data.ok) {
-        // Match created — reload so the dashboard shows the match card.
-        window.location.reload();
+        // Match created — flip THIS card to the "it's on" moment in place, then
+        // soft-refresh the server data so the new chat appears. No hard reload:
+        // scroll stays put and the reveal cinematic still fires for the fresh match.
+        setPickedId(c.id);
+        setPicking(null);
+        setTimeout(() => router.refresh(), 1400);
         return;
       }
       // Conflict (taken / already matched) — show why + refresh the roster.
@@ -170,8 +184,10 @@ export default function RosterPicker({
       <style>{`
         [data-card] { transition: transform .22s var(--ease), box-shadow .22s var(--ease); }
         [data-card]:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+        [data-card]:active { transform: translateY(-1px) scale(.99); }
         [data-card] .ncCardImg { transition: transform .4s var(--ease); }
         [data-card]:hover .ncCardImg { transform: scale(1.04); }
+        @keyframes ncPickedIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
       `}</style>
       {/* slim header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.9rem' }}>
@@ -262,18 +278,24 @@ export default function RosterPicker({
                 {c.occupation && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>💼 {c.occupation}</div>}
                 {style && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
                 {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
+                {pickedId === c.id ? (
+                  <div style={{ marginTop: 'auto', textAlign: 'center', background: 'rgba(37,99,255,0.1)', border: '1.5px solid #2563ff', color: '#2563ff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, animation: 'ncPickedIn .4s var(--ease) both' }}>
+                    ✦ it&apos;s on — opening your chat…
+                  </div>
+                ) : (
                 <button
                   onClick={() => pick(c)}
-                  disabled={!!picking}
+                  disabled={!!picking || !!pickedId}
                   style={{
                     marginTop: 'auto', background: picking === c.id ? '#1b46c9' : '#0b0b0b', color: '#fff', border: 'none',
                     borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem',
                     letterSpacing: '0.1em', textTransform: 'uppercase', cursor: picking ? 'wait' : 'pointer',
-                    opacity: picking && picking !== c.id ? 0.4 : 1,
+                    opacity: (picking && picking !== c.id) || pickedId ? 0.4 : 1,
                   }}
                 >
                   {picking === c.id ? 'connecting…' : atCapacity ? `close a chat to open →` : `choose ${first} →`}
                 </button>
+                )}
               </div>
             </div>
           );
@@ -283,6 +305,16 @@ export default function RosterPicker({
       <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
         refreshes as new people join
       </p>
+
+      {/* Checkout hand-off — never a silent redirect. */}
+      {checkingOut && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90 }}>
+          <div style={{ background: 'var(--h-surface)', borderRadius: 18, padding: '1.6rem 2rem', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>🔒</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>taking you to secure checkout…</div>
+          </div>
+        </div>
+      )}
 
       {/* At-capacity: choosing prompts the user to close one existing chat. */}
       {closePromptFor && (

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
+import { toast } from '@/components/feedback';
 
 // One-click "I'm back" — lifts a matching pause WITHOUT wiping the profile or
 // spending a "start fresh" refresh. Used on the paused-state cards (both lines).
@@ -15,10 +16,10 @@ export default function ReactivateButton({ accent = '#2563ff' }: { accent?: stri
     try {
       const r = await fetch('/api/profile/reactivate', { method: 'POST' });
       const d = await parseResponse<any>(r);
-      if (!r.ok) { alert(d.error || 'Could not reactivate'); setBusy(false); return; }
+      if (!r.ok) { toast(d.error || 'could not reactivate — try again', 'error'); setBusy(false); return; }
       window.location.reload();
     } catch {
-      alert('Something went wrong.'); setBusy(false);
+      toast('something went wrong — try again', 'error'); setBusy(false);
     }
   }
 

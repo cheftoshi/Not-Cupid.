@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
+import { toast, confirmDialog } from '@/components/feedback';
 
 const MAX = 3;
 
@@ -16,18 +17,21 @@ export default function RefreshProfileButton({ usedCount }: { usedCount?: number
 
   async function refresh() {
     if (busy || remaining <= 0) return;
-    if (!confirm(
-      `Start fresh? This wipes your quiz answers, profile, and all current matches on BOTH the Love and Friend lines — then you re-take the quiz. Your account stays. You have ${remaining} refresh${remaining === 1 ? '' : 'es'} left.`
-    )) return;
+    const ok = await confirmDialog({
+      title: 'start completely fresh?',
+      body: `This wipes your quiz answers, profile, and all current matches on BOTH the Love and Friend lines — then you re-take the quiz. Your account stays. You have ${remaining} refresh${remaining === 1 ? '' : 'es'} left.`,
+      confirmLabel: 'wipe & restart', danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const r = await fetch('/api/profile/refresh', { method: 'POST' });
       const d = await parseResponse<any>(r);
-      if (!r.ok) { alert(d.error || 'Could not refresh'); setBusy(false); return; }
+      if (!r.ok) { toast(d.error || 'could not refresh — try again', 'error'); setBusy(false); return; }
       setUsed((u) => u + 1);
       window.location.href = '/quiz?retake=1';
     } catch {
-      alert('Something went wrong.'); setBusy(false);
+      toast('something went wrong — try again', 'error'); setBusy(false);
     }
   }
 

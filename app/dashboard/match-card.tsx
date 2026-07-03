@@ -10,6 +10,7 @@ import { VIBE_HEADS, vibeLabel, relationshipStyleLabel, metroOf, METRO_CENTERS }
 import type { VibeKey } from '@/lib/quiz-data';
 import { signLabel, signCompat } from '@/lib/astrology';
 import { parseResponse } from '@/lib/fetch-helpers';
+import { confirmDialog } from '@/components/feedback';
 
 // Privacy: show a fuzzy distance band + metro, never the exact ZIP.
 function distanceBand(mi: number | null | undefined): string | null {
@@ -105,7 +106,7 @@ export default function MatchCard({ match, otherUser, currentUserId, isUnlocked,
   }
 
   async function handlePass() {
-    if (!confirm('Pass on this match? This ends it for both of you.')) return;
+    if (!(await confirmDialog({ title: 'pass on this match?', body: 'This ends it for both of you — they’ll see the conversation closed.', confirmLabel: 'pass', danger: true }))) return;
     setBusy(true); setError('');
     try {
       const res = await fetch(`/api/matches/${match.id}/pass`, { method: 'POST' });

@@ -10,6 +10,7 @@ import { parseResponse } from '@/lib/fetch-helpers';
 import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
 import { SUN_SIGNS } from '@/lib/astrology';
 import { compressImage } from '@/lib/compress-image';
+import { confirmDialog } from '@/components/feedback';
 
 type Props = {
   initialUser: any;
@@ -179,8 +180,8 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   }
 
   async function handleDelete() {
-    if (!confirm('Delete your account? Active matches will end. This cannot be undone.')) return;
-    if (!confirm('Really sure? This removes you from NotCupid permanently.')) return;
+    if (!(await confirmDialog({ title: 'delete your account?', body: 'Active matches will end and your profile disappears. This cannot be undone.', confirmLabel: 'continue', danger: true }))) return;
+    if (!(await confirmDialog({ title: 'really sure?', body: 'This removes you from NotCupid permanently — matches, chats, everything.', confirmLabel: 'delete forever', cancelLabel: 'keep my account', danger: true }))) return;
     await fetch('/api/profile/delete', { method: 'POST' });
     router.push('/');
   }
