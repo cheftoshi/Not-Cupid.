@@ -7,6 +7,7 @@ import { compressImage } from '@/lib/compress-image';
 import { VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import styles from './hub.module.css';
+import { SkeletonStyles, SkeletonRow } from '@/components/skeleton';
 
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
@@ -354,7 +355,7 @@ export default function HubClient({
                 {!friendOptedIn ? (
                   <p className={styles.emptyCopy}>Friend Line is where platonic matches, crews and plans live.</p>
                 ) : friends === null ? (
-                  <p className={styles.loadingCopy}>loading…</p>
+                  <div><SkeletonStyles /><SkeletonRow /><SkeletonRow /></div>
                 ) : friends.length === 0 ? (
                   <p className={styles.emptyCopy}>No friends opened yet. <Link href="/friends/pack" style={{ color: ORANGE_DEEP }}>Open a pack →</Link></p>
                 ) : (
@@ -376,7 +377,7 @@ export default function HubClient({
               <div>
                 <div className={`${styles.miniHead} ${styles.miniHeadFriend}`}><span>plans{myEvents.length ? ` · ${myEvents.length}` : ''}</span><Link href="/friends?view=scene">scene →</Link></div>
                 {feed === null ? (
-                  <p className={styles.loadingCopy}>loading…</p>
+                  <div><SkeletonRow /><SkeletonRow /></div>
                 ) : myEvents.length > 0 ? (
                   <div className={styles.eventList}>
                     {myEvents.slice(0, 3).map((a) => (

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { toast } from '@/components/feedback';
+import { SkeletonStyles, SkeletonCard } from '@/components/skeleton';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
 import ReactivateButton from '@/components/reactivate-button';
@@ -120,13 +121,20 @@ export default function RosterPicker({
     }
   }
 
-  // Loading
+  // Loading — card silhouettes in the real layout, so nothing shifts when the
+  // roster lands.
   if (roster === null) {
     return (
-      <div style={emptyWrap}>
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
+      <div>
+        <SkeletonStyles />
+        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.9rem' }}>
           finding your people…
         </p>
+        <div style={horizontal
+          ? { display: 'flex', gap: '1rem', overflow: 'hidden', padding: '0.5rem 0.2rem 1.1rem' }
+          : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '1rem' }}>
+          {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} width={horizontal ? 210 : undefined} />)}
+        </div>
       </div>
     );
   }

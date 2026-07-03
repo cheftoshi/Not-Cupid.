@@ -6,6 +6,7 @@ import ReactivateButton from '@/components/reactivate-button';
 import LocationControls from '@/components/location-controls';
 import { ConnectionSigil } from '@/components/connection-ui';
 import { toast, confirmDialog } from '@/components/feedback';
+import { SkeletonStyles, Skeleton, SkeletonCard, SkeletonRow } from '@/components/skeleton';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
@@ -755,6 +756,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
   const [pulse, setPulse] = useState<any>(null);
   const [acts, setActs] = useState<any[]>([]);
+  const [actsLoaded, setActsLoaded] = useState(false); // first Scene fetch landed → skeletons out
   const [filterCat, setFilterCat] = useState<string>(''); // selected sub-tag (exact category)
   const [filterMain, setFilterMain] = useState<string>(''); // selected main category bubble
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
@@ -811,6 +813,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   const loadActs = useCallback(async () => {
     const r = await fetch('/api/friend/activities'); // fetch all; category filtering is client-side now (mains group several)
     if (r.ok) setActs((await r.json()).activities || []);
+    setActsLoaded(true);
   }, []);
 
   // ── City Pulse communities: user-run clubs + submitted community links ──
@@ -1584,10 +1587,20 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
 
         <div className={`fbShell ${view === 'home' ? 'fbShellHome' : ''}`}>
           <main className="fbMain">
-        {view === 'home' && (
+        {view === 'home' && (!actsLoaded ? (
+          <div>
+            <SkeletonStyles />
+            <Skeleton h={30} w={220} style={{ marginBottom: 10 }} />
+            <Skeleton h={12} w={300} style={{ marginBottom: 22 }} />
+            <div style={{ display: 'flex', gap: '0.9rem', overflow: 'hidden', marginBottom: '1.4rem' }}>
+              {[0, 1, 2].map((i) => <SkeletonCard key={i} width={230} />)}
+            </div>
+            <SkeletonRow /><SkeletonRow />
+          </div>
+        ) : (
           <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} city={city}
             onCrew={() => goView('crew')} onScene={() => goView('scene')} onStart={() => { goView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard} />
-        )}
+        ))}
 
         {view === 'crew' && (
         <div>
@@ -1973,7 +1986,15 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                   : String(b.created_at || '').localeCompare(String(a.created_at || '')));
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  {shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
+                  {!actsLoaded && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      <SkeletonStyles />
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} style={{ ...card, padding: '0.9rem 1rem' }}><SkeletonRow /><Skeleton h={12} w="85%" style={{ margin: '0.5rem 0 0.4rem' }} /><Skeleton h={12} w="55%" /></div>
+                      ))}
+                    </div>
+                  )}
+                  {actsLoaded && shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
                   {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} />)}
                 </div>
               );
