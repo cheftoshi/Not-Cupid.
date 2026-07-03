@@ -7,6 +7,7 @@ import LocationControls from '@/components/location-controls';
 import { ConnectionSigil } from '@/components/connection-ui';
 import { toast, confirmDialog } from '@/components/feedback';
 import { SkeletonStyles, Skeleton, SkeletonCard, SkeletonRow } from '@/components/skeleton';
+import { DROP, untilNextDrop } from '@/lib/weekly-drop';
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
@@ -280,11 +281,14 @@ function VibeCard({ a, onRsvp, onAuthor }: { a: any; onRsvp: (id: string, r?: 'y
 
 // TODAY / VIBES — the entry point: what can I do on NotCupid today? Recommendation
 // rails (today's vibe / drop / near you / people / your plans / start something).
-function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onScene, onStart, onRsvp, onAuthor, city }: {
-  me?: any; firstName: string; acts: any[]; people: Person[]; myEvents: any[]; hasCrew: boolean;
+function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount = 0, onCrew, onScene, onStart, onRsvp, onAuthor, city }: {
+  me?: any; firstName: string; acts: any[]; people: Person[]; myEvents: any[]; hasCrew: boolean; sealedCount?: number;
   onCrew: () => void; onScene: () => void; onStart: () => void;
   onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onAuthor?: (a: any) => void; city?: string | null;
 }) {
+  // the weekly drop countdown re-renders every minute
+  const [, dropTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => dropTick((n) => n + 1), 60000); return () => clearInterval(t); }, []);
   const now = Date.now();
   const myInterests = new Set([...(me?.hobbies || []), ...(me?.food || []), ...(me?.music || []), ...(me?.sports || [])].map((x: any) => String(x).toLowerCase()));
   const open = acts.filter((a) => !a.mine && a.myResponse !== 'yes' && a.eligible !== false);
@@ -469,6 +473,25 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, onCrew, onSc
         </section>
 
         <aside className="friendTodaySide friendTodayActions">
+          {/* THE WEEKLY DROP — the ritual. Thursdays a fresh sealed pack lands;
+              between drops this counts down (drop culture, not feed culture). */}
+          <div className="friendPanel" style={sealedCount > 0 ? { border: '1.5px solid var(--h-accent)', boxShadow: '0 14px 34px -18px rgba(255,106,31,0.45)' } : undefined}>
+            <div className="friendPanelKicker">the weekly drop</div>
+            {sealedCount > 0 ? (
+              <>
+                <h2>this week&apos;s pack is here.</h2>
+                <p>{sealedCount} {sealedCount === 1 ? 'person' : 'people'}, curated for you — sealed until you open it.</p>
+                <a href="/friends/pack" className="friendHeroPrimary" style={{ display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}>🎁 open the pack →</a>
+              </>
+            ) : (
+              <>
+                <h2>next drop in {untilNextDrop()}.</h2>
+                <p>every {DROP.label}, a fresh pack of people lands — curated by the algo, sealed until you open it. can&apos;t wait? open one now ($1.99, free with all-access).</p>
+                <a href="/friends/pack" className="friendTextCta" style={{ textDecoration: 'none' }}>open one early →</a>
+              </>
+            )}
+          </div>
+
           <div className="friendPanel friendActionPanel">
             <div className="friendPanelKicker">quick starts</div>
             <h2>make the first move small.</h2>
@@ -1636,7 +1659,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             <SkeletonRow /><SkeletonRow />
           </div>
         ) : (
-          <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} city={city}
+          <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} sealedCount={sealedCount} city={city}
             onCrew={() => goView('crew')} onScene={() => goView('scene')} onStart={() => { goView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard} />
         ))}
 
