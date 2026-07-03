@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
+import { toast } from '@/components/feedback';
 import ReportDialog from '@/components/report-dialog';
 import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
@@ -97,6 +98,17 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const [now, setNow] = useState(() => Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // "typing…" — the poll carries the other side's last typing ping; we show the
+  // bubble while it's fresh (<6s). Our own pings are throttled to 1 per 2.5s.
+  const [otherTypingAt, setOtherTypingAt] = useState<string | null>(null);
+  const lastTypingPingRef = useRef(0);
+  function pingTyping() {
+    if (readOnly) return;
+    const t = Date.now();
+    if (t - lastTypingPingRef.current < 2500) return;
+    lastTypingPingRef.current = t;
+    fetch(`/api/matches/${matchId}/typing`, { method: 'POST' }).catch(() => {});
+  }
 
   const [placeholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
   const [starters] = useState(() => buildStarters(otherUser));
@@ -129,9 +141,20 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
     ? timeLeft(liveMatch.chat_expires_at, now)
     : 'active';
 
+  // Smart scroll: autoscroll on new messages only when the user is already near
+  // the bottom (or it's their own send) — never yank someone who's reading up.
+  const nearBottomRef = useRef(true);
+  function trackScroll() {
+    const el = scrollRef.current;
+    if (el) nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+  }
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages.length]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const last = messages[messages.length - 1];
+    const mine = last?.sender_id === currentUserId;
+    if (mine || nearBottomRef.current) el.scrollTop = el.scrollHeight;
+  }, [messages.length, currentUserId]);
 
   // Load the date vibes (options, my picks, mutual locks) for the side rail.
   async function loadVibes() {
@@ -194,11 +217,21 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             setMessages(fresh);
           }
           if (data.match) setLiveMatch((prev: any) => ({ ...prev, ...data.match }));
+          if ('otherTypingAt' in data) setOtherTypingAt(data.otherTypingAt || null);
         }
       } catch {}
     }, 3000);
     return () => clearInterval(interval);
   }, [matchId, readOnly]);
+
+  // Re-render every 2s while a typing ping is live so the bubble expires cleanly.
+  const [, typingTick] = useState(0);
+  useEffect(() => {
+    if (!otherTypingAt) return;
+    const id = setInterval(() => typingTick((n) => n + 1), 2000);
+    return () => clearInterval(id);
+  }, [otherTypingAt]);
+  const otherTyping = !!otherTypingAt && Date.now() - new Date(otherTypingAt).getTime() < 6000 && !readOnly;
 
   function pickStarter(text: string) {
     setInput(text);
@@ -231,6 +264,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
       sender_id: currentUserId,
       body: text,
       created_at: new Date().toISOString(),
+      pending: true,
     };
     setMessages((prev) => [...prev, optimistic]);
     setInput('');
@@ -242,12 +276,14 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
         body: JSON.stringify({ match_id: matchId, body: text }),
       });
       if (!res.ok) throw new Error('Send failed');
-      const refresh = await fetch(`/api/messages?match_id=${matchId}`);
-      const data = await parseResponse<any>(refresh);
-      setMessages(data.messages || []);
+      const data = await parseResponse<any>(res);
+      // Swap the optimistic bubble for the real row in place — no full refetch,
+      // no flicker. The incremental poll dedupes by id, so no double-ups.
+      setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? (data.message || { ...m, pending: false }) : m)));
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       setInput(text);
+      toast('message didn’t send — it’s back in the box, try again', 'error');
     } finally {
       setSending(false);
     }
@@ -300,7 +336,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
         </div>
       </header>
 
-      <div className={styles.messages} ref={scrollRef}>
+      <div className={styles.messages} ref={scrollRef} onScroll={trackScroll}>
         {/* algo narrator — frames every chat */}
         <div className={styles.narrator}>
           <span className={styles.narratorMark}>✦ NotCupid</span>
@@ -330,16 +366,29 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
               className={`${styles.bubble} ${
                 msg.sender_id === currentUserId ? styles.bubbleMine : styles.bubbleTheirs
               }`}
+              style={msg.pending ? { opacity: 0.55 } : undefined}
             >
               <div className={styles.bubbleBody}>{msg.body}</div>
               <div className={styles.bubbleTime}>
-                {new Date(msg.created_at).toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
+                {msg.pending
+                  ? 'sending…'
+                  : new Date(msg.created_at).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
               </div>
             </div>
           ))
+        )}
+        {otherTyping && (
+          <div className={`${styles.bubble} ${styles.bubbleTheirs}`} aria-label={`${firstName} is typing`}>
+            <div className={styles.bubbleBody} style={{ display: 'inline-flex', gap: 4, alignItems: 'center', padding: '0.15rem 0.1rem' }}>
+              <style>{`@keyframes ncTypDot { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }`}</style>
+              {[0, 1, 2].map((i) => (
+                <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', display: 'inline-block', animation: `ncTypDot 1.2s ease-in-out ${i * 0.18}s infinite` }} />
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
@@ -355,7 +404,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             ref={inputRef}
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { setInput(e.target.value); if (e.target.value) pingTyping(); }}
             placeholder={chatExpired ? 'chat ended' : pendingAccept ? `say hi — your message connects you with ${firstName}` : placeholder}
             disabled={chatExpired || sending}
             maxLength={2000}

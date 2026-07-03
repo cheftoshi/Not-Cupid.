@@ -705,6 +705,9 @@ alter table friend_activities add column if not exists location text;
 alter table friend_activities add column if not exists capacity int;
 -- 20260627_event_dating_friendly.sql — host opts the plan as "dating-friendly"
 alter table friend_activities add column if not exists dating_friendly boolean not null default false;
+-- 20260630_typing.sql — live "typing…" indicator for the love chat
+alter table matches add column if not exists user_1_typing_at timestamptz;
+alter table matches add column if not exists user_2_typing_at timestamptz;
 alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
   check (response in ('yes', 'maybe', 'no'));
 alter table users add column if not exists friend_digest_sent_at timestamptz;

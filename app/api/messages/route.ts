@@ -41,11 +41,23 @@ export async function GET(req: NextRequest) {
   }
   const { data: messages } = await msgQuery;
 
+  // Typing indicator — separate select so an un-migrated typing column can never
+  // break the chat's hot path (it just reads as "not typing").
+  let otherTypingAt: string | null = null;
+  {
+    const { data: t, error: tErr } = await supabaseAdmin
+      .from('matches').select('user_1_typing_at, user_2_typing_at').eq('id', matchId).maybeSingle();
+    if (!tErr && t) {
+      otherTypingAt = (match.user_1_id === user.id ? (t as any).user_2_typing_at : (t as any).user_1_typing_at) ?? null;
+    }
+  }
+
   // Return live match status alongside messages so the chat header can
   // auto-update (countdown ticking, or "ended" if the other person bailed).
   return NextResponse.json({
     messages: messages || [],
     incremental: !!after,
+    otherTypingAt,
     match: {
       chat_expires_at: match.chat_expires_at,
       ended_at: match.ended_at,
