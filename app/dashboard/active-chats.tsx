@@ -12,7 +12,7 @@ type Card = {
   matchId: string; name: string; photo_url: string | null; age: number | null;
   archetype: string | null; occupation?: string | null; city?: string | null;
   relationship_style?: string | null; sun_sign?: string | null;
-  bio?: string | null; interests?: string[];
+  bio?: string | null; interests?: string[]; unread?: boolean;
   score: number | null;
   status: 'chatting' | 'waiting' | 'your-move'; profileUnlocked: boolean; hasContent: boolean;
 };
@@ -89,7 +89,10 @@ export default function ActiveChats({ cards }: { cards: Card[] }) {
                   </span>
                   {a.score != null && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', fontWeight: 700, color: 'var(--blue)' }}>{a.score}%</span>}
                 </div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: s.color }}>{s.label}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: s.color }}>{s.label}</span>
+                  {a.unread && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#fff', background: '#2563ff', borderRadius: 999, padding: '2px 8px', fontWeight: 700 }}>● new message</span>}
+                </div>
                 {a.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{a.archetype}</div>}
 
                 {meta.length > 0 && (

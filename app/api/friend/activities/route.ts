@@ -77,6 +77,34 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // SOCIAL PROOF — "Maya + 1 more you know are going": the viewer's CONNECTIONS
+  // who RSVP'd yes per event. The strongest show-up (and safety) signal a plan
+  // can carry. First names only, capped at 3 per event.
+  const friendsGoingByAct = new Map<string, string[]>();
+  if (ids.length) {
+    try {
+      const { data: conns } = await supabaseAdmin
+        .from('friend_connections').select('user_a_id, user_b_id')
+        .eq('status', 'connected')
+        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
+      const connIds = new Set((conns ?? []).map((c: any) => (c.user_a_id === user.id ? c.user_b_id : c.user_a_id)));
+      if (connIds.size) {
+        const { data: yesRows } = await supabaseAdmin
+          .from('friend_activity_rsvps').select('activity_id, user_id')
+          .in('activity_id', ids).eq('response', 'yes').in('user_id', Array.from(connIds));
+        const nameIds = Array.from(new Set((yesRows ?? []).map((r: any) => r.user_id)));
+        const { data: names } = nameIds.length
+          ? await supabaseAdmin.from('users').select('id, name').in('id', nameIds)
+          : { data: [] as any[] };
+        const nameById = new Map((names ?? []).map((u: any) => [u.id, (u.name || 'someone').split(' ')[0]]));
+        (yesRows ?? []).forEach((r: any) => {
+          const list = friendsGoingByAct.get(r.activity_id) || [];
+          if (list.length < 3) { list.push(nameById.get(r.user_id) || 'someone'); friendsGoingByAct.set(r.activity_id, list); }
+        });
+      }
+    } catch { /* best-effort — no social proof beats a broken board */ }
+  }
+
   // Comment counts per shown post (Scene posts are commentable). Graceful if the
   // comments table isn't migrated yet.
   const commentCountByAct = new Map<string, number>();
@@ -119,6 +147,7 @@ export async function GET(req: NextRequest) {
       commentCount: commentCountByAct.get(a.id) || 0,
       iRsvped: myRespByAct.has(a.id),
       // event extras
+      friendsGoing: friendsGoingByAct.get(a.id) || [],
       capacity: a.capacity ?? null,
       datingFriendly: a.dating_friendly === true,
       audienceGender: a.audience_gender || null,

@@ -24,7 +24,30 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const otherId = req.nextUrl.searchParams.get('with');
-  if (!otherId || otherId === user.id) return NextResponse.json({ error: 'Invalid' }, { status: 400 });
+
+  // No `with` → unread summary across ALL my DM threads (badge counts for the
+  // connections rail). Graceful if friend_dm_reads isn't migrated yet.
+  if (!otherId) {
+    const unread: Record<string, number> = {};
+    try {
+      const { data: rows } = await supabaseAdmin
+        .from('friend_dms').select('user_a_id, user_b_id, sender_id, created_at')
+        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+        .order('created_at', { ascending: false }).limit(400);
+      const { data: reads } = await supabaseAdmin
+        .from('friend_dm_reads').select('other_id, read_at').eq('user_id', user.id);
+      const readByOther = new Map((reads ?? []).map((r: any) => [r.other_id, r.read_at]));
+      (rows ?? []).forEach((m: any) => {
+        if (m.sender_id === user.id) return;
+        const other = m.user_a_id === user.id ? m.user_b_id : m.user_a_id;
+        const readAt = readByOther.get(other);
+        if (!readAt || new Date(m.created_at) > new Date(readAt)) unread[other] = (unread[other] || 0) + 1;
+      });
+    } catch { /* reads table not migrated — no badges */ }
+    return NextResponse.json({ unread });
+  }
+
+  if (otherId === user.id) return NextResponse.json({ error: 'Invalid' }, { status: 400 });
   if (!(await areConnected(user.id, otherId))) {
     return NextResponse.json({ error: 'Not connected', messages: [] }, { status: 403 });
   }
@@ -41,6 +64,14 @@ export async function GET(req: NextRequest) {
 
   const { data: other } = await supabaseAdmin
     .from('users').select('id, name, photo_url').eq('id', otherId).maybeSingle();
+
+  // Opening/polling the thread = reading it. Graceful pre-migration.
+  try {
+    await supabaseAdmin.from('friend_dm_reads').upsert(
+      { user_id: user.id, other_id: otherId, read_at: new Date().toISOString() },
+      { onConflict: 'user_id,other_id' }
+    );
+  } catch { /* reads table not migrated */ }
 
   return NextResponse.json({
     messages: (messages ?? []).map((m: any) => ({ ...m, isMe: m.sender_id === user.id })),

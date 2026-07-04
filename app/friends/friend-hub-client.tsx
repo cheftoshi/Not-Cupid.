@@ -703,6 +703,13 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
             👥 open to {aud}
           </div>
         )}
+        {/* SOCIAL PROOF — your connections who are in. The strongest "it's safe
+            + it'll be fun" signal a plan can carry. */}
+        {isEvent && Array.isArray(a.friendsGoing) && a.friendsGoing.length > 0 && (
+          <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,106,31,0.1)', border: '1px solid rgba(255,106,31,0.3)', borderRadius: 999, padding: '0.3rem 0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.04em', color: '#d2530f', fontWeight: 700 }}>
+            🧡 {a.friendsGoing.slice(0, 2).join(' + ')}{a.friendsGoing.length > 2 ? ` + ${a.friendsGoing.length - 2} more` : ''} {a.friendsGoing.length === 1 ? 'you know is' : 'you know are'} going
+          </div>
+        )}
         {isEvent && !a.isMine && (
           <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.4, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.5rem 0.65rem' }}>
             <span style={{ flexShrink: 0 }}>🛡</span>
@@ -1097,7 +1104,16 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   const loadDm = useCallback(async (otherId: string): Promise<boolean> => {
     try { const r = await fetch('/api/friend/dm?with=' + otherId); if (r.ok) { setDmMsgs((await r.json()).messages || []); return true; } return false; } catch { return false; }
   }, []);
+  // Unread DM counts per connection (badge on the rail). Loaded with matches,
+  // refreshed by the acts poll; opening a thread clears its badge.
+  const [dmUnread, setDmUnread] = useState<Record<string, number>>({});
+  const loadDmUnread = useCallback(async () => {
+    try { const r = await fetch('/api/friend/dm'); if (r.ok) setDmUnread((await r.json()).unread || {}); } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { loadDmUnread(); const t = setInterval(() => { if (!document.hidden) loadDmUnread(); }, 45000); return () => clearInterval(t); }, [loadDmUnread]);
+
   async function openDm(m: any) {
+    setDmUnread((u) => ({ ...u, [m.otherId]: 0 })); // read the moment it opens
     setCardMember(null); setConfirmDrop(false); setDmText(''); setDmMsgs([]); setDmError(null); setDmWith(m);
     const ok = await loadDm(m.otherId);
     if (!ok) setDmError('Couldn’t open this chat. If you just connected, give it a second and reopen.');
@@ -2074,11 +2090,14 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
                   {matches.filter((m) => m.connected).slice(0, 8).map((m) => (
-                    <button key={m.otherId} onClick={() => setCardMember(m)} title={`view ${(m.name || '').split(' ')[0]}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, color: 'var(--h-text)', textAlign: 'left' }}>
+                    <button key={m.otherId} onClick={() => (dmUnread[m.otherId] ? openDm(m) : setCardMember(m))} title={`view ${(m.name || '').split(' ')[0]}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, color: 'var(--h-text)', textAlign: 'left' }}>
                       {m.photo_url
                         ? <img src={m.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                         : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
                       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]}</span>
+                      {(dmUnread[m.otherId] || 0) > 0 && (
+                        <span style={{ marginLeft: 'auto', flexShrink: 0, minWidth: 18, height: 18, borderRadius: 999, background: LINE, color: '#fff', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{dmUnread[m.otherId]}</span>
+                      )}
                     </button>
                   ))}
                 </div>

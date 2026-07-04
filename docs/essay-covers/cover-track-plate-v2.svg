@@ -1,0 +1,93 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.3" fill="#e2d4b8"/>
+    </pattern>
+    <radialGradient id="warm" cx="30%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#faf4e5"/>
+      <stop offset="100%" stop-color="#efe4cb"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#3d2c1a" stop-opacity="0"/>
+      <stop offset="82%" stop-color="#3d2c1a" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#3d2c1a" stop-opacity="0.18"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#warm)"/>
+  <rect width="1600" height="900" fill="url(#dots)"/>
+
+  <!-- ===== the place setting ===== -->
+  <!-- plate shadow -->
+  <ellipse cx="465" cy="490" rx="345" ry="330" fill="#d9c7a4" opacity="0.5"/>
+
+  <!-- plate = running track -->
+  <g transform="translate(450,462)">
+    <circle r="318" fill="#ece0c6"/>
+    <circle r="318" fill="none" stroke="#dccdae" stroke-width="2"/>
+    <circle r="296" fill="#bf4e2b"/>
+    <circle r="298" fill="none" stroke="#9c3a1c" stroke-width="5"/>
+    <!-- lane lines -->
+    <circle r="262" fill="none" stroke="#f4ecd9" stroke-width="3.5"/>
+    <circle r="228" fill="none" stroke="#f4ecd9" stroke-width="3.5"/>
+    <circle r="194" fill="none" stroke="#f4ecd9" stroke-width="3.5"/>
+    <!-- infield = plate center -->
+    <circle r="158" fill="#f4ecd9"/>
+    <circle r="158" fill="none" stroke="#ddcfae" stroke-width="2"/>
+    <circle r="146" fill="none" stroke="#e6dabc" stroke-width="1.5"/>
+    <!-- start / finish line -->
+    <line x1="158" y1="0" x2="296" y2="0" stroke="#f4ecd9" stroke-width="8"/>
+    <!-- lead runner, lane 2 -->
+    <circle cx="192" cy="-160" r="12" fill="#171310"/>
+    <path d="M 226 -122 A 245 245 0 0 0 244 -40" fill="none" stroke="#171310" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 21" opacity="0.6"/>
+    <!-- chasing runner, lane 3, cream so it pops on the terracotta -->
+    <circle cx="-24" cy="-209" r="11" fill="#f4ecd9" stroke="#171310" stroke-width="2.5"/>
+    <path d="M 32 -208 A 211 211 0 0 0 122 -172" fill="none" stroke="#f4ecd9" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 20" opacity="0.85"/>
+  </g>
+
+  <!-- fork (left, the human hand's side) -->
+  <g fill="#221c15">
+    <rect x="78" y="356" width="14" height="320" rx="7"/>
+    <rect x="48" y="238" width="11" height="102" rx="5.5"/>
+    <rect x="71" y="238" width="11" height="102" rx="5.5"/>
+    <rect x="94" y="238" width="11" height="102" rx="5.5"/>
+    <rect x="117" y="238" width="11" height="102" rx="5.5"/>
+    <path d="M 48 324 Q 48 360 85 364 Q 124 360 128 324 L 128 308 L 48 308 Z"/>
+  </g>
+
+  <!-- ===== robot arm holding the knife (the machine's side) ===== -->
+  <!-- knife -->
+  <g fill="#221c15">
+    <path d="M 838 232 C 870 256 876 318 864 352 L 838 352 Z"/>
+    <rect x="836" y="232" width="14" height="124" rx="7"/>
+    <rect x="836" y="352" width="14" height="290" rx="7"/>
+  </g>
+  <!-- arm: base at bottom edge -> elbow -> wrist joint -> clamp around the knife handle -->
+  <g stroke="#221c15" stroke-linecap="round" fill="none">
+    <line x1="912" y1="900" x2="906" y2="762" stroke-width="30"/>
+    <line x1="906" y1="762" x2="862" y2="622" stroke-width="24"/>
+  </g>
+  <!-- joints -->
+  <circle cx="906" cy="762" r="26" fill="#221c15"/>
+  <circle cx="906" cy="762" r="9" fill="#c04f2c"/>
+  <circle cx="862" cy="622" r="17" fill="#221c15"/>
+  <circle cx="862" cy="622" r="6" fill="#c04f2c"/>
+  <!-- clamp ring around the knife handle -->
+  <rect x="818" y="566" width="52" height="46" rx="13" fill="none" stroke="#221c15" stroke-width="11"/>
+
+  <!-- ===== title block ===== -->
+  <text x="995" y="270" font-family="Helvetica, Arial, sans-serif" font-size="20" letter-spacing="6" fill="#a45a2a">HOSPITALITY &#183; 2026</text>
+
+  <text x="988" y="382" font-family="Georgia, serif" font-size="104" fill="#171310">The great</text>
+  <text x="988" y="502" font-family="Georgia, serif" font-size="98" font-style="italic" fill="#bf4e2b">unbundling.</text>
+
+  <line x1="995" y1="552" x2="1215" y2="552" stroke="#171310" stroke-width="4"/>
+
+  <text x="992" y="622" font-family="Georgia, serif" font-style="italic" font-size="31" fill="#5f5342">Run clubs took the crowd.</text>
+  <text x="992" y="668" font-family="Georgia, serif" font-style="italic" font-size="31" fill="#5f5342">AI took the counter.</text>
+  <text x="992" y="714" font-family="Georgia, serif" font-style="italic" font-size="31" fill="#bf4e2b">Fast food falls first.</text>
+
+  <!-- frame + vignette -->
+  <rect x="26" y="26" width="1548" height="848" fill="none" stroke="#171310" stroke-opacity="0.16" stroke-width="2"/>
+  <rect width="1600" height="900" fill="url(#vignette)"/>
+</svg>

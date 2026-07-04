@@ -101,6 +101,8 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   // "typing…" — the poll carries the other side's last typing ping; we show the
   // bubble while it's fresh (<6s). Our own pings are throttled to 1 per 2.5s.
   const [otherTypingAt, setOtherTypingAt] = useState<string | null>(null);
+  // read receipt — the other side's last "chat open" stamp from the poll.
+  const [otherReadAt, setOtherReadAt] = useState<string | null>(null);
   const lastTypingPingRef = useRef(0);
   function pingTyping() {
     if (readOnly) return;
@@ -218,6 +220,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           }
           if (data.match) setLiveMatch((prev: any) => ({ ...prev, ...data.match }));
           if ('otherTypingAt' in data) setOtherTypingAt(data.otherTypingAt || null);
+          if ('otherReadAt' in data) setOtherReadAt(data.otherReadAt || null);
         }
       } catch {}
     }, 3000);
@@ -360,7 +363,10 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
+          (() => {
+            const lastMine = [...messages].reverse().find((m) => m.sender_id === currentUserId && !m.pending);
+            const seen = lastMine && otherReadAt && new Date(otherReadAt) >= new Date(lastMine.created_at);
+            return messages.map((msg) => (
             <div
               key={msg.id}
               className={`${styles.bubble} ${
@@ -376,9 +382,11 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
                       hour: 'numeric',
                       minute: '2-digit',
                     })}
+                {seen && msg.id === lastMine.id ? ' · seen ✓' : ''}
               </div>
             </div>
-          ))
+            ));
+          })()
         )}
         {otherTyping && (
           <div className={`${styles.bubble} ${styles.bubbleTheirs}`} aria-label={`${firstName} is typing`}>

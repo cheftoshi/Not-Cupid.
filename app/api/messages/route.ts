@@ -41,14 +41,30 @@ export async function GET(req: NextRequest) {
   }
   const { data: messages } = await msgQuery;
 
-  // Typing indicator — separate select so an un-migrated typing column can never
-  // break the chat's hot path (it just reads as "not typing").
+  // Typing + read receipts — separate selects so un-migrated columns can never
+  // break the chat's hot path (they just read as "not typing" / "not seen").
   let otherTypingAt: string | null = null;
+  let otherReadAt: string | null = null;
+  const isU1 = match.user_1_id === user.id;
   {
     const { data: t, error: tErr } = await supabaseAdmin
       .from('matches').select('user_1_typing_at, user_2_typing_at').eq('id', matchId).maybeSingle();
     if (!tErr && t) {
-      otherTypingAt = (match.user_1_id === user.id ? (t as any).user_2_typing_at : (t as any).user_1_typing_at) ?? null;
+      otherTypingAt = (isU1 ? (t as any).user_2_typing_at : (t as any).user_1_typing_at) ?? null;
+    }
+  }
+  {
+    const { data: rr, error: rErr } = await supabaseAdmin
+      .from('matches').select('user_1_read_at, user_2_read_at').eq('id', matchId).maybeSingle();
+    if (!rErr && rr) {
+      otherReadAt = (isU1 ? (rr as any).user_2_read_at : (rr as any).user_1_read_at) ?? null;
+      // Polling with the chat open = reading. Stamp my side when this is the
+      // initial load or fresh messages just arrived (keeps writes rare).
+      if (!after || (messages ?? []).length > 0) {
+        await supabaseAdmin.from('matches')
+          .update({ [isU1 ? 'user_1_read_at' : 'user_2_read_at']: new Date().toISOString() })
+          .eq('id', matchId);
+      }
     }
   }
 
@@ -58,6 +74,7 @@ export async function GET(req: NextRequest) {
     messages: messages || [],
     incremental: !!after,
     otherTypingAt,
+    otherReadAt,
     match: {
       chat_expires_at: match.chat_expires_at,
       ended_at: match.ended_at,

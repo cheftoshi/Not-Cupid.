@@ -713,6 +713,17 @@ alter table users add column if not exists invite_code text unique;
 alter table users add column if not exists referred_by uuid references users(id);
 -- 20260702_roster_nudge.sql — daily "fresh faces" push throttle
 alter table users add column if not exists roster_nudged_at timestamptz;
+-- 20260704_read_receipts.sql — chat read stamps + DM reads
+alter table matches add column if not exists user_1_read_at timestamptz;
+alter table matches add column if not exists user_2_read_at timestamptz;
+create table if not exists friend_dm_reads (
+  user_id uuid not null references users(id) on delete cascade,
+  other_id uuid not null references users(id) on delete cascade,
+  read_at timestamptz not null default now(),
+  primary key (user_id, other_id)
+);
+alter table friend_dm_reads enable row level security;
+grant all on table friend_dm_reads to anon, authenticated, service_role;
 alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
   check (response in ('yes', 'maybe', 'no'));
 alter table users add column if not exists friend_digest_sent_at timestamptz;

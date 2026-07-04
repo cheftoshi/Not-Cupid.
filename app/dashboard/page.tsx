@@ -69,7 +69,7 @@ export default async function DashboardPage({
   const CARD_COLS =
     'id, name, age, photo_url, archetype, occupation, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
-  const [{ data: unlockRows }, { data: others }, { data: historyOthers }] = await Promise.all([
+  const [{ data: unlockRows }, { data: others }, { data: historyOthers }, { data: recentMsgs }] = await Promise.all([
     liveIds.length
       ? supabaseAdmin
           .from('match_unlocks')
@@ -83,7 +83,20 @@ export default async function DashboardPage({
     historyOtherIds.length
       ? supabaseAdmin.from('users').select('id, name').in('id', historyOtherIds)
       : Promise.resolve({ data: [] as any[] }),
+    // Latest messages across the live matches → unread badges ("they replied").
+    liveIds.length
+      ? supabaseAdmin.from('messages').select('match_id, sender_id, created_at')
+          .in('match_id', liveIds).order('created_at', { ascending: false }).limit(120)
+      : Promise.resolve({ data: [] as any[] }),
   ] as any[]);
+
+  // Newest incoming message per match (first hit wins — rows are desc).
+  const lastFromOtherByMatch = new Map<string, string>();
+  (recentMsgs ?? []).forEach((r: any) => {
+    if (r.sender_id !== user.id && !lastFromOtherByMatch.has(r.match_id)) {
+      lastFromOtherByMatch.set(r.match_id, r.created_at);
+    }
+  });
 
   const unlockByMatch = new Map<string, any>((unlockRows ?? []).map((u: any) => [u.match_id, u]));
   const otherById = new Map<string, any>((others ?? []).map((u: any) => [u.id, u]));
@@ -134,12 +147,17 @@ export default async function DashboardPage({
     const interests = c.profileUnlocked
       ? [...(o.music || []), ...(o.food || []), ...(o.hobbies || [])].filter(Boolean).slice(0, 5)
       : [];
+    // Unread: they messaged after my last read stamp. Pre-migration (no read
+    // cols on the row) we stay quiet rather than false-badging everything.
+    const myReadAt = isU1 ? m.user_1_read_at : m.user_2_read_at;
+    const lastIn = lastFromOtherByMatch.get(m.id);
+    const unread = !!lastIn && ('user_1_read_at' in m) && (!myReadAt || new Date(lastIn) > new Date(myReadAt));
     return {
       matchId: m.id, name: o.name || 'your match', photo_url: o.photo_url || null,
       age: o.age ?? null, archetype: o.archetype || null, occupation: o.occupation || null,
       city: cityLabel(o.zip), relationship_style: o.relationship_style || null, sun_sign: o.sun_sign || null,
       score: m.compatibility_score ?? null,
-      bio: c.profileUnlocked ? (o.bio || null) : null, interests,
+      bio: c.profileUnlocked ? (o.bio || null) : null, interests, unread,
       status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
       profileUnlocked: c.profileUnlocked, hasContent,
     };
