@@ -43,23 +43,26 @@ const CHAPTERS: Record<string, { n: number; total: number; title: string; lede: 
 function ChapterCard({ k, onStart, onSkip, styles }: { k: string; onStart: () => void; onSkip?: () => void; styles: any }) {
   const c = CHAPTERS[k]
   if (!c) return null
+  // Staggered reveal — eyebrow → title → lede → button (inline animation names
+  // resolve against the GLOBAL fadeUp keyframes; inline styles bypass module scoping).
+  const stag = (delay: number): React.CSSProperties => ({ animation: `fadeUp 0.45s ease ${delay}s both` })
   return (
     <div className={styles.screen}>
       <div className={styles.introWrap}>
         <div className={styles.introHero}>
-          <div className={styles.stickerRow}>
+          <div className={styles.stickerRow} style={stag(0.05)}>
             {c.eyebrow && <span className={styles.sticker}>✦ {c.eyebrow}</span>}
             <span className={styles.stickerGold}>chapter {c.n} / {c.total}</span>
           </div>
-          <h1 className={styles.introH1}>
+          <h1 className={styles.introH1} style={stag(0.2)}>
             {k === 'rapid' ? <>rapid <em>fire ⚡</em></> : <em>{c.title}.</em>}
           </h1>
-          <p className={styles.introLede}>
+          <p className={styles.introLede} style={stag(0.38)}>
             {c.lede}<br />
             <span className={styles.introLedeSub}>{c.sub} then we keep moving.</span>
           </p>
         </div>
-        <button className="btn-primary" onClick={onStart} style={{ width: '100%', justifyContent: 'center' }}>
+        <button className="btn-primary" onClick={onStart} style={{ width: '100%', justifyContent: 'center', ...stag(0.55) }}>
           {k === 'rapid' ? "let's go ⚡" : 'start →'}
         </button>
         {onSkip && (
@@ -1051,6 +1054,7 @@ function QuizInner() {
             >
               ↗ share your type
             </button>
+            <a href="/types" target="_blank" style={{ display: 'block', textAlign: 'center', marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'underline', textUnderlineOffset: 3 }}>see all the types →</a>
 
             <div className={styles.profileCard}>
               <div className={styles.profileHeader}>

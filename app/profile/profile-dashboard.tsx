@@ -204,6 +204,42 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
         </div>
       )}
 
+      {/* HOW YOU CONNECT — attachment + values (the parts of the deep quiz that
+          actually drive matching; users never saw them before). */}
+      {(user.attach_style || (user.values_profile && typeof user.values_profile === 'object')) && (
+        <div className={styles.dashVibes}>
+          <div className={styles.dashSectionLabel}>how you connect</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginTop: '0.6rem' }}>
+            {user.attach_style && (
+              <span style={{ background: 'rgba(37,99,255,0.1)', color: 'var(--blue)', border: '1px solid rgba(37,99,255,0.3)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.05em', fontWeight: 700 }}>
+                {user.attach_style === 'secure' ? '🌿 secure attachment' : user.attach_style === 'anxious' ? '🌀 anxious attachment' : user.attach_style === 'avoidant' ? '🏝 avoidant attachment' : '🌗 fearful-avoidant'}
+              </span>
+            )}
+            {typeof user.attach_anxiety === 'number' && (
+              <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem' }}>anxiety {user.attach_anxiety}/100</span>
+            )}
+            {typeof user.attach_avoidance === 'number' && (
+              <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem' }}>avoidance {user.attach_avoidance}/100</span>
+            )}
+          </div>
+          {user.values_profile && typeof user.values_profile === 'object' && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.55rem' }}>
+              {Object.entries(user.values_profile as Record<string, any>)
+                .filter(([k, v]) => k !== 'partner' && (typeof v === 'number' || typeof v === 'string'))
+                .slice(0, 6)
+                .map(([k, v]) => (
+                  <span key={k} style={{ background: 'rgba(255,106,31,0.08)', color: 'var(--h-accent-2, #d2530f)', border: '1px solid rgba(255,106,31,0.28)', borderRadius: 999, padding: '0.35rem 0.8rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}>
+                    {k}{typeof v === 'number' ? ` · ${v}` : ''}
+                  </span>
+                ))}
+            </div>
+          )}
+          <p style={{ margin: '0.6rem 0 0', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>
+            attachment + values carry the most weight in your matches — more than personality traits.
+          </p>
+        </div>
+      )}
+
       {/* INTEREST TAGS (music / food / hobbies) */}
       {tags.some(t => t.items.length > 0) && (
         <div className={styles.dashVibes}>

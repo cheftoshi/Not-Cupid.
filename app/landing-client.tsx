@@ -31,11 +31,12 @@ export default function LandingClient({ stats }: { stats: Stats }) {
   if (tickers.length === 0) tickers.push({ k: 'cooking up the algo', v: '∞' })
 
   const [tickIdx, setTickIdx] = useState(0)
+  const [tickPaused, setTickPaused] = useState(false) // pause-on-hover so stats stay readable
   useEffect(() => {
-    if (tickers.length <= 1) return
+    if (tickers.length <= 1 || tickPaused) return
     const id = setInterval(() => setTickIdx((i) => (i + 1) % tickers.length), 3800)
     return () => clearInterval(id)
-  }, [tickers.length])
+  }, [tickers.length, tickPaused])
 
   const [coords, setCoords] = useState({ x: 50, y: 40 })
   useEffect(() => {

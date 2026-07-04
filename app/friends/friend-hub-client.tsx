@@ -9,6 +9,9 @@ import { toast, confirmDialog } from '@/components/feedback';
 import { SkeletonStyles, Skeleton, SkeletonCard, SkeletonRow } from '@/components/skeleton';
 import { DROP, untilNextDrop } from '@/lib/weekly-drop';
 
+// Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
+const buzz = () => { try { navigator.vibrate?.(15); } catch { /* unsupported */ } };
+
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
 const LINE = '#ff6a1f';          // the Friend Line — BRAND orange (was off-brand #e8842b)
@@ -935,6 +938,13 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
 
   useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
   useEffect(() => { loadActs(); }, [loadActs]);
+  // Changing a Scene filter jumps back to the top of the feed — new results
+  // shouldn't appear under your old scroll position. (Skips the mount run.)
+  const filterRanOnce = useRef(false);
+  useEffect(() => {
+    if (!filterRanOnce.current) { filterRanOnce.current = true; return; }
+    feedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [kindFilter, sceneTime, nearMe, filterCat, filterMain, sceneSort, areaFilter]);
   // light polling for the group chat
   // only poll the group chat when it's actually on screen + the tab is visible
   useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(); }, 4000); return () => clearInterval(t); }, [loadChat, view]);
@@ -1020,6 +1030,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   // Independent 1:1 connection with one person in the pack. First pick → they get
   // notified; if they'd already picked you, this accept connects you both.
   async function connectOne(otherId: string) {
+    buzz();
     if (!termsOk) return;
     setBusy(true);
     await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
@@ -1176,10 +1187,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
     }
     setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
     setComposerOpen(false); setComposerStep(1);
+    buzz();
     toast(newAct.kind === 'event' ? 'your plan is on the scene 🎟️' : 'posted to the scene ✨', 'success');
     await loadActs(); await loadPulse(); setBusy(false);
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
+    buzz();
     const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(response ? { response } : {}),
@@ -1235,7 +1248,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         const back = (to: number) => <button onClick={() => setComposerStep(to)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>← back</button>;
         return (
           <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 130 }}>
-            <div onClick={(e) => e.stopPropagation()} style={stepBox}>
+            <style>{`@keyframes ncStepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+            {/* keyed by step → each wizard step slides in instead of hard-cutting */}
+            <div key={composerStep} onClick={(e) => e.stopPropagation()} style={{ ...stepBox, animation: 'ncStepIn .26s ease both' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{isPost ? 'say something' : `step ${composerStep > 4 ? 4 : composerStep} of 4`}</span>
                 <button onClick={close} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--h-text-dim)' }}>✕</button>
@@ -1910,13 +1925,16 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               </div>
               {showNewClub && (
                 <div style={{ border: '1px solid var(--h-border)', borderRadius: 14, padding: '0.75rem', marginBottom: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', background: 'var(--h-surface-2)' }}>
-                  <input value={newClub.name} onChange={(e) => setNewClub({ ...newClub, name: e.target.value })} maxLength={80} placeholder="club name (e.g. sunday run club)" style={inputStyle} />
+                  <input value={newClub.name} onChange={(e) => setNewClub({ ...newClub, name: e.target.value })} maxLength={80} placeholder="club name (e.g. sunday run club)" style={{ ...inputStyle, borderColor: newClub.name.trim().length > 0 && newClub.name.trim().length < 3 ? '#d94f3d' : undefined }} />
+                  {newClub.name.trim().length > 0 && newClub.name.trim().length < 3 && (
+                    <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.75rem', color: '#c0392b', marginTop: '-0.3rem' }}>give it at least 3 characters — people search by name</span>
+                  )}
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <select value={newClub.category} onChange={(e) => setNewClub({ ...newClub, category: e.target.value })} style={{ ...inputStyle, flex: '0 0 auto' }}>{CLUB_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
                     <input value={newClub.area} onChange={(e) => setNewClub({ ...newClub, area: e.target.value })} maxLength={60} placeholder="📍 area (optional)" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
                   </div>
                   <textarea value={newClub.description} onChange={(e) => setNewClub({ ...newClub, description: e.target.value })} maxLength={400} placeholder="what's it about? when do you meet?" rows={2} style={{ ...inputStyle, resize: 'vertical', borderRadius: 12 }} />
-                  <button onClick={createClub} disabled={clubBusy || !newClub.name.trim() || !termsOk} style={{ ...poppyBtn, alignSelf: 'flex-start', opacity: newClub.name.trim() && termsOk ? 1 : 0.5 }}>{clubBusy ? '…' : 'create the club →'}</button>
+                  <button onClick={createClub} disabled={clubBusy || newClub.name.trim().length < 3 || !termsOk} style={{ ...poppyBtn, alignSelf: 'flex-start', opacity: newClub.name.trim().length >= 3 && termsOk ? 1 : 0.5 }}>{clubBusy ? '…' : 'create the club →'}</button>
                 </div>
               )}
               {clubs.length === 0 ? (
