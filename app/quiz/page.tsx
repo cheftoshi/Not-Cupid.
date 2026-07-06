@@ -1126,7 +1126,7 @@ function QuizInner() {
                 onClick={() => { window.location.href = postQuizPath }}
                 style={{marginTop:'1.25rem',width:'100%',justifyContent:'center'}}>
                 {postQuizPath === '/friends/quiz' ? 'continue → the friend quiz'
-                  : postQuizPath.includes('line=love') ? 'continue → the love quiz'
+                  : postQuizPath.includes('line=love') ? (intent === 'both' ? 'continue → love quiz first (friends after)' : 'continue → the love quiz')
                   : 'continue → your hub'}
               </button>
             )}

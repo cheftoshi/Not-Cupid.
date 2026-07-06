@@ -60,6 +60,8 @@ export default function RosterPicker({
   const [endingMatchId, setEndingMatchId] = useState<string | null>(null);
   async function unlock(matchId: string) {
     setCheckingOut(true);
+    // Safety net: never leave the overlay spinning if the redirect stalls.
+    setTimeout(() => setCheckingOut((v) => { if (v) toast('checkout is taking too long — try again', 'error'); return false; }), 10000);
     try {
       const res = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: 'profile' }),
@@ -366,7 +368,7 @@ export default function RosterPicker({
           matchId={endingMatchId}
           otherName={(liveConnections.find((l) => l.matchId === endingMatchId)?.name || 'them').split(' ')[0]}
           onClose={() => setEndingMatchId(null)}
-          onEnded={() => window.location.reload()}
+          onEnded={() => { setEndingMatchId(null); load(); router.refresh(); }}
         />
       )}
     </div>

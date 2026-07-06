@@ -28,6 +28,9 @@ export default function ActiveChats({ cards }: { cards: Card[] }) {
 
   async function unlock(matchId: string) {
     setCheckingOut(true);
+    // Safety net: if the redirect never happens (network stall, blocked popup),
+    // don't leave the overlay spinning forever.
+    setTimeout(() => setCheckingOut((v) => { if (v) toast('checkout is taking too long — try again', 'error'); return false; }), 10000);
     try {
       const res = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: 'profile' }),

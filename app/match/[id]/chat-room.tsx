@@ -159,11 +159,15 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   }, [messages.length, currentUserId]);
 
   // Load the date vibes (options, my picks, mutual locks) for the side rail.
+  // A failure shows a retry instead of spinning "loading…" forever.
+  const [vibesError, setVibesError] = useState(false);
   async function loadVibes() {
+    setVibesError(false);
     try {
       const r = await fetch(`/api/match/${matchId}/date-vibes`);
       if (r.ok) setVibes(await r.json());
-    } catch {}
+      else setVibesError(true);
+    } catch { setVibesError(true); }
   }
   useEffect(() => { loadVibes(); }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -488,7 +492,11 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
           )}
 
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.1rem 0 0.6rem' }}>✓ you both want this</div>
-          {!vibes ? (
+          {vibesError ? (
+            <div style={{ color: 'var(--h-text-dim)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>
+              date vibes couldn’t load — <button onClick={loadVibes} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', fontStyle: 'italic', color: '#2563ff', textDecoration: 'underline', cursor: 'pointer' }}>try again</button>
+            </div>
+          ) : !vibes ? (
             <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
           ) : vibes.mutualMatches?.length ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>

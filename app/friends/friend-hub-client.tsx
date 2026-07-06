@@ -1279,7 +1279,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                   ))}
                   <div style={{ ...opt(false), display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     📅 pick a date
-                    <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })} style={{ flex: 1, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.3rem 0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                    <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })}
+                      min={localDT(new Date())} max={localDT(new Date(Date.now() + 90 * 24 * 3600 * 1000))}
+                      style={{ flex: 1, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.3rem 0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                   </div>
                   {newAct.happens_at && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: LINE_DEEP }}>✓ {friendlyWhen(newAct.happens_at)}</div>}
                 </div>
@@ -1414,7 +1416,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
       {/* PRIVATE DM — a 1:1 thread with a connection, as a bottom sheet (not a page) */}
       {dmWith && (() => { const m = dmWith; const first = (m.name || '').split(' ')[0]; return (
         <div onClick={() => setDmWith(null)} style={{ position: 'fixed', inset: 0, zIndex: 195, background: 'rgba(24,14,6,0.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82vh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82dvh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1rem', borderBottom: '1px solid var(--h-border)', background: 'var(--h-surface-2)', flexShrink: 0 }}>
               {m.photo_url
                 ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} />
@@ -1450,7 +1452,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
       {/* CLUB CHAT — a member-only bottom-sheet thread for a club */}
       {clubChat && (
         <div onClick={() => setClubChat(null)} style={{ position: 'fixed', inset: 0, zIndex: 195, background: 'rgba(24,14,6,0.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82vh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82dvh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1rem', borderBottom: '1px solid var(--h-border)', background: 'var(--h-surface-2)', flexShrink: 0 }}>
               <span style={{ fontSize: '1.4rem' }}>🤝</span>
               <div style={{ minWidth: 0 }}>
@@ -2037,7 +2039,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           <span style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 1rem' }}>📣 start a plan →</span>
         </button>
 
-        <div ref={feedRef} />
+        {/* scroll target for filter changes — margin clears the sticky nav */}
+        <div ref={feedRef} style={{ scrollMarginTop: 72 }} />
 
             {/* active filter chips — the kind/sort/category controls live in the left rail */}
             {(filterMain || filterCat || areaFilter) && (

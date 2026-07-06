@@ -12,6 +12,9 @@ export default function TypesPage() {
   return (
     <div style={{ minHeight: '100vh', padding: '4.5rem 1.5rem 4rem', background: 'radial-gradient(900px 480px at 15% -5%, rgba(37,99,255,0.09), transparent 55%), radial-gradient(760px 420px at 95% 8%, rgba(255,106,31,0.07), transparent 52%), var(--h-bg)', color: 'var(--h-text)' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <a href="/" style={{ display: 'block', textAlign: 'center', marginBottom: '1.4rem', textDecoration: 'none', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.15rem' }}>
+          <span style={{ color: 'var(--blue)' }}>Not</span><span style={{ color: 'var(--orange, #ff6a1f)' }}>Cupid</span>
+        </a>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '0.9rem' }}>✦ the glossary</div>
           <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(2rem, 7vw, 2.8rem)', lineHeight: 1.05, margin: '0 0 0.7rem' }}>every <span style={{ color: 'var(--blue)', fontWeight: 700 }}>type.</span></h1>
