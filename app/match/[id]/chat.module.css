@@ -11,11 +11,16 @@
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* The chat column (header + messages + input) — one side of the split view. */
+/* The chat column (header + messages + input) — one side of the split view.
+   FIXED height (not min-height) so .messages actually scrolls internally and
+   the composer stays pinned — with min-height the column GREW with the thread,
+   the document scrolled instead, and auto-scroll silently no-oped on phones.
+   dvh = the real visible viewport on iOS (100vh hides behind Safari's chrome). */
 .chatCol {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   flex: 1;
   min-width: 0;
 }
@@ -320,6 +325,10 @@
 .messages {
   flex: 1;
   overflow-y: auto;
+  /* NO overscroll-behavior: contain — at the thread's bottom, a continued flick
+     chains to the page scroll, which is how mobile reaches the date-vibes rail
+     stacked below the chat. */
+  -webkit-overflow-scrolling: touch;
   padding: 1.25rem 1rem 1.5rem;
   display: flex;
   flex-direction: column;

@@ -281,8 +281,17 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
       if (!res.ok) throw new Error('Send failed');
       const data = await parseResponse<any>(res);
       // Swap the optimistic bubble for the real row in place — no full refetch,
-      // no flicker. The incremental poll dedupes by id, so no double-ups.
-      setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? (data.message || { ...m, pending: false }) : m)));
+      // no flicker. RACE GUARD: if the 3s poll already delivered this message
+      // (slow POST, fast poll), drop the optimistic bubble instead of swapping,
+      // or the message would render twice.
+      setMessages((prev) => {
+        const real = data.message;
+        if (!real) return prev.map((m) => (m.id === optimistic.id ? { ...m, pending: false } : m));
+        const alreadyPolled = prev.some((m) => m.id === real.id);
+        return alreadyPolled
+          ? prev.filter((m) => m.id !== optimistic.id)
+          : prev.map((m) => (m.id === optimistic.id ? real : m));
+      });
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       setInput(text);
@@ -414,7 +423,12 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
             value={input}
             onChange={(e) => { setInput(e.target.value); if (e.target.value) pingTyping(); }}
             placeholder={chatExpired ? 'chat ended' : pendingAccept ? `say hi — your message connects you with ${firstName}` : placeholder}
-            disabled={chatExpired || sending}
+            disabled={chatExpired}
+            /* NOT disabled while sending — disabling an input mid-send dismisses
+               the iOS keyboard, so every message cost a re-tap to keep typing.
+               handleSend already guards double-submits. */
+            enterKeyHint="send"
+            autoComplete="off"
             maxLength={2000}
             className={styles.input}
           />
