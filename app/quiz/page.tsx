@@ -10,7 +10,7 @@ import { parseResponse } from '@/lib/fetch-helpers'
 import { toast } from '@/components/feedback'
 import styles from './quiz.module.css'
 
-type Screen = 'intro' | 'verify' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result'
+type Screen = 'intro' | 'verify' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result' | 'love-done'
 
 interface FormData {
   name: string; age: string; gender: string; seek: string
@@ -110,7 +110,19 @@ function QuizInner() {
   // ONE-FLOW ONBOARDING: "what are you here for?" — asked at signup so the core
   // quiz can route STRAIGHT into the right deep quiz (no hub fork mid-flow).
   // State (not a ref) so the result screen re-renders when signup completes.
-  const [intent, setIntent] = useState<'' | 'love' | 'friends' | 'both'>('')
+  // Persisted in localStorage so a mid-form detour through /login (or the OTP
+  // round-trip) doesn't lose the choice.
+  const [intent, setIntentState] = useState<'' | 'love' | 'friends' | 'both'>(() => {
+    if (typeof window === 'undefined') return ''
+    try {
+      const v = localStorage.getItem('nc_intent')
+      return v === 'love' || v === 'friends' || v === 'both' ? v : ''
+    } catch { return '' }
+  })
+  const setIntent = (v: '' | 'love' | 'friends' | 'both') => {
+    setIntentState(v)
+    try { v ? localStorage.setItem('nc_intent', v) : localStorage.removeItem('nc_intent') } catch { /* ignore */ }
+  }
   const [postQuizPath, setPostQuizPath] = useState<string | null>(null)
   const [agreed, setAgreed] = useState(false)
   const [zipStatus, setZipStatus] = useState<'idle'|'valid'|'invalid'|'outofrange'>('idle')
@@ -402,7 +414,9 @@ function QuizInner() {
     } catch (err) {
       console.error('Love-deep submit failed:', err)
     } finally {
-      window.location.href = '/dashboard'
+      // A finish MOMENT, not an abrupt bounce — the core quiz gets a result
+      // reveal; the love-deep deserves its own beat before the dashboard.
+      setScreen('love-done')
     }
   }, [])
 
@@ -1019,6 +1033,24 @@ function QuizInner() {
               <div className={styles.loadingBar} style={{width:`${loadingPct}%`}} />
             </div>
             <p className={styles.loadingStatus}>{LOADING_MSGS[Math.min(loadingStep, LOADING_MSGS.length-1)]}</p>
+          </div>
+        </div>
+      )}
+
+      {screen === 'love-done' && (
+        <div className={styles.screen}>
+          <div className={styles.introWrap} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2.6rem', marginBottom: '0.8rem', animation: 'fadeUp 0.45s ease both' }}>💘</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '0.9rem', animation: 'fadeUp 0.45s ease 0.12s both' }}>love profile complete</div>
+            <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem', animation: 'fadeUp 0.45s ease 0.24s both' }}>
+              the algorithm knows<br />what you <em style={{ color: 'var(--blue)', fontWeight: 700 }}>need</em> now.
+            </h1>
+            <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem', animation: 'fadeUp 0.45s ease 0.36s both' }}>
+              how you attach and what you value now carry the most weight in your matches — more than personality traits. your roster is being curated with it.
+            </p>
+            <button className="btn-primary" onClick={() => { window.location.href = '/dashboard' }} style={{ width: '100%', justifyContent: 'center', animation: 'fadeUp 0.45s ease 0.5s both' }}>
+              see your matches →
+            </button>
           </div>
         </div>
       )}

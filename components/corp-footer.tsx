@@ -41,6 +41,10 @@ export default function CorpFooter() {
               textTransform: 'lowercase',
               color: '#2563ff',
               textDecoration: 'none',
+              // 44px-min tap target (Apple HIG) without changing the visual size
+              padding: '0.85rem 0.5rem',
+              margin: '-0.55rem -0.15rem',
+              display: 'inline-block',
             }}
           >
             ↗ {s.label}
@@ -67,6 +71,10 @@ export default function CorpFooter() {
               textTransform: 'uppercase',
               color: 'var(--h-text-dim)',
               textDecoration: 'none',
+              // 44px-min tap target (Apple HIG) without changing the visual size
+              padding: '0.85rem 0.5rem',
+              margin: '-0.55rem -0.2rem',
+              display: 'inline-block',
             }}
           >
             {l.label}

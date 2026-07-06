@@ -842,6 +842,32 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   const [rewipesUsed, setRewipesUsed] = useState(refreshCount);
   const [composerOpen, setComposerOpen] = useState(false); // guided post wizard
   const [composerStep, setComposerStep] = useState(1);
+  // Draft persistence — a refresh mid-composition restores the wizard exactly
+  // where it was (fields + step + open). Cleared on successful post; a
+  // deliberate close keeps the fields but stays closed.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('nc-composer-draft');
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d?.newAct) {
+          setNewAct((s) => ({ ...s, ...d.newAct }));
+          if (d.open) { setComposerOpen(true); setComposerStep(d.step || 1); }
+        }
+      }
+    } catch { /* corrupt draft — ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      if (composerOpen) {
+        localStorage.setItem('nc-composer-draft', JSON.stringify({ open: true, step: composerStep, newAct }));
+      } else {
+        const raw = localStorage.getItem('nc-composer-draft');
+        if (raw) { const d = JSON.parse(raw); if (d?.open) localStorage.setItem('nc-composer-draft', JSON.stringify({ ...d, open: false })); }
+      }
+    } catch { /* storage unavailable — drafts just don't persist */ }
+  }, [composerOpen, composerStep, newAct]);
   // Deep-link: a crew push opens /friends?view=crew straight into the chat.
   const [view, setView] = useState<NavKey>(() => {
     if (typeof window === 'undefined') return 'home';
@@ -948,6 +974,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   // light polling for the group chat
   // only poll the group chat when it's actually on screen + the tab is visible
   useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(); }, 4000); return () => clearInterval(t); }, [loadChat, view]);
+  // Entering the crew view refetches immediately — no stale-message window
+  // while waiting for the first 4s poll tick.
+  useEffect(() => { if (view === 'crew') loadChat(); }, [view, loadChat]);
   // poll the Scene so new posts/events surface live (and can notify)
   useEffect(() => { const t = setInterval(loadActs, 45000); return () => clearInterval(t); }, [loadActs]);
 
@@ -1187,6 +1216,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
     }
     setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
     setComposerOpen(false); setComposerStep(1);
+    try { localStorage.removeItem('nc-composer-draft'); } catch { /* ignore */ }
     buzz();
     toast(newAct.kind === 'event' ? 'your plan is on the scene 🎟️' : 'posted to the scene ✨', 'success');
     await loadActs(); await loadPulse(); setBusy(false);
