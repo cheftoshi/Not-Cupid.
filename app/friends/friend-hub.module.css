@@ -1,0 +1,181 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   FRIEND HUB — consolidated static styles for app/friends/friend-hub-client.tsx
+   Mechanically moved from the injected <style> blocks + module-level style
+   consts (zero visual change). Values are verbatim; template interpolations
+   resolved: INK = #0b0b0b, LINE = #ff6a1f, LINE_DEEP = #d2530f,
+   CREAM = var(--h-surface).
+   NOTE: rule ORDER inside the "layout shell" section mirrors the original
+   injected block exactly — later rules deliberately win some media-query
+   ties, so do not re-sort.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── LAYOUT SHELL / TOP NAV (nav floats on top; content = main feed + right rail) ── */
+.fbTopNav { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.4rem 0 0.2rem; }
+.fbShell { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.25rem; }
+.sceneFilterDock { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.85rem; }
+@media (max-width: 879px) { .fbRail { order: 2; } .fbMain { order: 1; } }
+@media (min-width: 880px) {
+  .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
+  .fbShellHome { grid-template-columns: 1fr; }
+  .fbShellHome .fbRail { display: none; }
+  .fbRail { position: sticky; top: 1rem; }
+}
+
+/* ── TODAY (hero / daily move / loop / layout / panels) ── */
+.friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 92% 12%, rgba(255,106,31,0.10), transparent 30%), radial-gradient(circle at 0% 100%, rgba(37,99,255,0.06), transparent 34%), color-mix(in srgb, var(--h-surface) 96%, #fff7ef); border: 1px solid color-mix(in srgb, #ff6a1f 18%, var(--h-border)); border-radius: 26px; box-shadow: 0 18px 60px -48px rgba(232,132,43,0.42), var(--shadow-sm); padding: clamp(1rem, 2.8vw, 1.45rem); margin-bottom: 1rem; }
+.friendTodayHero::after { content: none; }
+.friendHeroIntro { min-width: 0; }
+.friendHeroSignal { position: relative; z-index: 1; display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
+.friendHeroKicker { font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: #d2530f; }
+.friendHeroTitle { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.55rem, 4vw, 2.25rem); line-height: 1.03; letter-spacing: 0; margin: 0; color: var(--h-text); max-width: 12ch; }
+.friendHeroCopy { font-family: Georgia, serif; font-style: italic; font-size: 0.95rem; line-height: 1.52; color: var(--h-text-dim); margin: 0.58rem 0 0; max-width: 56ch; }
+.friendHeroActions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.friendHeroPrimary, .friendHeroSecondary { border: 1px solid var(--h-border); border-radius: 999px; padding: 0.62rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; cursor: pointer; text-decoration: none; }
+.friendHeroPrimary { background: #ff6a1f; color: #fff; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
+.friendHeroSecondary { background: var(--h-surface); color: var(--h-text); }
+.friendHeroStats { display: flex; flex-wrap: wrap; gap: 0.42rem; margin-top: 0.95rem; }
+.friendHeroStats div { display: inline-flex; align-items: baseline; gap: 0.32rem; background: color-mix(in srgb, var(--h-surface) 88%, #ff6a1f 4%); border: 1px solid var(--h-border); border-radius: 999px; padding: 0.38rem 0.64rem; }
+.friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; line-height: 0.9; color: #d2530f; }
+.friendHeroStats span { display: block; font-family: 'DM Mono', monospace; font-size: 0.47rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--h-text-dim); }
+.friendDailyMove { background: var(--h-surface); color: var(--h-text); border: 1px solid color-mix(in srgb, #ff6a1f 24%, var(--h-border)); border-radius: 22px; padding: 1rem; display: grid; gap: 0.65rem; align-content: center; box-shadow: 0 18px 42px -34px rgba(255,106,31,0.55); }
+.friendDailyMove h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.3rem, 3vw, 1.78rem); line-height: 1.06; letter-spacing: 0; margin: 0; }
+.friendDailyMove p { margin: 0; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; line-height: 1.45; }
+.friendDailyMove button { justify-self: start; border: 1px solid color-mix(in srgb, #ff6a1f 32%, var(--h-border)); border-radius: 999px; background: #ff6a1f; color: #fff; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; padding: 0.62rem 1rem; white-space: nowrap; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
+.friendLoop { border: 1px solid color-mix(in srgb, #ff6a1f 16%, var(--h-border)); border-radius: 24px; background: color-mix(in srgb, var(--h-surface) 96%, #fff8ef); box-shadow: var(--shadow-sm); padding: 1rem; margin: 0 0 1rem; }
+.friendLoopHead { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 0.85rem; }
+.friendLoopHead h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.25rem, 3vw, 1.65rem); line-height: 1.08; letter-spacing: 0; margin: 0.28rem 0 0; color: var(--h-text); }
+.friendLoopHead p { margin: 0; max-width: 36ch; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.86rem; line-height: 1.45; }
+.friendLoopSteps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.65rem; }
+.friendLoopStep { min-height: 168px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.45rem; text-align: left; color: var(--h-text); background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 18px; padding: 0.85rem; cursor: pointer; font: inherit; transition: transform .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease); }
+.friendLoopStep:hover { transform: translateY(-2px); border-color: color-mix(in srgb, #ff6a1f 34%, var(--h-border)); box-shadow: var(--shadow-sm); }
+.friendLoopStep > span { width: 26px; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, #ff6a1f 12%, var(--h-surface-2)); border: 1px solid color-mix(in srgb, #ff6a1f 26%, var(--h-border)); color: #d2530f; font-family: 'DM Mono', monospace; font-size: 0.62rem; font-weight: 800; }
+.friendLoopStep b { font-family: 'Bebas Neue', sans-serif; font-size: 1.28rem; line-height: 0.98; letter-spacing: 0.02em; font-weight: 400; }
+.friendLoopStep em { color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.82rem; line-height: 1.42; }
+.friendLoopStep strong { align-self: end; color: #d2530f; font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.friendLoopStep.done { background: color-mix(in srgb, var(--h-surface) 90%, #effaf3); border-color: color-mix(in srgb, #3f7d57 30%, var(--h-border)); }
+.friendLoopStep.done > span { background: #3f7d57; border-color: #3f7d57; color: #fff; }
+.friendTodayLayout { display: grid; grid-template-columns: minmax(0,1fr) minmax(250px, 310px); gap: 1rem; align-items: start; }
+.friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
+.friendTodayMain { min-width: 0; }
+.friendTodayPeople { grid-column: 2; grid-row: 1; }
+.friendTodayActions { grid-column: 2; grid-row: 2; }
+.friendTodayMain { grid-column: 1; grid-row: 1 / span 2; }
+
+/* ── PULSE (area boards) ── */
+.pulseAreasGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.65rem; }
+.pulseAreaCard { display: grid; gap: 0.38rem; min-height: 126px; background: var(--h-surface-2); border: 1px solid var(--h-border); cursor: pointer; font: inherit; padding: 0.75rem; border-radius: 16px; color: var(--h-text); text-align: left; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.pulseAreaCard:hover { transform: translateY(-2px); border-color: color-mix(in srgb, #ff6a1f 34%, var(--h-border)); box-shadow: var(--shadow-sm); }
+.pulseAreaTop { display: flex; align-items: flex-start; gap: 0.55rem; }
+.pulseAreaName { min-width: 0; flex: 1; font-family: 'Bebas Neue', sans-serif; font-size: 1.22rem; line-height: 0.96; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pulseAreaCount { flex-shrink: 0; max-width: 46%; text-align: right; font-family: 'DM Mono', monospace; font-size: 0.48rem; color: var(--h-text-faint); line-height: 1.25; }
+.pulseAreaHint { font-family: Georgia, serif; font-style: italic; font-size: 0.78rem; color: var(--h-text-dim); line-height: 1.35; }
+.pulseAreaCta { align-self: end; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; color: #d2530f; }
+
+/* ── TODAY panels / face lists / quick grid / mini plans ── */
+.friendPanel { background: color-mix(in srgb, var(--h-surface) 96%, transparent); border: 1px solid var(--h-border); border-radius: 22px; box-shadow: var(--shadow-sm); padding: 1rem; }
+.friendPanelKicker { font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase; color: #d2530f; font-weight: 700; }
+.friendPanel h2 { font-family: Georgia, serif; font-style: italic; font-size: 1.18rem; line-height: 1.08; margin: 0.35rem 0 0.55rem; color: var(--h-text); }
+.friendPanel p { margin: 0; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.84rem; line-height: 1.45; }
+.friendFaceList { display: grid; gap: 0.48rem; }
+.friendFaceList button { display: flex; align-items: center; gap: 0.55rem; min-width: 0; width: 100%; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); cursor: pointer; font: inherit; padding: 0.48rem 0.55rem; text-align: left; }
+.friendFaceList img, .friendFaceList span { width: 34px; height: 34px; border-radius: 12px; object-fit: cover; border: 1px solid var(--h-border); background: var(--h-surface-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #d2530f; font-family: 'Bebas Neue', sans-serif; }
+.friendFaceList b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'DM Mono', monospace; font-size: 0.68rem; font-weight: 600; }
+.friendFaceList em { margin-left: auto; flex-shrink: 0; font-family: 'DM Mono', monospace; font-size: 0.48rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--h-text-faint); font-style: normal; }
+.friendTextCta { margin-top: 0.72rem; background: transparent; border: none; cursor: pointer; padding: 0; color: #d2530f; font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; }
+.friendPlanStack { display: grid; gap: 0.8rem; }
+.friendQuickGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.45rem; margin: 0.75rem 0 0.9rem; }
+.friendQuickGrid button { min-height: 64px; border: 1px solid var(--h-border); border-radius: 16px; background: var(--h-surface-2); color: var(--h-text); cursor: pointer; display: grid; place-items: center; gap: 0.18rem; font-size: 1.25rem; }
+.friendQuickGrid span { font-family: 'DM Mono', monospace; font-size: 0.48rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--h-text-dim); }
+.friendMiniPlans { display: grid; gap: 0.45rem; }
+.friendMiniPlans button { display: grid; gap: 0.2rem; width: 100%; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); cursor: pointer; font: inherit; padding: 0.58rem 0.68rem; text-align: left; }
+.friendMiniPlans b { font-size: 0.84rem; line-height: 1.18; }
+.friendMiniPlans span { font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.04em; color: var(--h-text-dim); }
+.friendFocus { position: relative; overflow: hidden; background: #101010; color: #fff; border: 1px solid var(--h-border); border-radius: 24px; box-shadow: var(--shadow-md); padding: 1rem; margin: 1rem 0 0.5rem; }
+.friendFocus::after { content: none; }
+.friendFocusMeta { font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.66); margin-bottom: 0.65rem; }
+.friendFocusBody { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.friendFocus h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; line-height: 0.95; letter-spacing: 0.01em; margin: 0; }
+.friendFocus p { font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; color: rgba(255,255,255,0.72); margin: 0.4rem 0 0; }
+@media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) minmax(270px, 360px); align-items: stretch; } }
+@media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } }
+@media (max-width: 760px) { .friendTodayLayout, .friendLoopSteps { grid-template-columns: 1fr; } .friendTodayPeople, .friendTodayActions, .friendTodayMain { grid-column: auto; grid-row: auto; } .friendTodaySide { position: static; } .friendLoopHead { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 560px) {
+  .fbTopNav { position: sticky; top: 0.45rem; z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
+  .fbTopNav::-webkit-scrollbar { display: none; }
+  .fbTopNav button { white-space: nowrap; }
+  .fbShell { gap: 0.95rem; margin-top: 0.9rem; }
+  .sceneFilterDock { position: sticky; top: 3.7rem; z-index: 24; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; margin: 0 -0.2rem 0.9rem; padding: 0.45rem 0.2rem; background: color-mix(in srgb, var(--h-bg) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
+  .sceneFilterDock::-webkit-scrollbar { display: none; }
+  .sceneFilterDock button, .sceneFilterDock span { flex: 0 0 auto; white-space: nowrap; }
+  .sceneFilterDock > div { margin-left: 0 !important; flex: 0 0 auto; }
+  .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendDailyMove button { width: 100%; }
+  .pulseGrid { gap: 0.8rem; }
+  .pulseAreaCard { min-height: 112px; }
+  .crewLower { margin-top: 1rem; }
+}
+.pulseGrid { display: grid; grid-template-columns: 0.86fr 1.14fr; gap: 1rem; align-items: start; }
+@media (max-width: 780px) { .pulseGrid, .pulseAreasGrid { grid-template-columns: 1fr; } }
+.fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+@media (min-width: 880px) {
+  .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
+  .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
+  .fmMain { grid-column: 1; grid-row: 1; }
+}
+/* SCENE — filters/categories on the LEFT, the feed in the MIDDLE (pack + around live in the shared right rail). */
+.sceneGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+@media (min-width: 760px) {
+  .sceneGrid { grid-template-columns: minmax(0,1fr); align-items: start; }
+}
+.fmMap { position: relative; min-height: min(72vh, 600px); margin: 1.25rem 0 0; }
+.fmMapLine { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.fmStop { position: absolute; transform: translateX(-50%); width: min(300px, 84vw); text-align: left; display: flex; flex-direction: column; background: var(--h-surface); border: 1px solid var(--h-border); border-radius: var(--r-lg); box-shadow: var(--shadow-md); padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: var(--h-text); font: inherit; min-height: 190px; z-index: 1; transition: transform .12s ease, box-shadow .12s ease; }
+.fmStop:hover { transform: translate(calc(-50% - 2px), -3px); box-shadow: var(--shadow-lg); }
+.fmStopDot { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: var(--h-surface); border: 5px solid #ff6a1f; box-shadow: 0 0 0 3px var(--h-surface); }
+@media (max-width: 759px) {
+  .fmMap { min-height: 0; display: flex; flex-direction: column; gap: 1.6rem; padding-top: 0.6rem; }
+  .fmStop { position: static; transform: none; width: auto; }
+  .fmStop:hover { transform: translate(-2px,-3px); }
+  .fmMapLine { display: none; }
+}
+
+/* ── CREW ── */
+.crewWho { scrollbar-width: none; }
+.crewWho::-webkit-scrollbar { display: none; }
+.crewLower { margin-top: 1.5rem; }
+
+/* ── TOAST (in-app "new event" pop-up; keyframes were in the injected block) ── */
+.evToast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 100; max-width: min(440px, 92vw); display: flex; align-items: center; gap: 0.6rem; text-align: left; background: #ff6a1f; color: #fff; border: 1px solid var(--h-border); border-radius: 14px; box-shadow: 0 16px 38px -14px rgba(232,132,43,0.6); padding: 0.7rem 0.95rem; cursor: pointer; font: inherit; animation: fbToastIn 0.25s ease; }
+@keyframes fbToastIn { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ── SHARED CHROME (former module-level React.CSSProperties consts) ──
+   Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px
+   offset shadows — too loud). Surfaces read quiet so the content leads. */
+.card { background: var(--h-surface); border: 1px solid var(--h-border); border-radius: var(--r-md); box-shadow: var(--shadow-md); }
+.chip { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.04em; background: var(--h-surface-2); border: 1px solid var(--h-border); border-radius: 999px; padding: 0.22rem 0.6rem; color: var(--h-text-dim); }
+/* Section headers: a small connection-node + a calmer (smaller) display size. */
+.sectionLabel { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.05em; margin: 1.7rem 0 0.8rem; display: flex; gap: 0.5rem; align-items: center; color: var(--h-text); }
+.poppyBtn { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.05em; color: #fff; background: #ff6a1f; border: none; border-radius: var(--r-pill); padding: 0.6rem 1.5rem; box-shadow: 0 12px 26px -14px rgba(255,106,31,0.55); cursor: pointer; transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
+.inputStyle { border: 1px solid var(--h-border); border-radius: 999px; padding: 0.5rem 0.9rem; font-family: 'DM Mono', monospace; font-size: 0.72rem; background: var(--h-surface); color: var(--h-text); outline: none; }
+.pulseBtn { background: var(--h-surface-2); border: 1px solid var(--h-border); border-radius: 999px; padding: 0.35rem 0.8rem; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.04em; color: var(--h-text-dim); font-weight: 700; }
+.pulseBtnGhost { background: transparent; border: 1px solid var(--h-border); border-radius: 999px; padding: 0.35rem 0.8rem; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.04em; color: var(--h-text-dim); }
+/* A small filled node (the connection motif), not a chunky station ring. */
+.stationDot { width: 7px; height: 7px; border-radius: 50%; background: #ff6a1f; flex-shrink: 0; display: inline-block; }
+.sideHd { font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: #d2530f; font-weight: 700; }
+.sideEmpty { font-family: Georgia, serif; font-style: italic; color: var(--h-text-dim); font-size: 0.82rem; margin-top: 0.4rem; }
+/* Today page: horizontal scroll-snap rail. */
+.scrollRow { display: flex; gap: 0.85rem; overflow-x: auto; padding-bottom: 0.5rem; scroll-snap-type: x mandatory; }
+
+/* ── COMPOSER (guided wizard modal; ncStepIn keyframes were an injected one-liner) ── */
+.stepBox { background: var(--h-surface); border-radius: 18px; max-width: 520px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 1.5rem; box-shadow: 0 24px 70px -20px rgba(0,0,0,0.45); animation: ncStepIn .26s ease both; }
+@keyframes ncStepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.q { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; line-height: 1; margin: 0 0 1rem; }
+.navBtn { composes: poppyBtn; font-size: 1rem; padding: 0.5rem 1.2rem; }
+.backBtn { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--h-text-dim); }
+.stepFooter { display: flex; justify-content: space-between; align-items: center; margin-top: 1.3rem; }
+.wizLabel { font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--h-text-dim); margin-bottom: 0.4rem; }
+
+/* ── REPEATED INLINE OBJECTS (≥3 identical usages, swept in the phase-3 pass) ── */
+/* italic serif "quiet right now" empty-state inside a .card */
+.cardEmpty { padding: 1.25rem; font-family: Georgia, serif; font-style: italic; color: var(--h-text-dim); }
+/* City Pulse section sub-heads (community hubs / clubs / where it's happening) */
+.pulseH3 { font-family: Georgia, serif; font-style: italic; font-size: 1.35rem; line-height: 1.08; margin: 0.25rem 0 0; }

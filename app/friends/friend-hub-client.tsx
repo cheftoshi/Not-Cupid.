@@ -8,6 +8,7 @@ import { ConnectionSigil } from '@/components/connection-ui';
 import { toast, confirmDialog } from '@/components/feedback';
 import { SkeletonStyles, Skeleton, SkeletonCard, SkeletonRow } from '@/components/skeleton';
 import { DROP, untilNextDrop } from '@/lib/weekly-drop';
+import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
 const buzz = () => { try { navigator.vibrate?.(15); } catch { /* unsupported */ } };
@@ -16,7 +17,7 @@ const buzz = () => { try { navigator.vibrate?.(15); } catch { /* unsupported */ 
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
 const LINE = '#ff6a1f';          // the Friend Line — BRAND orange (was off-brand #e8842b)
 const LINE_DEEP = '#d2530f';     // brand orange-deep for shadows/hover
-const CREAM = 'var(--h-surface)'; // warm station-tile cream → themed surface
+// (CREAM — the warm station-tile surface — now lives in friend-hub.module.css as var(--h-surface))
 // Activity-rich categories — what people actually do together (fitness/sports
 // lead, then social/culture). Drives the Scene filter chips + the post composer.
 const CATS = ['fitness', 'gym', 'running', 'tennis', 'pickleball', 'sports', 'outdoors', 'food', 'coffee', 'drinks', 'movies', 'concerts', 'music', 'arts', 'books', 'games', 'chill'];
@@ -58,18 +59,9 @@ const PACK_PROMPTS = [
   'What kind of group plan feels low-pressure this week?',
 ];
 
-// Calm chrome: thin borders + soft shadows (was 3px ink borders + hard 5px offset
-// shadows — too loud). Surfaces read quiet so the content + connections lead.
-const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-md)' };
-const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.04em', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.22rem 0.6rem', color: 'var(--h-text-dim)' };
-// Section headers: a small connection-node + a calmer (smaller) display size.
-const sectionLabel: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.05em', margin: '1.7rem 0 0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--h-text)' };
-const poppyBtn: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: 'none', borderRadius: 'var(--r-pill)', padding: '0.6rem 1.5rem', boxShadow: '0 12px 26px -14px rgba(255,106,31,0.55)', cursor: 'pointer', transition: 'transform .2s var(--ease), box-shadow .2s var(--ease)' };
-const inputStyle: React.CSSProperties = { border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.5rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', background: 'var(--h-surface)', color: 'var(--h-text)', outline: 'none' };
-const pulseBtn: React.CSSProperties = { background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)', fontWeight: 700 };
-const pulseBtnGhost: React.CSSProperties = { background: 'transparent', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-dim)' };
+// Calm chrome (card/chip/buttons/inputs) now lives in friend-hub.module.css.
 // A small filled node (the connection motif), not a chunky station ring.
-const StationDot = () => <span style={{ width: 7, height: 7, borderRadius: '50%', background: LINE, flexShrink: 0, display: 'inline-block' }} />;
+const StationDot = () => <span className={s.stationDot} />;
 
 // Scene categories — the activity filter as choice "bubbles" with mini sub-tags
 // (movies, concerts, fitness, sports… each opens its own tags). Tags map to the
@@ -84,8 +76,8 @@ const SCENE_CATS: { key: string; icon: string; label: string; tags: string[] }[]
 ];
 function SceneCats({ main, setMain, sub, setSub }: { main: string; setMain: (m: string) => void; sub: string; setSub: (s: string) => void }) {
   return (
-    <div style={{ ...card, padding: '0.95rem 1rem' }}>
-      <div style={sideHd}>🎟️ what are you into?</div>
+    <div className={s.card} style={{ padding: '0.95rem 1rem' }}>
+      <div className={s.sideHd}>🎟️ what are you into?</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.65rem' }}>
         {SCENE_CATS.map((c) => {
           const on = main === c.key;
@@ -98,7 +90,7 @@ function SceneCats({ main, setMain, sub, setSub }: { main: string; setMain: (m: 
               {on && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.32rem', margin: '0.5rem 0 0.3rem 0.4rem' }}>
                   {c.tags.map((t) => (
-                    <button key={t} onClick={() => setSub(sub === t ? '' : t)} style={{ ...chip, cursor: 'pointer', background: sub === t ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sub === t ? '#0c2029' : 'var(--h-text-dim)' }}>{sub === t ? '✓ ' : ''}{t}</button>
+                    <button key={t} onClick={() => setSub(sub === t ? '' : t)} className={s.chip} style={{ cursor: 'pointer', background: sub === t ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sub === t ? '#0c2029' : 'var(--h-text-dim)' }}>{sub === t ? '✓ ' : ''}{t}</button>
                   ))}
                 </div>
               )}
@@ -219,9 +211,6 @@ const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
   { key: 'crew', icon: '🧡', label: 'my circle' },
   { key: 'pulse', icon: '🌆', label: 'city pulse' },
 ];
-const sideHd: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP, fontWeight: 700 };
-const sideEmpty: React.CSSProperties = { fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.4rem' };
-const miniCount: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', minWidth: 20, height: 18, padding: '0 5px', borderRadius: 999, background: LINE, color: '#fff', border: `1px solid var(--h-border)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
 
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
 
@@ -265,7 +254,7 @@ function VibeCard({ a, onRsvp, onAuthor }: { a: any; onRsvp: (id: string, r?: 'y
   const joined = a.myResponse === 'yes';
   const yes = a.responses?.yes ?? a.rsvpCount ?? 0;
   return (
-    <div style={{ ...card, padding: '0.95rem 1.05rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 230 }}>
+    <div className={s.card} style={{ padding: '0.95rem 1.05rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 230 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', lineHeight: 1.05, letterSpacing: '0.01em' }}>{a.title || 'a plan'}</div>
         <span style={{ flexShrink: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.2rem 0.5rem', fontWeight: 700 }}>{st.label}</span>
@@ -275,7 +264,7 @@ function VibeCard({ a, onRsvp, onAuthor }: { a: any; onRsvp: (id: string, r?: 'y
       </div>
       <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>for: {vibeFor(a)}</div>
       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.1rem' }}>
-        <button onClick={() => onRsvp(a.id, joined ? 'no' : 'yes')} style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 0.95rem', background: joined ? 'var(--h-surface-3)' : LINE, color: joined ? LINE_DEEP : '#fff', boxShadow: joined ? 'none' : poppyBtn.boxShadow }}>{joined ? '✓ you’re in' : `${st.cta} →`}</button>
+        <button onClick={() => onRsvp(a.id, joined ? 'no' : 'yes')} className={s.poppyBtn} style={{ fontSize: '0.95rem', padding: '0.4rem 0.95rem', background: joined ? 'var(--h-surface-3)' : LINE, color: joined ? LINE_DEEP : '#fff', boxShadow: joined ? 'none' : undefined }}>{joined ? '✓ you’re in' : `${st.cta} →`}</button>
         {onAuthor && a.authorName && <button onClick={() => onAuthor(a)} title="who's organizing" style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 2 }}>by {(a.authorName).split(' ')[0]}</button>}
       </div>
     </div>
@@ -361,56 +350,55 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
 
   const railHd = (emoji: string, text: string, sub?: string) => (
     <div style={{ margin: '1.6rem 0 0.7rem' }}>
-      <h2 style={{ ...sectionLabel, margin: 0 }}><StationDot />{emoji} {text}</h2>
+      <h2 className={s.sectionLabel} style={{ margin: 0 }}><StationDot />{emoji} {text}</h2>
       {sub && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{sub}</div>}
     </div>
   );
-  const scrollRow: React.CSSProperties = { display: 'flex', gap: '0.85rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollSnapType: 'x mandatory' };
 
   return (
     <div>
-      <div className="friendTodayHero">
-        <div className="friendHeroIntro">
-          <div className="friendHeroSignal">
+      <div className={s.friendTodayHero}>
+        <div className={s.friendHeroIntro}>
+          <div className={s.friendHeroSignal}>
             <ConnectionSigil tone="friend" />
-            <div className="friendHeroKicker">today on friend line</div>
+            <div className={s.friendHeroKicker}>today on friend line</div>
           </div>
-          <h1 className="friendHeroTitle">{firstName ? `${firstName}, ` : ''}what feels easy today?</h1>
-          <p className="friendHeroCopy">
+          <h1 className={s.friendHeroTitle}>{firstName ? `${firstName}, ` : ''}what feels easy today?</h1>
+          <p className={s.friendHeroCopy}>
             Start with one low-pressure move in {cityName}: join something forming, warm up your pack, or post the plan you wish existed.
           </p>
-          <div className="friendHeroStats" aria-label="today's Friend Line signals">
+          <div className={s.friendHeroStats} aria-label="today's Friend Line signals">
             <div><strong>{open.length}</strong><span>open plans</span></div>
             <div><strong>{vibePeople.length}</strong><span>nearby people</span></div>
             <div><strong>{myEvents.length}</strong><span>saved</span></div>
             <div><strong>{connectedCount}</strong><span>circle</span></div>
           </div>
-          <div className="friendHeroActions">
-            <button onClick={onStart} className="friendHeroPrimary">start something →</button>
-            {hasCrew && <button onClick={onCrew} className="friendHeroSecondary">open my circle</button>}
-            <button onClick={onScene} className="friendHeroSecondary">browse scene</button>
-            <a href="/friends/quiz?retake=1" className="friendHeroSecondary">retake friend quiz</a>
+          <div className={s.friendHeroActions}>
+            <button onClick={onStart} className={s.friendHeroPrimary}>start something →</button>
+            {hasCrew && <button onClick={onCrew} className={s.friendHeroSecondary}>open my circle</button>}
+            <button onClick={onScene} className={s.friendHeroSecondary}>browse scene</button>
+            <a href="/friends/quiz?retake=1" className={s.friendHeroSecondary}>retake friend quiz</a>
           </div>
         </div>
-        <div className="friendDailyMove">
-          <div className="friendPanelKicker">{todayMove.eyebrow}</div>
+        <div className={s.friendDailyMove}>
+          <div className={s.friendPanelKicker}>{todayMove.eyebrow}</div>
           <h2>{todayMove.title}</h2>
           <p>{todayMove.body}</p>
           <button onClick={todayMove.action}>{todayMove.cta}</button>
         </div>
       </div>
 
-      <section className="friendLoop" aria-label="Friend-making path">
-        <div className="friendLoopHead">
+      <section className={s.friendLoop} aria-label="Friend-making path">
+        <div className={s.friendLoopHead}>
           <div>
-            <div className="friendPanelKicker">why come back</div>
+            <div className={s.friendPanelKicker}>why come back</div>
             <h2>build one real friendship loop this week.</h2>
           </div>
           <p>Friend Line should help you move from “I should meet people” to a real plan with real names.</p>
         </div>
-        <div className="friendLoopSteps">
+        <div className={s.friendLoopSteps}>
           {friendPath.map((item) => (
-            <button key={item.step} onClick={item.action} className={`friendLoopStep ${item.done ? 'done' : ''}`}>
+            <button key={item.step} onClick={item.action} className={`${s.friendLoopStep} ${item.done ? s.done : ''}`}>
               <span>{item.done ? '✓' : item.step}</span>
               <b>{item.title}</b>
               <em>{item.body}</em>
@@ -420,15 +408,15 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
         </div>
       </section>
 
-      <div className="friendTodayLayout">
-        <aside className="friendTodaySide friendTodayPeople">
-          <div className="friendPanel">
-            <div className="friendPanelKicker">your people</div>
+      <div className={s.friendTodayLayout}>
+        <aside className={`${s.friendTodaySide} ${s.friendTodayPeople}`}>
+          <div className={s.friendPanel}>
+            <div className={s.friendPanelKicker}>your people</div>
             <h2>start from familiar faces.</h2>
             {connectedPeople.length === 0 ? (
               <p>No locked-in connections yet. Your first circle starts from the pack.</p>
             ) : (
-              <div className="friendFaceList">
+              <div className={s.friendFaceList}>
                 {connectedPeople.map((p) => (
                   <button key={p.id} onClick={onCrew}>
                     {p.photo_url ? <img src={p.photo_url} alt="" /> : <span>{(p.name || '?').charAt(0)}</span>}
@@ -437,16 +425,16 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
                 ))}
               </div>
             )}
-            <button onClick={onCrew} className="friendTextCta">open my circle →</button>
+            <button onClick={onCrew} className={s.friendTextCta}>open my circle →</button>
           </div>
 
-          <div className="friendPanel">
-            <div className="friendPanelKicker">next few</div>
+          <div className={s.friendPanel}>
+            <div className={s.friendPanelKicker}>next few</div>
             <h2>people with a possible overlap.</h2>
             {packPeople.length === 0 && vibePeople.length === 0 ? (
               <p>The next pack and the Scene will fill this in.</p>
             ) : (
-              <div className="friendFaceList">
+              <div className={s.friendFaceList}>
                 {[...packPeople, ...vibePeople.filter((p) => p.tag !== 'match')].slice(0, 7).map((p) => (
                   <button key={p.id} onClick={p.tag === 'match' ? onCrew : onScene}>
                     {p.photo_url ? <img src={p.photo_url} alt="" /> : <span>{(p.name || '?').charAt(0)}</span>}
@@ -459,71 +447,71 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
           </div>
         </aside>
 
-        <section className="friendTodayMain">
+        <section className={s.friendTodayMain}>
           {railHd('✨', 'plans that fit', 'pulled from the Scene, ranked by your interests and momentum')}
           {recs.length === 0 ? (
-            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>
+            <div className={`${s.card} ${s.cardEmpty}`}>
               quiet right now — <button onClick={onStart} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something →</button> and others will join.
             </div>
           ) : (
-            <div className="friendPlanStack">{recs.map((a) => <VibeCard key={a.id} a={a} onRsvp={onRsvp} onAuthor={onAuthor} />)}</div>
+            <div className={s.friendPlanStack}>{recs.map((a) => <VibeCard key={a.id} a={a} onRsvp={onRsvp} onAuthor={onAuthor} />)}</div>
           )}
 
           {nearYou.length > 0 && (<>
             {railHd('📍', 'easy ways in', `happening around ${cityName}`)}
-            <div style={scrollRow}>{nearYou.map((a) => <div key={a.id} style={{ flex: '0 0 260px', scrollSnapAlign: 'start' }}><VibeCard a={a} onRsvp={onRsvp} onAuthor={onAuthor} /></div>)}</div>
+            <div className={s.scrollRow}>{nearYou.map((a) => <div key={a.id} style={{ flex: '0 0 260px', scrollSnapAlign: 'start' }}><VibeCard a={a} onRsvp={onRsvp} onAuthor={onAuthor} /></div>)}</div>
           </>)}
         </section>
 
-        <aside className="friendTodaySide friendTodayActions">
+        <aside className={`${s.friendTodaySide} ${s.friendTodayActions}`}>
           {/* THE WEEKLY DROP — the ritual. Thursdays a fresh sealed pack lands;
               between drops this counts down (drop culture, not feed culture). */}
-          <div className="friendPanel" style={sealedCount > 0 ? { border: '1.5px solid var(--h-accent)', boxShadow: '0 14px 34px -18px rgba(255,106,31,0.45)' } : undefined}>
-            <div className="friendPanelKicker">the weekly drop</div>
+          <div className={s.friendPanel} style={sealedCount > 0 ? { border: '1.5px solid var(--h-accent)', boxShadow: '0 14px 34px -18px rgba(255,106,31,0.45)' } : undefined}>
+            <div className={s.friendPanelKicker}>the weekly drop</div>
             {sealedCount > 0 ? (
               <>
                 <h2>this week&apos;s pack is here.</h2>
                 <p>{sealedCount} {sealedCount === 1 ? 'person' : 'people'}, curated for you — sealed until you open it.</p>
-                <a href="/friends/pack" className="friendHeroPrimary" style={{ display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}>🎁 open the pack →</a>
+                <a href="/friends/pack" className={s.friendHeroPrimary} style={{ display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}>🎁 open the pack →</a>
               </>
             ) : (
               <>
                 <h2>next drop in {untilNextDrop()}.</h2>
                 <p>every {DROP.label}, a fresh pack of people lands — curated by the algo, sealed until you open it. can&apos;t wait? open one now ($0.99, free with all-access).</p>
-                <a href="/friends/pack" className="friendTextCta" style={{ textDecoration: 'none' }}>open one early →</a>
+                <a href="/friends/pack" className={s.friendTextCta} style={{ textDecoration: 'none' }}>open one early →</a>
               </>
             )}
           </div>
 
-          <div className="friendPanel friendActionPanel">
-            <div className="friendPanelKicker">quick starts</div>
+          <div className={`${s.friendPanel} friendActionPanel`}>
+            <div className={s.friendPanelKicker}>quick starts</div>
             <h2>make the first move small.</h2>
-            <div className="friendQuickGrid">
+            <div className={s.friendQuickGrid}>
               {QUICK.map(([emoji, label]) => (
                 <button key={label} onClick={onStart}>{emoji}<span>{label}</span></button>
               ))}
             </div>
-            <button onClick={onStart} className="friendHeroPrimary">post a plan →</button>
+            <button onClick={onStart} className={s.friendHeroPrimary}>post a plan →</button>
           </div>
 
           {drop && (
-            <div className="friendPanel">
-              <div className="friendPanelKicker">city signal</div>
+            <div className={s.friendPanel}>
+              <div className={s.friendPanelKicker}>city signal</div>
               <h2>{drop.title}</h2>
               <p>{drop.happens_at ? friendlyWhen(drop.happens_at) : (drop.area || cityName)}{drop.area && drop.happens_at ? ` · ${drop.area}` : ''}</p>
-              <button onClick={() => onRsvp(drop.id, drop.myResponse === 'yes' ? 'no' : 'yes')} className="friendTextCta">
+              <button onClick={() => onRsvp(drop.id, drop.myResponse === 'yes' ? 'no' : 'yes')} className={s.friendTextCta}>
                 {drop.myResponse === 'yes' ? 'you’re in ✓' : 'i’m interested →'}
               </button>
             </div>
           )}
 
-          <div className="friendPanel">
-            <div className="friendPanelKicker">today</div>
+          <div className={s.friendPanel}>
+            <div className={s.friendPanelKicker}>today</div>
             <h2>your plan board.</h2>
             {myEvents.length === 0 ? (
               <p>No saved plans yet. Join one from best fits or start your own.</p>
             ) : (
-              <div className="friendMiniPlans">
+              <div className={s.friendMiniPlans}>
                 {myEvents.slice(0, 4).map((a) => (
                   <button key={a.id} onClick={onScene}>
                     <b>{a.title}</b>
@@ -532,13 +520,13 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
                 ))}
               </div>
             )}
-            <button onClick={onScene} className="friendTextCta">browse the scene →</button>
+            <button onClick={onScene} className={s.friendTextCta}>browse the scene →</button>
           </div>
 
           {/* PMF loop: friends bring friends — the friend line is better with
               your actual people (and every invite densifies the pool). */}
-          <div className="friendPanel">
-            <div className="friendPanelKicker">bring your people</div>
+          <div className={s.friendPanel}>
+            <div className={s.friendPanelKicker}>bring your people</div>
             <h2>friends &gt; algorithms.</h2>
             <p>the friend line works best with people you already like. send your link — <b>you both get a free pack</b> when they join.</p>
             <button
@@ -555,7 +543,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
                   }
                 } catch { /* share sheet closed */ }
               }}
-              className="friendTextCta">share your invite link →</button>
+              className={s.friendTextCta}>share your invite link →</button>
           </div>
         </aside>
       </div>
@@ -656,7 +644,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
     } catch { /* user closed the share sheet */ }
   }
   return (
-    <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+    <div className={s.card} style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
         {/* author is clickable → their friend card (vet who's behind a post/event) */}
         <button onClick={() => onAuthor && !a.isMine && onAuthor(a)} title={a.isMine ? '' : `see ${a.authorName?.split(' ')[0] || 'who'}'s card`}
@@ -671,9 +659,9 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
             </div>
           </div>
         </button>
-        <span style={{ ...chip, flexShrink: 0 }}>{a.category}</span>
+        <span className={s.chip} style={{ flexShrink: 0 }}>{a.category}</span>
         <button onClick={sharePlan} title="share this — anyone with the link can see it and join"
-          style={{ ...chip, flexShrink: 0, cursor: 'pointer', background: 'var(--h-surface-2)' }}>↗</button>
+          className={s.chip} style={{ flexShrink: 0, cursor: 'pointer', background: 'var(--h-surface-2)' }}>↗</button>
         {a.isMine && <button onClick={() => onDelete(a.id)} title="delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>✕</button>}
       </div>
       <div style={{ padding: '0 1rem 0.75rem' }}>
@@ -690,7 +678,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
         })()}
         {isEvent && a.happens_at && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center', marginTop: '0.55rem' }}>
-            <span style={{ ...chip, background: 'var(--h-surface-3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <span className={s.chip} style={{ background: 'var(--h-surface-3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
               🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric' })}
             </span>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}><Countdown to={a.happens_at} /></span>
@@ -758,7 +746,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
               <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
                 <input value={cText} onChange={(e) => setCText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder="add a comment…"
                   style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.45rem 0.85rem', fontSize: '0.85rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
-                <button onClick={postComment} disabled={cBusy || !cText.trim()} style={{ ...poppyBtn, opacity: cText.trim() ? 1 : 0.5, padding: '0.4rem 0.9rem', fontSize: '0.9rem' }}>{cBusy ? '…' : 'post'}</button>
+                <button onClick={postComment} disabled={cBusy || !cText.trim()} className={s.poppyBtn} style={{ opacity: cText.trim() ? 1 : 0.5, padding: '0.4rem 0.9rem', fontSize: '0.9rem' }}>{cBusy ? '…' : 'post'}</button>
               </div>
             </div>
           )}
@@ -1254,7 +1242,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.95rem', color: 'var(--h-text-dim)', lineHeight: 1.6, margin: '0.7rem 0 1.2rem' }}>
               the friend line is about meeting real people. by continuing you agree to NotCupid&apos;s <a href="/terms" style={{ color: LINE_DEEP }}>terms</a> &amp; <a href="/safety" style={{ color: LINE_DEEP }}>community guidelines</a> — be kind, be real, and meet new people safely.
             </p>
-            <button onClick={agreeTerms} style={{ ...poppyBtn, width: '100%', fontSize: '1.25rem' }}>I agree — let me in →</button>
+            <button onClick={agreeTerms} className={s.poppyBtn} style={{ width: '100%', fontSize: '1.25rem' }}>I agree — let me in →</button>
             <a href="/hub" style={{ display: 'block', textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'none' }}>not now — back to hub</a>
           </div>
         </div>
@@ -1271,16 +1259,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           else { const toSat = (6 - d.getDay() + 7) % 7; d.setDate(d.getDate() + toSat); d.setHours(12, 0, 0, 0); }
           setNewAct((s) => ({ ...s, happens_at: localDT(d) }));
         };
-        const stepBox: React.CSSProperties = { background: 'var(--h-surface)', borderRadius: 18, maxWidth: 520, width: '100%', maxHeight: '88vh', overflowY: 'auto', padding: '1.5rem', boxShadow: '0 24px 70px -20px rgba(0,0,0,0.45)' };
-        const q: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', lineHeight: 1, margin: '0 0 1rem' };
         const opt = (active: boolean): React.CSSProperties => ({ cursor: 'pointer', textAlign: 'left', borderRadius: 12, padding: '0.8rem 1rem', border: `2px solid ${active ? LINE : 'var(--h-border)'}`, background: active ? 'rgba(255,106,31,0.08)' : 'var(--h-surface-2)', color: 'var(--h-text)', fontFamily: "'DM Mono', monospace", fontSize: '0.78rem' });
-        const navBtn: React.CSSProperties = { ...poppyBtn, fontSize: '1rem', padding: '0.5rem 1.2rem' };
-        const back = (to: number) => <button onClick={() => setComposerStep(to)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>← back</button>;
+        const back = (to: number) => <button onClick={() => setComposerStep(to)} className={s.backBtn}>← back</button>;
         return (
           <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 130 }}>
-            <style>{`@keyframes ncStepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
             {/* keyed by step → each wizard step slides in instead of hard-cutting */}
-            <div key={composerStep} onClick={(e) => e.stopPropagation()} style={{ ...stepBox, animation: 'ncStepIn .26s ease both' }}>
+            <div key={composerStep} onClick={(e) => e.stopPropagation()} className={s.stepBox}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{isPost ? 'say something' : `step ${composerStep > 4 ? 4 : composerStep} of 4`}</span>
                 <button onClick={close} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--h-text-dim)' }}>✕</button>
@@ -1288,7 +1272,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
 
               {/* STEP 1 — what */}
               {composerStep === 1 && (<>
-                <h3 style={q}>What do you want to do?</h3>
+                <h3 className={s.q}>What do you want to do?</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
                   {WHAT_CARDS.map((c) => (
                     <button key={c.label} onClick={() => { setNewAct((s) => ({ ...s, kind: c.kind, category: c.category })); if (c.kind === 'post') setComposerStep(5); else setComposerStep(2); }}
@@ -1302,7 +1286,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
 
               {/* STEP 2 — when */}
               {composerStep === 2 && (<>
-                <h3 style={q}>When?</h3>
+                <h3 className={s.q}>When?</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {([['tonight', '🌙 Tonight'], ['tomorrow', '☀️ Tomorrow'], ['weekend', '🗓 This weekend']] as const).map(([k, label]) => (
                     <button key={k} onClick={() => setWhen(k)} style={opt(false)}>{label}</button>
@@ -1315,37 +1299,37 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                   </div>
                   {newAct.happens_at && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: LINE_DEEP }}>✓ {friendlyWhen(newAct.happens_at)}</div>}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>{back(1)}<button onClick={() => setComposerStep(3)} disabled={!newAct.happens_at} style={{ ...navBtn, opacity: newAct.happens_at ? 1 : 0.5 }}>next →</button></div>
+                <div className={s.stepFooter}>{back(1)}<button onClick={() => setComposerStep(3)} disabled={!newAct.happens_at} className={s.navBtn} style={{ opacity: newAct.happens_at ? 1 : 0.5 }}>next →</button></div>
               </>)}
 
               {/* STEP 3 — who */}
               {composerStep === 3 && (<>
-                <h3 style={q}>Who can join?</h3>
-                <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.4rem' }}>open to</div>
+                <h3 className={s.q}>Who can join?</h3>
+                <div className={s.wizLabel}>open to</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                   <button onClick={() => setNewAct((s) => ({ ...s, audGenders: [] }))} style={opt(newAct.audGenders.length === 0)}>👥 Everyone</button>
                   {ownAudienceOpts.map(([v, label]) => (
                     <button key={v} onClick={() => setNewAct((s) => ({ ...s, audGenders: [v] }))} style={opt(newAct.audGenders.includes(v))}>{label}</button>
                   ))}
                 </div>
-                <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.4rem' }}>vibe</div>
+                <div className={s.wizLabel}>vibe</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                   <button onClick={() => setNewAct((s) => ({ ...s, datingFriendly: false }))} style={opt(!newAct.datingFriendly)}>🧡 Just friends</button>
                   <button onClick={() => setNewAct((s) => ({ ...s, datingFriendly: true }))} style={opt(newAct.datingFriendly)}>💘 Dating-friendly</button>
                 </div>
-                <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.4rem' }}>age range (optional)</div>
+                <div className={s.wizLabel}>age range (optional)</div>
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                   <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                   <span style={{ color: 'var(--h-text-dim)' }}>–</span>
                   <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                 </div>
                 {newAct.audGenders.length > 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.74rem', color: 'var(--h-text-dim)', marginTop: '0.7rem' }}>a same-gender plan stays {newAct.audGenders.includes('f') ? 'women' : newAct.audGenders.includes('m') ? 'men' : 'group'}-run — you can only open it to a group you’re part of.</div>}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>{back(2)}<button onClick={() => setComposerStep(4)} style={navBtn}>next →</button></div>
+                <div className={s.stepFooter}>{back(2)}<button onClick={() => setComposerStep(4)} className={s.navBtn}>next →</button></div>
               </>)}
 
               {/* STEP 4 — where */}
               {composerStep === 4 && (<>
-                <h3 style={q}>Where?</h3>
+                <h3 className={s.q}>Where?</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <button onClick={() => { setNewAct((s) => ({ ...s, area: '', location: '' })); setComposerStep(5); }} style={opt(false)}>📍 My area{myArea ? ` (${myArea})` : ''}</button>
                   <div style={{ ...opt(false) }}>
@@ -1358,12 +1342,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                   </div>
                   <button onClick={() => { setNewAct((s) => ({ ...s, area: '', location: '' })); setComposerStep(5); }} style={opt(false)}>🤷 Decide later</button>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>{back(3)}<button onClick={() => setComposerStep(5)} style={navBtn}>next →</button></div>
+                <div className={s.stepFooter}>{back(3)}<button onClick={() => setComposerStep(5)} className={s.navBtn}>next →</button></div>
               </>)}
 
               {/* STEP 5 — name it + post */}
               {composerStep === 5 && (<>
-                <h3 style={q}>{isPost ? 'Say something' : 'Name your plan'}</h3>
+                <h3 className={s.q}>{isPost ? 'Say something' : 'Name your plan'}</h3>
                 <input value={newAct.title} autoFocus onChange={(e) => setNewAct({ ...newAct, title: e.target.value })}
                   placeholder={isPost ? `what's on your mind, ${firstName.toLowerCase()}?` : (WHAT_CARDS.find((c) => c.category === newAct.category)?.ph || 'what’s the move?')}
                   style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 1rem', fontSize: '1rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
@@ -1377,9 +1361,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                     {newAct.happens_at ? `🕒 ${friendlyWhen(newAct.happens_at)}` : '🕒 anytime'} · {newAct.audGenders.length ? `👥 ${newAct.audGenders.includes('f') ? 'women' : newAct.audGenders.includes('m') ? 'men' : newAct.audGenders[0]} only` : '👥 everyone'}{newAct.datingFriendly ? ' · 💘 dating-friendly' : ''} · 📍 {newAct.location || newAct.area || 'TBD'}
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.3rem' }}>
+                <div className={s.stepFooter}>
                   {back(isPost ? 1 : 4)}
-                  <button onClick={createAct} disabled={busy || !newAct.title.trim()} style={{ ...navBtn, opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{busy ? 'posting…' : 'post to the scene →'}</button>
+                  <button onClick={createAct} disabled={busy || !newAct.title.trim()} className={s.navBtn} style={{ opacity: busy || !newAct.title.trim() ? 0.5 : 1 }}>{busy ? 'posting…' : 'post to the scene →'}</button>
                 </div>
               </>)}
             </div>
@@ -1406,7 +1390,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               {(m.sharedActivities || []).length > 0 && (
                 <div style={{ marginTop: '0.75rem' }}>
                   <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>you both like</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{m.sharedActivities.map((a: string) => <span key={a} style={chip}>{a}</span>)}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{m.sharedActivities.map((a: string) => <span key={a} className={s.chip}>{a}</span>)}</div>
                 </div>
               )}
               <div style={{ marginTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
@@ -1418,7 +1402,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                   </>
                 ) : (
                   <>
-                    <button onClick={() => openDm(m)} style={{ ...poppyBtn, width: '100%' }}>💬 message {first} →</button>
+                    <button onClick={() => openDm(m)} className={s.poppyBtn} style={{ width: '100%' }}>💬 message {first} →</button>
                     <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
                   </>
                 )) : m.theyAccepted ? (
@@ -1429,7 +1413,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                     <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>cancel request</button>
                   </>
                 ) : (
-                  <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.5, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>{busy ? '…' : `🤝 connect with ${first}`}</button>
+                  <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} className={s.poppyBtn} style={{ width: '100%', opacity: termsOk ? 1 : 0.5, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>{busy ? '…' : `🤝 connect with ${first}`}</button>
                 )}
                 {!termsOk && !m.connected && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.74rem', textAlign: 'center' }}>agree to the terms (on the page) before you connect.</div>}
               </div>
@@ -1473,7 +1457,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             <div style={{ display: 'flex', gap: '0.5rem', padding: '0.7rem', borderTop: '1px solid var(--h-border)', flexShrink: 0 }}>
               <input value={dmText} onChange={(e) => setDmText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendDm()} placeholder={`message ${first}…`}
                 style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
-              <button onClick={sendDm} disabled={!dmText.trim()} style={{ ...poppyBtn, opacity: dmText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
+              <button onClick={sendDm} disabled={!dmText.trim()} className={s.poppyBtn} style={{ opacity: dmText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
             </div>
           </div>
         </div>
@@ -1503,7 +1487,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', padding: '0.7rem', borderTop: '1px solid var(--h-border)', flexShrink: 0 }}>
               <input value={clubText} onChange={(e) => setClubText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendClubMsg()} placeholder="message the club…" style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
-              <button onClick={sendClubMsg} disabled={!clubText.trim()} style={{ ...poppyBtn, opacity: clubText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
+              <button onClick={sendClubMsg} disabled={!clubText.trim()} className={s.poppyBtn} style={{ opacity: clubText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
             </div>
           </div>
         </div>
@@ -1526,13 +1510,13 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                   <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     {r.photo_url ? <img src={r.photo_url} alt="" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} /> : <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', display: 'inline-block' }} />}
                     <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name || 'someone'}</span>
-                    <button onClick={() => reqAction(clubManage.id, r.id, 'approve')} style={{ ...poppyBtn, fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}>approve</button>
-                    <button onClick={() => reqAction(clubManage.id, r.id, 'decline')} style={pulseBtnGhost}>decline</button>
+                    <button onClick={() => reqAction(clubManage.id, r.id, 'approve')} className={s.poppyBtn} style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}>approve</button>
+                    <button onClick={() => reqAction(clubManage.id, r.id, 'decline')} className={s.pulseBtnGhost}>decline</button>
                   </div>
                 ))}
               </div>
             )}
-            <button onClick={() => openClubChat(clubManage)} style={{ ...pulseBtnGhost, width: '100%', marginTop: '1rem', padding: '0.5rem' }}>💬 open the club chat →</button>
+            <button onClick={() => openClubChat(clubManage)} className={s.pulseBtnGhost} style={{ width: '100%', marginTop: '1rem', padding: '0.5rem' }}>💬 open the club chat →</button>
           </div>
         </div>
       )}
@@ -1540,7 +1524,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
       {/* in-app "new event" pop-up — tap to jump to the Scene */}
       {evToast && (
         <button onClick={() => { goView('scene'); setEvToast(null); setNewScene(0); }}
-          style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'min(440px, 92vw)', display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', background: LINE, color: '#fff', border: "1px solid var(--h-border)", borderRadius: 14, boxShadow: '0 16px 38px -14px rgba(232,132,43,0.6)', padding: '0.7rem 0.95rem', cursor: 'pointer', font: 'inherit', animation: 'fbToastIn 0.25s ease' }}>
+          className={s.evToast}>
           <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔔</span>
           <span style={{ minWidth: 0 }}>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
@@ -1552,134 +1536,6 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         </button>
       )}
 
-      <style>{`
-        @keyframes fbToastIn { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
-        /* nav floats on top (all viewports); content = main feed + a right rail */
-        .fbTopNav { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.4rem 0 0.2rem; }
-        .fbShell { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.25rem; }
-        .sceneFilterDock { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.85rem; }
-        @media (max-width: 879px) { .fbRail { order: 2; } .fbMain { order: 1; } }
-        @media (min-width: 880px) {
-          .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
-          .fbShellHome { grid-template-columns: 1fr; }
-          .fbShellHome .fbRail { display: none; }
-          .fbRail { position: sticky; top: 1rem; }
-        }
-        .friendTodayHero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); gap: 1rem; background: radial-gradient(circle at 92% 12%, rgba(255,106,31,0.10), transparent 30%), radial-gradient(circle at 0% 100%, rgba(37,99,255,0.06), transparent 34%), color-mix(in srgb, var(--h-surface) 96%, #fff7ef); border: 1px solid color-mix(in srgb, ${LINE} 18%, var(--h-border)); border-radius: 26px; box-shadow: 0 18px 60px -48px rgba(232,132,43,0.42), var(--shadow-sm); padding: clamp(1rem, 2.8vw, 1.45rem); margin-bottom: 1rem; }
-        .friendTodayHero::after { content: none; }
-        .friendHeroIntro { min-width: 0; }
-        .friendHeroSignal { position: relative; z-index: 1; display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
-        .friendHeroKicker { font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: ${LINE_DEEP}; }
-        .friendHeroTitle { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.55rem, 4vw, 2.25rem); line-height: 1.03; letter-spacing: 0; margin: 0; color: var(--h-text); max-width: 12ch; }
-        .friendHeroCopy { font-family: Georgia, serif; font-style: italic; font-size: 0.95rem; line-height: 1.52; color: var(--h-text-dim); margin: 0.58rem 0 0; max-width: 56ch; }
-        .friendHeroActions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-        .friendHeroPrimary, .friendHeroSecondary { border: 1px solid var(--h-border); border-radius: 999px; padding: 0.62rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; cursor: pointer; text-decoration: none; }
-        .friendHeroPrimary { background: ${LINE}; color: #fff; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
-        .friendHeroSecondary { background: var(--h-surface); color: var(--h-text); }
-        .friendHeroStats { display: flex; flex-wrap: wrap; gap: 0.42rem; margin-top: 0.95rem; }
-        .friendHeroStats div { display: inline-flex; align-items: baseline; gap: 0.32rem; background: color-mix(in srgb, var(--h-surface) 88%, ${LINE} 4%); border: 1px solid var(--h-border); border-radius: 999px; padding: 0.38rem 0.64rem; }
-        .friendHeroStats strong { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; line-height: 0.9; color: ${LINE_DEEP}; }
-        .friendHeroStats span { display: block; font-family: 'DM Mono', monospace; font-size: 0.47rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--h-text-dim); }
-        .friendDailyMove { background: var(--h-surface); color: var(--h-text); border: 1px solid color-mix(in srgb, ${LINE} 24%, var(--h-border)); border-radius: 22px; padding: 1rem; display: grid; gap: 0.65rem; align-content: center; box-shadow: 0 18px 42px -34px rgba(255,106,31,0.55); }
-        .friendDailyMove h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.3rem, 3vw, 1.78rem); line-height: 1.06; letter-spacing: 0; margin: 0; }
-        .friendDailyMove p { margin: 0; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; line-height: 1.45; }
-        .friendDailyMove button { justify-self: start; border: 1px solid color-mix(in srgb, ${LINE} 32%, var(--h-border)); border-radius: 999px; background: ${LINE}; color: #fff; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.04em; padding: 0.62rem 1rem; white-space: nowrap; box-shadow: 0 12px 26px -14px rgba(232,132,43,0.75); }
-        .friendLoop { border: 1px solid color-mix(in srgb, ${LINE} 16%, var(--h-border)); border-radius: 24px; background: color-mix(in srgb, var(--h-surface) 96%, #fff8ef); box-shadow: var(--shadow-sm); padding: 1rem; margin: 0 0 1rem; }
-        .friendLoopHead { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 0.85rem; }
-        .friendLoopHead h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(1.25rem, 3vw, 1.65rem); line-height: 1.08; letter-spacing: 0; margin: 0.28rem 0 0; color: var(--h-text); }
-        .friendLoopHead p { margin: 0; max-width: 36ch; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.86rem; line-height: 1.45; }
-        .friendLoopSteps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.65rem; }
-        .friendLoopStep { min-height: 168px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.45rem; text-align: left; color: var(--h-text); background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 18px; padding: 0.85rem; cursor: pointer; font: inherit; transition: transform .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease); }
-        .friendLoopStep:hover { transform: translateY(-2px); border-color: color-mix(in srgb, ${LINE} 34%, var(--h-border)); box-shadow: var(--shadow-sm); }
-        .friendLoopStep > span { width: 26px; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, ${LINE} 12%, var(--h-surface-2)); border: 1px solid color-mix(in srgb, ${LINE} 26%, var(--h-border)); color: ${LINE_DEEP}; font-family: 'DM Mono', monospace; font-size: 0.62rem; font-weight: 800; }
-        .friendLoopStep b { font-family: 'Bebas Neue', sans-serif; font-size: 1.28rem; line-height: 0.98; letter-spacing: 0.02em; font-weight: 400; }
-        .friendLoopStep em { color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.82rem; line-height: 1.42; }
-        .friendLoopStep strong { align-self: end; color: ${LINE_DEEP}; font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.1em; text-transform: uppercase; }
-        .friendLoopStep.done { background: color-mix(in srgb, var(--h-surface) 90%, #effaf3); border-color: color-mix(in srgb, #3f7d57 30%, var(--h-border)); }
-        .friendLoopStep.done > span { background: #3f7d57; border-color: #3f7d57; color: #fff; }
-        .friendTodayLayout { display: grid; grid-template-columns: minmax(0,1fr) minmax(250px, 310px); gap: 1rem; align-items: start; }
-        .friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
-        .friendTodayMain { min-width: 0; }
-        .friendTodayPeople { grid-column: 2; grid-row: 1; }
-        .friendTodayActions { grid-column: 2; grid-row: 2; }
-        .friendTodayMain { grid-column: 1; grid-row: 1 / span 2; }
-        .pulseAreasGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.65rem; }
-        .pulseAreaCard { display: grid; gap: 0.38rem; min-height: 126px; background: var(--h-surface-2); border: 1px solid var(--h-border); cursor: pointer; font: inherit; padding: 0.75rem; border-radius: 16px; color: var(--h-text); text-align: left; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
-        .pulseAreaCard:hover { transform: translateY(-2px); border-color: color-mix(in srgb, ${LINE} 34%, var(--h-border)); box-shadow: var(--shadow-sm); }
-        .pulseAreaTop { display: flex; align-items: flex-start; gap: 0.55rem; }
-        .pulseAreaName { min-width: 0; flex: 1; font-family: 'Bebas Neue', sans-serif; font-size: 1.22rem; line-height: 0.96; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pulseAreaCount { flex-shrink: 0; max-width: 46%; text-align: right; font-family: 'DM Mono', monospace; font-size: 0.48rem; color: var(--h-text-faint); line-height: 1.25; }
-        .pulseAreaHint { font-family: Georgia, serif; font-style: italic; font-size: 0.78rem; color: var(--h-text-dim); line-height: 1.35; }
-        .pulseAreaCta { align-self: end; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; color: ${LINE_DEEP}; }
-        .friendPanel { background: color-mix(in srgb, var(--h-surface) 96%, transparent); border: 1px solid var(--h-border); border-radius: 22px; box-shadow: var(--shadow-sm); padding: 1rem; }
-        .friendPanelKicker { font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase; color: ${LINE_DEEP}; font-weight: 700; }
-        .friendPanel h2 { font-family: Georgia, serif; font-style: italic; font-size: 1.18rem; line-height: 1.08; margin: 0.35rem 0 0.55rem; color: var(--h-text); }
-        .friendPanel p { margin: 0; color: var(--h-text-dim); font-family: Georgia, serif; font-style: italic; font-size: 0.84rem; line-height: 1.45; }
-        .friendFaceList { display: grid; gap: 0.48rem; }
-        .friendFaceList button { display: flex; align-items: center; gap: 0.55rem; min-width: 0; width: 100%; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); cursor: pointer; font: inherit; padding: 0.48rem 0.55rem; text-align: left; }
-        .friendFaceList img, .friendFaceList span { width: 34px; height: 34px; border-radius: 12px; object-fit: cover; border: 1px solid var(--h-border); background: var(--h-surface-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: ${LINE_DEEP}; font-family: 'Bebas Neue', sans-serif; }
-        .friendFaceList b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'DM Mono', monospace; font-size: 0.68rem; font-weight: 600; }
-        .friendFaceList em { margin-left: auto; flex-shrink: 0; font-family: 'DM Mono', monospace; font-size: 0.48rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--h-text-faint); font-style: normal; }
-        .friendTextCta { margin-top: 0.72rem; background: transparent; border: none; cursor: pointer; padding: 0; color: ${LINE_DEEP}; font-family: 'DM Mono', monospace; font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; }
-        .friendPlanStack { display: grid; gap: 0.8rem; }
-        .friendQuickGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.45rem; margin: 0.75rem 0 0.9rem; }
-        .friendQuickGrid button { min-height: 64px; border: 1px solid var(--h-border); border-radius: 16px; background: var(--h-surface-2); color: var(--h-text); cursor: pointer; display: grid; place-items: center; gap: 0.18rem; font-size: 1.25rem; }
-        .friendQuickGrid span { font-family: 'DM Mono', monospace; font-size: 0.48rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--h-text-dim); }
-        .friendMiniPlans { display: grid; gap: 0.45rem; }
-        .friendMiniPlans button { display: grid; gap: 0.2rem; width: 100%; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); cursor: pointer; font: inherit; padding: 0.58rem 0.68rem; text-align: left; }
-        .friendMiniPlans b { font-size: 0.84rem; line-height: 1.18; }
-        .friendMiniPlans span { font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.04em; color: var(--h-text-dim); }
-        .friendFocus { position: relative; overflow: hidden; background: #101010; color: #fff; border: 1px solid var(--h-border); border-radius: 24px; box-shadow: var(--shadow-md); padding: 1rem; margin: 1rem 0 0.5rem; }
-        .friendFocus::after { content: none; }
-        .friendFocusMeta { font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.66); margin-bottom: 0.65rem; }
-        .friendFocusBody { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-        .friendFocus h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; line-height: 0.95; letter-spacing: 0.01em; margin: 0; }
-        .friendFocus p { font-family: Georgia, serif; font-style: italic; font-size: 0.9rem; color: rgba(255,255,255,0.72); margin: 0.4rem 0 0; }
-        @media (min-width: 720px) { .friendTodayHero { grid-template-columns: minmax(0,1fr) minmax(270px, 360px); align-items: stretch; } }
-        @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } }
-        @media (max-width: 760px) { .friendTodayLayout, .friendLoopSteps { grid-template-columns: 1fr; } .friendTodayPeople, .friendTodayActions, .friendTodayMain { grid-column: auto; grid-row: auto; } .friendTodaySide { position: static; } .friendLoopHead { align-items: flex-start; flex-direction: column; } }
-        @media (max-width: 560px) {
-          .fbTopNav { position: sticky; top: 0.45rem; z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
-          .fbTopNav::-webkit-scrollbar { display: none; }
-          .fbTopNav button { white-space: nowrap; }
-          .fbShell { gap: 0.95rem; margin-top: 0.9rem; }
-          .sceneFilterDock { position: sticky; top: 3.7rem; z-index: 24; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; margin: 0 -0.2rem 0.9rem; padding: 0.45rem 0.2rem; background: color-mix(in srgb, var(--h-bg) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
-          .sceneFilterDock::-webkit-scrollbar { display: none; }
-          .sceneFilterDock button, .sceneFilterDock span { flex: 0 0 auto; white-space: nowrap; }
-          .sceneFilterDock > div { margin-left: 0 !important; flex: 0 0 auto; }
-          .friendHeroSignal { align-items: flex-start; } .friendHeroActions { flex-direction: column; } .friendHeroPrimary, .friendHeroSecondary { width: 100%; text-align: center; } .friendFocusBody { align-items: flex-start; flex-direction: column; } .friendDailyMove button { width: 100%; }
-          .pulseGrid { gap: 0.8rem; }
-          .pulseAreaCard { min-height: 112px; }
-          .crewLower { margin-top: 1rem; }
-        }
-        .pulseGrid { display: grid; grid-template-columns: 0.86fr 1.14fr; gap: 1rem; align-items: start; }
-        @media (max-width: 780px) { .pulseGrid, .pulseAreasGrid { grid-template-columns: 1fr; } }
-        .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
-        @media (min-width: 880px) {
-          .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
-          .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
-          .fmMain { grid-column: 1; grid-row: 1; }
-        }
-        /* Scene = filters/categories on the LEFT, the feed in the MIDDLE (pack + around live in the shared right rail). */
-        .sceneGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
-        @media (min-width: 760px) {
-          .sceneGrid { grid-template-columns: minmax(0,1fr); align-items: start; }
-        }
-        .fmMap { position: relative; min-height: min(72vh, 600px); margin: 1.25rem 0 0; }
-        .fmMapLine { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-        .fmStop { position: absolute; transform: translateX(-50%); width: min(300px, 84vw); text-align: left; display: flex; flex-direction: column; background: var(--h-surface); border: 1px solid var(--h-border); border-radius: var(--r-lg); box-shadow: var(--shadow-md); padding: 1.4rem 1.3rem 1.2rem; cursor: pointer; color: var(--h-text); font: inherit; min-height: 190px; z-index: 1; transition: transform .12s ease, box-shadow .12s ease; }
-        .fmStop:hover { transform: translate(calc(-50% - 2px), -3px); box-shadow: var(--shadow-lg); }
-        .fmStopDot { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: ${CREAM}; border: 5px solid ${LINE}; box-shadow: 0 0 0 3px var(--h-surface); }
-        @media (max-width: 759px) {
-          .fmMap { min-height: 0; display: flex; flex-direction: column; gap: 1.6rem; padding-top: 0.6rem; }
-          .fmStop { position: static; transform: none; width: auto; }
-          .fmStop:hover { transform: translate(-2px,-3px); }
-          .fmMapLine { display: none; }
-        }
-        .crewWho { scrollbar-width: none; }
-        .crewWho::-webkit-scrollbar { display: none; }
-        .crewLower { margin-top: 1.5rem; }
-      `}</style>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
@@ -1696,7 +1552,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         </h1>
 
         {/* the nav — a floating pill bar across the top */}
-        <div className="fbTopNav">
+        <div className={s.fbTopNav}>
           {NAV.map((n) => {
             const active = view === n.key;
             return (
@@ -1709,8 +1565,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           })}
         </div>
 
-        <div className={`fbShell ${view === 'home' ? 'fbShellHome' : ''}`}>
-          <main className="fbMain">
+        <div className={`${s.fbShell} ${view === 'home' ? s.fbShellHome : ''}`}>
+          <main className={s.fbMain}>
         {view === 'home' && (!actsLoaded ? (
           <div>
             <SkeletonStyles />
@@ -1730,7 +1586,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         <div>
           {/* YOUR FRIEND CARD — on top, so the page leads with you */}
           {profileSet && me ? (
-            <div style={{ ...card, padding: '0.85rem 1rem', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+            <div className={s.card} style={{ padding: '0.85rem 1rem', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
               {me.photo_url
                 ? <img src={me.photo_url} alt="" style={{ width: 66, height: 66, borderRadius: 14, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                 : <div style={{ width: 66, height: 66, borderRadius: 14, border: '1px solid var(--h-border)', background: 'var(--h-surface-3)', flexShrink: 0 }} />}
@@ -1738,35 +1594,35 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>your friend card</div>
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.75rem', lineHeight: 1.05 }}>{me.name}{me.archetype && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, marginLeft: '0.5rem' }}>{me.archetype}</span>}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.35rem' }}>
-                  {[...me.hobbies, ...me.music, ...me.food].slice(0, 5).map((t) => <span key={t} style={chip}>{t}</span>)}
+                  {[...me.hobbies, ...me.music, ...me.food].slice(0, 5).map((t) => <span key={t} className={s.chip}>{t}</span>)}
                 </div>
               </div>
               <a href="/friends/profile" style={{ flexShrink: 0, alignSelf: 'flex-start', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>edit →</a>
             </div>
           ) : (
-            <a href="/friends/profile" style={{ ...card, display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.9rem 1rem', marginBottom: '1.2rem', textDecoration: 'none', color: 'var(--h-text)' }}>
+            <a href="/friends/profile" className={s.card} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.9rem 1rem', marginBottom: '1.2rem', textDecoration: 'none', color: 'var(--h-text)' }}>
               <span style={{ fontSize: '1.6rem' }}>📸</span>
               <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>set up your friend card so crews know it&apos;s you.</span>
               <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
             </a>
           )}
 
-          <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'grid', gap: '0.65rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff3e8)' }}>
+          <div className={s.card} style={{ padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'grid', gap: '0.65rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff3e8)' }}>
             <div>
-              <div style={sideHd}>tune your friend line</div>
+              <div className={s.sideHd}>tune your friend line</div>
               <p style={{ margin: '0.25rem 0 0', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.84rem', lineHeight: 1.45 }}>
                 Retake the friend quiz when your season changes, or use a limited rewipe when the current friend scene is not it.
               </p>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <a href="/friends/quiz?retake=1" style={{ ...pulseBtn, textDecoration: 'none', color: 'var(--h-text)' }}>retake quiz</a>
-              <button onClick={resetFriendScene} disabled={busy || rewipesLeft <= 0} style={{ ...pulseBtnGhost, color: rewipesLeft <= 0 ? 'var(--h-text-faint)' : '#c0392b', opacity: busy || rewipesLeft <= 0 ? 0.6 : 1, cursor: busy || rewipesLeft <= 0 ? 'not-allowed' : 'pointer' }}>{busy ? 'refreshing…' : rewipesLeft <= 0 ? 'rewipes locked' : `restart scene · ${rewipesLeft} left`}</button>
+              <a href="/friends/quiz?retake=1" className={s.pulseBtn} style={{ textDecoration: 'none', color: 'var(--h-text)' }}>retake quiz</a>
+              <button onClick={resetFriendScene} disabled={busy || rewipesLeft <= 0} className={s.pulseBtnGhost} style={{ color: rewipesLeft <= 0 ? 'var(--h-text-faint)' : '#c0392b', opacity: busy || rewipesLeft <= 0 ? 0.6 : 1, cursor: busy || rewipesLeft <= 0 ? 'not-allowed' : 'pointer' }}>{busy ? 'refreshing…' : rewipesLeft <= 0 ? 'rewipes locked' : `restart scene · ${rewipesLeft} left`}</button>
             </div>
           </div>
 
           {/* PAUSED / EMPTY / CHOOSE-PACK — your pack itself lives in the right rail */}
           {ghosted ? (
-            <div style={{ ...card, padding: '1.25rem' }}>
+            <div className={s.card} style={{ padding: '1.25rem' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ your matching is paused</div>
               {hardLocked ? (
                 <>
@@ -1787,54 +1643,54 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               )}
             </div>
           ) : cooledUntil !== null ? (
-            <div style={{ ...card, padding: '1.4rem 1.25rem', textAlign: 'center' }}>
+            <div className={s.card} style={{ padding: '1.4rem 1.25rem', textAlign: 'center' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ taking a little break</div>
               <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.55, margin: 0 }}>
                 you got a few packs and didn&apos;t open up to anyone, so we&apos;ve paused new packs to keep things fresh for everyone.{cooledUntil ? ` you're back on ${new Date(cooledUntil).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}.` : ''} your existing chats &amp; connections stay put — and turn on notifications so you don&apos;t miss the next pack.
               </p>
             </div>
           ) : matches.length === 0 ? (
-            <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>the algo is still finding your people — check back soon.</div>
+            <div className={`${s.card} ${s.cardEmpty}`}>the algo is still finding your people — check back soon.</div>
           ) : (!chat.circleId && matches.some((m) => !m.connected && !m.iAccepted)) ? (
-            <div style={{ ...card, padding: '1rem 1.2rem', marginBottom: '1.1rem' }}>
+            <div className={s.card} style={{ padding: '1rem 1.2rem', marginBottom: '1.1rem' }}>
               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', marginBottom: '0.6rem', color: 'var(--h-text-dim)', fontSize: '0.92rem' }}>
                 a <b style={{ color: 'var(--h-text)' }}>pack</b> is a batch of people to meet. <b>choose your pack</b> to open one group chat with everyone — then tap <b>connect</b> on anyone in <b>your pack</b> (over on the right) for a private 1:1.
               </div>
               <button onClick={choosePack} disabled={busy || !termsOk}
-                style={{ ...poppyBtn, width: '100%', opacity: termsOk ? 1 : 0.45, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>
+                className={s.poppyBtn} style={{ width: '100%', opacity: termsOk ? 1 : 0.45, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>
                 {busy ? '…' : '🎒 choose this pack — open the pack chat →'}
               </button>
             </div>
           ) : null}
 
           {/* LOWER — the group chat, full-width now (friend card lives up top) */}
-          <div className="crewLower">
+          <div className={s.crewLower}>
             {/* CHAT — roomy, full-width */}
             <div>
               {(chat.circleId || matches.length > 0) && (
                 <>
-                  <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '0.75rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 92%, #fff0e5), var(--h-surface))' }}>
-                    <div style={sideHd}>bonding room</div>
+                  <div className={s.card} style={{ padding: '0.9rem 1rem', marginBottom: '0.75rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 92%, #fff0e5), var(--h-surface))' }}>
+                    <div className={s.sideHd}>bonding room</div>
                     <p style={{ margin: '0.25rem 0 0.75rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
                       Pack Chat should make the first move easy. Pick a tiny game, vote on a plan, or drop a prompt so the group has somewhere to start.
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                       {PACK_GAMES.map((x) => (
                         <button key={x.label} onClick={() => { setMsg(x.text); setChatOpen(true); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }} disabled={!chatLive}
-                          style={{ ...chip, background: 'var(--h-surface)', cursor: chatLive ? 'pointer' : 'not-allowed', opacity: chatLive ? 1 : 0.55 }}>
+                          className={s.chip} style={{ background: 'var(--h-surface)', cursor: chatLive ? 'pointer' : 'not-allowed', opacity: chatLive ? 1 : 0.55 }}>
                           {x.label}
                         </button>
                       ))}
                     </div>
                   </div>
                   <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
-                    style={{ ...poppyBtn, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    className={s.poppyBtn} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>💬 pack chat</span>
                     <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewRoster.length}`}</span>
                   </button>
                   <div ref={chatRef} />
                   {chatOpen && (
-                    <div style={{ ...card, overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
+                    <div className={s.card} style={{ overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
                       {/* header + who's-here roster — names, not just avatars */}
                       <div style={{ background: LINE, color: '#fff', padding: '0.6rem 0.85rem 0.7rem', borderBottom: "1px solid var(--h-border)" }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem' }}>
@@ -1843,7 +1699,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                             {chatLive ? '● live' : '○ forming'}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', marginTop: '0.55rem', paddingBottom: '0.1rem' }} className="crewWho">
+                        <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', marginTop: '0.55rem', paddingBottom: '0.1rem' }} className={s.crewWho}>
                           {crewRoster.map((u) => (
                             <button key={u.id} onClick={() => { if (u.you) return; const mm = matches.find((x) => x.otherId === u.id); if (mm) setCardMember(mm); }} title={u.here ? `${u.name} · in the chat` : `${u.name} · invited`}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, cursor: u.you ? 'default' : 'pointer', font: 'inherit', background: 'var(--h-surface)', color: 'var(--h-text)', border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.18rem 0.55rem 0.18rem 0.22rem' }}>
@@ -1864,7 +1720,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                               <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', marginBottom: '0.65rem' }}>say hi to the crew, or start with one of these.</div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                                 {PACK_PROMPTS.map((p) => (
-                                  <button key={p} onClick={() => setMsg(p)} style={{ ...chip, cursor: 'pointer', background: 'var(--h-surface)' }}>{p}</button>
+                                  <button key={p} onClick={() => setMsg(p)} className={s.chip} style={{ cursor: 'pointer', background: 'var(--h-surface)' }}>{p}</button>
                                 ))}
                               </div>
                             </div>
@@ -1882,7 +1738,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', padding: '0.8rem 1.1rem', borderTop: `3px dashed rgba(36,29,18,0.25)` }}>
                           <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something to the pack…" style={{ flex: 1, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '0.9rem' }} />
-                          <button onClick={send} style={{ ...poppyBtn, fontSize: '1.1rem', padding: '0 1rem' }}>→</button>
+                          <button onClick={send} className={s.poppyBtn} style={{ fontSize: '1.1rem', padding: '0 1rem' }}>→</button>
                         </div>
                       </>) : (
                         <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
@@ -1906,31 +1762,31 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
 
         {view === 'pulse' && (
         <div>
-          <h2 style={sectionLabel}><StationDot />🌆 city pulse</h2>
+          <h2 className={s.sectionLabel}><StationDot />🌆 city pulse</h2>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
             Community hubs, active groups, and where people are actually gathering around {city ? city.split(',')[0].toLowerCase() : 'your city'}.
           </p>
 
-          <div className="pulseGrid">
-            <section style={{ ...card, padding: '1rem' }}>
+          <div className={s.pulseGrid}>
+            <section className={s.card} style={{ padding: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
                 <div>
-                  <div style={sideHd}>💬 community hubs</div>
-                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>the city&apos;s social points.</h3>
+                  <div className={s.sideHd}>💬 community hubs</div>
+                  <h3 className={s.pulseH3}>the city&apos;s social points.</h3>
                 </div>
-                <button onClick={() => setShowNewLink((v) => !v)} style={{ ...pulseBtnGhost, marginLeft: 'auto' }}>{showNewLink ? '✕ cancel' : '+ submit'}</button>
+                <button onClick={() => setShowNewLink((v) => !v)} className={s.pulseBtnGhost} style={{ marginLeft: 'auto' }}>{showNewLink ? '✕ cancel' : '+ submit'}</button>
               </div>
               {showNewLink && (
                 <div style={{ border: '1px solid var(--h-border)', borderRadius: 14, padding: '0.75rem', marginBottom: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', background: 'var(--h-surface-2)' }}>
-                  <input value={newLink.title} onChange={(e) => setNewLink({ ...newLink, title: e.target.value })} maxLength={100} placeholder="what is it? (e.g. boston runners discord)" style={inputStyle} />
-                  <select value={newLink.kind} onChange={(e) => setNewLink({ ...newLink, kind: e.target.value })} style={inputStyle}>{LINK_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}</select>
-                  <input value={newLink.url} onChange={(e) => setNewLink({ ...newLink, url: e.target.value })} maxLength={400} placeholder="paste the invite link" style={inputStyle} />
-                  <button onClick={submitLink} disabled={clubBusy || !newLink.title.trim() || !newLink.url.trim()} style={{ ...poppyBtn, alignSelf: 'flex-start', opacity: newLink.title.trim() && newLink.url.trim() ? 1 : 0.5 }}>{clubBusy ? '…' : 'submit for review →'}</button>
+                  <input value={newLink.title} onChange={(e) => setNewLink({ ...newLink, title: e.target.value })} maxLength={100} placeholder="what is it? (e.g. boston runners discord)" className={s.inputStyle} />
+                  <select value={newLink.kind} onChange={(e) => setNewLink({ ...newLink, kind: e.target.value })} className={s.inputStyle}>{LINK_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}</select>
+                  <input value={newLink.url} onChange={(e) => setNewLink({ ...newLink, url: e.target.value })} maxLength={400} placeholder="paste the invite link" className={s.inputStyle} />
+                  <button onClick={submitLink} disabled={clubBusy || !newLink.title.trim() || !newLink.url.trim()} className={s.poppyBtn} style={{ alignSelf: 'flex-start', opacity: newLink.title.trim() && newLink.url.trim() ? 1 : 0.5 }}>{clubBusy ? '…' : 'submit for review →'}</button>
                   <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.76rem', color: 'var(--h-text-faint)' }}>reviewed before it goes live.</span>
                 </div>
               )}
               {comLinks.length === 0 ? (
-                <div style={sideEmpty}>no community hubs yet — submit a Discord or group-chat link.</div>
+                <div className={s.sideEmpty}>no community hubs yet — submit a Discord or group-chat link.</div>
               ) : (
                 <div style={{ display: 'grid', gap: '0.55rem' }}>
                   {comLinks.map((l) => (
@@ -1947,30 +1803,30 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               )}
             </section>
 
-            <section style={{ ...card, padding: '1rem' }}>
+            <section className={s.card} style={{ padding: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
                 <div>
-                  <div style={sideHd}>🤝 clubs</div>
-                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>active groups and recurring hangs.</h3>
+                  <div className={s.sideHd}>🤝 clubs</div>
+                  <h3 className={s.pulseH3}>active groups and recurring hangs.</h3>
                 </div>
-                <button onClick={() => setShowNewClub((v) => !v)} style={{ ...poppyBtn, marginLeft: 'auto', fontSize: '0.95rem', padding: '0.38rem 0.9rem' }}>{showNewClub ? '✕ cancel' : '+ start'}</button>
+                <button onClick={() => setShowNewClub((v) => !v)} className={s.poppyBtn} style={{ marginLeft: 'auto', fontSize: '0.95rem', padding: '0.38rem 0.9rem' }}>{showNewClub ? '✕ cancel' : '+ start'}</button>
               </div>
               {showNewClub && (
                 <div style={{ border: '1px solid var(--h-border)', borderRadius: 14, padding: '0.75rem', marginBottom: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', background: 'var(--h-surface-2)' }}>
-                  <input value={newClub.name} onChange={(e) => setNewClub({ ...newClub, name: e.target.value })} maxLength={80} placeholder="club name (e.g. sunday run club)" style={{ ...inputStyle, borderColor: newClub.name.trim().length > 0 && newClub.name.trim().length < 3 ? '#d94f3d' : undefined }} />
+                  <input value={newClub.name} onChange={(e) => setNewClub({ ...newClub, name: e.target.value })} maxLength={80} placeholder="club name (e.g. sunday run club)" className={s.inputStyle} style={{ borderColor: newClub.name.trim().length > 0 && newClub.name.trim().length < 3 ? '#d94f3d' : undefined }} />
                   {newClub.name.trim().length > 0 && newClub.name.trim().length < 3 && (
                     <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.75rem', color: '#c0392b', marginTop: '-0.3rem' }}>give it at least 3 characters — people search by name</span>
                   )}
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <select value={newClub.category} onChange={(e) => setNewClub({ ...newClub, category: e.target.value })} style={{ ...inputStyle, flex: '0 0 auto' }}>{CLUB_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
-                    <input value={newClub.area} onChange={(e) => setNewClub({ ...newClub, area: e.target.value })} maxLength={60} placeholder="📍 area (optional)" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                    <select value={newClub.category} onChange={(e) => setNewClub({ ...newClub, category: e.target.value })} className={s.inputStyle} style={{ flex: '0 0 auto' }}>{CLUB_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                    <input value={newClub.area} onChange={(e) => setNewClub({ ...newClub, area: e.target.value })} maxLength={60} placeholder="📍 area (optional)" className={s.inputStyle} style={{ flex: 1, minWidth: 120 }} />
                   </div>
-                  <textarea value={newClub.description} onChange={(e) => setNewClub({ ...newClub, description: e.target.value })} maxLength={400} placeholder="what's it about? when do you meet?" rows={2} style={{ ...inputStyle, resize: 'vertical', borderRadius: 12 }} />
-                  <button onClick={createClub} disabled={clubBusy || newClub.name.trim().length < 3 || !termsOk} style={{ ...poppyBtn, alignSelf: 'flex-start', opacity: newClub.name.trim().length >= 3 && termsOk ? 1 : 0.5 }}>{clubBusy ? '…' : 'create the club →'}</button>
+                  <textarea value={newClub.description} onChange={(e) => setNewClub({ ...newClub, description: e.target.value })} maxLength={400} placeholder="what's it about? when do you meet?" rows={2} className={s.inputStyle} style={{ resize: 'vertical', borderRadius: 12 }} />
+                  <button onClick={createClub} disabled={clubBusy || newClub.name.trim().length < 3 || !termsOk} className={s.poppyBtn} style={{ alignSelf: 'flex-start', opacity: newClub.name.trim().length >= 3 && termsOk ? 1 : 0.5 }}>{clubBusy ? '…' : 'create the club →'}</button>
                 </div>
               )}
               {clubs.length === 0 ? (
-                <div style={sideEmpty}>no clubs in your city yet — start the first one.</div>
+                <div className={s.sideEmpty}>no clubs in your city yet — start the first one.</div>
               ) : (
                 <div style={{ display: 'grid', gap: '0.65rem' }}>
                   {clubs.map((c) => (
@@ -1986,15 +1842,15 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                       {c.description && <p style={{ margin: '0.5rem 0 0', fontSize: '0.86rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}>{c.description}</p>}
                       <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
                         {c.myStatus === 'owner' ? (<>
-                          <button onClick={() => openClubManage(c)} style={pulseBtn}>requests{c.pendingCount ? ` (${c.pendingCount})` : ''}</button>
-                          <button onClick={() => openClubChat(c)} style={{ ...poppyBtn, fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat →</button>
+                          <button onClick={() => openClubManage(c)} className={s.pulseBtn}>requests{c.pendingCount ? ` (${c.pendingCount})` : ''}</button>
+                          <button onClick={() => openClubChat(c)} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat →</button>
                         </>) : c.myStatus === 'member' ? (<>
-                          <button onClick={() => openClubChat(c)} style={{ ...poppyBtn, fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat →</button>
-                          <button onClick={async () => { await clubAct(c.id, 'leave'); await loadClubs(); }} style={pulseBtnGhost}>leave</button>
+                          <button onClick={() => openClubChat(c)} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat →</button>
+                          <button onClick={async () => { await clubAct(c.id, 'leave'); await loadClubs(); }} className={s.pulseBtnGhost}>leave</button>
                         </>) : c.myStatus === 'pending' ? (
-                          <span style={{ ...pulseBtnGhost, opacity: 0.7 }}>requested</span>
+                          <span className={s.pulseBtnGhost} style={{ opacity: 0.7 }}>requested</span>
                         ) : (
-                          <button onClick={async () => { await clubAct(c.id, 'join'); await loadClubs(); }} disabled={!termsOk} style={{ ...poppyBtn, fontSize: '0.9rem', padding: '0.35rem 0.85rem', opacity: termsOk ? 1 : 0.5 }}>request to join</button>
+                          <button onClick={async () => { await clubAct(c.id, 'join'); await loadClubs(); }} disabled={!termsOk} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem', opacity: termsOk ? 1 : 0.5 }}>request to join</button>
                         )}
                       </div>
                     </div>
@@ -2005,25 +1861,25 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           </div>
 
           {pulse && pulse.areas && pulse.areas.length > 0 && (
-            <section style={{ ...card, padding: '1rem', marginTop: '1rem' }}>
+            <section className={s.card} style={{ padding: '1rem', marginTop: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={sideHd}>📍 where it&apos;s happening</div>
-                  <h3 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '1.35rem', lineHeight: 1.08, margin: '0.25rem 0 0' }}>neighborhood boards, not an endless rail.</h3>
+                  <div className={s.sideHd}>📍 where it&apos;s happening</div>
+                  <h3 className={s.pulseH3}>neighborhood boards, not an endless rail.</h3>
                 </div>
-                <span style={{ ...chip, background: 'var(--h-surface-2)' }}>{pulse.areas.length} areas active</span>
+                <span className={s.chip} style={{ background: 'var(--h-surface-2)' }}>{pulse.areas.length} areas active</span>
               </div>
-              <div className="pulseAreasGrid">
+              <div className={s.pulseAreasGrid}>
                 {[...pulse.areas].sort((a: any, b: any) => (b.members + (b.activities || 0)) - (a.members + (a.activities || 0))).slice(0, 9).map((z: any, i: number) => {
                   const zonePlans = acts.filter((a: any) => a.area === z.area && (a.kind || 'event') === 'event').slice(0, 2);
                   return (
-                    <button key={z.area} onClick={() => { setAreaFilter(z.area); goView('scene'); }} title={`${z.members} around · ${z.activities || 0} happening — see it on the scene`} className="pulseAreaCard">
-                      <span className="pulseAreaTop">
-                        <span className="pulseAreaName">{i === 0 ? '🔥 ' : ''}{z.area}</span>
-                        <span className="pulseAreaCount">{z.members ? `${z.members} people` : 'new'}{z.activities ? ` · ${z.activities} plans` : ''}</span>
+                    <button key={z.area} onClick={() => { setAreaFilter(z.area); goView('scene'); }} title={`${z.members} around · ${z.activities || 0} happening — see it on the scene`} className={s.pulseAreaCard}>
+                      <span className={s.pulseAreaTop}>
+                        <span className={s.pulseAreaName}>{i === 0 ? '🔥 ' : ''}{z.area}</span>
+                        <span className={s.pulseAreaCount}>{z.members ? `${z.members} people` : 'new'}{z.activities ? ` · ${z.activities} plans` : ''}</span>
                       </span>
-                      <span className="pulseAreaHint">{zonePlans.length > 0 ? zonePlans.map((p: any) => p.title).join(' · ') : 'quiet right now — seed the first plan'}</span>
-                      <span className="pulseAreaCta">open board →</span>
+                      <span className={s.pulseAreaHint}>{zonePlans.length > 0 ? zonePlans.map((p: any) => p.title).join(' · ') : 'quiet right now — seed the first plan'}</span>
+                      <span className={s.pulseAreaCta}>open board →</span>
                     </button>
                   );
                 })}
@@ -2041,32 +1897,32 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         </div>
 
         {/* unified filter bar — kind · time · near me */}
-        <div className="sceneFilterDock">
+        <div className={s.sceneFilterDock}>
           {([['all', 'All'], ['event', 'Plans'], ['post', 'Talk']] as const).map(([k, label]) => {
             const on = kindFilter === k;
-            return <button key={k} onClick={() => setKindFilter(k)} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? LINE : 'var(--h-surface-3)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? LINE : 'var(--h-border)'}` }}>{label}</button>;
+            return <button key={k} onClick={() => setKindFilter(k)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? LINE : 'var(--h-surface-3)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? LINE : 'var(--h-border)'}` }}>{label}</button>;
           })}
           <span style={{ width: 1, height: 18, background: 'var(--h-border)', margin: '0 0.2rem' }} />
           {([['tonight', '🌙 Tonight'], ['weekend', '🗓 This Weekend']] as const).map(([k, label]) => {
             const on = sceneTime === k;
-            return <button key={k} onClick={() => setSceneTime(on ? 'all' : k)} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? '#ffd23d' : 'var(--h-surface-3)', color: on ? INK : 'var(--h-text-dim)', border: `1px solid ${on ? '#ffd23d' : 'var(--h-border)'}` }}>{label}</button>;
+            return <button key={k} onClick={() => setSceneTime(on ? 'all' : k)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? '#ffd23d' : 'var(--h-surface-3)', color: on ? INK : 'var(--h-text-dim)', border: `1px solid ${on ? '#ffd23d' : 'var(--h-border)'}` }}>{label}</button>;
           })}
-          <button onClick={() => setNearMe((v) => !v)} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: nearMe ? '#ffd23d' : 'var(--h-surface-3)', color: nearMe ? INK : 'var(--h-text-dim)', border: `1px solid ${nearMe ? '#ffd23d' : 'var(--h-border)'}` }}>📍 Near me</button>
+          <button onClick={() => setNearMe((v) => !v)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: nearMe ? '#ffd23d' : 'var(--h-surface-3)', color: nearMe ? INK : 'var(--h-text-dim)', border: `1px solid ${nearMe ? '#ffd23d' : 'var(--h-border)'}` }}>📍 Near me</button>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem' }}>
             {([['new', '🆕'], ['popular', '🔥']] as const).map(([k, label]) => (
-              <button key={k} onClick={() => setSceneSort(k)} title={k} style={{ ...chip, cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.7rem', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${sceneSort === k ? 'var(--h-accent)' : 'var(--h-border)'}` }}>{label} {k}</button>
+              <button key={k} onClick={() => setSceneSort(k)} title={k} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.7rem', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${sceneSort === k ? 'var(--h-accent)' : 'var(--h-border)'}` }}>{label} {k}</button>
             ))}
           </div>
         </div>
-        <div className="sceneGrid">
+        <div className={s.sceneGrid}>
           <div className="sceneMid">
         {/* composer trigger → guided wizard */}
-        <button onClick={() => { setComposerStep(1); setComposerOpen(true); }} style={{ ...card, width: '100%', textAlign: 'left', cursor: 'pointer', padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'flex', gap: '0.7rem', alignItems: 'center' }}>
+        <button onClick={() => { setComposerStep(1); setComposerOpen(true); }} className={s.card} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'flex', gap: '0.7rem', alignItems: 'center' }}>
           {me?.photo_url
             ? <img src={me.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
             : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
           <span style={{ flex: 1, fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.95rem', color: 'var(--h-text-dim)' }}>what do you want to do, {firstName.toLowerCase()}?</span>
-          <span style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.4rem 1rem' }}>📣 start a plan →</span>
+          <span className={s.poppyBtn} style={{ fontSize: '0.95rem', padding: '0.4rem 1rem' }}>📣 start a plan →</span>
         </button>
 
         {/* scroll target for filter changes — margin clears the sticky nav */}
@@ -2076,12 +1932,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             {(filterMain || filterCat || areaFilter) && (
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.9rem' }}>
               {(filterMain || filterCat) && (
-                <button onClick={() => { setFilterMain(''); setFilterCat(''); }} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
+                <button onClick={() => { setFilterMain(''); setFilterCat(''); }} className={s.chip} style={{ cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
                   {filterCat || filterMain} <span style={{ fontWeight: 800 }}>×</span>
                 </button>
               )}
               {areaFilter && (
-                <button onClick={() => setAreaFilter('')} style={{ ...chip, cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
+                <button onClick={() => setAreaFilter('')} className={s.chip} style={{ cursor: 'pointer', background: 'var(--h-accent)', color: '#0c2029', display: 'inline-flex', gap: '0.4rem' }}>
                   📍 {areaFilter} <span style={{ fontWeight: 800 }}>×</span>
                 </button>
               )}
@@ -2089,12 +1945,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             )}
 
             {areaFilter && (
-              <div style={{ ...card, padding: '0.9rem 1rem', marginBottom: '0.9rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff4ea)' }}>
-                <div style={sideHd}>📍 {areaFilter}</div>
+              <div className={s.card} style={{ padding: '0.9rem 1rem', marginBottom: '0.9rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff4ea)' }}>
+                <div className={s.sideHd}>📍 {areaFilter}</div>
                 <p style={{ margin: '0.3rem 0 0.75rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
                   This is the neighborhood board: plans, posts, and people trying to make something happen here.
                 </p>
-                <button onClick={() => { setNewAct((s) => ({ ...s, area: areaFilter })); setComposerStep(1); setComposerOpen(true); }} style={{ ...poppyBtn, fontSize: '0.95rem', padding: '0.45rem 0.95rem' }}>start something in {areaFilter} →</button>
+                <button onClick={() => { setNewAct((s) => ({ ...s, area: areaFilter })); setComposerStep(1); setComposerOpen(true); }} className={s.poppyBtn} style={{ fontSize: '0.95rem', padding: '0.45rem 0.95rem' }}>start something in {areaFilter} →</button>
               </div>
             )}
 
@@ -2118,11 +1974,11 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                       <SkeletonStyles />
                       {[0, 1, 2].map((i) => (
-                        <div key={i} style={{ ...card, padding: '0.9rem 1rem' }}><SkeletonRow /><Skeleton h={12} w="85%" style={{ margin: '0.5rem 0 0.4rem' }} /><Skeleton h={12} w="55%" /></div>
+                        <div key={i} className={s.card} style={{ padding: '0.9rem 1rem' }}><SkeletonRow /><Skeleton h={12} w="85%" style={{ margin: '0.5rem 0 0.4rem' }} /><Skeleton h={12} w="55%" /></div>
                       ))}
                     </div>
                   )}
-                  {actsLoaded && shown.length === 0 && <div style={{ ...card, padding: '1.25rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)' }}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
+                  {actsLoaded && shown.length === 0 && <div className={`${s.card} ${s.cardEmpty}`}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
                   {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} />)}
                 </div>
               );
@@ -2132,12 +1988,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
         </div>
         )}
           </main>
-          <aside className="fbRail">
+          <aside className={s.fbRail}>
             {view === 'crew' && (
-            <div style={{ ...card, padding: '0.9rem 1rem' }}>
-              <div style={sideHd}>🧡 your connections</div>
+            <div className={s.card} style={{ padding: '0.9rem 1rem' }}>
+              <div className={s.sideHd}>🧡 your connections</div>
               {matches.filter((m) => m.connected).length === 0 ? (
-                <div style={sideEmpty}>no connections yet — pick someone in your circle to connect.</div>
+                <div className={s.sideEmpty}>no connections yet — pick someone in your circle to connect.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
                   {matches.filter((m) => m.connected).slice(0, 8).map((m) => (
@@ -2155,7 +2011,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               )}
               {matches.filter((m) => !m.connected && m.theyAccepted && !m.iAccepted).length > 0 && (
                 <div style={{ marginTop: '0.85rem', borderTop: '1px solid var(--h-border)', paddingTop: '0.75rem' }}>
-                  <div style={sideHd}>connection requests</div>
+                  <div className={s.sideHd}>connection requests</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.55rem' }}>
                     {matches.filter((m) => !m.connected && m.theyAccepted && !m.iAccepted).map((m) => (
                       <button key={m.otherId} onClick={() => setCardMember(m)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 12, cursor: 'pointer', font: 'inherit', padding: '0.45rem', color: 'var(--h-text)', textAlign: 'left' }}>
@@ -2173,8 +2029,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
 
             {/* CREW VIEW — your pack lives here on the right */}
             {view === 'crew' && !ghosted && cooledUntil === null && matches.length > 0 && (
-            <div style={{ ...card, padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
-              <div style={sideHd}>🎒 your pack</div>
+            <div className={s.card} style={{ padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
+              <div className={s.sideHd}>🎒 your pack</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.6rem' }}>
                 {matches.map((m) => (
                   <div key={m.otherId} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
@@ -2210,8 +2066,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             )}
 
             {view === 'scene' && (
-            <div style={{ ...card, padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
-              <div style={sideHd}>scene guide</div>
+            <div className={s.card} style={{ padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
+              <div className={s.sideHd}>scene guide</div>
               <p style={{ margin: '0.45rem 0 0', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.45 }}>
                 Tap an organizer&apos;s name on any plan to see their card before you join. First hangs should stay public and easy to leave.
               </p>
