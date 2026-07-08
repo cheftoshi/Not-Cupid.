@@ -213,6 +213,9 @@ const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
 ];
 
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
+// One decided move from the AI concierge (/api/friend/today-move) — the
+// open → do the thing → close loop. `target` = event id (rsvp) / user id (dm).
+type AiMove = { headline: string; body: string; cta: string; action: 'rsvp' | 'dm' | 'pack' | 'post' | 'scene'; target: string };
 
 // Friendly "when" — Tonight · 6:30 PM / Tomorrow / Saturday · 10 AM / Jul 8.
 function friendlyWhen(iso?: string | null): string {
@@ -273,10 +276,11 @@ function VibeCard({ a, onRsvp, onAuthor }: { a: any; onRsvp: (id: string, r?: 'y
 
 // TODAY / VIBES — the entry point: what can I do on NotCupid today? Recommendation
 // rails (today's vibe / drop / near you / people / your plans / start something).
-function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount = 0, onCrew, onScene, onStart, onRsvp, onAuthor, city }: {
+function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount = 0, onCrew, onScene, onStart, onRsvp, onAuthor, city, aiMove, aiMoveLoading, onAiAct, onAiRefresh }: {
   me?: any; firstName: string; acts: any[]; people: Person[]; myEvents: any[]; hasCrew: boolean; sealedCount?: number;
   onCrew: () => void; onScene: () => void; onStart: () => void;
   onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onAuthor?: (a: any) => void; city?: string | null;
+  aiMove?: AiMove | null; aiMoveLoading?: boolean; onAiAct?: (m: AiMove) => void; onAiRefresh?: () => void;
 }) {
   // the weekly drop countdown re-renders every minute
   const [, dropTick] = useState(0);
@@ -381,10 +385,32 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
           </div>
         </div>
         <div className={s.friendDailyMove}>
-          <div className={s.friendPanelKicker}>{todayMove.eyebrow}</div>
-          <h2>{todayMove.title}</h2>
-          <p>{todayMove.body}</p>
-          <button onClick={todayMove.action}>{todayMove.cta}</button>
+          {aiMove ? (
+            <>
+              <div className={s.friendPanelKicker}>⚡ your concierge’s pick</div>
+              <h2>{aiMove.headline}</h2>
+              <p>{aiMove.body}</p>
+              <button onClick={() => onAiAct?.(aiMove)}>{aiMove.cta} →</button>
+              <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>one move · decided by your algorithm</span>
+                <button onClick={() => onAiRefresh?.()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', padding: 0 }}>↻ something else</button>
+              </div>
+            </>
+          ) : aiMoveLoading ? (
+            <>
+              <div className={s.friendPanelKicker}>⚡ your concierge’s pick</div>
+              <h2>reading {cityName}…</h2>
+              <p>Weighing tonight’s plans, your people and what you’re into — one decided move, coming up.</p>
+              <button disabled style={{ opacity: 0.55, cursor: 'default' }}>thinking…</button>
+            </>
+          ) : (
+            <>
+              <div className={s.friendPanelKicker}>{todayMove.eyebrow}</div>
+              <h2>{todayMove.title}</h2>
+              <p>{todayMove.body}</p>
+              <button onClick={todayMove.action}>{todayMove.cta}</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -885,9 +911,11 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   const seenEvents = useRef<Set<string>>(new Set());
   const seenBootstrapped = useRef(false);
 
+  const [rosterLoaded, setRosterLoaded] = useState(false); // first roster fetch landed (gates the AI move)
   const loadMatches = useCallback(async () => {
     const r = await fetch('/api/friend/roster');
     if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); setCooledUntil(d.friendCooled ? (d.cooledUntil || '') : null); }
+    setRosterLoaded(true);
   }, []);
   const loadChat = useCallback(async () => {
     const r = await fetch('/api/friend/messages'); if (r.ok) setChat(await r.json());
@@ -1139,6 +1167,72 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
     try { const r = await fetch('/api/friend/dm'); if (r.ok) setDmUnread((await r.json()).unread || {}); } catch { /* ignore */ }
   }, []);
   useEffect(() => { loadDmUnread(); const t = setInterval(() => { if (!document.hidden) loadDmUnread(); }, 45000); return () => clearInterval(t); }, [loadDmUnread]);
+
+  // ── TODAY'S MOVE — the AI concierge ──
+  // Open the app → get ONE decided move → do it → close. The client sends what's
+  // actually on the board (joinable plans, connections, sealed pack) and the
+  // server + Claude decide. Cached per day (localStorage here + users.today_move
+  // server-side) so it's one AI call a day; null → the rule-based fallback renders.
+  const [aiMove, setAiMove] = useState<AiMove | null>(null);
+  const [aiMoveLoading, setAiMoveLoading] = useState(false);
+  const aiMoveAsked = useRef(false);
+  const loadAiMove = useCallback(async (refresh = false) => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (!refresh) {
+      try {
+        const raw = localStorage.getItem('nc-today-move');
+        if (raw) { const c = JSON.parse(raw); if (c?.day === today && c.move) { setAiMove(c.move); return; } }
+      } catch { /* ignore */ }
+    }
+    setAiMove(null); setAiMoveLoading(true);
+    const now = Date.now();
+    const events = acts
+      .filter((a) => (a.kind || 'event') === 'event' && !a.isMine && a.eligible !== false && a.myResponse !== 'yes' && a.happens_at && new Date(a.happens_at).getTime() > now)
+      .slice(0, 12)
+      .map((a) => ({
+        id: a.id, title: a.title, category: a.category, area: a.area,
+        when: friendlyWhen(a.happens_at), location: a.location || '',
+        going: a.responses?.yes ?? a.rsvpCount ?? 0, friendsGoing: a.friendsGoing || [],
+      }));
+    const connections = matches.filter((m) => m.connected).slice(0, 8)
+      .map((m) => ({ id: m.otherId, name: (m.name || '').split(' ')[0] }));
+    try {
+      const r = await fetch('/api/friend/today-move', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh, events, connections, sealedCount }),
+      });
+      const d = r.ok ? await r.json() : { move: null };
+      if (d.move) {
+        setAiMove(d.move);
+        try { localStorage.setItem('nc-today-move', JSON.stringify({ day: today, move: d.move })); } catch { /* ignore */ }
+      }
+    } catch { /* AI unavailable → rule-based fallback renders */ }
+    setAiMoveLoading(false);
+  }, [acts, matches, sealedCount]);
+  // Ask once, after BOTH the scene and the roster have landed (so the concierge
+  // sees the full board). Re-rolls go through loadAiMove(true).
+  useEffect(() => {
+    if (!actsLoaded || !rosterLoaded || aiMoveAsked.current) return;
+    aiMoveAsked.current = true;
+    loadAiMove(false);
+  }, [actsLoaded, rosterLoaded, loadAiMove]);
+  // Execute the move — every path ends in a real action, never a feed.
+  function runAiMove(m: AiMove) {
+    buzz();
+    if (m.action === 'rsvp') {
+      const act = acts.find((a) => a.id === m.target);
+      if (act) { rsvp(m.target, 'yes'); toast('you’re in — it’s on your board 🎟️', 'success'); return; }
+      goView('scene'); return;
+    }
+    if (m.action === 'dm') {
+      const conn = matches.find((mm) => mm.connected && mm.otherId === m.target);
+      if (conn) { openDm(conn); return; }
+      goView('crew'); return;
+    }
+    if (m.action === 'pack') { window.location.href = '/friends/pack'; return; }
+    if (m.action === 'post') { goView('scene'); setComposerStep(1); setComposerOpen(true); return; }
+    goView('scene');
+  }
 
   async function openDm(m: any) {
     setDmUnread((u) => ({ ...u, [m.otherId]: 0 })); // read the moment it opens
@@ -1579,7 +1673,8 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
           </div>
         ) : (
           <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} sealedCount={sealedCount} city={city}
-            onCrew={() => goView('crew')} onScene={() => goView('scene')} onStart={() => { goView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard} />
+            onCrew={() => goView('crew')} onScene={() => goView('scene')} onStart={() => { goView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard}
+            aiMove={aiMove} aiMoveLoading={aiMoveLoading} onAiAct={runAiMove} onAiRefresh={() => loadAiMove(true)} />
         ))}
 
         {view === 'crew' && (

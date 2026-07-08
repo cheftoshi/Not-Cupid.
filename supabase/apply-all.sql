@@ -716,6 +716,9 @@ alter table users add column if not exists roster_nudged_at timestamptz;
 -- 20260704_read_receipts.sql — chat read stamps + DM reads
 alter table matches add column if not exists user_1_read_at timestamptz;
 alter table matches add column if not exists user_2_read_at timestamptz;
+-- 20260708_today_move.sql — AI concierge: day-cached "today's move" per user
+alter table users add column if not exists today_move jsonb;
+alter table users add column if not exists today_move_at timestamptz;
 create table if not exists friend_dm_reads (
   user_id uuid not null references users(id) on delete cascade,
   other_id uuid not null references users(id) on delete cascade,

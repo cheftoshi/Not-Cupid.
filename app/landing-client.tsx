@@ -80,8 +80,8 @@ export default function LandingClient({ stats }: { stats: Stats }) {
         </h1>
 
         <p className={styles.landLede}>
-          curated connections — for love and for friendship.<br/>
-          real people, real conversations.
+          AI-curated connections — for love and for friendship.<br/>
+          open it, find something to do, go live it.
         </p>
 
         <div className={styles.landAuthRow}>
