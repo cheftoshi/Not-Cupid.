@@ -26,11 +26,12 @@ export async function claudeJSON<T>(opts: {
   user: string;
   schema: Record<string, unknown>;
   maxTokens?: number;
+  model?: string;
 }): Promise<T | null> {
   if (!aiEnabled()) return null;
   try {
     const res = await getClient().messages.create({
-      model: 'claude-opus-4-8',
+      model: opts.model ?? 'claude-opus-4-8',
       max_tokens: opts.maxTokens ?? 700,
       system: opts.system,
       // Low effort: these are short, decided, copywriting-sized calls — latency

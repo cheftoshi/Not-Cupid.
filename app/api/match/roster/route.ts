@@ -9,7 +9,8 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { rankCandidates } from '@/lib/matching';
+import { MATCHING_ALGORITHM_VERSION, compatibilityBreakdown, rankCandidates } from '@/lib/matching';
+import { reciprocalMomentumAdjustment, type ReciprocalOutcomeStats } from '@/lib/reciprocity';
 import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS, MAX_IGNORED_PICKS } from '@/lib/match-actions';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
@@ -89,7 +90,7 @@ export async function GET() {
   // pool on every roster load: a PII over-fetch that scales with user count.
   const POOL_COLS =
     'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, occupation, ' +
-    'relationship_style, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, ' +
+    'relationship_style, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, music, food, hobbies, sports, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
     'score_conscientiousness, score_openness, last_matched_at, ignored_picks, is_test';
   const nowIso = new Date().toISOString();
@@ -212,19 +213,57 @@ export async function GET() {
     }
   }
 
-  // Matching V3 adjustment: compatibility still leads, but we gently prefer
-  // people with enough room and response momentum so rosters feel alive.
+  // Reciprocal recommendation: estimate whether each candidate tends to accept
+  // real invitations and participate once a match becomes mutual. This uses a
+  // 90-day, evidence-shrunk window and is capped to a tiny reranking nudge so a
+  // new or selective user is never buried by sparse historical behavior.
+  const outcomeByCandidateId = new Map<string, ReciprocalOutcomeStats>();
+  if (freshPool.length > 0) {
+    const poolIds = freshPool.map((p: any) => p.id);
+    const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
+    // One aggregate RPC avoids hauling historical match/message rows through
+    // this hot path. During a rolling migration, a missing function simply
+    // leaves everyone at the neutral cold-start adjustment.
+    const { data: outcomeRows, error: outcomeErr } = await supabaseAdmin.rpc('candidate_reciprocity_stats', {
+      p_candidate_ids: poolIds,
+      p_since: since,
+    });
+    if (!outcomeErr) {
+      for (const row of outcomeRows ?? []) {
+        outcomeByCandidateId.set(row.candidate_id, {
+          invitations: Number(row.invitations ?? 0),
+          acceptedInvitations: Number(row.accepted_invitations ?? 0),
+          mutualMatches: Number(row.mutual_matches ?? 0),
+          repliedMatches: Number(row.replied_matches ?? 0),
+        });
+      }
+    }
+  }
+
+  // Matching V3.1 adjustment: compatibility still leads, while spare capacity,
+  // richer mutual signal confidence, and reciprocal momentum break near-ties.
   const candidateAdjustments = new Map<string, number>();
+  const breakdownByCandidateId = new Map<string, ReturnType<typeof compatibilityBreakdown>>();
+  const reciprocalByCandidateId = new Map<string, number>();
   for (const p of freshPool as any[]) {
     const ignored = Math.max(0, p.ignored_picks ?? 0);
     const live = liveCount.get(p.id) || 0;
     const incoming = pendingIncoming.get(p.id) || 0;
     const neverMatched = !p.last_matched_at;
+    const breakdown = compatibilityBreakdown(user, p);
+    const reciprocal = reciprocalMomentumAdjustment(outcomeByCandidateId.get(p.id) ?? {
+      invitations: 0, acceptedInvitations: 0, mutualMatches: 0, repliedMatches: 0,
+    });
+    breakdownByCandidateId.set(p.id, breakdown);
+    reciprocalByCandidateId.set(p.id, reciprocal);
+    const confidenceBonus = Math.max(0, (breakdown.confidence - 0.45) * 2.5);
     const adj =
       (neverMatched ? 2 : 0) +
       (live === 0 ? 2 : 0) -
-      ignored * 4 -
-      incoming * 3;
+      ignored * 3 -
+      incoming * 3 +
+      confidenceBonus +
+      reciprocal;
     if (adj) candidateAdjustments.set(p.id, adj);
   }
 
@@ -276,6 +315,10 @@ export async function GET() {
       metro: metroLabel(c.user.zip),
       relationship_style: c.user.relationship_style,
       score: c.score,
+      why: breakdownByCandidateId.get(c.user.id)?.reasons[0] ?? 'your overall profiles complement each other',
+      reasonCodes: breakdownByCandidateId.get(c.user.id)?.reasonCodes ?? [],
+      scoreConfidence: breakdownByCandidateId.get(c.user.id)?.confidence ?? 0,
+      algorithmVersion: MATCHING_ALGORITHM_VERSION,
     }));
 
   if (persist) {
@@ -292,7 +335,16 @@ export async function GET() {
       await supabaseAdmin
         .from('roster_exposures')
         .upsert(
-          roster.map((candidate) => ({ user_id: user.id, candidate_id: candidate.id, shown_at: shownAt })),
+          roster.map((candidate, position) => ({
+            user_id: user.id,
+            candidate_id: candidate.id,
+            shown_at: shownAt,
+            position: position + 1,
+            score: candidate.score,
+            algorithm_version: MATCHING_ALGORITHM_VERSION,
+            reason_codes: candidate.reasonCodes,
+            reciprocal_adjustment: reciprocalByCandidateId.get(candidate.id) ?? 0,
+          })),
           { onConflict: 'user_id,candidate_id' },
         )
         .then(undefined, () => {});

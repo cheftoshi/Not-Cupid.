@@ -1,17 +1,14 @@
 /**
- * Matching: HEXACO-based compatibility scoring and adaptive thresholds.
+ * Love matching V3.1: auditable multi-signal compatibility plus adaptive
+ * thresholds. Core values and connection style lead; personality, rhythms,
+ * interests, and relationship expectations add supporting evidence. The score
+ * never uses message contents or an LLM.
  *
- * Score formula uses all six dimensions with research-informed weights:
- *  - Agreeableness: heaviest — similarity strongly predicts relationship satisfaction
- *  - Honesty-Humility, Conscientiousness: heavy — trust + reliability
- *  - Emotionality, Openness: moderate
- *  - Extraversion: light — complement is fine here
- *
- * Core quiz v2 scores each dimension out of 8 points
+ * Core quiz v2 scores each HEXACO dimension out of 8 points
  * (2 questions × 4 points each).
  */
-import { zipDistanceMiles, DEFAULT_MATCH_RADIUS } from './quiz-data';
-import { intentOf, intentCompatible, equityBonus } from './pools';
+import { zipDistanceMiles, DEFAULT_MATCH_RADIUS } from './quiz-data.ts';
+import { intentOf, intentCompatible, equityBonus } from './pools.ts';
 
 const W = {
   honesty: 2.0,
@@ -127,23 +124,156 @@ function rapidSubscore(a: any, b: any): number | null {
   return n === 0 ? null : (same / n) * 100;
 }
 
-// v2 weights (cold-start: no behavioral/reciprocity term yet — that blends in
-// later). Values lead, attachment next, traits + vibes + rapid light. Weights
-// are renormalized over whichever signals both users actually have.
-const V2_WEIGHTS = { values: 0.38, attachment: 0.27, traits: 0.13, vibes: 0.12, rapid: 0.10 } as const;
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && !!item.trim())
+    : [];
+}
+
+function normalizedSet(values: unknown[]): Set<string> {
+  return new Set(values.flatMap(stringList).map((item) => item.trim().toLowerCase()));
+}
+
+// Shared interests are a positive conversation signal, not a hard similarity
+// requirement. Free-text vocabularies are sparse, so zero exact overlap stays
+// near-neutral while one or more real overlaps get a meaningful lift.
+function interestSubscore(a: any, b: any): number | null {
+  const aSet = normalizedSet([a?.music, a?.food, a?.hobbies, a?.sports]);
+  const bSet = normalizedSet([b?.music, b?.food, b?.hobbies, b?.sports]);
+  if (aSet.size === 0 || bSet.size === 0) return null;
+  let shared = 0;
+  for (const item of aSet) if (bSet.has(item)) shared++;
+  if (shared === 0) return 45;
+  if (shared === 1) return 72;
+  if (shared === 2) return 88;
+  return 100;
+}
+
+function overlapScore(a: unknown, b: unknown): number | null {
+  const aa = new Set(stringList(a));
+  const bb = new Set(stringList(b));
+  if (aa.size === 0 || bb.size === 0) return null;
+  let intersection = 0;
+  for (const value of aa) if (bb.has(value)) intersection++;
+  return intersection / new Set([...aa, ...bb]).size;
+}
+
+function ordinalSimilarity(a: unknown, b: unknown, order: string[]): number | null {
+  const ai = order.indexOf(String(a));
+  const bi = order.indexOf(String(b));
+  if (ai < 0 || bi < 0) return null;
+  return 1 - Math.abs(ai - bi) / Math.max(1, order.length - 1);
+}
+
+// The deep quiz stores relationship expectations under values_profile.partner.
+// This is not treated as proof of chemistry; it is a light alignment signal for
+// pace, social energy, and what both people want a relationship to feel like.
+function relationshipPreferenceSubscore(a: any, b: any): number | null {
+  const ap = a?.values_profile?.partner;
+  const bp = b?.values_profile?.partner;
+  if (!ap || !bp || typeof ap !== 'object' || typeof bp !== 'object') return null;
+  const values = [
+    ordinalSimilarity(ap.pace, bp.pace, ['slow', 'steady', 'fast']),
+    ordinalSimilarity(ap.energy, bp.energy, ['home', 'balanced', 'social']),
+    overlapScore(ap.draws, bp.draws),
+    overlapScore(ap.priority, bp.priority),
+  ].filter((value): value is number => value != null);
+  return values.length ? (values.reduce((sum, value) => sum + value, 0) / values.length) * 100 : null;
+}
+
+// V3.1 stays content-based and auditable. Behavioral reciprocity is applied as
+// a small reranking adjustment outside this score, never allowed to override a
+// dealbreaker or turn the LLM into the matching engine.
+const V31_WEIGHTS = {
+  values: 0.30,
+  attachment: 0.24,
+  traits: 0.12,
+  vibes: 0.10,
+  rapid: 0.06,
+  interests: 0.10,
+  relationshipPreferences: 0.08,
+} as const;
+
+export const MATCHING_ALGORITHM_VERSION = 'love-v3.1';
+
+export type CompatibilityReasonCode =
+  | 'values'
+  | 'connection_style'
+  | 'daily_rhythm'
+  | 'personality'
+  | 'shared_interests'
+  | 'relationship_pace';
+
+export type CompatibilityBreakdown = {
+  score: number;
+  confidence: number;
+  reasonCodes: CompatibilityReasonCode[];
+  reasons: string[];
+  signalScores: Record<string, number | null>;
+  hardConflicts: string[];
+};
+
+export function hardDealbreakerConflicts(a: any, b: any): string[] {
+  const aKids = a?.values_profile?.kids;
+  const bKids = b?.values_profile?.kids;
+  const conflicts: string[] = [];
+  if ((aKids === 'yes' && bKids === 'no') || (aKids === 'no' && bKids === 'yes')) {
+    conflicts.push('kids');
+  }
+  return conflicts;
+}
+
+export function hasHardDealbreakerConflict(a: any, b: any): boolean {
+  return hardDealbreakerConflicts(a, b).length > 0;
+}
+
+export function compatibilityBreakdown(a: any, b: any): CompatibilityBreakdown {
+  const signals = {
+    values: valuesSubscore(a, b),
+    attachment: attachmentSubscore(a, b),
+    traits: hexacoSubscore(a, b),
+    vibes: vibesSubscore(a, b),
+    rapid: rapidSubscore(a, b),
+    interests: interestSubscore(a, b),
+    relationshipPreferences: relationshipPreferenceSubscore(a, b),
+  };
+  let sum = 0;
+  let weight = 0;
+  for (const [key, value] of Object.entries(signals)) {
+    if (value == null) continue;
+    const signalWeight = V31_WEIGHTS[key as keyof typeof V31_WEIGHTS];
+    sum += signalWeight * value;
+    weight += signalWeight;
+  }
+
+  const candidates: Array<{ code: CompatibilityReasonCode; label: string; score: number | null }> = [
+    { code: 'values', label: 'your core values line up', score: signals.values },
+    { code: 'connection_style', label: 'your connection styles look compatible', score: signals.attachment },
+    { code: 'daily_rhythm', label: 'your day-to-day rhythms fit', score: signals.vibes },
+    { code: 'personality', label: 'your personalities have an easy overlap', score: signals.traits },
+    { code: 'shared_interests', label: 'you have real interests in common', score: signals.interests },
+    { code: 'relationship_pace', label: 'you want a similar relationship pace', score: signals.relationshipPreferences },
+  ];
+  const strongest = candidates
+    .filter((item) => item.score != null && item.score >= 60)
+    .sort((x, y) => (y.score ?? 0) - (x.score ?? 0))
+    .slice(0, 2);
+  if (strongest.length === 0) {
+    strongest.push({ code: 'personality', label: 'your overall profiles complement each other', score: signals.traits });
+  }
+
+  return {
+    score: Math.round(weight > 0 ? sum / weight : signals.traits),
+    confidence: Math.round(weight * 100) / 100,
+    reasonCodes: strongest.map((item) => item.code),
+    reasons: strongest.map((item) => item.label),
+    signalScores: signals,
+    hardConflicts: hardDealbreakerConflicts(a, b),
+  };
+}
 
 export function compatibilityScore(a: any, b: any): number {
-  const parts: Array<[number, number | null]> = [
-    [V2_WEIGHTS.values, valuesSubscore(a, b)],
-    [V2_WEIGHTS.attachment, attachmentSubscore(a, b)],
-    [V2_WEIGHTS.traits, hexacoSubscore(a, b)],
-    [V2_WEIGHTS.vibes, vibesSubscore(a, b)],
-    [V2_WEIGHTS.rapid, rapidSubscore(a, b)],
-  ];
-  let sum = 0, wsum = 0;
-  for (const [w, v] of parts) { if (v != null) { sum += w * v; wsum += w; } }
-  // hexacoSubscore is never null, so wsum >= traits weight; guard anyway.
-  return Math.round(wsum > 0 ? sum / wsum : hexacoSubscore(a, b));
+  return compatibilityBreakdown(a, b).score;
 }
 
 /**
@@ -247,6 +377,7 @@ export function rankCandidates(
 
   const minScore = thresholdFor(user, pool, { waitDays: opts.waitDays });
   const clearing = clusterCompatible
+    .filter((p) => !hasHardDealbreakerConflict(user, p))
     .map((p) => ({ user: p, score: compatibilityScore(user, p) }))
     .filter((c) => c.score >= minScore)
     .map((c) => ({

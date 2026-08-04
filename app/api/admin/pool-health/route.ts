@@ -40,22 +40,41 @@ export async function GET() {
 
   try {
     const now = Date.now();
+    const since90Iso = new Date(now - 90 * DAY).toISOString();
 
-    const [{ data: users }, { data: matches }, { count: feedbackCount }] = await Promise.all([
+    const [
+      { data: users },
+      { data: matches },
+      { count: feedbackCount },
+      { data: messageRows },
+      { data: coachRows },
+    ] = await Promise.all([
       supabaseAdmin
         .from('users')
         .select('id, name, email, gender, status, pool_active, archetype, created_at, matching_cooldown_until, matching_disabled_at')
-        .is('deleted_at', null),
+        .is('deleted_at', null)
+        .not('is_test', 'is', true),
       supabaseAdmin
         .from('matches')
-        .select('user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at, ended_reason, created_at'),
+        .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at, ended_reason, created_at, compatibility_score, algorithm_version'),
       supabaseAdmin
         .from('date_feedback')
         .select('id', { count: 'exact', head: true }),
+      supabaseAdmin
+        .from('messages')
+        .select('match_id, sender_id')
+        .gte('created_at', since90Iso)
+        .limit(10000),
+      supabaseAdmin
+        .from('love_ai_coach_cache')
+        .select('user_id, source, stage')
+        .gte('generated_at', since90Iso)
+        .limit(5000),
     ]);
 
     const U = users ?? [];
-    const M = matches ?? [];
+    const realUserIds = new Set(U.map((u) => u.id));
+    const M = (matches ?? []).filter((m) => realUserIds.has(m.user_1_id) && realUserIds.has(m.user_2_id));
 
     // ── Per-user aggregates from matches ──────────────────────────────────
     type Agg = { involved: number; accepts: number; mutual: number; lastEndedAt: number | null };
@@ -152,6 +171,35 @@ export async function GET() {
       .sort((x, y) => x.acceptRate - y.acceptRate)
       .slice(0, 10);
 
+    // ── Conversation quality + AI activation (rolling 90 days) ───────────
+    // Mutual accept is not the finish line: measure whether both people enter
+    // the chat and whether the exchange gets past a token opener.
+    const recentMatches = M.filter((m) => new Date(m.created_at).getTime() >= now - 90 * DAY);
+    const recentMatchIds = new Set(recentMatches.map((m) => m.id));
+    const sendersByMatch = new Map<string, Set<string>>();
+    const messageCountByMatch = new Map<string, number>();
+    for (const row of messageRows ?? []) {
+      if (!recentMatchIds.has(row.match_id) || !realUserIds.has(row.sender_id)) continue;
+      const senders = sendersByMatch.get(row.match_id) ?? new Set<string>();
+      senders.add(row.sender_id);
+      sendersByMatch.set(row.match_id, senders);
+      messageCountByMatch.set(row.match_id, (messageCountByMatch.get(row.match_id) ?? 0) + 1);
+    }
+    const mutual90 = recentMatches.filter((m) => m.user_1_accepted && m.user_2_accepted);
+    const bothMessaged90 = mutual90.filter((m) => {
+      const senders = sendersByMatch.get(m.id);
+      return !!senders?.has(m.user_1_id) && !!senders?.has(m.user_2_id);
+    }).length;
+    const fivePlus90 = mutual90.filter((m) => (messageCountByMatch.get(m.id) ?? 0) >= 5).length;
+    const algorithmVersions: Record<string, number> = {};
+    for (const match of recentMatches) {
+      const version = match.algorithm_version || 'legacy';
+      algorithmVersions[version] = (algorithmVersions[version] ?? 0) + 1;
+    }
+    const realCoachRows = (coachRows ?? []).filter((row) => realUserIds.has(row.user_id));
+    const coachStages: Record<string, number> = {};
+    for (const row of realCoachRows) coachStages[row.stage] = (coachStages[row.stage] ?? 0) + 1;
+
     return NextResponse.json({
       funnel: { signups, quizComplete, inPool, matched, everBothAccepted: everBothAccepted.size },
       conversion: { created, bothAccepted, pending, passed, ghosted, expired, conversionPct },
@@ -165,6 +213,21 @@ export async function GET() {
       skew: { m: poolM, f: poolF, other: poolOther, skewPct, skewToward },
       stagnant,
       blackHoles,
+      conversations90d: {
+        created: recentMatches.length,
+        mutual: mutual90.length,
+        bothMessaged: bothMessaged90,
+        fivePlusMessages: fivePlus90,
+        mutualToBothMessagedPct: mutual90.length ? Math.round((bothMessaged90 / mutual90.length) * 100) : null,
+        algorithmVersions,
+      },
+      aiCoach90d: {
+        cardsGenerated: realCoachRows.length,
+        users: new Set(realCoachRows.map((row) => row.user_id)).size,
+        ai: realCoachRows.filter((row) => row.source === 'ai').length,
+        curated: realCoachRows.filter((row) => row.source === 'curated').length,
+        stages: coachStages,
+      },
       dates: { feedbackResponses: feedbackCount ?? 0 },
     });
   } catch (err: any) {

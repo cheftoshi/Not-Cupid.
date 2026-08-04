@@ -1,4 +1,5 @@
-// Pool / matching simulation — mirrors lib/matching.ts scoring exactly.
+// Pool / matching simulation — imports the production scorer so it cannot
+// silently drift from lib/matching.ts again.
 // Generates synthetic STRAIGHT daters at a given M/F ratio, runs the real
 // greedy matcher, and reports who matches, match quality, and the ceiling.
 //
@@ -8,50 +9,36 @@
 // total matches (each woman can pair one man). The algorithm controls WHO
 // matches and match QUALITY — never the COUNT. This quantifies that.
 
-// ── Scoring (copied verbatim from lib/matching.ts) ──────────────────────
-const W = { honesty: 2.0, agreeableness: 2.5, conscientiousness: 2.0, emotionality: 1.0, openness: 1.0, extraversion: 0.5 };
-const DIM_MAX_DIFF = 16;
-const MAX_WEIGHTED_DIFF = DIM_MAX_DIFF * (W.honesty + W.agreeableness + W.conscientiousness + W.emotionality + W.openness + W.extraversion);
-const HEXACO_WEIGHT = 0.8, VIBES_WEIGHT = 0.2;
-const VIBE_KEYS = ['chronotype', 'date_freq', 'future', 'comm', 'social', 'risk'];
-const VIBE_MAX_DIFF_PER_KEY = 3;
+import { compatibilityScore, hasHardDealbreakerConflict, thresholdFor } from '../lib/matching.ts';
 
-function hexacoSub(a, b) {
-  const d = (k) => Math.abs(a[k] - b[k]);
-  const weighted = d('honesty') * W.honesty + d('agreeableness') * W.agreeableness + d('conscientiousness') * W.conscientiousness
-    + d('emotionality') * W.emotionality + d('openness') * W.openness + d('extraversion') * W.extraversion;
-  return 100 - (weighted / MAX_WEIGHTED_DIFF) * 100;
-}
-function vibesSub(a, b) {
-  let total = 0, max = 0;
-  for (const k of VIBE_KEYS) { total += Math.abs(a.vibes[k] - b.vibes[k]); max += VIBE_MAX_DIFF_PER_KEY; }
-  return 100 - (total / max) * 100;
-}
-function compatibilityScore(a, b) {
-  const hex = hexacoSub(a, b), vib = vibesSub(a, b);
-  return Math.round(hex * HEXACO_WEIGHT + vib * VIBES_WEIGHT);
-}
-function thresholdFor(user, pool, base = 50, strict = 65, overrep = 0.55, minPool = 10) {
-  let t = base;
-  const binary = pool.filter((p) => p.gender === 'm' || p.gender === 'f');
-  if (binary.length >= minPool) {
-    const same = binary.filter((p) => p.gender === user.gender).length;
-    if (same / binary.length >= overrep) t = strict;
-  }
-  return t;
-}
+const VIBE_KEYS = ['chronotype', 'date_freq', 'future', 'comm', 'social', 'risk'];
+const INTERESTS = ['food', 'music', 'sports', 'comedy', 'art', 'outdoor', 'coffee', 'books'];
+const KIDS = ['yes', 'no', 'maybe'];
+const SUBSTANCES = ['none', 'rare', 'social', 'regular'];
 
 // ── Synthetic population ────────────────────────────────────────────────
 let seed = 42;
 function rnd() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
-function randDim() { return Math.round(rnd() * 16); }
+function randDim() { return Math.round(rnd() * 8); }
 function randVibe() { return 1 + Math.floor(rnd() * 4); }
+function pick(values) { return values[Math.floor(rnd() * values.length)]; }
+function pickSome(values, count = 2) {
+  return [...values].sort(() => rnd() - 0.5).slice(0, count);
+}
 function makeUser(id, gender) {
   return {
     id, gender, seeking: gender === 'm' ? 'f' : 'm',
-    honesty: randDim(), agreeableness: randDim(), conscientiousness: randDim(),
-    emotionality: randDim(), openness: randDim(), extraversion: randDim(),
-    vibes: Object.fromEntries(VIBE_KEYS.map((k) => [k, randVibe()])),
+    score_honesty: randDim(), score_agreeableness: randDim(), score_conscientiousness: randDim(),
+    score_emotionality: randDim(), score_openness: randDim(), score_extraversion: randDim(),
+    attach_anxiety: Math.round(rnd() * 100), attach_avoidance: Math.round(rnd() * 100),
+    vibes: { ...Object.fromEntries(VIBE_KEYS.map((k) => [k, randVibe()])), rapid: { a: randVibe(), b: randVibe(), c: randVibe() } },
+    values_profile: {
+      kids: pick(KIDS), faith: Math.floor(rnd() * 4), politics: Math.floor(rnd() * 4),
+      ambition: Math.floor(rnd() * 4), lifestyle: Math.floor(rnd() * 4), fitness: Math.floor(rnd() * 4),
+      substances: pick(SUBSTANCES),
+      partner: { pace: pick(['slow', 'steady', 'fast']), energy: pick(['home', 'balanced', 'social']), draws: pickSome(INTERESTS), priority: pickSome(INTERESTS) },
+    },
+    music: pickSome(INTERESTS), food: pickSome(INTERESTS), hobbies: pickSome(INTERESTS), sports: pickSome(INTERESTS, 1),
     matched: false,
   };
 }
@@ -77,7 +64,7 @@ function runMatching(users, { useThreshold = true } = {}) {
 
   for (const u of order) {
     if (u.matched) continue;
-    const cands = pool.filter((p) => !p.matched && p.id !== u.id && p.gender === u.seeking && p.seeking === u.gender);
+    const cands = pool.filter((p) => !p.matched && p.id !== u.id && p.gender === u.seeking && p.seeking === u.gender && !hasHardDealbreakerConflict(u, p));
     if (!cands.length) continue;
     const scored = cands.map((p) => ({ p, s: compatibilityScore(u, p) })).sort((a, b) => b.s - a.s);
     const min = useThreshold ? thresholdFor(u, pool) : 0;
@@ -148,7 +135,7 @@ function multiRound(fracMale, rounds, useEquity) {
     const order = [...users].sort((a, b) => (a.gender === pri ? 0 : 1) - (b.gender === pri ? 0 : 1));
     for (const u of order) {
       if (u.matched) continue;
-      const cands = users.filter((p) => !p.matched && p.id !== u.id && p.gender === u.seeking);
+      const cands = users.filter((p) => !p.matched && p.id !== u.id && p.gender === u.seeking && !hasHardDealbreakerConflict(u, p));
       if (!cands.length) continue;
       const min = thresholdFor(u, users);
       const clearing = cands.map((p) => ({ p, raw: compatibilityScore(u, p) })).filter((x) => x.raw >= min);

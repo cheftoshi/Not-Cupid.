@@ -28,6 +28,16 @@ interface Props {
   unlockItems: string[];
 }
 
+type LoveCoach = {
+  stage: 'opener' | 'wait' | 'reply' | 'deepen' | 'plan';
+  headline: string;
+  why: string;
+  openers: string[];
+  nextMove: string;
+  source: 'ai' | 'curated';
+  disclosure: string;
+};
+
 function timeLeft(iso: string, nowMs: number): string {
   const ms = new Date(iso).getTime() - nowMs;
   if (ms <= 0) return 'expired';
@@ -102,6 +112,11 @@ export default function ChatRoom({
   const [menuOpen, setMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
+  const [coach, setCoach] = useState<LoveCoach | null>(null);
+  const [coachBusy, setCoachBusy] = useState(false);
+  // A new message changes the coach stage. Never leave stale guidance on the
+  // screen after either person advances the conversation.
+  useEffect(() => setCoach(null), [messages.length]);
   // Date vibes for the side rail — fetched once (the endpoint hits external
   // event APIs, so we don't poll it like messages).
   const [vibes, setVibes] = useState<any>(null);
@@ -282,6 +297,21 @@ export default function ChatRoom({
     }
   }
 
+  async function loadCoach() {
+    if (coachBusy) return;
+    setCoachBusy(true);
+    try {
+      const response = await fetch(`/api/matches/${matchId}/coach`, { method: 'POST' });
+      const data = await parseResponse<{ coach?: LoveCoach; error?: string }>(response);
+      if (response.ok && data.coach) setCoach(data.coach);
+      else toast(data.error || 'match coach is taking a breather — try again', 'error');
+    } catch {
+      toast('match coach is taking a breather — try again', 'error');
+    } finally {
+      setCoachBusy(false);
+    }
+  }
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
@@ -399,17 +429,60 @@ export default function ChatRoom({
           )}
         </div>
 
+        {!readOnly && messages.length > 0 && !coach && (
+          <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
+            {coachBusy ? 'thinking…' : '✦ make the next move easier'}
+          </button>
+        )}
+
+        {!readOnly && coach && messages.length > 0 && (
+          <div className={styles.coachCard}>
+            <div className={styles.coachKicker}>{coach.source === 'ai' ? '✦ AI match coach' : '✦ match coach'}</div>
+            <strong>{coach.headline}</strong>
+            <p>{coach.nextMove}</p>
+            {coach.openers.length > 0 && (
+              <div className={styles.coachOpeners}>
+                {coach.openers.map((opener) => (
+                  <button key={opener} type="button" onClick={() => pickStarter(opener)}>{opener}</button>
+                ))}
+              </div>
+            )}
+            <small>{coach.disclosure}</small>
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>your move.</div>
-            <div className={styles.emptySub}>blank page energy? steal one of these:</div>
-            <div className={styles.starters}>
-              {starters.map((sLine) => (
-                <button key={sLine} type="button" className={styles.starter} onClick={() => pickStarter(sLine)}>
-                  {sLine}
-                </button>
-              ))}
-            </div>
+            <div className={styles.emptyTitle}>{readOnly ? 'this one is closed.' : 'your move.'}</div>
+            <div className={styles.emptySub}>{readOnly ? 'no messages were sent before it ended.' : 'blank page energy? steal one of these:'}</div>
+            {!readOnly && !coach && (
+              <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
+                {coachBusy ? 'curating your angle…' : '✦ ask the AI match coach'}
+              </button>
+            )}
+            {!readOnly && (
+              coach ? (
+                <div className={styles.coachCard}>
+                  <div className={styles.coachKicker}>{coach.source === 'ai' ? '✦ AI match coach' : '✦ match coach'}</div>
+                  <strong>{coach.headline}</strong>
+                  <p>{coach.why}.</p>
+                  <div className={styles.coachOpeners}>
+                    {coach.openers.map((opener) => (
+                      <button key={opener} type="button" onClick={() => pickStarter(opener)}>{opener}</button>
+                    ))}
+                  </div>
+                  <small>{coach.disclosure}</small>
+                </div>
+              ) : (
+                <div className={styles.starters}>
+                  {starters.map((sLine) => (
+                    <button key={sLine} type="button" className={styles.starter} onClick={() => pickStarter(sLine)}>
+                      {sLine}
+                    </button>
+                  ))}
+                </div>
+              )
+            )}
           </div>
         ) : (
           (() => {

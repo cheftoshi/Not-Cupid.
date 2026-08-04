@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" subtitle="Plain-English version of what we collect and why." updated="June 2026">
+    <LegalPage title="Privacy Policy" subtitle="Plain-English version of what we collect and why." updated="August 2026">
       <p>NotCupid is a connection experiment operated by <strong>Lemon Labs</strong>, available across New England, the New York City metro, and northern New Jersey. The whole product only works on trust, so this page explains — in plain English — what we collect, why, who we share it with, and the control you have. Questions or requests about your data? Email <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
 
       <h2>What we collect</h2>
@@ -16,7 +16,7 @@ export default function PrivacyPage() {
         <li><strong>Account &amp; profile:</strong> your name, email, age, ZIP code, the gender you are and who you&apos;re looking for, your photos and gallery, your bio, interests, and (optionally) your sun sign.</li>
         <li><strong>Sensitive details (you choose to share these):</strong> because we&apos;re a dating and friendship app, some of what you tell us is sensitive — who you&apos;re attracted to / seeking, whether you identify as LGBTQ+ (only if you opt to share it), your photos, your approximate location, and the personality, attachment, and values signals (including a health &amp; fitness question) computed from your quiz. You give us these so we can match you. See &quot;Sensitive information&quot; below.</li>
         <li><strong>Content you create:</strong> messages and group-chat posts, activities/events you post or RSVP to, date feedback you submit, and contest/raffle entries (including any short intro video).</li>
-        <li><strong>Activity:</strong> who you connect with, accept or pass, your friendship packs and connections, and lightweight product analytics (pages viewed, features used) so we can improve the app.</li>
+        <li><strong>Activity:</strong> who you connect with, accept or pass, your friendship packs and connections, AI-feature usage, and lightweight product analytics (pages viewed, features used) so we can improve the app.</li>
         <li><strong>Payments:</strong> when you pay (a Love-Line profile unlock, a friendship pack, or Pro), <strong>Stripe</strong> processes it — we never see or store your full card number. We keep a record of the transaction and your subscription status.</li>
         <li><strong>Notifications &amp; technical:</strong> if you turn on push notifications, your device&apos;s push subscription; plus standard server logs (IP address, browser) that come with any website, used for security and debugging.</li>
       </ul>
@@ -30,6 +30,7 @@ export default function PrivacyPage() {
         <li><strong>To run the product</strong> — show your profile to your matches, deliver messages, send the emails and notifications you&apos;ve opted into, and process payments.</li>
         <li><strong>To keep people safe</strong> — investigate reports, enforce our community guidelines, and prevent abuse and fraud.</li>
         <li><strong>To improve NotCupid</strong> — using aggregated, de-identified analytics and research. We never use this to identify you to outsiders.</li>
+        <li><strong>To offer optional AI suggestions</strong> — such as a Friend Line move or Love conversation prompt. Suggestions may use limited profile, match, and activity context; they never send a message or take an action for you.</li>
       </ul>
       <p>We <strong>do not sell or &quot;share&quot; your personal information</strong> (as those terms are used in U.S. privacy laws), and we don&apos;t show third-party ads.</p>
 
@@ -44,6 +45,7 @@ export default function PrivacyPage() {
         <li><strong>Resend</strong> — sending email.</li>
         <li><strong>Stripe</strong> — processing payments (we never see or store your full card details).</li>
         <li><strong>Push delivery services</strong> — to send the notifications you opt into.</li>
+        <li><strong>Anthropic</strong> — to generate optional AI suggestions from limited, bounded context. The Love coach does not receive the contents of your chat messages.</li>
         <li><strong>Ticketmaster / Yelp / local event sources</strong> — to surface public events and date ideas. These don&apos;t receive your personal data.</li>
       </ul>
       <p><strong>People on NotCupid:</strong> your matches and connections see your profile (see &quot;What your matches see&quot;), and anyone in a group/crew chat with you sees your messages there.</p>
@@ -68,7 +70,10 @@ export default function PrivacyPage() {
       <p>To make any request, email <a href="mailto:match@notcupid.com">match@notcupid.com</a> from your account email and we&apos;ll take care of it.</p>
 
       <h2>Automated matching</h2>
-      <p>Who you see, and who sees you, is decided by an algorithm using your quiz, preferences, age range, and location. This isn&apos;t a decision with legal effects — you stay in control: you choose who to connect with, and you can refresh your roster or reset your profile any time.</p>
+      <p>Who you see, and who sees you, is decided by an auditable scoring and rotation algorithm using your quiz, preferences, age range, location, recent availability, connection capacity, and limited response-history signals. Explicit dealbreakers can exclude a pairing. Response history is evidence-shrunk and only breaks close ranking ties; it does not read or score the content of your messages. An AI model does <strong>not</strong> choose your roster or decide who is right for you. This isn&apos;t a decision with legal effects — you stay in control: you choose who to connect with, and you can refresh your roster or reset your profile any time.</p>
+
+      <h2>AI features</h2>
+      <p>AI suggestions are optional, may be imperfect, and are always yours to edit or ignore. For the Love coach, we send Anthropic bounded context such as a match&apos;s first name, broad profile details you can already view, aggregate compatibility reasons, and conversation metadata such as message count and whether both people have participated. <strong>We do not send chat-message contents to the Love coach, and the coach never sends anything automatically.</strong> When an AI service is unavailable, NotCupid can show a curated non-AI fallback instead.</p>
 
       <h2>Retention &amp; security</h2>
       <p>We keep your data while your account is active. When you delete your account, we remove your profile and matchability; limited records (for example, payment records, or safety, fraud-prevention, and legal needs) may persist where required. We use industry-standard measures — encryption in transit, access controls, and server-only access to our database — to protect your data, though no online service can promise perfect security.</p>

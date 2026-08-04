@@ -10,7 +10,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { compatibilityScore, isGenderMatch, isWithinRadius } from '@/lib/matching';
+import {
+  MATCHING_ALGORITHM_VERSION,
+  compatibilityBreakdown,
+  hasHardDealbreakerConflict,
+  isGenderMatch,
+  isWithinRadius,
+} from '@/lib/matching';
 import { intentOf } from '@/lib/pools';
 import {
   acceptMatch,
@@ -83,6 +89,7 @@ export async function POST(req: NextRequest) {
     !cand.matching_disabled_at &&
     (!cand.matching_cooldown_until || new Date(cand.matching_cooldown_until).getTime() < nowMs) &&
     isGenderMatch(user, cand) &&
+    !hasHardDealbreakerConflict(user, cand) &&
     user.age >= cand.age_min && user.age <= cand.age_max && cand.age >= user.age_min && cand.age <= user.age_max &&
     isWithinRadius(user.zip, cand.zip, user.match_radius ?? DEFAULT_MATCH_RADIUS) &&
     // ENM cluster: enm only with enm
@@ -108,7 +115,8 @@ export async function POST(req: NextRequest) {
   // Final capacity/history claim happens inside Postgres while both user rows
   // are locked. Concurrent picks for either person serialize here, so nobody
   // can exceed three live slots and the same pair cannot be created twice.
-  const score = compatibilityScore(user, cand);
+  const breakdown = compatibilityBreakdown(user, cand);
+  const score = breakdown.score;
   const { data: matchId, error: claimErr } = await supabaseAdmin.rpc('create_capacity_pending_match', {
     p_picker_id: user.id,
     p_candidate_id: candidateId,
@@ -131,6 +139,26 @@ export async function POST(req: NextRequest) {
   // Remove this pair from each other's own roster. Only a person whose third
   // slot was just filled is removed from everyone else's saved roster.
   await syncMatchRosters([user.id, candidateId]);
+
+  // Persist auditable decision metadata (aggregate scores/reason codes only,
+  // never raw quiz answers) and close the roster exposure → pick loop.
+  const metadataResults = await Promise.all([
+    supabaseAdmin.from('matches').update({
+      algorithm_version: MATCHING_ALGORITHM_VERSION,
+      match_score_details: {
+        confidence: breakdown.confidence,
+        reason_codes: breakdown.reasonCodes,
+        signal_scores: breakdown.signalScores,
+      },
+    }).eq('id', matchId),
+    supabaseAdmin.from('roster_exposures').update({
+      picked_at: new Date().toISOString(),
+      picked_match_id: matchId,
+    }).eq('user_id', user.id).eq('candidate_id', candidateId),
+  ]);
+  for (const result of metadataResults) {
+    if (result.error) console.error('pick: analytics metadata failed', result.error);
+  }
 
   // Picker pre-accepts → this nudges the candidate to accept back. Reuses the
   // one shared activation path so mutual-accept behaves identically.

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" subtitle="The rules of the road. Be cool, and this all works." updated="June 2026">
+    <LegalPage title="Terms of Service" subtitle="The rules of the road. Be cool, and this all works." updated="August 2026">
       <p>These terms are an agreement between you and <strong>Lemon Labs</strong> (&quot;NotCupid,&quot; &quot;we,&quot; &quot;us&quot;) for use of the NotCupid app and site. By using NotCupid, you agree to them.</p>
 
       <h2>Who can use it</h2>
@@ -29,10 +29,13 @@ export default function TermsPage() {
       <p>You own what you post. By posting, you grant us a limited license to host and display it as needed to run the service (e.g. showing your profile to your matches). Don&apos;t post anything you don&apos;t have the right to share.</p>
 
       <h2>Payments</h2>
-      <p>Some features are paid — for example, unlocking a full match profile, extra Friend Line crews, or Friend Line Pro. Prices are shown before you pay and processed by Stripe. Because these are digital goods delivered immediately, payments are generally <strong>non-refundable</strong> except where required by law. We may change pricing going forward.</p>
+      <p>Some features are paid — for example, unlocking a full match profile, additional Friend Line packs, or All-Access Pro. Prices are shown before you pay and processed by Stripe. Because these are digital goods delivered immediately, payments are generally <strong>non-refundable</strong> except where required by law. We may change pricing going forward.</p>
 
       <h2>Matching is not a guarantee</h2>
       <p>We curate compatible people using an algorithm, but we can&apos;t guarantee matches, replies, dates, chemistry, or outcomes. NotCupid is a tool for meeting people — what happens next is up to you and them.</p>
+
+      <h2>AI suggestions</h2>
+      <p>Some features may offer AI-assisted prompts or next-move suggestions. They can be inaccurate or awkward and are not professional advice or a promise of compatibility or response. You decide whether to use or edit them, and you are responsible for anything you choose to send. NotCupid&apos;s AI features do not send messages or take actions automatically.</p>
 
       <h2>Ending things</h2>
       <p>You can delete your account anytime. We may suspend or pause access if you break these terms or our guidelines — including repeated ghosting, which can pause your matching on both lines (see the in-app notice for how to get back in). For serious or repeated violations we may remove you entirely.</p>

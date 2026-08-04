@@ -607,6 +607,13 @@ export default function AdminClient() {
                     <div className={s.healthLabel}>waiting now</div>
                     <div className={s.healthSub}>{health.conversion?.pending ?? 0} matches pending</div>
                   </div>
+                  <div className={s.healthMetric}>
+                    <div className={s.healthBig} style={{ color: convColor(health.conversations90d?.mutualToBothMessagedPct) }}>
+                      {health.conversations90d?.mutualToBothMessagedPct != null ? `${health.conversations90d.mutualToBothMessagedPct}%` : '—'}
+                    </div>
+                    <div className={s.healthLabel}>mutual → both message · 90d</div>
+                    <div className={s.healthSub}>{health.conversations90d?.bothMessaged ?? 0} two-sided · {health.conversations90d?.fivePlusMessages ?? 0} with 5+ messages</div>
+                  </div>
                 </div>
 
                 {/* outcome breakdown */}
@@ -617,6 +624,9 @@ export default function AdminClient() {
                   <span className={s.chip}>Passed <b>{health.conversion?.passed ?? 0}</b></span>
                   <span className={`${s.chip} ${s.chipGold}`}>Expired <b>{health.conversion?.expired ?? 0}</b></span>
                   <span className={`${s.chip} ${s.chipRed}`}>Ghosted <b>{health.conversion?.ghosted ?? 0}</b></span>
+                  <span className={s.chip}>Coach cards · 90d <b>{health.aiCoach90d?.cardsGenerated ?? 0}</b></span>
+                  <span className={s.chip}>Coach users · 90d <b>{health.aiCoach90d?.users ?? 0}</b></span>
+                  <span className={s.chip}>AI / fallback <b>{health.aiCoach90d?.ai ?? 0} / {health.aiCoach90d?.curated ?? 0}</b></span>
                 </div>
 
                 {/* two-up: stagnant + black holes */}

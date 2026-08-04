@@ -386,6 +386,80 @@
 }
 .starter:active { transform: translateY(0); }
 
+.coachTrigger {
+  align-self: center;
+  border: 1px solid rgba(37,99,255,0.3);
+  border-radius: 999px;
+  background: rgba(37,99,255,0.06);
+  color: #1b46c9;
+  padding: 0.55rem 0.85rem;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.coachTrigger:disabled { opacity: 0.55; cursor: wait; }
+
+.coachCard {
+  width: min(100%, 390px);
+  align-self: center;
+  border: 1px solid rgba(37,99,255,0.28);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(37,99,255,0.08), rgba(255,106,31,0.06));
+  padding: 0.9rem;
+  text-align: left;
+}
+
+.coachKicker {
+  margin-bottom: 0.35rem;
+  color: #2563ff;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.coachCard strong {
+  display: block;
+  color: var(--h-text);
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: 1.05rem;
+}
+
+.coachCard p {
+  margin: 0.35rem 0 0.65rem;
+  color: var(--h-text-dim);
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.coachOpeners { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.coachOpeners button {
+  border: 1px solid rgba(37,99,255,0.24);
+  border-radius: 10px;
+  background: var(--h-surface);
+  color: var(--h-text);
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.coachCard small {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--h-text-faint);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.44rem;
+  line-height: 1.45;
+}
+
 /* ============= NUDGE (the gentle roast) ============= */
 .nudge {
   margin: 0 1rem;
