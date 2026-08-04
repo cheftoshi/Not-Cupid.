@@ -63,6 +63,6 @@ export async function POST(req: NextRequest) {
   if (blocked) { updates.pool_active = false; updates.status = 'inactive'; }
 
   const { error } = await supabaseAdmin.from('users').update(updates).eq('id', userId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not update report' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

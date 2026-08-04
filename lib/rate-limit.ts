@@ -1,14 +1,18 @@
+import { createHash } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export type RateLimitResult =
   | { ok: true }
-  | { ok: false; retryAfterSec: number; reason: 'throttled' | 'blocked' };
+  | { ok: false; retryAfterSec: number; reason: 'throttled' | 'blocked' | 'unavailable' };
 
 /**
- * Sliding-window-ish rate limiter backed by the `rate_limits` table.
- * If the row's window has expired we reset; otherwise we increment and check.
- * Fails open (allows the request) if the rate_limits table is missing or unreachable —
- * this avoids locking everyone out if the migration hasn't run yet.
+ * Atomic, database-backed limiter. The RPC serializes requests for the same
+ * key in one transaction, preventing parallel requests from racing a
+ * read/increment/write sequence. Keys are hashed before storage so email/IP
+ * identifiers are not retained in plaintext.
+ *
+ * This deliberately fails closed. If abuse protection is unavailable, a
+ * caller can retry shortly instead of reaching an unprotected sensitive route.
  */
 export async function rateLimit(args: {
   key: string;
@@ -16,76 +20,41 @@ export async function rateLimit(args: {
   maxAttempts: number;
   blockSec?: number;
 }): Promise<RateLimitResult> {
-  const { key, windowSec, maxAttempts, blockSec } = args;
-  const now = new Date();
-  const nowMs = now.getTime();
+  const dbKey = `v2:${createHash('sha256').update(args.key).digest('hex')}`;
 
   try {
-    const { data: existing, error: selErr } = await supabaseAdmin
-      .from('rate_limits')
-      .select('count, window_start, blocked_until')
-      .eq('key', key)
-      .maybeSingle();
+    const { data, error } = await supabaseAdmin.rpc('consume_rate_limit', {
+      p_key: dbKey,
+      p_window_sec: args.windowSec,
+      p_max_attempts: args.maxAttempts,
+      p_block_sec: args.blockSec ?? 0,
+    });
 
-    if (selErr) {
-      // Likely the table doesn't exist yet — fail open but log so the operator notices.
-      console.warn('[rate-limit] select failed, failing open:', selErr.message);
-      return { ok: true };
+    if (error) {
+      console.error('[rate-limit] atomic RPC failed:', error.message);
+      return { ok: false, retryAfterSec: 60, reason: 'unavailable' };
     }
 
-    if (existing?.blocked_until) {
-      const blockedUntilMs = new Date(existing.blocked_until).getTime();
-      if (blockedUntilMs > nowMs) {
-        return {
-          ok: false,
-          retryAfterSec: Math.ceil((blockedUntilMs - nowMs) / 1000),
-          reason: 'blocked',
-        };
-      }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row.allowed !== 'boolean') {
+      console.error('[rate-limit] atomic RPC returned an invalid response');
+      return { ok: false, retryAfterSec: 60, reason: 'unavailable' };
     }
 
-    const windowStartMs = existing ? new Date(existing.window_start).getTime() : 0;
-    const windowExpired = nowMs - windowStartMs > windowSec * 1000;
-
-    if (!existing || windowExpired) {
-      await supabaseAdmin.from('rate_limits').upsert(
-        { key, count: 1, window_start: now.toISOString(), blocked_until: null },
-        { onConflict: 'key' }
-      );
-      return { ok: true };
-    }
-
-    const newCount = (existing.count ?? 0) + 1;
-
-    if (newCount > maxAttempts) {
-      const blockedUntil = blockSec
-        ? new Date(nowMs + blockSec * 1000).toISOString()
-        : null;
-      await supabaseAdmin
-        .from('rate_limits')
-        .update({ count: newCount, blocked_until: blockedUntil })
-        .eq('key', key);
-      return {
-        ok: false,
-        retryAfterSec: blockSec ?? Math.ceil((windowStartMs + windowSec * 1000 - nowMs) / 1000),
-        reason: 'throttled',
-      };
-    }
-
-    await supabaseAdmin
-      .from('rate_limits')
-      .update({ count: newCount })
-      .eq('key', key);
-
-    return { ok: true };
+    if (row.allowed) return { ok: true };
+    return {
+      ok: false,
+      retryAfterSec: Math.max(1, Number(row.retry_after_sec) || 60),
+      reason: row.reason === 'blocked' ? 'blocked' : 'throttled',
+    };
   } catch (err) {
-    console.warn('[rate-limit] unexpected error, failing open:', err);
-    return { ok: true };
+    console.error('[rate-limit] unexpected failure:', err);
+    return { ok: false, retryAfterSec: 60, reason: 'unavailable' };
   }
 }
 
 export function getClientIp(req: Request): string {
   const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return req.headers.get('x-real-ip') || 'unknown';
+  if (xff) return xff.split(',')[0].trim().slice(0, 64);
+  return (req.headers.get('x-real-ip') || 'unknown').slice(0, 64);
 }

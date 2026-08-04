@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     .in('id', ids)
 
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 })
+    return NextResponse.json({ error: 'Could not import history' }, { status: 500 })
   }
 
   return NextResponse.json({

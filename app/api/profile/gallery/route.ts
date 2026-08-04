@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { detectSafeImageType } from '@/lib/request-security';
 
 // Gallery = up to 3 extra photos beyond the primary photo_url, revealed as
 // part of the $0.99 profile unlock. Mirrors /api/profile/photo (same bucket, same
@@ -8,7 +9,6 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 const MAX_SIZE = 4 * 1024 * 1024; // 4MB — stay under Vercel's body limit
 const MAX_GALLERY = 3;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const BUCKET = 'profile-photos';
 
 export async function POST(req: NextRequest) {
@@ -23,24 +23,24 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get('file') as File;
   if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: 'Must be JPEG, PNG, or WebP' }, { status: 400 });
-  }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: 'photo must be under 4MB' }, { status: 400 });
   }
 
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const filename = `${user.id}/gallery/${Date.now()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
+  const detected = detectSafeImageType(buffer);
+  if (!detected || (file.type && file.type !== detected.mime)) {
+    return NextResponse.json({ error: 'File contents must be JPEG, PNG, or WebP' }, { status: 400 });
+  }
+  const filename = `${user.id}/gallery/${Date.now()}.${detected.ext}`;
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from(BUCKET)
-    .upload(filename, buffer, { contentType: file.type, upsert: false });
+    .upload(filename, buffer, { contentType: detected.mime, upsert: false });
 
   if (uploadError) {
     console.error('Gallery upload failed:', { userId: user.id, error: uploadError });
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    return NextResponse.json({ error: 'Gallery upload failed' }, { status: 500 });
   }
 
   const { data: { publicUrl } } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filename);
@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
 
   if (updateError) {
     console.error('Gallery row update failed:', { userId: user.id, error: updateError });
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    await supabaseAdmin.storage.from(BUCKET).remove([filename]).catch(() => {});
+    return NextResponse.json({ error: 'Gallery update failed' }, { status: 500 });
   }
 
   return NextResponse.json({ gallery: next });
@@ -78,7 +79,7 @@ export async function DELETE(req: NextRequest) {
 
   if (updateError) {
     console.error('Gallery delete update failed:', { userId: user.id, error: updateError });
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return NextResponse.json({ error: 'Gallery update failed' }, { status: 500 });
   }
 
   // Best-effort: remove the object from storage so we don't orphan it.

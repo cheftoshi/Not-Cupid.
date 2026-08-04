@@ -3,10 +3,20 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { recordUnlock } from '@/lib/record-unlock'
 import { verifyStripeSignature } from '@/lib/stripe-webhook'
 import { sendPushToUser } from '@/lib/push'
+import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
+async function completeStripeEvent(eventId: string) {
+  const { error } = await supabaseAdmin
+    .from('stripe_events')
+    .update({ processed_at: new Date().toISOString(), processing_started_at: null, last_error: null })
+    .eq('event_id', eventId)
+  if (error) throw new Error(`Could not complete Stripe event: ${error.message}`)
+}
+
 export async function POST(req: NextRequest) {
+  let claimedEventId: string | null = null
   try {
     const body = await req.text()
 
@@ -24,22 +34,22 @@ export async function POST(req: NextRequest) {
     const event = JSON.parse(body)
     console.log('Webhook received:', event.type, event.id)
 
-    // Idempotency: short-circuit if we've already processed this event.
-    if (event.id) {
-      const { data: seen } = await supabaseAdmin
-        .from('stripe_events')
-        .select('event_id')
-        .eq('event_id', event.id)
-        .maybeSingle()
-      if (seen) {
-        console.log('Duplicate Stripe event, skipping:', event.id)
-        return NextResponse.json({ received: true, duplicate: true })
-      }
-      await supabaseAdmin
-        .from('stripe_events')
-        .insert({ event_id: event.id, type: event.type })
-        .then(() => {})
+    if (typeof event.id !== 'string' || event.id.length > 255 || typeof event.type !== 'string') {
+      return NextResponse.json({ error: 'invalid event' }, { status: 400 })
     }
+
+    // Atomically claim the event. Parallel/replayed deliveries cannot both
+    // execute payment side effects; failed handlers release the claim for retry.
+    const { data: claimed, error: claimError } = await supabaseAdmin.rpc('claim_stripe_event', {
+      p_event_id: event.id,
+      p_type: event.type,
+    })
+    if (claimError) throw new Error(`Could not claim Stripe event: ${claimError.message}`)
+    if (!claimed) {
+      console.log('Duplicate or in-progress Stripe event, skipping:', event.id)
+      return NextResponse.json({ received: true, duplicate: true })
+    }
+    claimedEventId = event.id
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object
@@ -70,6 +80,7 @@ export async function POST(req: NextRequest) {
             tag: `unlock-${session.metadata.match_id || session.metadata.unlocked_user_id}`,
           }).catch(() => {})
         }
+        await completeStripeEvent(event.id)
         return NextResponse.json({ received: true })
       }
       // ============== End match unlock ==============
@@ -82,6 +93,7 @@ export async function POST(req: NextRequest) {
         )
         if (error) console.error('Friend match round error:', error)
         else console.log('Friend match round granted')
+        await completeStripeEvent(event.id)
         return NextResponse.json({ received: true })
       }
 
@@ -99,6 +111,7 @@ export async function POST(req: NextRequest) {
         }).eq('id', session.metadata.user_id)
         if (error) console.error('Friend pro start error:', error)
         else console.log('Friend Pro subscription started')
+        await completeStripeEvent(event.id)
         return NextResponse.json({ received: true })
       }
 
@@ -151,10 +164,10 @@ export async function POST(req: NextRequest) {
                   notcupid · personality results
                 </div>
                 <h1 style="font-family:Georgia,serif;font-style:italic;font-size:2rem;font-weight:400;margin:0 0 .5rem;line-height:1.2">
-                  ${user.archetype || 'your personality'}
+                  ${escapeHtml(user.archetype || 'your personality')}
                 </h1>
                 <p style="color:#6b6975;font-size:.9375rem;line-height:1.6;margin:0 0 2rem">
-                  hi ${user.name || 'there'} — here's your hexaco breakdown. these six dimensions shape how we match you with other bostonians.
+                  hi ${escapeHtml(user.name || 'there')} — here's your hexaco breakdown. these six dimensions shape how we match you with other bostonians.
                 </p>
                 <div style="margin:2rem 0">
                   ${dimRows}
@@ -178,16 +191,15 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               from: 'NotCupid <match@notcupid.com>',
               to: user.email,
-              subject: `your hexaco results · ${user.archetype || 'NotCupid'}`,
+              subject: sanitizeEmailSubject(`your hexaco results · ${user.archetype || 'NotCupid'}`),
               html: emailHtml,
             }),
           })
 
           if (!emailRes.ok) {
-            const errText = await emailRes.text()
-            console.error('Email send failed:', errText)
+            console.error('Email send failed:', emailRes.status)
           } else {
-            console.log('Results email sent to', user.email)
+            console.log('Results email sent for user', String(user.id).slice(0, 8))
           }
         }
       }
@@ -215,9 +227,19 @@ export async function POST(req: NextRequest) {
       console.log('Friend Pro subscription canceled:', sub.id)
     }
 
+    await completeStripeEvent(event.id)
     return NextResponse.json({ received: true })
   } catch (err) {
     console.error('Webhook error:', err)
+    if (claimedEventId) {
+      const message = err instanceof Error ? err.message : 'unknown failure'
+      await supabaseAdmin
+        .from('stripe_events')
+        .update({ processing_started_at: null, last_error: message.slice(0, 1000) })
+        .eq('event_id', claimedEventId)
+        .is('processed_at', null)
+        .then(() => {})
+    }
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 }

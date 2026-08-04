@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     name, category, description, area,
     creator_id: user.id, metro: metroOf((user as any).zip), is_test: (user as any).is_test === true,
   }).select('id').single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not create club' }, { status: 500 });
   // creator is a member from the start.
   await supabaseAdmin.from('friend_club_members').upsert(
     { club_id: club.id, user_id: user.id, status: 'member' }, { onConflict: 'club_id,user_id' }

@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   if (!force) query = query.is('relaunch_blast_sent_at', null)
 
   const { data: users, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Could not load recipients' }, { status: 500 })
 
   // Who currently has a live (both-accepted, not-ended) match? Drives the CTA.
   const { data: liveMatches } = await supabaseAdmin

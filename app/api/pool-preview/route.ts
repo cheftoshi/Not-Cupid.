@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf, METRO_CENTERS, isEligibleZip } from '@/lib/quiz-data';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,8 @@ export const dynamic = 'force-dynamic';
 // in, show the pool is real ("214 people in the Boston experiment · 41 joined
 // this month"). No PII: counts + city label only.
 export async function GET(req: NextRequest) {
+  const limit = await rateLimit({ key: `pool-preview:${getClientIp(req)}`, windowSec: 60, maxAttempts: 30, blockSec: 60 });
+  if (!limit.ok) return NextResponse.json({ ok: false }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
   const zip = String(req.nextUrl.searchParams.get('zip') || '').trim();
   if (!/^\d{5}$/.test(zip) || !isEligibleZip(zip)) return NextResponse.json({ ok: false });
 

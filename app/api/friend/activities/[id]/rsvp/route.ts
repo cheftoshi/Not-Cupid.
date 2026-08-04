@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { sendPushToUser } from '@/lib/push';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,13 @@ type Response = (typeof RESPONSES)[number];
 // RSVP to an activity. Events take a yes/maybe/no `response` and are gated to the
 // event's audience (gender + age). Posts (likes) just toggle a 'yes'. Tapping
 // your current response again clears it. Returns per-response counts + my state.
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limit = await rateLimit({ key: `friend-rsvp:${user.id}`, windowSec: 3600, maxAttempts: 60, blockSec: 900 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many RSVP changes' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
-  const activityId = params.id;
+  const { id: activityId } = await params;
   const body = await req.json().catch(() => ({} as any));
   const desired: Response = RESPONSES.includes(body?.response) ? body.response : 'yes';
 

@@ -15,7 +15,7 @@ export async function GET() {
 
   let entered = false, entry: any = null, draw: any = null, other: any = null;
   try {
-    const { data: e } = await supabaseAdmin.from('raffle_entries').select('video_url, status').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
+    const { data: e } = await supabaseAdmin.from('raffle_entries').select('status').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
     if (e) { entered = true; entry = e; }
 
     const { data: draws } = await supabaseAdmin.from('raffle_draws').select('*')

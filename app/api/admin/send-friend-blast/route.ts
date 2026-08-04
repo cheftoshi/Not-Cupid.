@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
   if (!force) query = query.is('friend_blast_sent_at', null)
 
   const { data: users, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Could not load recipients' }, { status: 500 })
 
   if (dryRun) {
     return NextResponse.json({

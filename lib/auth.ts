@@ -1,16 +1,22 @@
 import { cookies } from 'next/headers';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
 
 const COOKIE_NAME = 'nc_session';
 const SESSION_DAYS = 30;
 
+function hashSessionToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
 export async function createSession(userId: string) {
   const token = randomBytes(32).toString('hex');
+  const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
   const { error } = await supabaseAdmin.from('sessions').insert({
-    token,
+    token: tokenHash,
+    token_hash_version: 1,
     user_id: userId,
     expires_at: expiresAt.toISOString(),
   });
@@ -20,34 +26,48 @@ export async function createSession(userId: string) {
     throw new Error(`Session insert failed: ${error.message}`);
   }
 
-  cookies().set(COOKIE_NAME, token, {
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
     expires: expiresAt,
     path: '/',
+    priority: 'high',
   });
 
   return token;
 }
 
 export async function getCurrentUser() {
-  const token = cookies().get(COOKIE_NAME)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
+  const tokenHash = hashSessionToken(token);
 
   const { data: session } = await supabaseAdmin
     .from('sessions')
-    .select('user_id, expires_at')
-    .eq('token', token)
+    .select('token, token_hash_version, user_id, expires_at')
+    .in('token', [tokenHash, token])
+    .limit(1)
     .single();
 
   if (!session) return null;
-  if (new Date(session.expires_at) < new Date()) return null;
+  if (new Date(session.expires_at) < new Date()) {
+    await supabaseAdmin.from('sessions').delete().eq('token', session.token);
+    cookieStore.delete(COOKIE_NAME);
+    return null;
+  }
+
+  // Transparently migrate sessions created before tokens were hashed at rest.
+  if (session.token === token) {
+    await supabaseAdmin.from('sessions').update({ token: tokenHash, token_hash_version: 1 }).eq('token', token);
+  }
 
   supabaseAdmin
     .from('sessions')
     .update({ last_used_at: new Date().toISOString() })
-    .eq('token', token)
+    .eq('token', tokenHash)
     .then(() => {});
 
   const { data: user } = await supabaseAdmin
@@ -61,11 +81,12 @@ export async function getCurrentUser() {
 }
 
 export async function destroySession() {
-  const token = cookies().get(COOKIE_NAME)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return;
 
-  await supabaseAdmin.from('sessions').delete().eq('token', token);
-  cookies().delete(COOKIE_NAME);
+  await supabaseAdmin.from('sessions').delete().in('token', [hashSessionToken(token), token]);
+  cookieStore.delete(COOKIE_NAME);
 }
 
 export async function requireUser() {

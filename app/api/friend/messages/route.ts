@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { activeCircleOf } from '@/lib/friend-circles';
 import { hasCircleAccess, circleChatStatus } from '@/lib/friend-access';
 import { sendPushToUser } from '@/lib/push';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limit = await rateLimit({ key: `friend-message:${user.id}`, windowSec: 3600, maxAttempts: 120, blockSec: 600 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many messages' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
   const { body } = await req.json().catch(() => ({}));
   if (!body || typeof body !== 'string' || !body.trim()) {
@@ -104,7 +107,7 @@ export async function POST(req: NextRequest) {
     .select('id, sender_id, body, created_at')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
 
   // Notify the rest of the crew (awaited — Vercel can kill un-awaited work, and
   // this is the crew chat's only notification channel). Never blocks the send.

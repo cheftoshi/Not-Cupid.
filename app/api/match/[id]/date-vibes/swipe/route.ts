@@ -12,7 +12,8 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: match } = await supabaseAdmin
     .from('matches')
     .select('user_1_id, user_2_id, user_1_accepted, user_2_accepted')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
   if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
   if (match.user_1_id !== user.id && match.user_2_id !== user.id) {
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await supabaseAdmin
       .from('activity_swipes')
       .delete()
-      .eq('match_id', params.id)
+      .eq('match_id', id)
       .eq('user_id', user.id)
       .eq('activity_id', activityId);
     return NextResponse.json({ ok: true, mutual: false });
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .from('activity_swipes')
     .upsert(
       {
-        match_id: params.id,
+        match_id: id,
         user_id: user.id,
         activity_id: activityId,
         decision,
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (swipeErr) {
     console.error('swipe insert error', swipeErr);
-    return NextResponse.json({ error: swipeErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not save swipe' }, { status: 500 });
   }
 
   // If this is a 'yes', check whether the partner also said yes → mutual.
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { data: partnerSwipe } = await supabaseAdmin
       .from('activity_swipes')
       .select('decision')
-      .eq('match_id', params.id)
+      .eq('match_id', id)
       .eq('user_id', partnerId)
       .eq('activity_id', activityId)
       .maybeSingle();

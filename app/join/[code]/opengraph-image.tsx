@@ -2,7 +2,6 @@ import { ImageResponse } from 'next/og';
 
 // Share card for /join/<code> — the invite link's unfurl. Generic on purpose
 // (no DB fetch at the edge; the page metadata handles specifics).
-export const runtime = 'edge';
 export const alt = 'You’re invited to NotCupid';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';

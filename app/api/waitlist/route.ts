@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,14 @@ export async function POST(req: NextRequest) {
   if (!email || typeof email !== 'string' || !email.includes('@') || email.length > 200) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
-  const safeEmail = esc(email.trim().slice(0, 200));
+  const normalizedEmail = email.trim().toLowerCase().slice(0, 200);
+  const ipLimit = await rateLimit({ key: `waitlist-ip:${getClientIp(req)}`, windowSec: 3600, maxAttempts: 8, blockSec: 3600 });
+  const emailLimit = await rateLimit({ key: `waitlist-email:${normalizedEmail}`, windowSec: 86400, maxAttempts: 3, blockSec: 86400 });
+  const denied = !ipLimit.ok ? ipLimit : !emailLimit.ok ? emailLimit : null;
+  if (denied && !denied.ok) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(denied.retryAfterSec) } });
+  }
+  const safeEmail = esc(normalizedEmail);
   const safeCity = esc((typeof city === 'string' ? city : '').trim().slice(0, 100));
 
   await sendEmail({

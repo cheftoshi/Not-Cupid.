@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
+import { escapeHtml } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Hobby plan cap
@@ -13,7 +14,7 @@ const MAX_RETRIES = 2
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)) }
 
 function emailHtml(name: string, baseUrl: string) {
-  const safeName = (name || 'there').split(' ')[0]
+  const safeName = escapeHtml((name || 'there').split(' ')[0])
   return `
     <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f6f6f6;">
       <div style="font-family:Georgia,serif;font-style:italic;font-size:1.5rem;font-weight:700;margin-bottom:2rem"><span style="color:#2563ff">Not</span><span style="color:#ff6a1f">Cupid</span></div>
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
   if (!force) query = query.is('quiz_blast_sent_at', null)
 
   const { data: users, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Could not load recipients' }, { status: 500 })
 
   if (dryRun) {
     return NextResponse.json({

@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { joinCircle } from '@/lib/friend-circles';
-import { renderEmail, sendEmail, button, C } from '@/lib/email';
+import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ async function notifyCrewMember(memberId: string, joinerName: string, crewSize: 
     preheader: `${first} just joined — your crew chat is active. hop in.`,
     eyebrow: 'friend line · all aboard',
     headline: `${first} is in. the crew chat is live.`,
-    bodyHtml: `<p style="margin:0 0 16px 0;">${first} just said they're in, so the group thread is open for ${others}. hop in, say hi, and make a plan before the moment passes.</p>
+    bodyHtml: `<p style="margin:0 0 16px 0;">${escapeHtml(first)} just said they're in, so the group thread is open for ${escapeHtml(others)}. hop in, say hi, and make a plan before the moment passes.</p>
       ${button({ href: `${base}/friends`, label: 'hop in to the chat →' })}`,
   });
   await sendEmail({ to: u.email, subject: `${first} joined your crew — chat's live on NotCupid`, html }).catch(() => {});
@@ -60,6 +61,8 @@ export async function POST() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
+  const limit = await rateLimit({ key: `friend-accept:${user.id}`, windowSec: 3600, maxAttempts: 5, blockSec: 1800 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')
@@ -73,6 +76,10 @@ export async function POST() {
     const iAmA = c.user_a_id === user.id;
     const myField = iAmA ? 'a_picked' : 'b_picked';
     const theyPicked = iAmA ? c.b_picked : c.a_picked;
+
+    // A replay must not re-send crew notifications. If both state and circle
+    // are already settled, there is nothing left to mutate.
+    if (c[myField] && (!theyPicked || c.circle_id)) continue;
 
     if (theyPicked) {
       // Both opted in → share the GROUP circle (the crew chat). This is NOT a

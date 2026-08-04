@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('set-radius error', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not update radius' }, { status: 500 });
   }
 
   // Roster-first: no auto-match. The dashboard reloads and the new radius

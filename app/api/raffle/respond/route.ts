@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE } from '@/lib/raffle';
 import { sendPushToUser } from '@/lib/push';
 import { drawRaffle } from '@/lib/raffle-draw';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limit = await rateLimit({ key: `raffle-response:${user.id}`, windowSec: 3600, maxAttempts: 10, blockSec: 1800 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
   const { accept } = await req.json().catch(() => ({ accept: false }));
 
   const { data: draws } = await supabaseAdmin.from('raffle_draws').select('*')
@@ -24,6 +27,10 @@ export async function POST(req: NextRequest) {
   const isA = d.user_a_id === user.id;
   const otherId = isA ? d.user_b_id : d.user_a_id;
   const myFirst = (user.name || 'Someone').split(' ')[0];
+
+  if (accept && (isA ? d.a_accepted : d.b_accepted)) {
+    return NextResponse.json({ ok: true, bothAccepted: false, already: true });
+  }
 
   if (!accept) {
     // The rejecter is out of the round. The other person (who was willing) goes

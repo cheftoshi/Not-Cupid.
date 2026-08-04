@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const { error } = await supabaseAdmin.from('users').update(updates).eq('id', userId);
   if (error) {
     console.error('pools/action error', { action, userId, error });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not update pool' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

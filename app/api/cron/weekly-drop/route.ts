@@ -4,6 +4,7 @@ import { assignFriendMatches, matchCapFor } from '@/lib/friend-assign';
 import { isFriendCooled } from '@/lib/friend-cooldown';
 import { dropKey } from '@/lib/weekly-drop';
 import { sendPushToUser } from '@/lib/push';
+import { isAuthorizedCronRequest } from '@/lib/request-security';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -13,11 +14,7 @@ export const maxDuration = 300;
 // assignment + a push. Idempotent per week via the rounds table's unique
 // stripe_payment_id (`drop-<week>-<user>`), so re-runs never double-drop.
 export async function GET(req: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get('authorization') || '';
-  const userAgent = req.headers.get('user-agent') || '';
-  const isVercelCron = (!!cronSecret && authHeader === `Bearer ${cronSecret}`) || /vercel-cron/i.test(userAgent);
-  if (!isVercelCron) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!isAuthorizedCronRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const week = dropKey();
 

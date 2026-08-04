@@ -12,8 +12,9 @@ export const metadata: Metadata = {
 
 // Warm invite landing: "<first name> wants you here." The CTA carries the ref
 // code into the quiz so the signup records who brought them (users.referred_by).
-export default async function JoinPage({ params }: { params: { code: string } }) {
-  const code = String(params.code || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+export default async function JoinPage({ params }: { params: Promise<{ code: string }> }) {
+  const { code: rawCode } = await params;
+  const code = String(rawCode || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   if (!code) redirect('/');
 
   const { data: inviter } = await supabaseAdmin

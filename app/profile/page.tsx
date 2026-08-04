@@ -3,11 +3,13 @@ import { getCurrentUser } from '@/lib/auth';
 import ProfileShell from './profile-shell';
 import Wordmark from '@/components/wordmark';
 import styles from './profile.module.css';
+import { withPrivateVideoPreview } from '@/lib/private-media';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilePage() {
-  const user = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  const user = currentUser ? await withPrivateVideoPreview(currentUser) : null;
   if (!user) redirect('/');
   if (!user.archetype) redirect('/quiz');
 

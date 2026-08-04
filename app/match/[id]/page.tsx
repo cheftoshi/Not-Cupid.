@@ -5,14 +5,15 @@ import ChatRoom from './chat-room';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MatchPage({ params }: { params: { id: string } }) {
+export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect('/');
 
   const { data: match } = await supabaseAdmin
     .from('matches')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!match) redirect('/dashboard');
@@ -36,14 +37,14 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
   const { data: messagesDesc } = await supabaseAdmin
     .from('messages')
     .select('*')
-    .eq('match_id', params.id)
+    .eq('match_id', id)
     .order('created_at', { ascending: false })
     .limit(500);
   const messages = (messagesDesc ?? []).reverse();
 
   return (
     <ChatRoom
-      matchId={params.id}
+      matchId={id}
       currentUserId={user.id}
       otherUser={otherUser}
       match={match}

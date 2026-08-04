@@ -8,16 +8,17 @@ export const dynamic = 'force-dynamic';
 // Date vibes: post-acceptance bonding surface. Both users pick interests,
 // then independently swipe through a filtered deck of activities/events.
 // Mutual yeses become "you both want this" matches pinned at the top.
-export default async function DateVibesPage({ params }: { params: { id: string } }) {
+export default async function DateVibesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=/match/${params.id}/date-vibes`);
+  if (!user) redirect(`/login?next=/match/${id}/date-vibes`);
 
   // Verify match membership + that both sides have accepted (otherwise the
   // feature is locked).
   const { data: match } = await supabaseAdmin
     .from('matches')
     .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!match) return <LockedScreen reason="That match doesn't exist." />;
@@ -40,7 +41,7 @@ export default async function DateVibesPage({ params }: { params: { id: string }
 
   return (
     <DateVibesClient
-      matchId={params.id}
+      matchId={id}
       currentUserId={user.id}
       partnerName={other?.name ?? 'your match'}
     />

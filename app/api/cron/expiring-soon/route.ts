@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getCurrentAdmin } from '@/lib/admin';
-import { renderEmail, sendEmail, button, C } from '@/lib/email';
+import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email';
 import { signMatchToken } from '@/lib/match-tokens';
 import { sendPushToUser } from '@/lib/push';
+import { isAuthorizedCronRequest } from '@/lib/request-security';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,23 +21,10 @@ const WINDOW_MIN_HOURS = 3;
 const WINDOW_MAX_HOURS = 6;
 
 export async function GET(req: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get('authorization') || '';
-  const userAgent = req.headers.get('user-agent') || '';
-  const bearerOk = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
-  // Fallback: Vercel's scheduler always sends this UA on cron invocations,
-  // even when CRON_SECRET isn't wired through to the runtime env.
-  const vercelCronUA = /vercel-cron/i.test(userAgent);
-  const isVercelCron = bearerOk || vercelCronUA;
-
-  if (!isVercelCron) {
+  if (!isAuthorizedCronRequest(req)) {
     const admin = await getCurrentAdmin();
     if (!admin) {
-      console.warn('[cron/expiring-soon] 403 — not cron and not admin', {
-        hasCronSecret: !!cronSecret,
-        gotAuthHeader: !!authHeader,
-        ua: userAgent.slice(0, 40),
-      });
+      console.warn('[cron/expiring-soon] 403 — invalid bearer and no admin session');
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
   }
@@ -104,7 +92,7 @@ export async function GET(req: NextRequest) {
           headline: `Don't ghost ${otherFirst}.`,
           bodyHtml: `
             <p style="margin:0 0 12px 0;">
-              Your ${m.compatibility_score ?? '—'}% match with <strong style="color:${C.ink};">${otherFirst}</strong> expires in about <strong style="color:${C.ink};">${hoursLeft} hours</strong>. If you don't say yes or no, the match drops and you both go back in the pool.
+              Your ${m.compatibility_score ?? '—'}% match with <strong style="color:${C.ink};">${escapeHtml(otherFirst)}</strong> expires in about <strong style="color:${C.ink};">${hoursLeft} hours</strong>. If you don't say yes or no, the match drops and you both go back in the pool.
             </p>
             <p style="margin:0 0 22px 0;">
               No pressure to commit to coffee — just commit to a decision.
@@ -153,6 +141,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     console.error('cron/expiring-soon error:', err);
-    return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

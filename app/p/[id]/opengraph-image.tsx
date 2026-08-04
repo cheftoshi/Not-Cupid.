@@ -3,7 +3,6 @@ import { ImageResponse } from 'next/og';
 // Share card for /p/<id> — what unfurls when someone drops a plan link in a
 // group chat. Kept generic (no DB fetch at the edge): the page title metadata
 // already carries the plan's specifics.
-export const runtime = 'edge';
 export const alt = 'A plan on NotCupid';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';

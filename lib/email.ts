@@ -12,7 +12,7 @@
 //     render (most clients fall back to system, which is fine)
 //   - Buttons rendered as <a> with padding (bulletproof button pattern)
 
-import { createHmac } from 'crypto';
+import { createHash, createHmac, timingSafeEqual } from 'crypto';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const FROM = 'NotCupid <match@notcupid.com>';
@@ -33,6 +33,19 @@ export const C = {
   border:     'rgba(11,11,11,0.08)',
 };
 
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function sanitizeEmailSubject(value: unknown): string {
+  return String(value ?? '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+}
+
 // ─── Unsubscribe link signing (HMAC; same shape as match-tokens) ─────────
 function getUnsubSecret(): string {
   const s = process.env.MATCH_LINK_SECRET;
@@ -42,17 +55,23 @@ function getUnsubSecret(): string {
   return s;
 }
 
-export function signUnsubToken(userId: string): string {
-  const mac = createHmac('sha256', getUnsubSecret()).update(`unsub.${userId}`).digest();
-  return mac.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+export function signUnsubToken(userId: string, expiresAt = Date.now() + 90 * 24 * 60 * 60 * 1000): string {
+  const exp = Math.floor(expiresAt).toString(36);
+  const mac = createHmac('sha256', getUnsubSecret()).update(`unsub.${userId}.${exp}`).digest();
+  const signature = mac.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${exp}.${signature}`;
 }
 
 export function verifyUnsubToken(userId: string, token: string | null | undefined): boolean {
   if (!token) return false;
-  const expected = signUnsubToken(userId);
-  // Constant-time compare via length-then-equality. HMAC outputs fixed length
-  // so a simple === is fine here (no user-controlled length).
-  return token === expected;
+  const [exp, signature, extra] = token.split('.');
+  const expiresAt = Number.parseInt(exp, 36);
+  if (!exp || !signature || extra || !Number.isFinite(expiresAt) || Date.now() > expiresAt) return false;
+  const mac = createHmac('sha256', getUnsubSecret()).update(`unsub.${userId}.${exp}`).digest();
+  const expected = mac.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const provided = Buffer.from(signature);
+  const wanted = Buffer.from(expected);
+  return provided.length === wanted.length && timingSafeEqual(provided, wanted);
 }
 
 // ─── Reusable email components ───────────────────────────────────────────
@@ -67,18 +86,18 @@ export function button(opts: { href: string; label: string; variant?: 'primary' 
   const bg = isPrimary ? C.ink : 'transparent';
   const color = isPrimary ? C.paper : C.muted;
   const border = isPrimary ? `1px solid ${C.ink}` : `1px solid ${C.mutedSoft}`;
-  return `<a href="${opts.href}" style="display:inline-block;background:${bg};color:${color};border:${border};padding:14px 26px;font-family:'DM Mono','SF Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;font-weight:600;border-radius:0;mso-padding-alt:0;">${opts.label}</a>`;
+  return `<a href="${escapeHtml(opts.href)}" style="display:inline-block;background:${bg};color:${color};border:${border};padding:14px 26px;font-family:'DM Mono','SF Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;font-weight:600;border-radius:0;mso-padding-alt:0;">${escapeHtml(opts.label)}</a>`;
 }
 
 /** Soft lavender info card — used for OTP codes, compatibility scores, etc. */
 export function infoCard(opts: { eyebrow?: string; big: string; sub?: string }): string {
   const eyebrow = opts.eyebrow
-    ? `<div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;">${opts.eyebrow}</div>`
+    ? `<div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(opts.eyebrow)}</div>`
     : '';
   const sub = opts.sub
-    ? `<div style="font-family:'DM Mono','SF Mono',monospace;font-size:11px;color:${C.muted};margin-top:8px;">${opts.sub}</div>`
+    ? `<div style="font-family:'DM Mono','SF Mono',monospace;font-size:11px;color:${C.muted};margin-top:8px;">${escapeHtml(opts.sub)}</div>`
     : '';
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.lavSoft};border-radius:10px;margin:16px 0;"><tr><td style="padding:22px 24px;">${eyebrow}<div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:${C.ink};line-height:1.1;letter-spacing:-0.01em;">${opts.big}</div>${sub}</td></tr></table>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.lavSoft};border-radius:10px;margin:16px 0;"><tr><td style="padding:22px 24px;">${eyebrow}<div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:${C.ink};line-height:1.1;letter-spacing:-0.01em;">${escapeHtml(opts.big)}</div>${sub}</td></tr></table>`;
 }
 
 // ─── Main render function ────────────────────────────────────────────────
@@ -102,7 +121,7 @@ export function renderEmail(args: RenderArgs): string {
     : '';
 
   const eyebrowBlock = args.eyebrow
-    ? `<div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.2em;text-transform:uppercase;margin-bottom:14px;">${args.eyebrow}</div>`
+    ? `<div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.2em;text-transform:uppercase;margin-bottom:14px;">${escapeHtml(args.eyebrow)}</div>`
     : '';
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -119,7 +138,7 @@ export function renderEmail(args: RenderArgs): string {
 
 <!-- preheader: hidden inbox preview text, padded with zero-width spaces -->
 <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${C.paper};opacity:0;">
-  ${args.preheader}${'‌ '.repeat(60)}
+  ${escapeHtml(args.preheader)}${'‌ '.repeat(60)}
 </div>
 
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.paper};">
@@ -140,7 +159,7 @@ export function renderEmail(args: RenderArgs): string {
           <td style="padding:24px 36px 8px 36px;">
             ${eyebrowBlock}
             <h1 style="margin:0 0 18px 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:${C.ink};font-weight:400;letter-spacing:-0.01em;">
-              ${args.headline}
+              ${escapeHtml(args.headline)}
             </h1>
           </td>
         </tr>
@@ -152,7 +171,7 @@ export function renderEmail(args: RenderArgs): string {
         <tr>
           <td style="padding:0 36px 32px 36px;">
             <div style="border-top:1px solid ${C.border};padding-top:18px;font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.mutedSoft};letter-spacing:0.12em;text-transform:uppercase;">
-              ${args.footerNote ? `<div style="margin-bottom:8px;color:${C.muted};text-transform:none;letter-spacing:0;font-family:Georgia,serif;font-style:italic;font-size:12px;">${args.footerNote}</div>` : ''}
+              ${args.footerNote ? `<div style="margin-bottom:8px;color:${C.muted};text-transform:none;letter-spacing:0;font-family:Georgia,serif;font-style:italic;font-size:12px;">${escapeHtml(args.footerNote)}</div>` : ''}
               <div style="margin-bottom:8px;color:${C.muted};text-transform:none;letter-spacing:0;font-family:Georgia,serif;font-style:italic;font-size:12px;">add <strong>match@notcupid.com</strong> to your contacts so matches land in your inbox — not Promotions or spam.</div>
               Boston · notcupid.com · the algo decided
               <div style="margin-top:10px;">
@@ -216,6 +235,11 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
     console.error('sendEmail: RESEND_API_KEY missing');
     return { ok: false, error: 'RESEND_API_KEY missing' };
   }
+  if (!args.to || /[\r\n\0]/.test(args.to)) {
+    console.error('sendEmail: invalid recipient');
+    return { ok: false, error: 'Invalid recipient' };
+  }
+  const recipientId = createHash('sha256').update(args.to.trim().toLowerCase()).digest('hex').slice(0, 12);
   try {
     const res = await fetch(RESEND_ENDPOINT, {
       method: 'POST',
@@ -226,7 +250,7 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
       body: JSON.stringify({
         from: FROM,
         to: [args.to],
-        subject: args.subject,
+        subject: sanitizeEmailSubject(args.subject),
         html: args.html,
         // Always send a text part (better inbox placement) + a real reply-to so
         // replies reach a human and the message reads as transactional.
@@ -235,13 +259,12 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
       }),
     });
     if (!res.ok) {
-      const body = await res.text();
-      console.error('sendEmail: Resend non-2xx', { status: res.status, body: body.slice(0, 300), to: args.to });
+      console.error('sendEmail: Resend non-2xx', { status: res.status, recipientId });
       return { ok: false, error: `Resend ${res.status}` };
     }
     return { ok: true };
   } catch (err: any) {
-    console.error('sendEmail: throw', { to: args.to, err: err?.message });
+    console.error('sendEmail: throw', { recipientId, err: err?.message });
     return { ok: false, error: err?.message || 'send failed' };
   }
 }

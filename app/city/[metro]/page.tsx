@@ -13,8 +13,9 @@ export function generateStaticParams() {
   return Object.keys(METRO_CENTERS).map((metro) => ({ metro }));
 }
 
-export async function generateMetadata({ params }: { params: { metro: string } }): Promise<Metadata> {
-  const m = METRO_CENTERS[params.metro];
+export async function generateMetadata({ params }: { params: Promise<{ metro: string }> }): Promise<Metadata> {
+  const { metro } = await params;
+  const m = METRO_CENTERS[metro];
   if (!m) return { title: 'NotCupid — A Connection Experiment' };
   return {
     title: `Meet people in ${m.city} — NotCupid`,
@@ -55,10 +56,11 @@ async function cityStats(metro: string) {
   return Promise.race([load, timeout]).catch(() => fallback);
 }
 
-export default async function CityPage({ params }: { params: { metro: string } }) {
-  const m = METRO_CENTERS[params.metro];
+export default async function CityPage({ params }: { params: Promise<{ metro: string }> }) {
+  const { metro } = await params;
+  const m = METRO_CENTERS[metro];
   if (!m) redirect('/');
-  const { count, plans } = await cityStats(params.metro);
+  const { count, plans } = await cityStats(metro);
 
   return (
     <div style={{ minHeight: '100vh', padding: '4.5rem 1.5rem 4rem', background: 'radial-gradient(900px 480px at 15% -5%, rgba(37,99,255,0.09), transparent 55%), radial-gradient(760px 420px at 95% 8%, rgba(255,106,31,0.07), transparent 52%), var(--h-bg)', color: 'var(--h-text)' }}>

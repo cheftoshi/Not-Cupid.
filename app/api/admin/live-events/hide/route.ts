@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('hide event error', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not hide event' }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }
@@ -45,7 +45,7 @@ export async function DELETE(req: NextRequest) {
 
   if (error) {
     console.error('unhide event error', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not unhide event' }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }

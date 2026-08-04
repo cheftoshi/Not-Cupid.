@@ -56,7 +56,7 @@ export async function POST() {
       profile_refresh_count: used + 1,
     })
     .eq('id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not reset friend profile' }, { status: 500 });
 
   return NextResponse.json({
     ok: true,

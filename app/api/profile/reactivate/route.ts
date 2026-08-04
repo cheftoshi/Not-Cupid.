@@ -42,7 +42,7 @@ export async function POST() {
 
   if (error) {
     console.error('reactivate error', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not reactivate profile' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

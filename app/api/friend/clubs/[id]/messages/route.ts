@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPushToUser } from '@/lib/push';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,14 +16,15 @@ async function memberOf(clubId: string, userId: string): Promise<{ ok: boolean; 
 }
 
 // GET ?after= — the club chat (last 200), members-only.
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const m = await memberOf(params.id, user.id);
+  const m = await memberOf(id, user.id);
   if (!m.ok) return NextResponse.json({ error: 'Members only', messages: [] }, { status: 403 });
 
   const after = req.nextUrl.searchParams.get('after');
-  let q = supabaseAdmin.from('friend_club_messages').select('id, sender_id, body, created_at').eq('club_id', params.id).order('created_at', { ascending: false }).limit(200);
+  let q = supabaseAdmin.from('friend_club_messages').select('id, sender_id, body, created_at').eq('club_id', id).order('created_at', { ascending: false }).limit(200);
   if (after) q = q.gt('created_at', after);
   const { data } = await q;
   const rows = (data ?? []).slice().reverse();
@@ -37,10 +39,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // POST { body } — send to the club chat (members-only); pushes the rest.
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const m = await memberOf(params.id, user.id);
+  const limit = await rateLimit({ key: `club-message:${user.id}`, windowSec: 3600, maxAttempts: 120, blockSec: 600 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many messages' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
+  const m = await memberOf(id, user.id);
   if (!m.ok) return NextResponse.json({ error: 'Members only' }, { status: 403 });
 
   const { body } = await req.json().catch(() => ({}));
@@ -48,15 +53,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!text) return NextResponse.json({ error: 'Empty' }, { status: 400 });
 
   const { data: row, error } = await supabaseAdmin.from('friend_club_messages')
-    .insert({ club_id: params.id, sender_id: user.id, body: text }).select('id, body, created_at').single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    .insert({ club_id: id, sender_id: user.id, body: text }).select('id, body, created_at').single();
+  if (error) return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
 
   // notify the other approved members + owner.
-  const { data: mems } = await supabaseAdmin.from('friend_club_members').select('user_id').eq('club_id', params.id).eq('status', 'member');
+  const { data: mems } = await supabaseAdmin.from('friend_club_members').select('user_id').eq('club_id', id).eq('status', 'member');
   const ids = new Set<string>([...(mems ?? []).map((x: any) => x.user_id), ...(m.creatorId ? [m.creatorId] : [])]);
   ids.delete(user.id);
   const first = ((user.name as string) || 'someone').split(' ')[0];
-  await Promise.all(Array.from(ids).map((id) => sendPushToUser(id, { title: `${first} · ${m.name || 'club'} 💬`, body: text.length > 80 ? text.slice(0, 80) + '…' : text, url: '/friends?view=crew', tag: `club-${params.id}` }).catch(() => {})));
+  await Promise.all(Array.from(ids).map((recipientId) => sendPushToUser(recipientId, { title: `${first} · ${m.name || 'club'} 💬`, body: text.length > 80 ? text.slice(0, 80) + '…' : text, url: '/friends?view=crew', tag: `club-${id}` }).catch(() => {})));
 
   return NextResponse.json({ ok: true, message: { id: row.id, body: row.body, created_at: row.created_at, name: user.name, photo_url: (user as any).photo_url, isMe: true } });
 }

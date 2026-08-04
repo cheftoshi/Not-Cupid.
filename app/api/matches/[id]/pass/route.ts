@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: match } = await supabaseAdmin
     .from('matches')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
@@ -26,9 +27,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       ended_at: new Date().toISOString(),
       ended_reason: 'one_passed',
     })
-    .eq('id', params.id);
+    .eq('id', id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not pass on match' }, { status: 500 });
 
   // Record in history to prevent re-match
   const a = match.user_1_id < match.user_2_id ? match.user_1_id : match.user_2_id;
@@ -37,7 +38,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     {
       user_a_id: a,
       user_b_id: b,
-      match_id: params.id,
+      match_id: id,
       outcome: 'one_passed',
       last_matched_at: new Date().toISOString(),
     },

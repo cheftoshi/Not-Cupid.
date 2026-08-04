@@ -67,7 +67,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
       const r = await fetch('/api/raffle/upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ext }) });
       const d = await r.json();
       if (!r.ok) { setErr(d.error || 'upload not available — try again shortly.'); return; }
-      const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': file.type || 'video/mp4' } });
+      const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': d.contentType } });
       if (!put.ok) { setErr('upload failed — try again.'); return; }
       setVideoUrl(d.publicUrl);
     } catch { setErr('upload failed — try again.'); }

@@ -47,6 +47,6 @@ export async function POST(req: NextRequest) {
   await supabaseAdmin.from('friend_activity_rsvps').delete().eq('activity_id', id);
   await supabaseAdmin.from('friend_activity_comments').delete().eq('activity_id', id);
   const { error } = await supabaseAdmin.from('friend_activities').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not delete activity' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

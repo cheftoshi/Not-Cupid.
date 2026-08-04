@@ -1,50 +1,95 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-// Inbound email webhook (Resend). Stores the message for an admin to read/reply.
-//
-// SECURITY: this route used to auto-reply to the `from` address, which made it
-// an open email-reflection relay — an attacker could POST a forged event with
-// `from` set to a victim and we'd email the victim. The auto-reply is removed;
-// replies now go out only from the admin tools. If INBOUND_WEBHOOK_SECRET is
-// set, we also require it (configure Resend's webhook URL with ?token=...), so
-// only Resend can post here.
+function plainTextFallback(html: string): string {
+  return html
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Resend inbound webhook. Requests are verified against the raw body and the
+// provider's signing secret before any event data is trusted or stored.
 export async function POST(req: NextRequest) {
-  const secret = process.env.INBOUND_WEBHOOK_SECRET;
-  if (secret) {
-    const url = new URL(req.url);
-    const token = url.searchParams.get('token') || req.headers.get('x-webhook-token');
-    if (token !== secret) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!webhookSecret || !apiKey) {
+    console.error('[inbound] Resend webhook configuration is incomplete');
+    return NextResponse.json({ error: 'Webhook unavailable' }, { status: 503 });
   }
 
-  const event = await req.json().catch(() => null);
-  if (!event || event.type !== 'email.received') {
-    return NextResponse.json({ ok: true });
+  const contentLength = Number(req.headers.get('content-length') || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
   }
 
-  const { from, to, subject, text, html, email_id } = event.data || {};
-  const fromAddr = (from || '').toLowerCase();
+  const payload = await req.text();
+  if (payload.length > 1024 * 1024) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+  }
 
-  // Drop system/bounce noise.
+  const resend = new Resend(apiKey);
+  let event: ReturnType<typeof resend.webhooks.verify>;
+  try {
+    event = resend.webhooks.verify({
+      payload,
+      headers: {
+        id: req.headers.get('svix-id') || '',
+        timestamp: req.headers.get('svix-timestamp') || '',
+        signature: req.headers.get('svix-signature') || '',
+      },
+      webhookSecret,
+    });
+  } catch {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+  }
+
+  if (event.type !== 'email.received') return NextResponse.json({ ok: true });
+
+  const emailId = event.data.email_id;
+  if (typeof emailId !== 'string' || emailId.length > 200) {
+    return NextResponse.json({ error: 'Invalid event' }, { status: 400 });
+  }
+
+  const { data: email, error: retrieveError } = await resend.emails.receiving.get(emailId, { html_format: 'cid' });
+  if (retrieveError || !email) {
+    console.error('[inbound] Could not retrieve verified email:', retrieveError?.message);
+    return NextResponse.json({ error: 'Could not retrieve email' }, { status: 502 });
+  }
+
+  const from = String(email.from || '').trim().slice(0, 320);
+  const fromLower = from.toLowerCase();
   if (
-    fromAddr.includes('mailer-daemon') ||
-    fromAddr.includes('postmaster') ||
-    fromAddr.includes('no-reply') ||
-    fromAddr.includes('noreply')
+    fromLower.includes('mailer-daemon')
+    || fromLower.includes('postmaster')
+    || fromLower.includes('no-reply')
+    || fromLower.includes('noreply')
   ) {
     return NextResponse.json({ ok: true, skipped: 'system' });
   }
 
-  await supabaseAdmin.from('inbound_messages').insert({
+  const text = (email.text || (email.html ? plainTextFallback(email.html) : '')).slice(0, 100_000);
+  const { error } = await supabaseAdmin.from('inbound_messages').insert({
     from_email: from,
-    to_email: to,
-    subject,
+    to_email: (email.to || []).join(', ').slice(0, 2000),
+    subject: String(email.subject || '').slice(0, 500),
     body_text: text,
-    body_html: html,
-    resend_email_id: email_id,
+    // Never store remote HTML. Admin surfaces can render body_text safely.
+    body_html: null,
+    resend_email_id: emailId,
   });
 
-  return NextResponse.json({ ok: true });
+  if (error && error.code !== '23505') {
+    console.error('[inbound] Store failed:', error);
+    return NextResponse.json({ error: 'Could not store email' }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, duplicate: error?.code === '23505' });
 }

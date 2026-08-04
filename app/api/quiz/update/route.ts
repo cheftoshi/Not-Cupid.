@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
   if (updateErr) {
     console.error('Quiz update error:', updateErr);
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not save answers' }, { status: 500 });
   }
 
   // End any non-terminal pending matches so the user is free to be re-matched.

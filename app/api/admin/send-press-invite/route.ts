@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
   const { data: fbRows, error: fbErr } = await supabaseAdmin
     .from('date_feedback')
     .select('user_id')
-  if (fbErr) return NextResponse.json({ error: fbErr.message }, { status: 500 })
+  if (fbErr) return NextResponse.json({ error: 'Could not load recipients' }, { status: 500 })
 
   const feedbackUserIds = Array.from(
     new Set((fbRows || []).map((r: any) => r.user_id).filter(Boolean) as string[]),
@@ -133,10 +133,10 @@ export async function POST(req: NextRequest) {
       .not('email', 'is', null)
       .neq('is_test', true)
       .neq('email_notifications', false)
-    if (fb.error) return NextResponse.json({ error: fb.error.message }, { status: 500 })
+    if (fb.error) return NextResponse.json({ error: 'Could not load recipients' }, { status: 500 })
     users = fb.data as Recipient[]
   } else if (res.error) {
-    return NextResponse.json({ error: res.error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Could not load recipients' }, { status: 500 })
   } else {
     users = res.data as Recipient[]
   }

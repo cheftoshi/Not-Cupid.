@@ -16,8 +16,14 @@ export async function POST(req: NextRequest) {
   const endpoint = body?.endpoint;
   const p256dh = body?.keys?.p256dh;
   const auth = body?.keys?.auth;
-  if (typeof endpoint !== 'string' || !endpoint.startsWith('https://') ||
-      typeof p256dh !== 'string' || typeof auth !== 'string') {
+  let validEndpoint = false;
+  try {
+    const parsed = new URL(endpoint);
+    validEndpoint = parsed.protocol === 'https:' && !parsed.username && !parsed.password;
+  } catch { /* invalid URL */ }
+  if (typeof endpoint !== 'string' || endpoint.length > 2048 || !validEndpoint ||
+      typeof p256dh !== 'string' || p256dh.length > 512 ||
+      typeof auth !== 'string' || auth.length > 512) {
     return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 });
   }
 
@@ -43,7 +49,7 @@ export async function DELETE(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let body: any = {};
   try { body = await req.json(); } catch { /* empty */ }
-  if (typeof body?.endpoint !== 'string') {
+  if (typeof body?.endpoint !== 'string' || body.endpoint.length > 2048) {
     return NextResponse.json({ error: 'endpoint required' }, { status: 400 });
   }
   await supabaseAdmin

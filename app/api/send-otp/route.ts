@@ -3,6 +3,7 @@ import { randomInt } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { renderEmail, sendEmail, infoCard } from '@/lib/email'
+import { hashOtp } from '@/lib/otp'
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Basic format check - catches obvious typos before we waste a Resend send
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 
@@ -49,13 +50,13 @@ export async function POST(req: NextRequest) {
     const { error: dbError } = await supabaseAdmin
       .from('otp_codes')
       .upsert(
-        { email, code: otp, expires_at: expiresAt, verified: false },
+        { email, code: hashOtp(email, otp), expires_at: expiresAt, verified: false },
         { onConflict: 'email' }
       )
 
     if (dbError) {
       console.error('Supabase insert error:', JSON.stringify(dbError))
-      return NextResponse.json({ error: 'DB error', details: dbError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Could not issue a verification code' }, { status: 500 })
     }
     console.log('OTP saved to DB successfully')
 

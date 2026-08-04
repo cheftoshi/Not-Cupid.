@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible, raffleClosed } from '@/lib/raffle';
 import { drawRaffle } from '@/lib/raffle-draw';
+import { isManagedStorageUrl } from '@/lib/request-security';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,9 @@ export async function POST(req: NextRequest) {
   if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
   if (user.age < 21) return NextResponse.json({ error: 'This dinner is 21 and over — you’re not eligible for this round.' }, { status: 400 });
   if (!video_url) return NextResponse.json({ error: 'Your intro video is required to enter.' }, { status: 400 });
+  if (!isManagedStorageUrl(video_url, 'raffle-videos', `${user.id}/${RAFFLE.key}-`)) {
+    return NextResponse.json({ error: 'Upload your intro video through NotCupid before entering.' }, { status: 400 });
+  }
   if (body.agreed !== true) return NextResponse.json({ error: 'Please agree to the Official Rules to enter.' }, { status: 400 });
 
   // New entrants face the deadline, the overall cap, and the per-gender balance

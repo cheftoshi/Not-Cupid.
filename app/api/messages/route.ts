@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { acceptMatch } from '@/lib/match-actions';
 import { renderEmail, sendEmail, button } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limit = await rateLimit({ key: `match-message:${user.id}`, windowSec: 3600, maxAttempts: 120, blockSec: 600 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many messages' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
   const { match_id, body } = await req.json();
   if (!match_id || !body || typeof body !== 'string') {
@@ -139,7 +142,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('Insert message error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
   }
 
   // Slide the inactivity window forward on an active chat (it never expires

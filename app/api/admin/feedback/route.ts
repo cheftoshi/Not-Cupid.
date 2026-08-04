@@ -37,6 +37,6 @@ export async function GET() {
     return NextResponse.json({ items, total: items.length });
   } catch (err: any) {
     console.error('admin/feedback error', err);
-    return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

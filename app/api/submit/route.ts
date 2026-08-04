@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { createSession } from '@/lib/auth'
 import { metroOf } from '@/lib/quiz-data'
 import { metroGenderCounts, shouldHoldForBalance } from '@/lib/balance'
-import { renderEmail, sendEmail, button, C } from '@/lib/email'
+import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email'
 import { sendPushToUser } from '@/lib/push'
 
 async function sendCoreCompletionEmail(user: { id: string; email: string; name?: string | null; archetype?: string | null }, held: boolean) {
@@ -18,7 +18,7 @@ async function sendCoreCompletionEmail(user: { id: string; email: string; name?:
     headline: `${first}, you're in.`,
     bodyHtml: `
       <p style="margin:0 0 14px 0;">Your core profile is live. This is the baseline that powers both lines: Love for dating, Friend for plans, crews, and people you might actually click with.</p>
-      ${user.archetype ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.lavSoft};border-radius:10px;margin:16px 0;"><tr><td style="padding:18px 20px;"><div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;">your starting signal</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;color:${C.ink};line-height:1.1;">${user.archetype}</div></td></tr></table>` : ''}
+      ${user.archetype ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.lavSoft};border-radius:10px;margin:16px 0;"><tr><td style="padding:18px 20px;"><div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;">your starting signal</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;color:${C.ink};line-height:1.1;">${escapeHtml(user.archetype)}</div></td></tr></table>` : ''}
       <p style="margin:0 0 18px 0;">Next step: open the Hub and choose where you want to start today. No swiping. No endless browsing. Just a smaller set of real openings.</p>
       ${button({ href: `${base}/hub`, label: 'open your hub →' })}
       ${held ? `<p style="margin:16px 0 0 0;font-size:13px;color:${C.muted};">Small note: your local roster may open a little slower while we keep the pool balanced. Your profile is still complete and ready.</p>` : ''}
@@ -43,27 +43,14 @@ export async function POST(req: NextRequest) {
       attach_anxiety, attach_avoidance, attach_style, values_profile,
       ref,
     } = body
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
 
     const VALID_RELATIONSHIP_STYLES = new Set([
       'marriage_track', 'dink', 'enm_poly', 'casual', 'open',
     ])
 
-    if (!name || !age || !gender || !seeking || !zip || !email) {
+    if (!name || !age || !gender || !seeking || !zip || !normalizedEmail) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    // Proof of email ownership: there must be a verified OTP for this email.
-    // (Without this, a script could POST here to create an account + get a
-    // session cookie for ANY email — account creation with no email proof.)
-    const { data: verifiedOtp } = await supabaseAdmin
-      .from('otp_codes')
-      .select('id')
-      .eq('email', email)
-      .eq('verified', true)
-      .limit(1)
-      .maybeSingle()
-    if (!verifiedOtp) {
-      return NextResponse.json({ error: 'Please verify your email first.' }, { status: 403 })
     }
 
     // Server-side validation (don't trust the client): bound everything that
@@ -75,22 +62,43 @@ export async function POST(req: NextRequest) {
     if (!/^\d{5}$/.test(String(zip).trim())) {
       return NextResponse.json({ error: 'Invalid ZIP code' }, { status: 400 })
     }
-    const cleanName = String(name).trim().slice(0, 100)
+    if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
+    }
+    if (!['m', 'f', 'nb', 'o', 'b'].includes(gender)) {
+      return NextResponse.json({ error: 'Invalid gender' }, { status: 400 })
+    }
+    if (!['m', 'f', 'b', 'both'].includes(seeking)) {
+      return NextResponse.json({ error: 'Invalid seeking preference' }, { status: 400 })
+    }
+    const cleanName = String(name).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100)
     if (!cleanName) return NextResponse.json({ error: 'Name required' }, { status: 400 })
     // HEXACO dimensions are 0–16 (4 questions × 4 pts); clamp so a tampered
     // client can't store fake personality scores that skew matching.
     const clampScore = (v: any) => Math.max(0, Math.min(8, Number(v) || 0)) // 2 questions/dim × 4 = max 8
     const clampAge = (v: any, d: number) => { const n = parseInt(v); return Number.isFinite(n) ? Math.max(18, Math.min(120, n)) : d }
+    const cleanAgeMin = clampAge(age_min, 18)
+    const cleanAgeMax = clampAge(age_max, 99)
+    if (cleanAgeMin > cleanAgeMax) {
+      return NextResponse.json({ error: 'Invalid age range' }, { status: 400 })
+    }
+    const boundedObject = (value: unknown, maxLength = 5000) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+      try { return JSON.stringify(value).length <= maxLength } catch { return false }
+    }
 
     const insertRow: any = {
-      name: cleanName, age: ageNum, gender, seeking, zip: String(zip).trim(), email,
-      age_min: clampAge(age_min, 18), age_max: clampAge(age_max, 99),
+      name: cleanName, age: ageNum, gender, seeking, zip: String(zip).trim(), email: normalizedEmail,
+      age_min: cleanAgeMin, age_max: cleanAgeMax,
       score_honesty: clampScore(score_honesty), score_emotionality: clampScore(score_emotionality),
       score_extraversion: clampScore(score_extraversion), score_agreeableness: clampScore(score_agreeableness),
       score_conscientiousness: clampScore(score_conscientiousness), score_openness: clampScore(score_openness),
       archetype: archetype ? String(archetype).slice(0, 80) : archetype, status: 'waiting',
     }
-    if (vibes && typeof vibes === 'object') insertRow.vibes = vibes
+    if (vibes != null && !boundedObject(vibes)) {
+      return NextResponse.json({ error: 'Invalid vibes' }, { status: 400 })
+    }
+    if (boundedObject(vibes)) insertRow.vibes = vibes
     if (relationship_style && VALID_RELATIONSHIP_STYLES.has(relationship_style)) {
       insertRow.relationship_style = relationship_style
     }
@@ -99,7 +107,29 @@ export async function POST(req: NextRequest) {
     if (attach_anxiety != null) insertRow.attach_anxiety = clamp100(attach_anxiety)
     if (attach_avoidance != null) insertRow.attach_avoidance = clamp100(attach_avoidance)
     if (['secure', 'anxious', 'avoidant', 'fearful'].includes(attach_style)) insertRow.attach_style = attach_style
-    if (values_profile && typeof values_profile === 'object') insertRow.values_profile = values_profile
+    if (values_profile != null && !boundedObject(values_profile)) {
+      return NextResponse.json({ error: 'Invalid values profile' }, { status: 400 })
+    }
+    if (boundedObject(values_profile)) insertRow.values_profile = values_profile
+
+    // Consume a still-valid verified OTP in the same database operation used
+    // to prove ownership. A verified row can no longer be replayed days later
+    // or reused by parallel signup requests.
+    const { data: consumedOtp, error: consumeError } = await supabaseAdmin
+      .from('otp_codes')
+      .delete()
+      .eq('email', normalizedEmail)
+      .eq('verified', true)
+      .gt('expires_at', new Date().toISOString())
+      .select('email')
+      .maybeSingle()
+    if (consumeError) {
+      console.error('Submit: OTP consumption failed:', consumeError)
+      return NextResponse.json({ error: 'Could not verify email ownership' }, { status: 500 })
+    }
+    if (!consumedOtp) {
+      return NextResponse.json({ error: 'Please verify your email again.' }, { status: 403 })
+    }
 
     // Invite attribution — best-effort, never blocks signup. A valid ref code
     // records who brought them (users.referred_by); anything else is ignored.
@@ -127,7 +157,7 @@ if (error) {
     // Expected, handled case — client looks up the existing user and
     // redirects to their dashboard. Logged as warn (not error) so real
     // failures stand out in Vercel logs.
-    console.warn('Submit: duplicate email, redirecting to existing account', { email })
+    console.warn('Submit: duplicate email, redirecting to existing account')
     return NextResponse.json({ error: 'already_registered' }, { status: 409 })
   }
   console.error('Submit: supabase error:', error)

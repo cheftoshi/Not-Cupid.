@@ -4,7 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: match } = await supabaseAdmin
     .from('matches')
     .select('user_1_id, user_2_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
@@ -28,13 +29,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   // Submitting feedback does NOT end the match — review only, private to user + admin.
   const { error } = await supabaseAdmin.from('date_feedback').upsert(
-    { match_id: params.id, user_id: user.id, rating, would_again, notes },
+    { match_id: id, user_id: user.id, rating, would_again, notes },
     { onConflict: 'match_id,user_id' }
   );
 
   if (error) {
     console.error('Date feedback error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not save feedback' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

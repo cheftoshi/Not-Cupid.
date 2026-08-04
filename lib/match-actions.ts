@@ -10,7 +10,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { signMatchToken } from '@/lib/match-tokens';
-import { renderEmail, sendEmail, infoCard, button, C } from '@/lib/email';
+import { renderEmail, sendEmail, infoCard, button, C, escapeHtml } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
 
 // How many live conversations a user can run at once. Kept deliberately small
@@ -106,6 +106,14 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
   if (match.ended_at || ['ended', 'passed', 'expired'].includes(match.status)) {
     return { ok: false, reason: 'ended' };
   }
+  if (match.expires_at && new Date(match.expires_at) <= new Date()) {
+    await supabaseAdmin
+      .from('matches')
+      .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
+      .eq('id', matchId)
+      .eq('status', 'pending');
+    return { ok: false, reason: 'ended' };
+  }
 
   // Already mutually accepted → idempotent success (don't re-send emails).
   if (match.user_1_accepted && match.user_2_accepted) {
@@ -176,7 +184,7 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
       bodyHtml: `
         <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you. Chat's open in the app, and here's their email so you can take it wherever feels right.</p>
         ${infoCard({ eyebrow: `${otherName}'s email`, big: otherEmail })}
-        <p style="margin:0 0 18px 0;">Want more context before you write? Open the match room. If ${otherName.split(' ')[0]} added a bio or extra photos, their full profile unlock is there for $0.99.</p>
+        <p style="margin:0 0 18px 0;">Want more context before you write? Open the match room. If ${escapeHtml(otherName.split(' ')[0])} added a bio or extra photos, their full profile unlock is there for $0.99.</p>
         <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
         <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
           <li>Message soon — the chat closes after 36 quiet hours (every message resets the clock).</li>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { signMatchToken } from '@/lib/match-tokens'
+import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,19 +27,19 @@ function matchEmail(name: string, otherName: string, score: number, spot: string
     <div style="font-family:monospace;max-width:520px;margin:0 auto;padding:2rem;background:#f6f6f6;">
       <div style="font-family:Georgia,serif;font-style:italic;font-size:1.5rem;font-weight:700;margin-bottom:2rem"><span style="color:#2563ff">Not</span><span style="color:#ff6a1f">Cupid</span></div>
       <p style="font-size:.75rem;color:#2563ff;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1rem">The algorithm has spoken</p>
-      <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem;line-height:1.5">Hey ${name} — we found your match.</p>
+      <p style="font-size:1.1rem;color:#0e0c1a;font-weight:500;margin-bottom:1.5rem;line-height:1.5">Hey ${escapeHtml(name)} — we found your match.</p>
       <div style="background:#e8edff;padding:1.5rem;margin-bottom:1.5rem">
         <p style="font-size:.72rem;color:#7a7590;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Compatibility score</p>
-        <p style="font-size:2.5rem;font-weight:700;color:#2563ff;line-height:1">${score}<span style="font-size:1rem;color:#c8c4dc">%</span></p>
+        <p style="font-size:2.5rem;font-weight:700;color:#2563ff;line-height:1">${Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : '—'}<span style="font-size:1rem;color:#c8c4dc">%</span></p>
       </div>
       <p style="font-size:.88rem;color:#7a7590;line-height:1.75;margin-bottom:1.5rem">
-        Your match is <strong style="color:#0e0c1a">${otherName}</strong>. Based on six dimensions of your personality, the algorithm thinks you two are worth meeting.
+        Your match is <strong style="color:#0e0c1a">${escapeHtml(otherName)}</strong>. Based on six dimensions of your personality, the algorithm thinks you two are worth meeting.
       </p>
       <div style="background:#fff;border:1px solid #c8c4dc;padding:1.25rem;margin-bottom:1.5rem">
         <p style="font-size:.65rem;color:#2563ff;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem">Suggested first spot</p>
-        <p style="font-size:.9rem;color:#0e0c1a;font-weight:500">${spot}</p>
+        <p style="font-size:.9rem;color:#0e0c1a;font-weight:500">${escapeHtml(spot)}</p>
       </div>
-      <p style="font-size:.85rem;color:#0e0c1a;font-weight:500;margin-bottom:1rem">Are you interested in meeting ${otherName}?</p>
+      <p style="font-size:.85rem;color:#0e0c1a;font-weight:500;margin-bottom:1rem">Are you interested in meeting ${escapeHtml(otherName)}?</p>
       <p style="font-size:.78rem;color:#7a7590;line-height:1.65;margin-bottom:1.5rem">
         If both of you say yes — you'll get each other's email. If either passes, you go back in the pool.
       </p>
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
           body: JSON.stringify({
             from: 'NotCupid <match@notcupid.com>',
             to: [user1.email],
-            subject: `${user2.name} — your NotCupid match is ready`,
+            subject: sanitizeEmailSubject(`${user2.name} — your NotCupid match is ready`),
             html: matchEmail(user1.name, user2.name, match.compatibility_score, spot, match.id, user1.id)
           })
         }),
@@ -100,7 +101,7 @@ export async function GET(req: NextRequest) {
           body: JSON.stringify({
             from: 'NotCupid <match@notcupid.com>',
             to: [user2.email],
-            subject: `${user1.name} — your NotCupid match is ready`,
+            subject: sanitizeEmailSubject(`${user1.name} — your NotCupid match is ready`),
             html: matchEmail(user2.name, user1.name, match.compatibility_score, spot, match.id, user2.id)
           })
         })

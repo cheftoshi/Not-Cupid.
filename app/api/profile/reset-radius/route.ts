@@ -28,7 +28,7 @@ export async function POST() {
 
   if (error) {
     console.error('reset-radius error', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not update radius' }, { status: 500 });
   }
 
   // Roster-first: no auto-match. The dashboard reloads and the narrower radius

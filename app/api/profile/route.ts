@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { isSunSign } from '@/lib/astrology';
+import { isManagedStorageUrl } from '@/lib/request-security';
+import { withPrivateVideoPreview } from '@/lib/private-media';
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  return NextResponse.json({ user });
+  return NextResponse.json({ user: await withPrivateVideoPreview(user) });
 }
 
 export async function PUT(req: NextRequest) {
@@ -37,21 +39,77 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'No valid fields' }, { status: 400 });
   }
 
-  // Validations that handle null/undefined safely
-  if (updates.age != null && (updates.age < 18 || updates.age > 100)) {
+  const isInteger = (value: unknown) => typeof value === 'number' && Number.isInteger(value);
+  const normalizeShortText = (key: string, max: number, required = false) => {
+    if (!(key in updates)) return true;
+    if (typeof updates[key] !== 'string') return false;
+    updates[key] = updates[key].trim();
+    return updates[key].length <= max && (!required || updates[key].length > 0);
+  };
+  const normalizeStringList = (key: string) => {
+    if (!(key in updates)) return true;
+    if (!Array.isArray(updates[key]) || updates[key].length > 50) return false;
+    const values = updates[key];
+    if (values.some((v: unknown) => typeof v !== 'string' || v.length > 80)) return false;
+    updates[key] = Array.from(new Set(values.map((v: string) => v.trim()).filter(Boolean)));
+    return true;
+  };
+  const validJson = (value: unknown, max = 5000) => {
+    if (!value || typeof value !== 'object') return false;
+    try { return JSON.stringify(value).length <= max; } catch { return false; }
+  };
+
+  if (!normalizeShortText('name', 100, true)
+    || !normalizeShortText('bio', 500)
+    || !normalizeShortText('occupation', 120)
+    || !normalizeShortText('education', 120)) {
+    return NextResponse.json({ error: 'Invalid profile text' }, { status: 400 });
+  }
+  if (typeof updates.name === 'string') {
+    updates.name = updates.name.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!updates.name) return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
+  }
+  if (updates.age != null && (!isInteger(updates.age) || updates.age < 18 || updates.age > 100)) {
     return NextResponse.json({ error: 'Invalid age' }, { status: 400 });
   }
-  if (updates.bio != null && updates.bio.length > 500) {
-    return NextResponse.json({ error: 'Bio too long (max 500)' }, { status: 400 });
+  if (updates.gender != null && !['m', 'f', 'nb', 'o', 'b'].includes(updates.gender)) {
+    return NextResponse.json({ error: 'Invalid gender' }, { status: 400 });
   }
-  if (updates.height_cm != null && (updates.height_cm < 120 || updates.height_cm > 250)) {
+  if (updates.seeking != null && !['m', 'f', 'b', 'both'].includes(updates.seeking)) {
+    return NextResponse.json({ error: 'Invalid seeking preference' }, { status: 400 });
+  }
+  if (updates.zip != null && (typeof updates.zip !== 'string' || !/^\d{5}$/.test(updates.zip.trim()))) {
+    return NextResponse.json({ error: 'Invalid ZIP code' }, { status: 400 });
+  }
+  if (typeof updates.zip === 'string') updates.zip = updates.zip.trim();
+  if (updates.height_cm != null && (!isInteger(updates.height_cm) || updates.height_cm < 120 || updates.height_cm > 250)) {
     return NextResponse.json({ error: 'Invalid height' }, { status: 400 });
   }
-  if (updates.age_min != null && (updates.age_min < 18 || updates.age_min > 100)) {
+  if (updates.age_min != null && (!isInteger(updates.age_min) || updates.age_min < 18 || updates.age_min > 100)) {
     return NextResponse.json({ error: 'Invalid min age' }, { status: 400 });
   }
-  if (updates.age_max != null && (updates.age_max < 18 || updates.age_max > 100)) {
+  if (updates.age_max != null && (!isInteger(updates.age_max) || updates.age_max < 18 || updates.age_max > 100)) {
     return NextResponse.json({ error: 'Invalid max age' }, { status: 400 });
+  }
+  const finalAgeMin = updates.age_min ?? user.age_min;
+  const finalAgeMax = updates.age_max ?? user.age_max;
+  if (finalAgeMin != null && finalAgeMax != null && finalAgeMin > finalAgeMax) {
+    return NextResponse.json({ error: 'Minimum age must not exceed maximum age' }, { status: 400 });
+  }
+  if (!['music', 'food', 'hobbies', 'sports'].every(normalizeStringList)) {
+    return NextResponse.json({ error: 'Invalid interests' }, { status: 400 });
+  }
+  if ('prompts' in updates && !validJson(updates.prompts)) {
+    return NextResponse.json({ error: 'Invalid prompts' }, { status: 400 });
+  }
+  if ('vibes' in updates && !validJson(updates.vibes)) {
+    return NextResponse.json({ error: 'Invalid vibes' }, { status: 400 });
+  }
+  if ('auto_rematch' in updates && typeof updates.auto_rematch !== 'boolean') {
+    return NextResponse.json({ error: 'Invalid auto-rematch preference' }, { status: 400 });
+  }
+  if ('email_notifications' in updates && typeof updates.email_notifications !== 'boolean') {
+    return NextResponse.json({ error: 'Invalid notification preference' }, { status: 400 });
   }
   if (updates.relationship_style != null && !VALID_RELATIONSHIP_STYLES.has(updates.relationship_style)) {
     return NextResponse.json({ error: 'Invalid relationship style' }, { status: 400 });
@@ -65,7 +123,8 @@ export async function PUT(req: NextRequest) {
   if ('intro_video_url' in updates) {
     const v = updates.intro_video_url;
     if (v == null || v === '') updates.intro_video_url = null;
-    else if (typeof v !== 'string' || v.length > 600 || !/^https:\/\//i.test(v)) {
+    else if (typeof v !== 'string' || v.length > 600
+      || !isManagedStorageUrl(v, 'raffle-videos', `profile/${user.id}/`)) {
       return NextResponse.json({ error: 'Invalid video' }, { status: 400 });
     }
   }
@@ -101,8 +160,8 @@ export async function PUT(req: NextRequest) {
 
   if (error) {
     console.error('Profile update failed:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Profile update failed' }, { status: 500 });
   }
 
-  return NextResponse.json({ user: data });
+  return NextResponse.json({ user: await withPrivateVideoPreview(data) });
 }

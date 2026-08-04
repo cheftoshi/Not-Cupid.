@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
       friend_seeking: ['grab a drink', 'try new spots'],
     };
     const { data, error } = await supabaseAdmin.from('users').upsert(row, { onConflict: 'email' }).select('id').single();
-    if (error) { console.error('seed-test upsert failed', error); return NextResponse.json({ error: error.message }, { status: 500 }); }
+    if (error) { console.error('seed-test upsert failed', error); return NextResponse.json({ error: 'Could not seed test users' }, { status: 500 }); }
     ids.push(data.id);
   }
 

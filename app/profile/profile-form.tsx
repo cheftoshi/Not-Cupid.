@@ -162,9 +162,9 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
       const r = await fetch('/api/profile/video-upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ext }) });
       const d = await parseResponse<any>(r);
       if (!r.ok) throw new Error(d.error || 'upload not available — try again shortly');
-      const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': file.type || 'video/mp4' } });
+      const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': d.contentType } });
       if (!put.ok) throw new Error('upload failed — try again');
-      setUser({ ...user, intro_video_url: d.publicUrl });
+      setUser({ ...user, intro_video_url: d.publicUrl, intro_video_preview_url: URL.createObjectURL(file) });
       setMessage('✓ video added — hit save to keep it');
       setTimeout(() => setMessage(''), 3500);
     } catch (err: any) {
@@ -176,7 +176,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
   }
 
   function handleVideoRemove() {
-    setUser({ ...user, intro_video_url: null });
+    setUser({ ...user, intro_video_url: null, intro_video_preview_url: null });
   }
 
   async function handleDelete() {
@@ -284,7 +284,7 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           {user.intro_video_url ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-start' }}>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video src={user.intro_video_url} controls playsInline style={{ width: '100%', maxWidth: 280, borderRadius: 14, background: '#000', display: 'block', border: '1px solid var(--h-border)' }} />
+              <video src={user.intro_video_preview_url || user.intro_video_url} controls playsInline style={{ width: '100%', maxWidth: 280, borderRadius: 14, background: '#000', display: 'block', border: '1px solid var(--h-border)' }} />
               <button type="button" onClick={handleVideoRemove} style={{ background: 'none', border: 'none', color: 'var(--h-accent)', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'underline' }}>remove video</button>
             </div>
           ) : (

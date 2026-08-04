@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { friendCompatibilityScore, friendGenderOk } from '@/lib/friend-matching';
 import { joinCircle } from '@/lib/friend-circles';
 import { sendPushToUser } from '@/lib/push';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
+  const limit = await rateLimit({ key: `friend-connect:${user.id}`, windowSec: 3600, maxAttempts: 30, blockSec: 1800 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many connection attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
   const { candidateId } = await req.json().catch(() => ({}));
   if (!candidateId || candidateId === user.id) return NextResponse.json({ error: 'Invalid candidate' }, { status: 400 });
@@ -31,11 +34,19 @@ export async function POST(req: NextRequest) {
   const { data: existing } = await supabaseAdmin
     .from('friend_connections').select('*').eq('user_a_id', aId).eq('user_b_id', bId).maybeSingle();
 
+  // A candidate must have been assigned into this user's paced friend pack.
+  // Otherwise an authenticated caller could enumerate users and manufacture
+  // arbitrary connection requests/push notifications.
+  if (!existing) return NextResponse.json({ error: 'That person is not in your current pack.' }, { status: 403 });
   if (existing?.status === 'connected') return NextResponse.json({ ok: true, connected: true, already: true });
   if (existing?.status === 'declined') return NextResponse.json({ error: 'That connection was ended.' }, { status: 409 });
 
   const myPick = iAmA ? { a_picked: true } : { b_picked: true };
   const theyPicked = iAmA ? existing?.b_picked : existing?.a_picked;
+  const alreadyPicked = iAmA ? existing?.a_picked : existing?.b_picked;
+  if (alreadyPicked && !theyPicked) {
+    return NextResponse.json({ ok: true, connected: false, already: true });
+  }
   const score = friendCompatibilityScore(user, cand);
   const meFirst = (user.name || 'Someone').split(' ')[0];
 

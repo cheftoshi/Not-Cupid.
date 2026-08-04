@@ -28,8 +28,9 @@ async function loadPlan(id: string) {
   return { ...a, hostFirst: (author.name || 'someone').split(' ')[0], going: going ?? 0 };
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const plan = await loadPlan(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const plan = await loadPlan(id);
   if (!plan) return { title: 'NotCupid — A Connection Experiment' };
   return {
     title: `${plan.title} — NotCupid`,
@@ -43,8 +44,9 @@ const CAT_EMOJI: Record<string, string> = {
   books: '📚', games: '🎲', chill: '🛋️', hang: '🧡',
 };
 
-export default async function PublicPlanPage({ params }: { params: { id: string } }) {
-  const plan = await loadPlan(params.id);
+export default async function PublicPlanPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const plan = await loadPlan(id);
   if (!plan) redirect('/');
 
   const when = plan.happens_at

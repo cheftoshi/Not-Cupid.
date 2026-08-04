@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { PRO_PRICE_CENTS } from '@/lib/pro';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +11,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limit = await rateLimit({ key: `checkout-pro:${user.id}`, windowSec: 600, maxAttempts: 10, blockSec: 600 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many checkout attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
+  if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: 'Payments unavailable' }, { status: 503 });
 
-  const origin = req.headers.get('origin') || `https://${req.headers.get('host')}` || 'https://notcupid.com';
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const p = new URLSearchParams();
   p.append('payment_method_types[]', 'card');
   p.append('mode', 'subscription');
@@ -38,7 +42,7 @@ export async function POST(req: NextRequest) {
   const session = await res.json();
   if (!res.ok) {
     console.error('All-Access checkout error:', session);
-    return NextResponse.json({ error: session.error?.message || 'Stripe error' }, { status: 500 });
+    return NextResponse.json({ error: 'Could not create checkout' }, { status: 502 });
   }
   return NextResponse.json({ url: session.url });
 }

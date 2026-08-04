@@ -40,6 +40,6 @@ export async function POST(req: NextRequest) {
     submitter_id: user.id, metro: metroOf((user as any).zip), is_test: (user as any).is_test === true,
     approved: false,
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not submit link' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

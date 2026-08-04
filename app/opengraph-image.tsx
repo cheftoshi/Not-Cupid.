@@ -2,7 +2,6 @@ import { ImageResponse } from 'next/og';
 
 // Branded 1200×630 share card — what renders when a NotCupid link is dropped in
 // Reddit / iMessage / socials. Generated at the edge, no image asset to ship.
-export const runtime = 'edge';
 export const alt = "NotCupid — A Connection Experiment";
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';

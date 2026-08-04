@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { verifyMatchToken, signMatchToken } from '@/lib/match-tokens'
+import { verifyMatchToken } from '@/lib/match-tokens'
 import { acceptMatch } from '@/lib/match-actions'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,7 @@ function htmlPage(title: string, body: string, status = 200): NextResponse {
       <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">${title}</h1>
       ${body}
     </body></html>`,
-    { status, headers: { 'Content-Type': 'text/html' } }
+    { status, headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } }
   )
 }
 
@@ -65,9 +65,7 @@ export async function GET(req: NextRequest) {
     return invalidLink()
   }
 
-  // Token: either provided (new email) or absent (legacy email — mint a fresh one).
-  let workingToken = token
-  if (workingToken && !verifyMatchToken({ matchId, userId, action: 'accept', token: workingToken })) {
+  if (!token || !verifyMatchToken({ matchId, userId, action: 'accept', token })) {
     console.warn('[match-accept] 400 bad token', {
       matchId: String(matchId).slice(0, 8), ua: req.headers.get('user-agent')?.slice(0, 80),
     })
@@ -79,7 +77,7 @@ export async function GET(req: NextRequest) {
   // route a real user to a meaningless confirm screen.
   const { data: match } = await supabaseAdmin
     .from('matches')
-    .select('user_1_id, user_2_id, status')
+    .select('user_1_id, user_2_id, status, expires_at')
     .eq('id', matchId)
     .maybeSingle()
 
@@ -87,26 +85,21 @@ export async function GET(req: NextRequest) {
     console.warn('[match-accept] 400 link not recoverable', {
       matchId: String(matchId).slice(0, 8),
       reason: !match ? 'no_match' : 'not_party',
-      legacy: !token,
       ua: req.headers.get('user-agent')?.slice(0, 80),
     })
     return invalidLink()
   }
 
-  if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
+  if ((match.status && ['ended', 'passed', 'expired'].includes(match.status))
+    || (match.expires_at && new Date(match.expires_at) <= new Date())) {
     console.log('[match-accept] link points to ended match', {
       matchId: String(matchId).slice(0, 8),
       status: match.status,
-      legacy: !token,
     })
-    return endedMatchPage(match.status)
+    return endedMatchPage(match.status === 'pending' ? 'expired' : match.status)
   }
 
-  if (!workingToken) {
-    workingToken = signMatchToken({ matchId, userId, action: 'accept' })
-    console.log('[match-accept] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
-  }
-  const token_for_form = workingToken
+  const token_for_form = token
 
   // Render a confirmation page. No DB mutation here — email-link prefetchers
   // (Gmail / Outlook / antivirus) only GET, so they won't accidentally accept.
@@ -126,7 +119,7 @@ export async function GET(req: NextRequest) {
       </form>
       <p style="margin-top:2rem"><a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#2563ff;font-size:.75rem">← back to NotCupid</a></p>
     </body></html>
-  `, { headers: { 'Content-Type': 'text/html' } })
+  `, { headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } })
 }
 
 export async function POST(req: NextRequest) {

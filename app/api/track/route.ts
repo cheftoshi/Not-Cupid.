@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
+
+function safeReferrer(value: unknown): string | null {
+  if (typeof value !== 'string' || !value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    // Never retain query strings or fragments: emailed action links and
+    // checkout returns can contain bearer tokens or provider session IDs.
+    return `${url.origin}${url.pathname}`.slice(0, 300);
+  } catch {
+    return null;
+  }
+}
 
 // Fire-and-forget pageview beacon. No auth (anonymous visitors count too),
 // kept deliberately cheap — no session lookup per hit.
 export async function POST(req: NextRequest) {
   try {
+    const limit = await rateLimit({ key: `track:${getClientIp(req)}`, windowSec: 60, maxAttempts: 240, blockSec: 60 });
+    if (!limit.ok) return NextResponse.json({ ok: false }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
     const { path, ref, anonId } = await req.json().catch(() => ({}));
     if (!path || typeof path !== 'string' || !path.startsWith('/')) {
       return NextResponse.json({ ok: false }, { status: 400 });
@@ -19,7 +35,7 @@ export async function POST(req: NextRequest) {
     await supabaseAdmin.from('page_views').insert({
       path: clean,
       anon_id: typeof anonId === 'string' ? anonId.slice(0, 64) : null,
-      referrer: typeof ref === 'string' && ref ? ref.slice(0, 300) : null,
+      referrer: safeReferrer(ref),
     });
     return NextResponse.json({ ok: true });
   } catch {

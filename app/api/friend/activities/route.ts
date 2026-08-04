@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
   if (error && /audience_|column|schema cache/i.test(error.message || '')) {
     ({ data: act, error } = await ins(baseRow));
   }
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Could not create activity' }, { status: 500 });
   if (!act) return NextResponse.json({ error: 'Could not create activity.' }, { status: 500 });
 
   // Author auto-RSVPs their own activity.

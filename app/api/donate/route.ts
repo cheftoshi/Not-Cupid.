@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getClientIp, rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
     const { amount } = await req.json()
-    if (!amount || amount < 1) return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
+    const amountNumber = Number(amount)
+    if (!Number.isFinite(amountNumber) || amountNumber < 1 || amountNumber > 500) {
+      return NextResponse.json({ error: 'Amount must be between $1 and $500' }, { status: 400 })
+    }
+    const limit = await rateLimit({ key: `donate:${getClientIp(req)}`, windowSec: 600, maxAttempts: 10, blockSec: 600 })
+    if (!limit.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } })
+    if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: 'Payments unavailable' }, { status: 503 })
 
-    const amountCents = Math.round(parseFloat(amount) * 100)
+    const amountCents = Math.round(amountNumber * 100)
 
     const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',

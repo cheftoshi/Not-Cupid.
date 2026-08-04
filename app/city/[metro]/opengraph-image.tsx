@@ -2,13 +2,13 @@ import { ImageResponse } from 'next/og';
 import { METRO_CENTERS } from '@/lib/quiz-data';
 
 // Share card for /city/<metro> — unfurls when a city page is posted.
-export const runtime = 'edge';
 export const alt = 'Meet people on NotCupid';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default async function Image({ params }: { params: { metro: string } }) {
-  const m = METRO_CENTERS[params.metro];
+export default async function Image({ params }: { params: Promise<{ metro: string }> }) {
+  const { metro } = await params;
+  const m = METRO_CENTERS[metro];
   const city = m ? m.city : 'your city';
   return new ImageResponse(
     (

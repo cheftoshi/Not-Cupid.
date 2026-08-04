@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createSession } from '@/lib/auth'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
+import { hashOtp } from '@/lib/otp'
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,13 +12,14 @@ export async function POST(req: NextRequest) {
     const email = (body.email || '').trim().toLowerCase()
     const code = (body.code || '').toString().trim().replace(/\s+/g, '')
 
-    if (!email || !code) {
+    if (!email || email.length > 254 || !code) {
       return NextResponse.json({ error: 'Missing email or code' }, { status: 400 })
     }
 
     if (!/^\d{6}$/.test(code)) {
       return NextResponse.json({ error: 'Code must be 6 digits' }, { status: 400 })
     }
+    const codeHash = hashOtp(email, code)
 
     // Brute-force protection: 6 verify attempts per email per 15 min, then 15-min lockout.
     // Also IP-level so a single attacker can't sweep many emails.
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
       .from('otp_codes')
       .select('*')
       .eq('email', email)
-      .eq('code', code)
+      .eq('code', codeHash)
       .order('created_at', { ascending: false })
       .limit(1)
 
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest) {
         .from('otp_codes')
         .select('verified')
         .eq('email', email)
-        .eq('code', code)
+        .eq('code', codeHash)
         .limit(1)
         .maybeSingle()
 
@@ -108,6 +110,7 @@ export async function POST(req: NextRequest) {
     }
 
     await createSession(user.id)
+    await supabaseAdmin.from('otp_codes').delete().eq('email', email)
 
     // Existing user. If they've completed the quiz → /hub. If they
     // signed up but never finished the quiz → /quiz?retake=1 so the
@@ -117,8 +120,8 @@ export async function POST(req: NextRequest) {
       success: true,
       redirect: user.archetype ? '/hub' : '/quiz?retake=1',
     })
-  } catch (err: any) {
+  } catch (err) {
     console.error('Verify OTP error:', err)
-    return NextResponse.json({ error: 'Server error', detail: err.message }, { status: 500 })
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

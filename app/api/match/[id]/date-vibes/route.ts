@@ -49,11 +49,12 @@ async function loadMatchOrError(matchId: string, userId: string): Promise<LoadRe
   };
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const loaded = await loadMatchOrError(params.id, user.id);
+  const loaded = await loadMatchOrError(id, user.id);
   if (!loaded.ok) return loaded.error;
   const { partnerId } = loaded;
 
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { data: vibes } = await supabaseAdmin
     .from('match_date_vibes')
     .select('user_id, interests')
-    .eq('match_id', params.id)
+    .eq('match_id', id)
     .in('user_id', [user.id, partnerId]);
 
   const myRow = (vibes ?? []).find((v: any) => v.user_id === user.id);
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { data: swipes } = await supabaseAdmin
     .from('activity_swipes')
     .select('activity_id, decision, user_id')
-    .eq('match_id', params.id);
+    .eq('match_id', id);
 
   const mySwipedIds = new Set((swipes ?? []).filter((s: any) => s.user_id === user.id).map((s: any) => s.activity_id));
 
@@ -115,7 +116,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { count: datesLogged } = await supabaseAdmin
     .from('date_feedback')
     .select('match_id', { count: 'exact', head: true })
-    .eq('match_id', params.id);
+    .eq('match_id', id);
   const matchAgeDays = loaded.match.created_at
     ? (Date.now() - new Date(loaded.match.created_at).getTime()) / 86_400_000
     : 0;
@@ -154,11 +155,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const loaded = await loadMatchOrError(params.id, user.id);
+  const loaded = await loadMatchOrError(id, user.id);
   if (!loaded.ok) return loaded.error;
 
   const body = await req.json().catch(() => ({}));
@@ -174,7 +176,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     .from('match_date_vibes')
     .upsert(
       {
-        match_id: params.id,
+        match_id: id,
         user_id: user.id,
         interests: cleaned,
         updated_at: new Date().toISOString(),
@@ -184,7 +186,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   if (error) {
     console.error('date-vibes PUT error', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not update date vibes' }, { status: 500 });
   }
   return NextResponse.json({ ok: true, interests: cleaned });
 }

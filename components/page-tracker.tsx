@@ -18,6 +18,16 @@ function anonId(): string {
   }
 }
 
+function safeReferrer(): string | null {
+  try {
+    if (!document.referrer) return null;
+    const referrer = new URL(document.referrer);
+    return `${referrer.origin}${referrer.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function PageTracker() {
   const pathname = usePathname();
   useEffect(() => {
@@ -25,7 +35,7 @@ export default function PageTracker() {
     if (pathname.startsWith('/admin') || pathname.startsWith('/api')) return;
     const payload = JSON.stringify({
       path: pathname,
-      ref: typeof document !== 'undefined' ? document.referrer || null : null,
+      ref: safeReferrer(),
       anonId: anonId(),
     });
     try {

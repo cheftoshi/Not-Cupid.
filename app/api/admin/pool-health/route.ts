@@ -169,6 +169,6 @@ export async function GET() {
     });
   } catch (err: any) {
     console.error('admin/pool-health error:', err);
-    return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

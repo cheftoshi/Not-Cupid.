@@ -14,8 +14,9 @@ export function generateStaticParams() {
   return ARCHETYPES.map((a) => ({ slug: typeSlug(a.name) }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const t = bySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const t = bySlug(slug);
   if (!t) return { title: 'NotCupid — A Connection Experiment' };
   return {
     title: `${t.name} — my NotCupid type`,
@@ -23,8 +24,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function TypePage({ params }: { params: { slug: string } }) {
-  const t = bySlug(params.slug);
+export default async function TypePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const t = bySlug(slug);
   if (!t) redirect('/quiz');
 
   return (

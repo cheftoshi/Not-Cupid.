@@ -30,8 +30,22 @@ export async function POST(req: NextRequest) {
   const reason = typeof body?.reason === 'string' && VALID_REASONS.has(body.reason) ? body.reason : 'other';
   const detail = typeof body?.detail === 'string' ? body.detail.slice(0, 2000) : null;
 
-  if (!reportedId || reportedId === user.id) {
+  if (!reportedId || reportedId === user.id || !matchId) {
     return NextResponse.json({ error: 'Invalid report target' }, { status: 400 });
+  }
+
+  const { data: match } = await supabaseAdmin
+    .from('matches')
+    .select('user_1_id, user_2_id')
+    .eq('id', matchId)
+    .maybeSingle();
+  let otherId: string | null = null;
+  if (match) {
+    if (match.user_1_id === user.id) otherId = match.user_2_id;
+    else if (match.user_2_id === user.id) otherId = match.user_1_id;
+  }
+  if (!otherId || otherId !== reportedId) {
+    return NextResponse.json({ error: 'You can only report your own match.' }, { status: 403 });
   }
 
   // Record the report.
@@ -44,23 +58,13 @@ export async function POST(req: NextRequest) {
   });
   if (repErr) {
     console.error('report insert failed', repErr);
-    return NextResponse.json({ error: repErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not save report' }, { status: 500 });
   }
 
-  // End the match (if one was supplied + belongs to the reporter).
-  if (matchId) {
-    const { data: match } = await supabaseAdmin
-      .from('matches')
-      .select('user_1_id, user_2_id')
-      .eq('id', matchId)
-      .maybeSingle();
-    if (match && (match.user_1_id === user.id || match.user_2_id === user.id)) {
-      await supabaseAdmin
-        .from('matches')
-        .update({ status: 'ended', ended_at: new Date().toISOString(), ended_reason: 'reported' })
-        .eq('id', matchId);
-    }
-  }
+  await supabaseAdmin
+    .from('matches')
+    .update({ status: 'ended', ended_at: new Date().toISOString(), ended_reason: 'reported' })
+    .eq('id', matchId);
 
   // Block effect: write the pair to match_history so the matcher never pairs
   // them again (same no-repeat path used by end/pass).

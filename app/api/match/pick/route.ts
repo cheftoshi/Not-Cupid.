@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'candidateId required' }, { status: 400 });
   }
   if (candidateId === user.id) return NextResponse.json({ error: 'Cannot pick yourself' }, { status: 400 });
+  const rosterSnapshot: string[] = Array.isArray(user.roster_snapshot) ? user.roster_snapshot : [];
+  if (!rosterSnapshot.includes(candidateId)) {
+    return NextResponse.json({ error: 'That person is not on your current roster.' }, { status: 403 });
+  }
 
   // Ghosted/paused callers can't pick — locked out of both lines until they
   // refresh their profile (which clears the flag and starts them over).

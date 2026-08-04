@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 type Reason = 'ghosted' | 'not_vibing' | 'user_ended'
 const VALID_REASONS: Reason[] = ['ghosted', 'not_vibing', 'user_ended']
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const reason: Reason = VALID_REASONS.includes(body?.reason) ? body.reason : 'user_ended'
 
-  const matchId = params.id
+  const { id: matchId } = await params
 
   const { data: match } = await supabaseAdmin
     .from('matches')
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (matchError) {
     console.error('End match error:', matchError)
-    return NextResponse.json({ error: matchError.message }, { status: 500 })
+    return NextResponse.json({ error: 'Could not end match' }, { status: 500 })
   }
 
   // Record end_reports row (admin moderation context, always)

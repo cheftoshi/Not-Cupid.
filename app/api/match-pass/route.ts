@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { verifyMatchToken, signMatchToken } from '@/lib/match-tokens'
+import { verifyMatchToken } from '@/lib/match-tokens'
 import { renderEmail, sendEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,7 @@ function htmlPage(title: string, body: string, status = 200): NextResponse {
       <h1 style="font-size:2rem;color:#0e0c1a;margin-bottom:1rem">${title}</h1>
       ${body}
     </body></html>`,
-    { status, headers: { 'Content-Type': 'text/html' } }
+    { status, headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } }
   )
 }
 
@@ -65,8 +65,7 @@ export async function GET(req: NextRequest) {
     return invalidLink()
   }
 
-  let workingToken = token
-  if (workingToken && !verifyMatchToken({ matchId, userId, action: 'pass', token: workingToken })) {
+  if (!token || !verifyMatchToken({ matchId, userId, action: 'pass', token })) {
     console.warn('[match-pass] 400 bad token', {
       matchId: String(matchId).slice(0, 8), ua: req.headers.get('user-agent')?.slice(0, 80),
     })
@@ -75,7 +74,7 @@ export async function GET(req: NextRequest) {
 
   const { data: match } = await supabaseAdmin
     .from('matches')
-    .select('user_1_id, user_2_id, status')
+    .select('user_1_id, user_2_id, status, expires_at')
     .eq('id', matchId)
     .maybeSingle()
 
@@ -83,24 +82,19 @@ export async function GET(req: NextRequest) {
     console.warn('[match-pass] 400 link not recoverable', {
       matchId: String(matchId).slice(0, 8),
       reason: !match ? 'no_match' : 'not_party',
-      legacy: !token,
       ua: req.headers.get('user-agent')?.slice(0, 80),
     })
     return invalidLink()
   }
 
-  if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
-    return endedMatchPage(match.status)
-  }
-
-  if (!workingToken) {
-    workingToken = signMatchToken({ matchId, userId, action: 'pass' })
-    console.log('[match-pass] legacy link recovered', { matchId: String(matchId).slice(0, 8) })
+  if ((match.status && ['ended', 'passed', 'expired'].includes(match.status))
+    || (match.expires_at && new Date(match.expires_at) <= new Date())) {
+    return endedMatchPage(match.status === 'pending' ? 'expired' : match.status)
   }
 
   const mId = escapeHtml(matchId)
   const uId = escapeHtml(userId)
-  const tk = escapeHtml(workingToken)
+  const tk = escapeHtml(token)
   return new NextResponse(`
     <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f6f6f6;text-align:center;">
       <div style="font-family:Georgia,serif;font-style:italic;font-size:1.5rem;font-weight:700;margin-bottom:2rem"><span style="color:#2563ff">Not</span><span style="color:#ff6a1f">Cupid</span></div>
@@ -114,7 +108,7 @@ export async function GET(req: NextRequest) {
       </form>
       <p style="margin-top:2rem"><a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#2563ff;font-size:.75rem">← back to NotCupid</a></p>
     </body></html>
-  `, { headers: { 'Content-Type': 'text/html' } })
+  `, { headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } })
 }
 
 export async function POST(req: NextRequest) {
@@ -132,8 +126,9 @@ export async function POST(req: NextRequest) {
     const isUser2 = match.user_2_id === userId
     if (!isUser1 && !isUser2) return invalidLink()
 
-    if (match.status && ['ended', 'passed', 'expired'].includes(match.status)) {
-      return endedMatchPage(match.status)
+    if ((match.status && ['ended', 'passed', 'expired'].includes(match.status))
+      || (match.expires_at && new Date(match.expires_at) <= new Date())) {
+      return endedMatchPage(match.status === 'pending' ? 'expired' : match.status)
     }
 
     await supabaseAdmin

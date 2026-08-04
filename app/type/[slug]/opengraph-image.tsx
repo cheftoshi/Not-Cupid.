@@ -3,13 +3,13 @@ import { ARCHETYPES, typeSlug } from '@/lib/quiz-data';
 
 // The share card for /type/<slug> — what unfurls on iMessage/IG/X when someone
 // posts their type. Bold serif name on brand-tinted paper.
-export const runtime = 'edge';
 export const alt = 'My NotCupid type';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default async function Image({ params }: { params: { slug: string } }) {
-  const t = ARCHETYPES.find((a) => typeSlug(a.name) === params.slug) || ARCHETYPES[0];
+export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const t = ARCHETYPES.find((a) => typeSlug(a.name) === slug) || ARCHETYPES[0];
   return new ImageResponse(
     (
       <div
