@@ -30,33 +30,37 @@ export type PushPayload = {
 };
 
 /** Send a push to every subscription a user has. Never throws. */
-export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+export async function sendPushToUser(userId: string, payload: PushPayload): Promise<boolean> {
   try {
-    if (!ensureConfigured()) return;
+    if (!ensureConfigured()) return false;
     const { data: subs, error } = await supabaseAdmin
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth')
       .eq('user_id', userId);
     // Pre-migration (table missing) or query error → quiet no-op.
-    if (error || !subs || subs.length === 0) return;
+    if (error || !subs || subs.length === 0) return false;
 
     const body = JSON.stringify(payload);
-    await Promise.all(
+    const delivered = await Promise.all(
       subs.map(async (s) => {
         try {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
             body
           );
+          return true;
         } catch (err: any) {
           // 404/410 = subscription expired or revoked — clean it up.
           if (err?.statusCode === 404 || err?.statusCode === 410) {
             await supabaseAdmin.from('push_subscriptions').delete().eq('id', s.id);
           }
+          return false;
         }
       })
     );
+    return delivered.some(Boolean);
   } catch (err) {
     console.error('push: send failed', err);
+    return false;
   }
 }

@@ -13,6 +13,11 @@ import { rankCandidates } from '@/lib/matching';
 import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS, MAX_IGNORED_PICKS } from '@/lib/match-actions';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
+import {
+  activeUserCutoffIso,
+  orderForRosterRotation,
+  rosterExposureCutoffIso,
+} from '@/lib/matching-policy';
 
 // ZIP → human metro label (e.g. "Boston, MA"), or "Boston area" fallback.
 // Never returns the raw ZIP — that's a location-privacy leak.
@@ -63,6 +68,14 @@ export async function GET() {
   const cooldownActive = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > now;
   if (user.matching_disabled_at || cooldownActive) {
     return NextResponse.json({ roster: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes) });
+  }
+
+  // Opening the Love roster is a direct signal that this person is available
+  // again. Clear the ignored-pick penalty so a previously benched member can
+  // re-enter other active users' candidate pools without needing an incoming
+  // pick (which a benched member could never receive) to recover.
+  if ((user.ignored_picks ?? 0) > 0) {
+    await supabaseAdmin.from('users').update({ ignored_picks: 0 }).eq('id', user.id);
   }
 
   // Fully free (no live matches) but status got stuck → normalize to 'waiting'
@@ -167,6 +180,34 @@ export async function GET() {
     freshPool = freshPool.filter((p: any) => (liveCount.get(p.id) || 0) < MAX_CONNECTIONS);
   }
 
+  // Availability is the strongest response signal in the live data. Treat a
+  // session used in the last 12 days as active. The orderer below puts those
+  // candidates first, while keeping dormant people as a thin-pool fallback.
+  const activeCandidateIds = new Set<string>();
+  const recentlyShownIds = new Set<string>();
+  if (freshPool.length > 0) {
+    const poolIds = freshPool.map((p: any) => p.id);
+    const [{ data: activeSessions }, { data: recentExposures, error: exposureErr }] = await Promise.all([
+      supabaseAdmin
+        .from('sessions')
+        .select('user_id')
+        .in('user_id', poolIds)
+        .gte('last_used_at', activeUserCutoffIso())
+        .limit(5000),
+      supabaseAdmin
+        .from('roster_exposures')
+        .select('candidate_id')
+        .eq('user_id', user.id)
+        .gte('shown_at', rosterExposureCutoffIso()),
+    ]);
+    for (const session of activeSessions ?? []) activeCandidateIds.add(session.user_id);
+    // Graceful until the migration is applied: exposure history is an
+    // optimization, never a reason for the roster endpoint to fail.
+    if (!exposureErr) {
+      for (const exposure of recentExposures ?? []) recentlyShownIds.add(exposure.candidate_id);
+    }
+  }
+
   // Matching V3 adjustment: compatibility still leads, but we gently prefer
   // people with enough room and response momentum so rosters feel alive.
   const candidateAdjustments = new Map<string, number>();
@@ -184,6 +225,7 @@ export async function GET() {
   }
 
   const { ranked } = rankCandidates(user, freshPool, { waitDays, candidateAdjustments });
+  const rotationRanked = orderForRosterRotation(ranked, activeCandidateIds, recentlyShownIds);
   // Bigger roster for women seeking men/anyone (scarce side); 5 otherwise.
   const size = user.gender === 'f' && user.seeking !== 'f' ? ROSTER_SIZE_SCARCE : ROSTER_SIZE;
 
@@ -205,13 +247,13 @@ export async function GET() {
     // backfill from the live ranking to keep the roster full when people drop.
     const kept = snapshot.filter((id) => eligibleById.has(id));
     const keptSet = new Set(kept);
-    const backfill = ranked.map((c) => c.user.id).filter((id) => !keptSet.has(id));
+    const backfill = rotationRanked.map((c) => c.user.id).filter((id) => !keptSet.has(id));
     orderedIds = [...kept, ...backfill].slice(0, size);
     // Only re-persist if the membership actually changed (backfill kicked in).
     if (kept.length < Math.min(snapshot.length, size)) persist = true;
   } else {
     // Stale or no snapshot → recompute fresh and persist with a new timestamp.
-    orderedIds = ranked.slice(0, size).map((c) => c.user.id);
+    orderedIds = rotationRanked.slice(0, size).map((c) => c.user.id);
     persist = true;
   }
 
@@ -237,6 +279,19 @@ export async function GET() {
     const updates: Record<string, any> = { roster_snapshot: roster.map((r) => r.id) };
     if (!snapshotFresh) updates.roster_refreshed_at = new Date().toISOString();
     await supabaseAdmin.from('users').update(updates).eq('id', user.id);
+
+    // Record only rosters that were actually composed/persisted. Upsert keeps
+    // one latest exposure per pair, which is all the seven-day cooldown needs.
+    if (roster.length > 0) {
+      const shownAt = new Date().toISOString();
+      await supabaseAdmin
+        .from('roster_exposures')
+        .upsert(
+          roster.map((candidate) => ({ user_id: user.id, candidate_id: candidate.id, shown_at: shownAt })),
+          { onConflict: 'user_id,candidate_id' },
+        )
+        .then(undefined, () => {});
+    }
   }
 
   return NextResponse.json({ roster, atCapacity });

@@ -219,14 +219,14 @@ export default function AdminClient() {
   }
 
   async function runWave() {
-    if (!confirm('Run a full pool rotation now? This ejects inactive users, releases expired cooldowns, wakes the next wave, and re-matches eligible users.')) return
+    if (!confirm('Rotate Love Line rosters for users active in the last 12 days? This refreshes their roster and sends the weekly email + push notification when enabled.')) return
     setWaveBusy(true)
     try {
-      const r = await fetch('/api/cron/rematch')
+      const r = await fetch('/api/cron/rematch?rotate=1')
       const j = await parseResponse<any>(r)
       alert(
         r.ok
-          ? `Pool rotation done.\n\nWoke: ${j.poolWaked ?? 0}\nEjected: ${j.poolEjected ?? 0}\nCooldowns released: ${j.cooldownReleased ?? 0}\nRematched: ${j.rematched ?? 0}`
+          ? `Love rotation done.\n\nRosters: ${j.rostersRotated ?? 0}\nEmails: ${j.rotationEmails ?? 0}\nPushes: ${j.rotationPushes ?? 0}\nCooldowns released: ${j.cooldownReleased ?? 0}`
           : `Failed: ${j.error || r.status}`
       )
       refreshPools()
@@ -442,7 +442,7 @@ export default function AdminClient() {
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className={`${s.btn} ${s.btnGhost}`} onClick={refreshPools}>refresh</button>
                 <button className={`${s.btn} ${s.btnDeep}`} onClick={runWave} disabled={waveBusy}>
-                  {waveBusy ? 'running…' : '🔄 run pool rotation'}
+                  {waveBusy ? 'running…' : '🔄 rotate love rosters'}
                 </button>
               </div>
             </div>

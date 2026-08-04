@@ -65,7 +65,7 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   const ranked = rankFriendCandidates(me, fresh);
 
   const meFirst = ((me as any).name || 'Someone').split(' ')[0];
-  const pushes: Promise<void>[] = [];
+  const pushes: Promise<boolean>[] = [];
   let created = 0;
   // Batch every ranked candidate's active-connection count in ONE query (was an
   // N+1 — one friend_connections lookup per candidate inside the loop below).
