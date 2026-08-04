@@ -4,10 +4,12 @@ import { FRIEND_MAX_CONNECTIONS } from '@/lib/friend-circles';
 import { isFriendCooled } from '@/lib/friend-cooldown';
 import { sendPushToUser } from '@/lib/push';
 import { metroOf } from '@/lib/quiz-data';
+import { friendLocationContext, friendMetroLabel, travelerPresenceByUser } from '@/lib/friend-location';
+import { connectionInFriendSegment, travelMatchExpiry, travelSegmentCapacity } from '@/lib/friend-travel';
 
-// Auto-assign: top the user up to FRIEND_MAX_CONNECTIONS (5) friend matches by
+// Auto-assign: top the user up to the current segment's friend-match capacity by
 // score, excluding anyone they already have a connection or history with, and
-// respecting the OTHER person's 5-cap too. Idempotent + lazy — safe to call on
+// respecting the OTHER person's base segment cap too. Idempotent + lazy — safe to call on
 // every matches-fetch, so we don't need a cron for v1. Returns # created.
 export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNECTIONS): Promise<number> {
   const { data: me } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
@@ -20,13 +22,25 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   // On a friend-pack break (ignored too many packs) → no new packs until it lifts.
   if (isFriendCooled(me)) return 0;
 
+  // An unaccepted destination introduction should not occupy a local's pack
+  // after the shared travel window has ended. Mutual friendships are permanent.
+  await supabaseAdmin.from('friend_connections').update({ status: 'declined' })
+    .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`)
+    .eq('status', 'pending').not('match_expires_at', 'is', null)
+    .lt('match_expires_at', new Date().toISOString());
+
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')
-    .select('user_a_id, user_b_id, status')
+    .select('user_a_id, user_b_id, status, match_metro')
     .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`);
-  const active = (conns ?? []).filter((c) => c.status !== 'declined');
-  if (active.length >= max) return 0;
-  const need = max - active.length;
+  const location = await friendLocationContext(me);
+  const targetMetro = location.metro;
+  const segmentMax = location.isTraveling ? travelSegmentCapacity(max, FRIEND_MAX_CONNECTIONS) : max;
+  const active = (conns ?? []).filter((c: any) => c.status !== 'declined' && (
+    connectionInFriendSegment(c, targetMetro, location.isTraveling)
+  ));
+  if (active.length >= segmentMax) return 0;
+  const need = segmentMax - active.length;
 
   const { data: hist } = await supabaseAdmin
     .from('friend_match_history')
@@ -56,11 +70,14 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   // Friend matching is metro-bounded — you crew up across your WHOLE metro (no
   // radius), but never cross-metro (a Boston user shouldn't be friend-matched to
   // NYC). If we can't resolve the user's metro, fall back to no geo filter.
-  const myMetro = metroOf((me as any).zip);
+  const myMetro = targetMetro;
+  const candidateTrips = myMetro
+    ? await travelerPresenceByUser((pool ?? []).map((candidate: any) => candidate.id), myMetro, location.windowStart, location.windowEnd)
+    : new Map();
   const fresh = (pool ?? []).filter((p) =>
     !seen.has(p.id) &&
     (((p as any).is_test === true) === meTest) &&
-    (!myMetro || metroOf((p as any).zip) === myMetro)
+    (!myMetro || metroOf((p as any).zip) === myMetro || candidateTrips.has(p.id))
   );
   const ranked = rankFriendCandidates(me, fresh);
 
@@ -74,13 +91,20 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   if (candIds.length) {
     const { data: allConns } = await supabaseAdmin
       .from('friend_connections')
-      .select('user_a_id, user_b_id, status')
+      .select('user_a_id, user_b_id, status, match_metro, match_expires_at')
       .neq('status', 'declined')
+      .or(`match_expires_at.is.null,match_expires_at.gt.${new Date().toISOString()}`)
       .or(`user_a_id.in.(${candIds.join(',')}),user_b_id.in.(${candIds.join(',')})`);
     const candSet = new Set(candIds);
+    const candidateById = new Map((pool ?? []).map((candidate: any) => [candidate.id, candidate]));
+    const countsInTarget = (candidateId: string, connection: any) => {
+      if (!myMetro) return true;
+      if (connection.match_metro) return connection.match_metro === myMetro;
+      return metroOf((candidateById.get(candidateId) as any)?.zip) === myMetro;
+    };
     for (const c of allConns ?? []) {
-      if (candSet.has(c.user_a_id)) candActiveCount.set(c.user_a_id, (candActiveCount.get(c.user_a_id) || 0) + 1);
-      if (candSet.has(c.user_b_id)) candActiveCount.set(c.user_b_id, (candActiveCount.get(c.user_b_id) || 0) + 1);
+      if (candSet.has(c.user_a_id) && countsInTarget(c.user_a_id, c)) candActiveCount.set(c.user_a_id, (candActiveCount.get(c.user_a_id) || 0) + 1);
+      if (candSet.has(c.user_b_id) && countsInTarget(c.user_b_id, c)) candActiveCount.set(c.user_b_id, (candActiveCount.get(c.user_b_id) || 0) + 1);
     }
   }
   for (const { user: cand, score } of ranked) {
@@ -92,8 +116,18 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     if (candActive >= FRIEND_MAX_CONNECTIONS) continue;
 
     const [a, b] = [userId, cand.id].sort();
+    const candidateTrip = candidateTrips.get(cand.id);
+    const travelers = [location.isTraveling ? userId : null, candidateTrips.has(cand.id) ? cand.id : null].filter(Boolean);
+    const tripWindows: Record<string, { startsOn: string; endsOn: string }> = {};
+    if (location.isTraveling) tripWindows[userId] = { startsOn: location.windowStart, endsOn: location.windowEnd };
+    if (candidateTrip) tripWindows[cand.id] = { startsOn: candidateTrip.starts_on, endsOn: candidateTrip.ends_on };
     const { error } = await supabaseAdmin.from('friend_connections').upsert(
-      { user_a_id: a, user_b_id: b, status: 'pending', compatibility_score: score },
+      {
+        user_a_id: a, user_b_id: b, status: 'pending', compatibility_score: score,
+        match_metro: myMetro,
+        match_expires_at: travelMatchExpiry(Object.values(tripWindows).map((window) => window.endsOn)),
+        match_context: { travelers, tripWindows },
+      },
       { onConflict: 'user_a_id,user_b_id', ignoreDuplicates: true }
     );
     if (!error) {
@@ -103,7 +137,7 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
       pushes.push(
         sendPushToUser(cand.id, {
           title: 'New friend match 🧡',
-          body: `${meFirst} could be your kind of people — say hi on the Friend Line.`,
+          body: `${meFirst} could be your kind of people${friendMetroLabel(myMetro) ? ` in ${friendMetroLabel(myMetro)}` : ''} — say hi on the Friend Line.`,
           url: '/friends',
           tag: `friend-match-${cand.id}`,
         })
@@ -116,7 +150,7 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   return created;
 }
 
-// A user's match cap = base 5, plus 5 for every paid "another round" ($0.99).
+// A user's match cap = the base pack, plus one base-sized paid/Pro round.
 // Tolerant: if the friend_match_rounds table isn't migrated yet, fall back to base.
 export async function matchCapFor(userId: string): Promise<number> {
   try {

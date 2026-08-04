@@ -40,6 +40,10 @@ export async function POST(req: NextRequest) {
   if (!existing) return NextResponse.json({ error: 'That person is not in your current pack.' }, { status: 403 });
   if (existing?.status === 'connected') return NextResponse.json({ ok: true, connected: true, already: true });
   if (existing?.status === 'declined') return NextResponse.json({ error: 'That connection was ended.' }, { status: 409 });
+  if (existing?.match_expires_at && new Date(existing.match_expires_at).getTime() < Date.now()) {
+    await supabaseAdmin.from('friend_connections').update({ status: 'declined' }).eq('id', existing.id).eq('status', 'pending');
+    return NextResponse.json({ error: 'That travel introduction has ended.' }, { status: 409 });
+  }
 
   const myPick = iAmA ? { a_picked: true } : { b_picked: true };
   const theyPicked = iAmA ? existing?.b_picked : existing?.a_picked;
@@ -54,7 +58,7 @@ export async function POST(req: NextRequest) {
     // Mutual! → connect + shared circle. (No cap — connections are unlimited.)
     const circleId = await joinCircle(aId, bId);
     await supabaseAdmin.from('friend_connections').upsert(
-      { user_a_id: aId, user_b_id: bId, ...myPick, status: 'connected', circle_id: circleId, compatibility_score: score, connected_at: new Date().toISOString() },
+      { user_a_id: aId, user_b_id: bId, ...myPick, status: 'connected', circle_id: circleId, compatibility_score: score, connected_at: new Date().toISOString(), match_expires_at: null },
       { onConflict: 'user_a_id,user_b_id' }
     );
     // They picked you earlier and you just accepted → tell them you're connected.

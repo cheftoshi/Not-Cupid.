@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { neighborhoodOf } from '@/lib/neighborhoods';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { metroOf } from '@/lib/quiz-data';
+import { friendLocationContext } from '@/lib/friend-location';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
   const nowIso = new Date().toISOString();
 
   const meTest = (user as any).is_test === true;
-  const myMetro = metroOf((user as any).zip);
+  const locationContext = await friendLocationContext(user);
+  const myMetro = locationContext.metro;
   let q = supabaseAdmin
     .from('friend_activities')
     .select('*')
@@ -176,6 +177,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
 
+  const locationContext = await friendLocationContext(user);
   const body = await req.json().catch(() => ({}));
   const title = (body.title || '').toString().trim();
   if (!title) return NextResponse.json({ error: 'Give it a title.' }, { status: 400 });
@@ -184,7 +186,7 @@ export async function POST(req: NextRequest) {
   const category = CATEGORIES.includes(body.category) ? body.category : 'hang';
   // Posts have no time; events can. Posts live 7d, events until 12h after they happen (or 14d).
   const happensAt = kind === 'event' && body.happens_at ? new Date(body.happens_at) : null;
-  const area = (body.area || '').toString().trim() || neighborhoodOf(user.zip);
+  const area = (body.area || '').toString().trim() || locationContext.area;
   const expiresAt = kind === 'post'
     ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     : happensAt
@@ -224,7 +226,7 @@ export async function POST(req: NextRequest) {
     expires_at: expiresAt.toISOString(),
     // Query-level realm + metro isolation. Old rows are backfilled for realm and
     // author-verified for metro; every new row is filterable before LIMIT.
-    metro: metroOf((user as any).zip),
+    metro: locationContext.metro,
     is_test: (user as any).is_test === true,
   };
   const audienceRow = { audience_gender: audienceGender, audience_age_min: audMin, audience_age_max: audMax };

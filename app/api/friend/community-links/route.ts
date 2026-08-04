@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { metroOf } from '@/lib/quiz-data';
 import { normalizeFriendActivity } from '@/lib/friend-taxonomy';
+import { friendLocationContext } from '@/lib/friend-location';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +13,8 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const meTest = (user as any).is_test === true;
-  const myMetro = metroOf((user as any).zip);
+  const location = await friendLocationContext(user);
+  const myMetro = location.metro;
   let q = supabaseAdmin.from('friend_community_links').select('id, title, url, kind, description, activity_key, area, cadence, audience, last_verified_at, join_count, created_at')
     .eq('approved', true).eq('is_test', meTest).order('created_at', { ascending: false }).limit(60);
   if (myMetro) q = q.eq('metro', myMetro);
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
+  const location = await friendLocationContext(user);
   const b = await req.json().catch(() => ({}));
   const title = String(b.title ?? '').trim().slice(0, 100);
   let url = String(b.url ?? '').trim().slice(0, 400);
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabaseAdmin.from('friend_community_links').insert({
     title, url, kind, description, activity_key: activityKey, area, cadence, audience,
-    submitter_id: user.id, metro: metroOf((user as any).zip), is_test: (user as any).is_test === true,
+    submitter_id: user.id, metro: location.metro, is_test: (user as any).is_test === true,
     approved: false,
   });
   if (error) return NextResponse.json({ error: 'Could not submit link' }, { status: 500 });

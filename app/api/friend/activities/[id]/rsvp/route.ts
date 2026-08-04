@@ -5,6 +5,7 @@ import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordFriendAction } from '@/lib/friend-events';
+import { friendActivityInCurrentMetro } from '@/lib/friend-activity-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,10 +27,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { data: activity } = await supabaseAdmin
     .from('friend_activities')
-    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max, capacity')
+    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max, capacity, metro, is_test')
     .eq('id', activityId)
     .maybeSingle();
   if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
+
+  const { data: existing } = await supabaseAdmin
+    .from('friend_activity_rsvps')
+    .select('response')
+    .eq('activity_id', activityId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const retained = existing?.response === 'yes' || existing?.response === 'maybe';
+  if (!retained && !(await friendActivityInCurrentMetro(user, activity))) {
+    return NextResponse.json({ error: 'That plan is outside your current Friend Line metro.' }, { status: 404 });
+  }
 
   // Audience gate (events only; author is always allowed).
   if ((activity.kind || 'event') === 'event' && activity.author_id !== user.id) {
@@ -41,13 +53,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'This event is open to a specific group.' }, { status: 403 });
     }
   }
-
-  const { data: existing } = await supabaseAdmin
-    .from('friend_activity_rsvps')
-    .select('response')
-    .eq('activity_id', activityId)
-    .eq('user_id', user.id)
-    .maybeSingle();
 
   let myResponse: Response | null;
   if (existing && existing.response === desired) {

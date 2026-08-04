@@ -5,6 +5,8 @@ import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { assignFriendMatches, matchCapFor } from '@/lib/friend-assign';
 import { isPro } from '@/lib/pro';
 import { isHardLocked } from '@/lib/ghost';
+import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
+import { connectionInFriendSegment } from '@/lib/friend-travel';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +37,9 @@ async function loadFriends(userId: string, rows: any[]) {
       const shared = (o.friend_vibes?.activities ?? []).filter((a: string) => myActs.includes(a));
       return {
         otherId, name: o.name, age: o.age, photo_url: o.photo_url, archetype: o.archetype,
-        metro: metroLabel(o.zip), sharedActivities: shared, score: c.compatibility_score,
+        metro: c.match_metro ? friendMetroLabel(c.match_metro) : metroLabel(o.zip),
+        visiting: Array.isArray(c.match_context?.travelers) && c.match_context.travelers.includes(otherId),
+        sharedActivities: shared, score: c.compatibility_score,
         sunSign: o.sun_sign ?? null,
         _test: o.is_test === true, _meTest: meTest,
       };
@@ -58,6 +62,7 @@ export async function GET() {
 
   const cap = await matchCapFor(user.id);
   await assignFriendMatches(user.id, cap);
+  const location = await friendLocationContext(user);
 
   const { data: conns } = await supabaseAdmin
     .from('friend_connections')
@@ -67,10 +72,14 @@ export async function GET() {
     .order('compatibility_score', { ascending: false });
 
   const all = conns ?? [];
-  const sealedRows = all.filter(sealed);
-  const openedCount = all.length - sealedRows.length;
+  const segmentRows = all.filter((connection: any) => connectionInFriendSegment(connection, location.metro, location.isTraveling));
+  const sealedRows = segmentRows.filter(sealed);
+  const openedCount = segmentRows.filter((connection: any) => !sealed(connection)).length;
   const friends = await loadFriends(user.id, sealedRows);
-  return NextResponse.json({ optedIn: true, sealed: friends, openedCount, pro: isPro(user) });
+  return NextResponse.json({
+    optedIn: true, sealed: friends, openedCount, pro: isPro(user),
+    location: { metro: location.metro, label: friendMetroLabel(location.metro), isTraveling: location.isTraveling },
+  });
 }
 
 // POST { action } — 'open' marks the sealed pack revealed; 'grant' gives an
@@ -81,13 +90,18 @@ export async function POST(req: NextRequest) {
   const { action } = await req.json().catch(() => ({ action: '' }));
 
   if (action === 'open') {
-    // Stamp every still-sealed connection as opened. (No-op / tolerated pre-migration.)
+    // Reveal only the current location segment. A Boston travel pack must not
+    // silently open the member's still-sealed New York pack.
     try {
-      await supabaseAdmin
+      const location = await friendLocationContext(user);
+      let query = supabaseAdmin
         .from('friend_connections')
         .update({ opened_at: new Date().toISOString() })
         .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
         .is('opened_at', null);
+      if (location.isTraveling && location.metro) query = query.eq('match_metro', location.metro);
+      else if (location.metro) query = query.or(`match_metro.is.null,match_metro.eq.${location.metro}`);
+      await query;
     } catch { /* column not migrated yet — nothing to open */ }
     return NextResponse.json({ ok: true });
   }

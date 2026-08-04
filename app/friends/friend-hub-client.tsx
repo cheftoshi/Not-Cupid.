@@ -815,7 +815,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
 }
 
 type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null; gender?: string | null; isLgbtq?: boolean };
-export default function FriendHubClient({ firstName, me, city, metro, myArea, refreshCount = 0 }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; myArea?: string | null; refreshCount?: number; accessTier?: string; daysLeft?: number }) {
+export default function FriendHubClient({ firstName, me, city, metro, homeCity, homeMetro, myArea, refreshCount = 0 }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; homeCity?: string | null; homeMetro?: string | null; myArea?: string | null; refreshCount?: number; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
   // Events default to EVERYONE. You CAN make a same-gender space (some people want
   // same-gender friendships) — but only for a group you're part of, so a woman can
@@ -1488,7 +1488,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.9rem', lineHeight: 1 }}>{m.name}{m.age ? <span style={{ color: 'var(--h-text-dim)', fontSize: '1rem' }}> · {m.age}</span> : null}</div>
               {m.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.2rem' }}>{m.archetype}</div>}
               {(m.gender === 'm' || m.gender === 'f' || m.gender === 'nb') && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.25rem' }}>{m.gender === 'f' ? '♀ woman' : m.gender === 'm' ? '♂ man' : '⚧ non-binary'}</div>}
-              {m.metro && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.2rem' }}>📍 {m.metro}</div>}
+              {m.metro && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.2rem' }}>📍 {m.visiting ? `visiting ${m.metro}` : m.metro}</div>}
               {(m.sharedActivities || []).length > 0 && (
                 <div style={{ marginTop: '0.75rem' }}>
                   <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>you both like</div>
@@ -1646,7 +1646,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{city ? `all of ${city.split(',')[0].toLowerCase()}` : 'your metro'}</span>
           </div>
           {/* friends: change your city (metro-wide; no radius) */}
-          <LocationControls city={city} currentMetro={metro} accent={LINE} />
+          <LocationControls city={homeCity || city} currentMetro={homeMetro || metro} accent={LINE} />
         </div>
 
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2rem,6vw,3rem)', lineHeight: 0.96, color: 'var(--h-text)', margin: '0.6rem 0 1.2rem' }}>

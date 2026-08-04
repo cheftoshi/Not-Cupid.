@@ -3,16 +3,14 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
-import { metroOf } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
 
 // Is the caller an approved member (or the creator) of this club?
 async function memberOf(clubId: string, user: any): Promise<{ ok: boolean; creatorId?: string; name?: string }> {
-  const { data: c } = await supabaseAdmin.from('friend_clubs').select('creator_id, name, metro, is_test, hidden_at').eq('id', clubId).maybeSingle();
+  const { data: c } = await supabaseAdmin.from('friend_clubs').select('creator_id, name, is_test, hidden_at').eq('id', clubId).maybeSingle();
   if (!c) return { ok: false };
-  const metro = metroOf(user.zip);
-  if (c.hidden_at || (c.is_test === true) !== (user.is_test === true) || (metro && c.metro !== metro)) return { ok: false };
+  if (c.hidden_at || (c.is_test === true) !== (user.is_test === true)) return { ok: false };
   if (c.creator_id === user.id) return { ok: true, creatorId: c.creator_id, name: c.name };
   const { data: m } = await supabaseAdmin.from('friend_club_members').select('status').eq('club_id', clubId).eq('user_id', user.id).maybeSingle();
   return { ok: m?.status === 'member', creatorId: c.creator_id, name: c.name };

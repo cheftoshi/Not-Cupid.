@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@/components/feedback';
 import { FRIEND_ACTIVITIES, FRIEND_TIME_WINDOWS, friendActivity, type FriendActivityKey, type FriendTimeWindow } from '@/lib/friend-taxonomy';
+import { METRO_CENTERS } from '@/lib/quiz-data';
 import s from './friend-hub.module.css';
 
 type Props = {
@@ -23,6 +24,21 @@ function whenLabel(route: any) {
   return route.area || 'local';
 }
 
+function localYmd(daysAhead = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysAhead);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function tripDateLabel(value: string) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+const TRAVEL_METROS = Object.entries(METRO_CENTERS).sort(([, first], [, second]) =>
+  `${first.state} ${first.label}`.localeCompare(`${second.state} ${second.label}`)
+);
+
 export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, onStartPlan, onRsvp }: Props) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +47,12 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
   const [timeWindow, setTimeWindow] = useState<FriendTimeWindow>('this_week');
   const [note, setNote] = useState('');
   const [showAll, setShowAll] = useState(false);
+  const [showTravel, setShowTravel] = useState(false);
+  const [travelBusy, setTravelBusy] = useState(false);
+  const [destinationMetro, setDestinationMetro] = useState('');
+  const [destinationArea, setDestinationArea] = useState('');
+  const [startsOn, setStartsOn] = useState(localYmd(7));
+  const [endsOn, setEndsOn] = useState(localYmd(10));
 
   const load = useCallback(async (activity?: FriendActivityKey | null) => {
     setLoading(true);
@@ -73,6 +95,47 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       });
       await load(selected);
     } finally { setBusy(false); }
+  }
+
+  function openTravel() {
+    const trip = data?.location?.trip;
+    const firstMetro = TRAVEL_METROS.find(([key]) => key !== data?.location?.homeMetro)?.[0] || '';
+    setDestinationMetro(trip?.destination_metro || firstMetro);
+    setDestinationArea(trip?.destination_area || '');
+    setStartsOn(trip?.starts_on || localYmd(7));
+    setEndsOn(trip?.ends_on || localYmd(10));
+    setShowTravel(true);
+  }
+
+  async function saveTravel() {
+    if (!destinationMetro || travelBusy) return;
+    setTravelBusy(true);
+    try {
+      const response = await fetch('/api/friend/travel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set', destinationMetro, destinationArea, startsOn, endsOn }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) { toast(body.error || 'could not save travel mode', 'error'); return; }
+      toast(`trip saved — ${body.label || 'your destination'} is on deck ✈️`, 'success');
+      window.location.reload();
+    } finally { setTravelBusy(false); }
+  }
+
+  async function cancelTravel() {
+    const tripId = data?.location?.trip?.id;
+    if (!tripId || travelBusy) return;
+    setTravelBusy(true);
+    try {
+      const response = await fetch('/api/friend/travel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', id: tripId }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) { toast(body.error || 'could not cancel that trip', 'error'); return; }
+      toast('travel mode off — back to your home Friend Line', 'success');
+      window.location.reload();
+    } finally { setTravelBusy(false); }
   }
 
   async function joinIntent(route: any) {
@@ -130,6 +193,54 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
             <div style={{ fontWeight: 750, marginTop: '0.15rem' }}>{data.myIntent.activity.emoji} {data.myIntent.activity.label}</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.15rem' }}>{String(data.myIntent.timeWindow).replaceAll('_', ' ')} · {data.myIntent.interestedCount} down too</div>
             <button onClick={closeIntent} disabled={busy} style={{ marginTop: '0.35rem', padding: 0, border: 0, background: 'none', color: '#a74712', cursor: 'pointer', fontFamily: "'DM Mono',monospace", fontSize: '0.53rem', textDecoration: 'underline' }}>close signal</button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: '0.75rem', border: '1px solid rgba(255,106,31,0.28)', background: 'rgba(255,106,31,0.055)', borderRadius: 14, padding: '0.65rem 0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 210 }}>
+            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.52rem', letterSpacing: '0.11em', textTransform: 'uppercase', color: '#a74712' }}>
+              {data?.location?.trip ? (data.location.isTraveling ? '✈ travel friend line active' : '✈ upcoming trip saved') : '✈ going somewhere?'}
+            </div>
+            {data?.location?.trip ? (
+              <div style={{ marginTop: '0.18rem', fontSize: '0.84rem', color: 'var(--h-text-dim)' }}>
+                <strong style={{ color: 'var(--h-text)' }}>{data.location.isTraveling ? data.location.label : (METRO_CENTERS[data.location.trip.destination_metro]?.label || data.location.trip.destination_metro)}</strong>
+                {' · '}{tripDateLabel(data.location.trip.starts_on)}–{tripDateLabel(data.location.trip.ends_on)}
+                {' · '}{data.location.isTraveling ? 'plans, groups and matches route there now' : 'activates 30 days before arrival'}
+              </div>
+            ) : (
+              <div style={{ marginTop: '0.18rem', fontSize: '0.82rem', color: 'var(--h-text-dim)' }}>Find locals, other visitors, plans and communities before you arrive. Your home city stays unchanged.</div>
+            )}
+          </div>
+          <button onClick={openTravel} disabled={travelBusy} className={s.pulseBtnGhost}>{data?.location?.trip ? 'change trip' : 'add a trip'}</button>
+          {data?.location?.trip && <button onClick={cancelTravel} disabled={travelBusy} className={s.pulseBtnGhost} style={{ color: '#a74712' }}>cancel</button>}
+        </div>
+
+        {showTravel && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '0.45rem', marginTop: '0.65rem', paddingTop: '0.65rem', borderTop: '1px solid rgba(255,106,31,0.2)' }}>
+            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+              destination metro
+              <select value={destinationMetro} onChange={(event) => setDestinationMetro(event.target.value)} className={s.inputStyle}>
+                {TRAVEL_METROS.filter(([key]) => key !== data?.location?.homeMetro).map(([key, center]) => <option key={key} value={key}>{center.label}, {center.state}</option>)}
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+              neighborhood / area (optional)
+              <input value={destinationArea} onChange={(event) => setDestinationArea(event.target.value)} maxLength={60} placeholder="Back Bay, Brooklyn…" className={s.inputStyle} />
+            </label>
+            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+              arrival
+              <input type="date" min={localYmd()} value={startsOn} onChange={(event) => setStartsOn(event.target.value)} className={s.inputStyle} />
+            </label>
+            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+              departure
+              <input type="date" min={startsOn || localYmd()} value={endsOn} onChange={(event) => setEndsOn(event.target.value)} className={s.inputStyle} />
+            </label>
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'end' }}>
+              <button onClick={saveTravel} disabled={travelBusy || !destinationMetro || !startsOn || !endsOn} className={s.poppyBtn}>{travelBusy ? 'saving…' : 'route my Friend Line →'}</button>
+              <button onClick={() => setShowTravel(false)} disabled={travelBusy} className={s.pulseBtnGhost}>close</button>
+            </div>
           </div>
         )}
       </div>

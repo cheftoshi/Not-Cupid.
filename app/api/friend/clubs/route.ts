@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { metroOf } from '@/lib/quiz-data';
 import { normalizeFriendActivity } from '@/lib/friend-taxonomy';
+import { friendLocationContext } from '@/lib/friend-location';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,8 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const meTest = (user as any).is_test === true;
-  const myMetro = metroOf((user as any).zip);
+  const location = await friendLocationContext(user);
+  const myMetro = location.metro;
 
   let q = supabaseAdmin.from('friend_clubs').select('*').eq('is_test', meTest).is('hidden_at', null).order('created_at', { ascending: false }).limit(100);
   if (myMetro) q = q.eq('metro', myMetro);
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
+  const location = await friendLocationContext(user);
   const b = await req.json().catch(() => ({}));
   const name = String(b.name ?? '').trim().slice(0, 80);
   if (!name) return NextResponse.json({ error: 'Name your club.' }, { status: 400 });
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
   const { data: club, error } = await supabaseAdmin.from('friend_clubs').insert({
     name, category, description, area, activity_key: activityKey, cadence,
     join_mode: joinMode, next_meet_at: nextMeet,
-    creator_id: user.id, metro: metroOf((user as any).zip), is_test: (user as any).is_test === true,
+    creator_id: user.id, metro: location.metro, is_test: (user as any).is_test === true,
   }).select('id').single();
   if (error) return NextResponse.json({ error: 'Could not create club' }, { status: 500 });
   // creator is a member from the start.

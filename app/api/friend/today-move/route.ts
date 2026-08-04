@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { claudeJSON, aiEnabled } from '@/lib/ai';
-import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
+import { METRO_CENTERS } from '@/lib/quiz-data';
 import { DROP, untilNextDrop } from '@/lib/weekly-drop';
+import { friendLocationContext } from '@/lib/friend-location';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30; // one Claude round-trip, comfortably
@@ -75,7 +76,8 @@ export async function POST(req: NextRequest) {
   })).filter((c: any) => c.id && c.name);
   const sealedCount = Number.isFinite(body.sealedCount) ? Math.max(0, Math.min(20, body.sealedCount)) : 0;
 
-  const metro = metroOf(user.zip);
+  const friendLocation = await friendLocationContext(user);
+  const metro = friendLocation.metro;
   const city = metro && METRO_CENTERS[metro] ? METRO_CENTERS[metro].city : 'your city';
   const interests = [
     ...(user.hobbies || []), ...(user.sports || []), ...(user.food || []), ...(user.music || []),

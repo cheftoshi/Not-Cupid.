@@ -2,8 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { hasFriendVibes } from '@/lib/friend-quiz';
-import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
-import { neighborhoodOf } from '@/lib/neighborhoods';
+import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
 import FriendHubClient from './friend-hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -51,8 +50,19 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: {
     gender: user.gender || null,
     isLgbtq: user.is_lgbtq === true,
   };
-  // Location (friends): the change-city control lives here, not on the hub.
-  const metro = metroOf(user.zip);
-  const city = metro && METRO_CENTERS[metro] ? `${METRO_CENTERS[metro].city}, ${METRO_CENTERS[metro].state}` : null;
-  return <FriendHubClient firstName={(user.name || 'friend').split(' ')[0]} me={me} city={city} metro={metro} myArea={neighborhoodOf(user.zip)} refreshCount={user.profile_refresh_count ?? 0} />;
+  // Friend discovery can temporarily enter a dated destination without
+  // overwriting the user's home city. The city-change control still edits home.
+  const location = await friendLocationContext(user);
+  const city = friendMetroLabel(location.metro);
+  const homeCity = friendMetroLabel(location.homeMetro);
+  return <FriendHubClient
+    firstName={(user.name || 'friend').split(' ')[0]}
+    me={me}
+    city={city}
+    metro={location.metro}
+    homeCity={homeCity}
+    homeMetro={location.homeMetro}
+    myArea={location.area}
+    refreshCount={user.profile_refresh_count ?? 0}
+  />;
 }

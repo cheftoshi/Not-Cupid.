@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf } from '@/lib/quiz-data';
-import { neighborhoodOf } from '@/lib/neighborhoods';
 import { rateLimit } from '@/lib/rate-limit';
 import { sendPushToUser } from '@/lib/push';
 import { rankFriendDiscovery, type FriendDiscoveryItem } from '@/lib/friend-discovery';
@@ -17,6 +16,7 @@ import {
   type FriendActivityKey,
 } from '@/lib/friend-taxonomy';
 import { recordFriendAction } from '@/lib/friend-events';
+import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,8 +36,9 @@ export async function GET(req: NextRequest) {
 
   const nowIso = new Date().toISOString();
   const isTest = (user as any).is_test === true;
-  const metro = metroOf((user as any).zip);
-  const area = neighborhoodOf((user as any).zip);
+  const location = await friendLocationContext(user);
+  const metro = location.metro;
+  const area = location.area;
   const requested = req.nextUrl.searchParams.get('activity');
   const affinities = friendActivityAffinity((user as any).friend_vibes);
 
@@ -61,9 +62,11 @@ export async function GET(req: NextRequest) {
     activityQuery = activityQuery.or(`metro.eq.${metro},metro.is.null`);
   }
 
+  let myIntentQuery = supabaseAdmin.from('friend_intents').select('*').eq('user_id', user.id)
+    .eq('status', 'open').gt('expires_at', nowIso).order('created_at', { ascending: false }).limit(1);
+  if (metro) myIntentQuery = myIntentQuery.eq('metro', metro);
   const [myIntentRes, intentsRes, clubsRes, linksRes, activitiesRes] = await Promise.all([
-    supabaseAdmin.from('friend_intents').select('*').eq('user_id', user.id)
-      .eq('status', 'open').gt('expires_at', nowIso).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    myIntentQuery.maybeSingle(),
     intentQuery,
     clubQuery,
     linkQuery,
@@ -214,6 +217,15 @@ export async function GET(req: NextRequest) {
       communities: routes.filter((route) => route.kind === 'community').length,
       people: routes.filter((route) => route.kind === 'intent').length,
     },
+    location: {
+      homeMetro: location.homeMetro,
+      metro: location.metro,
+      label: friendMetroLabel(location.metro),
+      area: location.area,
+      trip: location.trip,
+      isTraveling: location.isTraveling,
+      isOnTrip: location.isOnTrip,
+    },
   });
 }
 
@@ -227,7 +239,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const action = String(body.action || '');
   const isTest = (user as any).is_test === true;
-  const metro = metroOf((user as any).zip);
+  const location = await friendLocationContext(user);
+  const metro = location.metro;
 
   if (action === 'set_intent') {
     if (!validActivity(body.activityKey)) return NextResponse.json({ error: 'Pick what you want to do.' }, { status: 400 });
@@ -235,7 +248,7 @@ export async function POST(req: NextRequest) {
     const role = ['join', 'host', 'either'].includes(body.role) ? body.role : 'either';
     const groupSize = ['one', 'small', 'group'].includes(body.groupSize) ? body.groupSize : 'small';
     const note = String(body.note || '').trim().slice(0, 180) || null;
-    const area = String(body.area || '').trim().slice(0, 60) || neighborhoodOf((user as any).zip);
+    const area = String(body.area || '').trim().slice(0, 60) || location.area;
 
     // A person has one current ask. Replacing it is more legible to other people
     // than leaving several stale versions of their availability around the app.
@@ -250,6 +263,7 @@ export async function POST(req: NextRequest) {
       note,
       metro,
       area,
+      trip_id: location.trip?.id || null,
       is_test: isTest,
       expires_at: friendIntentExpiry(timeWindow),
     }).select('id').single();

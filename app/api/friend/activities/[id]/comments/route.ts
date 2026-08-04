@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
+import { friendActivityInCurrentMetro, hasFriendActivityHistory } from '@/lib/friend-activity-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: activity } = await supabaseAdmin.from('friend_activities')
+    .select('id, author_id, metro, is_test').eq('id', id).maybeSingle();
+  if (!activity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const retained = await hasFriendActivityHistory(user.id, id);
+  if (!retained && !(await friendActivityInCurrentMetro(user, activity))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const { data: comments } = await supabaseAdmin
     .from('friend_activity_comments')
@@ -49,8 +58,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!text) return NextResponse.json({ error: 'Empty comment' }, { status: 400 });
 
   const { data: act } = await supabaseAdmin
-    .from('friend_activities').select('id, author_id, title').eq('id', id).maybeSingle();
+    .from('friend_activities').select('id, author_id, title, metro, is_test').eq('id', id).maybeSingle();
   if (!act) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const retained = await hasFriendActivityHistory(user.id, id);
+  if (!retained && !(await friendActivityInCurrentMetro(user, act))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const { data: row, error } = await supabaseAdmin
     .from('friend_activity_comments')

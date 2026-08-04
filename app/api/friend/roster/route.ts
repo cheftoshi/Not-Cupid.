@@ -5,6 +5,8 @@ import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { assignFriendMatches, matchCapFor } from '@/lib/friend-assign';
 import { evaluatePackEngagement } from '@/lib/friend-cooldown';
 import { isHardLocked } from '@/lib/ghost';
+import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
+import { connectionInFriendSegment } from '@/lib/friend-travel';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +15,7 @@ function metroLabel(zip: string | null | undefined): string | null {
   return m && METRO_CENTERS[m] ? `${METRO_CENTERS[m].city}, ${METRO_CENTERS[m].state}` : null;
 }
 
-// The user's auto-assigned friend matches (up to 5). Lazily tops up on each
+// The user's auto-assigned friend matches. Lazily tops up on each
 // fetch, so no cron needed for v1. Each row carries accept state so the UI can
 // gate the chat: chat only unlocks once BOTH have accepted.
 export async function GET() {
@@ -30,14 +32,21 @@ export async function GET() {
 
   const cap = await matchCapFor(user.id);
   await assignFriendMatches(user.id, cap);
+  const location = await friendLocationContext(user);
 
-  const { data: conns } = await supabaseAdmin
+  const { data: rawConns } = await supabaseAdmin
     .from('friend_connections')
     .select('*')
     .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
     .neq('status', 'declined')
-    .order('compatibility_score', { ascending: false })
-    .limit(cap);
+    .order('compatibility_score', { ascending: false });
+  const conns = (rawConns || []).filter((connection: any) => {
+    const iAmA = connection.user_a_id === user.id;
+    const incoming = connection.status === 'pending' && (iAmA ? connection.b_picked : connection.a_picked);
+    // Always surface an incoming request so temporarily changing discovery
+    // metros never strands a real person who already chose this member.
+    return connection.status === 'connected' || incoming || connectionInFriendSegment(connection, location.metro, location.isTraveling);
+  });
 
   const otherIds = (conns ?? []).map((c) => (c.user_a_id === user.id ? c.user_b_id : c.user_a_id));
   const { data: others } = await supabaseAdmin
@@ -58,7 +67,8 @@ export async function GET() {
     return {
       otherId,
       name: o.name, age: o.age, photo_url: o.photo_url, archetype: o.archetype,
-      metro: metroLabel(o.zip),
+      metro: c.match_metro ? friendMetroLabel(c.match_metro) : metroLabel(o.zip),
+      visiting: Array.isArray(c.match_context?.travelers) && c.match_context.travelers.includes(otherId),
       sharedActivities: shared,
       score: c.compatibility_score,
       iAccepted: !!iAccepted,
@@ -84,5 +94,8 @@ export async function GET() {
   const engage = await evaluatePackEngagement(user, visible);
   if (engage.cooled) return NextResponse.json({ optedIn: true, matches: [], sealedCount: 0, friendCooled: true, cooledUntil: engage.until });
 
-  return NextResponse.json({ optedIn: true, matches: visible, sealedCount });
+  return NextResponse.json({
+    optedIn: true, matches: visible, sealedCount,
+    location: { metro: location.metro, label: friendMetroLabel(location.metro), isTraveling: location.isTraveling },
+  });
 }

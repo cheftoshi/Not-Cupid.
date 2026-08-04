@@ -468,6 +468,10 @@ export default function AdminClient() {
                 <span className={s.chip}>Connections <b>{data.friend.connectionsMade}</b></span>
                 <span className={s.chip}>Pending <b>{data.friend.connectionsPending}</b></span>
                 <span className={s.chip}>Active crews <b>{data.friend.activeCircles}</b></span>
+                <span className={s.chip}>Trips saved <b>{data.friend.scheduledTrips ?? 0}</b></span>
+                <span className={s.chip}>Travelers now <b>{data.friend.activeTravelers ?? 0}</b></span>
+                <span className={s.chip}>Travel matches <b>{data.friend.travelMatches ?? 0}</b></span>
+                <span className={s.chip}>Travel metros <b>{data.friend.travelMetros ?? 0}</b></span>
                 <span className={s.chip}>Chat msgs <b>{data.friend.messages}</b></span>
                 <span className={s.chip}>Posts <b>{data.friend.posts}</b></span>
                 <span className={s.chip}>Events <b>{data.friend.events}</b></span>

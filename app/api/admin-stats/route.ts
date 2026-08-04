@@ -31,13 +31,14 @@ export async function GET(req: NextRequest) {
     try {
       const liveUsers = (users ?? []).filter((u: any) => !u.deleted_at)
       const optedIn = liveUsers.filter((u: any) => u.friend_opted_in_at)
-      const { data: conns } = await supabaseAdmin.from('friend_connections').select('status')
+      const { data: conns } = await supabaseAdmin.from('friend_connections').select('status, match_metro, match_context, match_expires_at')
       const { data: circleMembers } = await supabaseAdmin.from('friend_circle_members').select('circle_id').is('left_at', null)
       const { count: fMsgCount } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
       const { count: unlockCount } = await supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true })
       const { data: acts } = await supabaseAdmin.from('friend_activities').select('kind')
       const { data: intentRows } = await supabaseAdmin.from('friend_intents').select('user_id, status, expires_at')
       const { data: actionRows } = await supabaseAdmin.from('friend_action_events').select('user_id, event').gte('created_at', thirtyDaysAgo)
+      const { data: tripRows } = await supabaseAdmin.from('friend_trips').select('user_id, destination_metro, starts_on, ends_on, status')
       const { count: clubCount } = await supabaseAdmin.from('friend_clubs').select('id', { count: 'exact', head: true }).eq('is_test', false).is('hidden_at', null)
       const { count: communityCount } = await supabaseAdmin.from('friend_community_links').select('id', { count: 'exact', head: true }).eq('is_test', false).eq('approved', true)
       const connList = conns ?? []
@@ -52,6 +53,12 @@ export async function GET(req: NextRequest) {
       const realActions = (actionRows ?? []).filter((event: any) => realUserIds.has(event.user_id))
       const uniqueActionUsers = (event: string) => new Set(realActions.filter((row: any) => row.event === event).map((row: any) => row.user_id)).size
       const connectionActionUsers = new Set(realActions.filter((row: any) => ['intent_joined', 'community_opened', 'club_joined', 'plan_rsvp'].includes(row.event)).map((row: any) => row.user_id)).size
+      const today = new Date().toISOString().slice(0, 10)
+      const realTrips = (tripRows ?? []).filter((trip: any) => realUserIds.has(trip.user_id) && trip.status === 'active' && trip.ends_on >= today)
+      const activeTravelers = realTrips.filter((trip: any) => trip.starts_on <= today).length
+      const travelMatches = connList.filter((connection: any) =>
+        connection.status !== 'declined' && Array.isArray(connection.match_context?.travelers) && connection.match_context.travelers.length > 0
+      ).length
       friend = {
         optedIn: optedIn.length,
         matchRounds: friendPaidPacks,
@@ -73,6 +80,10 @@ export async function GET(req: NextRequest) {
         communityOpeners30d: uniqueActionUsers('community_opened'),
         planRsvps30d: uniqueActionUsers('plan_rsvp'),
         connectionActionUsers30d: connectionActionUsers,
+        scheduledTrips: realTrips.length,
+        activeTravelers,
+        travelMatches,
+        travelMetros: new Set(realTrips.map((trip: any) => trip.destination_metro)).size,
       }
     } catch (e) {
       console.warn('friend metrics unavailable', e)
