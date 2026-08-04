@@ -29,7 +29,7 @@ type Candidate = {
 export default function RosterPicker({
   radius,
   maxRadius,
-  maxConnections = 2,
+  maxConnections = 1,
   liveConnections = [],
   activeCards = [],
   horizontal = false,
@@ -53,6 +53,8 @@ export default function RosterPicker({
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [atCapacity, setAtCapacity] = useState(false);
+  const [nextRotationAt, setNextRotationAt] = useState<string | null>(null);
+  const [clock, setClock] = useState(() => Date.now());
   const [checkingOut, setCheckingOut] = useState(false);
   // When at capacity, picking opens a "close one first" prompt for this person.
   const [closePromptFor, setClosePromptFor] = useState<Candidate | null>(null);
@@ -74,6 +76,10 @@ export default function RosterPicker({
   }
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   async function load() {
     try {
@@ -82,11 +88,19 @@ export default function RosterPicker({
       setGhosted(!!data.ghosted);
       setHardLocked(!!data.hardLocked);
       setAtCapacity(!!data.atCapacity);
+      setNextRotationAt(typeof data.nextRotationAt === 'string' ? data.nextRotationAt : null);
       setRoster(Array.isArray(data.roster) ? data.roster : []);
     } catch {
       setRoster([]);
     }
   }
+
+  const rotationMs = nextRotationAt ? new Date(nextRotationAt).getTime() - clock : 0;
+  const rotationLabel = nextRotationAt
+    ? rotationMs <= 0
+      ? 'new rotation ready when you return'
+      : `next active rotation in ${Math.max(1, Math.ceil(rotationMs / 3_600_000))}h`
+    : null;
 
   async function pick(c: Candidate) {
     if (picking) return;
@@ -182,7 +196,7 @@ export default function RosterPicker({
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>✦</div>
         <h2 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>in the queue.</h2>
         <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 440, margin: '0 auto' }}>
-          the algorithm re-runs every 20 minutes, and new people join your city every week — your roster fills as they do. we&apos;ll ping you when fresh picks land.
+          recently active people rotate through first. come back tomorrow to refresh your place in line — we&apos;ll also email when your weekly rotation is ready.
         </p>
         <ExpandRadiusButton radius={radius} maxRadius={maxRadius} />
       </div>
@@ -211,9 +225,15 @@ export default function RosterPicker({
         )}
       </div>
 
+      {rotationLabel && (
+        <div style={{ margin: '-0.45rem 0 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>
+          {rotationLabel} · returning keeps you active
+        </div>
+      )}
+
       {atCapacity && (
         <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.75rem 0.95rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>
-          you&apos;re chatting with {maxConnections} people — your max. browse freely, but to open a new chat you&apos;ll close one first.
+          you&apos;re focused on one connection. browse freely, but close it before opening another.
         </div>
       )}
 
@@ -313,7 +333,7 @@ export default function RosterPicker({
       </div>
 
       <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
-        refreshes as new people join
+        active picks rotate daily · weekly reminder by email + push
       </p>
 
       {/* Checkout hand-off — never a silent redirect. */}
@@ -338,7 +358,7 @@ export default function RosterPicker({
               close a chat to open one with {(closePromptFor.name || 'them').split(' ')[0]}.
             </h3>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
-              you can run {maxConnections} conversations at once. end one of these to free up a spot:
+              Love Line keeps one connection open at a time. end this one to free up your next pick:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               {liveConnections.map((lc) => (

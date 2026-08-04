@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 // A self-contained TEST WORLD, segregated from real users (is_test = true; the
 // matcher/roster/pulse only ever pair test↔test). Built so logging in as
 // **Test Alex** exercises EVERY surface at once:
-//   LOVE  → "your chats" with a live both-accepted chat (Bailey, w/ messages +
-//           a locked profile so the $0.99 unlock wall shows) AND a "your move"
-//           pending match (Harper), plus a FULL roster carousel of 5 more women.
+//   LOVE  → "your chats" with one live both-accepted chat (Bailey, w/ messages +
+//           a locked profile so the $0.99 unlock wall shows), plus a FULL
+//           browseable roster carousel of 5 more women.
 //   FRIEND→ a live 3-person crew + group chat (opened) AND a SEALED pack of 4
 //           waiting to be opened (the cinematic /friends/pack reveal).
 //   SCENE → events + posts on the board, with Alex RSVP'd / liked some so the
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     ids.push(data.id);
   }
 
-  const [alex, bailey, harper, dev, iris, jules, maya, cam, eli, owen] = ids;
+  const [alex, bailey, , dev, iris, jules, maya, cam, eli, owen] = ids;
 
   // ── Clean slate (idempotent re-seed) ──
   const del = async (table: string, cols: string[]) => {
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
 
   const expires = new Date(Date.now() + 72 * 3600 * 1000).toISOString();
 
-  // ── LOVE: a live chat (Alex↔Bailey, both accepted) + a "your move" pending ──
+  // ── LOVE: one live chat (Alex↔Bailey, both accepted) ──
   const { data: m1 } = await supabaseAdmin.from('matches').insert({
     user_1_id: alex, user_2_id: bailey, compatibility_score: 94,
     status: 'both_accepted', user_1_accepted: true, user_2_accepted: true, expires_at: expires,
@@ -168,13 +168,8 @@ export async function POST(req: NextRequest) {
       { match_id: m1.id, sender_id: bailey, body: 'a man with a *spreadsheet*. be still my heart' },
     ]);
   }
-  // Harper picked Alex → pending, Harper accepted, Alex hasn't → "your move".
-  await supabaseAdmin.from('matches').insert({
-    user_1_id: harper, user_2_id: alex, compatibility_score: 88,
-    status: 'pending', user_1_accepted: true, user_2_accepted: false, expires_at: expires,
-  });
   await supabaseAdmin.from('users').update({ status: 'matched', last_matched_at: now }).in('id', [alex, bailey]);
-  // Dev, Iris, Jules, Maya stay unmatched → they fill Alex's roster carousel.
+  // Harper, Dev, Iris, Jules, Maya stay unmatched → they fill Alex's roster carousel.
 
   // ── FRIEND: a live opened crew (Cam, Eli, Owen) + a SEALED pack (Dev,Iris,Jules,Maya) ──
   const crew = [cam, eli, owen];
@@ -241,7 +236,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    message: 'Test world ready. Log in as Test Alex to see it all: 2 love chats (1 live + 1 "your move") + a full roster, a live friend crew + a sealed pack to open, and a populated Scene with RSVPs. Test accounts only ever match other test accounts.',
+    message: 'Test world ready. Log in as Test Alex to see it all: 1 live Love connection + a full browseable roster, a live friend crew + a sealed pack to open, and a populated Scene with RSVPs. Test accounts only ever match other test accounts.',
     accounts: S.map((u, i) => ({ name: u.name, email: u.email, loginUrl: devLoginUrl(baseUrl, ids[i]) })),
   });
 }

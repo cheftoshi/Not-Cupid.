@@ -13,11 +13,11 @@ import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C, escapeHtml } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
 
-// How many live conversations a user can run at once. Kept deliberately small
-// to preserve the curated, scarcity-driven feel — you can browse the whole
-// roster, but to open a NEW chat past the cap you must close an existing one.
+// One live Love Line connection at a time. A pending pick reserves both people;
+// once mutual, both disappear from every other roster until this connection
+// ends. This keeps the product focused and prevents duplicate match promises.
 // "Live" = both-accepted, or pending within the accept window.
-export const MAX_CONNECTIONS = 2;
+export const MAX_CONNECTIONS = 1;
 
 // Responsiveness gate. Each time a user gets PICKED (a pending match waiting on
 // them) and lets it EXPIRE without ever accepting, their `ignored_picks` ticks
@@ -53,6 +53,14 @@ export async function liveMatchesFor(userId: string): Promise<any[]> {
     .neq('status', 'expired');
   const now = Date.now();
   return (data ?? []).filter((m) => isMatchLive(m, now));
+}
+
+/** Remove claimed/matched people from every persisted roster immediately. */
+export async function purgeUsersFromRosters(userIds: string[]): Promise<void> {
+  const ids = Array.from(new Set(userIds.filter(Boolean)));
+  if (ids.length === 0) return;
+  const { error } = await supabaseAdmin.rpc('purge_roster_candidates', { p_candidate_ids: ids });
+  if (error) console.error('purgeUsersFromRosters failed', error.message);
 }
 
 // Lazily expire a user's timed-out pending matches and return both parties to
@@ -117,6 +125,7 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
 
   // Already mutually accepted → idempotent success (don't re-send emails).
   if (match.user_1_accepted && match.user_2_accepted) {
+    await purgeUsersFromRosters([match.user_1_id, match.user_2_id]);
     return { ok: true, mutual: true, already: true };
   }
 
@@ -149,6 +158,8 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
         chat_expires_at: new Date(Date.now() + CHAT_INACTIVITY_MS).toISOString(),
       })
       .eq('id', matchId);
+
+    await purgeUsersFromRosters([match.user_1_id, match.user_2_id]);
 
     await sendItsAMatchEmails(matchId, match.user_1_id, match.user_2_id).catch((e) =>
       console.error('acceptMatch: its-a-match email failed', e)

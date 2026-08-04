@@ -19,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       : 400;
     const msg = result.reason === 'not_found' ? 'Match not found'
       : result.reason === 'not_party' ? 'Not your match'
-      : result.reason === 'at_capacity' ? "You're at your max conversations — wrap one up to accept this."
+      : result.reason === 'at_capacity' ? "You already have an open Love Line connection — wrap it up before accepting another."
       : 'Match already ended';
     return NextResponse.json({ error: msg }, { status: code });
   }

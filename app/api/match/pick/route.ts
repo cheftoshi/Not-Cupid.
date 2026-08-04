@@ -12,7 +12,14 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { compatibilityScore, isGenderMatch, isWithinRadius } from '@/lib/matching';
 import { intentOf } from '@/lib/pools';
-import { acceptMatch, releaseTimedOutMatches, liveMatchesFor, MAX_CONNECTIONS, MAX_IGNORED_PICKS } from '@/lib/match-actions';
+import {
+  acceptMatch,
+  releaseTimedOutMatches,
+  liveMatchesFor,
+  MAX_CONNECTIONS,
+  MAX_IGNORED_PICKS,
+  purgeUsersFromRosters,
+} from '@/lib/match-actions';
 import { DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
@@ -98,40 +105,35 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (prior) return NextResponse.json({ error: 'You two have already been matched before.' }, { status: 409 });
 
-  // Capacity model: no single-match atomic claim. Both sides had spare capacity
-  // above, so we create the pending match directly. `status='matched'` is kept
-  // for back-compat (pools/legacy) but is now just informational — capacity is
-  // enforced by the live-match count, not this flag. A rare double-pick race
-  // just means a candidate gets an extra suitor to accept or decline.
-  const matchedAt = new Date().toISOString();
-  await supabaseAdmin
-    .from('users')
-    .update({ status: 'matched', last_matched_at: matchedAt })
-    .in('id', [user.id, candidateId]);
-
+  // Final capacity/history claim happens inside Postgres while both user rows
+  // are locked. Concurrent picks for either person serialize here, so exactly
+  // one pending connection can be created and duplicate match cards cannot win
+  // a race from another user's stale roster.
   const score = compatibilityScore(user, cand);
-  const { data: match, error: insErr } = await supabaseAdmin
-    .from('matches')
-    .insert([{
-      user_1_id: user.id,
-      user_2_id: candidateId,
-      compatibility_score: score,
-      status: 'pending',
-      expires_at: new Date(nowMs + 72 * 60 * 60 * 1000).toISOString(), // 72h accept window
-    }])
-    .select()
-    .single();
+  const { data: matchId, error: claimErr } = await supabaseAdmin.rpc('create_exclusive_pending_match', {
+    p_picker_id: user.id,
+    p_candidate_id: candidateId,
+    p_compatibility_score: score,
+    p_expires_at: new Date(nowMs + 72 * 60 * 60 * 1000).toISOString(),
+  });
 
-  if (insErr || !match) {
-    // Roll both back so nobody is stranded as 'matched' with no match row.
-    await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [user.id, candidateId]);
-    console.error('pick: match insert failed', insErr);
+  if (claimErr) {
+    console.error('pick: exclusive claim failed', claimErr);
     return NextResponse.json({ error: 'Could not create the match. Try again.' }, { status: 500 });
   }
+  if (!matchId) {
+    return NextResponse.json(
+      { error: 'That person just connected with someone else. Your roster has been refreshed.' },
+      { status: 409 },
+    );
+  }
+
+  // Remove both people from all other saved rosters before sending the nudge.
+  await purgeUsersFromRosters([user.id, candidateId]);
 
   // Picker pre-accepts → this nudges the candidate to accept back. Reuses the
   // one shared activation path so mutual-accept behaves identically.
-  await acceptMatch(match.id, user.id).catch((e) => console.error('pick: acceptMatch failed', e));
+  await acceptMatch(matchId, user.id).catch((e) => console.error('pick: acceptMatch failed', e));
 
-  return NextResponse.json({ ok: true, matchId: match.id, score });
+  return NextResponse.json({ ok: true, matchId, score });
 }

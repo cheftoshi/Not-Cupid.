@@ -14,7 +14,9 @@ import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS, M
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
 import {
+  ROSTER_RETURN_ROTATION_HOURS,
   activeUserCutoffIso,
+  matchingActivitySegment,
   orderForRosterRotation,
   rosterExposureCutoffIso,
 } from '@/lib/matching-policy';
@@ -36,10 +38,11 @@ const ROSTER_SIZE = 5;
 // show empty slots.
 const ROSTER_SIZE_SCARCE = 8;
 
-// Roster snapshot rotates at most every 12h. Within that window the same
+// Roster snapshot rotates at most once per return day. Within that window the same
 // people show (minus any who got taken, with fresh backfill), so the roster
-// feels stable instead of reshuffling on every reload.
-const ROSTER_TTL_MS = 12 * 60 * 60 * 1000;
+// feels stable instead of reshuffling on every reload. The API returns the next
+// rotation time so the dashboard can make the daily return loop visible.
+const ROSTER_TTL_MS = ROSTER_RETURN_ROTATION_HOURS * 60 * 60 * 1000;
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -183,14 +186,14 @@ export async function GET() {
   // Availability is the strongest response signal in the live data. Treat a
   // session used in the last 12 days as active. The orderer below puts those
   // candidates first, while keeping dormant people as a thin-pool fallback.
-  const activeCandidateIds = new Set<string>();
+  const activityByCandidateId = new Map<string, ReturnType<typeof matchingActivitySegment>>();
   const recentlyShownIds = new Set<string>();
   if (freshPool.length > 0) {
     const poolIds = freshPool.map((p: any) => p.id);
     const [{ data: activeSessions }, { data: recentExposures, error: exposureErr }] = await Promise.all([
       supabaseAdmin
         .from('sessions')
-        .select('user_id')
+        .select('user_id, last_used_at')
         .in('user_id', poolIds)
         .gte('last_used_at', activeUserCutoffIso())
         .limit(5000),
@@ -200,7 +203,14 @@ export async function GET() {
         .eq('user_id', user.id)
         .gte('shown_at', rosterExposureCutoffIso()),
     ]);
-    for (const session of activeSessions ?? []) activeCandidateIds.add(session.user_id);
+    const latestSessionByUser = new Map<string, string>();
+    for (const session of activeSessions ?? []) {
+      const previous = latestSessionByUser.get(session.user_id);
+      if (!previous || session.last_used_at > previous) latestSessionByUser.set(session.user_id, session.last_used_at);
+    }
+    for (const [candidateId, lastUsedAt] of latestSessionByUser) {
+      activityByCandidateId.set(candidateId, matchingActivitySegment(lastUsedAt));
+    }
     // Graceful until the migration is applied: exposure history is an
     // optimization, never a reason for the roster endpoint to fail.
     if (!exposureErr) {
@@ -225,7 +235,7 @@ export async function GET() {
   }
 
   const { ranked } = rankCandidates(user, freshPool, { waitDays, candidateAdjustments });
-  const rotationRanked = orderForRosterRotation(ranked, activeCandidateIds, recentlyShownIds);
+  const rotationRanked = orderForRosterRotation(ranked, activityByCandidateId, recentlyShownIds);
   // Bigger roster for women seeking men/anyone (scarce side); 5 otherwise.
   const size = user.gender === 'f' && user.seeking !== 'f' ? ROSTER_SIZE_SCARCE : ROSTER_SIZE;
 
@@ -294,5 +304,11 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ roster, atCapacity });
+  const rotationStart = snapshotFresh ? refreshedAt : Date.now();
+  return NextResponse.json({
+    roster,
+    atCapacity,
+    nextRotationAt: new Date(rotationStart + ROSTER_TTL_MS).toISOString(),
+    rotationHours: ROSTER_RETURN_ROTATION_HOURS,
+  });
 }

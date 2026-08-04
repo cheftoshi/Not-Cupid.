@@ -176,7 +176,7 @@ export default async function DashboardPage({
     ? 'A small opener beats a perfect one. Pick the person you are most curious about and make it easy to answer.'
     : chattingCount > 0
       ? 'The app works best when a match becomes a rhythm. Reply, suggest a window, or ask the thing you actually want to know.'
-      : 'You can keep up to two live connections. Start with the profile that gives you a real reason to say yes.';
+      : 'Love Line keeps one live connection at a time. Start with the profile that gives you a real reason to say yes.';
   const loveProfileTags = [
     ...(Array.isArray((user as any).music) ? (user as any).music : []),
     ...(Array.isArray((user as any).food) ? (user as any).food : []),
