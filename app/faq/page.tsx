@@ -15,7 +15,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How does the matching actually work?',
-    a: 'A personality quiz — HEXACO traits, your attachment style, what you value, and a rapid-fire round — powers it. We score real compatibility on who you are and what you want, not photos or a swipe count, then hand you a curated roster. You pick, and Love Line keeps one live connection open at a time.',
+    a: 'A personality quiz — HEXACO traits, your attachment style, what you value, and a rapid-fire round — powers it. We score real compatibility on who you are and what you want, not photos or a swipe count, then hand you five curated options. You can keep up to three Love Line connections active and swap one when a better fit appears.',
   },
   {
     q: 'No swiping — really?',

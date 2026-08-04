@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ACTIVE_USER_DAYS,
+  LOVE_MAX_CONNECTIONS,
+  LOVE_ROSTER_OPTIONS,
   RECENT_USER_DAYS,
   ROSTER_EXPOSURE_COOLDOWN_DAYS,
   ROSTER_RETURN_ROTATION_HOURS,
@@ -20,6 +22,8 @@ test('matching activity and exposure cutoffs use 12 and 7 days', () => {
   assert.equal(RECENT_USER_DAYS, 3);
   assert.equal(ROSTER_EXPOSURE_COOLDOWN_DAYS, 7);
   assert.equal(ROSTER_RETURN_ROTATION_HOURS, 24);
+  assert.equal(LOVE_MAX_CONNECTIONS, 3);
+  assert.equal(LOVE_ROSTER_OPTIONS, 5);
   assert.equal(activeUserCutoffIso(now), new Date(now - 12 * DAY_MS).toISOString());
   assert.equal(rosterExposureCutoffIso(now), new Date(now - 7 * DAY_MS).toISOString());
   assert.equal(isActiveWithinWindow(new Date(now - 12 * DAY_MS).toISOString(), now), true);

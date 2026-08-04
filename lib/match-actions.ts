@@ -12,12 +12,13 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C, escapeHtml } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
+import { LOVE_MAX_CONNECTIONS } from '@/lib/matching-policy';
 
-// One live Love Line connection at a time. A pending pick reserves both people;
-// once mutual, both disappear from every other roster until this connection
-// ends. This keeps the product focused and prevents duplicate match promises.
+// Three live Love Line connections at a time. Pending picks reserve a slot, so
+// availability is honest while both people decide. Five additional roster
+// choices remain browseable; at the cap, choosing one becomes a deliberate swap.
 // "Live" = both-accepted, or pending within the accept window.
-export const MAX_CONNECTIONS = 1;
+export const MAX_CONNECTIONS = LOVE_MAX_CONNECTIONS;
 
 // Responsiveness gate. Each time a user gets PICKED (a pending match waiting on
 // them) and lets it EXPIRE without ever accepting, their `ignored_picks` ticks
@@ -55,12 +56,19 @@ export async function liveMatchesFor(userId: string): Promise<any[]> {
   return (data ?? []).filter((m) => isMatchLive(m, now));
 }
 
-/** Remove claimed/matched people from every persisted roster immediately. */
-export async function purgeUsersFromRosters(userIds: string[]): Promise<void> {
+/**
+ * Remove the newly-created pair from each other's saved roster. A user stays
+ * visible to everyone else until all three slots are filled; at capacity the
+ * database removes them from every saved roster in one operation.
+ */
+export async function syncMatchRosters(userIds: string[]): Promise<void> {
   const ids = Array.from(new Set(userIds.filter(Boolean)));
   if (ids.length === 0) return;
-  const { error } = await supabaseAdmin.rpc('purge_roster_candidates', { p_candidate_ids: ids });
-  if (error) console.error('purgeUsersFromRosters failed', error.message);
+  const { error } = await supabaseAdmin.rpc('sync_match_rosters', {
+    p_user_ids: ids,
+    p_max_connections: MAX_CONNECTIONS,
+  });
+  if (error) console.error('syncMatchRosters failed', error.message);
 }
 
 // Lazily expire a user's timed-out pending matches and return both parties to
@@ -125,7 +133,7 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
 
   // Already mutually accepted → idempotent success (don't re-send emails).
   if (match.user_1_accepted && match.user_2_accepted) {
-    await purgeUsersFromRosters([match.user_1_id, match.user_2_id]);
+    await syncMatchRosters([match.user_1_id, match.user_2_id]);
     return { ok: true, mutual: true, already: true };
   }
 
@@ -159,7 +167,7 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
       })
       .eq('id', matchId);
 
-    await purgeUsersFromRosters([match.user_1_id, match.user_2_id]);
+    await syncMatchRosters([match.user_1_id, match.user_2_id]);
 
     await sendItsAMatchEmails(matchId, match.user_1_id, match.user_2_id).catch((e) =>
       console.error('acceptMatch: its-a-match email failed', e)

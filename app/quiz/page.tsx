@@ -583,7 +583,7 @@ function QuizInner() {
               <p className={styles.rulesTitle}>here's the deal →</p>
               {[
                 ['no photos first', 'your personality goes before your face. radical concept.'],
-                ['a curated roster', 'the algorithm hands you your most compatible people. you pick, one live connection at a time.'],
+                ['a curated roster', 'the algorithm hands you five compatible options. you pick, with up to three active Love connections at a time.'],
                 ['actually local', 'born in boston, open across new england + nyc. matched near you so you can actually meet up.'],
                 ['4 minutes', "answer honestly. the algorithm clocks when you're performing."],
               ].map(([bold, rest]) => (

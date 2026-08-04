@@ -14,6 +14,7 @@ import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS, M
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
 import {
+  LOVE_ROSTER_OPTIONS,
   ROSTER_RETURN_ROTATION_HOURS,
   activeUserCutoffIso,
   matchingActivitySegment,
@@ -30,13 +31,6 @@ function metroLabel(zip: string | null | undefined): string {
 }
 
 export const dynamic = 'force-dynamic';
-
-const ROSTER_SIZE = 5;
-// The scarce side gets a bigger roster. In a male-skewed pool that means
-// women seeking men (or anyone) get more options — but NOT women seeking
-// women, whose sought pool is itself thin, so a bigger number would just
-// show empty slots.
-const ROSTER_SIZE_SCARCE = 8;
 
 // Roster snapshot rotates at most once per return day. Within that window the same
 // people show (minus any who got taken, with fresh backfill), so the roster
@@ -236,8 +230,9 @@ export async function GET() {
 
   const { ranked } = rankCandidates(user, freshPool, { waitDays, candidateAdjustments });
   const rotationRanked = orderForRosterRotation(ranked, activityByCandidateId, recentlyShownIds);
-  // Bigger roster for women seeking men/anyone (scarce side); 5 otherwise.
-  const size = user.gender === 'f' && user.seeking !== 'f' ? ROSTER_SIZE_SCARCE : ROSTER_SIZE;
+  // Scarcity stays legible: everyone sees at most five additional choices,
+  // including while all three live connection slots are filled.
+  const size = LOVE_ROSTER_OPTIONS;
 
   // Map of currently-eligible candidates by id (for snapshot validation +
   // hydration). Anyone in the prior snapshot who's since been taken / matched /

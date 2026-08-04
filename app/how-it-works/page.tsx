@@ -22,7 +22,7 @@ const CORE_STEPS = [
 const LOVE_STEPS = [
   { emoji: '🧭', title: 'go deeper on love', body: 'a few more questions — what you’re looking for, how you connect (attachment style), and what matters most (values, kids, lifestyle, fitness). that’s what the matching actually weighs, not just vibes.' },
   { emoji: '🃏', title: 'your curated roster', body: 'the algo hands you a small set of your most compatible people, ranked on values, attachment, personality and shared rapid-fire answers — no swiping, no endless feed.' },
-  { emoji: '👉', title: 'you pick', body: 'choose someone worth the first message. Love Line keeps one connection open at a time; the roster stays browsable, and closing one opens your next choice.' },
+  { emoji: '👉', title: 'you pick', body: 'choose someone worth the first message. Keep up to three active connections while five curated options stay browseable; at the cap, drop one to swap in your next choice.' },
   { emoji: '💞', title: 'it’s a match', body: 'when you both accept, the chat opens and we email you both. set your match radius (5–75 mi) so you only see people you’d actually meet.' },
   { emoji: '🔓', title: 'unlock the full profile', body: 'the photos you share with a match are free; their bio, gallery and the rest unlock for a one-time $0.99 (free on Pro).' },
   { emoji: '🍽️', title: 'plan the date', body: 'once you’re talking, Date Vibes makes choosing what to do a game — a deck of curated local spots and live events; a mutual yes reveals the plan.' },

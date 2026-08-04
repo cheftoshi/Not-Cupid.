@@ -29,7 +29,7 @@ type Candidate = {
 export default function RosterPicker({
   radius,
   maxRadius,
-  maxConnections = 1,
+  maxConnections = 3,
   liveConnections = [],
   activeCards = [],
   horizontal = false,
@@ -60,6 +60,9 @@ export default function RosterPicker({
   const [closePromptFor, setClosePromptFor] = useState<Candidate | null>(null);
   // Which existing conversation's end-dialog (reason picker) is open.
   const [endingMatchId, setEndingMatchId] = useState<string | null>(null);
+  // At the cap, keep the selected replacement through the end-match flow so
+  // confirming the drop completes the swap without asking for a second click.
+  const [swapCandidate, setSwapCandidate] = useState<Candidate | null>(null);
   async function unlock(matchId: string) {
     setCheckingOut(true);
     // Safety net: never leave the overlay spinning if the redirect stalls.
@@ -102,13 +105,18 @@ export default function RosterPicker({
       : `next active rotation in ${Math.max(1, Math.ceil(rotationMs / 3_600_000))}h`
     : null;
 
-  async function pick(c: Candidate) {
+  function pick(c: Candidate) {
     if (picking) return;
     // At the cap → don't pick; prompt them to close an existing conversation.
     if (atCapacity || liveConnections.length >= maxConnections) {
       setClosePromptFor(c);
       return;
     }
+    void submitPick(c);
+  }
+
+  async function submitPick(c: Candidate) {
+    if (picking) return;
     setPicking(c.id);
     setNotice(null);
     try {
@@ -233,7 +241,7 @@ export default function RosterPicker({
 
       {atCapacity && (
         <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.75rem 0.95rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>
-          you&apos;re focused on one connection. browse freely, but close it before opening another.
+          your three connection slots are full. these five stay browseable — choose one to swap with a current match.
         </div>
       )}
 
@@ -358,13 +366,17 @@ export default function RosterPicker({
               close a chat to open one with {(closePromptFor.name || 'them').split(' ')[0]}.
             </h3>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
-              Love Line keeps one connection open at a time. end this one to free up your next pick:
+              Love Line keeps up to {maxConnections} connections active. choose which one to close, and we&apos;ll connect your new pick automatically:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               {liveConnections.map((lc) => (
                 <button
                   key={lc.matchId}
-                  onClick={() => { setClosePromptFor(null); setEndingMatchId(lc.matchId); }}
+                  onClick={() => {
+                    setSwapCandidate(closePromptFor);
+                    setClosePromptFor(null);
+                    setEndingMatchId(lc.matchId);
+                  }}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', background: 'var(--h-surface-3)', border: '1.5px solid var(--h-border)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', textAlign: 'left' }}
                 >
                   <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)' }}>{(lc.name || 'your match').split(' ')[0]}</span>
@@ -387,8 +399,16 @@ export default function RosterPicker({
         <EndMatchDialog
           matchId={endingMatchId}
           otherName={(liveConnections.find((l) => l.matchId === endingMatchId)?.name || 'them').split(' ')[0]}
-          onClose={() => setEndingMatchId(null)}
-          onEnded={() => { setEndingMatchId(null); load(); router.refresh(); }}
+          onClose={() => { setEndingMatchId(null); setSwapCandidate(null); }}
+          onEnded={() => {
+            const replacement = swapCandidate;
+            setEndingMatchId(null);
+            setSwapCandidate(null);
+            setAtCapacity(false);
+            void load();
+            router.refresh();
+            if (replacement) void submitPick(replacement);
+          }}
         />
       )}
     </div>

@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
       if (result.reason === 'at_capacity') {
         return htmlPage(
           'Your hands are full. ✋',
-          `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">You already have an open Love Line connection. Wrap it up on your dashboard, then come back and say yes — this match stays open until it expires.</p>
+          `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Your three Love Line connection slots are full. Wrap one up on your dashboard, then come back and say yes — this match stays open until it expires.</p>
            <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard" style="background:#0e0c1a;color:#f6f6f6;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Open your dashboard →</a>`
         )
       }
