@@ -197,13 +197,13 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const html = (otherName: string, otherEmail: string, recipientId: string) =>
     renderEmail({
-      preheader: `Both of you said yes. Open the chat, or unlock ${otherName.split(' ')[0]}'s full profile if they added more.`,
+      preheader: `Both of you said yes. Open the chat, or unlock ${otherName.split(' ')[0]}'s compatibility profile if they shared more.`,
       eyebrow: "it's a match ✦",
       headline: `${otherName.split(' ')[0]} said yes too.`,
       bodyHtml: `
         <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you. Chat's open in the app, and here's their email so you can take it wherever feels right.</p>
         ${infoCard({ eyebrow: `${otherName}'s email`, big: otherEmail })}
-        <p style="margin:0 0 18px 0;">Want more context before you write? Open the match room. If ${escapeHtml(otherName.split(' ')[0])} added a bio or extra photos, their full profile unlock is there for $0.99.</p>
+        <p style="margin:0 0 18px 0;">Want more context before you write? Open the match room. If ${escapeHtml(otherName.split(' ')[0])} shared more profile detail, their compatibility profile unlock is there for $0.99.</p>
         <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
         <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
           <li>Message soon — the chat closes after 36 quiet hours (every message resets the clock).</li>

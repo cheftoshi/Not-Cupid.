@@ -23,6 +23,9 @@ interface Props {
   match: any;
   initialMessages: any[];
   readOnly?: boolean;
+  profileUnlocked: boolean;
+  unlockAvailable: boolean;
+  unlockItems: string[];
 }
 
 function timeLeft(iso: string, nowMs: number): string {
@@ -71,7 +74,17 @@ function buildStarters(other: any): string[] {
   return out.slice(0, 4);
 }
 
-export default function ChatRoom({ matchId, currentUserId, otherUser, match, initialMessages, readOnly = false }: Props) {
+export default function ChatRoom({
+  matchId,
+  currentUserId,
+  otherUser,
+  match,
+  initialMessages,
+  readOnly = false,
+  profileUnlocked,
+  unlockAvailable,
+  unlockItems,
+}: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
   // Newest message timestamp we hold — lets the poll ask for only newer rows.
   const lastMsgAtRef = useRef<string>(
@@ -88,6 +101,7 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
   const [endOpen, setEndOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
   // Date vibes for the side rail — fetched once (the endpoint hits external
   // event APIs, so we don't poll it like messages).
   const [vibes, setVibes] = useState<any>(null);
@@ -244,6 +258,28 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
     setInput(text);
     setNudge(null);
     inputRef.current?.focus();
+  }
+
+  async function unlockProfile() {
+    if (unlocking) return;
+    setUnlocking(true);
+    try {
+      const response = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: 'profile' }),
+      });
+      const data = await parseResponse<any>(response);
+      if (response.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      toast(data.error || 'checkout didn’t open — try again', 'error');
+    } catch {
+      toast('checkout didn’t open — try again', 'error');
+    } finally {
+      setUnlocking(false);
+    }
   }
 
   async function handleSend(e: React.FormEvent) {
@@ -467,12 +503,42 @@ export default function ChatRoom({ matchId, currentUserId, otherUser, match, ini
               {otherUser?.relationship_style && <span>{otherUser.relationship_style}</span>}
               {otherUser?.sun_sign && <span>{otherUser.sun_sign}</span>}
             </div>
-            {otherUser?.bio && <p>{otherUser.bio}</p>}
-            {profileTags.length > 0 && (
-              <div className={styles.matchTags}>
-                {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}
+            {profileUnlocked ? (
+              <>
+                {Array.isArray(otherUser?.gallery) && otherUser.gallery.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+                    {otherUser.gallery.slice(0, 3).map((url: string) => (
+                      <img key={url} src={url} alt="" style={{ width: 70, height: 82, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+                    ))}
+                  </div>
+                )}
+                {otherUser?.bio && <p>{otherUser.bio}</p>}
+                {profileTags.length > 0 && (
+                  <div className={styles.matchTags}>
+                    {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}
+                  </div>
+                )}
+                <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.48rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#2d7a4f' }}>
+                  ✓ full compatibility profile unlocked
+                </div>
+              </>
+            ) : unlockAvailable ? (
+              <div id="full-profile" style={{ background: 'linear-gradient(135deg,rgba(37,99,255,0.09),rgba(255,106,31,0.08))', border: '1px solid rgba(37,99,255,0.3)', borderRadius: 14, padding: '0.9rem' }}>
+                <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>🔒 the full story</div>
+                <strong style={{ display: 'block', fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)', marginBottom: '0.35rem' }}>
+                  see what makes you two click.
+                </strong>
+                <p style={{ margin: '0 0 0.7rem', fontSize: '0.76rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}>
+                  {unlockItems.slice(0, 4).join(' · ')}{unlockItems.length > 4 ? ` · +${unlockItems.length - 4} more` : ''}
+                </p>
+                <button onClick={unlockProfile} disabled={unlocking} style={{ width: '100%', border: 0, borderRadius: 10, background: '#0b0b0b', color: '#fff', padding: '0.65rem 0.75rem', cursor: unlocking ? 'wait' : 'pointer', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.56rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {unlocking ? 'opening checkout…' : 'unlock once · $0.99 →'}
+                </button>
+                <a href="/pro" style={{ display: 'block', textAlign: 'center', marginTop: '0.55rem', color: '#2563ff', textDecoration: 'none', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  or unlock every match with Pro · $3.99/mo
+                </a>
               </div>
-            )}
+            ) : null}
           </div>
         </section>
         <div className={styles.vibesInner}>

@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import ChatRoom from './chat-room';
+import { isPro } from '@/lib/pro';
+import { lockedProfileView, profileUnlockSummary } from '@/lib/profile-unlock';
+import { recordMonetizationEvent } from '@/lib/monetization';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,11 +29,34 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const readOnly = !!match.ended_at || ['ended', 'passed', 'expired'].includes(match.status);
 
   const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
-  const { data: otherUser } = await supabaseAdmin
-    .from('users')
-    .select('id, name, age, photo_url, gallery, bio, archetype, occupation, music, food, hobbies, relationship_style, sun_sign')
-    .eq('id', otherId)
-    .single();
+  const [{ data: otherUser }, { data: unlock }] = await Promise.all([
+    supabaseAdmin
+      .from('users')
+      .select('id, name, age, photo_url, gallery, bio, archetype, occupation, education, music, food, hobbies, sports, prompts, vibes, values_profile, attach_style, relationship_style, sun_sign')
+      .eq('id', otherId)
+      .single(),
+    supabaseAdmin
+      .from('match_unlocks')
+      .select('profile_unlocked')
+      .eq('user_id', user.id)
+      .eq('match_id', id)
+      .maybeSingle(),
+  ]);
+
+  if (!otherUser) redirect('/dashboard');
+  const profileUnlocked = isPro(user) || !!unlock?.profile_unlocked;
+  const unlockSummary = profileUnlockSummary(otherUser);
+  if (!profileUnlocked && unlockSummary.available && !(user as any).is_test) {
+    await recordMonetizationEvent({
+      userId: user.id,
+      event: 'paywall_viewed',
+      product: 'love_profile',
+      surface: 'match_room',
+      matchId: id,
+      amountCents: 99,
+    });
+  }
+  const visibleOtherUser = profileUnlocked ? otherUser : lockedProfileView(otherUser);
 
   // Last 500 messages (newest-first, then re-ordered) — enough for any real
   // conversation without making long threads unbounded on first paint.
@@ -46,10 +72,13 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     <ChatRoom
       matchId={id}
       currentUserId={user.id}
-      otherUser={otherUser}
+      otherUser={visibleOtherUser}
       match={match}
       initialMessages={messages || []}
       readOnly={readOnly}
+      profileUnlocked={profileUnlocked}
+      unlockAvailable={unlockSummary.available}
+      unlockItems={unlockSummary.items}
     />
   );
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { PRO_PRICE_CENTS } from '@/lib/pro';
 import { rateLimit } from '@/lib/rate-limit';
+import { recordMonetizationEvent } from '@/lib/monetization';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +25,11 @@ export async function POST(req: NextRequest) {
   p.append('line_items[0][price_data][product_data][name]', 'NotCupid Pro');
   p.append('line_items[0][price_data][unit_amount]', String(PRO_PRICE_CENTS));
   p.append('line_items[0][price_data][recurring][interval]', 'month');
-  if (user.email) p.append('customer_email', user.email);
+  // Stripe accepts an existing customer OR customer_email, not both. Existing
+  // customers also get their saved details prefilled for a faster checkout.
   if (user.stripe_customer_id) p.append('customer', user.stripe_customer_id);
+  else if (user.email) p.append('customer_email', user.email);
+  p.append('client_reference_id', user.id);
   p.append('metadata[type]', 'all_access');
   p.append('metadata[user_id]', user.id);
   // metadata also goes on the subscription so future invoice events can resolve it.
@@ -42,7 +46,15 @@ export async function POST(req: NextRequest) {
   const session = await res.json();
   if (!res.ok) {
     console.error('All-Access checkout error:', session);
+    await recordMonetizationEvent({
+      userId: user.id, event: 'checkout_failed', product: 'pro', surface: 'pro_checkout_api',
+      amountCents: PRO_PRICE_CENTS, metadata: { provider_status: res.status },
+    });
     return NextResponse.json({ error: 'Could not create checkout' }, { status: 502 });
   }
+  await recordMonetizationEvent({
+    userId: user.id, event: 'checkout_started', product: 'pro', surface: 'pro_checkout_api',
+    amountCents: PRO_PRICE_CENTS,
+  });
   return NextResponse.json({ url: session.url });
 }

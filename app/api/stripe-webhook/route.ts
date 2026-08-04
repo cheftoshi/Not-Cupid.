@@ -4,6 +4,7 @@ import { recordUnlock } from '@/lib/record-unlock'
 import { verifyStripeSignature } from '@/lib/stripe-webhook'
 import { sendPushToUser } from '@/lib/push'
 import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
+import { recordMonetizationEvent } from '@/lib/monetization'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,11 +67,23 @@ export async function POST(req: NextRequest) {
           tier,
           paymentId: paymentIntent,
         })
-        if (error) console.error('Match unlock insert error:', error)
-        else console.log(`Match unlock recorded (${tier})`)
+        if (error) throw new Error(`Match unlock insert failed: ${error.message}`)
+        console.log(`Match unlock recorded (${tier})`)
+        if (session.customer) {
+          await supabaseAdmin.from('users').update({ stripe_customer_id: session.customer }).eq('id', session.metadata.user_id)
+        }
+        await recordMonetizationEvent({
+          userId: session.metadata.user_id,
+          event: 'purchase_completed',
+          product: 'love_profile',
+          surface: 'stripe_webhook',
+          matchId: session.metadata.match_id,
+          amountCents: session.amount_total ?? 99,
+          externalEventId: event.id,
+        })
         // Tell the person who got unlocked — a warm "someone's into you" signal,
         // on ANY unlock tier (they're already matched, so no privacy leak).
-        if (!error && session.metadata.unlocked_user_id) {
+        if (session.metadata.unlocked_user_id) {
           await sendPushToUser(session.metadata.unlocked_user_id, {
             title: 'Someone unlocked your profile 👀',
             body: tier === 'hexaco'
@@ -91,8 +104,19 @@ export async function POST(req: NextRequest) {
           { user_id: session.metadata.user_id, stripe_payment_id: session.payment_intent },
           { onConflict: 'stripe_payment_id' }
         )
-        if (error) console.error('Friend match round error:', error)
-        else console.log('Friend match round granted')
+        if (error) throw new Error(`Friend match round failed: ${error.message}`)
+        console.log('Friend match round granted')
+        if (session.customer) {
+          await supabaseAdmin.from('users').update({ stripe_customer_id: session.customer }).eq('id', session.metadata.user_id)
+        }
+        await recordMonetizationEvent({
+          userId: session.metadata.user_id,
+          event: 'purchase_completed',
+          product: 'friend_pack',
+          surface: 'stripe_webhook',
+          amountCents: session.amount_total ?? 99,
+          externalEventId: event.id,
+        })
         await completeStripeEvent(event.id)
         return NextResponse.json({ received: true })
       }
@@ -109,8 +133,16 @@ export async function POST(req: NextRequest) {
           stripe_customer_id: session.customer || null,
           friend_sub_id: session.subscription || null,
         }).eq('id', session.metadata.user_id)
-        if (error) console.error('Friend pro start error:', error)
-        else console.log('Friend Pro subscription started')
+        if (error) throw new Error(`Pro subscription start failed: ${error.message}`)
+        console.log('Friend Pro subscription started')
+        await recordMonetizationEvent({
+          userId: session.metadata.user_id,
+          event: 'purchase_completed',
+          product: 'pro',
+          surface: 'stripe_webhook',
+          amountCents: session.amount_total ?? 399,
+          externalEventId: event.id,
+        })
         await completeStripeEvent(event.id)
         return NextResponse.json({ received: true })
       }
@@ -213,7 +245,22 @@ export async function POST(req: NextRequest) {
         // period end is on the invoice line; fall back to +31d.
         const periodEnd = inv.lines?.data?.[0]?.period?.end
         const until = periodEnd ? new Date(periodEnd * 1000).toISOString() : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
-        await supabaseAdmin.from('users').update({ friend_pro_until: until }).eq('friend_sub_id', subId)
+        const { data: subscriber, error: subscriberError } = await supabaseAdmin
+          .from('users').select('id').eq('friend_sub_id', subId).maybeSingle()
+        if (subscriberError) throw new Error(`Pro renewal lookup failed: ${subscriberError.message}`)
+        const { error: renewalError } = await supabaseAdmin.from('users').update({ friend_pro_until: until }).eq('friend_sub_id', subId)
+        if (renewalError) throw new Error(`Pro renewal failed: ${renewalError.message}`)
+        if (subscriber?.id) {
+          await recordMonetizationEvent({
+            userId: subscriber.id,
+            event: 'purchase_completed',
+            product: 'pro',
+            surface: 'stripe_invoice_webhook',
+            amountCents: inv.amount_paid ?? 399,
+            externalEventId: event.id,
+            metadata: { renewal: true },
+          })
+        }
         console.log('Friend Pro renewed to', until)
       }
     }

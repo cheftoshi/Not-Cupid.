@@ -1,8 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase';
 
 // Friend Line access model (v6 — weekly packs, 6/30):
-//   • Your FIRST friendship pack (up to 10 friends) is FREE
-//   • Each ADDITIONAL weekly pack = one-time $0.99 (a fresh batch of up to 10 friends)
+//   • Your FIRST friendship pack (up to 5 friends) is FREE
+//   • Each ADDITIONAL weekly pack = one-time $0.99 (a fresh batch of up to 5 friends)
 //   • Group chats are FREE for everyone in a pack — the $0.99 buys the pack
 //   • All-Access ($3.99/mo) → packs are free (see lib/pro.ts)
 export type FriendAccess = 'trial' | 'active' | 'expired';

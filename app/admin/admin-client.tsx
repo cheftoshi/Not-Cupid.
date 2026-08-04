@@ -298,6 +298,7 @@ export default function AdminClient() {
             </div>
             <nav className={s.nav}>
               <a href="#funnel" className={s.navLink}>Funnel</a>
+              <a href="#monetization" className={s.navLink}>Revenue funnel</a>
               <a href="#traffic" className={s.navLink}>Traffic</a>
               <a href="#friend" className={s.navLink}>Friend</a>
               <a href="#pool" className={s.navLink}>Pool</a>
@@ -338,6 +339,45 @@ export default function AdminClient() {
                 {sub && <div className={s.kpiSub}>{sub}</div>}
               </div>
             ))}
+          </div>
+
+          {/* ── MONETIZATION FUNNEL (last 30 days) ── */}
+          <div className={s.card} id="monetization">
+            <div className={s.cardHead}>
+              <p className={s.cardTitle}>Revenue funnel — <b>last 30 days</b></p>
+            </div>
+            {!data?.monetization ? (
+              <p className={s.note}>tracking starts after the monetization migration is applied.</p>
+            ) : (
+              <>
+                <div className={s.chips}>
+                  <span className={s.chip}>Paywall viewers <b>{data.monetization.paywallViewers}</b></span>
+                  <span className={s.chip}>Checkout starters <b>{data.monetization.checkoutStarters}</b></span>
+                  <span className={s.chip}>Checkout failures <b>{data.monetization.checkoutFailures}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>Purchases <b>{data.monetization.purchases}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>Tracked revenue <b>${data.monetization.trackedRevenue}</b></span>
+                  <span className={s.chip}>View → checkout <b>{data.monetization.viewToCheckoutPct == null ? '—' : `${data.monetization.viewToCheckoutPct}%`}</b></span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '0.7rem', marginTop: '0.8rem' }}>
+                  {([
+                    ['love_profile', 'Love profiles'],
+                    ['friend_pack', 'Friend packs'],
+                    ['pro', 'Pro'],
+                  ] as const).map(([key, label]) => {
+                    const product = data.monetization.products?.[key]
+                    return (
+                      <div key={key} style={{ border: '1px solid #e6e6ea', borderRadius: 10, padding: '0.75rem' }}>
+                        <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700 }}>{label}</div>
+                        <div style={{ marginTop: '0.35rem', fontFamily: 'DM Mono, monospace', fontSize: '0.58rem', lineHeight: 1.65, color: '#6b6b76' }}>
+                          {product?.paywallViewers ?? 0} viewers · {product?.checkoutStarters ?? 0} started<br />
+                          {product?.purchases ?? 0} bought · ${product?.trackedRevenue ?? '0.00'}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* ── CONVERSION FUNNEL (the app's webflow) ── */}

@@ -24,13 +24,13 @@ const LOVE_STEPS = [
   { emoji: '🃏', title: 'your curated roster', body: 'the algo hands you a small set of your most compatible people, ranked on values, attachment, personality and shared rapid-fire answers — no swiping, no endless feed.' },
   { emoji: '👉', title: 'you pick', body: 'choose someone worth the first message. Keep up to three active connections while five curated options stay browseable; at the cap, drop one to swap in your next choice.' },
   { emoji: '💞', title: 'it’s a match', body: 'when you both accept, the chat opens and we email you both. set your match radius (5–75 mi) so you only see people you’d actually meet.' },
-  { emoji: '🔓', title: 'unlock the full profile', body: 'the photos you share with a match are free; their bio, gallery and the rest unlock for a one-time $0.99 (free on Pro).' },
+  { emoji: '🔓', title: 'unlock their compatibility profile', body: 'chat and the first impression stay free; the bio, extra photos, interests, prompts, lifestyle, values and connection style they shared unlock for a one-time $0.99 (free on Pro).' },
   { emoji: '🍽️', title: 'plan the date', body: 'once you’re talking, Date Vibes makes choosing what to do a game — a deck of curated local spots and live events; a mutual yes reveals the plan.' },
 ];
 
 const FRIEND_STEPS = [
   { emoji: '🧡', title: 'join the friend line', body: 'a quick friend quiz — the activities you’re into, who you’re open to meeting, your age range. platonic only, its own separate pool.' },
-  { emoji: '🎒', title: 'open a friendship pack', body: 'a pack is 7–8 people picked for you to meet. your first pack is free; more weekly packs are $0.99 (free on Pro). packs pace how many people you SEE — the connections themselves are unlimited.' },
+  { emoji: '🎒', title: 'open a friendship pack', body: 'a pack is up to 5 people picked for you to meet. your first pack is free; more weekly packs are $0.99 (free on Pro). packs pace how many people you SEE — the connections themselves are unlimited.' },
   { emoji: '🤝', title: 'connect — your 1:1s', body: 'tap connect on anyone in a pack; they get a ping, and when they accept back you’re connected for good. connect with as many people as you like.' },
   { emoji: '💬', title: 'the group chat', body: 'choose the whole pack to open a group chat with everyone in it — the room you meet in. people who opt in are active; the rest show as invited.' },
   { emoji: '🪪', title: 'connections, added & dropped', body: 'click any connection to open their friend card — their interests, your match, and a button to connect or to drop the connection. drop one and you quietly leave the shared chat if they were your last tie there. only connections can message each other.' },
@@ -112,7 +112,7 @@ export default function HowItWorks() {
         <div style={{ background: 'var(--h-surface)', border: `2px dashed ${BLUE}`, borderRadius: 16, padding: '1.25rem', margin: '0 0 1.75rem', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent)', margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-            the quiz and your matches are <b>free</b>. on Love, unlock a match’s full profile for a one-time <b>$0.99</b>. on Friend, your first <b>friendship pack</b> (7–8 people) is free — more weekly packs are <b>$0.99</b> each, and group chats are always free.
+            the quiz and your matches are <b>free</b>. on Love, unlock a match’s compatibility profile for a one-time <b>$0.99</b>. on Friend, your first <b>friendship pack</b> (up to 5 people) is free — more weekly packs are <b>$0.99</b> each, and group chats are always free.
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent-2)', margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
             or go <b>Pro</b> — every love unlock, unlimited friendship packs, and events, all for <b>$3.99/mo</b>. no swiping, ever.

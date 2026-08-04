@@ -15,7 +15,7 @@ type LiveConnection = { matchId: string; name: string };
 type ActiveCard = {
   matchId: string; name: string; photo_url: string | null; age: number | null;
   archetype: string | null; score: number | null;
-  status: 'chatting' | 'waiting' | 'your-move'; profileUnlocked: boolean; hasContent: boolean;
+  status: 'chatting' | 'waiting' | 'your-move'; profileUnlocked: boolean; unlockAvailable: boolean;
 };
 
 // One horizontal carousel of your people: your chosen matches lead, then the
@@ -282,7 +282,7 @@ export default function RosterPicker({
                 <a href={`/match/${a.matchId}`} style={{ marginTop: 'auto', textAlign: 'center', textDecoration: 'none', background: '#2563ff', color: '#fff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                   {a.status === 'your-move' ? 'say hi →' : 'open chat →'}
                 </a>
-                {!a.profileUnlocked && a.hasContent && (
+                {!a.profileUnlocked && a.unlockAvailable && (
                   <button onClick={() => unlock(a.matchId)} style={{ background: 'none', border: '1px solid var(--h-border)', color: 'var(--h-accent)', borderRadius: 10, padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔒 see more · $0.99</button>
                 )}
               </div>

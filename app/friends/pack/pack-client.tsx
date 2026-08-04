@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { signLabel } from '@/lib/astrology';
 import styles from './pack.module.css';
@@ -28,6 +28,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
   const [err, setErr] = useState('');
   const [requested, setRequested] = useState<Set<string>>(new Set());
   const [termsOk, setTermsOk] = useState(false);
+  const trackedPaywall = useRef(false);
   useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } }, []);
   function agreeTerms() { setTermsOk(true); try { localStorage.setItem('nc-friend-terms', '1'); } catch { /* ignore */ } }
 
@@ -60,6 +61,18 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
     } catch { setErr('something glitched — try again'); setPhase('empty'); }
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (pro || trackedPaywall.current || !['revealed', 'empty'].includes(phase)) return;
+    trackedPaywall.current = true;
+    fetch('/api/monetization/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product: 'friend_pack',
+        surface: phase === 'revealed' ? 'friend_pack_revealed' : 'friend_pack_empty',
+      }),
+    }).catch(() => {});
+  }, [phase, pro]);
 
   async function openPack() {
     if (phase !== 'ready') return;

@@ -50,7 +50,7 @@ export default function HowItWorks() {
         <div style={{ background: '#fffaf0', border: `3px dashed ${LINE}`, borderRadius: 16, padding: '1.25rem', margin: '1.75rem 0', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-your crews and their group chats are <b>free</b>. want more people? a fresh round of 5 matches is a one-time <b>$0.99</b> — no subscription, no catch.
+your crews and their group chats are <b>free</b>. want more people? a fresh pack of up to 5 matches is a one-time <b>$0.99</b> — or unlimited with Pro.
           </p>
         </div>
 

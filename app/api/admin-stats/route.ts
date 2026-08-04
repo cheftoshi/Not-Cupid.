@@ -68,6 +68,43 @@ export async function GET(req: NextRequest) {
       pageViews = r.data ?? []
     } catch { pageViews = null }
 
+    // First-party payment funnel, last 30 days. This is intentionally derived
+    // from aggregate events and never exposes checkout/customer details.
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    let monetization: any = null
+    try {
+      const result = await supabaseAdmin
+        .from('monetization_events')
+        .select('user_id, event, product, amount_cents')
+        .gte('created_at', thirtyDaysAgo)
+      if (!result.error) {
+        const rows = result.data ?? []
+        const productNames = ['love_profile', 'friend_pack', 'pro']
+        const summarize = (product?: string) => {
+          const subset = product ? rows.filter((row: any) => row.product === product) : rows
+          const unique = (event: string) => new Set(
+            subset.filter((row: any) => row.event === event).map((row: any) => row.user_id)
+          ).size
+          const views = unique('paywall_viewed')
+          const starts = unique('checkout_started')
+          const purchases = subset.filter((row: any) => row.event === 'purchase_completed')
+          return {
+            paywallViewers: views,
+            checkoutStarters: starts,
+            checkoutFailures: subset.filter((row: any) => row.event === 'checkout_failed').length,
+            purchases: purchases.length,
+            trackedRevenue: (purchases.reduce((sum: number, row: any) => sum + (row.amount_cents ?? 0), 0) / 100).toFixed(2),
+            viewToCheckoutPct: views > 0 ? Math.round((starts / views) * 100) : null,
+          }
+        }
+        monetization = {
+          periodDays: 30,
+          ...summarize(),
+          products: Object.fromEntries(productNames.map((product) => [product, summarize(product)])),
+        }
+      }
+    } catch { monetization = null }
+
     const totalUsers = users?.length ?? 0
     const totalMatches = matches?.length ?? 0
 
@@ -205,6 +242,7 @@ export async function GET(req: NextRequest) {
       signupsPerDay: days,
       funnel,
       traffic,
+      monetization,
       friend,
       recentUsers,
       recentMatches,

@@ -8,8 +8,8 @@ const BLUE = '#2563ff';
 const ORANGE = '#ff6a1f';
 
 const PERKS = [
-  { icon: '💘', t: 'Every love profile, unlocked', d: 'See any match’s full profile — bio, photos, the works — no $0.99 per unlock.' },
-  { icon: '🎒', t: 'Unlimited weekly friendship packs', d: 'Open fresh packs whenever you want, free. Each one is 7–8 new people to connect with.' },
+  { icon: '💘', t: 'Every compatibility profile, unlocked', d: 'See every match’s bio, extra photos, interests, values, and connection style — no $0.99 per unlock.' },
+  { icon: '🎒', t: 'Unlimited weekly friendship packs', d: 'Open fresh packs whenever you want, free. Each one adds up to 5 new people to connect with.' },
   { icon: '🎟️', t: 'The whole Scene', d: 'Events, crews, the city pulse — all of it, all the time.' },
   { icon: '🍀', t: 'Raffle boost when rounds reopen', d: 'Members get 2× entries in Summer of Connection rounds when they are live. (No purchase necessary; a free bonus entry is available on request.)' },
   { icon: '✦', t: 'One price, everything', d: 'Skip the per-unlock and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
@@ -74,6 +74,9 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
             </button>
             <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginTop: '0.8rem' }}>
               cancel anytime · keeps access through the month you paid for
+            </p>
+            <p style={{ textAlign: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', margin: '0.55rem auto 0', maxWidth: 430 }}>
+              Prefer to stay flexible? One-time Love profile and Friend pack unlocks remain $0.99 each.
             </p>
             {err && <p style={{ textAlign: 'center', color: '#ffb3b3', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem' }}>{err}</p>}
           </>

@@ -2,7 +2,7 @@
 // Every Thursday evening, a fresh sealed pack of curated people lands for every
 // friend-opted-in user (cron: /api/cron/weekly-drop). The cadence is the
 // product: you don't "check the app", you open Thursday's pack — drop culture,
-// not feed culture. Extra packs stay paid ($1.99 / free with All-Access) as
+// not feed culture. Extra packs stay paid ($0.99 / free with All-Access) as
 // "can't wait till thursday?".
 //
 // 23:00 UTC ≈ 7pm ET (6pm during winter time) — labeled "thursday evenings" so

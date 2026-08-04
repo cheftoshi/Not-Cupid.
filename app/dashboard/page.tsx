@@ -8,6 +8,9 @@ import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METR
 import { recordUnlock } from '@/lib/record-unlock';
 import { isPro } from '@/lib/pro';
 import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
+import { profileUnlockSummary } from '@/lib/profile-unlock';
+import { recordMonetizationEvent } from '@/lib/monetization';
+import LoveUnlockOffer from './love-unlock-offer';
 import styles from './dashboard.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -68,6 +71,7 @@ export default async function DashboardPage({
   ));
   const CARD_COLS =
     'id, name, age, photo_url, archetype, occupation, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
+    'sports, prompts, vibes, values_profile, attach_style, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
   const [{ data: unlockRows }, { data: others }, { data: historyOthers }, { data: recentMsgs }] = await Promise.all([
     liveIds.length
@@ -143,7 +147,7 @@ export default async function DashboardPage({
     const myAcc = isU1 ? m.user_1_accepted : m.user_2_accepted;
     const both = m.user_1_accepted && m.user_2_accepted;
     const o = c.otherUser;
-    const hasContent = !!(o.bio || '').trim() || (Array.isArray(o.gallery) && o.gallery.length > 0);
+    const unlockSummary = profileUnlockSummary(o);
     const interests = c.profileUnlocked
       ? [...(o.music || []), ...(o.food || []), ...(o.hobbies || [])].filter(Boolean).slice(0, 5)
       : [];
@@ -159,9 +163,23 @@ export default async function DashboardPage({
       score: m.compatibility_score ?? null,
       bio: c.profileUnlocked ? (o.bio || null) : null, interests, unread,
       status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
-      profileUnlocked: c.profileUnlocked, hasContent,
+      profileUnlocked: c.profileUnlocked,
+      unlockAvailable: unlockSummary.available,
+      unlockItems: unlockSummary.items,
     };
   });
+
+  const lockedOffer = activeCards.find((card) => !card.profileUnlocked && card.unlockAvailable) ?? null;
+  if (lockedOffer && !isTestViewer) {
+    await recordMonetizationEvent({
+      userId: user.id,
+      event: 'paywall_viewed',
+      product: 'love_profile',
+      surface: 'love_dashboard',
+      matchId: lockedOffer.matchId,
+      amountCents: 99,
+    });
+  }
 
   const yourMoveCount = activeCards.filter((card) => card.status === 'your-move').length;
   const chattingCount = activeCards.filter((card) => card.status === 'chatting').length;
@@ -262,7 +280,10 @@ export default async function DashboardPage({
                       </span>
                       <span className={styles.chatCopy}>
                         <strong>{card.name.split(' ')[0]}{card.age ? `, ${card.age}` : ''}</strong>
-                        <em>{card.status === 'chatting' ? 'chat open' : card.status === 'your-move' ? 'your move' : 'waiting on them'}</em>
+                        <em>
+                          {card.status === 'chatting' ? 'chat open' : card.status === 'your-move' ? 'your move' : 'waiting on them'}
+                          {!card.profileUnlocked && card.unlockAvailable ? ' · compatibility details locked' : ''}
+                        </em>
                       </span>
                     </a>
                   ))}
@@ -317,6 +338,14 @@ export default async function DashboardPage({
                 </a>
               </div>
             </section>
+
+            {lockedOffer && (
+              <LoveUnlockOffer
+                matchId={lockedOffer.matchId}
+                name={lockedOffer.name}
+                items={lockedOffer.unlockItems}
+              />
+            )}
 
             {newest && newestFresh && (
               <MatchReveal

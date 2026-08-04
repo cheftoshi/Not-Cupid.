@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { FRIEND_PACK_CENTS } from '@/lib/friend-access';
 import { rateLimit } from '@/lib/rate-limit';
+import { recordMonetizationEvent } from '@/lib/monetization';
 
 export const dynamic = 'force-dynamic';
 
-// $0.99 one-time — open ANOTHER WEEKLY FRIENDSHIP PACK (a fresh batch of up to 10
+// $0.99 one-time — open ANOTHER WEEKLY FRIENDSHIP PACK (a fresh batch of up to 5
 // friends). Group chats are free; this is the only paid friend surface (free for
 // All-Access). The grant (a friend_match_rounds row that bumps the match cap)
 // lands via the webhook and/or the success-redirect, idempotent on the payment id.
@@ -22,8 +23,15 @@ export async function POST(req: NextRequest) {
   params.append('mode', 'payment');
   params.append('line_items[0][quantity]', '1');
   params.append('line_items[0][price_data][currency]', 'usd');
-  params.append('line_items[0][price_data][product_data][name]', 'Friend Line — weekly friendship pack (up to 10 friends)');
+  params.append('line_items[0][price_data][product_data][name]', 'Friend Line — weekly friendship pack (up to 5 friends)');
   params.append('line_items[0][price_data][unit_amount]', String(FRIEND_PACK_CENTS));
+  params.append('client_reference_id', user.id);
+  if (user.stripe_customer_id) {
+    params.append('customer', user.stripe_customer_id);
+  } else {
+    params.append('customer_creation', 'always');
+    if (user.email) params.append('customer_email', user.email);
+  }
   params.append('metadata[user_id]', user.id);
   params.append('metadata[type]', 'friend_more_matches');
   params.append('success_url', `${origin}/friends/pack?bought={CHECKOUT_SESSION_ID}`);
@@ -37,7 +45,15 @@ export async function POST(req: NextRequest) {
   const session = await res.json();
   if (!res.ok) {
     console.error('Friend more-matches checkout error:', session);
+    await recordMonetizationEvent({
+      userId: user.id, event: 'checkout_failed', product: 'friend_pack', surface: 'friend_pack_checkout_api',
+      amountCents: FRIEND_PACK_CENTS, metadata: { provider_status: res.status },
+    });
     return NextResponse.json({ error: 'Could not create checkout' }, { status: 502 });
   }
+  await recordMonetizationEvent({
+    userId: user.id, event: 'checkout_started', product: 'friend_pack', surface: 'friend_pack_checkout_api',
+    amountCents: FRIEND_PACK_CENTS,
+  });
   return NextResponse.json({ url: session.url });
 }
