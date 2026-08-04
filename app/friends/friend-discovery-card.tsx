@@ -197,8 +197,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
         )}
       </div>
 
-      <div style={{ marginTop: '0.75rem', border: '1px solid rgba(255,106,31,0.28)', background: 'rgba(255,106,31,0.055)', borderRadius: 14, padding: '0.65rem 0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+      <div className={s.travelPanel}>
+        <div className={s.travelSummary}>
           <div style={{ flex: 1, minWidth: 210 }}>
             <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.52rem', letterSpacing: '0.11em', textTransform: 'uppercase', color: '#a74712' }}>
               {data?.location?.trip ? (data.location.isTraveling ? '✈ travel friend line active' : '✈ upcoming trip saved') : '✈ going somewhere?'}
@@ -213,31 +213,33 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
               <div style={{ marginTop: '0.18rem', fontSize: '0.82rem', color: 'var(--h-text-dim)' }}>Find locals, other visitors, plans and communities before you arrive. Your home city stays unchanged.</div>
             )}
           </div>
-          <button onClick={openTravel} disabled={travelBusy} className={s.pulseBtnGhost}>{data?.location?.trip ? 'change trip' : 'add a trip'}</button>
-          {data?.location?.trip && <button onClick={cancelTravel} disabled={travelBusy} className={s.pulseBtnGhost} style={{ color: '#a74712' }}>cancel</button>}
+          <div className={s.travelSummaryActions}>
+            <button onClick={openTravel} disabled={travelBusy} className={s.pulseBtnGhost}>{data?.location?.trip ? 'change trip' : 'add a trip'}</button>
+            {data?.location?.trip && <button onClick={cancelTravel} disabled={travelBusy} className={s.pulseBtnGhost} style={{ color: '#a74712' }}>cancel</button>}
+          </div>
         </div>
 
         {showTravel && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '0.45rem', marginTop: '0.65rem', paddingTop: '0.65rem', borderTop: '1px solid rgba(255,106,31,0.2)' }}>
-            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+          <div className={s.travelForm}>
+            <label>
               destination metro
               <select value={destinationMetro} onChange={(event) => setDestinationMetro(event.target.value)} className={s.inputStyle}>
                 {TRAVEL_METROS.filter(([key]) => key !== data?.location?.homeMetro).map(([key, center]) => <option key={key} value={key}>{center.label}, {center.state}</option>)}
               </select>
             </label>
-            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+            <label>
               neighborhood / area (optional)
               <input value={destinationArea} onChange={(event) => setDestinationArea(event.target.value)} maxLength={60} placeholder="Back Bay, Brooklyn…" className={s.inputStyle} />
             </label>
-            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+            <label>
               arrival
               <input type="date" min={localYmd()} value={startsOn} onChange={(event) => setStartsOn(event.target.value)} className={s.inputStyle} />
             </label>
-            <label style={{ display: 'grid', gap: '0.2rem', fontSize: '0.68rem', color: 'var(--h-text-dim)' }}>
+            <label>
               departure
               <input type="date" min={startsOn || localYmd()} value={endsOn} onChange={(event) => setEndsOn(event.target.value)} className={s.inputStyle} />
             </label>
-            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'end' }}>
+            <div className={s.travelFormActions}>
               <button onClick={saveTravel} disabled={travelBusy || !destinationMetro || !startsOn || !endsOn} className={s.poppyBtn}>{travelBusy ? 'saving…' : 'route my Friend Line →'}</button>
               <button onClick={() => setShowTravel(false)} disabled={travelBusy} className={s.pulseBtnGhost}>close</button>
             </div>

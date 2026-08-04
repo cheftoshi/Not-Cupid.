@@ -54,9 +54,29 @@
   --shadow-lg: 0 10px 26px -10px rgba(11,11,11,0.16), 0 26px 60px -24px rgba(11,11,11,0.20);
   --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-pill: 999px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --app-safe-right: env(safe-area-inset-right, 0px);
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-left: env(safe-area-inset-left, 0px);
 }
 
 html{scroll-behavior:smooth}
+
+html[data-native-shell]{
+  overscroll-behavior-y:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.appTopNav{
+  padding-top:calc(.6rem + var(--app-safe-top)) !important;
+  padding-right:calc(1rem + var(--app-safe-right)) !important;
+  padding-left:calc(1rem + var(--app-safe-left)) !important;
+}
+
+.siteFooterShell{
+  padding-bottom:var(--app-safe-bottom);
+  background:var(--h-surface);
+}
 
 body{
   background:var(--bg);
@@ -69,6 +89,19 @@ body{
   flex-direction:column;
   overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
+}
+
+@media (display-mode:standalone){
+  body{overscroll-behavior-y:none}
+}
+
+@media (max-width:600px){
+  .appTopNav{gap:.45rem !important;padding-bottom:.5rem !important}
+  .appTopNavTabs{order:3;width:100%;justify-content:center;overflow-x:auto;scrollbar-width:none}
+  .appTopNavTabs::-webkit-scrollbar{display:none}
+  .appTopNavTabs a{min-height:44px;display:inline-flex;align-items:center;justify-content:center;flex:1 0 auto}
+  .appTopNavActions{margin-left:auto;gap:.55rem !important}
+  .appTopNavActions>a,.appTopNavActions>button{min-height:44px;display:inline-flex;align-items:center}
 }
 
 .btn-primary{

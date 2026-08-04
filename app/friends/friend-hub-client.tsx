@@ -1333,7 +1333,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   }
 
   return (
-    <div className="friendDark" style={{ minHeight: '100vh', background: 'radial-gradient(95% 65% at 4% 0%, #f6d4b4 0%, transparent 46%), radial-gradient(90% 60% at 99% 5%, #f4cadd 0%, transparent 44%), radial-gradient(120% 80% at 50% 116%, #c9d9f5 0%, transparent 54%), #f0e4d0', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
+    <div className={`friendDark ${s.friendPage}`} style={{ background: 'radial-gradient(95% 65% at 4% 0%, #f6d4b4 0%, transparent 46%), radial-gradient(90% 60% at 99% 5%, #f4cadd 0%, transparent 44%), radial-gradient(120% 80% at 50% 116%, #c9d9f5 0%, transparent 54%), #f0e4d0', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative' }}>
       <ConnectionBackdrop />
 
       {/* T&C GATE — a blocking pop-up; you agree once before you can use the friend line */}
@@ -1638,7 +1638,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
         </button>
       )}
 
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '1.5rem 1.25rem 4rem', position: 'relative', zIndex: 1 }}>
+      <div className={s.friendPageContent} style={{ maxWidth: 1180, margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>

@@ -1,10 +1,10 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// NotCupid native shell (Capacitor) — the staged App Store path decided 6/10.
-// The app is server-rendered Next.js on Vercel, so the native app is a thin
-// wrapper around the LIVE site (server.url): every deploy updates the app
-// instantly, no store re-review for content changes. Native layers (push,
-// splash, icons — and later an IAP bridge) get added on top.
+// NotCupid native shell (Capacitor) — staged TestFlight/Play path.
+// NOTE: server.url is retained for internal device testing of the SSR app. The
+// Capacitor docs explicitly classify it as a live-reload option, not a final
+// production architecture. Remove it in the App Store release build after the
+// native delivery strategy in docs/app-store-track.md is complete.
 //
 // Build flow:  npx cap sync  →  npx cap open ios / android  →  archive/upload.
 // See docs/app-store-track.md for the full TestFlight / Play checklist.
@@ -17,10 +17,15 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://notcupid.com',
     allowNavigation: ['notcupid.com', '*.notcupid.com', 'checkout.stripe.com', '*.stripe.com'],
+    cleartext: false,
   },
   ios: {
-    contentInset: 'automatic',
+    // CSS env(safe-area-inset-*) owns the insets across PWA and native shells.
+    contentInset: 'never',
     backgroundColor: '#f6f6f6',
+    preferredContentMode: 'mobile',
+    allowsLinkPreview: false,
+    webContentsDebuggingEnabled: false,
   },
   android: {
     backgroundColor: '#f6f6f6',

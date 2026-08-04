@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { isNativeShell } from '@/lib/native-platform';
 
 // PWA niceties — a FLOATING prompt mounted ONCE in the root layout, so the
 // "install the app" tag shows on EVERY page (not just dashboard/friends):
@@ -33,6 +34,7 @@ function dismissedRecently() {
 
 function getInstallMode(): false | 'native' | 'ios' | 'fallback' {
   if (typeof window === 'undefined') return false;
+  if (isNativeShell()) return false;
   const standalone =
     window.matchMedia?.('(display-mode: standalone)').matches ||
     (navigator as any).standalone === true;
@@ -77,6 +79,9 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Capacitor is already an installed app. Web Push only works reliably for
+    // browser/Home Screen PWAs on iOS; the native build will use APNs instead.
+    if (isNativeShell()) return;
     const dismissed = dismissedRecently();
     const standalone =
       window.matchMedia?.('(display-mode: standalone)').matches ||
@@ -112,6 +117,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
 
   useEffect(() => {
     function forceInstallPrompt() {
+      if (isNativeShell()) return;
       try { localStorage.removeItem(DISMISS_KEY); } catch { /* ignore */ }
       setShowInstall(installEvt ? 'native' : getInstallMode() || 'fallback');
     }

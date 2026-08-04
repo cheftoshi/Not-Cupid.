@@ -11,5 +11,5 @@ const HIDE = ['/friends/pack', '/pro'];
 export default function SiteFooter() {
   const pathname = usePathname() || '';
   if (HIDE.some((h) => pathname === h || pathname.startsWith(h + '/'))) return null;
-  return <CorpFooter />;
+  return <div className="siteFooterShell"><CorpFooter /></div>;
 }

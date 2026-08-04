@@ -8,13 +8,15 @@ export interface ChangelogEntry {
 
 // Bump this string whenever you add an entry. The dashboard compares it to
 // the version the user last saw (localStorage) to show a "new" indicator.
-export const CHANGELOG_VERSION = '2026-08-04';
+export const CHANGELOG_VERSION = '2026-08-04-mobile';
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: 'August 2026',
     items: [
       '💘 More room to meet — keep up to 3 active Love connections while 5 curated options rotate with your activity.',
+      '✈ Going somewhere? Add an upcoming trip and Friend Line will route local people, plans, clubs, and communities before you arrive.',
+      '📱 Friend Line is smoother on phones — thumb-sized controls, compact navigation, safer modal scrolling, and better support for notched screens.',
       '🔒 Compatibility profiles — a clearer optional $0.99 unlock shows exactly what a match shared, from extra photos and interests to values and connection style. Chat stays free.',
       '✦ Prefer everything open? Pro is still $3.99/mo, and one-time Love profile and Friend pack unlocks stay $0.99.',
     ],

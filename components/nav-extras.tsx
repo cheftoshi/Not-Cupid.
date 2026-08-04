@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { CHANGELOG, CHANGELOG_VERSION } from '@/lib/changelog';
+import { isNativeShell } from '@/lib/native-platform';
 
 const SEEN_KEY = 'nc_changelog_seen';
 
@@ -12,9 +13,11 @@ export default function NavExtras() {
   const [open, setOpen] = useState<null | 'whatsnew' | 'feedback'>(null);
   const [hasNew, setHasNew] = useState(false);
   const [menu, setMenu] = useState(false); // mobile "•••" dropdown
+  const [nativeShell, setNativeShell] = useState(false);
 
   useEffect(() => {
     try { setHasNew(localStorage.getItem(SEEN_KEY) !== CHANGELOG_VERSION); } catch { /* ignore */ }
+    setNativeShell(isNativeShell());
   }, []);
 
   function openWhatsNew() {
@@ -25,6 +28,7 @@ export default function NavExtras() {
   function openFeedback() { setMenu(false); setOpen('feedback'); }
   function openInstall() {
     setMenu(false);
+    if (nativeShell) return;
     window.dispatchEvent(new Event('nc:show-install-prompt'));
   }
 
@@ -52,7 +56,7 @@ export default function NavExtras() {
           <div className="nxMobileMenu">
             <button onClick={openWhatsNew} style={menuItem}>✦ what&apos;s new{hasNew && <span style={dot} />}</button>
             <button onClick={openFeedback} style={menuItem}>💬 feedback</button>
-            <button onClick={openInstall} style={menuItem}>📲 install app</button>
+            {!nativeShell && <button onClick={openInstall} style={menuItem}>📲 install app</button>}
           </div>
         </>)}
       </span>
