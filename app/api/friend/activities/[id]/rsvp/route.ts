@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
+import { recordFriendAction } from '@/lib/friend-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,6 +97,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       url: '/friends?view=scene',
       tag: `rsvp-${activityId}`,
     }).catch(() => {});
+  }
+
+  if ((activity.kind || 'event') === 'event' && (myResponse === 'yes' || myResponse === 'maybe')) {
+    await recordFriendAction({
+      userId: user.id,
+      event: 'plan_rsvp',
+      subjectType: 'activity',
+      subjectId: activityId,
+      metadata: { response: myResponse },
+    });
   }
 
   return NextResponse.json({ ok: true, joined: myResponse !== null, myResponse, responses, count });

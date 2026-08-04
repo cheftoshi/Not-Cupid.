@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { neighborhoodOf } from '@/lib/neighborhoods';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
+import { metroOf } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,12 +18,16 @@ export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category');
   const nowIso = new Date().toISOString();
 
+  const meTest = (user as any).is_test === true;
+  const myMetro = metroOf((user as any).zip);
   let q = supabaseAdmin
     .from('friend_activities')
     .select('*')
+    .eq('is_test', meTest)
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order('created_at', { ascending: false })
-    .limit(120); // headroom for the realm filter below
+    .limit(120); // headroom for legacy rows whose metro is author-derived below
+  if (myMetro) q = q.or(`metro.eq.${myMetro},metro.is.null`);
   if (area) q = q.eq('area', area);
   if (category) q = q.eq('category', category);
   const { data: rawActs } = await q;
@@ -32,12 +37,15 @@ export async function GET(req: NextRequest) {
   // (and vice-versa). This also keeps the derived "around in {city}" people clean.
   const rawAuthorIds = Array.from(new Set((rawActs ?? []).map((a) => a.author_id)));
   const { data: authors } = await supabaseAdmin
-    .from('users').select('id, name, photo_url, is_test, gender, age, archetype, music, food, hobbies')
+    .from('users').select('id, name, photo_url, is_test, zip, gender, age, archetype, music, food, hobbies')
     .in('id', rawAuthorIds.length ? rawAuthorIds : ['00000000-0000-0000-0000-000000000000']);
   const aById = new Map((authors ?? []).map((u) => [u.id, u]));
-  const meTest = (user as any).is_test === true;
   const acts = (rawActs ?? [])
-    .filter((a) => ((((aById.get(a.author_id) as any)?.is_test === true)) === meTest))
+    .filter((a) => {
+      const author: any = aById.get(a.author_id);
+      if (!author || (author.is_test === true) !== meTest) return false;
+      return !myMetro || a.metro === myMetro || (!a.metro && metroOf(author.zip) === myMetro);
+    })
     .slice(0, 60);
 
   const ids = (acts ?? []).map((a) => a.id);
@@ -214,6 +222,10 @@ export async function POST(req: NextRequest) {
     category, area,
     happens_at: happensAt ? happensAt.toISOString() : null,
     expires_at: expiresAt.toISOString(),
+    // Query-level realm + metro isolation. Old rows are backfilled for realm and
+    // author-verified for metro; every new row is filterable before LIMIT.
+    metro: metroOf((user as any).zip),
+    is_test: (user as any).is_test === true,
   };
   const audienceRow = { audience_gender: audienceGender, audience_age_min: audMin, audience_age_max: audMax };
 

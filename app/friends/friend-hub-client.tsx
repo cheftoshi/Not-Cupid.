@@ -8,6 +8,8 @@ import { ConnectionSigil } from '@/components/connection-ui';
 import { toast, confirmDialog } from '@/components/feedback';
 import { SkeletonStyles, Skeleton, SkeletonCard, SkeletonRow } from '@/components/skeleton';
 import { DROP, untilNextDrop } from '@/lib/weekly-drop';
+import { FRIEND_ACTIVITIES } from '@/lib/friend-taxonomy';
+import FriendDiscoveryCard from './friend-discovery-card';
 import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
@@ -207,9 +209,9 @@ function ConnectionBackdrop() {
 type NavKey = 'home' | 'scene' | 'crew' | 'pulse';
 const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
   { key: 'home', icon: '✨', label: 'today' },
-  { key: 'scene', icon: '🎟️', label: 'the scene' },
+  { key: 'scene', icon: '🎟️', label: 'do something' },
   { key: 'crew', icon: '🧡', label: 'my circle' },
-  { key: 'pulse', icon: '🌆', label: 'city pulse' },
+  { key: 'pulse', icon: '🌆', label: 'communities' },
 ];
 
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
@@ -934,9 +936,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   const [comLinks, setComLinks] = useState<any[]>([]);
   const [clubBusy, setClubBusy] = useState(false);
   const [showNewClub, setShowNewClub] = useState(false);
-  const [newClub, setNewClub] = useState({ name: '', category: 'books', description: '', area: '' });
+  const [newClub, setNewClub] = useState({ name: '', category: 'books', activityKey: 'books', description: '', area: '', cadence: 'monthly', joinMode: 'open', nextMeetAt: '' });
   const [showNewLink, setShowNewLink] = useState(false);
-  const [newLink, setNewLink] = useState({ title: '', url: '', kind: 'discord', description: '' });
+  const [newLink, setNewLink] = useState({ title: '', url: '', kind: 'discord', activityKey: 'other', description: '', area: '', cadence: 'ongoing', audience: '' });
   const [clubChat, setClubChat] = useState<{ id: string; name: string } | null>(null);
   const [clubMsgs, setClubMsgs] = useState<any[]>([]);
   const [clubText, setClubText] = useState('');
@@ -949,7 +951,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   async function createClub() {
     const name = newClub.name.trim(); if (!name || clubBusy) return; setClubBusy(true);
     try { const r = await fetch('/api/friend/clubs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newClub) });
-      if (r.ok) { setShowNewClub(false); setNewClub({ name: '', category: 'books', description: '', area: '' }); toast('your club is live 🎉', 'success'); await loadClubs(); }
+      if (r.ok) { setShowNewClub(false); setNewClub({ name: '', category: 'books', activityKey: 'books', description: '', area: '', cadence: 'monthly', joinMode: 'open', nextMeetAt: '' }); toast('your club is live 🎉', 'success'); await loadClubs(); }
       else { const d = await r.json().catch(() => ({})); toast(d.error || 'could not create the club — try again', 'error'); }
     } catch { /* ignore */ } finally { setClubBusy(false); }
   }
@@ -963,9 +965,15 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
   async function submitLink() {
     const title = newLink.title.trim(); const url = newLink.url.trim(); if (!title || !url || clubBusy) return; setClubBusy(true);
     try { const r = await fetch('/api/friend/community-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newLink) });
-      if (r.ok) { setShowNewLink(false); setNewLink({ title: '', url: '', kind: 'discord', description: '' }); toast('submitted — it shows up once the team approves it ✨', 'success'); }
+      if (r.ok) { setShowNewLink(false); setNewLink({ title: '', url: '', kind: 'discord', activityKey: 'other', description: '', area: '', cadence: 'ongoing', audience: '' }); toast('submitted — it shows up once the team approves it ✨', 'success'); }
       else { const d = await r.json().catch(() => ({})); toast(d.error || 'could not submit — try again', 'error'); }
     } catch { /* ignore */ } finally { setClubBusy(false); }
+  }
+  function trackCommunityOpen(id: string) {
+    fetch('/api/friend/discover', {
+      method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'community_open', id }),
+    }).catch(() => {});
   }
 
   useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } setTermsChecked(true); }, []);
@@ -1671,11 +1679,17 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
             </div>
             <SkeletonRow /><SkeletonRow />
           </div>
-        ) : (
+        ) : (<>
+          <FriendDiscoveryCard
+            onOpenScene={() => goView('scene')}
+            onOpenCommunities={() => goView('pulse')}
+            onStartPlan={() => { goView('scene'); setComposerStep(1); setComposerOpen(true); }}
+            onRsvp={rsvp}
+          />
           <HomeFeed me={me} firstName={firstName} acts={acts} people={people} myEvents={myEvents} hasCrew={matches.length > 0} sealedCount={sealedCount} city={city}
             onCrew={() => goView('crew')} onScene={() => goView('scene')} onStart={() => { goView('scene'); setComposerStep(1); setComposerOpen(true); }} onRsvp={rsvp} onAuthor={openAuthorCard}
             aiMove={aiMove} aiMoveLoading={aiMoveLoading} onAiAct={runAiMove} onAiRefresh={() => loadAiMove(true)} />
-        ))}
+        </>))}
 
         {view === 'crew' && (
         <div>
@@ -1857,9 +1871,9 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
 
         {view === 'pulse' && (
         <div>
-          <h2 className={s.sectionLabel}><StationDot />🌆 city pulse</h2>
+          <h2 className={s.sectionLabel}><StationDot />🌆 communities</h2>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
-            Community hubs, active groups, and where people are actually gathering around {city ? city.split(',')[0].toLowerCase() : 'your city'}.
+            Find a recurring group or trusted community without digging through Reddit threads and dead invite links around {city ? city.split(',')[0].toLowerCase() : 'your city'}.
           </p>
 
           <div className={s.pulseGrid}>
@@ -1874,8 +1888,17 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               {showNewLink && (
                 <div style={{ border: '1px solid var(--h-border)', borderRadius: 14, padding: '0.75rem', marginBottom: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', background: 'var(--h-surface-2)' }}>
                   <input value={newLink.title} onChange={(e) => setNewLink({ ...newLink, title: e.target.value })} maxLength={100} placeholder="what is it? (e.g. boston runners discord)" className={s.inputStyle} />
-                  <select value={newLink.kind} onChange={(e) => setNewLink({ ...newLink, kind: e.target.value })} className={s.inputStyle}>{LINK_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}</select>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <select value={newLink.kind} onChange={(e) => setNewLink({ ...newLink, kind: e.target.value })} className={s.inputStyle} style={{ flex: 1 }}>{LINK_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}</select>
+                    <select value={newLink.activityKey} onChange={(e) => setNewLink({ ...newLink, activityKey: e.target.value })} className={s.inputStyle} style={{ flex: 1 }}>{FRIEND_ACTIVITIES.map((a) => <option key={a.key} value={a.key}>{a.emoji} {a.label}</option>)}</select>
+                    <select value={newLink.cadence} onChange={(e) => setNewLink({ ...newLink, cadence: e.target.value })} className={s.inputStyle} style={{ flex: 1 }}><option value="weekly">weekly</option><option value="biweekly">every 2 weeks</option><option value="monthly">monthly</option><option value="occasional">occasional</option><option value="ongoing">always on</option></select>
+                  </div>
                   <input value={newLink.url} onChange={(e) => setNewLink({ ...newLink, url: e.target.value })} maxLength={400} placeholder="paste the invite link" className={s.inputStyle} />
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <input value={newLink.area} onChange={(e) => setNewLink({ ...newLink, area: e.target.value })} maxLength={60} placeholder="area (optional)" className={s.inputStyle} style={{ flex: 1 }} />
+                    <input value={newLink.audience} onChange={(e) => setNewLink({ ...newLink, audience: e.target.value })} maxLength={100} placeholder="who is it for?" className={s.inputStyle} style={{ flex: 1 }} />
+                  </div>
+                  <textarea value={newLink.description} onChange={(e) => setNewLink({ ...newLink, description: e.target.value })} maxLength={240} placeholder="what actually happens in this community?" rows={2} className={s.inputStyle} style={{ resize: 'vertical', borderRadius: 12 }} />
                   <button onClick={submitLink} disabled={clubBusy || !newLink.title.trim() || !newLink.url.trim()} className={s.poppyBtn} style={{ alignSelf: 'flex-start', opacity: newLink.title.trim() && newLink.url.trim() ? 1 : 0.5 }}>{clubBusy ? '…' : 'submit for review →'}</button>
                   <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.76rem', color: 'var(--h-text-faint)' }}>reviewed before it goes live.</span>
                 </div>
@@ -1885,11 +1908,12 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
               ) : (
                 <div style={{ display: 'grid', gap: '0.55rem' }}>
                   {comLinks.map((l) => (
-                    <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" style={{ border: '1px solid var(--h-border)', borderRadius: 14, background: 'var(--h-surface-2)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', color: 'var(--h-text)' }}>
+                    <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" onClick={() => trackCommunityOpen(l.id)} style={{ border: '1px solid var(--h-border)', borderRadius: 14, background: 'var(--h-surface-2)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', color: 'var(--h-text)' }}>
                       <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>{KIND_EMOJI[l.kind] || '🔗'}</span>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.18rem', lineHeight: 1 }}>{l.title}</div>
                         {l.description && <div style={{ fontSize: '0.78rem', color: 'var(--h-text-dim)', marginTop: '0.1rem', lineHeight: 1.35 }}>{l.description}</div>}
+                        <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.5rem', color: 'var(--h-text-faint)', marginTop: '0.2rem' }}>{[l.cadence !== 'ongoing' ? l.cadence : '', l.area, l.audience, l.last_verified_at ? 'checked recently' : ''].filter(Boolean).join(' · ')}</div>
                       </div>
                       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, flexShrink: 0 }}>join →</span>
                     </a>
@@ -1913,8 +1937,13 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                     <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.75rem', color: '#c0392b', marginTop: '-0.3rem' }}>give it at least 3 characters — people search by name</span>
                   )}
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <select value={newClub.category} onChange={(e) => setNewClub({ ...newClub, category: e.target.value })} className={s.inputStyle} style={{ flex: '0 0 auto' }}>{CLUB_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                    <select value={newClub.category} onChange={(e) => setNewClub({ ...newClub, category: e.target.value, activityKey: e.target.value })} className={s.inputStyle} style={{ flex: '0 0 auto' }}>{CLUB_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
                     <input value={newClub.area} onChange={(e) => setNewClub({ ...newClub, area: e.target.value })} maxLength={60} placeholder="📍 area (optional)" className={s.inputStyle} style={{ flex: 1, minWidth: 120 }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <select value={newClub.cadence} onChange={(e) => setNewClub({ ...newClub, cadence: e.target.value })} className={s.inputStyle} style={{ flex: 1 }}><option value="weekly">weekly</option><option value="biweekly">every 2 weeks</option><option value="monthly">monthly</option><option value="occasional">occasional</option><option value="ongoing">forming now</option></select>
+                    <select value={newClub.joinMode} onChange={(e) => setNewClub({ ...newClub, joinMode: e.target.value })} className={s.inputStyle} style={{ flex: 1 }}><option value="open">open — one-tap join</option><option value="request">request approval</option></select>
+                    <input type="datetime-local" value={newClub.nextMeetAt} onChange={(e) => setNewClub({ ...newClub, nextMeetAt: e.target.value })} className={s.inputStyle} style={{ flex: 1 }} aria-label="next meetup" />
                   </div>
                   <textarea value={newClub.description} onChange={(e) => setNewClub({ ...newClub, description: e.target.value })} maxLength={400} placeholder="what's it about? when do you meet?" rows={2} className={s.inputStyle} style={{ resize: 'vertical', borderRadius: 12 }} />
                   <button onClick={createClub} disabled={clubBusy || newClub.name.trim().length < 3 || !termsOk} className={s.poppyBtn} style={{ alignSelf: 'flex-start', opacity: newClub.name.trim().length >= 3 && termsOk ? 1 : 0.5 }}>{clubBusy ? '…' : 'create the club →'}</button>
@@ -1935,6 +1964,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                         <button onClick={async () => { if (await confirmDialog({ title: `report "${c.name}"?`, body: 'The team reviews every report. Clubs with repeat reports are hidden automatically.', confirmLabel: 'report it', danger: true })) { await clubAct(c.id, 'report'); await loadClubs(); toast('thanks — the team will take a look', 'success'); } }} title="report this club" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontSize: '0.85rem', flexShrink: 0 }}>⚑</button>
                       </div>
                       {c.description && <p style={{ margin: '0.5rem 0 0', fontSize: '0.86rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}>{c.description}</p>}
+                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.52rem', color: 'var(--h-text-faint)', marginTop: '0.35rem' }}>{[c.cadence && c.cadence !== 'ongoing' ? c.cadence : 'forming now', c.nextMeetAt ? `next: ${friendlyWhen(c.nextMeetAt)}` : '', c.joinMode === 'open' ? 'open join' : 'organizer approval'].filter(Boolean).join(' · ')}</div>
                       <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
                         {c.myStatus === 'owner' ? (<>
                           <button onClick={() => openClubManage(c)} className={s.pulseBtn}>requests{c.pendingCount ? ` (${c.pendingCount})` : ''}</button>
@@ -1945,7 +1975,7 @@ export default function FriendHubClient({ firstName, me, city, metro, myArea, re
                         </>) : c.myStatus === 'pending' ? (
                           <span className={s.pulseBtnGhost} style={{ opacity: 0.7 }}>requested</span>
                         ) : (
-                          <button onClick={async () => { await clubAct(c.id, 'join'); await loadClubs(); }} disabled={!termsOk} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem', opacity: termsOk ? 1 : 0.5 }}>request to join</button>
+                          <button onClick={async () => { await clubAct(c.id, 'join'); await loadClubs(); }} disabled={!termsOk} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem', opacity: termsOk ? 1 : 0.5 }}>{c.joinMode === 'open' ? 'join club' : 'request to join'}</button>
                         )}
                       </div>
                     </div>

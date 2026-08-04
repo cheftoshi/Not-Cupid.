@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf } from '@/lib/quiz-data';
+import { normalizeFriendActivity } from '@/lib/friend-taxonomy';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,9 @@ export async function GET() {
     return {
       id: c.id, name: c.name, category: c.category, description: c.description,
       area: c.area, creatorName: cName.get(c.creator_id) || 'someone',
+      activityKey: c.activity_key || normalizeFriendActivity(c.category),
+      cadence: c.cadence || 'ongoing', nextMeetAt: c.next_meet_at || null,
+      joinMode: c.join_mode || 'request', externalUrl: c.external_url || null,
       memberCount: cm.filter((m: any) => m.status === 'member').length,
       myStatus: isOwner ? 'owner' : (mine ? mine.status : null),
       pendingCount: isOwner ? cm.filter((m: any) => m.status === 'pending').length : 0,
@@ -56,9 +60,14 @@ export async function POST(req: NextRequest) {
   const category = CLUB_CATS.includes(b.category) ? b.category : 'other';
   const description = String(b.description ?? '').trim().slice(0, 400) || null;
   const area = String(b.area ?? '').trim().slice(0, 60) || null;
+  const activityKey = normalizeFriendActivity(b.activityKey || category);
+  const cadence = ['weekly', 'biweekly', 'monthly', 'occasional', 'ongoing'].includes(b.cadence) ? b.cadence : 'ongoing';
+  const joinMode = b.joinMode === 'open' ? 'open' : 'request';
+  const nextMeet = b.nextMeetAt && !Number.isNaN(new Date(b.nextMeetAt).getTime()) ? new Date(b.nextMeetAt).toISOString() : null;
 
   const { data: club, error } = await supabaseAdmin.from('friend_clubs').insert({
-    name, category, description, area,
+    name, category, description, area, activity_key: activityKey, cadence,
+    join_mode: joinMode, next_meet_at: nextMeet,
     creator_id: user.id, metro: metroOf((user as any).zip), is_test: (user as any).is_test === true,
   }).select('id').single();
   if (error) return NextResponse.json({ error: 'Could not create club' }, { status: 500 });

@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     // For the conversion funnel: which matches have ≥1 message, and which users gave date feedback.
     const { data: msgRows } = await supabaseAdmin.from('messages').select('match_id')
     const { data: feedbackRows } = await supabaseAdmin.from('date_feedback').select('user_id')
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
     // ── Friend Maxxin metrics (wrapped so missing tables don't break the dashboard) ──
     // Hoisted so the top-level revenue total can fold in friend-side income.
@@ -35,6 +36,10 @@ export async function GET(req: NextRequest) {
       const { count: fMsgCount } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
       const { count: unlockCount } = await supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true })
       const { data: acts } = await supabaseAdmin.from('friend_activities').select('kind')
+      const { data: intentRows } = await supabaseAdmin.from('friend_intents').select('user_id, status, expires_at')
+      const { data: actionRows } = await supabaseAdmin.from('friend_action_events').select('user_id, event').gte('created_at', thirtyDaysAgo)
+      const { count: clubCount } = await supabaseAdmin.from('friend_clubs').select('id', { count: 'exact', head: true }).eq('is_test', false).is('hidden_at', null)
+      const { count: communityCount } = await supabaseAdmin.from('friend_community_links').select('id', { count: 'exact', head: true }).eq('is_test', false).eq('approved', true)
       const connList = conns ?? []
       friendChatUnlocks = unlockCount ?? 0
       try {
@@ -43,6 +48,10 @@ export async function GET(req: NextRequest) {
         const { data: roundRows } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id')
         friendPaidPacks = (roundRows ?? []).filter((r: any) => !/^(pro-|drop-|ref-|refwelcome-)/.test(String(r.stripe_payment_id ?? ''))).length
       } catch { /* friend_match_rounds not migrated yet */ }
+      const realUserIds = new Set(liveUsers.map((u: any) => u.id))
+      const realActions = (actionRows ?? []).filter((event: any) => realUserIds.has(event.user_id))
+      const uniqueActionUsers = (event: string) => new Set(realActions.filter((row: any) => row.event === event).map((row: any) => row.user_id)).size
+      const connectionActionUsers = new Set(realActions.filter((row: any) => ['intent_joined', 'community_opened', 'club_joined', 'plan_rsvp'].includes(row.event)).map((row: any) => row.user_id)).size
       friend = {
         optedIn: optedIn.length,
         matchRounds: friendPaidPacks,
@@ -55,6 +64,15 @@ export async function GET(req: NextRequest) {
         messages: fMsgCount ?? 0,
         posts: (acts ?? []).filter((a: any) => a.kind === 'post').length,
         events: (acts ?? []).filter((a: any) => a.kind !== 'post').length,
+        openIntents: (intentRows ?? []).filter((intent: any) => realUserIds.has(intent.user_id) && intent.status === 'open' && new Date(intent.expires_at).getTime() > Date.now()).length,
+        clubs: clubCount ?? 0,
+        communities: communityCount ?? 0,
+        discoveryUsers30d: uniqueActionUsers('discovery_viewed'),
+        intentCreators30d: uniqueActionUsers('intent_created'),
+        intentJoiners30d: uniqueActionUsers('intent_joined'),
+        communityOpeners30d: uniqueActionUsers('community_opened'),
+        planRsvps30d: uniqueActionUsers('plan_rsvp'),
+        connectionActionUsers30d: connectionActionUsers,
       }
     } catch (e) {
       console.warn('friend metrics unavailable', e)
@@ -70,7 +88,6 @@ export async function GET(req: NextRequest) {
 
     // First-party payment funnel, last 30 days. This is intentionally derived
     // from aggregate events and never exposes checkout/customer details.
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     let monetization: any = null
     try {
       const result = await supabaseAdmin

@@ -42,7 +42,7 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     // Only the fields the friend matcher actually reads — was `select('*')`,
     // a PII over-fetch (email/bio/gallery/love-columns) for the whole friend
     // pool on every roster load. Mirrors the love-roster trim.
-    .select('id, age, gender, is_lgbtq, friend_age_min, friend_age_max, friend_seeking, friend_vibes, zip')
+    .select('id, age, gender, is_lgbtq, friend_age_min, friend_age_max, friend_seeking, friend_vibes, zip, score_openness, score_extraversion, score_agreeableness, score_honesty, score_conscientiousness')
     .not('friend_opted_in_at', 'is', null)
     .is('deleted_at', null)
     // Exclude ghosted/paused users — they don't surface to anyone on either line.

@@ -456,7 +456,7 @@ export default function AdminClient() {
           {/* ── FRIEND MAXXIN ── */}
           <div className={s.card} id="friend">
             <div className={s.cardHead}>
-              <p className={s.cardTitle}>Friend Line — <b>launch blast</b></p>
+              <p className={s.cardTitle}>Friend Line — <b>connection funnel</b></p>
             </div>
             {!data?.friend ? (
               <p className={s.note}>no friend data yet (run the friend migrations).</p>
@@ -471,6 +471,15 @@ export default function AdminClient() {
                 <span className={s.chip}>Chat msgs <b>{data.friend.messages}</b></span>
                 <span className={s.chip}>Posts <b>{data.friend.posts}</b></span>
                 <span className={s.chip}>Events <b>{data.friend.events}</b></span>
+                <span className={`${s.chip} ${s.chipGold}`}>30d real actions <b>{data.friend.connectionActionUsers30d ?? 0}</b></span>
+                <span className={s.chip}>Discovery users <b>{data.friend.discoveryUsers30d ?? 0}</b></span>
+                <span className={s.chip}>Signals live <b>{data.friend.openIntents ?? 0}</b></span>
+                <span className={s.chip}>Signal creators <b>{data.friend.intentCreators30d ?? 0}</b></span>
+                <span className={s.chip}>Signal joiners <b>{data.friend.intentJoiners30d ?? 0}</b></span>
+                <span className={s.chip}>Plan RSVPs <b>{data.friend.planRsvps30d ?? 0}</b></span>
+                <span className={s.chip}>Community opens <b>{data.friend.communityOpeners30d ?? 0}</b></span>
+                <span className={s.chip}>Clubs <b>{data.friend.clubs ?? 0}</b></span>
+                <span className={s.chip}>Communities <b>{data.friend.communities ?? 0}</b></span>
               </div>
             )}
           </div>

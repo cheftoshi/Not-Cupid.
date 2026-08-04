@@ -25,6 +25,18 @@ function jaccard(a: string[] = [], b: string[] = []): number {
   return union === 0 ? 0 : inter / union;
 }
 
+// Exact Jaccard alone punishes a curious user who picked five activities for
+// matching a focused user who picked one—even when that one is a perfect shared
+// plan. Blend in overlap coefficient so a real shared "easy yes" stays strong.
+function activityCloseness(a: string[] = [], b: string[] = []): number {
+  if (!a.length || !b.length) return 0;
+  const A = new Set(a), B = new Set(b);
+  let shared = 0;
+  A.forEach((value) => { if (B.has(value)) shared++; });
+  const overlap = shared / Math.max(1, Math.min(A.size, B.size));
+  return 0.7 * overlap + 0.3 * jaccard(a, b);
+}
+
 // Ordinal closeness for scales (cadence, group_size): 1 when equal, decaying
 // with distance across the option list.
 function ordinalCloseness(av: string | undefined, bv: string | undefined, order: string[]): number {
@@ -63,7 +75,7 @@ export function friendCompatibilityScore(a: any, b: any): number {
   const av: FriendVibes = a.friend_vibes || {};
   const bv: FriendVibes = b.friend_vibes || {};
 
-  const activities = jaccard(av.activities, bv.activities);            // 0..1
+  const activities = activityCloseness(av.activities, bv.activities); // 0..1
   const hexaco = hexacoFriendScore(a, b);                              // 0..1
   const lifestyle =
     0.55 * ordinalCloseness(av.cadence, bv.cadence, CADENCE_ORDER) +

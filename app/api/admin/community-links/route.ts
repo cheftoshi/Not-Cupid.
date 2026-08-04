@@ -23,9 +23,10 @@ export async function POST(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   if (action === 'approve') {
     const { data: link } = await supabaseAdmin.from('friend_community_links').select('submitter_id, title').eq('id', id).maybeSingle();
-    await supabaseAdmin.from('friend_community_links').update({ approved: true, approved_at: new Date().toISOString() }).eq('id', id);
+    const verifiedAt = new Date().toISOString();
+    await supabaseAdmin.from('friend_community_links').update({ approved: true, approved_at: verifiedAt, last_verified_at: verifiedAt }).eq('id', id);
     if (link?.submitter_id) {
-      await sendPushToUser(link.submitter_id, { title: 'your community hub is live 🎉', body: `“${link.title}” is now in City Pulse — others can join it.`, url: '/friends?view=pulse', tag: `comlink-${id}` }).catch(() => {});
+      await sendPushToUser(link.submitter_id, { title: 'your community hub is live 🎉', body: `“${link.title}” is now in Communities — others can join it.`, url: '/friends?view=pulse', tag: `comlink-${id}` }).catch(() => {});
     }
   } else {
     await supabaseAdmin.from('friend_community_links').delete().eq('id', id);
