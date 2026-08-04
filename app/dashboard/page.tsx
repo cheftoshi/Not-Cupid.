@@ -213,6 +213,11 @@ export default async function DashboardPage({
               ? `${activeCards.length} ${activeCards.length === 1 ? 'conversation' : 'conversations'} going · up to ${MAX_CONNECTIONS} at once · you set the pace`
               : 'pick who you connect with · you set the pace'}
           </p>
+          <div className={styles.lovePolicyBar} aria-label="Love Line matching limits">
+            <span><strong>{MAX_CONNECTIONS}</strong> active matches</span>
+            <span><strong>5</strong> curated options</span>
+            <span><strong>7d</strong> cooldown before repeats</span>
+          </div>
         </div>
 
         <div className={styles.loveGrid}>
@@ -356,13 +361,14 @@ export default async function DashboardPage({
               />
             )}
 
-            <div id="roster">
+            <div id="roster" className={styles.rosterAnchor}>
               <RosterPicker
                 radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
                 maxRadius={MAX_MATCH_RADIUS}
                 maxConnections={MAX_CONNECTIONS}
                 horizontal
                 hasActive={activeCards.length > 0}
+                activeCards={activeCards}
                 liveConnections={connections.map((c: any) => ({
                   matchId: c.match.id,
                   name: c.otherUser.name || 'your match',

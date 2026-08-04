@@ -3,7 +3,7 @@
 // assets. Pages and API calls always go to the network; navigations only fall
 // back to a static offline screen when the network is unavailable.
 
-const STATIC_CACHE = 'nc-static-v2';
+const STATIC_CACHE = 'nc-static-v3';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {

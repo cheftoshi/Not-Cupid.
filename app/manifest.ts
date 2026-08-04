@@ -33,7 +33,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: 'Love Line',
         short_name: 'Love',
-        description: 'Open your dating matches and chats.',
+        description: 'Open up to 3 active matches and 5 rotating curated options.',
         url: '/dashboard?source=pwa-shortcut',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },

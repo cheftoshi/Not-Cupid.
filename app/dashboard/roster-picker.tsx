@@ -9,6 +9,7 @@ import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
 import ReactivateButton from '@/components/reactivate-button';
 import EndMatchDialog from '@/components/end-match-dialog';
+import styles from './dashboard.module.css';
 
 type LiveConnection = { matchId: string; name: string };
 // Your chosen/active matches — rendered as the LEADING cards in the carousel.
@@ -150,14 +151,12 @@ export default function RosterPicker({
   // roster lands.
   if (roster === null) {
     return (
-      <div>
+      <div className={styles.loveRoster}>
         <SkeletonStyles />
         <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.9rem' }}>
           finding your people…
         </p>
-        <div style={horizontal
-          ? { display: 'flex', gap: '1rem', overflow: 'hidden', padding: '0.5rem 0.2rem 1.1rem' }
-          : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '1rem' }}>
+        <div className={horizontal ? styles.loveRosterSkeleton : styles.loveRosterGrid}>
           {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} width={horizontal ? 210 : undefined} />)}
         </div>
       </div>
@@ -213,7 +212,7 @@ export default function RosterPicker({
   }
 
   return (
-    <div>
+    <div className={styles.loveRoster}>
       <style>{`
         [data-card] { transition: transform .22s var(--ease), box-shadow .22s var(--ease); }
         [data-card]:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
@@ -253,16 +252,18 @@ export default function RosterPicker({
       )}
 
       {/* compatible people — a horizontal row (dashboard) or a responsive grid */}
-      <div style={horizontal
-        ? { display: 'flex', gap: '1rem', overflowX: 'auto', overflowY: 'visible', padding: '0.5rem 0.2rem 1.1rem', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }
-        : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '1rem' }}>
+      <div
+        className={horizontal ? styles.loveRosterRail : styles.loveRosterGrid}
+        aria-label="Active Love Line matches followed by curated options"
+        data-love-roster={horizontal ? 'carousel' : 'grid'}
+      >
         {/* CHOSEN / active matches — the leading cards */}
         {activeCards.map((a) => {
           const first = (a.name || 'your match').split(' ')[0];
           const statusLabel = a.status === 'chatting' ? '● chatting' : a.status === 'your-move' ? '● your move' : '● waiting on them';
           const statusColor = a.status === 'chatting' ? '#2d7a4f' : a.status === 'your-move' ? '#2563ff' : 'var(--h-text-dim)';
           return (
-            <div key={a.matchId} data-card style={{ ...cardBase, border: '2px solid #2563ff', ...(horizontal ? { width: 210, flexShrink: 0, scrollSnapAlign: 'start' } : {}) }}>
+            <div key={a.matchId} data-card data-roster-kind="active" className={horizontal ? styles.loveRosterCard : undefined} style={{ ...cardBase, border: '2px solid #2563ff' }}>
               <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
                 {a.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -280,11 +281,11 @@ export default function RosterPicker({
                   {first}{a.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {a.age}</span> : null}
                 </div>
                 {a.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{a.archetype}</div>}
-                <a href={`/match/${a.matchId}`} style={{ marginTop: 'auto', textAlign: 'center', textDecoration: 'none', background: '#2563ff', color: '#fff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                <a className={styles.loveRosterAction} href={`/match/${a.matchId}`} style={{ marginTop: 'auto', textAlign: 'center', textDecoration: 'none', background: '#2563ff', color: '#fff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                   {a.status === 'your-move' ? 'say hi →' : 'open chat →'}
                 </a>
                 {!a.profileUnlocked && a.unlockAvailable && (
-                  <button onClick={() => unlock(a.matchId)} style={{ background: 'none', border: '1px solid var(--h-border)', color: 'var(--h-accent)', borderRadius: 10, padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔒 see more · $0.99</button>
+                  <button className={styles.loveRosterAction} onClick={() => unlock(a.matchId)} style={{ background: 'none', border: '1px solid var(--h-border)', color: 'var(--h-accent)', borderRadius: 10, padding: '0.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔒 see more · $0.99</button>
                 )}
               </div>
             </div>
@@ -296,7 +297,7 @@ export default function RosterPicker({
           const first = (c.name || 'someone').split(' ')[0];
           const style = relationshipStyleLabel(c.relationship_style);
           return (
-            <div key={c.id} data-card style={{ ...cardBase, ...(horizontal ? { width: 210, flexShrink: 0, scrollSnapAlign: 'start' } : {}) }}>
+            <div key={c.id} data-card data-roster-kind="option" className={horizontal ? styles.loveRosterCard : undefined} style={cardBase}>
               <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
                 {c.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -324,6 +325,7 @@ export default function RosterPicker({
                   </div>
                 ) : (
                 <button
+                  className={styles.loveRosterAction}
                   onClick={() => pick(c)}
                   disabled={!!picking || !!pickedId}
                   style={{
@@ -348,8 +350,8 @@ export default function RosterPicker({
 
       {/* Checkout hand-off — never a silent redirect. */}
       {checkingOut && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90 }}>
-          <div style={{ background: 'var(--h-surface)', borderRadius: 18, padding: '1.6rem 2rem', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
+        <div className={styles.loveModalOverlay}>
+          <div className={styles.loveCheckoutCard}>
             <div style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>🔒</div>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>taking you to secure checkout…</div>
           </div>
@@ -360,9 +362,9 @@ export default function RosterPicker({
       {closePromptFor && (
         <div
           onClick={() => setClosePromptFor(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem', zIndex: 60 }}
+          className={styles.loveModalOverlay}
         >
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 18, padding: '1.5rem', maxWidth: 420, width: '100%' }}>
+          <div onClick={(e) => e.stopPropagation()} className={styles.loveSwapSheet}>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>your inbox is full</div>
             <h3 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
               close a chat to open one with {(closePromptFor.name || 'them').split(' ')[0]}.
@@ -373,13 +375,14 @@ export default function RosterPicker({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               {liveConnections.map((lc) => (
                 <button
+                  className={styles.loveSwapChoice}
                   key={lc.matchId}
                   onClick={() => {
                     setSwapCandidate(closePromptFor);
                     setClosePromptFor(null);
                     setEndingMatchId(lc.matchId);
                   }}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', background: 'var(--h-surface-3)', border: '1.5px solid var(--h-border)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ background: 'var(--h-surface-3)', border: '1.5px solid var(--h-border)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', textAlign: 'left' }}
                 >
                   <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)' }}>{(lc.name || 'your match').split(' ')[0]}</span>
                   <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-accent-2)' }}>end this →</span>

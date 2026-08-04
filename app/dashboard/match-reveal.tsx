@@ -104,7 +104,9 @@ export default function MatchReveal({
 const overlay: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 80,
   background: 'var(--h-bg)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: 'calc(1.25rem + env(safe-area-inset-top, 0px)) calc(1.25rem + env(safe-area-inset-right, 0px)) calc(1.25rem + env(safe-area-inset-bottom, 0px)) calc(1.25rem + env(safe-area-inset-left, 0px))',
+  overflowY: 'auto', overscrollBehavior: 'contain',
   animation: 'ncRevealIn .5s ease both',
 };
 const glow: React.CSSProperties = {
@@ -114,6 +116,7 @@ const glow: React.CSSProperties = {
 const content: React.CSSProperties = { position: 'relative', textAlign: 'center', maxWidth: 520 };
 const cta: React.CSSProperties = {
   background: '#0b0b0b', color: '#fff', border: 'none', borderRadius: 999, padding: '15px 30px',
+  minHeight: 44,
   fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase',
   cursor: 'pointer', transition: 'transform .12s ease, background .15s ease',
 };

@@ -1,5 +1,6 @@
 .page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background:
@@ -10,7 +11,8 @@
   background-size: 34px 34px, auto, auto, auto;
   color: var(--h-text);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 1.5rem 1.5rem 0;
+  padding: 1.5rem 1.5rem var(--app-safe-bottom, 0px);
+  overflow-x: clip;
 }
 
 .container { max-width: 1220px; margin: 0 auto; padding-top: 1rem; width: 100%; }
@@ -70,6 +72,36 @@
   margin: 0;
 }
 
+.lovePolicyBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.lovePolicyBar span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  min-height: 36px;
+  padding: 0.48rem 0.72rem;
+  border: 1px solid color-mix(in srgb, var(--blue) 18%, var(--h-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--h-surface) 86%, var(--blue-pale));
+  color: var(--h-text-dim);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lovePolicyBar strong {
+  color: var(--blue);
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
 .loveGrid {
   display: grid;
   grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
@@ -88,6 +120,54 @@
 .loveMain {
   min-width: 0;
 }
+
+.rosterAnchor { min-width: 0; scroll-margin-top: 8rem; }
+
+.loveRoster { min-width: 0; }
+.loveRosterRail,
+.loveRosterSkeleton {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0.2rem 1.1rem;
+}
+.loveRosterRail {
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.2rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.loveRosterRail::-webkit-scrollbar { display: none; }
+.loveRosterSkeleton { overflow: hidden; }
+.loveRosterGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; }
+.loveRosterCard { width: 210px; flex: 0 0 210px; scroll-snap-align: start; scroll-snap-stop: always; }
+.loveRosterAction { min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
+
+.loveModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(1rem + var(--app-safe-top, 0px)) calc(1rem + var(--app-safe-right, 0px)) calc(1rem + var(--app-safe-bottom, 0px)) calc(1rem + var(--app-safe-left, 0px));
+  background: rgba(11,11,11,0.58);
+}
+.loveCheckoutCard,
+.loveSwapSheet {
+  width: 100%;
+  max-height: calc(100dvh - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--h-surface);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+}
+.loveCheckoutCard { max-width: 360px; padding: 1.6rem 2rem; text-align: center; }
+.loveSwapSheet { max-width: 420px; padding: 1.5rem; }
+.loveSwapChoice { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; min-height: 48px; }
 
 .loveProfileCard,
 .loveChatPanel,
@@ -606,7 +686,10 @@
 
   .loveSide {
     position: static;
+    order: 2;
   }
+
+  .loveMain { order: 1; }
 
   .loveNext {
     grid-template-columns: 1fr;
@@ -623,8 +706,13 @@
 
 @media (max-width: 520px) {
   .page {
-    padding: 1rem 1rem 0;
+    padding: 1rem 0.75rem var(--app-safe-bottom, 0px);
   }
+
+  .head { margin-bottom: 1rem; padding-bottom: 1rem; }
+  .lovePolicyBar { flex-wrap: nowrap; overflow-x: auto; margin-inline: -0.1rem; padding: 0.1rem 0.1rem 0.35rem; scrollbar-width: none; }
+  .lovePolicyBar::-webkit-scrollbar { display: none; }
+  .lovePolicyBar span { flex: 0 0 auto; min-height: 44px; }
 
   .loveNext {
     border-radius: 22px;
@@ -647,13 +735,26 @@
   }
 
   .loveNextTiles {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .loveNextTile { padding: 0.65rem 0.25rem; }
+  .loveNextTile strong { font-size: 1.25rem; }
+  .loveNextTile span { font-size: 0.43rem; letter-spacing: 0.04em; }
 
   .loveNextButton {
     white-space: normal;
     line-height: 1.35;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+
+  .loveLinks a, .loveChatRow, .historyDetails summary, .loveUnlockActions button { min-height: 44px; }
+  .loveRosterCard { width: min(76vw, 270px); flex-basis: min(76vw, 270px); }
+  .loveRosterRail { margin-inline: -0.15rem; padding-bottom: 0.85rem; }
+  .loveSwapSheet { align-self: flex-end; border-radius: 20px 20px 0 0; padding: 1.2rem; padding-bottom: max(1.2rem, var(--app-safe-bottom, 0px)); }
 }
 
 /* keyframes must live in-module (CSS Modules scope animation names — the

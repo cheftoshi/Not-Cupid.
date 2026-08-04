@@ -172,13 +172,13 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
             <img src="/icons/icon-192.png" alt="" style={{ width: 46, height: 46, borderRadius: 14, flexShrink: 0, boxShadow: '0 12px 26px -18px rgba(0,0,0,0.55)' }} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.06rem', lineHeight: 1.08, color: 'var(--h-text)' }}>Keep your connection experiment in your pocket.</div>
-              <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.76rem', lineHeight: 1.35, color: 'var(--h-text-dim)', marginTop: 4 }}>Install NotCupid for faster access to Friend Line, chats, and real-plan pings.</div>
+              <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.76rem', lineHeight: 1.35, color: 'var(--h-text-dim)', marginTop: 4 }}>Install NotCupid for faster access to Love Line, Friend Line, chats, and real-plan pings.</div>
             </div>
           </div>
         )}
         {showInstall && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '0.35rem' }}>
-            {['friend line', 'chats', 'pings'].map((x) => (
+            {['love line', 'friend line', 'pings'].map((x) => (
               <span key={x} style={{ textAlign: 'center', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.3rem 0.35rem', background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{x}</span>
             ))}
           </div>
