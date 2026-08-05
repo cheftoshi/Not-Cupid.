@@ -5,19 +5,14 @@ import { activeCircleOf } from '@/lib/friend-circles';
 import { hasCircleAccess, circleChatStatus } from '@/lib/friend-access';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
+import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
 
 // Push every other live member of a circle. Crew chat has no email notification,
 // so this is the ONLY ping crewmates get — the per-circle tag collapses a burst
 // of messages into one lock-screen notification.
-async function pushCrew(circleId: string, exceptId: string, title: string, body: string) {
-  const { data: members } = await supabaseAdmin
-    .from('friend_circle_members')
-    .select('user_id')
-    .eq('circle_id', circleId)
-    .is('left_at', null);
-  const ids = (members ?? []).map((m) => m.user_id).filter((id) => id !== exceptId);
+async function pushCrew(circleId: string, ids: string[], title: string, body: string) {
   await Promise.all(
     ids.map((id) => sendPushToUser(id, { title, body, url: '/friends?view=crew', tag: `crew-${circleId}` }))
   );
@@ -39,16 +34,21 @@ export async function GET() {
   const ids = (memberRows ?? []).map((m) => m.user_id);
 
   const { data: memberData } = await supabaseAdmin
-    .from('users').select('id, name, photo_url').in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+    .from('users').select('id, name, photo_url, is_test').in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+  // A mixed-realm circle can only be legacy/corrupt data. Never expose its
+  // members or message bodies while the cleanup migration retires it.
+  const mixedRealm = (memberData ?? []).length !== ids.length
+    || (memberData ?? []).some((member: any) => !sameRealm(user, member));
   // Mark the caller + float them first, so the "who's here" roster can say "you".
   const members = (memberData ?? [])
-    .map((m: any) => ({ ...m, isMe: m.id === user.id }))
+    .filter((member: any) => sameRealm(user, member))
+    .map(({ is_test: _isTest, ...m }: any) => ({ ...m, isMe: m.id === user.id }))
     .sort((a: any, b: any) => (a.isMe === b.isMe ? 0 : a.isMe ? -1 : 1));
 
   // Two gates: do I personally have access, and is the chat live for everyone?
   const iHaveAccess = await hasCircleAccess(user, circleId);
   const status = await circleChatStatus(circleId);
-  const canSee = iHaveAccess && status.live;
+  const canSee = iHaveAccess && status.live && !mixedRealm;
 
   // Withhold message bodies unless the chat is fully live (so the UI can show
   // either "unlock to join" or "waiting on N crewmates to unlock").
@@ -90,6 +90,26 @@ export async function POST(req: NextRequest) {
   const circleId = await activeCircleOf(user.id);
   if (!circleId) return NextResponse.json({ error: 'You have no friend circle yet — match with someone first.' }, { status: 400 });
 
+  // Re-check every live member on writes as well as reads. This prevents a
+  // legacy mixed-realm circle from accepting a message or sending cross-realm
+  // push notifications before the cleanup migration closes it.
+  const { data: realmMemberRows } = await supabaseAdmin
+    .from('friend_circle_members')
+    .select('user_id')
+    .eq('circle_id', circleId)
+    .is('left_at', null);
+  const realmMemberIds = Array.from(new Set((realmMemberRows ?? []).map((member) => member.user_id)));
+  const { data: realmMembers } = await supabaseAdmin
+    .from('users')
+    .select('id, is_test')
+    .in('id', realmMemberIds.length ? realmMemberIds : ['00000000-0000-0000-0000-000000000000']);
+  const invalidRealm = !realmMemberIds.includes(user.id)
+    || (realmMembers ?? []).length !== realmMemberIds.length
+    || (realmMembers ?? []).some((member: any) => !sameRealm(user, member));
+  if (invalidRealm) {
+    return NextResponse.json({ error: 'This crew is unavailable.' }, { status: 409 });
+  }
+
   // Must personally have access (free 1st crew or $0.99 unlock)…
   if (!(await hasCircleAccess(user, circleId))) {
     return NextResponse.json({ error: 'locked', needsUnlock: true }, { status: 402 });
@@ -113,7 +133,8 @@ export async function POST(req: NextRequest) {
   // this is the crew chat's only notification channel). Never blocks the send.
   const senderFirst = (user.name || 'A crewmate').split(' ')[0];
   const preview = message.body.length > 90 ? message.body.slice(0, 90) + '…' : message.body;
-  await pushCrew(circleId, user.id, `${senderFirst} · your crew`, preview).catch(() => {});
+  const recipientIds = realmMemberIds.filter((id) => id !== user.id);
+  await pushCrew(circleId, recipientIds, `${senderFirst} · your crew`, preview).catch(() => {});
 
   return NextResponse.json({ message });
 }

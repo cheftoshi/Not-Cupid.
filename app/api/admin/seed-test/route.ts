@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { getCurrentAdmin } from '@/lib/admin';
 import { joinCircle } from '@/lib/friend-circles';
 import { devLoginUrl } from '@/lib/dev-login';
+import { metroOf } from '@/lib/quiz-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,7 @@ export const dynamic = 'force-dynamic';
 const gal = (a: number, b: number) => [`https://i.pravatar.cc/600?img=${a}`, `https://i.pravatar.cc/600?img=${b}`];
 const baseVibes = { chronotype: 2, date_freq: 3, future: 3, comm: 3, social: 3, risk: 2 };
 const vals = (o: Record<string, any> = {}) => ({ kids: 2, faith: 1, politics: 2, ambition: 2, lifestyle: 2, fitness: 3, substances: 'social', ...o });
+const FIXTURE_EMAIL_SUFFIX = '+test@notcupid.dev';
 
 type Spec = {
   email: string; name: string; gender: string; seeking: string; age: number; zip: string;
@@ -103,6 +105,19 @@ export async function POST(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${req.headers.get('host')}`;
   const now = new Date().toISOString();
   const ids: string[] = [];
+  const canonicalEmails = new Set(S.map((user) => user.email.toLowerCase()));
+  // Include retired fixture accounts in cleanup so old definitions (for
+  // example Test Frankie) cannot remain eligible and displace the canonical
+  // Love roster. Only the dedicated +test@notcupid.dev namespace is touched.
+  const { data: existingFixtureUsers, error: existingFixtureError } = await supabaseAdmin
+    .from('users')
+    .select('id, email')
+    .eq('is_test', true)
+    .like('email', `%${FIXTURE_EMAIL_SUFFIX}`);
+  if (existingFixtureError) {
+    console.error('seed-test fixture lookup failed', existingFixtureError);
+    return NextResponse.json({ error: 'Could not inspect test fixtures' }, { status: 500 });
+  }
 
   for (const u of S) {
     const row = {
@@ -117,11 +132,21 @@ export async function POST(req: NextRequest) {
       vibes: baseVibes, attach_anxiety: u.attach[0], attach_avoidance: u.attach[1], attach_style: u.attach[2],
       values_profile: vals(u.values),
       is_test: true, status: 'waiting', pool_active: true,
+      auto_rematch: true, last_seen_at: now, last_matched_at: null,
       matching_cooldown_until: null, matching_disabled_at: null, deleted_at: null, is_blocked: false,
-      ghost_strikes: 0, ignored_picks: 0,
+      pool_drop_at: null, balance_hold_at: null, match_radius: 15, radius_nudge_sent_at: null,
+      ghost_reports_received: 0, ghost_strikes: 0, ignored_picks: 0, hexaco_unlocked: false,
+      roster_snapshot: [], roster_refreshed_at: null,
+      roster_nudged_at: null, today_move: null, today_move_at: null,
       friend_opted_in_at: now,
       friend_vibes: { intent: 'open to both', activities: u.activities, cadence: 'weekly', group_size: 'small', life_stage: 'settling in' },
       friend_seeking: ['grab a drink', 'try new spots'],
+      friend_age_min: 21, friend_age_max: 45,
+      friend_skips: 0, friend_pack_seen_at: null, friend_cooldown_until: null,
+      friend_paid_at: null, friend_pro_until: null, stripe_customer_id: null, friend_sub_id: null,
+      friend_digest_sent_at: null, profile_refresh_count: 0,
+      email_notifications: true, notifications_paused_at: null,
+      intro_video_url: null, prompts: [], is_lgbtq: false,
     };
     const { data, error } = await supabaseAdmin.from('users').upsert(row, { onConflict: 'email' }).select('id').single();
     if (error) { console.error('seed-test upsert failed', error); return NextResponse.json({ error: 'Could not seed test users' }, { status: 500 }); }
@@ -129,30 +154,87 @@ export async function POST(req: NextRequest) {
   }
 
   const [alex, bailey, , dev, iris, jules, maya, cam, eli, owen] = ids;
+  const staleFixtureIds = (existingFixtureUsers ?? [])
+    .filter((user: any) => !canonicalEmails.has(String(user.email || '').toLowerCase()))
+    .map((user: any) => user.id as string);
+  const fixtureIds = Array.from(new Set([...(existingFixtureUsers ?? []).map((user: any) => user.id as string), ...ids]));
+  const fixtureEmails = Array.from(new Set([...(existingFixtureUsers ?? []).map((user: any) => String(user.email).toLowerCase()), ...S.map((user) => user.email.toLowerCase())]));
 
   // ── Clean slate (idempotent re-seed) ──
   const del = async (table: string, cols: string[]) => {
-    for (const c of cols) { try { await supabaseAdmin.from(table).delete().in(c, ids); } catch { /* table may not exist */ } }
+    for (const c of cols) {
+      const { error } = await supabaseAdmin.from(table).delete().in(c, fixtureIds);
+      if (error) console.warn(`seed-test cleanup skipped ${table}.${c}`, error.message);
+    }
   };
   // messages first (FK to matches), then matches
-  try {
-    const { data: m1 } = await supabaseAdmin.from('matches').select('id').in('user_1_id', ids);
-    const { data: m2 } = await supabaseAdmin.from('matches').select('id').in('user_2_id', ids);
-    const mids = Array.from(new Set([...(m1 ?? []), ...(m2 ?? [])].map((m: any) => m.id)));
-    if (mids.length) await supabaseAdmin.from('messages').delete().in('match_id', mids);
-  } catch { /* ignore */ }
+  const { data: matchSideOne } = await supabaseAdmin.from('matches').select('id').in('user_1_id', fixtureIds);
+  const { data: matchSideTwo } = await supabaseAdmin.from('matches').select('id').in('user_2_id', fixtureIds);
+  const oldMatchIds = Array.from(new Set([...(matchSideOne ?? []), ...(matchSideTwo ?? [])].map((match: any) => match.id)));
+  if (oldMatchIds.length) await supabaseAdmin.from('messages').delete().in('match_id', oldMatchIds);
+
+  const { data: oldMemberships } = await supabaseAdmin
+    .from('friend_circle_members').select('circle_id').in('user_id', fixtureIds);
+  const oldCircleIds = Array.from(new Set((oldMemberships ?? []).map((member: any) => member.circle_id)));
+  if (oldCircleIds.length) await supabaseAdmin.from('friend_messages').delete().in('circle_id', oldCircleIds);
+
   await del('matches', ['user_1_id', 'user_2_id']);
   await del('match_history', ['user_a_id', 'user_b_id']);
   await del('match_unlocks', ['user_id', 'unlocked_user_id']);
+  await del('unlocks', ['user_id']);
+  await del('match_date_vibes', ['user_id']);
+  await del('activity_swipes', ['user_id']);
+  await del('date_feedback', ['user_id']);
+  await del('feedback', ['user_id']);
+  await del('monetization_events', ['user_id']);
+  await del('love_ai_coach_cache', ['user_id']);
+  await del('roster_exposures', ['user_id', 'candidate_id']);
+  await del('sessions', ['user_id']);
+  await del('push_subscriptions', ['user_id']);
+  const { error: otpCleanupError } = await supabaseAdmin.from('otp_codes').delete().in('email', fixtureEmails);
+  if (otpCleanupError) console.warn('seed-test cleanup skipped otp_codes.email', otpCleanupError.message);
   await del('friend_connections', ['user_a_id', 'user_b_id']);
   await del('friend_circle_members', ['user_id']);
   await del('friend_match_history', ['user_a_id', 'user_b_id']);
-  try {
-    const { data: oldActs } = await supabaseAdmin.from('friend_activities').select('id').in('author_id', ids);
-    const aids = (oldActs ?? []).map((a: any) => a.id);
-    if (aids.length) { await supabaseAdmin.from('friend_activity_rsvps').delete().in('activity_id', aids); }
-    await supabaseAdmin.from('friend_activities').delete().in('author_id', ids);
-  } catch { /* ignore */ }
+  await del('friend_match_rounds', ['user_id']);
+  await del('friend_chat_unlocks', ['user_id']);
+  await del('friend_dms', ['user_a_id', 'user_b_id', 'sender_id']);
+  await del('friend_dm_reads', ['user_id', 'other_id']);
+  await del('friend_trips', ['user_id']);
+  await del('friend_intent_members', ['user_id']);
+  await del('friend_intents', ['user_id']);
+  await del('friend_action_events', ['user_id']);
+  await del('friend_club_members', ['user_id']);
+  await del('friend_club_messages', ['sender_id']);
+  await del('friend_club_reports', ['user_id']);
+  await del('friend_clubs', ['creator_id']);
+  await del('friend_community_links', ['submitter_id']);
+  await del('raffle_entries', ['user_id']);
+  await del('raffle_draws', ['user_a_id', 'user_b_id']);
+
+  const { data: oldActs } = await supabaseAdmin.from('friend_activities').select('id').in('author_id', fixtureIds);
+  const oldActivityIds = (oldActs ?? []).map((activity: any) => activity.id);
+  if (oldActivityIds.length) {
+    await supabaseAdmin.from('friend_activity_rsvps').delete().in('activity_id', oldActivityIds);
+    await supabaseAdmin.from('friend_activity_comments').delete().in('activity_id', oldActivityIds);
+  }
+  await del('friend_activity_rsvps', ['user_id']);
+  await del('friend_activity_comments', ['user_id']);
+  await del('friend_activities', ['author_id']);
+
+  if (staleFixtureIds.length) {
+    await supabaseAdmin.from('users').update({
+      pool_active: false,
+      matching_disabled_at: now,
+      deleted_at: now,
+      friend_opted_in_at: null,
+      roster_snapshot: [],
+      roster_refreshed_at: null,
+    }).in('id', staleFixtureIds);
+    // Remove retired ids from any cached roster immediately. Eligibility checks
+    // also exclude their soft-deleted rows if this rolling-migration RPC is absent.
+    await supabaseAdmin.rpc('purge_roster_candidates', { p_candidate_ids: staleFixtureIds }).then(undefined, () => {});
+  }
 
   const expires = new Date(Date.now() + 72 * 3600 * 1000).toISOString();
 
@@ -213,6 +295,7 @@ export async function POST(req: NextRequest) {
     const exp = happens_at || new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();
     const { data } = await supabaseAdmin.from('friend_activities').insert({
       author_id: ids[ev.author], title: ev.title, body: ev.body, category: ev.cat, area: ev.area,
+      metro: metroOf(S[ev.author].zip), is_test: true,
       kind: ev.kind, happens_at, expires_at: exp, audience_gender: null, audience_age_min: null, audience_age_max: null,
     }).select('id').single();
     if (data?.id) actIds.push(data.id);
@@ -237,6 +320,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     message: 'Test world ready. Log in as Test Alex to see it all: 1 live Love connection + a full browseable roster, a live friend crew + a sealed pack to open, and a populated Scene with RSVPs. Test accounts only ever match other test accounts.',
+    accountCount: S.length,
+    retiredFixtureCount: staleFixtureIds.length,
     accounts: S.map((u, i) => ({ name: u.name, email: u.email, loginUrl: devLoginUrl(baseUrl, ids[i]) })),
   });
 }

@@ -5,6 +5,7 @@ import ChatRoom from './chat-room';
 import { isPro } from '@/lib/pro';
 import { lockedProfileView, profileUnlockSummary } from '@/lib/profile-unlock';
 import { recordMonetizationEvent } from '@/lib/monetization';
+import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const [{ data: otherUser }, { data: unlock }] = await Promise.all([
     supabaseAdmin
       .from('users')
-      .select('id, name, age, photo_url, gallery, bio, archetype, occupation, education, music, food, hobbies, sports, prompts, vibes, values_profile, attach_style, relationship_style, sun_sign')
+      .select('id, name, age, photo_url, gallery, bio, archetype, occupation, education, music, food, hobbies, sports, prompts, vibes, values_profile, attach_style, relationship_style, sun_sign, is_test')
       .eq('id', otherId)
       .single(),
     supabaseAdmin
@@ -43,7 +44,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       .maybeSingle(),
   ]);
 
-  if (!otherUser) redirect('/dashboard');
+  if (!otherUser || !sameRealm(user, otherUser)) redirect('/dashboard');
   const profileUnlocked = isPro(user) || !!unlock?.profile_unlocked;
   const unlockSummary = profileUnlockSummary(otherUser);
   if (!profileUnlocked && unlockSummary.available && !(user as any).is_test) {

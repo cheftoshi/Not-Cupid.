@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
+import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +50,11 @@ export async function GET(req: NextRequest) {
   }
 
   if (otherId === user.id) return NextResponse.json({ error: 'Invalid' }, { status: 400 });
+  const { data: other } = await supabaseAdmin
+    .from('users').select('id, name, photo_url, is_test').eq('id', otherId).is('deleted_at', null).maybeSingle();
+  if (!other || !sameRealm(user, other)) {
+    return NextResponse.json({ error: 'Not connected', messages: [] }, { status: 403 });
+  }
   if (!(await areConnected(user.id, otherId))) {
     return NextResponse.json({ error: 'Not connected', messages: [] }, { status: 403 });
   }
@@ -62,9 +68,6 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: true });
   if (after) q = q.gt('created_at', after);
   const { data: messages } = await q;
-
-  const { data: other } = await supabaseAdmin
-    .from('users').select('id, name, photo_url').eq('id', otherId).maybeSingle();
 
   // Opening/polling the thread = reading it. Graceful pre-migration.
   try {
@@ -90,6 +93,11 @@ export async function POST(req: NextRequest) {
   const { otherId, body } = await req.json().catch(() => ({}));
   const text = String(body ?? '').trim().slice(0, 2000);
   if (!otherId || otherId === user.id || !text) return NextResponse.json({ error: 'Invalid' }, { status: 400 });
+  const { data: other } = await supabaseAdmin
+    .from('users').select('id, is_test').eq('id', otherId).is('deleted_at', null).maybeSingle();
+  if (!other || !sameRealm(user, other)) {
+    return NextResponse.json({ error: 'Not connected' }, { status: 403 });
+  }
   if (!(await areConnected(user.id, otherId))) {
     return NextResponse.json({ error: 'Not connected' }, { status: 403 });
   }

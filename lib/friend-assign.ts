@@ -6,6 +6,7 @@ import { sendPushToUser } from '@/lib/push';
 import { metroOf } from '@/lib/quiz-data';
 import { friendLocationContext, friendMetroLabel, travelerPresenceByUser } from '@/lib/friend-location';
 import { connectionInFriendSegment, travelMatchExpiry, travelSegmentCapacity } from '@/lib/friend-travel';
+import { sameRealm } from '@/lib/realm';
 
 // Auto-assign: top the user up to the current segment's friend-match capacity by
 // score, excluding anyone they already have a connection or history with, and
@@ -51,14 +52,20 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     seen.add(r.user_a_id === userId ? r.user_b_id : r.user_a_id)
   );
 
+  const meTest = (me as any).is_test === true;
   const { data: pool } = await supabaseAdmin
     .from('users')
     // Only the fields the friend matcher actually reads — was `select('*')`,
     // a PII over-fetch (email/bio/gallery/love-columns) for the whole friend
     // pool on every roster load. Mirrors the love-roster trim.
-    .select('id, age, gender, is_lgbtq, friend_age_min, friend_age_max, friend_seeking, friend_vibes, zip, score_openness, score_extraversion, score_agreeableness, score_honesty, score_conscientiousness')
+    .select('id, age, gender, is_test, is_lgbtq, friend_age_min, friend_age_max, friend_seeking, friend_vibes, zip, score_openness, score_extraversion, score_agreeableness, score_honesty, score_conscientiousness')
     .not('friend_opted_in_at', 'is', null)
     .is('deleted_at', null)
+    // Query-time realm boundary: never even download the other realm into the
+    // candidate pool. Keep legacy NULL rows in the real realm, matching
+    // sameRealm's fail-safe normalization. The JS check below remains as
+    // defense in depth.
+    .or(meTest ? 'is_test.eq.true' : 'is_test.is.null,is_test.eq.false')
     // Exclude ghosted/paused users — they don't surface to anyone on either line.
     .is('matching_disabled_at', null)
     .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${new Date().toISOString()}`)
@@ -66,7 +73,6 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
 
   // Realm segregation: test accounts only crew up with other test accounts;
   // real users never get matched to a test account (and vice-versa).
-  const meTest = (me as any).is_test === true;
   // Friend matching is metro-bounded — you crew up across your WHOLE metro (no
   // radius), but never cross-metro (a Boston user shouldn't be friend-matched to
   // NYC). If we can't resolve the user's metro, fall back to no geo filter.
@@ -76,7 +82,7 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     : new Map();
   const fresh = (pool ?? []).filter((p) =>
     !seen.has(p.id) &&
-    (((p as any).is_test === true) === meTest) &&
+    sameRealm(me, p as any) &&
     (!myMetro || metroOf((p as any).zip) === myMetro || candidateTrips.has(p.id))
   );
   const ranked = rankFriendCandidates(me, fresh);

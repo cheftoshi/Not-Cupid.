@@ -6,6 +6,7 @@ import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordFriendAction } from '@/lib/friend-events';
 import { friendActivityInCurrentMetro } from '@/lib/friend-activity-access';
+import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .eq('id', activityId)
     .maybeSingle();
   if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
+  if (!sameRealm(user, activity)) {
+    return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
+  }
 
   const { data: existing } = await supabaseAdmin
     .from('friend_activity_rsvps')

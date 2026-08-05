@@ -12,6 +12,7 @@ import { profileUnlockSummary } from '@/lib/profile-unlock';
 import { recordMonetizationEvent } from '@/lib/monetization';
 import LoveUnlockOffer from './love-unlock-offer';
 import styles from './dashboard.module.css';
+import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,7 +86,7 @@ export default async function DashboardPage({
       ? supabaseAdmin.from('users').select(CARD_COLS).in('id', otherIds)
       : Promise.resolve({ data: [] as any[] }),
     historyOtherIds.length
-      ? supabaseAdmin.from('users').select('id, name').in('id', historyOtherIds)
+      ? supabaseAdmin.from('users').select('id, name, is_test').in('id', historyOtherIds)
       : Promise.resolve({ data: [] as any[] }),
     // Latest messages across the live matches → unread badges ("they replied").
     liveIds.length
@@ -104,7 +105,7 @@ export default async function DashboardPage({
 
   const unlockByMatch = new Map<string, any>((unlockRows ?? []).map((u: any) => [u.match_id, u]));
   const otherById = new Map<string, any>((others ?? []).map((u: any) => [u.id, u]));
-  const historyNameById = new Map<string, any>((historyOthers ?? []).map((u: any) => [u.id, u.name]));
+  const historyOtherById = new Map<string, any>((historyOthers ?? []).map((historyUser: any) => [historyUser.id, historyUser]));
 
   const isTestViewer = (user as any).is_test === true;
   const viewerIsPro = isPro(user);
@@ -129,6 +130,10 @@ export default async function DashboardPage({
       };
     })
     .filter(Boolean) as any[];
+  const safeHistoryMatches = (historyMatches ?? []).filter((match: any) => {
+    const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
+    return sameRealm(user, historyOtherById.get(otherId));
+  });
 
   const newest = connections[0] || null;
   const newestFresh = !!newest?.match?.created_at &&
@@ -298,7 +303,7 @@ export default async function DashboardPage({
               )}
             </section>
 
-            {historyMatches && historyMatches.length > 0 && (
+            {safeHistoryMatches.length > 0 && (
               <section className={styles.loveHistoryPanel}>
                 <div>
                   <div className={styles.panelKicker}>past conversations</div>
@@ -307,9 +312,9 @@ export default async function DashboardPage({
                 <details className={styles.historyDetails}>
                   <summary>look at past conversations</summary>
                   <div className={styles.historyMiniList}>
-                    {historyMatches.map((m: any) => {
+                    {safeHistoryMatches.map((m: any) => {
                       const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
-                      const name = historyNameById.get(otherId) || 'a match';
+                      const name = historyOtherById.get(otherId)?.name || 'a match';
                       return (
                         <a key={m.id} href={`/match/${m.id}`}>
                           <span>{name}</span>

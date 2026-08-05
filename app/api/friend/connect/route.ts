@@ -5,6 +5,7 @@ import { friendCompatibilityScore, friendGenderOk } from '@/lib/friend-matching'
 import { joinCircle } from '@/lib/friend-circles';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
+import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
   const { data: cand } = await supabaseAdmin
     .from('users').select('*').eq('id', candidateId).is('deleted_at', null).single();
   if (!cand || !cand.friend_opted_in_at) return NextResponse.json({ error: 'They’re not available.' }, { status: 404 });
+  if (!sameRealm(user, cand)) return NextResponse.json({ error: 'They’re not available.' }, { status: 404 });
   if (!friendGenderOk(user, cand)) return NextResponse.json({ error: 'Not a match on friend preferences.' }, { status: 409 });
 
   // CONNECTIONS ARE UNLIMITED — packs limit how many people you SEE (paced
