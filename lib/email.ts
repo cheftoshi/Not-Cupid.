@@ -109,6 +109,7 @@ interface RenderArgs {
   bodyHtml: string;           // pre-built HTML for the body (paragraphs, cards, buttons)
   recipientId?: string;       // if provided, footer includes unsub link
   footerNote?: string;        // short line above the boilerplate footer
+  mailingAddress?: string;    // full postal address for promotional campaigns
 }
 
 export function renderEmail(args: RenderArgs): string {
@@ -189,7 +190,7 @@ export function renderEmail(args: RenderArgs): string {
 
       <!-- legal / address (CAN-SPAM) -->
       <div style="max-width:600px;margin-top:14px;font-family:'DM Mono','SF Mono',monospace;font-size:9px;color:${C.mutedSoft};letter-spacing:0.1em;text-align:center;line-height:1.6;">
-        NotCupid · Boston, MA · You're receiving this because you signed up at notcupid.com.
+        NotCupid · ${escapeHtml(args.mailingAddress || 'Boston, MA')} · You're receiving this because you signed up at notcupid.com.
       </div>
 
     </td>
@@ -208,6 +209,8 @@ interface SendArgs {
   html: string;
   replyTo?: string;
   text?: string;
+  tags?: Array<{ name: string; value: string }>;
+  idempotencyKey?: string;
 }
 
 // Crude HTML→text fallback. A multipart (text + html) email reads as a real
@@ -230,7 +233,7 @@ function htmlToText(html: string): string {
 }
 
 /** Send a single email via Resend. Returns { ok, error? } — never throws. */
-export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: string }> {
+export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; id?: string; error?: string }> {
   if (!process.env.RESEND_API_KEY) {
     console.error('sendEmail: RESEND_API_KEY missing');
     return { ok: false, error: 'RESEND_API_KEY missing' };
@@ -246,6 +249,7 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
+        ...(args.idempotencyKey ? { 'Idempotency-Key': args.idempotencyKey.slice(0, 256) } : {}),
       },
       body: JSON.stringify({
         from: FROM,
@@ -256,13 +260,15 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: 
         // replies reach a human and the message reads as transactional.
         text: args.text || htmlToText(args.html),
         reply_to: args.replyTo || 'match@notcupid.com',
+        ...(args.tags?.length ? { tags: args.tags.slice(0, 20) } : {}),
       }),
     });
     if (!res.ok) {
       console.error('sendEmail: Resend non-2xx', { status: res.status, recipientId });
       return { ok: false, error: `Resend ${res.status}` };
     }
-    return { ok: true };
+    const data = await res.json().catch(() => ({}));
+    return { ok: true, id: typeof data?.id === 'string' ? data.id : undefined };
   } catch (err: any) {
     console.error('sendEmail: throw', { recipientId, err: err?.message });
     return { ok: false, error: err?.message || 'send failed' };

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase';
+import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,92 @@ function plainTextFallback(html: string): string {
     .trim();
 }
 
-// Resend inbound webhook. Requests are verified against the raw body and the
-// provider's signing secret before any event data is trusted or stored.
+const CAMPAIGN_EVENT_MAP: Record<string, { status: string; timestamp?: string }> = {
+  'email.sent': { status: 'sent', timestamp: 'sent_at' },
+  'email.delivered': { status: 'delivered', timestamp: 'delivered_at' },
+  'email.opened': { status: 'opened', timestamp: 'opened_at' },
+  'email.clicked': { status: 'clicked', timestamp: 'clicked_at' },
+  'email.delivery_delayed': { status: 'delayed' },
+  'email.suppressed': { status: 'suppressed' },
+  'email.failed': { status: 'failed' },
+  'email.bounced': { status: 'bounced', timestamp: 'bounced_at' },
+  'email.complained': { status: 'complained', timestamp: 'complained_at' },
+};
+
+const CAMPAIGN_STATUS_RANK: Record<string, number> = {
+  queued: 0,
+  sent: 1,
+  delayed: 1,
+  delivered: 2,
+  opened: 3,
+  clicked: 4,
+  failed: 5,
+  bounced: 5,
+  suppressed: 5,
+  complained: 5,
+};
+
+async function recordCampaignEvent(event: any) {
+  const mapped = CAMPAIGN_EVENT_MAP[event.type];
+  const data = event?.data || {};
+  const tags = data.tags && typeof data.tags === 'object' ? data.tags : {};
+  if (!mapped || tags.campaign !== LOVE_RELAUNCH_CAMPAIGN || typeof tags.user_id !== 'string') return false;
+
+  const userId = tags.user_id;
+  if (!/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(userId)) return true;
+  const at = typeof event.created_at === 'string' ? event.created_at : new Date().toISOString();
+  const { data: existing } = await supabaseAdmin
+    .from('email_campaign_deliveries')
+    .select('status, sent_at, delivered_at, opened_at, clicked_at, bounced_at, complained_at')
+    .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const currentStatus = typeof existing?.status === 'string' ? existing.status : 'queued';
+  const terminal = ['failed', 'bounced', 'suppressed', 'complained'].includes(currentStatus);
+  const nextStatus = terminal || CAMPAIGN_STATUS_RANK[currentStatus] > CAMPAIGN_STATUS_RANK[mapped.status]
+    ? currentStatus
+    : mapped.status;
+  const update: Record<string, any> = {
+    campaign_key: LOVE_RELAUNCH_CAMPAIGN,
+    user_id: userId,
+    variant: ['ready', 'profile', 'love_setup', 'live'].includes(tags.variant) ? tags.variant : 'ready',
+    // Provider events may arrive out of order; never turn a click back into a
+    // delivery or overwrite a suppression with a late open-pixel event.
+    status: nextStatus,
+    resend_email_id: typeof data.email_id === 'string' ? data.email_id : null,
+    last_event_at: at,
+    updated_at: at,
+  };
+  if (mapped.timestamp && !(existing as any)?.[mapped.timestamp]) update[mapped.timestamp] = at;
+
+  const { error } = await supabaseAdmin
+    .from('email_campaign_deliveries')
+    .upsert(update, { onConflict: 'campaign_key,user_id' });
+  if (error) {
+    console.error('[email-webhook] Could not store campaign event', { type: event.type, code: error.code });
+    throw new Error('Campaign event storage failed');
+  }
+
+  // A complaint or permanent delivery failure must remove the address from
+  // future campaigns. Matching currently depends on email availability, so the
+  // pool flag follows the notification preference just like profile settings.
+  if (['email.complained', 'email.bounced', 'email.suppressed'].includes(event.type)) {
+    await supabaseAdmin
+      .from('users')
+      .update({
+        email_notifications: false,
+        pool_active: false,
+        notifications_paused_at: at,
+      })
+      .eq('id', userId);
+  }
+  return true;
+}
+
+// Resend webhook for inbound replies and outbound campaign lifecycle events.
+// Requests are verified against the raw body and the provider's signing secret
+// before any event data is trusted or stored.
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
   const apiKey = process.env.RESEND_API_KEY;
@@ -52,7 +137,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
-  if (event.type !== 'email.received') return NextResponse.json({ ok: true });
+  if (event.type !== 'email.received') {
+    try {
+      const tracked = await recordCampaignEvent(event);
+      return NextResponse.json({ ok: true, tracked });
+    } catch {
+      return NextResponse.json({ error: 'Could not store campaign event' }, { status: 500 });
+    }
+  }
 
   const emailId = event.data.email_id;
   if (typeof emailId !== 'string' || emailId.length > 200) {

@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function ProfilePage() {
   const currentUser = await getCurrentUser();
   const user = currentUser ? await withPrivateVideoPreview(currentUser) : null;
-  if (!user) redirect('/');
+  if (!user) redirect('/login?next=/profile');
   if (!user.archetype) redirect('/quiz');
 
   return (

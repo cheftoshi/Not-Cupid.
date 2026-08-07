@@ -4,17 +4,21 @@ import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import Link from 'next/link';
 import styles from './preview.module.css';
+import { withPrivateVideoPreview } from '@/lib/private-media';
+import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilePreviewPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect('/');
+  const currentUser = await getCurrentUser();
+  if (!currentUser) redirect('/login?next=/profile/preview');
+  const user = await withPrivateVideoPreview(currentUser);
   if (!user.archetype) redirect('/quiz');
 
   const heightFt = user.height_cm ? Math.floor(user.height_cm / 30.48) : null;
   const heightIn = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : null;
   const arche = ARCHETYPES.find((a) => a.name === user.archetype);
+  const prompts = normalizeProfilePrompts(user.prompts);
 
   const tagRows: Array<{ label: string; items: string[]; variant: 'lav' | 'accent' }> = [
     { label: 'sounds like', items: user.music || [], variant: 'lav' },
@@ -67,6 +71,22 @@ export default async function ProfilePreviewPage() {
             </div>
           )}
 
+          {user.intro_video_preview_url && (
+            <section className={styles.videoBlock}>
+              <div className={styles.videoLabel}>🎬 a quick hello</div>
+              {/* User-uploaded profile clips do not have a separate caption track. */}
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                className={styles.introVideo}
+                src={user.intro_video_preview_url}
+                controls
+                playsInline
+                preload="metadata"
+                aria-label={`${user.name || 'Profile'} intro video`}
+              />
+            </section>
+          )}
+
           {/* ARCHETYPE BAND */}
           {user.archetype && (
             <section className={styles.archeBand}>
@@ -83,6 +103,18 @@ export default async function ProfilePreviewPage() {
               <span className={styles.bioQ}>“</span>
               <p className={styles.bioText}>{user.bio}</p>
               <span className={styles.bioQEnd}>”</span>
+            </section>
+          )}
+
+          {prompts.length > 0 && (
+            <section className={styles.promptSection}>
+              <div className={styles.vibeHead}>· ask me about ·</div>
+              {prompts.map((prompt) => (
+                <div className={styles.promptCard} key={prompt.question}>
+                  <span>{prompt.question}</span>
+                  <strong>{prompt.answer}</strong>
+                </div>
+              ))}
             </section>
           )}
 

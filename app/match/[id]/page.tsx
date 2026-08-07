@@ -6,6 +6,7 @@ import { isPro } from '@/lib/pro';
 import { lockedProfileView, profileUnlockSummary } from '@/lib/profile-unlock';
 import { recordMonetizationEvent } from '@/lib/monetization';
 import { sameRealm } from '@/lib/realm';
+import { withPrivateVideoPreview } from '@/lib/private-media';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   const [{ data: otherUser }, { data: unlock }] = await Promise.all([
     supabaseAdmin
       .from('users')
-      .select('id, name, age, photo_url, gallery, bio, archetype, occupation, education, music, food, hobbies, sports, prompts, vibes, values_profile, attach_style, relationship_style, sun_sign, is_test')
+      .select('id, name, age, photo_url, gallery, bio, archetype, occupation, education, music, food, hobbies, sports, prompts, vibes, values_profile, attach_style, relationship_style, sun_sign, intro_video_url, is_test')
       .eq('id', otherId)
       .single(),
     supabaseAdmin
@@ -57,7 +58,12 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       amountCents: 99,
     });
   }
-  const visibleOtherUser = profileUnlocked ? otherUser : lockedProfileView(otherUser);
+  const otherWithVideo = await withPrivateVideoPreview(otherUser);
+  // Pass only the short-lived playback URL to the client, never the stable
+  // private-storage reference. The hello video is free inside a real match;
+  // the paid profile still covers the deeper bio/gallery/compatibility story.
+  const safeOtherUser = { ...otherWithVideo, intro_video_url: null };
+  const visibleOtherUser = profileUnlocked ? safeOtherUser : lockedProfileView(safeOtherUser);
 
   // Last 500 messages (newest-first, then re-ordered) — enough for any real
   // conversation without making long threads unbounded on first paint.

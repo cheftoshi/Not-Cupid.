@@ -808,7 +808,7 @@ update friend_connections set opened_at = now() where opened_at is null;
 alter table users add column if not exists sun_sign text;
 
 -- ──────────────────────── 20260625_intro_video ────────────────────────
--- Short profile intro video (optional). Stored in the public `raffle-videos`
+-- Short profile intro video (optional). Stored in the private `raffle-videos`
 -- bucket under a `profile/` prefix; this column holds the public URL.
 alter table users add column if not exists intro_video_url text;
 
@@ -1347,3 +1347,26 @@ create trigger friend_connections_same_realm before insert or update of user_a_i
 for each row execute function public.enforce_friend_connection_realm();
 revoke all on function public.enforce_match_realm() from public, anon, authenticated;
 revoke all on function public.enforce_friend_connection_realm() from public, anon, authenticated;
+
+-- ==================== 20260807_email_campaign_deliveries.sql ====================
+create table if not exists public.email_campaign_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  campaign_key text not null check (campaign_key ~ '^[a-z0-9_]{1,80}$'),
+  user_id uuid not null references public.users(id) on delete cascade,
+  variant text not null default 'ready' check (variant in ('ready','profile','love_setup','live')),
+  resend_email_id text,
+  status text not null default 'queued' check (status in ('queued','sent','delivered','opened','clicked','delayed','suppressed','failed','bounced','complained')),
+  sent_at timestamptz, delivered_at timestamptz, opened_at timestamptz, clicked_at timestamptz,
+  bounced_at timestamptz, complained_at timestamptz, last_event_at timestamptz,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  unique (campaign_key, user_id)
+);
+create unique index if not exists email_campaign_deliveries_resend_id_uq
+  on public.email_campaign_deliveries (resend_email_id) where resend_email_id is not null;
+create index if not exists email_campaign_deliveries_campaign_idx
+  on public.email_campaign_deliveries (campaign_key, created_at desc);
+create index if not exists email_campaign_deliveries_user_idx
+  on public.email_campaign_deliveries (user_id, created_at desc);
+alter table public.email_campaign_deliveries enable row level security;
+revoke all on table public.email_campaign_deliveries from public, anon, authenticated;
+grant all on table public.email_campaign_deliveries to service_role;

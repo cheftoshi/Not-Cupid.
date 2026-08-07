@@ -1,6 +1,7 @@
 // Shared definition of the $0.99 Love compatibility-profile value. Keep the
 // dashboard, match room, and checkout eligibility aligned so the app never
 // advertises an empty purchase or gives paid fields away on another surface.
+import { normalizeProfilePrompts } from './profile-prompts.ts';
 
 export type ProfileUnlockSummary = {
   available: boolean;
@@ -26,9 +27,7 @@ export function profileUnlockSummary(user: any): ProfileUnlockSummary {
     ...list(user?.hobbies),
     ...list(user?.sports),
   ].map((item) => item.toLowerCase())).size;
-  const hasPrompts = Array.isArray(user?.prompts)
-    ? user.prompts.length > 0
-    : nonEmptyObject(user?.prompts);
+  const hasPrompts = normalizeProfilePrompts(user?.prompts).length > 0;
   const hasLifestyle = nonEmptyObject(user?.vibes);
   // relationship_style is intentionally part of the free profile baseline.
   // Only count the deeper values answers as paid value.

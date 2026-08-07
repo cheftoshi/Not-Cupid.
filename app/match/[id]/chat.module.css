@@ -104,6 +104,32 @@
   backdrop-filter: blur(12px);
 }
 
+.matchVideoWrap {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #2563ff 26%, var(--h-border));
+  border-radius: 16px;
+  background: #050505;
+}
+
+.matchVideoLabel {
+  background: color-mix(in srgb, var(--h-surface) 95%, var(--blue-pale));
+  color: #1b46c9;
+  padding: 0.55rem 0.7rem;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.matchVideo {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  background: #050505;
+  object-fit: contain;
+}
+
 .matchProfileBody {
   display: grid;
   gap: 0.58rem;
@@ -114,6 +140,36 @@
 .matchTags span {
   font-family: 'DM Mono', ui-monospace, monospace;
   text-transform: uppercase;
+}
+
+.matchPrompts {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.matchPrompts > div {
+  display: grid;
+  gap: 0.2rem;
+  border-left: 2px solid #2563ff;
+  background: color-mix(in srgb, var(--h-surface) 86%, var(--blue-pale));
+  padding: 0.65rem 0.72rem;
+}
+
+.matchPrompts span {
+  color: #1b46c9;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.46rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.matchPrompts strong {
+  color: var(--h-text);
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.82rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.38;
 }
 
 .matchKicker {

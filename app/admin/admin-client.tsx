@@ -299,6 +299,7 @@ export default function AdminClient() {
             <nav className={s.nav}>
               <a href="#funnel" className={s.navLink}>Funnel</a>
               <a href="#monetization" className={s.navLink}>Revenue funnel</a>
+              <a href="#love-campaign" className={s.navLink}>Love campaign</a>
               <a href="#traffic" className={s.navLink}>Traffic</a>
               <a href="#friend" className={s.navLink}>Friend</a>
               <a href="#pool" className={s.navLink}>Pool</a>
@@ -339,6 +340,33 @@ export default function AdminClient() {
                 {sub && <div className={s.kpiSub}>{sub}</div>}
               </div>
             ))}
+          </div>
+
+          {/* ── LOVE LINE RELAUNCH CAMPAIGN ── */}
+          <div className={s.card} id="love-campaign">
+            <div className={s.cardHead}>
+              <p className={s.cardTitle}>Love relaunch — <b>email engagement</b></p>
+            </div>
+            {!data?.loveCampaign ? (
+              <p className={s.note}>Apply the email campaign migration to start the delivery ledger.</p>
+            ) : (
+              <>
+                <div className={s.chips}>
+                  <span className={s.chip}>Sent <b>{data.loveCampaign.sent}</b></span>
+                  <span className={s.chip}>Delivered <b>{data.loveCampaign.delivered}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>CTA clicks <b>{data.loveCampaign.clicked}</b></span>
+                  <span className={s.chip}>Directional opens <b>{data.loveCampaign.opened}</b></span>
+                  <span className={s.chip}>Delivery rate <b>{data.loveCampaign.deliveryRatePct == null ? '—' : `${data.loveCampaign.deliveryRatePct}%`}</b></span>
+                  <span className={s.chip}>Click / delivered <b>{data.loveCampaign.clickRatePct == null ? '—' : `${data.loveCampaign.clickRatePct}%`}</b></span>
+                  <span className={`${s.chip} ${s.chipRed}`}>Bounced <b>{data.loveCampaign.bounced}</b></span>
+                  <span className={`${s.chip} ${s.chipRed}`}>Complaints <b>{data.loveCampaign.complained}</b></span>
+                  <span className={s.chip}>Failed <b>{data.loveCampaign.failed}</b></span>
+                </div>
+                <p className={s.note} style={{ marginTop: '0.75rem' }}>
+                  CTA clicks are first-party. Opens are only directional because mailbox privacy tools can preload tracking pixels.
+                </p>
+              </>
+            )}
           </div>
 
           {/* ── MONETIZATION FUNNEL (last 30 days) ── */}
@@ -773,15 +801,24 @@ export default function AdminClient() {
                 const note = d.remaining > 0 ? `\n\n${d.remaining} remaining. Click again to continue.` : ''
                 alert(`Blast: sent ${d.sent || 0}, failed ${d.failed || 0}, candidates ${d.totalCandidates || 0}${note}`)
               }}>✨ Quiz-retake blast</button>
-              <button className={`${s.btn} ${s.btnInk}`} onClick={async () => {
-                const dry = await fetch('/api/admin/send-relaunch-blast?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
-                const preview = dry ? `\n\n${dry.wouldSend} recipients (${dry.withLiveMatch} have a live match → "see your match", rest → "retake quiz").` : ''
-                if (!confirm(`Send the matching-RELAUNCH blast to all UNSENT users?${preview}\n\nIdempotent — already-sent users skipped.`)) return
-                const res = await fetch('/api/admin/send-relaunch-blast', { method: 'POST' })
+              <button className={`${s.btn} ${s.btnLav}`} onClick={async () => {
+                const res = await fetch('/api/admin/send-love-relaunch?test=1', { method: 'POST' })
                 const d = await parseResponse<any>(res)
-                const note = d.remaining > 0 ? `\n\n${d.remaining} remaining. Click again to continue.` : ''
-                alert(`Relaunch blast: sent ${d.sent || 0}, failed ${d.failed || 0}, candidates ${d.totalCandidates || 0}${note}${d.errors?.length ? '\n\n' + d.errors.slice(0,5).join('\n') : ''}`)
-              }}>📣 Relaunch blast (pick-from-5)</button>
+                alert(res.ok ? `Test Love relaunch email sent to ${d.sentTo}.` : `Test failed: ${d.error || res.status}`)
+              }}>🧪 Send me Love email test</button>
+              <button className={`${s.btn} ${s.btnInk}`} onClick={async () => {
+                const dryRes = await fetch('/api/admin/send-love-relaunch?dry=1&limit=25', { method: 'POST' })
+                const dry = await parseResponse<any>(dryRes).catch(() => null)
+                if (!dryRes.ok || !dry) { alert(`Dry run failed: ${dry?.error || dryRes.status}`); return }
+                const b = dry.breakdown || {}
+                const preview = `${dry.wouldSend} in this wave · ${dry.eligibleActiveLoveUsers} eligible (${dry.activeWindowDays}d activity) · ${dry.excludedDormant || 0} dormant excluded · ${dry.alreadySent} already handled\n\n${b.live || 0} live-match · ${b.ready || 0} roster-ready · ${b.profile || 0} need photo · ${b.love_setup || 0} need Love setup`
+                if (!confirm(`Send the next Love Line relaunch wave?\n\n${preview}\n\nThis sends at most 25, excludes test/blocked/unsubscribed/dormant accounts, and skips prior successful deliveries.`)) return
+                const res = await fetch('/api/admin/send-love-relaunch?limit=25', { method: 'POST' })
+                const d = await parseResponse<any>(res)
+                if (!res.ok) { alert(`Campaign failed: ${d.error || res.status}`); return }
+                const note = d.remaining > 0 ? `\n\n${d.remaining} remained in this run.` : ''
+                alert(`Love relaunch: sent ${d.sent || 0}, failed ${d.failed || 0}, processed ${d.processed || 0}.${note}`)
+              }}>💘 Send next Love wave (25)</button>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
                 const dry = await fetch('/api/admin/send-friend-blast?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
                 const preview = dry ? `\n\n${dry.wouldSend} recipients (ALL users — links to /friends).` : ''

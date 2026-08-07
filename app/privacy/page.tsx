@@ -35,7 +35,7 @@ export default function PrivacyPage() {
       <p>We <strong>do not sell or &quot;share&quot; your personal information</strong> (as those terms are used in U.S. privacy laws), and we don&apos;t show third-party ads.</p>
 
       <h2>Cookies &amp; analytics</h2>
-      <p>We use first-party cookies only: a sign-in/session cookie to keep you logged in, and lightweight first-party analytics (which pages and features get used) to improve the app. We don&apos;t run third-party advertising trackers and we don&apos;t sell data to ad networks.</p>
+      <p>We use first-party cookies only: a sign-in/session cookie to keep you logged in, and lightweight first-party analytics (which pages and features get used) to improve the app. For product emails, we may record delivery, a directional open signal, and whether the app link was clicked so we can understand whether an announcement was useful; mailbox privacy tools can make open counts imprecise. We don&apos;t run third-party advertising trackers and we don&apos;t sell data to ad networks.</p>
 
       <h2>Who we share it with</h2>
       <p>Only the service providers we need to run NotCupid, and only the minimum they need:</p>
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
       <p>If you enter a NotCupid contest or raffle (such as the Summer of Connection series), we collect your entry, your match basics, and your optional intro video. By entering you agree to that contest&apos;s <a href="/raffle/rules">Official Rules</a>, which include a likeness release allowing us to use your name, city, photo, and video for promoting the contest. A winning pair&apos;s prize details (venue and time) are shared only with the two of them.</p>
 
       <h2>What your matches see</h2>
-      <p>Your first name, age, photo(s), bio, and interests are visible to people you match or connect with (a match&apos;s full Love-Line profile unlocks for a one-time fee or with Pro). We <strong>never</strong> show your exact address or ZIP — only a metro label (e.g.&nbsp;&quot;Boston, MA&quot;) and a fuzzy distance band.</p>
+      <p>Your first name, age, main photo, and optional short intro video are visible to people you match or connect with. Additional photos, bio, interests, and deeper compatibility details are part of the full Love-Line profile, which unlocks for a one-time fee or with Pro. We <strong>never</strong> show your exact address or ZIP — only a metro label (e.g.&nbsp;&quot;Boston, MA&quot;) and a fuzzy distance band.</p>
 
       <h2>Your rights &amp; choices</h2>
       <ul>

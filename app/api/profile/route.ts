@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { isSunSign } from '@/lib/astrology';
 import { isManagedStorageUrl } from '@/lib/request-security';
 import { withPrivateVideoPreview } from '@/lib/private-media';
+import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -78,6 +79,9 @@ export async function PUT(req: NextRequest) {
   if (updates.seeking != null && !['m', 'f', 'b', 'both'].includes(updates.seeking)) {
     return NextResponse.json({ error: 'Invalid seeking preference' }, { status: 400 });
   }
+  // Normalize the legacy UI value so matching sees its canonical "anyone"
+  // code instead of silently excluding otherwise compatible profiles.
+  if (updates.seeking === 'both') updates.seeking = 'b';
   if (updates.zip != null && (typeof updates.zip !== 'string' || !/^\d{5}$/.test(updates.zip.trim()))) {
     return NextResponse.json({ error: 'Invalid ZIP code' }, { status: 400 });
   }
@@ -99,8 +103,16 @@ export async function PUT(req: NextRequest) {
   if (!['music', 'food', 'hobbies', 'sports'].every(normalizeStringList)) {
     return NextResponse.json({ error: 'Invalid interests' }, { status: 400 });
   }
-  if ('prompts' in updates && !validJson(updates.prompts)) {
-    return NextResponse.json({ error: 'Invalid prompts' }, { status: 400 });
+  if ('prompts' in updates) {
+    if (!validJson(updates.prompts) || !Array.isArray(updates.prompts) || updates.prompts.length > 3) {
+      return NextResponse.json({ error: 'Invalid prompts' }, { status: 400 });
+    }
+    const normalized = normalizeProfilePrompts(updates.prompts);
+    const suppliedWithAnswers = updates.prompts.filter((entry: any) => entry?.answer?.trim()).length;
+    if (normalized.length !== suppliedWithAnswers) {
+      return NextResponse.json({ error: 'Choose a valid prompt and keep each answer under 180 characters' }, { status: 400 });
+    }
+    updates.prompts = normalized;
   }
   if ('vibes' in updates && !validJson(updates.vibes)) {
     return NextResponse.json({ error: 'Invalid vibes' }, { status: 400 });

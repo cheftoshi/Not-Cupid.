@@ -417,6 +417,67 @@
 
 .charCount { font-size: 0.6875rem; color: var(--h-text-faint); text-align: right; margin-top: 0.4rem; letter-spacing: 0.05em; }
 
+.promptBlock {
+  margin: 0 0 1.75rem;
+  padding: 1rem;
+  border: 1px solid var(--h-border);
+  border-radius: 14px;
+  background: var(--h-surface-2);
+}
+
+.promptHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+  color: var(--h-text-faint);
+  font-size: 0.7rem;
+}
+
+.promptHead .label { margin-bottom: 0.25rem; }
+
+.promptEditor {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.8rem;
+  margin-top: 0.75rem;
+  border-radius: 12px;
+  background: var(--h-surface);
+}
+
+.promptEditor .textarea { min-height: 72px; }
+
+.promptActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--h-text-faint);
+  font-size: 0.6875rem;
+}
+
+.promptActions button,
+.promptAdd {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--h-text-dim);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.promptAdd {
+  margin-top: 0.85rem;
+  color: var(--blue);
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
 .personalityCard {
   background: #0a0a0a;
   color: #fff;

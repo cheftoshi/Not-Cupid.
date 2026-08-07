@@ -7,6 +7,7 @@ import ReportDialog from '@/components/report-dialog';
 import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
 import styles from './chat.module.css';
+import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 
 // Emoji labels for a partner's picked interests (mirrors INTEREST_OPTIONS).
 const INTEREST_LABELS: Record<string, string> = {
@@ -151,6 +152,7 @@ export default function ChatRoom({
     ...(Array.isArray(otherUser?.food) ? otherUser.food : []),
     ...(Array.isArray(otherUser?.hobbies) ? otherUser.hobbies : []),
   ].filter(Boolean).slice(0, 8);
+  const profilePrompts = normalizeProfilePrompts(otherUser?.prompts);
 
   // Tick a clock so the countdown re-renders live (every 30s is plenty).
   useEffect(() => {
@@ -568,6 +570,21 @@ export default function ChatRoom({
             )}
             {score != null && <span className={styles.matchScore}>{score}% match</span>}
           </div>
+          {otherUser?.intro_video_preview_url && (
+            <div className={styles.matchVideoWrap}>
+              <div className={styles.matchVideoLabel}>🎬 {firstName} in 30 seconds</div>
+              {/* User-uploaded profile clips do not have a separate caption track. */}
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                className={styles.matchVideo}
+                src={otherUser.intro_video_preview_url}
+                controls
+                playsInline
+                preload="metadata"
+                aria-label={`${firstName} intro video`}
+              />
+            </div>
+          )}
           <div className={styles.matchProfileBody}>
             <div className={styles.matchKicker}>your connection</div>
             <h2>{otherUser?.name || 'Match'}{otherUser?.age ? <span>, {otherUser.age}</span> : null}</h2>
@@ -587,6 +604,16 @@ export default function ChatRoom({
                   </div>
                 )}
                 {otherUser?.bio && <p>{otherUser.bio}</p>}
+                {profilePrompts.length > 0 && (
+                  <div className={styles.matchPrompts}>
+                    {profilePrompts.map((prompt) => (
+                      <div key={prompt.question}>
+                        <span>{prompt.question}</span>
+                        <strong>{prompt.answer}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {profileTags.length > 0 && (
                   <div className={styles.matchTags}>
                     {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}

@@ -22,7 +22,7 @@ export default async function DashboardPage({
   searchParams: { unlock_session?: string };
 }) {
   const user = await getCurrentUser();
-  if (!user) redirect('/');
+  if (!user) redirect('/login?next=/dashboard');
   if (!user.archetype) redirect('/quiz');
 
   if (searchParams.unlock_session) {
@@ -71,7 +71,7 @@ export default async function DashboardPage({
     (historyMatches ?? []).map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
   ));
   const CARD_COLS =
-    'id, name, age, photo_url, archetype, occupation, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
+    'id, name, age, photo_url, intro_video_url, archetype, occupation, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
     'sports, prompts, vibes, values_profile, attach_style, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
   const [{ data: unlockRows }, { data: others }, { data: historyOthers }, { data: recentMsgs }] = await Promise.all([
@@ -166,6 +166,7 @@ export default async function DashboardPage({
       age: o.age ?? null, archetype: o.archetype || null, occupation: o.occupation || null,
       city: cityLabel(o.zip), relationship_style: o.relationship_style || null, sun_sign: o.sun_sign || null,
       score: m.compatibility_score ?? null,
+      hasIntroVideo: !!o.intro_video_url,
       bio: c.profileUnlocked ? (o.bio || null) : null, interests, unread,
       status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
       profileUnlocked: c.profileUnlocked,
@@ -300,6 +301,7 @@ export default async function DashboardPage({
                         <strong>{card.name.split(' ')[0]}{card.age ? `, ${card.age}` : ''}</strong>
                         <em>
                           {card.status === 'chatting' ? 'chat open' : card.status === 'your-move' ? 'your move' : 'waiting on them'}
+                          {card.hasIntroVideo ? ' · video hello' : ''}
                           {!card.profileUnlocked && card.unlockAvailable ? ' · compatibility details locked' : ''}
                         </em>
                       </span>

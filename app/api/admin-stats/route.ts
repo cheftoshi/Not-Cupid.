@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
+import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,6 +133,41 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch { monetization = null }
+
+    // Love relaunch lifecycle. Opens are directional because mailbox privacy
+    // proxies can prefetch pixels; first-party CTA clicks are the stronger KPI.
+    let loveCampaign: any = null
+    try {
+      const result = await supabaseAdmin
+        .from('email_campaign_deliveries')
+        .select('variant, status, sent_at, delivered_at, opened_at, clicked_at, bounced_at, complained_at')
+        .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN)
+      if (!result.error) {
+        const rows = result.data ?? []
+        const sent = rows.filter((row: any) => row.sent_at).length
+        const delivered = rows.filter((row: any) => row.delivered_at).length
+        const opened = rows.filter((row: any) => row.opened_at).length
+        const clicked = rows.filter((row: any) => row.clicked_at).length
+        const variants = rows.reduce((counts: Record<string, number>, row: any) => {
+          counts[row.variant || 'unknown'] = (counts[row.variant || 'unknown'] || 0) + 1
+          return counts
+        }, {})
+        loveCampaign = {
+          key: LOVE_RELAUNCH_CAMPAIGN,
+          queued: rows.filter((row: any) => row.status === 'queued').length,
+          sent,
+          delivered,
+          opened,
+          clicked,
+          bounced: rows.filter((row: any) => row.bounced_at).length,
+          complained: rows.filter((row: any) => row.complained_at).length,
+          failed: rows.filter((row: any) => row.status === 'failed').length,
+          deliveryRatePct: sent > 0 ? Math.round((delivered / sent) * 100) : null,
+          clickRatePct: delivered > 0 ? Math.round((clicked / delivered) * 100) : null,
+          variants,
+        }
+      }
+    } catch { loveCampaign = null }
 
     const totalUsers = users?.length ?? 0
     const totalMatches = matches?.length ?? 0
@@ -271,6 +307,7 @@ export async function GET(req: NextRequest) {
       funnel,
       traffic,
       monetization,
+      loveCampaign,
       friend,
       recentUsers,
       recentMatches,

@@ -20,6 +20,7 @@ type Candidate = {
   archetype: string | null; metro: string | null; relationship_style: string | null; occupation?: string | null; score: number;
   why?: string | null;
   scoreConfidence?: number;
+  hasIntroVideo?: boolean;
 };
 
 export default function RosterPicker({
@@ -258,6 +259,11 @@ export default function RosterPicker({
                 <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 11px', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', fontWeight: 600 }}>
                   {c.score}<span style={{ color: '#ff6a1f' }}>%</span>
                 </div>
+                {c.hasIntroVideo && (
+                  <div style={{ position: 'absolute', left: 10, bottom: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 9px', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    🎬 video hello
+                  </div>
+                )}
               </div>
               <div style={{ padding: '0.9rem 0.95rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <div style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>

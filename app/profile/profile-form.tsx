@@ -11,6 +11,7 @@ import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
 import { SUN_SIGNS } from '@/lib/astrology';
 import { compressImage } from '@/lib/compress-image';
 import { confirmDialog } from '@/components/feedback';
+import { profilePromptDrafts, PROFILE_PROMPT_OPTIONS, type ProfilePrompt } from '@/lib/profile-prompts';
 
 type Props = {
   initialUser: any;
@@ -35,11 +36,13 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
     ...(Array.isArray(user.music) ? user.music : []),
     ...(Array.isArray(user.food) ? user.food : []),
   ].filter(Boolean).length;
+  const prompts = profilePromptDrafts(user.prompts);
   const qualityItems = [
     { label: 'face photo', done: Boolean(user.photo_url) },
     { label: '2+ extra photos', done: gallery.length >= 2 },
     { label: 'short hello video', done: Boolean(user.intro_video_url) },
     { label: 'bio with texture', done: (user.bio || '').trim().length >= 80 },
+    { label: 'conversation prompt', done: prompts.length >= 1 },
     { label: '3+ interests', done: interestsCount >= 3 },
     { label: 'relationship style', done: Boolean(user.relationship_style) },
     { label: 'basics filled', done: Boolean(user.age && user.gender && user.seeking && user.zip) },
@@ -177,6 +180,22 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
 
   function handleVideoRemove() {
     setUser({ ...user, intro_video_url: null, intro_video_preview_url: null });
+  }
+
+  function updatePrompt(index: number, patch: Partial<ProfilePrompt>) {
+    const next = prompts.map((prompt, promptIndex) => promptIndex === index ? { ...prompt, ...patch } : prompt);
+    setUser({ ...user, prompts: next });
+  }
+
+  function addPrompt() {
+    if (prompts.length >= 3) return;
+    const used = new Set(prompts.map((prompt) => prompt.question));
+    const question = PROFILE_PROMPT_OPTIONS.find((option) => !used.has(option)) || PROFILE_PROMPT_OPTIONS[0];
+    setUser({ ...user, prompts: [...prompts, { question, answer: '' }] });
+  }
+
+  function removePrompt(index: number) {
+    setUser({ ...user, prompts: prompts.filter((_, promptIndex) => promptIndex !== index) });
   }
 
   async function handleDelete() {
@@ -365,11 +384,11 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Seeking</label>
-            <select className={styles.select} value={user.seeking || ''} onChange={e => setUser({ ...user, seeking: e.target.value })}>
+            <select className={styles.select} value={user.seeking === 'both' ? 'b' : (user.seeking || '')} onChange={e => setUser({ ...user, seeking: e.target.value })}>
               <option value="">—</option>
               <option value="m">Men</option>
               <option value="f">Women</option>
-              <option value="both">Anyone</option>
+              <option value="b">Anyone</option>
             </select>
           </div>
         </div>
@@ -419,6 +438,36 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
             placeholder="what's the most interesting thing about you that isn't obvious from a photo?"
           />
           <div className={styles.charCount}>{(user.bio || '').length}/500</div>
+        </div>
+        <div className={styles.promptBlock}>
+          <div className={styles.promptHead}>
+            <div>
+              <div className={styles.label}>Conversation prompts</div>
+              <div className={styles.labelHint}>Give someone an easy, specific way to start.</div>
+            </div>
+            <span>{prompts.length}/3</span>
+          </div>
+          {prompts.map((prompt, index) => (
+            <div className={styles.promptEditor} key={`${prompt.question}-${index}`}>
+              <select className={styles.select} value={prompt.question}
+                onChange={(event) => updatePrompt(index, { question: event.target.value })}>
+                {PROFILE_PROMPT_OPTIONS.map((option) => (
+                  <option key={option} value={option} disabled={prompts.some((item, itemIndex) => itemIndex !== index && item.question === option)}>{option}</option>
+                ))}
+              </select>
+              <textarea className={styles.textarea} rows={2} maxLength={180}
+                value={prompt.answer}
+                onChange={(event) => updatePrompt(index, { answer: event.target.value })}
+                placeholder="Make it concrete—one real detail beats a perfect paragraph." />
+              <div className={styles.promptActions}>
+                <span>{prompt.answer.length}/180</span>
+                <button type="button" onClick={() => removePrompt(index)}>remove</button>
+              </div>
+            </div>
+          ))}
+          {prompts.length < 3 && (
+            <button type="button" className={styles.promptAdd} onClick={addPrompt}>+ add a prompt</button>
+          )}
         </div>
         <div className={styles.row}>
           <div className={styles.field}>
