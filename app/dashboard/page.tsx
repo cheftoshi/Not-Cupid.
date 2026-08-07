@@ -196,10 +196,15 @@ export default async function DashboardPage({
       ? 'keep one conversation warm today.'
       : 'choose someone from your roster.';
   const nextBody = yourMoveCount > 0
-    ? 'A small opener beats a perfect one. Pick the person you are most curious about and make it easy to answer.'
+    ? 'A small opener beats a perfect one. Make it specific and easy to answer.'
     : chattingCount > 0
-      ? 'The app works best when a match becomes a rhythm. Reply, suggest a window, or ask the thing you actually want to know.'
+      ? 'Reply, suggest a window, or ask the thing you actually want to know.'
       : 'Love Line gives you room for three active connections and five curated options. Start with the profile that gives you a real reason to say yes.';
+  const nextAction = nextCard?.status === 'your-move'
+    ? `say hi to ${nextCard.name.split(' ')[0]}`
+    : nextCard
+      ? `continue with ${nextCard.name.split(' ')[0]}`
+      : 'see your five options';
   const loveProfileTags = [
     ...(Array.isArray((user as any).music) ? (user as any).music : []),
     ...(Array.isArray((user as any).food) ? (user as any).food : []),
@@ -218,11 +223,14 @@ export default async function DashboardPage({
               ? `${activeCards.length} ${activeCards.length === 1 ? 'conversation' : 'conversations'} going · up to ${MAX_CONNECTIONS} at once · you set the pace`
               : 'pick who you connect with · you set the pace'}
           </p>
-          <div className={styles.lovePolicyBar} aria-label="Love Line matching limits">
-            <span><strong>{MAX_CONNECTIONS}</strong> active matches</span>
-            <span><strong>5</strong> curated options</span>
-            <span><strong>7d</strong> cooldown before repeats</span>
-          </div>
+          <details className={styles.lovePolicyDetails}>
+            <summary>how Love Line works</summary>
+            <div className={styles.lovePolicyBar} aria-label="Love Line matching limits">
+              <span><strong>{MAX_CONNECTIONS}</strong> active matches</span>
+              <span><strong>5</strong> curated options</span>
+              <span><strong>7d</strong> cooldown before repeats</span>
+            </div>
+          </details>
         </div>
 
         <div className={styles.loveGrid}>
@@ -344,18 +352,10 @@ export default async function DashboardPage({
                   <div className={styles.loveNextTile}><strong>{waitingCount}</strong><span>waiting</span></div>
                 </div>
                 <a href={nextCard ? `/match/${nextCard.matchId}` : '#roster'} className={styles.loveNextButton}>
-                  {nextCard ? `open ${nextCard.name.split(' ')[0]}` : 'see roster'} →
+                  {nextAction} →
                 </a>
               </div>
             </section>
-
-            {lockedOffer && (
-              <LoveUnlockOffer
-                matchId={lockedOffer.matchId}
-                name={lockedOffer.name}
-                items={lockedOffer.unlockItems}
-              />
-            )}
 
             {newest && newestFresh && (
               <MatchReveal
@@ -373,13 +373,20 @@ export default async function DashboardPage({
                 maxConnections={MAX_CONNECTIONS}
                 horizontal
                 hasActive={activeCards.length > 0}
-                activeCards={activeCards}
                 liveConnections={connections.map((c: any) => ({
                   matchId: c.match.id,
                   name: c.otherUser.name || 'your match',
                 }))}
               />
             </div>
+
+            {lockedOffer && (
+              <LoveUnlockOffer
+                matchId={lockedOffer.matchId}
+                name={lockedOffer.name}
+                items={lockedOffer.unlockItems}
+              />
+            )}
 
           </main>
         </div>

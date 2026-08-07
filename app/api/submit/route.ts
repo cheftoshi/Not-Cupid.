@@ -13,14 +13,14 @@ async function sendCoreCompletionEmail(user: { id: string; email: string; name?:
   const html = renderEmail({
     preheader: held
       ? 'Your NotCupid profile is complete. We’ll open your roster as the local pool balances.'
-      : 'Your NotCupid profile is complete. Choose Love, Friend, or both from the Hub.',
+      : 'Your NotCupid baseline is complete. Continue the line you chose whenever you’re ready.',
     eyebrow: 'profile complete',
     headline: `${first}, you're in.`,
     bodyHtml: `
       <p style="margin:0 0 14px 0;">Your core profile is live. This is the baseline that powers both lines: Love for dating, Friend for plans, crews, and people you might actually click with.</p>
       ${user.archetype ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.lavSoft};border-radius:10px;margin:16px 0;"><tr><td style="padding:18px 20px;"><div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;">your starting signal</div><div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;color:${C.ink};line-height:1.1;">${escapeHtml(user.archetype)}</div></td></tr></table>` : ''}
-      <p style="margin:0 0 18px 0;">Next step: open the Hub and choose where you want to start today. No swiping. No endless browsing. Just a smaller set of real openings.</p>
-      ${button({ href: `${base}/hub`, label: 'open your hub →' })}
+      <p style="margin:0 0 18px 0;">Next step: continue the line you chose. You can add or change lines from the Hub anytime. No swiping. No endless browsing. Just a smaller set of real openings.</p>
+      ${button({ href: `${base}/hub`, label: 'continue in NotCupid →' })}
       ${held ? `<p style="margin:16px 0 0 0;font-size:13px;color:${C.muted};">Small note: your local roster may open a little slower while we keep the pool balanced. Your profile is still complete and ready.</p>` : ''}
     `,
     recipientId: user.id,

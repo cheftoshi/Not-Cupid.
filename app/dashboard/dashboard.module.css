@@ -102,6 +102,33 @@
   letter-spacing: 0;
 }
 
+.lovePolicyDetails {
+  width: fit-content;
+  margin-top: 0.9rem;
+}
+
+.lovePolicyDetails summary {
+  width: fit-content;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  background: var(--h-surface);
+  color: var(--h-text-dim);
+  cursor: pointer;
+  padding: 0.48rem 0.72rem;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  list-style: none;
+}
+
+.lovePolicyDetails summary::-webkit-details-marker { display: none; }
+.lovePolicyDetails[open] summary { color: var(--blue); border-color: color-mix(in srgb, var(--blue) 28%, var(--h-border)); }
+.lovePolicyDetails .lovePolicyBar { margin-top: 0.55rem; }
+
 .loveGrid {
   display: grid;
   grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
@@ -600,6 +627,7 @@
   border-radius: 18px;
   background: linear-gradient(110deg, rgba(37, 99, 255, 0.08), rgba(255, 106, 31, 0.08));
   box-shadow: 0 18px 50px -38px rgba(37, 99, 255, 0.75);
+  margin-top: 1rem;
 }
 
 .loveUnlockIcon {
@@ -711,6 +739,8 @@
 
   .head { margin-bottom: 1rem; padding-bottom: 1rem; }
   .lovePolicyBar { flex-wrap: nowrap; overflow-x: auto; margin-inline: -0.1rem; padding: 0.1rem 0.1rem 0.35rem; scrollbar-width: none; }
+  .lovePolicyDetails { width: 100%; }
+  .lovePolicyDetails summary { min-height: 44px; }
   .lovePolicyBar::-webkit-scrollbar { display: none; }
   .lovePolicyBar span { flex: 0 0 auto; min-height: 44px; }
 

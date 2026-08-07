@@ -315,7 +315,7 @@ export async function GET() {
       metro: metroLabel(c.user.zip),
       relationship_style: c.user.relationship_style,
       score: c.score,
-      why: breakdownByCandidateId.get(c.user.id)?.reasons[0] ?? 'your overall profiles complement each other',
+      why: breakdownByCandidateId.get(c.user.id)?.reasons[0] ?? 'there is enough overlap here to be curious',
       reasonCodes: breakdownByCandidateId.get(c.user.id)?.reasonCodes ?? [],
       scoreConfidence: breakdownByCandidateId.get(c.user.id)?.confidence ?? 0,
       algorithmVersion: MATCHING_ALGORITHM_VERSION,

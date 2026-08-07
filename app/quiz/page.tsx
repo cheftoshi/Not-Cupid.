@@ -10,7 +10,7 @@ import { parseResponse } from '@/lib/fetch-helpers'
 import { toast } from '@/components/feedback'
 import styles from './quiz.module.css'
 
-type Screen = 'intro' | 'verify' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result' | 'love-done'
+type Screen = 'intro' | 'details' | 'verify' | 'save-error' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'love-preferences' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result' | 'love-done'
 
 interface FormData {
   name: string; age: string; gender: string; seek: string
@@ -18,13 +18,40 @@ interface FormData {
 }
 
 const LOADING_MSGS = [
-  'Cross-referencing chaos levels...',
-  'Consulting the Boston oracle...',
-  'Penalizing red flag responses...',
-  "Checking Dunkin' loyalty scores...",
-  'Calibrating emotional damage...',
-  'Your match is almost cooked...',
+  'Reading the patterns...',
+  'Balancing personality and pace...',
+  'Finding what feels natural...',
+  'Turning answers into your baseline...',
+  'Checking your local pool...',
+  'Your profile is almost ready...',
 ]
+
+const INTENT_OPTIONS = [
+  {
+    value: 'love',
+    eyebrow: 'love line',
+    icon: '💘',
+    title: 'I want to date.',
+    body: 'Five curated options, up to three active connections, and help turning a chat into a real plan.',
+    next: 'baseline first · Love setup after',
+  },
+  {
+    value: 'friends',
+    eyebrow: 'friend line',
+    icon: '🧡',
+    title: 'I want more people around me.',
+    body: 'Find compatible people, small plans, and communities without pretending you are here to date.',
+    next: 'baseline first · short Friend setup after',
+  },
+  {
+    value: 'both',
+    eyebrow: 'both lines',
+    icon: '✨',
+    title: 'I am open to both.',
+    body: 'Build one baseline, then set up Love and Friend one at a time. You can pause between them.',
+    next: 'one clear step at a time',
+  },
+] as const
 
 // Named chapters so the quiz reads like an experience, not a form.
 // Two tracks: the CORE quiz (everyone — personality + lifestyle + fun) and the
@@ -110,18 +137,15 @@ function QuizInner() {
   // ONE-FLOW ONBOARDING: "what are you here for?" — asked at signup so the core
   // quiz can route STRAIGHT into the right deep quiz (no hub fork mid-flow).
   // State (not a ref) so the result screen re-renders when signup completes.
-  // Persisted in localStorage so a mid-form detour through /login (or the OTP
-  // round-trip) doesn't lose the choice.
+  // Friend referral links carry their intent in the URL; the "both" handoff also
+  // carries its next step in the URL, so the rendered selection never depends on
+  // browser-only storage during hydration.
   const [intent, setIntentState] = useState<'' | 'love' | 'friends' | 'both'>(() => {
-    if (typeof window === 'undefined') return ''
-    try {
-      const v = localStorage.getItem('nc_intent')
-      return v === 'love' || v === 'friends' || v === 'both' ? v : ''
-    } catch { return '' }
+    if (nextIntent === 'friends' && !isLoveDeep) return 'friends'
+    return ''
   })
   const setIntent = (v: '' | 'love' | 'friends' | 'both') => {
     setIntentState(v)
-    try { v ? localStorage.setItem('nc_intent', v) : localStorage.removeItem('nc_intent') } catch { /* ignore */ }
   }
   const [postQuizPath, setPostQuizPath] = useState<string | null>(null)
   const [agreed, setAgreed] = useState(false)
@@ -130,6 +154,7 @@ function QuizInner() {
   const [otpError, setOtpError] = useState('')
   const [otpSending, setOtpSending] = useState(false)
   const [otpVerifying, setOtpVerifying] = useState(false)
+  const [coreSaveError, setCoreSaveError] = useState(false)
   const [resendTimer, setResendTimer] = useState(0)
   const [currentQ, setCurrentQ] = useState(0)
   const [selectedOpt, setSelectedOpt] = useState<number|null>(null)
@@ -154,6 +179,8 @@ function QuizInner() {
   const [partnerSelected, setPartnerSelected] = useState<number|null>(null)
   const [partnerMulti, setPartnerMulti] = useState<number[]>([]) // multi-select picks for the current Q
   const [loveDeepReady, setLoveDeepReady] = useState(false)
+  const [loveSaveError, setLoveSaveError] = useState('')
+  const [loveSaveBusy, setLoveSaveBusy] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
   const [loadingPct, setLoadingPct] = useState(0)
   const [archetype, setArchetype] = useState<ReturnType<typeof pickArchetype>|null>(null)
@@ -205,9 +232,24 @@ function QuizInner() {
           window.location.href = '/quiz'
           return
         }
-        setForm((f) => ({ ...f, name: data.user.name || '', email: data.user.email || '' }))
+        const seeking = data.user.seeking || ''
+        const ageMin = Number(data.user.age_min) || 18
+        const ageMax = Number(data.user.age_max) || 99
+        setForm((f) => ({
+          ...f,
+          name: data.user.name || '',
+          email: data.user.email || '',
+          seek: seeking,
+          ageMin: String(ageMin),
+          ageMax: String(ageMax),
+        }))
         setLoveDeepReady(true)
-        setScreen('partner-intro')
+        // Friend-first signup stores deliberately broad legacy defaults because
+        // these columns are required. Ask for real Love preferences exactly once
+        // when those defaults are still present; otherwise avoid a repeated step.
+        const needsLovePreferences = !seeking || ageMin < 18 || ageMax <= ageMin ||
+          (seeking === 'b' && ageMin === 18 && ageMax === 99)
+        setScreen(needsLovePreferences ? 'love-preferences' : 'partner-intro')
       } else {
         window.location.href = '/login?next=' + encodeURIComponent('/quiz?line=love')
       }
@@ -233,9 +275,29 @@ function QuizInner() {
   }, [])
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
-  const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && form.seek &&
-    emailValid && parseInt(form.ageMin) >= 18 && parseInt(form.ageMax) > parseInt(form.ageMin) && zipStatus === 'valid'
+  const friendOnly = intent === 'friends'
+  const loveDeepPreferenceValid = ['m', 'f', 'b'].includes(form.seek) &&
+    parseInt(form.ageMin) >= 18 && parseInt(form.ageMax) > parseInt(form.ageMin) && parseInt(form.ageMax) <= 99
+  const lovePreferenceValid = friendOnly || (form.seek && parseInt(form.ageMin) >= 18 && parseInt(form.ageMax) > parseInt(form.ageMin))
+  const formValid = form.name.trim() && parseInt(form.age) >= 18 && form.gender && lovePreferenceValid &&
+    emailValid && zipStatus === 'valid'
   const otpComplete = otp.every(d => d !== '')
+
+  function continueFromIntent() {
+    if (!intent) return
+    if (intent === 'friends') {
+      // The core users table predates Friend Line and still requires Love
+      // preference columns. Use broad, neutral defaults for Friend-first signup;
+      // if they enter Love later, the Love setup asks them to tune the profile.
+      setForm((current) => ({
+        ...current,
+        seek: current.seek || 'b',
+        ageMin: '18',
+        ageMax: '99',
+      }))
+    }
+    setScreen('details')
+  }
 
   function handleZip(z: string) {
     setForm(f => ({...f, zip: z}))
@@ -255,13 +317,18 @@ function QuizInner() {
     setOtpSending(true)
     setOtpError('')
     try {
-      await fetch('/api/send-otp', {
+      const response = await fetch('/api/send-otp', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: form.email })
       })
+      const data = await parseResponse<{ error?: string }>(response)
+      if (!response.ok) {
+        setOtpError(data.error || 'Could not send the code. Try again.')
+        return
+      }
       setScreen('verify')
       setResendTimer(60)
-    } catch { setOtpError('Failed to send. Try again.') }
+    } catch { setOtpError('Could not send the code. Try again.') }
     finally { setOtpSending(false) }
   }
 
@@ -302,7 +369,20 @@ function QuizInner() {
         // This avoids re-running the quiz and hitting a duplicate-email
         // 409 at /api/submit.
         if (data.needsQuiz) {
-          setScreen('quiz-intro')
+          if (
+            coreSaveError && archetype &&
+            answers.length === QUESTIONS.length &&
+            vibeAnswers.length === VIBE_QUESTIONS.length &&
+            rapidAnswers.length === RAPID_FIRE.length
+          ) {
+            setCoreSaveError(false)
+            setScreen('loading')
+            setLoadingStep(0)
+            setLoadingPct(0)
+            void submitCore(scores, archetype, vibeAnswers, rapidAnswers)
+          } else {
+            setScreen('quiz-intro')
+          }
         } else {
           window.location.href = data.redirect || '/hub'
         }
@@ -350,10 +430,11 @@ function QuizInner() {
         // IMPORTANT: do NOT fall through to /api/submit — their email already
         // has an account, so submit 409s → login → verify-otp sees no archetype
         // → back to retake → loop ("it keeps telling me to retake the quiz").
-        // Show the result screen with a retry instead.
+        // Keep the answers in memory and offer a real retry. Never make a
+        // failed save look like a successful result.
         console.error('Retake save failed', res.status)
-        setScreen('result')
-        setTimeout(() => setBarsVisible(true), 400)
+        setCoreSaveError(true)
+        setScreen('save-error')
         return
       }
 
@@ -373,6 +454,7 @@ function QuizInner() {
         window.location.href = '/login?next=' + encodeURIComponent('/hub')
         return
       }
+      if (!res.ok) throw new Error(data.error || 'Could not save your baseline')
       if (data.userId) {
         userIdRef.current = data.userId
         // Session exists server-side. Do NOT redirect — let the loading screen
@@ -382,14 +464,17 @@ function QuizInner() {
         // hub fork mid-flow.
         setPostQuizPath(
           intent === 'friends' ? '/friends/quiz'
-          : intent === 'love' || intent === 'both' ? '/quiz?line=love'
+          : intent === 'both' ? '/quiz?line=love&next=friends'
+          : intent === 'love' ? '/quiz?line=love'
           : afterCorePath
         )
       }
     } catch (err) {
       console.error('Failed to submit:', err)
-      setScreen('result')
-      setTimeout(() => setBarsVisible(true), 400)
+      setCoreSaveError(true)
+      setOtp(['','','','','',''])
+      setOtpError('')
+      setScreen('save-error')
     }
   }, [form, isRetake, afterCorePath, intent])
 
@@ -397,11 +482,12 @@ function QuizInner() {
   // profile (best-effort) and lands on the love dashboard.
   const submitLoveDeep = useCallback(async (attachAns: number[], valuesAns: number[], partnerAns: (number | number[])[]) => {
     userIdRef.current = 'done' // prevent the loading screen's result fallback
+    setLoveSaveBusy(true)
     try {
       const attach = computeAttachment(attachAns)
       const { relationship_style, partner } = partnerFromAnswers(partnerAns)
       const values_profile = { ...valuesFromAnswers(valuesAns), partner }
-      await fetch('/api/quiz/love-deep', {
+      const response = await fetch('/api/quiz/love-deep', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           attach_anxiety: attach.anxiety,
@@ -409,16 +495,26 @@ function QuizInner() {
           attach_style: attach.style,
           values_profile,
           relationship_style,
+          seeking: form.seek,
+          age_min: parseInt(form.ageMin),
+          age_max: parseInt(form.ageMax),
         }),
       })
+      if (!response.ok) {
+        const data = await parseResponse<{ error?: string }>(response)
+        throw new Error(data.error || 'Could not save your Love setup')
+      }
+      setLoveSaveError('')
     } catch (err) {
       console.error('Love-deep submit failed:', err)
+      setLoveSaveError('Your answers are still here. We just need to try saving them again.')
     } finally {
       // A finish MOMENT, not an abrupt bounce — the core quiz gets a result
       // reveal; the love-deep deserves its own beat before the dashboard.
       setScreen('love-done')
+      setLoveSaveBusy(false)
     }
-  }, [])
+  }, [form.seek, form.ageMin, form.ageMax])
 
   const advance = useCallback((ans: number) => {
     const newAnswers = [...answers, ans]
@@ -564,38 +660,74 @@ function QuizInner() {
 
       {screen === 'intro' && (
         <div className={styles.screen}>
-          <div className={styles.introWrap}>
+          <div className={styles.intentWrap}>
             <div className={styles.introHero}>
               <div className={styles.stickerRow}>
-                <span className={styles.sticker}>🚫 cupid</span>
-                <span className={styles.stickerGold}>✦ science</span>
+                <span className={styles.sticker}>no swiping</span>
+                <span className={styles.stickerGold}>step 1 of 2</span>
               </div>
               <h1 className={styles.introH1}>
-                ok so<br />hear me<br /><em>out.</em>
+                what are you<br />here to <em>find?</em>
               </h1>
               <p className={styles.introLede}>
-                what if instead of swiping on vibes you just... let an algorithm built on actual psychology do it?<br />
-                <span className={styles.introLedeSub}>yeah. that's the pitch.</span>
+                Pick a path now. We&apos;ll only show you the setup that path needs—and you can add the other line later.
+                <span className={styles.introLedeSub}>one baseline powers both lines.</span>
               </p>
             </div>
 
-            <div className={styles.rulesBlock}>
-              <p className={styles.rulesTitle}>here's the deal →</p>
-              {[
-                ['no photos first', 'your personality goes before your face. radical concept.'],
-                ['a curated roster', 'the algorithm hands you five compatible options. you pick, with up to three active Love connections at a time.'],
-                ['actually local', 'born in boston, open across new england + nyc. matched near you so you can actually meet up.'],
-                ['4 minutes', "answer honestly. the algorithm clocks when you're performing."],
-              ].map(([bold, rest]) => (
-                <div key={bold} className={styles.rule}>
-                  <span className={styles.ruleDot}>→</span>
-                  <span className={styles.ruleText}><strong>{bold}</strong> — {rest}</span>
-                </div>
-              ))}
+            <div className={styles.intentGrid} role="radiogroup" aria-label="Choose what you want from NotCupid">
+              {INTENT_OPTIONS.map((option) => {
+                const selected = intent === option.value
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    className={`${styles.intentCard} ${selected ? styles.intentCardSelected : ''}`}
+                    onClick={() => setIntent(option.value)}
+                  >
+                    <span className={styles.intentIcon}>{option.icon}</span>
+                    <span className={styles.intentCopy}>
+                      <span className={styles.intentEyebrow}>{option.eyebrow}</span>
+                      <strong>{option.title}</strong>
+                      <span>{option.body}</span>
+                      <em>{option.next}</em>
+                    </span>
+                    <span className={styles.intentCheck}>{selected ? '✓' : '→'}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <button className="btn-primary" onClick={continueFromIntent} disabled={!intent}
+              style={{width:'100%',justifyContent:'center',marginTop:'1rem'}}>
+              continue with {intent === 'friends' ? 'Friend Line' : intent === 'love' ? 'Love Line' : intent === 'both' ? 'both lines' : 'your choice'} →
+            </button>
+            <p className={styles.formNote}>about 4 minutes for your baseline · pause anytime after that</p>
+          </div>
+        </div>
+      )}
+
+      {screen === 'details' && (
+        <div className={styles.screen}>
+          <div className={styles.introWrap}>
+            <div className={styles.detailsHeader}>
+              <div className={styles.stickerRow}>
+                <span className={styles.stickerGold}>step 2 of 2</span>
+                <span className={styles.pathPill}>{intent === 'friends' ? '🧡 Friend Line' : intent === 'love' ? '💘 Love Line' : '✨ both lines'}</span>
+              </div>
+              <h1 className={styles.detailsTitle}>the basics.<br /><em>nothing weird.</em></h1>
+              <p className={styles.detailsLede}>
+                This creates your private baseline and keeps recommendations local.
+                {friendOnly
+                  ? ' Dating preferences stay out of your Friend-first signup.'
+                  : ' Love preferences help us avoid showing you people outside your range.'}
+              </p>
+              <button type="button" className={styles.changePath} onClick={() => setScreen('intro')}>← change my path</button>
             </div>
 
             <div className={styles.formBlock}>
-              <p className={styles.formTitle}>let's go</p>
               <div className={styles.fieldGrid}>
                 <div className={styles.field}>
                   <label className={styles.label}>first name</label>
@@ -608,49 +740,49 @@ function QuizInner() {
                     value={form.age} onChange={e => setForm(f=>({...f,age:e.target.value}))} />
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label}>i am a</label>
+                  <label className={styles.label}>how do you describe yourself?</label>
                   <select className={styles.input} value={form.gender}
                     onChange={e => setForm(f=>({...f,gender:e.target.value}))}>
                     <option value="">—</option>
                     <option value="m">man</option>
                     <option value="f">woman</option>
                     <option value="nb">non-binary</option>
-                    <option value="b">bisexual</option>
-                  </select>
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>looking for</label>
-                  <select className={styles.input} value={form.seek}
-                    onChange={e => setForm(f=>({...f,seek:e.target.value}))}>
-                    <option value="">—</option>
-                    <option value="f">women</option>
-                    <option value="m">men</option>
-                    <option value="b">everyone</option>
+                    <option value="o">another identity</option>
                   </select>
                 </div>
 
-                <div className={`${styles.field} ${styles.fieldFull}`}>
-                  <label className={styles.label}>what are you here for?</label>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {([['love', '💘 dates'], ['friends', '🧡 friends'], ['both', '✨ both']] as const).map(([v, label]) => (
-                      <button key={v} type="button" onClick={() => setIntent(intent === v ? '' : v)}
-                        style={{ flex: '1 1 30%', minWidth: 100, padding: '0.7rem 0.5rem', borderRadius: 12, cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', letterSpacing: '0.06em', border: intent === v ? '2px solid var(--blue)' : '1.5px solid var(--h-border)', background: intent === v ? 'rgba(37,99,255,0.1)' : 'var(--h-surface)', color: intent === v ? 'var(--blue)' : 'var(--h-text)', fontWeight: intent === v ? 700 : 400 }}>
-                        {intent === v ? '✓ ' : ''}{label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {!friendOnly && (
+                  <>
+                    <div className={styles.field}>
+                      <label className={styles.label}>who should Love Line show you?</label>
+                      <select className={styles.input} value={form.seek}
+                        onChange={e => setForm(f=>({...f,seek:e.target.value}))}>
+                        <option value="">—</option>
+                        <option value="f">women</option>
+                        <option value="m">men</option>
+                        <option value="b">everyone</option>
+                      </select>
+                    </div>
 
-                <div className={`${styles.field} ${styles.fieldFull}`}>
-                  <label className={styles.label}>match age range</label>
-                  <div className={styles.ageRangeWrap}>
-                    <input className={styles.input} type="number" placeholder="22" min={18} max={99}
-                      value={form.ageMin} onChange={e => setForm(f=>({...f,ageMin:e.target.value}))} style={{flex:1}} />
-                    <span className={styles.ageSep}>—</span>
-                    <input className={styles.input} type="number" placeholder="35" min={18} max={99}
-                      value={form.ageMax} onChange={e => setForm(f=>({...f,ageMax:e.target.value}))} style={{flex:1}} />
+                    <div className={`${styles.field} ${styles.fieldFull}`}>
+                      <label className={styles.label}>Love match age range</label>
+                      <div className={styles.ageRangeWrap}>
+                        <input className={styles.input} type="number" placeholder="22" min={18} max={99}
+                          value={form.ageMin} onChange={e => setForm(f=>({...f,ageMin:e.target.value}))} style={{flex:1}} />
+                        <span className={styles.ageSep}>—</span>
+                        <input className={styles.input} type="number" placeholder="35" min={18} max={99}
+                          value={form.ageMax} onChange={e => setForm(f=>({...f,ageMax:e.target.value}))} style={{flex:1}} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {friendOnly && (
+                  <div className={`${styles.friendFirstNote} ${styles.fieldFull}`}>
+                    <strong>Friend-first means friend-first.</strong>
+                    <span>We&apos;ll ask who you want to meet and what you like doing in the short Friend setup after your baseline.</span>
                   </div>
-                </div>
+                )}
 
                 <div className={`${styles.field} ${styles.fieldFull}`}>
                   <label className={styles.label}>zip code</label>
@@ -669,7 +801,7 @@ function QuizInner() {
                 </div>
 
                 <div className={`${styles.field} ${styles.fieldFull}`}>
-                  <label className={styles.label}>email — this is how we reach you</label>
+                  <label className={styles.label}>email</label>
                   <input className={styles.input} type="email" placeholder="you@email.com"
                     value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} />
                   {form.email && !emailValid && (
@@ -705,12 +837,13 @@ function QuizInner() {
                   <a href="/safety" target="_blank" style={{color:'var(--h-accent)'}}>community guidelines</a>.
                 </span>
               </label>
+              {otpError && <p className={styles.otpError} role="alert">{otpError}</p>}
               <button className="btn-primary" onClick={sendOtp}
                 disabled={!formValid || !agreed || otpSending}
                 style={{width:'100%',justifyContent:'center',marginTop:'0.5rem'}}>
                 {otpSending ? 'sending code...' : 'verify my email →'}
               </button>
-              <p className={styles.formNote}>we'll send a 6-digit code to confirm it's you</p>
+              <p className={styles.formNote}>we&apos;ll send one 6-digit code · no password to remember</p>
             </div>
           </div>
         </div>
@@ -739,6 +872,7 @@ function QuizInner() {
                   inputMode="numeric"
                   maxLength={1}
                   value={digit}
+                  aria-label={`Verification code digit ${i + 1}`}
                   onChange={e => handleOtpInput(e.target.value, i)}
                   onKeyDown={e => handleOtpKey(e, i)}
                   autoFocus={i === 0}
@@ -762,9 +896,87 @@ function QuizInner() {
                   </button>
               }
               <span className={styles.resendDot}>·</span>
-              <button className={styles.resendBtn} onClick={() => setScreen('intro')}>
+              <button className={styles.resendBtn} onClick={() => setScreen('details')}>
                 wrong email?
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'save-error' && (
+        <div className={styles.screen}>
+          <div className={styles.verifyWrap}>
+            <div className={styles.verifyTop}>
+              <span className={styles.verifyEmoji}>↻</span>
+              <h2 className={styles.verifyH2}>your answers are safe.</h2>
+              <p className={styles.verifySub}>
+                {isRetake
+                  ? 'We couldn’t update your baseline. Try saving again without redoing the quiz.'
+                  : 'We couldn’t save your baseline. Request a fresh code and we’ll retry without making you redo the quiz.'}
+              </p>
+            </div>
+            {otpError && <p className={styles.otpError} role="alert">{otpError}</p>}
+            {isRetake ? (
+              <button className="btn-primary" disabled={!archetype}
+                onClick={() => {
+                  if (!archetype) return
+                  setCoreSaveError(false)
+                  void submitCore(scores, archetype, vibeAnswers, rapidAnswers)
+                }}
+                style={{width:'100%',justifyContent:'center'}}>
+                try saving again →
+              </button>
+            ) : (
+              <button className="btn-primary" onClick={sendOtp} disabled={otpSending}
+                style={{width:'100%',justifyContent:'center'}}>
+                {otpSending ? 'sending code…' : 'send a fresh code →'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {screen === 'love-preferences' && (
+        <div className={styles.screen}>
+          <div className={styles.introWrap}>
+            <div className={styles.detailsHeader}>
+              <div className={styles.stickerRow}>
+                <span className={styles.sticker}>💘 Love Line</span>
+                <span className={styles.stickerGold}>before matching</span>
+              </div>
+              <h1 className={styles.detailsTitle}>who should we<br /><em>look for?</em></h1>
+              <p className={styles.detailsLede}>Your Friend setup never needed dating preferences. Love Line does—so let&apos;s set them now.</p>
+            </div>
+            <div className={styles.formBlock}>
+              <div className={styles.fieldGrid}>
+                <div className={`${styles.field} ${styles.fieldFull}`}>
+                  <label className={styles.label}>show me</label>
+                  <select className={styles.input} value={form.seek}
+                    onChange={e => setForm(f => ({ ...f, seek: e.target.value }))}>
+                    <option value="">—</option>
+                    <option value="f">women</option>
+                    <option value="m">men</option>
+                    <option value="b">everyone</option>
+                  </select>
+                </div>
+                <div className={`${styles.field} ${styles.fieldFull}`}>
+                  <label className={styles.label}>match age range</label>
+                  <div className={styles.ageRangeWrap}>
+                    <input className={styles.input} type="number" min={18} max={99}
+                      value={form.ageMin} onChange={e => setForm(f => ({ ...f, ageMin: e.target.value }))} style={{flex:1}} />
+                    <span className={styles.ageSep}>—</span>
+                    <input className={styles.input} type="number" min={18} max={99}
+                      value={form.ageMax} onChange={e => setForm(f => ({ ...f, ageMax: e.target.value }))} style={{flex:1}} />
+                  </div>
+                </div>
+              </div>
+              <button className="btn-primary" disabled={!loveDeepPreferenceValid}
+                onClick={() => setScreen('partner-intro')}
+                style={{width:'100%',justifyContent:'center',marginTop:'0.9rem'}}>
+                continue → what you want
+              </button>
+              <p className={styles.formNote}>private · editable later · used only for Love Line</p>
             </div>
           </div>
         </div>
@@ -861,7 +1073,7 @@ function QuizInner() {
         <ChapterCard
           k="partner"
           onStart={() => setScreen('partner')}
-          onSkip={() => { window.location.href = '/dashboard' }}
+          onSkip={() => { window.location.href = nextIntent === 'friends' ? '/friends/quiz' : '/dashboard' }}
           styles={styles}
         />
       )}
@@ -1028,7 +1240,7 @@ function QuizInner() {
           <div className={styles.loadingWrap}>
             <div className={styles.loadingGlyph}>⧖</div>
             <h2 className={styles.loadingH2}>hold on.</h2>
-            <p className={styles.loadingSub}>the algorithm is doing its thing. this is not a drill.</p>
+            <p className={styles.loadingSub}>turning your answers into one baseline for the path you chose.</p>
             <div className={styles.loadingBarWrap}>
               <div className={styles.loadingBar} style={{width:`${loadingPct}%`}} />
             </div>
@@ -1040,17 +1252,31 @@ function QuizInner() {
       {screen === 'love-done' && (
         <div className={styles.screen}>
           <div className={styles.introWrap} style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2.6rem', marginBottom: '0.8rem', animation: 'fadeUp 0.45s ease both' }}>💘</div>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '0.9rem', animation: 'fadeUp 0.45s ease 0.12s both' }}>love profile complete</div>
-            <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem', animation: 'fadeUp 0.45s ease 0.24s both' }}>
-              the algorithm knows<br />what you <em style={{ color: 'var(--blue)', fontWeight: 700 }}>need</em> now.
-            </h1>
-            <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem', animation: 'fadeUp 0.45s ease 0.36s both' }}>
-              how you attach and what you value now carry the most weight in your matches — more than personality traits. your roster is being curated with it.
-            </p>
-            <button className="btn-primary" onClick={() => { window.location.href = '/dashboard' }} style={{ width: '100%', justifyContent: 'center', animation: 'fadeUp 0.45s ease 0.5s both' }}>
-              see your matches →
-            </button>
+            {loveSaveError ? (
+              <>
+                <div style={{ fontSize: '2.6rem', marginBottom: '0.8rem' }}>↻</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--h-accent-2)', marginBottom: '0.9rem' }}>save interrupted</div>
+                <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem' }}>nothing was lost.</h1>
+                <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem' }}>{loveSaveError}</p>
+                <button className="btn-primary" disabled={loveSaveBusy} onClick={() => submitLoveDeep(attachAnswers, valuesAnswers, partnerAnswers)} style={{ width: '100%', justifyContent: 'center' }}>
+                  {loveSaveBusy ? 'saving…' : 'try saving again →'}
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '2.6rem', marginBottom: '0.8rem', animation: 'fadeUp 0.45s ease both' }}>💘</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '0.9rem', animation: 'fadeUp 0.45s ease 0.12s both' }}>love profile complete</div>
+                <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem', animation: 'fadeUp 0.45s ease 0.24s both' }}>
+                  your Love profile<br />has a clearer <em style={{ color: 'var(--blue)', fontWeight: 700 }}>signal.</em>
+                </h1>
+                <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem', animation: 'fadeUp 0.45s ease 0.36s both' }}>
+                  How you connect and what you value now shape your roster. You can tune these preferences anytime.
+                </p>
+                <button className="btn-primary" onClick={() => { window.location.href = nextIntent === 'friends' ? '/friends/quiz' : '/dashboard' }} style={{ width: '100%', justifyContent: 'center', animation: 'fadeUp 0.45s ease 0.5s both' }}>
+                  {nextIntent === 'friends' ? 'continue → Friend setup' : 'see your Love Line →'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1067,6 +1293,16 @@ function QuizInner() {
             <div className={styles.resultDescCard}>
               <p className={styles.resultDesc}>{archetype.desc}</p>
             </div>
+
+            {postQuizPath && (
+              <button className="btn-primary"
+                onClick={() => { window.location.href = postQuizPath }}
+                style={{margin:'0 0 1rem',width:'100%',justifyContent:'center'}}>
+                {postQuizPath === '/friends/quiz' ? 'continue → Friend setup'
+                  : postQuizPath.includes('line=love') ? 'continue → Love setup'
+                  : 'continue → your hub'}
+              </button>
+            )}
 
             {/* share your type — the viral surface (unfurls the OG card) */}
             <button
@@ -1146,22 +1382,19 @@ function QuizInner() {
             )}
 
             <div className={styles.matchCard}>
-              <div className={styles.matchBadge}>pool status: active 👀</div>
-              <p className={styles.matchTitle}>you're in.</p>
+              <div className={styles.matchBadge}>baseline complete ✓</div>
+              <p className={styles.matchTitle}>one step at a time.</p>
               <p className={styles.matchDesc}>
-                the algorithm is scanning your metro's pool. your roster — the most compatible people near you — lands on your dashboard. you pick who to meet. show up.
+                {intent === 'friends'
+                  ? 'Next is a short Friend setup about how you like to spend time. Then we can introduce people and plans that fit.'
+                  : intent === 'both'
+                    ? 'Next we finish your Love setup, then your Friend setup. Each line stays separate, and you can pause between them.'
+                    : intent === 'love'
+                      ? 'Next is a focused Love setup about what you want and how you connect. Then your five curated options can open.'
+                      : 'Your baseline is ready. Open the Hub whenever you want to choose a line.'}
               </p>
             </div>
 
-            {postQuizPath && (
-              <button className="btn-primary"
-                onClick={() => { window.location.href = postQuizPath }}
-                style={{marginTop:'1.25rem',width:'100%',justifyContent:'center'}}>
-                {postQuizPath === '/friends/quiz' ? 'continue → the friend quiz'
-                  : postQuizPath.includes('line=love') ? (intent === 'both' ? 'continue → love quiz first (friends after)' : 'continue → the love quiz')
-                  : 'continue → your hub'}
-              </button>
-            )}
             <button className="btn-ghost"
               onClick={() => { setScreen('intro'); setAnswers([]); setCurrentQ(0); setOtp(['','','','','','']) }}
               style={{marginTop:'1rem',width:'100%',justifyContent:'center'}}>

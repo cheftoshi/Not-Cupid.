@@ -21,13 +21,38 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const { attach_anxiety, attach_avoidance, attach_style, values_profile, relationship_style } = body;
+  const {
+    attach_anxiety,
+    attach_avoidance,
+    attach_style,
+    values_profile,
+    relationship_style,
+    seeking,
+    age_min,
+    age_max,
+  } = body;
+
+  const parsedAgeMin = Number(age_min);
+  const parsedAgeMax = Number(age_max);
+  if (!['m', 'f', 'b'].includes(seeking) || !Number.isInteger(parsedAgeMin) ||
+      !Number.isInteger(parsedAgeMax) || parsedAgeMin < 18 || parsedAgeMax > 99 ||
+      parsedAgeMax <= parsedAgeMin) {
+    return NextResponse.json({ error: 'Valid Love preferences are required' }, { status: 400 });
+  }
 
   const clamp100 = (v: any) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
 
   // Base update never depends on the v2 columns, so the fallback below always
   // has something safe to write.
-  const base: any = { status: 'waiting', pool_active: true, roster_snapshot: [], roster_refreshed_at: null };
+  const base: any = {
+    status: 'waiting',
+    pool_active: true,
+    roster_snapshot: [],
+    roster_refreshed_at: null,
+    seeking,
+    age_min: parsedAgeMin,
+    age_max: parsedAgeMax,
+  };
   if (relationship_style && VALID_RELATIONSHIP_STYLES.has(relationship_style)) {
     base.relationship_style = relationship_style;
   }

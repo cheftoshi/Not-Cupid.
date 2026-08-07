@@ -423,9 +423,9 @@ export default function ChatRoom({
         <div className={styles.narrator}>
           <span className={styles.narratorMark}>✦ NotCupid</span>
           {score != null ? (
-            <>you &amp; {firstName} scored <strong>{score}%</strong>. the algo did its part — the rest is on you.</>
+            <>you &amp; {firstName} scored <strong>{score}%</strong>. start small, stay curious, and see what feels easy.</>
           ) : (
-            <>you matched with {firstName}. the algo did its part — the rest is on you.</>
+            <>you matched with {firstName}. start small, stay curious, and see what feels easy.</>
           )}
         </div>
 
@@ -544,6 +544,7 @@ export default function ChatRoom({
             autoComplete="off"
             maxLength={2000}
             className={styles.input}
+            aria-label={`Message ${firstName}`}
           />
           <button
             type="submit"
@@ -568,7 +569,7 @@ export default function ChatRoom({
             {score != null && <span className={styles.matchScore}>{score}% match</span>}
           </div>
           <div className={styles.matchProfileBody}>
-            <div className={styles.matchKicker}>your match today</div>
+            <div className={styles.matchKicker}>your connection</div>
             <h2>{otherUser?.name || 'Match'}{otherUser?.age ? <span>, {otherUser.age}</span> : null}</h2>
             <div className={styles.matchFacts}>
               {otherUser?.archetype && <span>{otherUser.archetype}</span>}
@@ -614,11 +615,11 @@ export default function ChatRoom({
             ) : null}
           </div>
         </section>
-        <div className={styles.vibesInner}>
+        <div className={styles.vibesInner} id="date-plans">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>date vibes</div>
-              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.45rem', lineHeight: 1.08, color: 'var(--h-text)' }}>make it easier to meet.</div>
+              <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>one easy plan</div>
+              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.45rem', lineHeight: 1.08, color: 'var(--h-text)' }}>make meeting feel simple.</div>
             </div>
             <button onClick={() => setFeedbackOpen(true)} className={styles.dateDoneButton}>
               we went on a date
@@ -660,9 +661,9 @@ export default function ChatRoom({
 
           {/* MULTIPLE CHOICE — curated date ideas stay primary while live-event
               APIs are held back from the main chat surface. */}
-          <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>pick what you&apos;d do</div>
+          <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>pick one you&apos;d actually do</div>
           {!vibes ? (
-            <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>loading…</div>
+            null
           ) : (() => {
             const all = [
               ...(vibes.myPicks || []).map((a: any) => ({ ...a, _sel: true })),
@@ -675,7 +676,12 @@ export default function ChatRoom({
                   <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem', lineHeight: 1.45 }}>no date ideas left right now — check back soon.</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {curated.slice(0, 12).map(renderVibeOption)}
+                    {curated.slice(0, 3).map((option: any, index: number) => (
+                      <div key={option.id}>
+                        {index === 0 && <div className={styles.planStartLabel}>best place to start</div>}
+                        {renderVibeOption(option)}
+                      </div>
+                    ))}
                     <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textAlign: 'center', marginTop: '0.2rem' }}>tap to pick · locks when you both choose it</div>
                   </div>
                 )}
@@ -685,7 +691,7 @@ export default function ChatRoom({
               </>
             );
           })()}
-          <a href={`/match/${matchId}/date-vibes`} style={{ display: 'block', textAlign: 'center', marginTop: '0.7rem', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#1b46c9', textDecoration: 'none' }}>open the full deck ↗</a>
+          <a href={`/match/${matchId}/date-vibes`} style={{ display: 'block', textAlign: 'center', marginTop: '0.7rem', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#1b46c9', textDecoration: 'none' }}>see more date ideas ↗</a>
 
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.5rem 0 0.6rem' }}>{firstName}&apos;s vibe</div>
           {vibes?.partnerInterests?.length ? (
