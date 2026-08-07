@@ -15,11 +15,12 @@ import { profilePromptDrafts, PROFILE_PROMPT_OPTIONS, type ProfilePrompt } from 
 
 type Props = {
   initialUser: any;
+  relaunchMode?: boolean;
   onSaved?: (user: any) => void;
   onCancel?: () => void;
 };
 
-export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
+export default function ProfileForm({ initialUser, relaunchMode = false, onSaved, onCancel }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<any>(initialUser);
   const [saving, setSaving] = useState(false);
@@ -68,6 +69,13 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
       const data = await parseResponse<any>(res);
       setUser(data.user);
       setMessage('✓ saved');
+      if (relaunchMode) {
+        const payload = JSON.stringify({ path: '/reactivation/profile_saved', ref: null, anonId: '' });
+        try {
+          if (navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
+          else fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true });
+        } catch { /* saving the profile matters more than analytics */ }
+      }
       if (onSaved) {
         // Brief flash of confirmation, then back to the dashboard.
         setTimeout(() => onSaved(data.user), 400);
@@ -223,6 +231,23 @@ export default function ProfileForm({ initialUser, onSaved, onCancel }: Props) {
           </button>
         )}
       </div>
+
+      {relaunchMode && (
+        <div className={styles.relaunchBanner}>
+          <div>
+            <span>welcome-back profile review</span>
+            <strong>Keep what still fits. Upgrade what doesn’t.</strong>
+          </div>
+          <p>
+            Add a strong main photo, a 15–30 second hello, one specific prompt, and current preferences. Saving refreshes your roster inputs without deleting existing matches.
+          </p>
+          <div>
+            <em>1 · photos & video</em>
+            <em>2 · story & prompts</em>
+            <em>3 · match preferences</em>
+          </div>
+        </div>
+      )}
 
       <div className={styles.qualityCard}>
         <div className={styles.qualityTop}>

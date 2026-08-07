@@ -37,6 +37,10 @@ export async function POST() {
       ghost_reports_received: 0,
       status: 'waiting',
       pool_active: true,
+      // Clicking "reactivate" is an explicit opt-in to receive the match
+      // notifications required for an active Love Line profile.
+      email_notifications: true,
+      notifications_paused_at: null,
     })
     .eq('id', user.id);
 

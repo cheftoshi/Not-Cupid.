@@ -28,7 +28,7 @@ test('Love relaunch links reject expiry and tampering', () => {
 });
 
 test('Love relaunch destinations stay internal and explicit', () => {
-  assert.equal(loveRelaunchPath('dashboard'), '/dashboard?from=love-relaunch');
-  assert.equal(loveRelaunchPath('profile'), '/profile?from=love-relaunch');
+  assert.equal(loveRelaunchPath('dashboard'), '/dashboard?from=love-relaunch&welcome=love-refresh-2026-08');
+  assert.equal(loveRelaunchPath('profile'), '/profile?from=love-relaunch&welcome=love-refresh-2026-08');
   assert.equal(loveRelaunchPath('love_setup'), '/quiz?line=love&from=love-relaunch');
 });

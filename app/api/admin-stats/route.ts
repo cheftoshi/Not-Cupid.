@@ -298,6 +298,15 @@ export async function GET(req: NextRequest) {
         uniqueSessions: sessions.size,
         topPaths,
         viewsByDay,
+        reactivation: {
+          welcomeViews: pathCounts['/reactivation/welcome_viewed'] || 0,
+          profileReviewStarts: pathCounts['/reactivation/profile_review_started'] || 0,
+          profileSaves: pathCounts['/reactivation/profile_saved'] || 0,
+          loveAnswerStarts: pathCounts['/reactivation/love_answers_started'] || 0,
+          loveReactivated: pathCounts['/reactivation/love_reactivated'] || 0,
+          currentProfileUsed: pathCounts['/reactivation/current_profile_used'] || 0,
+          dismissed: pathCounts['/reactivation/welcome_dismissed'] || 0,
+        },
       }
     }
 

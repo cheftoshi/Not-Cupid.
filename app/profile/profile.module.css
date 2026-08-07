@@ -367,6 +367,63 @@
 
 .field { margin-bottom: 1.5rem; }
 
+.relaunchBanner {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(37, 99, 255, 0.28);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 94% 12%, rgba(37, 99, 255, 0.13), transparent 28%),
+    var(--h-surface);
+  box-shadow: 0 16px 44px -38px rgba(37, 99, 255, 0.6);
+}
+
+.relaunchBanner > div:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.relaunchBanner span {
+  color: var(--blue);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.relaunchBanner strong {
+  color: var(--h-text);
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.relaunchBanner p {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--h-text-dim);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.relaunchBanner > div:last-child { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.relaunchBanner em {
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  background: var(--h-surface-2);
+  color: var(--h-text-dim);
+  padding: 0.35rem 0.6rem;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .label {
   display: block;
   font-size: 0.625rem;

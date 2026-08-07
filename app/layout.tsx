@@ -7,6 +7,7 @@ import TopNav from '@/components/top-nav'
 import SiteFooter from '@/components/site-footer'
 import FeedbackHost from '@/components/feedback'
 import NativeShellBootstrap from '@/components/native-shell-bootstrap'
+import ReturningUserWelcome from '@/components/returning-user-welcome'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://notcupid.com'),
@@ -47,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* No-flash theme: apply the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('nc-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}` }} />
       </head>
-      <body><NativeShellBootstrap /><TopNav />{children}<SiteFooter /><PwaPrompt /><PageTracker /><SwRegister /><FeedbackHost /></body>
+      <body><NativeShellBootstrap /><TopNav />{children}<SiteFooter /><ReturningUserWelcome /><PwaPrompt /><PageTracker /><SwRegister /><FeedbackHost /></body>
     </html>
   )
 }

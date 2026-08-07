@@ -111,6 +111,7 @@
   text-transform: uppercase; color: #0e0c1a; font-weight: 500; margin: 0;
 }
 .cardTitle b { color: #2563ff; font-weight: 500; }
+.divider { height: 1px; margin: 0.2rem 0 1rem; background: rgba(14,12,26,0.08); }
 
 /* ── Chips / summary ────────────────────────────────────────────── */
 .chips {

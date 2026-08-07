@@ -7,6 +7,7 @@ import {
   loveRelaunchUrl,
   type LoveRelaunchDestination,
 } from '@/lib/love-relaunch';
+import { withReturningUserWelcome } from '@/lib/returning-user';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -54,11 +55,16 @@ function campaignHtml(
   const first = (user.name || 'there').split(' ')[0];
   const firstHtml = escapeHtml(first);
   const destination = destinationFor(variant);
+  const directDestination = destination === 'dashboard'
+    ? withReturningUserWelcome('/dashboard?from=love-relaunch-test')
+    : destination === 'profile'
+      ? withReturningUserWelcome('/profile?from=love-relaunch-test')
+      : '/quiz?line=love&from=love-relaunch-test';
   const primaryUrl = options.tracked === false
-    ? `${baseUrl}${destination === 'dashboard' ? '/dashboard' : destination === 'profile' ? '/profile' : '/quiz?line=love'}`
+    ? `${baseUrl}${directDestination}`
     : loveRelaunchUrl(baseUrl, user.id, destination);
   const profileUrl = options.tracked === false
-    ? `${baseUrl}/profile`
+    ? `${baseUrl}${withReturningUserWelcome('/profile?from=love-relaunch-test')}`
     : loveRelaunchUrl(baseUrl, user.id, 'profile');
   const cta = variant === 'live'
     ? 'continue your connections →'

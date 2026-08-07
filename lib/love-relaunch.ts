@@ -5,8 +5,8 @@ export const LOVE_RELAUNCH_CAMPAIGN = 'love_line_aug_2026';
 export type LoveRelaunchDestination = 'dashboard' | 'profile' | 'love_setup';
 
 const DESTINATIONS: Record<LoveRelaunchDestination, string> = {
-  dashboard: '/dashboard?from=love-relaunch',
-  profile: '/profile?from=love-relaunch',
+  dashboard: '/dashboard?from=love-relaunch&welcome=love-refresh-2026-08',
+  profile: '/profile?from=love-relaunch&welcome=love-refresh-2026-08',
   love_setup: '/quiz?line=love&from=love-relaunch',
 };
 

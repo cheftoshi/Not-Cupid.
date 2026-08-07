@@ -7,7 +7,12 @@ import { withPrivateVideoPreview } from '@/lib/private-media';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string; from?: string }>;
+}) {
+  const params = await searchParams;
   const currentUser = await getCurrentUser();
   const user = currentUser ? await withPrivateVideoPreview(currentUser) : null;
   if (!user) redirect('/login?next=/profile');
@@ -25,7 +30,11 @@ export default async function ProfilePage() {
             <a href="/quiz?retake=1" className={styles.navLink}>Retake quiz</a>
           </div>
         </nav>
-        <ProfileShell initialUser={user} />
+        <ProfileShell
+          initialUser={user}
+          startEditing={params.mode === 'edit'}
+          relaunchMode={params.from === 'welcome-back'}
+        />
       </div>
     </div>
   );

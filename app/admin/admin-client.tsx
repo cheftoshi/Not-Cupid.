@@ -367,6 +367,21 @@ export default function AdminClient() {
                 </p>
               </>
             )}
+            {data?.traffic?.reactivation && (
+              <>
+                <div className={s.divider} />
+                <p className={s.note} style={{ marginBottom: '0.65rem' }}>Welcome-back profile loop · last 7 days</p>
+                <div className={s.chips}>
+                  <span className={s.chip}>Welcome views <b>{data.traffic.reactivation.welcomeViews}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>Profile starts <b>{data.traffic.reactivation.profileReviewStarts}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>Profiles saved <b>{data.traffic.reactivation.profileSaves}</b></span>
+                  <span className={s.chip}>Love retunes <b>{data.traffic.reactivation.loveAnswerStarts}</b></span>
+                  <span className={s.chip}>Reactivated <b>{data.traffic.reactivation.loveReactivated}</b></span>
+                  <span className={s.chip}>Used current <b>{data.traffic.reactivation.currentProfileUsed}</b></span>
+                  <span className={s.chip}>Dismissed <b>{data.traffic.reactivation.dismissed}</b></span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* ── MONETIZATION FUNNEL (last 30 days) ── */}

@@ -119,6 +119,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       redirect: user.archetype ? '/hub' : '/quiz?retake=1',
+      // Existing completed members get the one-time, non-destructive profile
+      // upgrade flow. Incomplete accounts still go straight back to the quiz.
+      returning: !!user.archetype,
     })
   } catch (err) {
     console.error('Verify OTP error:', err)

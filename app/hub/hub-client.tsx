@@ -12,6 +12,7 @@ import { SkeletonStyles, SkeletonRow } from '@/components/skeleton';
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
   gallery?: string[]; bio?: string | null; relationship_style?: string | null;
+  hasIntroVideo?: boolean; hasPrompt?: boolean;
   attach_style?: string | null; vibes?: Record<string, number> | null; sun_sign?: string | null;
   music?: string[]; food?: string[]; hobbies?: string[]; sports?: string[];
 };
@@ -134,6 +135,8 @@ export default function HubClient({
     !needsLoveDeep,
     interestCount >= 3,
     vibeTags.length >= 3,
+    !!profile.hasIntroVideo,
+    !!profile.hasPrompt,
   ];
   const profilePercent = Math.round((profileChecks.filter(Boolean).length / profileChecks.length) * 100);
 

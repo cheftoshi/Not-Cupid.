@@ -7,6 +7,7 @@ import styles from './login.module.css';
 import Wordmark from '@/components/wordmark';
 import { suggestEmailCorrection } from '@/lib/email-typos';
 import { parseResponse } from '@/lib/fetch-helpers';
+import { withReturningUserWelcome } from '@/lib/returning-user';
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
@@ -80,13 +81,14 @@ function LoginInner() {
 
       // Happy path: new verify-otp returns 200 with redirect (handles both /profile and /quiz)
       if (res.ok && data.redirect) {
+        const welcomePath = (path: string) => data.returning ? withReturningUserWelcome(path) : path;
         // Prefer ?next= if the user came from a gated page (e.g. /admin) and has an account
         if (nextPath && !data.needsQuiz) {
-          router.push(nextPath);
+          router.push(welcomePath(nextPath));
         } else if (data.needsQuiz && nextPath?.startsWith('/friends')) {
           router.push('/quiz?next=friends');
         } else {
-          router.push(data.redirect);
+          router.push(welcomePath(data.redirect));
         }
         return;
       }
