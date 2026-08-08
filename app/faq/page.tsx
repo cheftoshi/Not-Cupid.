@@ -51,7 +51,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What is the NotCupid Dating Experiment?',
-    a: 'A Boston-first experiment we are keeping in quiet mode while we finish the safeguards and dinner logistics. When it opens, eligible people join for free with a complete profile and short private intro video. The system forms mutually eligible pairs, uses compatibility to weight the selection, and privately lets both selected people preview one another. If both say yes, NotCupid covers dinner up to $200. Paid membership never improves the odds.',
+    a: 'A Boston-first experiment we are keeping in quiet mode while we finish the safeguards and dinner logistics. When it opens, eligible people join free with a complete profile and short private intro video. A coverage-first system gives each person up to two reciprocal options. People privately say yes to either, both, or neither; only mutual yes pairs enter the final compatibility-weighted selection for a dinner covered up to $200. Paid membership never improves offers or odds.',
   },
   {
     q: 'How do I install the app — and turn on notifications?',

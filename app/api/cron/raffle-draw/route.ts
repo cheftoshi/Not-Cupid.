@@ -5,9 +5,9 @@ import { isAuthorizedCronRequest } from '@/lib/request-security';
 
 export const dynamic = 'force-dynamic';
 
-// Hourly heartbeat. drawRaffle() self-gates — it only draws once entries close or
-// the cap is hit, and it expires a stale (no-show) pending draw and re-draws so a
-// round can't deadlock. A no-op the rest of the time. Auth via Vercel's bearer.
+// Hourly heartbeat. The shared engine starts a reciprocal shortlist after the
+// public trigger, waits for sealed decisions, and resolves one mutual dinner
+// pair after everyone responds or the deadline passes. No-op while paused.
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCronRequest(req)) {
     const admin = await getCurrentAdmin();

@@ -6,61 +6,118 @@ import { signPrivateVideoReference } from '@/lib/private-media';
 
 export const dynamic = 'force-dynamic';
 
-// The caller's raffle state: eligible? entered? drawn into a pair? accepted?
+async function privateCandidate(candidateId: string) {
+  const [{ data: profile }, { data: entry }] = await Promise.all([
+    supabaseAdmin.from('users').select('name, age, photo_url, gallery, archetype').eq('id', candidateId).single(),
+    supabaseAdmin.from('raffle_entries').select('video_url, questionnaire').eq('event_key', RAFFLE.key).eq('user_id', candidateId).maybeSingle(),
+  ]);
+  if (!profile) return null;
+  const introVideoPreviewUrl = await signPrivateVideoReference(
+    (entry as any)?.video_url,
+    `${candidateId}/${RAFFLE.key}-`,
+  );
+  return {
+    name: profile.name,
+    age: profile.age,
+    photo_url: profile.photo_url,
+    gallery: Array.isArray(profile.gallery) ? profile.gallery.slice(0, 3) : [],
+    archetype: profile.archetype,
+    introVideoPreviewUrl,
+    conversationStarter: (entry as any)?.questionnaire?.conversationStarter || null,
+    energy: (entry as any)?.questionnaire?.energy || null,
+  };
+}
+
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const eligible = user.is_test !== true && raffleEligible(user);
   const hasProfile = !!user.photo_url && !!user.archetype;
-
   let entered = false, entry: any = null, draw: any = null, other: any = null;
+  let shortlist: any[] = [], shortlistRound: any = null;
+
   try {
-    const { data: e } = await supabaseAdmin.from('raffle_entries').select('status').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
-    if (e) { entered = e.status === 'entered' || e.status === 'picked'; entry = e; }
+    const { data: ownEntry } = await supabaseAdmin.from('raffle_entries')
+      .select('status')
+      .eq('user_id', user.id)
+      .eq('event_key', RAFFLE.key)
+      .maybeSingle();
+    if (ownEntry) {
+      entered = ownEntry.status === 'entered' || ownEntry.status === 'picked';
+      entry = ownEntry;
+    }
+
+    const { data: offerRows } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
+      .select('id, round_id, user_a_id, user_b_id, compatibility_score, a_accepted, b_accepted, a_favorite, b_favorite, created_at')
+      .eq('event_key', RAFFLE.key)
+      .eq('status', 'pending')
+      .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
+    const activeRoundId = offerRows?.[0]?.round_id;
+    const activeOffers = activeRoundId ? (offerRows ?? []).filter((row) => row.round_id === activeRoundId) : [];
+    if (activeRoundId) {
+      const { data: round } = await supabaseAdmin.from('dating_experiment_rounds')
+        .select('id, round_number, status, response_deadline')
+        .eq('id', activeRoundId)
+        .in('status', ['collecting', 'resolving'])
+        .maybeSingle();
+      if (round) {
+        shortlist = (await Promise.all(activeOffers.map(async (offer) => {
+          const isA = offer.user_a_id === user.id;
+          const candidateId = isA ? offer.user_b_id : offer.user_a_id;
+          return {
+            id: offer.id,
+            score: offer.compatibility_score,
+            myAccepted: isA ? offer.a_accepted : offer.b_accepted,
+            myFavorite: isA ? offer.a_favorite : offer.b_favorite,
+            candidate: await privateCandidate(candidateId),
+          };
+        }))).filter((offer) => offer.candidate != null);
+        shortlistRound = {
+          id: round.id,
+          roundNumber: round.round_number,
+          status: round.status,
+          responseDeadline: round.response_deadline,
+          allResponded: shortlist.length > 0 && shortlist.every((offer) => offer.myAccepted !== null),
+        };
+      }
+    }
 
     const { data: draws } = await supabaseAdmin.from('raffle_draws').select('*')
       .eq('event_key', RAFFLE.key)
       .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
       .in('status', ['pending', 'both_accepted'])
+      .order('created_at', { ascending: false })
       .limit(1);
-    const d = (draws ?? [])[0];
-    if (d) {
-      const isA = d.user_a_id === user.id;
-      const otherId = isA ? d.user_b_id : d.user_a_id;
-      const [{ data: o }, { data: otherEntry }] = await Promise.all([
-        supabaseAdmin.from('users').select('name, age, photo_url, gallery, archetype').eq('id', otherId).single(),
-        supabaseAdmin.from('raffle_entries').select('video_url, questionnaire').eq('event_key', RAFFLE.key).eq('user_id', otherId).maybeSingle(),
-      ]);
-      const introVideoPreviewUrl = await signPrivateVideoReference(
-        (otherEntry as any)?.video_url,
-        `${otherId}/${RAFFLE.key}-`,
-      );
+    const latestDraw = draws?.[0];
+    if (latestDraw) {
+      const isA = latestDraw.user_a_id === user.id;
+      const otherId = isA ? latestDraw.user_b_id : latestDraw.user_a_id;
       draw = {
-        id: d.id, status: d.status, score: d.compatibility_score,
-        myAccepted: isA ? d.a_accepted : d.b_accepted,
-        theyAccepted: isA ? d.b_accepted : d.a_accepted,
-        bothAccepted: d.a_accepted && d.b_accepted,
-        restaurant: d.restaurant, happensAt: d.happens_at,
+        id: latestDraw.id,
+        status: latestDraw.status,
+        score: latestDraw.compatibility_score,
+        myAccepted: isA ? latestDraw.a_accepted : latestDraw.b_accepted,
+        theyAccepted: isA ? latestDraw.b_accepted : latestDraw.a_accepted,
+        bothAccepted: latestDraw.a_accepted && latestDraw.b_accepted,
+        restaurant: latestDraw.restaurant,
+        happensAt: latestDraw.happens_at,
       };
-      other = o ? {
-        name: o.name,
-        age: o.age,
-        photo_url: o.photo_url,
-        gallery: Array.isArray(o.gallery) ? o.gallery.slice(0, 3) : [],
-        archetype: o.archetype,
-        introVideoPreviewUrl,
-        conversationStarter: (otherEntry as any)?.questionnaire?.conversationStarter || null,
-        energy: (otherEntry as any)?.questionnaire?.energy || null,
-      } : null;
+      other = await privateCandidate(otherId);
     }
-  } catch { /* tables not migrated yet — show the register state */ }
+  } catch (error) {
+    console.error('[dating-experiment-status]', error);
+  }
 
   let spotsLeft = RAFFLE.cap;
   try {
-    const { count } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key).neq('status', 'withdrawn');
+    const { count } = await supabaseAdmin.from('raffle_entries')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('event_key', RAFFLE.key)
+      .neq('status', 'withdrawn');
     spotsLeft = Math.max(0, RAFFLE.cap - (count ?? 0));
-  } catch { /* not migrated */ }
+  } catch { /* migration not ready */ }
 
   return NextResponse.json({
     event: {
@@ -69,8 +126,9 @@ export async function GET() {
       statusLabel: RAFFLE.statusLabel, entriesOpen: RAFFLE.entriesOpen,
       radiusMiles: RAFFLE.radiusMiles, centerZip: RAFFLE.centerZip, termsVersion: RAFFLE.termsVersion,
       videoMinSeconds: RAFFLE.videoMinSeconds, videoMaxSeconds: RAFFLE.videoMaxSeconds, videoMaxBytes: RAFFLE.videoMaxBytes,
+      shortlistMaxOptions: RAFFLE.shortlistMaxOptions,
       spotsLeft, closed: raffleClosed() || spotsLeft === 0,
     },
-    eligible, hasProfile, entered, entry, draw, other,
+    eligible, hasProfile, entered, entry, shortlist, shortlistRound, draw, other,
   });
 }

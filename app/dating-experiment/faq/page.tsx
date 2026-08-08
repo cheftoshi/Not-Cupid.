@@ -15,9 +15,9 @@ const BLUE = '#2563ff';
 
 const STEPS = [
   ['1', 'Join for free', `Complete your profile, answer three quick questions, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello video.`],
-  ['2', 'The system pairs', 'Mutual preferences come first. Then compatibility gives stronger qualified pairs a limited boost in a random selection.'],
-  ['3', 'Both people decide', `You each get a private preview and ${RAFFLE.respondHours} hours to say yes or pass. A pass stays private.`],
-  ['4', 'Dinner is on us', `If you both say yes, NotCupid shares the plan and covers one Boston dinner up to $${RAFFLE.budget}.`],
+  ['2', 'Meet up to two', 'The system prioritizes broad coverage, then gives each qualified participant up to two strong reciprocal options.'],
+  ['3', 'Choose privately', `You have ${RAFFLE.respondHours} hours to say yes to either, both, or neither—and optionally favorite one. Every choice stays sealed.`],
+  ['4', 'Mutual wins', `Only mutual yes pairs qualify. One is selected for a Boston dinner covered up to $${RAFFLE.budget}.`],
 ];
 
 const FAQS = [
@@ -35,7 +35,11 @@ const FAQS = [
   },
   {
     q: 'How is a pair selected?',
-    a: 'The system first checks mutual age and gender preferences, local eligibility, prior pairings, and a minimum compatibility score. It then randomly selects from the qualified pairs. Higher compatibility gets a limited 1×–3× weight, so fit matters without turning the result into a guaranteed or hand-picked match.',
+    a: `The system checks mutual preferences, local eligibility, prior pairings, and a minimum compatibility score. It first tries to give as many people as possible one strong reciprocal option, then fills second slots where the pool supports it. You may say yes to one, both, or neither. Only mutual yes pairs enter the final selection. Compatibility gets a limited 1×–3× weight, and favorites add a small disclosed boost.`,
+  },
+  {
+    q: 'Do women and men receive different numbers of options?',
+    a: `No. Everyone has the same cap of up to ${RAFFLE.shortlistMaxOptions} options. Actual shortlist size depends on reciprocal age and gender preferences, compatibility, prior pairings, and pool supply. The coverage-first system gives people a first option before it starts giving others a second.`,
   },
   {
     q: 'Why is a short video required?',
@@ -43,7 +47,7 @@ const FAQS = [
   },
   {
     q: 'Who can see my video and profile?',
-    a: 'Only a potential date selected with you and limited NotCupid administrators who operate or safeguard the experiment. Videos are stored privately and played through short-lived links. Joining does not give NotCupid permission to use your name, photos, video, or story in advertising.',
+    a: `Only the people placed on reciprocal shortlists with you—no more than ${RAFFLE.shortlistMaxOptions} in a round—and limited NotCupid administrators who operate or safeguard the experiment. Videos are stored privately and played through short-lived links. Joining does not give NotCupid permission to use your name, photos, video, or story in advertising.`,
   },
   {
     q: 'How long is the video kept?',
@@ -51,11 +55,11 @@ const FAQS = [
   },
   {
     q: 'What do we see before deciding?',
-    a: `Each selected person privately sees the other person’s first name, age, photos, profile context, short experiment answer, and intro video. Each person decides independently within ${RAFFLE.respondHours} hours. The restaurant details stay private until both people accept.`,
+    a: `You privately see each shortlist option’s first name, age, photos, profile context, short experiment answer, and intro video. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the final mutual pair is selected.`,
   },
   {
     q: 'What if one person passes or does not respond?',
-    a: `The pairing quietly ends. NotCupid does not tell either person who passed. An eligible participant may return to the pool for another compatible selection, with no more than ${RAFFLE.maxAttempts} selections in the round.`,
+    a: `That offer cannot become a mutual pair. NotCupid does not tell either person who passed or failed to respond. If the round produces no mutual pair, eligible participants may receive another shortlist, up to ${RAFFLE.maxAttempts} shortlist rounds in the experiment.`,
   },
   {
     q: `What does the $${RAFFLE.budget} dinner cover?`,
@@ -67,7 +71,7 @@ const FAQS = [
   },
   {
     q: 'How will I know if I am selected?',
-    a: 'The app can send an opted-in push notification, and your experiment screen will show the private preview. Participants are responsible for checking the app during the response window. No promotional email campaign is part of joining.',
+    a: 'The app can send an opted-in push notification when your shortlist is ready and when a final mutual dinner pair is selected. Participants are responsible for checking the app during the response window. No promotional email campaign is part of joining.',
   },
 ];
 

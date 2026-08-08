@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {
+  buildCoverageFirstShortlist,
+  mutualSelectionWeight,
+  selectMutualDinnerPair,
+} from '../lib/experiment-shortlist.ts';
 
 const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.url), 'utf8');
 
@@ -18,6 +23,34 @@ test('selection weight is bounded and compatibility score remains normalized', (
   assert.match(experimentSource, /Math\.min\(3,/);
   assert.match(experimentSource, /Math\.max\(0,\s*Math\.min\(100,/);
   assert.match(experimentSource, /base\s*\*\s*0\.75\s*\+\s*sharedScore\s*\*\s*0\.15\s*\+\s*answerScore\s*\*\s*0\.10/);
+});
+
+test('V2 shortlist prioritizes coverage and never gives anyone more than two options', () => {
+  const user = (id) => ({ id });
+  const edges = [
+    { a: user('a'), b: user('b'), score: 100 },
+    { a: user('a'), b: user('c'), score: 99 },
+    { a: user('a'), b: user('d'), score: 98 },
+    { a: user('b'), b: user('e'), score: 97 },
+    { a: user('c'), b: user('f'), score: 96 },
+  ];
+  const selected = buildCoverageFirstShortlist(edges, 2);
+  const counts = new Map();
+  for (const edge of selected) {
+    counts.set(edge.a.id, (counts.get(edge.a.id) || 0) + 1);
+    counts.set(edge.b.id, (counts.get(edge.b.id) || 0) + 1);
+  }
+  assert.deepEqual([...counts.keys()].sort(), ['a', 'b', 'c', 'd', 'e', 'f']);
+  assert.ok([...counts.values()].every((count) => count <= 2));
+});
+
+test('V2 dinner selection uses only mutual yes pairs and bounded favorite boosts', () => {
+  const edges = [
+    { id: 'no', a: 'a', b: 'b', score: 90, aAccepted: true, bAccepted: false },
+    { id: 'mutual', a: 'c', b: 'd', score: 70, aAccepted: true, bAccepted: true, aFavorite: true, bFavorite: true },
+  ];
+  assert.equal(selectMutualDinnerPair(edges, () => 1, () => 0)?.id, 'mutual');
+  assert.equal(mutualSelectionWeight(edges[1], () => 2), 3);
 });
 
 test('entry requires versioned, separate consent records', () => {
@@ -44,4 +77,18 @@ test('experiment has a quiet-mode FAQ beside the public flow', () => {
   assert.match(faq, /Paying for Pro[\s\S]*never adds entries or improves selection odds/);
   assert.match(faq, /short-lived links/);
   assert.match(flow, /\/dating-experiment\/faq/);
+  assert.match(faq, /same cap of up to/);
+});
+
+test('V2 decisions stay service-only and test accounts are rejected by the database', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260808163959_dating_experiment_mutual_shortlist_v2.sql', import.meta.url), 'utf8');
+  const sealingMigration = readFileSync(new URL('../supabase/migrations/20260808165229_seal_dating_experiment_shortlist_choices.sql', import.meta.url), 'utf8');
+  const responseRoute = readFileSync(new URL('../app/api/raffle/respond/route.ts', import.meta.url), 'utf8');
+  assert.match(migration, /revoke all on table public\.dating_experiment_shortlist_pairs from anon, authenticated/i);
+  assert.match(migration, /test accounts cannot enter live dating experiment shortlists/i);
+  assert.match(migration, /where status in \('collecting', 'resolving'\)/i);
+  assert.match(sealingMigration, /security definer[\s\S]*set search_path = ''/i);
+  assert.match(sealingMigration, /revoke all on function public\.submit_dating_experiment_shortlist_choices[\s\S]*from public, anon, authenticated/i);
+  assert.match(sealingMigration, /for update/i);
+  assert.match(responseRoute, /rpc\([\s\S]*submit_dating_experiment_shortlist_choices/i);
 });

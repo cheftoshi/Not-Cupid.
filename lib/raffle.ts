@@ -20,10 +20,11 @@ export const RAFFLE = {
   entriesOpen: false, // quiet mode: keep the flow/rules live, but block new public entries
   statusLabel: 'TBD',
   cap: 100, // entry closes at 100 entrants → auto-draw fires
-  maxAttempts: 2, // each entrant can be drawn at most twice (accept/reject, then re-draw)
+  maxAttempts: 2, // at most two sealed shortlist rounds per entrant
+  shortlistMaxOptions: 2,
   respondHours: 12,
-  termsVersion: 'boston-v1-2026-08-08',
-  algorithmVersion: 'dating-experiment-v1',
+  termsVersion: 'boston-v2-2026-08-08',
+  algorithmVersion: 'dating-experiment-mutual-shortlist-v2',
   minimumPairScore: 55,
   videoMinSeconds: 5,
   videoMaxSeconds: 15,
@@ -83,8 +84,8 @@ export function raffleScore(a: any, b: any): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-// Stronger pairs are more likely to be selected, but the narrow 1×–3× band
-// keeps the experiment meaningfully random among all qualified pairs.
+// Stronger mutual pairs are more likely to receive the dinner, but the narrow
+// 1×–3× band keeps the final selection meaningfully random.
 export function pairSelectionWeight(score: number): number {
   const floor = RAFFLE.minimumPairScore;
   if (score <= floor) return 1;

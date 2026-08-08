@@ -41,6 +41,7 @@ export default async function DatingExperimentPage() {
         videoMinSeconds: RAFFLE.videoMinSeconds,
         videoMaxSeconds: RAFFLE.videoMaxSeconds,
         videoMaxBytes: RAFFLE.videoMaxBytes,
+        shortlistMaxOptions: RAFFLE.shortlistMaxOptions,
         entriesOpen: RAFFLE.entriesOpen,
         statusLabel: RAFFLE.statusLabel,
       }}

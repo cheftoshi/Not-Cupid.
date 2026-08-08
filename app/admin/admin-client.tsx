@@ -785,12 +785,12 @@ export default function AdminClient() {
                 setSeedAccounts(d.accounts || []);
               }}>🧪 Seed full test world + login links</button>
               <button className={`${s.btn} ${s.btnDeep}`} onClick={async () => {
-                if (!confirm('Run the Dating Experiment selection now? This creates one compatibility-weighted pending pair and sends both participants a push notification.')) return;
+                if (!confirm('Run the Dating Experiment V2 shortlist now? This creates reciprocal private options for qualified entrants and sends participating users a push notification.')) return;
                 const res = await fetch('/api/admin/raffle-draw', { method: 'POST' });
                 const d = await parseResponse<any>(res);
                 if (!d.ok) { alert('Failed: ' + (d.error || d.message || 'unknown')); return; }
-                alert(`Drew ${d.drawn} pair(s) from ${d.entrants} entrant(s).${d.pairs?.length ? '\n\n' + d.pairs.map((p: any) => `${p.a} ✕ ${p.b} · ${p.score}`).join('\n') : (d.message ? '\n\n' + d.message : '')}`);
-              }}>✦ Run experiment selection</button>
+                alert(`Created/resolved ${d.drawn} pair(s) from ${d.entrants} entrant(s).${d.pairs?.length ? '\n\n' + d.pairs.map((p: any) => `${p.a} ✕ ${p.b} · ${p.score}`).join('\n') : (d.message ? '\n\n' + d.message : '')}`);
+              }}>✦ Run experiment shortlist</button>
             </div>
             <div className={`${s.actionsGrid} ${s.actions3}`} style={{ marginBottom: '1.5rem' }}>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {

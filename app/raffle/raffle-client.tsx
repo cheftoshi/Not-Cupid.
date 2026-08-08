@@ -17,6 +17,7 @@ type Event = {
   videoMinSeconds: number;
   videoMaxSeconds: number;
   videoMaxBytes: number;
+  shortlistMaxOptions?: number;
   entriesOpen?: boolean;
   statusLabel?: string;
 };
@@ -157,7 +158,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
         <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
-          a compatibility-led selection, a private mutual preview, and dinner up to <b>${ev.budget}*</b>. <b>{ev.dateLabel}</b>.
+          up to two compatibility-led options, private mutual choices, and one dinner up to <b>${ev.budget}*</b>. <b>{ev.dateLabel}</b>.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', margin: '-0.85rem 0 1.25rem' }}>
           <Link href="/dating-experiment/faq" style={infoLink}>how it works + FAQ</Link>
@@ -192,6 +193,15 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             </p>
             <Link href="/hub" style={backLink}>back to hub →</Link>
           </div>
+        ) : st?.shortlist?.length ? (
+          <ShortlistPanel
+            offers={st.shortlist}
+            round={st.shortlistRound}
+            budget={ev.budget}
+            busy={busy}
+            setBusy={setBusy}
+            setErr={setErr}
+          />
         ) : (st?.draw && st.draw.status === 'pending' && !st.draw.myAccepted) ? (
           // ── you've been drawn → accept / reject ──
           <div style={{ ...card, border: `2px solid ${BLUE}`, textAlign: 'center' }}>
@@ -229,7 +239,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.12), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2.2rem' }}>🎉</div>
             <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', margin: '0.3rem 0' }}>you’re in{done ? `, ${firstName.toLowerCase()}` : ''}.</h2>
-            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>selection runs <b>{ev.drawLabel}</b>. We’ll ping you if you’re selected. good luck ✦</p>
+            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>shortlists form <b>{ev.drawLabel}</b>. We’ll ping you if you receive one or two private options. good luck ✦</p>
             {!pushOn && <button onClick={enablePush} style={{ display: 'block', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: ORANGE_DEEP, borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on experiment notifications</button>}
             <Link href="/hub" style={{ display: 'inline-block', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', textDecoration: 'none' }}>back to hub →</Link>
             <button onClick={withdraw} disabled={busy} style={{ display: 'block', margin: '0.9rem auto 0', border: 'none', background: 'none', color: 'var(--h-text-faint)', textDecoration: 'underline', cursor: busy ? 'wait' : 'pointer', fontSize: '0.72rem' }}>withdraw my entry</button>
@@ -345,7 +355,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               {[
                 [attendanceConfirmed, setAttendanceConfirmed, `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend the stated dinner.`],
                 [termsAccepted, setTermsAccepted, <>I agree to the <Link href="/dating-experiment/terms" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Dating Experiment Terms</Link>.</>],
-                [videoConsent, setVideoConsent, 'I consent to my profile, photos, answers, and intro video being shown privately to a selected potential date.'],
+                [videoConsent, setVideoConsent, `I consent to my profile, photos, answers, and intro video being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.`],
                 [safetyAcknowledged, setSafetyAcknowledged, 'I understand NotCupid does not conduct criminal background checks or guarantee another participant’s identity, behavior, or compatibility.'],
               ].map(([checked, setter, label], i) => (
                 <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.7rem' }}>
@@ -360,12 +370,111 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             </button>
             {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'answer the three quick questions' : !videoUrl ? 'upload your intro video' : 'confirm the terms and safety notices'}</p>}
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
-              <b>*</b> Free entry. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Compatibility-weighted selection; odds depend on the qualified pool. Dinner value up to ${ev.budget}. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Experiment Terms</Link>.
+              <b>*</b> Free entry. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Up to two reciprocal options; only mutual yes pairs enter the final compatibility-weighted dinner selection. Odds depend on the qualified pool and private choices. Dinner value up to ${ev.budget}. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Experiment Terms</Link>.
             </p>
           </div>
         )}
         {err && <p style={{ color: ORANGE_DEEP, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', marginTop: '1rem' }}>{err}</p>}
       </div>
+    </div>
+  );
+}
+
+function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
+  offers: any[];
+  round: any;
+  budget: number;
+  busy: boolean;
+  setBusy: (value: boolean) => void;
+  setErr: (value: string) => void;
+}) {
+  const [decisions, setDecisions] = useState<Record<string, { accept: boolean | null; favorite: boolean }>>(() =>
+    Object.fromEntries(offers.map((offer) => [offer.id, { accept: offer.myAccepted, favorite: offer.myFavorite === true }])),
+  );
+  const locked = round?.allResponded || round?.status === 'resolving';
+  const complete = offers.every((offer) => decisions[offer.id]?.accept !== null);
+
+  function decide(id: string, accept: boolean) {
+    setDecisions((current) => ({
+      ...current,
+      [id]: { accept, favorite: accept ? current[id]?.favorite === true : false },
+    }));
+  }
+  function favorite(id: string) {
+    setDecisions((current) => Object.fromEntries(Object.entries(current).map(([key, decision]) => [
+      key,
+      { ...decision, favorite: key === id ? !decision.favorite : false },
+    ])));
+  }
+  async function submit() {
+    if (!complete || busy) return;
+    setBusy(true); setErr('');
+    const payload = offers.map((offer) => ({
+      pairId: offer.id,
+      accept: decisions[offer.id].accept === true,
+      favorite: decisions[offer.id].favorite === true,
+    }));
+    const response = await fetch('/api/raffle/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decisions: payload }),
+    });
+    if (response.ok) window.location.reload();
+    else {
+      const data = await response.json().catch(() => ({}));
+      setErr(data.error || 'could not save your private choices');
+      setBusy(false);
+    }
+  }
+
+  if (locked) {
+    return (
+      <div style={{ ...card, border: `2px solid ${BLUE}`, textAlign: 'center' }}>
+        <div style={{ fontSize: '2rem' }}>🔒</div>
+        <h2 style={cardH}>your choices are sealed.</h2>
+        <p style={cardP}>We’ll resolve the round when everyone responds or the private window closes. Only mutual yes pairs can be considered for the ${budget} dinner.</p>
+        <Link href="/hub" style={backLink}>back to hub →</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ ...card, border: `2px solid ${BLUE}`, marginBottom: '0.8rem' }}>
+        <div style={cardLabel}>private shortlist · round {round?.roundNumber || 1}</div>
+        <h2 style={{ ...cardH, marginTop: '0.35rem' }}>choose who you’d actually meet.</h2>
+        <p style={cardP}>Say yes to one, both, or neither. If both appeal to you, mark one favorite. Your answers stay sealed; only mutual yes pairs enter the final dinner selection.</p>
+        {round?.responseDeadline && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: 'var(--h-text-faint)', letterSpacing: '0.05em' }}>respond by {new Date(round.responseDeadline).toLocaleString()}</p>}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: '0.8rem' }}>
+        {offers.map((offer) => {
+          const person = offer.candidate;
+          const first = (person?.name || 'this person').split(' ')[0];
+          const choice = decisions[offer.id] || { accept: null, favorite: false };
+          return (
+            <div key={offer.id} style={{ ...card, padding: '0.9rem', border: choice.accept === true ? `2px solid ${BLUE}` : choice.accept === false ? '1px solid var(--h-border)' : '1px solid rgba(37,99,255,0.3)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '0.35rem' }}>
+                {[person?.photo_url, ...(person?.gallery || [])].filter(Boolean).slice(0, 4).map((src: string, index: number) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={`${src}-${index}`} src={src} alt={`${first} profile ${index + 1}`} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 9 }} />
+                ))}
+              </div>
+              <div style={{ marginTop: '0.65rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '1.25rem' }}>{first}{person?.age ? `, ${person.age}` : ''}</h3>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: BLUE }}>{offer.score}% fit</span>
+              </div>
+              {person?.introVideoPreviewUrl && <video src={person.introVideoPreviewUrl} controls playsInline preload="metadata" style={{ width: '100%', display: 'block', marginTop: '0.55rem', borderRadius: 9, background: '#000' }} />}
+              {person?.conversationStarter && <p style={{ margin: '0.55rem 0 0', fontSize: '0.8rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}><b style={{ color: 'var(--h-text)' }}>ask about:</b> {person.conversationStarter}</p>}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.7rem' }}>
+                <button onClick={() => decide(offer.id, true)} style={{ ...choiceBtn, background: choice.accept === true ? BLUE : 'var(--h-surface-2)', color: choice.accept === true ? '#fff' : 'var(--h-text)' }}>yes, I’d meet</button>
+                <button onClick={() => decide(offer.id, false)} style={{ ...choiceBtn, background: choice.accept === false ? 'var(--h-text)' : 'var(--h-surface-2)', color: choice.accept === false ? 'var(--h-bg)' : 'var(--h-text-dim)' }}>pass privately</button>
+              </div>
+              {choice.accept === true && offers.length > 1 && <button onClick={() => favorite(offer.id)} style={{ width: '100%', marginTop: '0.4rem', border: 'none', background: 'none', color: choice.favorite ? ORANGE_DEEP : 'var(--h-text-faint)', cursor: 'pointer', fontSize: '0.72rem' }}>{choice.favorite ? '★ your favorite' : '☆ mark as favorite'}</button>}
+            </div>
+          );
+        })}
+      </div>
+      <button onClick={submit} disabled={!complete || busy} style={{ width: '100%', marginTop: '0.9rem', border: 'none', borderRadius: 14, padding: '0.9rem', background: complete ? ORANGE : 'var(--h-surface-2)', color: complete ? '#fff' : 'var(--h-text-faint)', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.45rem', letterSpacing: '0.04em', cursor: complete && !busy ? 'pointer' : 'not-allowed' }}>{busy ? 'sealing…' : complete ? 'seal my private choices →' : 'decide on every option'}</button>
     </div>
   );
 }
@@ -379,6 +488,7 @@ const btnGhost: React.CSSProperties = { background: 'var(--h-surface-2)', border
 const numIn: React.CSSProperties = { width: 60, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.5rem', color: 'var(--h-text)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem' };
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const infoLink: React.CSSProperties = { display: 'inline-block', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.42rem 0.7rem', background: 'var(--h-surface)', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
+const choiceBtn: React.CSSProperties = { border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.55rem 0.35rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' };
 function chip(on: boolean): React.CSSProperties {
   return { background: on ? ORANGE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? ORANGE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', cursor: 'pointer' };
 }

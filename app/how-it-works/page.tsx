@@ -61,9 +61,9 @@ function Chapter({ tag, title, accent, accentLight, steps }: { tag: string; titl
 // The Boston Dating Experiment — every point for the featured section below.
 const RAFFLE_POINTS = [
   { e: '✅', t: 'how to join', b: `be 21+, live in Massachusetts within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}, complete your profile, answer three short questions, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}s intro video. joining is free.` },
-  { e: '✦', t: 'how selection works', b: 'the system applies mutual preferences and a minimum compatibility score, then makes a lightly compatibility-weighted random selection among the qualified pairs. no human picks, and paid membership never changes the odds.' },
-  { e: '🔒', t: 'private by design', b: 'only a selected potential date can view your experiment video and preview. your entry does not give NotCupid permission to use your likeness in marketing.' },
-  { e: '🤝', t: 'both people decide', b: `you each privately preview and say yes or pass. both yes locks the dinner up to $${RAFFLE.budget}; otherwise the system quietly looks for another qualified pair.` },
+  { e: '✦', t: 'up to two strong options', b: 'the system prioritizes giving qualified people one reciprocal option before adding a second. everyone has the same two-option cap; paid membership never changes offers or odds.' },
+  { e: '🔒', t: 'private by design', b: 'only people placed on a reciprocal shortlist with you can view your experiment video. every yes, pass, and optional favorite stays sealed.' },
+  { e: '🤝', t: 'mutual choice wins', b: `say yes to either, both, or neither. only mutual yes pairs enter the final compatibility-weighted selection for the dinner up to $${RAFFLE.budget}.` },
 ];
 
 export default function HowItWorks() {
@@ -124,7 +124,7 @@ export default function HowItWorks() {
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🎟️ quiet mode · {RAFFLE.statusLabel}</div>
           <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0.3rem 0 0.2rem' }}>{RAFFLE.series}</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1rem' }}>
-            {RAFFLE.tagline} One selected compatible pair can privately preview each other and, if both say yes, share dinner up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant. Entries are paused while we finish the first round.
+            {RAFFLE.tagline} Qualified participants receive up to two reciprocal options, choose privately, and one mutual pair shares dinner up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant. Entries are paused while we finish the first round.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {RAFFLE_POINTS.map((p) => (
@@ -139,7 +139,7 @@ export default function HowItWorks() {
           </div>
           <Link href="/dating-experiment" style={{ display: 'inline-block', marginTop: '0.9rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', textDecoration: 'none' }}>see experiment details →</Link>
           <p style={{ fontSize: '0.66rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.85rem 0 0' }}>
-            * Free entry. Massachusetts residents 21+ within {RAFFLE.radiusMiles} miles of {RAFFLE.centerZip}. Compatibility-weighted selection; odds depend on the qualified pool. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP, textDecoration: 'underline' }}>Experiment Terms</Link>.
+            * Free entry. Massachusetts residents 21+ within {RAFFLE.radiusMiles} miles of {RAFFLE.centerZip}. Up to two reciprocal options; only mutual yes pairs enter the final weighted selection. Odds depend on the qualified pool and private choices. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP, textDecoration: 'underline' }}>Experiment Terms</Link>.
           </p>
         </div>
 

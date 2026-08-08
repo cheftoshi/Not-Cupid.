@@ -35,7 +35,7 @@ export default function TermsPage() {
       <p>We curate compatible people using an algorithm, but we can&apos;t guarantee matches, replies, dates, chemistry, or outcomes. NotCupid is a tool for meeting people — what happens next is up to you and them.</p>
 
       <h2>Dating Experiment</h2>
-      <p>The optional Boston Dating Experiment has additional eligibility, selection, dinner, video, consent, and safety terms. Those <a href="/dating-experiment/terms">Dating Experiment Terms</a> are presented separately and must be accepted before entry. Joining is free, paid membership does not improve selection odds, and entering does not give us permission to use your likeness in advertising.</p>
+      <p>The optional Boston Dating Experiment has additional eligibility, reciprocal-shortlist, dinner, video, consent, and safety terms. Those <a href="/dating-experiment/terms">Dating Experiment Terms</a> are presented separately and must be accepted before entry. Joining is free, paid membership does not improve offers or selection odds, and entering does not give us permission to use your likeness in advertising.</p>
 
       <h2>AI suggestions</h2>
       <p>Some features may offer AI-assisted prompts or next-move suggestions. They can be inaccurate or awkward and are not professional advice or a promise of compatibility or response. You decide whether to use or edit them, and you are responsible for anything you choose to send. NotCupid&apos;s AI features do not send messages or take actions automatically.</p>

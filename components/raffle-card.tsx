@@ -18,12 +18,16 @@ export default function RaffleCard() {
 
   if (s.draw?.bothAccepted) {
     border = accent = '#2d7a4f'; head = `it’s a date with ${other}. ✦`; sub = `your $${ev.budget} dinner is locked · ${ev.dateLabel}`; label = 'see the details →';
+  } else if (s.shortlist?.length && !s.shortlistRound?.allResponded) {
+    border = accent = '#2563ff'; head = 'your private shortlist is ready. ✦'; sub = `${s.shortlist.length} compatible ${s.shortlist.length === 1 ? 'person' : 'people'} · say yes to either, both, or neither.`; label = 'make your choices →';
+  } else if (s.shortlist?.length && s.shortlistRound?.allResponded) {
+    border = accent = '#2563ff'; head = 'your choices are sealed. 🔒'; sub = 'we’ll resolve the round when everyone responds or the window closes.'; label = 'view the experiment →';
   } else if (s.draw && s.draw.status === 'pending' && !s.draw.myAccepted) {
     border = accent = '#2563ff'; head = `🎉 you’ve been selected — meet ${other}!`; sub = 'preview each other privately, then decide.'; label = 'open the experiment →';
   } else if (s.draw?.myAccepted && !s.draw.bothAccepted) {
     border = accent = '#2563ff'; head = `you’re in — waiting on ${other}.`; sub = `as soon as ${other} accepts, it’s locked for ${ev.dateLabel}.`; label = 'view your entry →';
   } else if (s.entered) {
-    head = 'you’re in the dating experiment. ✓'; sub = `selection runs ${ev.drawLabel}; we’ll ping you if you’re selected.`; label = 'view your entry →';
+    head = 'you’re in the dating experiment. ✓'; sub = `shortlists form ${ev.drawLabel}; we’ll ping you if you receive one or two private options.`; label = 'view your entry →';
   } else if (!ev.entriesOpen) {
     head = `${ev.series} is on pause.`;
     sub = `The dinner round is being tuned quietly. Date: ${ev.dateLabel || 'TBD'}.`;
