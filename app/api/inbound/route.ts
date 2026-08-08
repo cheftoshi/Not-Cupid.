@@ -58,7 +58,7 @@ async function recordCampaignEvent(event: any) {
   const update: Record<string, any> = {
     campaign_key: LOVE_RELAUNCH_CAMPAIGN,
     user_id: userId,
-    variant: ['ready', 'profile', 'love_setup', 'live'].includes(tags.variant) ? tags.variant : 'ready',
+    variant: ['ready', 'profile', 'live'].includes(tags.variant) ? tags.variant : 'ready',
     // Provider events may arrive out of order; never turn a click back into a
     // delivery or overwrite a suppression with a late open-pixel event.
     status: nextStatus,

@@ -345,7 +345,7 @@ export default function AdminClient() {
           {/* ── LOVE LINE RELAUNCH CAMPAIGN ── */}
           <div className={s.card} id="love-campaign">
             <div className={s.cardHead}>
-              <p className={s.cardTitle}>Love relaunch — <b>email engagement</b></p>
+              <p className={s.cardTitle}>Dating Experiment comeback — <b>email engagement</b></p>
             </div>
             {!data?.loveCampaign ? (
               <p className={s.note}>Apply the email campaign migration to start the delivery ledger.</p>
@@ -817,23 +817,16 @@ export default function AdminClient() {
                 alert(`Blast: sent ${d.sent || 0}, failed ${d.failed || 0}, candidates ${d.totalCandidates || 0}${note}`)
               }}>✨ Quiz-retake blast</button>
               <button className={`${s.btn} ${s.btnLav}`} onClick={async () => {
-                const res = await fetch('/api/admin/send-love-relaunch?test=1', { method: 'POST' })
-                const d = await parseResponse<any>(res)
-                alert(res.ok ? `Test Love relaunch email sent to ${d.sentTo}.` : `Test failed: ${d.error || res.status}`)
-              }}>🧪 Send me Love email test</button>
+                window.open('/api/admin/send-love-relaunch?variant=ready', '_blank', 'noopener,noreferrer')
+              }}>👀 Preview experiment email (no send)</button>
               <button className={`${s.btn} ${s.btnInk}`} onClick={async () => {
-                const dryRes = await fetch('/api/admin/send-love-relaunch?dry=1&limit=25', { method: 'POST' })
+                const dryRes = await fetch('/api/admin/send-love-relaunch?dry=1', { method: 'POST' })
                 const dry = await parseResponse<any>(dryRes).catch(() => null)
                 if (!dryRes.ok || !dry) { alert(`Dry run failed: ${dry?.error || dryRes.status}`); return }
                 const b = dry.breakdown || {}
-                const preview = `${dry.wouldSend} in this wave · ${dry.eligibleActiveLoveUsers} eligible (${dry.activeWindowDays}d activity) · ${dry.excludedDormant || 0} dormant excluded · ${dry.alreadySent} already handled\n\n${b.live || 0} live-match · ${b.ready || 0} roster-ready · ${b.profile || 0} need photo · ${b.love_setup || 0} need Love setup`
-                if (!confirm(`Send the next Love Line relaunch wave?\n\n${preview}\n\nThis sends at most 25, excludes test/blocked/unsubscribed/dormant accounts, and skips prior successful deliveries.`)) return
-                const res = await fetch('/api/admin/send-love-relaunch?limit=25', { method: 'POST' })
-                const d = await parseResponse<any>(res)
-                if (!res.ok) { alert(`Campaign failed: ${d.error || res.status}`); return }
-                const note = d.remaining > 0 ? `\n\n${d.remaining} remained in this run.` : ''
-                alert(`Love relaunch: sent ${d.sent || 0}, failed ${d.failed || 0}, processed ${d.processed || 0}.${note}`)
-              }}>💘 Send next Love wave (25)</button>
+                const preview = `${dry.wouldSend} would receive it · ${dry.eligibleActiveBostonUsers} eligible Boston users (${dry.activeWindowDays}d activity) · ${dry.excludedDormant || 0} dormant excluded · ${dry.alreadySent} already handled\n\n${b.live || 0} live-match · ${b.ready || 0} experiment-ready · ${b.profile || 0} need profile work\n\nEntries open: ${dry.entriesOpen ? 'yes' : 'no'} · send approval configured: ${dry.approvalConfigured ? 'yes' : 'no'}`
+                alert(`Dating Experiment email dry run — NOTHING SENT\n\n${preview}`)
+              }}>📋 Experiment email audience (dry run)</button>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
                 const dry = await fetch('/api/admin/send-friend-blast?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
                 const preview = dry ? `\n\n${dry.wouldSend} recipients (ALL users — links to /friends).` : ''

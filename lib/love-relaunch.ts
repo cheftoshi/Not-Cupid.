@@ -1,13 +1,15 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 
-export const LOVE_RELAUNCH_CAMPAIGN = 'love_line_aug_2026';
+export const LOVE_RELAUNCH_CAMPAIGN = 'dating_experiment_comeback_aug_2026';
+export const LOVE_RELAUNCH_APPROVAL_VERSION = 'dating-experiment-comeback-v1-2026-08-08';
+export const LOVE_RELAUNCH_SUBJECT = 'Boston: want to try the NotCupid Dating Experiment?';
 
-export type LoveRelaunchDestination = 'dashboard' | 'profile' | 'love_setup';
+export type LoveRelaunchDestination = 'experiment' | 'dashboard' | 'profile';
 
 const DESTINATIONS: Record<LoveRelaunchDestination, string> = {
-  dashboard: '/dashboard?from=love-relaunch&welcome=love-refresh-2026-08',
-  profile: '/profile?from=love-relaunch&welcome=love-refresh-2026-08',
-  love_setup: '/quiz?line=love&from=love-relaunch',
+  experiment: '/dating-experiment?from=dating-experiment-comeback',
+  dashboard: '/dashboard?from=dating-experiment-comeback&welcome=love-refresh-2026-08',
+  profile: '/profile?from=dating-experiment-comeback&welcome=love-refresh-2026-08',
 };
 
 function secret(): string {

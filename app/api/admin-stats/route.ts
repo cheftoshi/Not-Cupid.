@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
       }
     } catch { monetization = null }
 
-    // Love relaunch lifecycle. Opens are directional because mailbox privacy
+    // Dating Experiment comeback lifecycle. Opens are directional because mailbox privacy
     // proxies can prefetch pixels; first-party CTA clicks are the stronger KPI.
     let loveCampaign: any = null
     try {

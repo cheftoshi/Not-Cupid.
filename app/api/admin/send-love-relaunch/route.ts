@@ -3,11 +3,16 @@ import { getCurrentAdmin } from '@/lib/admin';
 import { supabaseAdmin } from '@/lib/supabase';
 import { button, C, escapeHtml, renderEmail, sendEmail } from '@/lib/email';
 import {
+  LOVE_RELAUNCH_APPROVAL_VERSION,
   LOVE_RELAUNCH_CAMPAIGN,
+  LOVE_RELAUNCH_SUBJECT,
+  loveRelaunchPath,
   loveRelaunchUrl,
   type LoveRelaunchDestination,
 } from '@/lib/love-relaunch';
 import { withReturningUserWelcome } from '@/lib/returning-user';
+import { defaultEmailReplyTo } from '@/lib/email-address';
+import { RAFFLE, raffleEligible, raffleEntriesOpen, raffleLaunchBlockers } from '@/lib/raffle';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -21,13 +26,18 @@ type CampaignUser = {
   id: string;
   name: string | null;
   email: string;
+  age: number | null;
+  zip: string | null;
   photo_url: string | null;
-  intro_video_url: string | null;
-  attach_style: string | null;
+  bio: string | null;
+  hobbies: string[] | null;
+  music: string[] | null;
+  food: string[] | null;
+  sports: string[] | null;
   created_at: string;
 };
 
-type Variant = 'ready' | 'profile' | 'love_setup' | 'live';
+type Variant = 'ready' | 'profile' | 'live';
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,15 +45,14 @@ function wait(ms: number) {
 
 function variantFor(user: CampaignUser, hasLiveMatch: boolean): Variant {
   if (hasLiveMatch) return 'live';
-  if (!user.photo_url) return 'profile';
-  if (!user.attach_style) return 'love_setup';
+  const interests = (user.hobbies?.length ?? 0) + (user.music?.length ?? 0) + (user.food?.length ?? 0) + (user.sports?.length ?? 0);
+  if (!user.photo_url || !user.bio?.trim() || interests < 3) return 'profile';
   return 'ready';
 }
 
 function destinationFor(variant: Variant): LoveRelaunchDestination {
   if (variant === 'profile') return 'profile';
-  if (variant === 'love_setup') return 'love_setup';
-  return 'dashboard';
+  return 'experiment';
 }
 
 function campaignHtml(
@@ -55,52 +64,46 @@ function campaignHtml(
   const first = (user.name || 'there').split(' ')[0];
   const firstHtml = escapeHtml(first);
   const destination = destinationFor(variant);
-  const directDestination = destination === 'dashboard'
-    ? withReturningUserWelcome('/dashboard?from=love-relaunch-test')
-    : destination === 'profile'
-      ? withReturningUserWelcome('/profile?from=love-relaunch-test')
-      : '/quiz?line=love&from=love-relaunch-test';
+  const directDestination = destination === 'experiment'
+    ? '/dating-experiment?from=dating-experiment-comeback-preview'
+    : withReturningUserWelcome('/profile?from=dating-experiment-comeback-preview');
   const primaryUrl = options.tracked === false
     ? `${baseUrl}${directDestination}`
     : loveRelaunchUrl(baseUrl, user.id, destination);
-  const profileUrl = options.tracked === false
-    ? `${baseUrl}${withReturningUserWelcome('/profile?from=love-relaunch-test')}`
-    : loveRelaunchUrl(baseUrl, user.id, 'profile');
-  const cta = variant === 'live'
-    ? 'continue your connections →'
-    : variant === 'profile'
-      ? 'finish your Love profile →'
-      : variant === 'love_setup'
-        ? 'finish your Love setup →'
-        : 'open your Love Line →';
+  const loveLineUrl = options.tracked === false
+    ? `${baseUrl}${withReturningUserWelcome('/dashboard?from=dating-experiment-comeback-preview')}`
+    : loveRelaunchUrl(baseUrl, user.id, 'dashboard');
+  const faqUrl = `${baseUrl}/dating-experiment/faq`;
+  const termsUrl = `${baseUrl}/dating-experiment/terms`;
+  const cta = variant === 'profile' ? 'get my profile ready →' : 'join the Dating Experiment →';
   const lead = variant === 'live'
-    ? 'Your conversations are still there, and the space around them is better: clearer next moves, easier date planning, and a profile that can finally sound like you.'
+    ? 'Your current conversations are still there. This is a separate, smaller way to meet someone new without giving up the connections you already have.'
     : variant === 'profile'
-      ? 'Your quiz is already in. Add one strong face photo and a short hello so the people you meet have something real to respond to.'
-      : variant === 'love_setup'
-        ? 'Your core quiz is already in. Finish the focused Love setup and we can build a better roster around what you actually want.'
-        : 'Your Love profile is ready for the new flow. Come see the people in your current rotation and choose who feels worth a conversation.';
+      ? 'Your quiz is already in. Finish the profile basics so potential dates have something real to respond to, then you can join the experiment.'
+      : 'Your NotCupid profile is ready for the first Boston Dating Experiment.';
 
   return renderEmail({
-    preheader: `${first}, Love Line now gives you a clearer roster, richer profiles, and an easier path to a real date.`,
-    eyebrow: 'Love Line, rebuilt',
-    headline: `${first}, come see what changed.`,
+    preheader: `${first}, a private shortlist, mutual choice, and up to two $${RAFFLE.budget} Boston dinners on us.`,
+    eyebrow: 'The NotCupid Dating Experiment · Boston',
+    headline: `${first}, want us to help set up the first date?`,
     bodyHtml: `
       <p style="margin:0 0 16px 0;">${firstHtml}, ${lead.charAt(0).toLowerCase()}${lead.slice(1)}</p>
-      <p style="margin:0 0 18px 0;">NotCupid is still quiz-based and still has no infinite swipe deck. The difference is that Love Line now gives you more agency without turning dating into another feed.</p>
+      <p style="margin:0 0 18px 0;">We&apos;re trying a more human way to date: not an infinite swipe deck, and not a blind assignment. You set the preferences. We build a small compatibility-led shortlist. You decide who you would actually meet.</p>
 
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px 0;">
-        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Up to five curated options</strong><br><span style="font-size:13px;">Choose who you want to open—not who the app assigns.</span></td></tr>
-        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Three conversations at a time</strong><br><span style="font-size:13px;">Enough room to meet people, without an endless pile of matches.</span></td></tr>
-        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Photos + a 15–30 second hello</strong><br><span style="font-size:13px;">Show some personality before anyone has to invent an opener.</span></td></tr>
-        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};border-bottom:1px solid ${C.border};"><strong style="color:${C.ink};">A simpler route to meeting</strong><br><span style="font-size:13px;">Conversation help and date ideas live next to the chat.</span></td></tr>
+        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Tell us what you actually want</strong><br><span style="font-size:13px;">Choose your age range, orientation, and one or more genders you&apos;re open to meeting. Preferences must work both ways.</span></td></tr>
+        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Meet up to two—privately</strong><br><span style="font-size:13px;">See a compatibility-led profile, photos, answers, and a private 5–15 second hello video.</span></td></tr>
+        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">You choose. They choose.</strong><br><span style="font-size:13px;">Say yes or pass in private. Only people who choose each other enter the dinner selection.</span></td></tr>
+        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};border-bottom:1px solid ${C.border};"><strong style="color:${C.ink};">Dinner is on us</strong><br><span style="font-size:13px;">Up to ${RAFFLE.winnerPairCount} mutual pairs can receive a Boston dinner worth up to $${RAFFLE.budget} per pair.</span></td></tr>
       </table>
 
       <div style="margin:0 0 18px 0;">${button({ href: primaryUrl, label: cta })}</div>
-      ${variant !== 'profile' ? `<p style="margin:0;font-size:13px;">Want to make a stronger first impression first? <a href="${profileUrl}" style="color:${C.lav};font-weight:600;">Add photos or a short video hello.</a></p>` : ''}
+      <p style="margin:0 0 10px 0;font-size:13px;">Want the full plan first? <a href="${faqUrl}" style="color:${C.lav};font-weight:600;">Read how the experiment works.</a></p>
+      <p style="margin:0 0 18px 0;font-size:13px;">The regular Love Line is still here too. <a href="${loveLineUrl}" style="color:${C.lav};font-weight:600;">See your current rotation and conversations.</a></p>
+      <p style="margin:0;font-size:11px;line-height:1.55;color:${C.muted};">No purchase necessary. Massachusetts residents age 21+ within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}. Entry is free, payment and Pro status never affect selection, and no match or prize is guaranteed. Up to ${RAFFLE.winnerPairCount} dinners; maximum value $${RAFFLE.budget} per selected pair and $${RAFFLE.budget * RAFFLE.winnerPairCount} total. Odds depend on the eligible pool, reciprocal preferences, compatibility, and private mutual choices. Void where prohibited. <a href="${termsUrl}" style="color:${C.lav};">Official Rules.</a></p>
     `,
-    recipientId: user.id,
-    footerNote: 'smaller roster. better reasons to say hello.',
+    recipientId: options.tracked === false ? undefined : user.id,
+    footerNote: 'two private options. mutual choice. one real reason to meet.',
     mailingAddress: options.mailingAddress,
   });
 }
@@ -108,7 +111,7 @@ function campaignHtml(
 async function loadAudience() {
   const { data: users, error } = await supabaseAdmin
     .from('users')
-    .select('id, name, email, photo_url, intro_video_url, attach_style, created_at')
+    .select('id, name, email, age, zip, photo_url, bio, hobbies, music, food, sports, created_at')
     .is('deleted_at', null)
     .not('email', 'is', null)
     .not('archetype', 'is', null)
@@ -118,7 +121,51 @@ async function loadAudience() {
     .neq('email_notifications', false)
     .neq('is_test', true);
   if (error) throw new Error('Could not load the active Love audience');
-  return (users || []).filter((user: any) => typeof user.email === 'string' && user.email.includes('@')) as CampaignUser[];
+  return (users || []).filter((user: any) =>
+    typeof user.email === 'string'
+    && user.email.includes('@')
+    && Number.isInteger(user.age)
+    && user.age >= 21
+    && raffleEligible(user)
+  ) as CampaignUser[];
+}
+
+function previewUser(admin: any): CampaignUser {
+  return {
+    id: admin.id,
+    name: admin.name || 'there',
+    email: admin.email || 'preview@notcupid.com',
+    age: Number.isInteger(admin.age) ? admin.age : 30,
+    zip: admin.zip || RAFFLE.centerZip,
+    photo_url: admin.photo_url || null,
+    bio: admin.bio || 'Ready for a real conversation.',
+    hobbies: admin.hobbies || ['trying new places'],
+    music: admin.music || ['live music'],
+    food: admin.food || ['dinner'],
+    sports: admin.sports || null,
+    created_at: admin.created_at || new Date().toISOString(),
+  };
+}
+
+// Browser-safe preview only. This renders the exact ready-profile variant but
+// never reserves a delivery, records a campaign event, or contacts Resend.
+export async function GET(req: NextRequest) {
+  const admin = await getCurrentAdmin();
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const requestedVariant = new URL(req.url).searchParams.get('variant');
+  const variant: Variant = requestedVariant === 'profile' || requestedVariant === 'live' ? requestedVariant : 'ready';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
+  const html = campaignHtml(previewUser(admin), variant, baseUrl, {
+    tracked: false,
+    mailingAddress: process.env.EMAIL_MAILING_ADDRESS?.trim(),
+  });
+  return new NextResponse(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'private, no-store',
+      'X-Robots-Tag': 'noindex, nofollow',
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -132,21 +179,27 @@ export async function POST(req: NextRequest) {
   const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(requestedLimit, 100)) : null;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const mailingAddress = process.env.EMAIL_MAILING_ADDRESS?.trim();
+  const approvalConfigured = process.env.DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION;
+
+  // A test or production delivery is impossible until the exact draft version
+  // is approved out-of-band AND the experiment itself passes every launch gate.
+  // Dry runs remain available because they provably contact no recipient.
+  if (!dryRun && (!approvalConfigured || !raffleEntriesOpen())) {
+    return NextResponse.json({
+      error: 'Dating Experiment email is preview-only until copy and send are separately approved and entries are open.',
+      approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
+      approvalConfigured,
+      entriesOpen: raffleEntriesOpen(),
+      launchBlockers: raffleLaunchBlockers(),
+    }, { status: 409 });
+  }
 
   if (testOnly) {
     if (!admin.email) return NextResponse.json({ error: 'Admin account has no email' }, { status: 400 });
-    const testUser: CampaignUser = {
-      id: admin.id,
-      name: admin.name || 'there',
-      email: admin.email,
-      photo_url: admin.photo_url || null,
-      intro_video_url: admin.intro_video_url || null,
-      attach_style: admin.attach_style || null,
-      created_at: admin.created_at || new Date().toISOString(),
-    };
+    const testUser: CampaignUser = { ...previewUser(admin), email: admin.email };
     const result = await sendEmail({
       to: admin.email,
-      subject: '[TEST] Love Line just got a serious upgrade',
+      subject: `[TEST] ${LOVE_RELAUNCH_SUBJECT}`,
       // Test messages use direct app links so clicking a preview cannot pollute
       // production campaign metrics.
       html: campaignHtml(testUser, 'ready', baseUrl, { tracked: false, mailingAddress }),
@@ -207,17 +260,39 @@ export async function POST(req: NextRequest) {
   const breakdown = candidates.reduce<Record<Variant, number>>((counts, user) => {
     counts[variantFor(user, liveSet.has(user.id))] += 1;
     return counts;
-  }, { ready: 0, profile: 0, love_setup: 0, live: 0 });
+  }, { ready: 0, profile: 0, live: 0 });
 
   if (dryRun) {
     return NextResponse.json({
       campaign: LOVE_RELAUNCH_CAMPAIGN,
-      eligibleActiveLoveUsers: activeUsers.length,
+      approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
+      approvalConfigured,
+      entriesOpen: raffleEntriesOpen(),
+      launchBlockers: raffleLaunchBlockers(),
+      subject: LOVE_RELAUNCH_SUBJECT,
+      sender: 'NotCupid <match@notcupid.com>',
+      replyTo: defaultEmailReplyTo(),
+      sendType: 'production marketing campaign (preview only; no delivery authorized)',
+      audienceDefinition: `Real, non-blocked, subscribed Love users age 21+ within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}, with a completed core quiz and account activity in the last ${CAMPAIGN_ACTIVE_DAYS} days or a current mutual match. Test, deleted, disabled, dormant, invalid-email, previously completed, and out-of-area accounts are excluded.`,
+      eligibleActiveBostonUsers: activeUsers.length,
       excludedDormant: users.length - activeUsers.length,
       activeWindowDays: CAMPAIGN_ACTIVE_DAYS,
       alreadySent: completed.size,
       wouldSend: candidates.length,
       breakdown,
+      links: {
+        primaryReady: `${baseUrl}${loveRelaunchPath('experiment')}`,
+        primaryNeedsProfile: `${baseUrl}${loveRelaunchPath('profile')}`,
+        loveLine: `${baseUrl}${loveRelaunchPath('dashboard')}`,
+        faq: `${baseUrl}/dating-experiment/faq`,
+        officialRules: `${baseUrl}/dating-experiment/terms`,
+        unsubscribe: `${baseUrl}/unsubscribe`,
+      },
+      previewUrls: {
+        ready: `${baseUrl}/api/admin/send-love-relaunch?variant=ready`,
+        needsProfile: `${baseUrl}/api/admin/send-love-relaunch?variant=profile`,
+        liveMatch: `${baseUrl}/api/admin/send-love-relaunch?variant=live`,
+      },
       sample: candidates.slice(0, 5).map((user) => ({
         email: user.email.replace(/^(.{2}).*(@.*)$/, '$1…$2'),
         variant: variantFor(user, liveSet.has(user.id)),
@@ -257,7 +332,7 @@ export async function POST(req: NextRequest) {
 
       const result = await sendEmail({
         to: user.email,
-        subject: 'Love Line just got a serious upgrade',
+        subject: LOVE_RELAUNCH_SUBJECT,
         html: campaignHtml(user, variant, baseUrl, { mailingAddress }),
         idempotencyKey: `${LOVE_RELAUNCH_CAMPAIGN}-${user.id}`,
         tags: [
