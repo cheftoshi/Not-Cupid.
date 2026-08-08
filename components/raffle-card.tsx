@@ -49,7 +49,9 @@ export default function RaffleCard() {
         </div>
       )}
       <div style={{ marginTop: fine ? '0.3rem' : '0.7rem', fontSize: '0.56rem', letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
-        <Link href="/dating-experiment/terms" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>*terms &amp; conditions apply</Link>
+        <Link href="/dating-experiment/faq" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>how it works + FAQ</Link>
+        <span style={{ color: 'var(--h-text-faint)' }}> · </span>
+        <Link href="/dating-experiment/terms" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>terms</Link>
       </div>
     </div>
   );

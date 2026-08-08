@@ -14,7 +14,7 @@ export default function DatingExperimentTermsPage() {
     <LegalPage title="Dating Experiment Terms" subtitle="The complete rules for Dinner on Us: Boston." updated="August 8, 2026">
       {!RAFFLE.entriesOpen && <p><strong>Quiet mode:</strong> entries are not currently open. These terms are published for transparency and may be updated before the entry period begins.</p>}
 
-      <p>These terms apply to the <strong>{RAFFLE.series}</strong>, operated by NotCupid, a Lemon Labs property (the &quot;Sponsor&quot;). By entering, you agree to the version shown at entry: <strong>{RAFFLE.termsVersion}</strong>. Questions may be sent to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.</p>
+      <p>These terms apply to the <strong>{RAFFLE.series}</strong>, operated by NotCupid, a Lemon Labs property (the &quot;Sponsor&quot;). By entering, you agree to the version shown at entry: <strong>{RAFFLE.termsVersion}</strong>. For the plain-language plan, read the <a href="/dating-experiment/faq">Dating Experiment FAQ</a>. Questions may be sent to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.</p>
 
       <h2>1. Free entry</h2>
       <p>No purchase or payment is necessary to enter or be selected. A purchase, subscription, or NotCupid Pro membership does not improve anyone&apos;s selection odds. Limit one entry per person.</p>

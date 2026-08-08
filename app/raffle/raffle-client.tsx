@@ -159,12 +159,20 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
           a compatibility-led selection, a private mutual preview, and dinner up to <b>${ev.budget}*</b>. <b>{ev.dateLabel}</b>.
         </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', margin: '-0.85rem 0 1.25rem' }}>
+          <Link href="/dating-experiment/faq" style={infoLink}>how it works + FAQ</Link>
+          <Link href="/dating-experiment/terms" style={infoLink}>experiment terms</Link>
+          <Link href="/safety" style={infoLink}>safety</Link>
+        </div>
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
             <h2 style={cardH}>quiet mode for now.</h2>
             <p style={cardP}>we’re keeping the first {ev.series} round under wraps while we finish the safeguards and logistics. Date is <b>TBD</b>, and entries are paused for now.</p>
-            <Link href="/hub" style={backLink}>back to hub →</Link>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
+              <Link href="/dating-experiment/faq" style={backLink}>see the simple plan →</Link>
+              <Link href="/hub" style={backLink}>back to hub →</Link>
+            </div>
           </div>
         ) : !eligible ? (
           <div style={card}>
@@ -370,6 +378,7 @@ const qLabel: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSi
 const btnGhost: React.CSSProperties = { background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.55rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const numIn: React.CSSProperties = { width: 60, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.5rem', color: 'var(--h-text)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem' };
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
+const infoLink: React.CSSProperties = { display: 'inline-block', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.42rem 0.7rem', background: 'var(--h-surface)', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 function chip(on: boolean): React.CSSProperties {
   return { background: on ? ORANGE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? ORANGE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', cursor: 'pointer' };
 }

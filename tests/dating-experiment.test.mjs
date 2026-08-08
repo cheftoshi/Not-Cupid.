@@ -36,3 +36,12 @@ test('experiment terms do not bundle a marketing likeness license', () => {
   assert.match(terms, /requires separate written consent/i);
   assert.doesNotMatch(terms, /royalty-free, worldwide license/i);
 });
+
+test('experiment has a quiet-mode FAQ beside the public flow', () => {
+  const faq = readFileSync(new URL('../app/dating-experiment/faq/page.tsx', import.meta.url), 'utf8');
+  const flow = readFileSync(new URL('../app/raffle/raffle-client.tsx', import.meta.url), 'utf8');
+  assert.match(faq, /Quiet mode:/);
+  assert.match(faq, /Paying for Pro[\s\S]*never adds entries or improves selection odds/);
+  assert.match(faq, /short-lived links/);
+  assert.match(flow, /\/dating-experiment\/faq/);
+});
