@@ -17,6 +17,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/dating-experiment-retention",
+      "schedule": "15 5 * * *"
+    },
+    {
       "path": "/api/cron/weekly-drop",
       "schedule": "0 23 * * 4"
     }

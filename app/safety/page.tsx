@@ -20,6 +20,9 @@ export default function SafetyPage() {
         <li><strong>Trust your gut</strong> — if something feels off, you owe no one an explanation. Leave.</li>
       </ul>
 
+      <h2>Dating Experiment dinners</h2>
+      <p>A Dating Experiment selection is never an obligation. Both people privately preview one another and must independently accept before NotCupid reveals the dinner details. We do not conduct criminal background checks or guarantee identity or conduct. The dinner is held in a public venue; arrange separate transportation, share the plan with someone you trust, and leave whenever you want.</p>
+
       <h2>The standard we hold everyone to</h2>
       <p>On both the Love Line and the Friend Line, you agree to:</p>
       <ul>

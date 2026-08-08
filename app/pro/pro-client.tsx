@@ -11,7 +11,6 @@ const PERKS = [
   { icon: '💘', t: 'Every compatibility profile, unlocked', d: 'See every match’s bio, extra photos, interests, values, and connection style — no $0.99 per unlock.' },
   { icon: '🎒', t: 'Unlimited weekly friendship packs', d: 'Open fresh packs whenever you want, free. Each one adds up to 5 new people to connect with.' },
   { icon: '🎟️', t: 'The whole Scene', d: 'Events, crews, the city pulse — all of it, all the time.' },
-  { icon: '🍀', t: 'Raffle boost when rounds reopen', d: 'Members get 2× entries in Summer of Connection rounds when they are live. (No purchase necessary; a free bonus entry is available on request.)' },
   { icon: '✦', t: 'One price, everything', d: 'Skip the per-unlock and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
 ];
 

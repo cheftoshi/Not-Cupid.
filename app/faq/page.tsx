@@ -50,8 +50,8 @@ const FAQS: { q: string; a: string }[] = [
     a: 'You can block and report anyone, we never show your exact location (just a fuzzy metro and distance band), and date-safety tips are built into your matches. People who repeatedly ghost get paused.',
   },
   {
-    q: 'What is the Summer of Connection raffle?',
-    a: 'A Boston-first event series we are keeping in quiet mode for now. Entries are paused and the next dinner date is TBD while we tune the app. When it reopens, it is free to enter: each round draws one fully-covered date (up to $200), with odds weighted toward compatibility and shared interests. Full terms are in the Official Rules.',
+    q: 'What is the NotCupid Dating Experiment?',
+    a: 'A Boston-first experiment we are keeping in quiet mode while we finish the safeguards and dinner logistics. When it opens, eligible people join for free with a complete profile and short private intro video. The system forms mutually eligible pairs, uses compatibility to weight the selection, and privately lets both selected people preview one another. If both say yes, NotCupid covers dinner up to $200. Paid membership never improves the odds.',
   },
   {
     q: 'How do I install the app — and turn on notifications?',

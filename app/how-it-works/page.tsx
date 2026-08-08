@@ -58,12 +58,12 @@ function Chapter({ tag, title, accent, accentLight, steps }: { tag: string; titl
   );
 }
 
-// The Summer of Connection raffle — every point, for the featured slide below.
+// The Boston Dating Experiment — every point for the featured section below.
 const RAFFLE_POINTS = [
-  { e: '✅', t: 'how to enter', b: `be in ${RAFFLE.city} with a complete profile (photo, quiz, bio, a few interests), set your match basics (who you’re into + your age range), and add a 15–30s intro video — that’s your contest entry. entering is free.` },
-  { e: '🎲', t: 'how we pick', b: 'a weighted-random draw — it’s luck, but the odds scale with compatibility. every eligible pair can win; better-matched pairs (shared hobbies, music, food, plus personality and values) just win more often. no human picks.' },
-  { e: '⚖️', t: 'kept fair', b: 'the entrant pool is balanced by gender so it can’t skew, anyone who already won a past round sits out the next, and if your match passes you get re-drawn — up to two shots.' },
-  { e: '🤝', t: 'drawn? accept or reject', b: `you and your match each say yes or no. both yes and your $${RAFFLE.budget} dinner is locked — we send the spot and the time. turn on notifications so you know the second you’re picked.` },
+  { e: '✅', t: 'how to join', b: `be 21+, live in Massachusetts within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}, complete your profile, answer three short questions, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}s intro video. joining is free.` },
+  { e: '✦', t: 'how selection works', b: 'the system applies mutual preferences and a minimum compatibility score, then makes a lightly compatibility-weighted random selection among the qualified pairs. no human picks, and paid membership never changes the odds.' },
+  { e: '🔒', t: 'private by design', b: 'only a selected potential date can view your experiment video and preview. your entry does not give NotCupid permission to use your likeness in marketing.' },
+  { e: '🤝', t: 'both people decide', b: `you each privately preview and say yes or pass. both yes locks the dinner up to $${RAFFLE.budget}; otherwise the system quietly looks for another qualified pair.` },
 ];
 
 export default function HowItWorks() {
@@ -119,12 +119,12 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        {/* featured: the Summer of Connection raffle */}
+        {/* featured: the Boston Dating Experiment */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.13), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.4rem 1.4rem 1.5rem', margin: '0 0 1.75rem', boxShadow: '0 18px 50px -30px rgba(255,106,31,0.55)' }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🎟️ quiet mode · {RAFFLE.statusLabel}</div>
           <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0.3rem 0 0.2rem' }}>{RAFFLE.series}</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1rem' }}>
-            {RAFFLE.tagline} each round raffles <b>one fully-covered date</b> — up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant. Entries are paused while we tune the next round.
+            {RAFFLE.tagline} One selected compatible pair can privately preview each other and, if both say yes, share dinner up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant. Entries are paused while we finish the first round.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {RAFFLE_POINTS.map((p) => (
@@ -137,9 +137,9 @@ export default function HowItWorks() {
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.06em', color: ORANGE_DEEP, marginTop: '1rem', fontWeight: 700 }}>
             capped at {RAFFLE.cap} entrants · entry date {RAFFLE.entryCloseLabel} · dinner {RAFFLE.dateLabel}
           </div>
-          <Link href="/raffle" style={{ display: 'inline-block', marginTop: '0.9rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', textDecoration: 'none' }}>see raffle details →</Link>
+          <Link href="/dating-experiment" style={{ display: 'inline-block', marginTop: '0.9rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.65rem 1.7rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', textDecoration: 'none' }}>see experiment details →</Link>
           <p style={{ fontSize: '0.66rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.85rem 0 0' }}>
-            * No purchase necessary. Open to {RAFFLE.city}-area residents 21+. Winner selected by chance; odds depend on entries. Void where prohibited. <Link href="/raffle/rules" style={{ color: ORANGE_DEEP, textDecoration: 'underline' }}>Official Rules</Link>.
+            * Free entry. Massachusetts residents 21+ within {RAFFLE.radiusMiles} miles of {RAFFLE.centerZip}. Compatibility-weighted selection; odds depend on the qualified pool. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP, textDecoration: 'underline' }}>Experiment Terms</Link>.
           </p>
         </div>
 

@@ -4,8 +4,23 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
 
-type Event = { series: string; city: string; dateLabel: string; budget: number; tagline: string; drawLabel: string; entriesOpen?: boolean; statusLabel?: string };
-type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seeking: string; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null; isPro: boolean };
+type Event = {
+  series: string;
+  city: string;
+  dateLabel: string;
+  budget: number;
+  tagline: string;
+  drawLabel: string;
+  radiusMiles: number;
+  centerZip: string;
+  termsVersion: string;
+  videoMinSeconds: number;
+  videoMaxSeconds: number;
+  videoMaxBytes: number;
+  entriesOpen?: boolean;
+  statusLabel?: string;
+};
+type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seeking: string; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
 
 const ORANGE = '#ff6a1f';
 const ORANGE_DEEP = '#d2530f';
@@ -14,8 +29,7 @@ const GREEN = '#2d7a4f';
 const GENDERS = [['m', 'a man'], ['f', 'a woman'], ['nb', 'non-binary']];
 const SEEKING = [['f', 'women'], ['m', 'men'], ['both', 'anyone']];
 
-// The /raffle page IS the raffle — every state lives here (register → entered →
-// drawn/accept-or-reject → it's-a-date). The hub just links in.
+// The public Dating Experiment flow. Legacy route/API names stay internal.
 export default function RaffleClient({ firstName, eligible, profile, event }: {
   firstName: string; eligible: boolean; profile: Profile; event: Event;
 }) {
@@ -24,15 +38,22 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [ageMin, setAgeMin] = useState(profile.ageMin);
   const [ageMax, setAgeMax] = useState(profile.ageMax);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [notify, setNotify] = useState(true);
-  const [agreed, setAgreed] = useState(false);
+  const [intention, setIntention] = useState('');
+  const [energy, setEnergy] = useState('');
+  const [conversationStarter, setConversationStarter] = useState('');
+  const [attendanceConfirmed, setAttendanceConfirmed] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [videoConsent, setVideoConsent] = useState(false);
+  const [safetyAcknowledged, setSafetyAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // live raffle state (entered / drawn / accepted / it's-a-date)
+  // Live experiment state (entered / selected / accepted / it's-a-date).
   const [st, setSt] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
   const [pushOn, setPushOn] = useState(true);
@@ -55,21 +76,29 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   ];
   const credOk = cred.every((c) => c.ok);
   const basicsOk = !!gender && !!seeking && ageMin >= 18 && ageMax >= ageMin;
-  const canEnter = credOk && basicsOk && !!videoUrl && agreed;
+  const questionsOk = !!intention && !!energy && conversationStarter.trim().length >= 3;
+  const consentOk = attendanceConfirmed && termsAccepted && videoConsent && safetyAcknowledged;
+  const canEnter = credOk && basicsOk && questionsOk && !!videoUrl && videoDuration != null && consentOk;
 
   async function onVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 80 * 1024 * 1024) { setErr('that video is over 80MB — keep it short (15–30s).'); return; }
+    if (file.size > ev.videoMaxBytes) { setErr('that video is over 25MB — keep it to a quick hello.'); return; }
     setUploading(true); setErr('');
     try {
+      const duration = await readVideoDuration(file);
+      if (duration < ev.videoMinSeconds || duration > ev.videoMaxSeconds) {
+        setErr(`keep the intro between ${ev.videoMinSeconds} and ${ev.videoMaxSeconds} seconds — aim for about 10.`);
+        return;
+      }
       const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
       const r = await fetch('/api/raffle/upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ext }) });
       const d = await r.json();
       if (!r.ok) { setErr(d.error || 'upload not available — try again shortly.'); return; }
       const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': d.contentType } });
       if (!put.ok) { setErr('upload failed — try again.'); return; }
-      setVideoUrl(d.publicUrl);
+      setVideoUrl(d.storageRef || d.publicUrl);
+      setVideoDuration(duration);
     } catch { setErr('upload failed — try again.'); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   }
@@ -81,7 +110,23 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
       if (notify) await subscribeToPush().catch(() => {});
       const r = await fetch('/api/raffle/enter', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ video_url: videoUrl, notify, gender, seeking, ageMin, ageMax, agreed }),
+        body: JSON.stringify({
+          video_url: videoUrl,
+          videoDurationSeconds: videoDuration,
+          notify,
+          gender,
+          seeking,
+          ageMin,
+          ageMax,
+          intention,
+          energy,
+          conversationStarter: conversationStarter.trim(),
+          attendanceConfirmed,
+          termsAccepted,
+          termsVersion: ev.termsVersion,
+          videoConsent,
+          safetyAcknowledged,
+        }),
       });
       const d = await r.json();
       if (!r.ok) { setErr(d.error || 'could not enter'); return; }
@@ -95,6 +140,13 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     const r = await fetch('/api/raffle/respond', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accept }) });
     if (r.ok) window.location.reload(); else { setBusy(false); setErr('try again'); }
   }
+  async function withdraw() {
+    if (!window.confirm('Withdraw from this Dating Experiment round and delete your experiment video?')) return;
+    setBusy(true); setErr('');
+    const r = await fetch('/api/raffle/withdraw', { method: 'POST' });
+    if (r.ok) window.location.reload();
+    else { const d = await r.json().catch(() => ({})); setErr(d.error || 'could not withdraw'); setBusy(false); }
+  }
   async function enablePush() { const ok = await subscribeToPush(); setPushOn(ok); if (!ok) setErr('couldn’t enable — on iPhone, install the app first'); }
 
   return (
@@ -105,19 +157,19 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
         <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
-          a fully-covered dinner — up to <b>${ev.budget}*</b> — drawn from everyone who enters. <b>{ev.dateLabel}</b>.
+          a compatibility-led selection, a private mutual preview, and dinner up to <b>${ev.budget}*</b>. <b>{ev.dateLabel}</b>.
         </p>
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
             <h2 style={cardH}>quiet mode for now.</h2>
-            <p style={cardP}>we’re keeping the next {ev.series} round under wraps while we tune the app for more people. Date is <b>TBD</b>, and entries are paused for now.</p>
+            <p style={cardP}>we’re keeping the first {ev.series} round under wraps while we finish the safeguards and logistics. Date is <b>TBD</b>, and entries are paused for now.</p>
             <Link href="/hub" style={backLink}>back to hub →</Link>
           </div>
         ) : !eligible ? (
           <div style={card}>
-            <h2 style={cardH}>this one’s for Bostonians.</h2>
-            <p style={cardP}>you need to live in {ev.city} or a next-door neighborhood (Cambridge, Somerville, Brookline, and the rest of the inner city) to enter — so you can actually make the dinner. set your city on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love line</Link> if that’s you — more cities coming.</p>
+            <h2 style={cardH}>this one’s local to Boston.</h2>
+            <p style={cardP}>you need to be a Massachusetts resident within {ev.radiusMiles} miles of {ev.centerZip} and able to attend the stated dinner. update your location on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love Line</Link> if that’s you.</p>
           </div>
         ) : !loaded ? (
           <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>
@@ -136,11 +188,25 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           // ── you've been drawn → accept / reject ──
           <div style={{ ...card, border: `2px solid ${BLUE}`, textAlign: 'center' }}>
             <div style={{ fontSize: '2.2rem' }}>🎉</div>
-            <h2 style={cardH}>you’ve been picked — meet {other}.</h2>
-            <p style={cardP}>you two scored <b>{st.draw.score}%</b>. accept to lock in your <b>${ev.budget} date</b> on <b>{ev.dateLabel}</b>.{st.draw.theyAccepted ? ` ${other} already said yes 👀` : ''}</p>
+            <h2 style={cardH}>you’ve been selected — meet {other}.</h2>
+            <p style={cardP}>you two scored <b>{st.draw.score}% compatible</b>. Preview each other privately, then decide. Both yes locks in the <b>${ev.budget} dinner</b> on <b>{ev.dateLabel}</b>.{st.draw.theyAccepted ? ` ${other} already said yes 👀` : ''}</p>
+            {st.other && (
+              <div style={{ marginTop: '1rem', padding: '0.85rem', borderRadius: 14, background: 'var(--h-surface-2)', textAlign: 'left' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '0.45rem' }}>
+                  {[st.other.photo_url, ...(st.other.gallery || [])].filter(Boolean).slice(0, 4).map((src: string, i: number) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={`${src}-${i}`} src={src} alt={`${other} profile ${i + 1}`} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 10 }} />
+                  ))}
+                </div>
+                {st.other.introVideoPreviewUrl && (
+                  <video src={st.other.introVideoPreviewUrl} controls playsInline preload="metadata" style={{ width: '100%', display: 'block', marginTop: '0.65rem', borderRadius: 10, background: '#000' }} />
+                )}
+                {st.other.conversationStarter && <p style={{ margin: '0.7rem 0 0', fontSize: '0.84rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}><b style={{ color: 'var(--h-text)' }}>ask {other} about:</b> {st.other.conversationStarter}</p>}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', marginTop: '1rem' }}>
               <button onClick={() => respond(true)} disabled={busy} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 999, padding: '0.7rem 1.9rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', letterSpacing: '0.04em', cursor: busy ? 'wait' : 'pointer' }}>{busy ? '…' : 'accept →'}</button>
-              <button onClick={() => respond(false)} disabled={busy} style={{ background: 'none', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>reject</button>
+              <button onClick={() => respond(false)} disabled={busy} style={{ background: 'none', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>pass privately</button>
             </div>
           </div>
         ) : (st?.draw?.myAccepted && !st.draw.bothAccepted) ? (
@@ -155,31 +221,20 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.12), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2.2rem' }}>🎉</div>
             <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', margin: '0.3rem 0' }}>you’re in{done ? `, ${firstName.toLowerCase()}` : ''}.</h2>
-            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>we draw <b>{ev.drawLabel}</b> and ping you the second you’re picked. good luck ✦</p>
-            {!pushOn && <button onClick={enablePush} style={{ display: 'block', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: ORANGE_DEEP, borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on raffle notifications</button>}
+            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>selection runs <b>{ev.drawLabel}</b>. We’ll ping you if you’re selected. good luck ✦</p>
+            {!pushOn && <button onClick={enablePush} style={{ display: 'block', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: ORANGE_DEEP, borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on experiment notifications</button>}
             <Link href="/hub" style={{ display: 'inline-block', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', textDecoration: 'none' }}>back to hub →</Link>
+            <button onClick={withdraw} disabled={busy} style={{ display: 'block', margin: '0.9rem auto 0', border: 'none', background: 'none', color: 'var(--h-text-faint)', textDecoration: 'underline', cursor: busy ? 'wait' : 'pointer', fontSize: '0.72rem' }}>withdraw my entry</button>
           </div>
         ) : ev.closed ? (
           // ── entries closed ──
           <div style={card}>
             <h2 style={cardH}>entries are closed.</h2>
-            <p style={cardP}>this round filled up — watch the hub for the next {ev.series} drop.</p>
+            <p style={cardP}>this experiment filled up — watch the hub for the next round.</p>
           </div>
         ) : (
           // ── register ──
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-            {/* Pro = dual entry (better odds). The bonus is also free on request — see the rules. */}
-            {profile.isPro ? (
-              <div style={{ background: 'linear-gradient(135deg, rgba(37,99,255,0.12), var(--h-surface))', border: '1.5px solid #2563ff', borderRadius: 14, padding: '0.8rem 1rem', fontSize: '0.85rem', color: 'var(--h-text)' }}>
-                ✨ <b>Pro perk:</b> you get <b>double entry</b> in this draw — 2× the odds. you’re all set.
-              </div>
-            ) : (
-              <Link href="/pro" style={{ display: 'block', background: 'linear-gradient(135deg, rgba(37,99,255,0.1), var(--h-surface))', border: '1.5px solid rgba(37,99,255,0.5)', borderRadius: 14, padding: '0.8rem 1rem', fontSize: '0.85rem', color: 'var(--h-text)', textDecoration: 'none' }}>
-                ✨ <b>NotCupid Pro members get double entry</b> — 2× the odds in every raffle. <span style={{ color: '#2563ff', fontWeight: 700 }}>go Pro for $3.99/mo →</span>
-                <div style={{ fontSize: '0.66rem', color: 'var(--h-text-faint)', marginTop: '0.25rem' }}>no purchase necessary — the bonus entry is also free on request (see the <span style={{ textDecoration: 'underline' }}>Official Rules</span>).</div>
-              </Link>
-            )}
-
             {/* ① cred check — pulled from the profile */}
             <div style={card}>
               <div style={cardLabel}>① your cred</div>
@@ -198,7 +253,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             {/* ② match basics — the questions */}
             <div style={card}>
               <div style={cardLabel}>② your match basics</div>
-              <p style={cardP}>so we draw you someone you’d actually want across the table.</p>
+              <p style={cardP}>so the system only considers people you’d actually want across the table.</p>
               <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
                 <div>
                   <div style={qLabel}>I’m…</div>
@@ -223,12 +278,42 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               </div>
             </div>
 
-            {/* ③ contest video */}
+            {/* ③ short experiment questions */}
             <div style={card}>
-              <div style={cardLabel}>③ your intro video <span style={{ color: ORANGE_DEEP }}>· required</span></div>
-              <p style={cardP}>a 15–30s “hi, I’m {firstName}” clip — your contest intro. every entrant needs one.</p>
+              <div style={cardLabel}>③ three quick questions</div>
+              <p style={cardP}>the main quiz still drives compatibility; these just give the dinner a little context.</p>
+              <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                <div>
+                  <div style={qLabel}>what are you hoping for?</div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {[['relationship', 'a relationship'], ['intentional', 'intentional dating'], ['open', 'open, but real']].map(([v, l]) => <button key={v} onClick={() => setIntention(v)} style={chip(intention === v)}>{l}</button>)}
+                  </div>
+                </div>
+                <div>
+                  <div style={qLabel}>your ideal dinner energy</div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {[['conversation', 'deep conversation'], ['playful', 'playful + easy'], ['foodie', 'food-first adventure']].map(([v, l]) => <button key={v} onClick={() => setEnergy(v)} style={chip(energy === v)}>{l}</button>)}
+                  </div>
+                </div>
+                <div>
+                  <div style={qLabel}>a good thing to ask you about</div>
+                  <input
+                    value={conversationStarter}
+                    maxLength={160}
+                    onChange={(e) => setConversationStarter(e.target.value)}
+                    placeholder="the niche thing you could talk about all night"
+                    style={{ width: '100%', boxSizing: 'border-box', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.65rem 0.75rem', color: 'var(--h-text)', fontSize: '0.86rem' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ④ intro video */}
+            <div style={card}>
+              <div style={cardLabel}>④ your intro video <span style={{ color: ORANGE_DEEP }}>· required</span></div>
+              <p style={cardP}>aim for about 10 seconds: “hi, I’m {firstName} — my ideal Boston date is…” Only a selected potential date can view it.</p>
               {videoUrl ? (
-                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: GREEN, letterSpacing: '0.06em' }}>✓ video added · <button onClick={() => setVideoUrl(null)} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: 'pointer', textDecoration: 'underline' }}>replace</button></div>
+                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: GREEN, letterSpacing: '0.06em' }}>✓ {videoDuration?.toFixed(1)}s video added · <button onClick={() => { setVideoUrl(null); setVideoDuration(null); }} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: 'pointer', textDecoration: 'underline' }}>replace</button></div>
               ) : (
                 <label style={{ ...btnGhost, display: 'inline-block', marginTop: '0.7rem', cursor: uploading ? 'wait' : 'pointer' }}>
                   {uploading ? 'uploading…' : '🎬 upload a video'}
@@ -237,33 +322,37 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               )}
             </div>
 
-            {/* ④ notifications */}
+            {/* ⑤ notifications */}
             <div style={card}>
-              <div style={cardLabel}>④ notifications</div>
+              <div style={cardLabel}>⑤ notifications</div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', marginTop: '0.5rem' }}>
                 <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} style={{ width: 18, height: 18, accentColor: ORANGE }} />
-                <span style={{ fontSize: '0.9rem', color: 'var(--h-text)' }}>🔔 ping me the moment I’m drawn</span>
+                <span style={{ fontSize: '0.9rem', color: 'var(--h-text)' }}>🔔 ping me if I’m selected</span>
               </label>
             </div>
 
-            {/* ⑤ agree to the rules — required */}
+            {/* ⑥ separate, auditable consents */}
             <div style={card}>
-              <div style={cardLabel}>⑤ the fine print <span style={{ color: ORANGE_DEEP }}>· required</span></div>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.6rem' }}>
-                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ width: 18, height: 18, accentColor: ORANGE, marginTop: '0.15rem', flexShrink: 0 }} />
-                <span style={{ fontSize: '0.85rem', color: 'var(--h-text)', lineHeight: 1.5 }}>
-                  I’m <b>21 or older</b> (this dinner is 21+), a {ev.city}-area resident, and I agree to the{' '}
-                  <Link href="/raffle/rules" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Official Rules</Link>, including the photo/video likeness release and the release of liability. I understand this is a free-to-enter sweepstakes and that I’ll be meeting someone in person entirely at my own risk.
-                </span>
-              </label>
+              <div style={cardLabel}>⑥ confirm before joining <span style={{ color: ORANGE_DEEP }}>· required</span></div>
+              {[
+                [attendanceConfirmed, setAttendanceConfirmed, `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend the stated dinner.`],
+                [termsAccepted, setTermsAccepted, <>I agree to the <Link href="/dating-experiment/terms" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Dating Experiment Terms</Link>.</>],
+                [videoConsent, setVideoConsent, 'I consent to my profile, photos, answers, and intro video being shown privately to a selected potential date.'],
+                [safetyAcknowledged, setSafetyAcknowledged, 'I understand NotCupid does not conduct criminal background checks or guarantee another participant’s identity, behavior, or compatibility.'],
+              ].map(([checked, setter, label], i) => (
+                <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.7rem' }}>
+                  <input type="checkbox" checked={checked as boolean} onChange={(e) => (setter as (value: boolean) => void)(e.target.checked)} style={{ width: 18, height: 18, accentColor: ORANGE, marginTop: '0.15rem', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.82rem', color: 'var(--h-text)', lineHeight: 1.5 }}>{label as React.ReactNode}</span>
+                </label>
+              ))}
             </div>
 
             <button onClick={enter} disabled={busy || uploading || !canEnter} style={{ background: canEnter ? ORANGE : 'var(--h-surface-2)', color: canEnter ? '#fff' : 'var(--h-text-faint)', border: canEnter ? 'none' : '1px solid var(--h-border)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || !canEnter ? 'not-allowed' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
-              {busy ? '…' : canEnter ? '🎟️ enter the raffle' : 'finish the steps above'}
+              {busy ? '…' : canEnter ? '✦ join the dating experiment' : 'finish the steps above'}
             </button>
-            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !videoUrl ? 'upload your intro video' : 'agree to the official rules'}</p>}
+            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'answer the three quick questions' : !videoUrl ? 'upload your intro video' : 'confirm the terms and safety notices'}</p>}
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
-              <b>*</b> No purchase necessary. Open to {ev.city}-area residents 21+. Winner selected by chance; odds depend on entries. Prize ARV up to ${ev.budget}. Void where prohibited. <Link href="/raffle/rules" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
+              <b>*</b> Free entry. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Compatibility-weighted selection; odds depend on the qualified pool. Dinner value up to ${ev.budget}. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Experiment Terms</Link>.
             </p>
           </div>
         )}
@@ -283,4 +372,33 @@ const numIn: React.CSSProperties = { width: 60, background: 'var(--h-surface-2)'
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 function chip(on: boolean): React.CSSProperties {
   return { background: on ? ORANGE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? ORANGE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', cursor: 'pointer' };
+}
+
+function readVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    const cleanup = () => {
+      clearTimeout(timeout);
+      URL.revokeObjectURL(url);
+      video.removeAttribute('src');
+      video.load();
+    };
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('video metadata timeout'));
+    }, 8000);
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      cleanup();
+      if (!Number.isFinite(duration) || duration <= 0) reject(new Error('invalid video duration'));
+      else resolve(Math.round(duration * 100) / 100);
+    };
+    video.onerror = () => {
+      cleanup();
+      reject(new Error('invalid video'));
+    };
+    video.src = url;
+  });
 }

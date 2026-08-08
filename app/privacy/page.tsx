@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <ul>
         <li><strong>Account &amp; profile:</strong> your name, email, age, ZIP code, the gender you are and who you&apos;re looking for, your photos and gallery, your bio, interests, and (optionally) your sun sign.</li>
         <li><strong>Sensitive details (you choose to share these):</strong> because we&apos;re a dating and friendship app, some of what you tell us is sensitive — who you&apos;re attracted to / seeking, whether you identify as LGBTQ+ (only if you opt to share it), your photos, your approximate location, and the personality, attachment, and values signals (including a health &amp; fitness question) computed from your quiz. You give us these so we can match you. See &quot;Sensitive information&quot; below.</li>
-        <li><strong>Content you create:</strong> messages and group-chat posts, activities/events you post or RSVP to, date feedback you submit, and contest/raffle entries (including any short intro video).</li>
+        <li><strong>Content you create:</strong> messages and group-chat posts, activities/events you post or RSVP to, date feedback you submit, and Dating Experiment entries (including the short private intro video and experiment answers).</li>
         <li><strong>Activity:</strong> who you connect with, accept or pass, your friendship packs and connections, AI-feature usage, and lightweight product analytics (pages viewed, features used) so we can improve the app.</li>
         <li><strong>Payments:</strong> when you pay (a Love-Line profile unlock, a friendship pack, or Pro), <strong>Stripe</strong> processes it — we never see or store your full card number. We keep a record of the transaction and your subscription status.</li>
         <li><strong>Notifications &amp; technical:</strong> if you turn on push notifications, your device&apos;s push subscription; plus standard server logs (IP address, browser) that come with any website, used for security and debugging.</li>
@@ -52,8 +52,8 @@ export default function PrivacyPage() {
       <p><strong>Press / publications — only with your explicit consent.</strong> From time to time we may invite people who&apos;ve been on a date to share their experience with a publication. We only contact you about this, and we only share what you specifically agree to — replying to such an invitation never obligates you, and we won&apos;t share a word without your okay.</p>
       <p>We may also disclose information if required by law or to protect someone&apos;s safety.</p>
 
-      <h2>Contests &amp; the raffle</h2>
-      <p>If you enter a NotCupid contest or raffle (such as the Summer of Connection series), we collect your entry, your match basics, and your optional intro video. By entering you agree to that contest&apos;s <a href="/raffle/rules">Official Rules</a>, which include a likeness release allowing us to use your name, city, photo, and video for promoting the contest. A winning pair&apos;s prize details (venue and time) are shared only with the two of them.</p>
+      <h2>The Dating Experiment</h2>
+      <p>If you join the <a href="/dating-experiment">NotCupid Dating Experiment</a>, we collect your entry, availability confirmation, match basics, short answers, consent timestamps, terms version, and required introduction video. Your video is stored privately and is shown only to a selected potential date and limited NotCupid administrators who operate or safeguard the experiment. Entering does <strong>not</strong> give us permission to use your name, photo, video, or story in advertising; any public or marketing use requires separate written consent. Experiment videos are scheduled for deletion after the round, subject to limited safety, fraud, dispute, and legal retention. Venue and time are shared only after both selected participants accept. See the <a href="/dating-experiment/terms">Dating Experiment Terms</a>.</p>
 
       <h2>What your matches see</h2>
       <p>Your first name, age, main photo, and optional short intro video are visible to people you match or connect with. Additional photos, bio, interests, and deeper compatibility details are part of the full Love-Line profile, which unlocks for a one-time fee or with Pro. We <strong>never</strong> show your exact address or ZIP — only a metro label (e.g.&nbsp;&quot;Boston, MA&quot;) and a fuzzy distance band.</p>
@@ -82,7 +82,7 @@ export default function PrivacyPage() {
       <p>NotCupid serves the U.S. Northeast, and your data is stored and processed in the <strong>United States</strong> by our U.S.-based providers. NotCupid isn&apos;t intended for use outside our service area.</p>
 
       <h2>Age</h2>
-      <p>NotCupid is strictly for people <strong>18 and older</strong> (some features, like the raffle dinner, are 21+). We don&apos;t knowingly collect data from anyone under 18; if we learn we have, we delete it.</p>
+      <p>NotCupid is strictly for people <strong>18 and older</strong> (some features, like the Dating Experiment dinner, are 21+). We don&apos;t knowingly collect data from anyone under 18; if we learn we have, we delete it.</p>
 
       <h2>Changes</h2>
       <p>If we make material changes to this policy, we&apos;ll update the date above and, where appropriate, let you know in the app. Continued use means you accept the current version.</p>

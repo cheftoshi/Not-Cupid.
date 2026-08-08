@@ -1,24 +1,16 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleScore, ageMutual, raffleClosed, raffleEligible } from '@/lib/raffle';
+import { RAFFLE, raffleScore, pairSelectionWeight, ageMutual, raffleClosed, raffleEligible } from '@/lib/raffle';
 import { isGenderMatch } from '@/lib/matching';
-import { isPro } from '@/lib/pro';
 import { sendPushToUser } from '@/lib/push';
 
 const COLS = 'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, hobbies, music, food, sports, ' +
   'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, ' +
-  'vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, is_test, friend_pro_until';
-
-// A Pro member (or a free-AMOE-granted bonus, both = isPro) gets RAFFLE.proEntries
-// entries — i.e. that many times the draw weight. So a pair's weight scales by the
-// entry count of BOTH people.
-const entriesFor = (u: any) => (isPro(u) ? RAFFLE.proEntries : 1);
+  'vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, is_test';
 
 const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
-// The raffle draw — AUTO, no human picks. We raffle ONE date per round, ONE live
-// pair at a time, via a WEIGHTED-RANDOM draw: every mutually-eligible pair can
-// win, with odds that scale with the hobbies-weighted raffleScore (luck, but
-// better matches win more often — fairer than always crowning the top pair).
+// The experiment selection is automatic: hard mutual eligibility first, then a
+// lightly compatibility-weighted random choice among qualified pairs.
 // If they don't both accept, the willing one is re-drawn — each entrant gets at
 // most RAFFLE.maxAttempts (2) draws, then they're out. Prior-round winners are
 // excluded. Stops once a pair mutually accepts (the winner) or no pairs remain.
@@ -57,18 +49,26 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<{ ok: 
   const seenPairs = new Set<string>((priorDraws ?? []).map((d: any) => pairKey(d.user_a_id, d.user_b_id)));
 
   // Eligible entrants: still in, under the attempt cap.
-  const { data: entries } = await supabaseAdmin.from('raffle_entries').select('user_id, attempts').eq('event_key', RAFFLE.key).eq('status', 'entered');
-  const eligibleIds = (entries ?? []).filter((e: any) => (e.attempts ?? 0) < RAFFLE.maxAttempts).map((e: any) => e.user_id);
+  const { data: entries } = await supabaseAdmin.from('raffle_entries')
+    .select('user_id, attempts, questionnaire, terms_version')
+    .eq('event_key', RAFFLE.key)
+    .eq('status', 'entered');
+  const eligibleIds = (entries ?? [])
+    .filter((e: any) => (e.attempts ?? 0) < RAFFLE.maxAttempts && e.terms_version === RAFFLE.termsVersion)
+    .map((e: any) => e.user_id);
 
   // Only draw when it's time: admin force, entries closed, the cap is reached, or
   // the round already started (so post-decline / post-expiry re-draws flow through).
-  const { count: totalEntries } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key);
+  const { count: totalEntries } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key).neq('status', 'withdrawn');
   const canDraw = force || (RAFFLE.entriesOpen && raffleClosed()) || (totalEntries ?? 0) >= RAFFLE.cap || (priorDraws?.length ?? 0) > 0;
   if (!canDraw) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'waiting-for-trigger' };
   if (eligibleIds.length < 2) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
 
   const { data: usersData } = await supabaseAdmin.from('users').select(COLS).in('id', eligibleIds);
-  const pool: any[] = ((usersData as any[]) ?? []).filter((u) => u.photo_url && u.archetype && raffleEligible(u));
+  const entryByUser = new Map((entries ?? []).map((entry: any) => [entry.user_id, entry]));
+  const pool: any[] = ((usersData as any[]) ?? [])
+    .filter((u) => u.is_test !== true && u.photo_url && u.archetype && raffleEligible(u))
+    .map((u) => ({ ...u, experiment_answers: (entryByUser.get(u.id) as any)?.questionnaire ?? null }));
 
   // Fairness across rounds: a prior-round winner can't win again.
   const { data: priorWins } = await supabaseAdmin.from('raffle_draws').select('user_a_id, user_b_id').eq('status', 'both_accepted').neq('event_key', RAFFLE.key);
@@ -85,30 +85,45 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<{ ok: 
       if ((a.is_test === true) !== (b.is_test === true)) continue; // realm segregation
       if (!isGenderMatch(a, b) || !isGenderMatch(b, a)) continue;
       if (!ageMutual(a, b)) continue;
-      pairs.push({ a, b, score: raffleScore(a, b) });
+      const score = raffleScore(a, b);
+      if (score < RAFFLE.minimumPairScore) continue;
+      pairs.push({ a, b, score });
     }
   }
   if (!pairs.length) return { ok: true, entrants: pool.length, drawn: 0, state: 'no-eligible-pair' };
 
-  // WEIGHTED-RANDOM pick — odds ∝ raffleScore × each person's entry count (Pro =
-  // dual entry). Every pair still has a real shot; more entries just means better
-  // odds.
-  const weightOf = (p: { a: any; b: any; score: number }) => Math.max(1, p.score) * entriesFor(p.a) * entriesFor(p.b);
+  // Every qualified pair has a real chance. Compatibility changes odds only
+  // within a bounded 1×–3× band; subscriptions and payments never affect it.
+  const weightOf = (p: { a: any; b: any; score: number }) => pairSelectionWeight(p.score);
   const totalW = pairs.reduce((s, p) => s + weightOf(p), 0);
   let r = Math.random() * totalW;
   let best = pairs[0];
   for (const p of pairs) { r -= weightOf(p); if (r <= 0) { best = p; break; } }
 
-  await supabaseAdmin.from('raffle_draws').upsert(
-    { event_key: RAFFLE.key, user_a_id: best.a.id, user_b_id: best.b.id, compatibility_score: best.score, status: 'pending' },
+  const selectedWeight = weightOf(best);
+  const { error: drawError } = await supabaseAdmin.from('raffle_draws').upsert(
+    {
+      event_key: RAFFLE.key,
+      user_a_id: best.a.id,
+      user_b_id: best.b.id,
+      compatibility_score: best.score,
+      status: 'pending',
+      algorithm_version: RAFFLE.algorithmVersion,
+      eligible_pair_count: pairs.length,
+      selection_weight: selectedWeight,
+    },
     { onConflict: 'event_key,user_a_id,user_b_id' }
   );
+  if (drawError) {
+    if (drawError.code === '23505') return { ok: true, entrants: pool.length, drawn: 0, state: 'awaiting-response' };
+    throw drawError;
+  }
   // Bump each one's attempt count.
   for (const id of [best.a.id, best.b.id]) {
     const cur = (entries ?? []).find((e: any) => e.user_id === id)?.attempts ?? 0;
     await supabaseAdmin.from('raffle_entries').update({ attempts: cur + 1, status: 'picked' }).eq('event_key', RAFFLE.key).eq('user_id', id);
   }
-  const msg = { title: "You've been drawn! ✦", body: `${RAFFLE.series}: you got picked. Accept to lock in your $${RAFFLE.budget} date — ${RAFFLE.dateLabel}.`, url: '/hub', tag: 'raffle-drawn' };
+  const msg = { title: "You've been selected! ✦", body: `${RAFFLE.series}: preview your match and decide whether to lock in the $${RAFFLE.budget} dinner — ${RAFFLE.dateLabel}.`, url: '/dating-experiment', tag: 'dating-experiment-selected' };
   await Promise.allSettled([sendPushToUser(best.a.id, msg), sendPushToUser(best.b.id, msg)]);
   return { ok: true, entrants: pool.length, drawn: 1, pair: { a: best.a.name, b: best.b.name, score: best.score }, state: 'drawn' };
 }

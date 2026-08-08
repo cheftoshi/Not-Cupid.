@@ -7,19 +7,25 @@ import { isManagedStorageUrl } from '@/lib/request-security';
 
 export const dynamic = 'force-dynamic';
 
-// Enter the raffle. Needs established cred (a real, complete profile), the match
-// basics, an intro video, and to be in the event's city. New entrants also face
-// the deadline, the overall cap, and a per-gender balance cap so the pool can't
-// skew lopsided (keeps everyone's odds fair).
+const INTENTIONS = new Set(['relationship', 'intentional', 'open']);
+const ENERGIES = new Set(['conversation', 'playful', 'foodie']);
+
+// Enter the Dating Experiment. The public flow is intentionally short, while
+// the server records each material consent separately for an auditable trail.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (user.is_test === true) return NextResponse.json({ error: 'Test accounts cannot enter the live Dating Experiment.' }, { status: 403 });
   if (!RAFFLE.entriesOpen) return NextResponse.json({ error: 'Entries are paused while we set up the next round.' }, { status: 403 });
-  if (!raffleEligible(user)) return NextResponse.json({ error: `${RAFFLE.city} only for this one — change your city to ${RAFFLE.city} to enter.` }, { status: 400 });
+  if (!raffleEligible(user)) return NextResponse.json({ error: `This experiment is for Massachusetts residents within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}.` }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
   const video_url = body.video_url ? String(body.video_url).slice(0, 2000) : null;
+  const videoDuration = Number(body.videoDurationSeconds);
   const notify = body.notify !== false;
+  const intention = INTENTIONS.has(body.intention) ? body.intention : null;
+  const energy = ENERGIES.has(body.energy) ? body.energy : null;
+  const conversationStarter = String(body.conversationStarter || '').trim().slice(0, 160);
 
   // Match basics from the form — set them on the real profile (the matcher reads
   // user.gender/seeking/age) so they're not raffle-only.
@@ -50,35 +56,51 @@ export async function POST(req: NextRequest) {
   if (!isManagedStorageUrl(video_url, 'raffle-videos', `${user.id}/${RAFFLE.key}-`)) {
     return NextResponse.json({ error: 'Upload your intro video through NotCupid before entering.' }, { status: 400 });
   }
-  if (body.agreed !== true) return NextResponse.json({ error: 'Please agree to the Official Rules to enter.' }, { status: 400 });
+  if (!Number.isFinite(videoDuration) || videoDuration < RAFFLE.videoMinSeconds || videoDuration > RAFFLE.videoMaxSeconds) {
+    return NextResponse.json({ error: `Your intro video must be ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds} seconds long.` }, { status: 400 });
+  }
+  if (!intention || !energy || conversationStarter.length < 3) {
+    return NextResponse.json({ error: 'Finish the three short experiment questions before entering.' }, { status: 400 });
+  }
+  if (body.termsVersion !== RAFFLE.termsVersion || body.termsAccepted !== true) {
+    return NextResponse.json({ error: 'Please agree to the current Dating Experiment Terms.' }, { status: 400 });
+  }
+  if (body.videoConsent !== true) return NextResponse.json({ error: 'Please consent to the private profile and video preview.' }, { status: 400 });
+  if (body.safetyAcknowledged !== true) return NextResponse.json({ error: 'Please acknowledge the participant safety notice.' }, { status: 400 });
+  if (body.attendanceConfirmed !== true) return NextResponse.json({ error: 'Please confirm you can attend the stated dinner.' }, { status: 400 });
 
-  // New entrants face the deadline, the overall cap, and the per-gender balance
-  // cap; updating your own existing entry skips all three.
-  const { data: mine } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
-  const alreadyIn = !!mine;
+  // New entrants face the deadline and overall cap. Compatibility graph health,
+  // rather than a binary gender quota, determines whether a pair can be formed.
+  const { data: mine } = await supabaseAdmin.from('raffle_entries').select('user_id, status').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
+  const alreadyIn = !!mine && mine.status !== 'withdrawn';
   if (!alreadyIn) {
     if (raffleClosed()) return NextResponse.json({ error: 'Entries are closed for this one — watch the hub for the next.' }, { status: 400 });
-    const { data: ents } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('event_key', RAFFLE.key);
+    const { data: ents } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('event_key', RAFFLE.key).neq('status', 'withdrawn');
     const ids = (ents ?? []).map((e: any) => e.user_id);
-    if (ids.length >= RAFFLE.cap) return NextResponse.json({ error: 'The raffle just hit capacity — watch the hub for the next one.' }, { status: 400 });
-    // Balance: neither men nor women can exceed 60% of the cap, so the pool can't
-    // go lopsided and crush one side's odds. (nb uncapped — small numbers.)
-    if ((g === 'm' || g === 'f') && ids.length) {
-      const { data: gs } = await supabaseAdmin.from('users').select('gender').in('id', ids);
-      const sameSide = (gs ?? []).filter((u: any) => u.gender === g).length;
-      if (sameSide >= Math.ceil(RAFFLE.cap * 0.6)) {
-        const side = g === 'm' ? 'men’s' : 'women’s';
-        return NextResponse.json({ error: `The ${side} side is full for this round — we balance the pool so the draw stays fair. Watch the hub for the next one.` }, { status: 400 });
-      }
-    }
+    if (ids.length >= RAFFLE.cap) return NextResponse.json({ error: 'This Dating Experiment round just hit capacity — watch the hub for the next one.' }, { status: 400 });
   }
 
-  const row: any = { user_id: user.id, event_key: RAFFLE.key, video_url, notify, status: 'entered', agreed_at: new Date().toISOString() };
-  let { error } = await supabaseAdmin.from('raffle_entries').upsert(row, { onConflict: 'user_id,event_key' });
-  if (error && /agreed_at/i.test(error.message || '')) { // pre-migration fallback
-    delete row.agreed_at;
-    ({ error } = await supabaseAdmin.from('raffle_entries').upsert(row, { onConflict: 'user_id,event_key' }));
-  }
+  const acceptedAt = new Date().toISOString();
+  const row: any = {
+    user_id: user.id,
+    event_key: RAFFLE.key,
+    video_url,
+    video_duration_seconds: videoDuration,
+    notify,
+    status: 'entered',
+    agreed_at: acceptedAt,
+    terms_version: RAFFLE.termsVersion,
+    terms_accepted_at: acceptedAt,
+    video_consent_at: acceptedAt,
+    safety_acknowledged_at: acceptedAt,
+    attendance_confirmed_at: acceptedAt,
+    // Publicity/marketing permission must use a future, separate consent flow;
+    // this entry endpoint never infers or accepts it.
+    publicity_consent_at: null,
+    questionnaire: { intention, energy, conversationStarter },
+    withdrawn_at: null,
+  };
+  const { error } = await supabaseAdmin.from('raffle_entries').upsert(row, { onConflict: 'user_id,event_key' });
   if (error) {
     console.error('raffle enter error', error);
     return NextResponse.json({ error: 'Could not enter — try again.' }, { status: 500 });

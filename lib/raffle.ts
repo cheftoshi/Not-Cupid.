@@ -1,19 +1,33 @@
 import { compatibilityScore } from '@/lib/matching';
+import { zipDistanceMiles } from '@/lib/quiz-data';
 
-// Summer of Connection — the live event raffle. v1 = Boston, one date.
-// The draw is AUTOMATIC: it fires the moment entries hit `cap`, or via the daily
-// cron once `entryClose` passes — no human picks. (Confirm the dates below.)
+export type ExperimentAnswers = {
+  intention: 'relationship' | 'intentional' | 'open';
+  energy: 'conversation' | 'playful' | 'foodie';
+  conversationStarter: string;
+};
+
+// Publicly this is the NotCupid Dating Experiment. The legacy RAFFLE symbol and
+// database table names stay internal so we can upgrade the existing machinery
+// without a risky data migration.
 export const RAFFLE = {
-  key: 'boston-2026-07-02',
-  series: 'Summer of Connection',
+  key: 'boston-dating-experiment-v1',
+  series: 'The NotCupid Dating Experiment',
   city: 'Boston',
   metro: 'boston',
+  centerZip: '02116',
+  radiusMiles: 20,
   entriesOpen: false, // quiet mode: keep the flow/rules live, but block new public entries
   statusLabel: 'TBD',
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // each entrant can be drawn at most twice (accept/reject, then re-draw)
-  proEntries: 2, // NotCupid Pro members get this many entries (dual entry = 2× draw weight). NO PURCHASE NECESSARY: the same bonus is free on request (AMOE) so it stays a sweepstakes, not a paid lottery.
-  respondHours: 18, // a drawn pair has this long to accept before the draw expires + we re-draw (so a no-show can't deadlock the round)
+  respondHours: 12,
+  termsVersion: 'boston-v1-2026-08-08',
+  algorithmVersion: 'dating-experiment-v1',
+  minimumPairScore: 55,
+  videoMinSeconds: 5,
+  videoMaxSeconds: 15,
+  videoMaxBytes: 25 * 1024 * 1024,
   entryClose: '2099-12-31T04:59:59.000Z',
   entryCloseLabel: 'TBD',
   happensAt: '2099-12-31T23:00:00.000Z',
@@ -23,20 +37,19 @@ export const RAFFLE = {
   // The actual venue — revealed ONLY to a winning pair (set on the draw at mutual
   // accept; never in the public status payload). Kept secret until someone wins.
   restaurant: 'The Berkeley · 154 Berkeley Street, Back Bay, Boston — we’ll confirm the time with you.',
-  tagline: 'Two Bostonians. One $200 dinner. On us.',
+  tagline: 'One compatible Boston pair. Dinner is on us.',
 };
 
 export function raffleClosed(): boolean {
   return !RAFFLE.entriesOpen || Date.now() > new Date(RAFFLE.entryClose).getTime();
 }
 
-// Is this user eligible for the raffle? CITY-BASED: they must live in an actual
-// named Boston neighborhood or inner-ring town (Back Bay, Cambridge, Somerville,
-// Brookline, Quincy, …) — a real Bostonian, so a winner can show up to dinner.
-// (Sharper + more on-brand than a vague mileage radius.)
-import { isBostonAreaZip } from '@/lib/neighborhoods';
+// Keep the first experiment in one jurisdiction and within a practical trip of
+// the fixed Boston dinner. ZIP distance is approximate and exact location is
+// never shown to another participant.
 export function raffleEligible(user: any): boolean {
-  return isBostonAreaZip(user?.zip);
+  const distance = zipDistanceMiles(user?.zip, RAFFLE.centerZip);
+  return distance != null && distance <= RAFFLE.radiusMiles;
 }
 
 const overlap = (a?: string[] | null, b?: string[] | null) => {
@@ -45,9 +58,16 @@ const overlap = (a?: string[] | null, b?: string[] | null) => {
   return b.filter((s) => A.has(String(s).toLowerCase().trim())).length;
 };
 
-// Raffle pairing score — the normal compatibility score, then a heavy bonus for
-// SHARED INTERESTS (hobbies / music / food / sports), so the draw clearly favors
-// people who'd actually have things to do + talk about over dinner.
+function answerCompatibility(a?: Partial<ExperimentAnswers>, b?: Partial<ExperimentAnswers>): number | null {
+  if (!a?.intention || !b?.intention || !a?.energy || !b?.energy) return null;
+  const intention = a.intention === b.intention || a.intention === 'open' || b.intention === 'open' ? 100 : 55;
+  const energy = a.energy === b.energy ? 100 : 65;
+  return intention * 0.65 + energy * 0.35;
+}
+
+// Compatibility drives who makes the eligible pair pool. Shared interests and
+// the tiny experiment questionnaire add texture without overpowering the main
+// values/attachment-based matching model.
 export function raffleScore(a: any, b: any): number {
   const base = compatibilityScore(a, b); // 0–100
   const shared =
@@ -55,7 +75,20 @@ export function raffleScore(a: any, b: any): number {
     overlap(a.music, b.music) +
     overlap(a.food, b.food) +
     overlap(a.sports, b.sports);
-  return Math.round(base) + Math.min(40, shared * 6); // up to +40 for overlap
+  const sharedScore = Math.min(100, shared * 20);
+  const answerScore = answerCompatibility(a.experiment_answers, b.experiment_answers);
+  const score = answerScore == null
+    ? base * 0.85 + sharedScore * 0.15
+    : base * 0.75 + sharedScore * 0.15 + answerScore * 0.10;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+// Stronger pairs are more likely to be selected, but the narrow 1×–3× band
+// keeps the experiment meaningfully random among all qualified pairs.
+export function pairSelectionWeight(score: number): number {
+  const floor = RAFFLE.minimumPairScore;
+  if (score <= floor) return 1;
+  return Math.min(3, 1 + ((score - floor) / Math.max(1, 100 - floor)) * 2);
 }
 
 // Mutually within each other's age window.
