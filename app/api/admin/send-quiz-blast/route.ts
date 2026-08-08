@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { escapeHtml } from '@/lib/email'
+import { defaultEmailReplyTo } from '@/lib/email-address'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Hobby plan cap
@@ -55,6 +56,7 @@ async function sendOne(
       body: JSON.stringify({
         from: 'NotCupid <match@notcupid.com>',
         to: [user.email],
+        reply_to: defaultEmailReplyTo(),
         subject: 'the algo got smarter — retake the quiz',
         html: emailHtml(user.name || '', baseUrl),
       }),

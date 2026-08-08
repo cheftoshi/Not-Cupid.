@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { renderEmail, button, C } from '@/lib/email'
+import { defaultEmailReplyTo } from '@/lib/email-address'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -60,6 +61,7 @@ async function sendOne(
       body: JSON.stringify({
         from: 'NotCupid <match@notcupid.com>',
         to: [user.email],
+        reply_to: defaultEmailReplyTo(),
         subject: 'the Friend Line is live — find your next friend',
         html: emailHtml(user.name || '', user.id, baseUrl),
       }),

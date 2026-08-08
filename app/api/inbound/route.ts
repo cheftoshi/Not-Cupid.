@@ -2,20 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase';
 import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch';
+import { configuredInboundForwardTo, SUPPORT_EMAIL } from '@/lib/email-address';
+import { buildInboundForward, isMatchInboxRecipient, plainTextFromHtml } from '@/lib/inbound-forward';
 
 export const dynamic = 'force-dynamic';
 
-function plainTextFallback(html: string): string {
-  return html
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+const MAX_FORWARD_ATTACHMENT_BYTES = 35 * 1024 * 1024;
 
 const CAMPAIGN_EVENT_MAP: Record<string, { status: string; timestamp?: string }> = {
   'email.sent': { status: 'sent', timestamp: 'sent_at' },
@@ -168,7 +160,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: 'system' });
   }
 
-  const text = (email.text || (email.html ? plainTextFallback(email.html) : '')).slice(0, 100_000);
+  if (!isMatchInboxRecipient(email.to || [], email.received_for || [])) {
+    return NextResponse.json({ ok: true, skipped: 'different-inbox' });
+  }
+
+  const text = (email.text || (email.html ? plainTextFromHtml(email.html) : '')).slice(0, 100_000);
   const { error } = await supabaseAdmin.from('inbound_messages').insert({
     from_email: from,
     to_email: (email.to || []).join(', ').slice(0, 2000),
@@ -183,5 +179,79 @@ export async function POST(req: NextRequest) {
     console.error('[inbound] Store failed:', error);
     return NextResponse.json({ error: 'Could not store email' }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, duplicate: error?.code === '23505' });
+
+  const forwardTo = configuredInboundForwardTo();
+  if (!forwardTo) {
+    console.error('[inbound] INBOUND_FORWARD_TO is missing or invalid');
+    return NextResponse.json({ error: 'Forwarding unavailable' }, { status: 503 });
+  }
+
+  const forward = buildInboundForward({
+    from,
+    to: email.to || [SUPPORT_EMAIL],
+    receivedFor: email.received_for || [],
+    replyTo: email.reply_to,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
+  });
+  if (!forward.fromAddress || !forward.replyTo) {
+    console.error('[inbound] Verified inbound message had no safe reply address');
+    return NextResponse.json({ error: 'Invalid sender' }, { status: 400 });
+  }
+
+  let attachments: Array<{ filename?: string; path: string; contentType?: string }> | undefined;
+  let attachmentNote = '';
+  if (email.attachments?.length) {
+    const listed = await resend.emails.receiving.attachments.list({ emailId, limit: 100 });
+    if (listed.error || !listed.data) {
+      console.error('[inbound] Could not retrieve attachment links', { code: listed.error?.name });
+      return NextResponse.json({ error: 'Could not retrieve attachments' }, { status: 502 });
+    }
+    const totalBytes = listed.data.data.reduce((sum, item) => sum + Math.max(0, item.size || 0), 0);
+    if (totalBytes <= MAX_FORWARD_ATTACHMENT_BYTES) {
+      attachments = listed.data.data.map((item) => ({
+        filename: item.filename || 'attachment',
+        path: item.download_url,
+        contentType: item.content_type,
+      }));
+    } else {
+      attachmentNote = `${listed.data.data.length} attachment(s) were retained in Resend but not forwarded because they exceed the 35 MB forwarding safety limit.`;
+    }
+  }
+
+  const rendered = attachmentNote
+    ? buildInboundForward({
+        from,
+        to: email.to || [SUPPORT_EMAIL],
+        receivedFor: email.received_for || [],
+        replyTo: email.reply_to,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+        attachmentNote,
+      })
+    : forward;
+  const forwarded = await resend.emails.send({
+    from: 'NotCupid Inbox <match@notcupid.com>',
+    to: [forwardTo],
+    replyTo: rendered.replyTo!,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+    attachments,
+    headers: { 'X-NotCupid-Inbound-Id': emailId },
+    tags: [{ name: 'source', value: 'inbound-forward' }],
+  }, { idempotencyKey: `inbound-forward-${emailId}` });
+  if (forwarded.error || !forwarded.data) {
+    console.error('[inbound] Forward failed', { code: forwarded.error?.name });
+    return NextResponse.json({ error: 'Could not forward email' }, { status: 502 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    duplicate: error?.code === '23505',
+    forwarded: true,
+    attachmentsForwarded: attachments?.length || 0,
+  });
 }

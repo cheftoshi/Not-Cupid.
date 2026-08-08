@@ -13,6 +13,7 @@
 //   - Buttons rendered as <a> with padding (bulletproof button pattern)
 
 import { createHash, createHmac, timingSafeEqual } from 'crypto';
+import { defaultEmailReplyTo } from './email-address.ts';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const FROM = 'NotCupid <match@notcupid.com>';
@@ -259,7 +260,7 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; id?: str
         // Always send a text part (better inbox placement) + a real reply-to so
         // replies reach a human and the message reads as transactional.
         text: args.text || htmlToText(args.html),
-        reply_to: args.replyTo || 'match@notcupid.com',
+        reply_to: args.replyTo || defaultEmailReplyTo(),
         ...(args.tags?.length ? { tags: args.tags.slice(0, 20) } : {}),
       }),
     });

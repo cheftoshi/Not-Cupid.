@@ -4,6 +4,7 @@ import { recordUnlock } from '@/lib/record-unlock'
 import { verifyStripeSignature } from '@/lib/stripe-webhook'
 import { sendPushToUser } from '@/lib/push'
 import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
+import { defaultEmailReplyTo } from '@/lib/email-address'
 import { recordMonetizationEvent } from '@/lib/monetization'
 
 export const dynamic = 'force-dynamic'
@@ -223,6 +224,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               from: 'NotCupid <match@notcupid.com>',
               to: user.email,
+              reply_to: defaultEmailReplyTo(),
               subject: sanitizeEmailSubject(`your hexaco results · ${user.archetype || 'NotCupid'}`),
               html: emailHtml,
             }),

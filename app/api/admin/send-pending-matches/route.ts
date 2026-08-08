@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { signMatchToken } from '@/lib/match-tokens'
 import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
+import { defaultEmailReplyTo } from '@/lib/email-address'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,6 +89,7 @@ export async function GET(req: NextRequest) {
           body: JSON.stringify({
             from: 'NotCupid <match@notcupid.com>',
             to: [user1.email],
+            reply_to: defaultEmailReplyTo(),
             subject: sanitizeEmailSubject(`${user2.name} — your NotCupid match is ready`),
             html: matchEmail(user1.name, user2.name, match.compatibility_score, spot, match.id, user1.id)
           })
@@ -101,6 +103,7 @@ export async function GET(req: NextRequest) {
           body: JSON.stringify({
             from: 'NotCupid <match@notcupid.com>',
             to: [user2.email],
+            reply_to: defaultEmailReplyTo(),
             subject: sanitizeEmailSubject(`${user1.name} — your NotCupid match is ready`),
             html: matchEmail(user2.name, user1.name, match.compatibility_score, spot, match.id, user2.id)
           })
