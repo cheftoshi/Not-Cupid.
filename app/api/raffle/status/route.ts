@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleEligible, raffleClosed, raffleEntriesOpen } from '@/lib/raffle';
+import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import { signPrivateVideoReference } from '@/lib/private-media';
 import { experimentOrientationLabel } from '@/lib/experiment-preferences';
+import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,12 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const eligible = user.is_test !== true && raffleEligible(user);
+  const event = await getDatingExperimentEvent();
+  const eventLocation = event
+    ? { centerZip: event.center_zip, radiusMiles: Number(event.radius_miles) }
+    : RAFFLE;
+  const entriesOpen = datingExperimentEntriesOpen(event);
+  const eligible = user.is_test !== true && raffleEligible(user, eventLocation);
   const hasProfile = !!user.photo_url && !!user.archetype;
   let entered = false, entry: any = null, draw: any = null, other: any = null;
   let shortlist: any[] = [], shortlistRound: any = null;
@@ -113,25 +119,26 @@ export async function GET() {
     console.error('[dating-experiment-status]', error);
   }
 
-  let spotsLeft = RAFFLE.cap;
+  const eventCap = event?.entry_cap ?? RAFFLE.cap;
+  let spotsLeft = eventCap;
   try {
     const { count } = await supabaseAdmin.from('raffle_entries')
       .select('user_id', { count: 'exact', head: true })
       .eq('event_key', RAFFLE.key)
       .neq('status', 'withdrawn');
-    spotsLeft = Math.max(0, RAFFLE.cap - (count ?? 0));
+    spotsLeft = Math.max(0, eventCap - (count ?? 0));
   } catch { /* migration not ready */ }
 
   return NextResponse.json({
     event: {
-      series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget,
-      tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: RAFFLE.cap, entryCloseLabel: RAFFLE.entryCloseLabel,
-      statusLabel: RAFFLE.statusLabel, entriesOpen: raffleEntriesOpen(),
-      radiusMiles: RAFFLE.radiusMiles, centerZip: RAFFLE.centerZip, termsVersion: RAFFLE.termsVersion,
+      series: event?.public_name ?? RAFFLE.series, city: event?.city ?? RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: (event?.prize_per_pair_cents ?? RAFFLE.budget * 100) / 100,
+      tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: eventCap, entryCloseLabel: RAFFLE.entryCloseLabel,
+      statusLabel: RAFFLE.statusLabel, entriesOpen,
+      radiusMiles: Number(event?.radius_miles ?? RAFFLE.radiusMiles), centerZip: event?.center_zip ?? RAFFLE.centerZip, termsVersion: event?.terms_version ?? RAFFLE.termsVersion,
       videoMinSeconds: RAFFLE.videoMinSeconds, videoMaxSeconds: RAFFLE.videoMaxSeconds, videoMaxBytes: RAFFLE.videoMaxBytes,
-      shortlistMaxOptions: RAFFLE.shortlistMaxOptions,
-      winnerPairCount: RAFFLE.winnerPairCount,
-      spotsLeft, closed: raffleClosed() || spotsLeft === 0,
+      shortlistMaxOptions: event?.shortlist_max_options ?? RAFFLE.shortlistMaxOptions,
+      winnerPairCount: event?.winner_pair_limit ?? RAFFLE.winnerPairCount,
+      spotsLeft, closed: !entriesOpen || spotsLeft === 0,
     },
     eligible, hasProfile, entered, entry, shortlist, shortlistRound, draw, other,
   });

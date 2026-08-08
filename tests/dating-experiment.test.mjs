@@ -27,7 +27,7 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /centerZip:\s*'02116'/);
   assert.match(experimentSource, /radiusMiles:\s*20/);
   assert.doesNotMatch(experimentSource, /proEntries/);
-  assert.match(experimentSource, /distance\s*<=\s*RAFFLE\.radiusMiles/);
+  assert.match(experimentSource, /distance\s*<=\s*location\.radiusMiles/);
 });
 
 test('selection weight is bounded and compatibility score remains normalized', () => {
@@ -137,6 +137,7 @@ test('V3 preserves a two-pair outcome when a valid disjoint configuration exists
 
 test('entry requires versioned, separate consent records', () => {
   const source = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
+  const eventMigration = readFileSync(new URL('../supabase/migrations/20260808193341_dating_experiment_event_ledger.sql', import.meta.url), 'utf8');
   const statusSource = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
   for (const required of [
     'terms_version',
@@ -144,7 +145,12 @@ test('entry requires versioned, separate consent records', () => {
     'video_consent_at',
     'safety_acknowledged_at',
     'attendance_confirmed_at',
-  ]) assert.match(source, new RegExp(required));
+  ]) assert.match(eventMigration, new RegExp(required));
+  assert.match(source, /p_accepted_at: acceptedAt/);
+  assert.match(source, /body\.termsAccepted !== true/);
+  assert.match(source, /body\.videoConsent !== true/);
+  assert.match(source, /body\.safetyAcknowledged !== true/);
+  assert.match(source, /body\.attendanceConfirmed !== true/);
   assert.match(source, /preferences: \{ gender, orientation, seekingGenders, ageMin, ageMax \}/);
   assert.match(source, /Choose the orientation label that feels closest to you/);
   assert.match(source, /Choose at least one gender you would like to meet/);
@@ -153,6 +159,28 @@ test('entry requires versioned, separate consent records', () => {
   assert.match(statusSource, /ownEntry\.terms_version === RAFFLE\.termsVersion/);
   assert.match(statusSource, /needs-preference-refresh/);
   assert.match(statusSource, /experimentOrientationLabel/);
+});
+
+test('every experiment has an isolated ledger and atomic limited entry transaction', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260808193341_dating_experiment_event_ledger.sql', import.meta.url), 'utf8');
+  const entryRoute = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
+  assert.match(migration, /create table public\.dating_experiment_events/i);
+  assert.match(migration, /entry_cap integer[\s\S]*between 2 and 1000/i);
+  assert.match(migration, /shortlist_max_options integer[\s\S]*between 1 and 2/i);
+  assert.match(migration, /winner_pair_limit integer[\s\S]*between 1 and 2/i);
+  assert.match(migration, /entry_price_cents integer[\s\S]*entry_price_cents = 0/i);
+  assert.match(migration, /selection_payment_neutral boolean[\s\S]*is true/i);
+  assert.match(migration, /minimum_pair_score integer[\s\S]*between 0 and 100/i);
+  assert.match(migration, /winner_fulfillment_details text/i);
+  assert.match(migration, /foreign key \(event_key\) references public\.dating_experiment_events\(event_key\)/i);
+  assert.match(migration, /create or replace function public\.reserve_dating_experiment_entry/i);
+  assert.match(migration, /from public\.dating_experiment_events[\s\S]*for update/i);
+  assert.match(migration, /dating experiment entry capacity reached/i);
+  assert.match(migration, /revoke all on function public\.reserve_dating_experiment_entry[\s\S]*from public, anon, authenticated/i);
+  assert.match(migration, /where existing\.event_key = new\.event_key/i);
+  assert.match(migration, /new\.winner_slot > v_winner_limit/i);
+  assert.match(entryRoute, /rpc\([\s\S]*reserve_dating_experiment_entry/i);
+  assert.doesNotMatch(entryRoute, /\.from\('raffle_entries'\)\.upsert/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {
@@ -201,10 +229,14 @@ test('V3 database guardrails enforce two disjoint winner slots', () => {
 
 test('public entry remains fail-closed until every launch prerequisite is approved', () => {
   const drawSource = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
   for (const gate of ['prizeFundingConfirmed: false', 'venueConfirmed: false', 'sponsorDetailsConfirmed: false', 'legalReviewApproved: false']) {
     assert.match(experimentSource, new RegExp(gate));
   }
   assert.match(experimentSource, /raffleLaunchBlockers\(\)\.length === 0/);
-  assert.match(drawSource, /if \(!raffleEntriesOpen\(\)\) return \{ ok: true, entrants: 0, drawn: 0, state: 'paused' \}/);
-  assert.doesNotMatch(drawSource, /!raffleEntriesOpen\(\) && !force/);
+  assert.match(eventSource, /RAFFLE\.entriesOpen[\s\S]*raffleLaunchBlockers\(\)\.length === 0/);
+  assert.match(eventSource, /event\.status === 'entry_open'/);
+  assert.match(eventSource, /hasDatabaseLaunchApproval\(event\)/);
+  assert.match(drawSource, /if \(!datingExperimentCanShortlist\(event\)\) return \{ ok: true, entrants: 0, drawn: 0, state: 'paused' \}/);
+  assert.doesNotMatch(drawSource, /!datingExperimentCanShortlist\(event\) && !force/);
 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleEligible, raffleClosed, raffleEntriesOpen } from '@/lib/raffle';
+import { RAFFLE, raffleEligible, raffleEntriesOpen } from '@/lib/raffle';
 import { drawRaffle } from '@/lib/raffle-draw';
 import { isManagedStorageUrl } from '@/lib/request-security';
 import {
@@ -79,52 +79,53 @@ export async function POST(req: NextRequest) {
   if (body.safetyAcknowledged !== true) return NextResponse.json({ error: 'Please acknowledge the participant safety notice.' }, { status: 400 });
   if (body.attendanceConfirmed !== true) return NextResponse.json({ error: 'Please confirm you can attend the stated dinner.' }, { status: 400 });
 
-  // New entrants face the deadline and overall cap. Compatibility graph health,
-  // rather than a binary gender quota, determines whether a pair can be formed.
-  const { data: mine } = await supabaseAdmin.from('raffle_entries').select('user_id, status').eq('user_id', user.id).eq('event_key', RAFFLE.key).maybeSingle();
-  const alreadyIn = !!mine && mine.status !== 'withdrawn';
-  if (!alreadyIn) {
-    if (raffleClosed()) return NextResponse.json({ error: 'Entries are closed for this one — watch the hub for the next.' }, { status: 400 });
-    const { data: ents } = await supabaseAdmin.from('raffle_entries').select('user_id').eq('event_key', RAFFLE.key).neq('status', 'withdrawn');
-    const ids = (ents ?? []).map((e: any) => e.user_id);
-    if (ids.length >= RAFFLE.cap) return NextResponse.json({ error: 'This Dating Experiment round just hit capacity — watch the hub for the next one.' }, { status: 400 });
-  }
-
   const acceptedAt = new Date().toISOString();
-  const row: any = {
-    user_id: user.id,
-    event_key: RAFFLE.key,
-    video_url,
-    video_duration_seconds: videoDuration,
-    notify,
-    status: 'entered',
-    agreed_at: acceptedAt,
-    terms_version: RAFFLE.termsVersion,
-    terms_accepted_at: acceptedAt,
-    video_consent_at: acceptedAt,
-    safety_acknowledged_at: acceptedAt,
-    attendance_confirmed_at: acceptedAt,
-    // Publicity/marketing permission must use a future, separate consent flow;
-    // this entry endpoint never infers or accepts it.
-    publicity_consent_at: null,
-    questionnaire: {
-      intention,
-      energy,
-      conversationStarter,
-      preferences: { gender, orientation, seekingGenders, ageMin, ageMax },
+  // Capacity reservation and the entry write happen under one event-row lock.
+  // This keeps simultaneous signups from oversubscribing a limited event.
+  const { data: reservationRows, error: reservationError } = await supabaseAdmin.rpc(
+    'reserve_dating_experiment_entry',
+    {
+      p_event_key: RAFFLE.key,
+      p_user_id: user.id,
+      p_video_url: video_url,
+      p_video_duration_seconds: videoDuration,
+      p_notify: notify,
+      p_terms_version: RAFFLE.termsVersion,
+      p_questionnaire: {
+        intention,
+        energy,
+        conversationStarter,
+        preferences: { gender, orientation, seekingGenders, ageMin, ageMax },
+      },
+      p_accepted_at: acceptedAt,
     },
-    withdrawn_at: null,
-  };
-  const { error } = await supabaseAdmin.from('raffle_entries').upsert(row, { onConflict: 'user_id,event_key' });
-  if (error) {
-    console.error('raffle enter error', error);
+  );
+  if (reservationError) {
+    const message = reservationError.message || '';
+    if (message.includes('capacity reached')) {
+      return NextResponse.json({ error: 'This Dating Experiment round just hit capacity — watch the hub for the next one.' }, { status: 409 });
+    }
+    if (message.includes('entries are not open')) {
+      return NextResponse.json({ error: 'Entries are closed for this one — watch the hub for the next.' }, { status: 403 });
+    }
+    if (message.includes('terms version') || message.includes('already been processed')) {
+      return NextResponse.json({ error: 'This experiment entry needs to be reviewed again before it can be submitted.' }, { status: 409 });
+    }
+    console.error('dating experiment reservation error', reservationError);
     return NextResponse.json({ error: 'Could not enter — try again.' }, { status: 500 });
   }
+  const reservation = Array.isArray(reservationRows) ? reservationRows[0] : reservationRows;
 
-  // Hit the cap on this entry → auto-draw immediately (the algo does the rest).
-  if (!alreadyIn) {
-    const { count: now } = await supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', RAFFLE.key).eq('status', 'entered');
-    if ((now ?? 0) >= RAFFLE.cap) await drawRaffle().catch((e) => console.error('cap auto-draw failed', e));
+  // Publicity/marketing permission remains outside this RPC and requires a
+  // future, separate consent flow. Entry never infers or accepts it.
+
+  // Hit the cap on a new reservation → auto-start the shortlist machinery.
+  if (reservation?.was_new && Number(reservation.spots_left) === 0) {
+    await drawRaffle().catch((error) => console.error('cap auto-draw failed', error));
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    eventKey: RAFFLE.key,
+    spotsLeft: Number(reservation?.spots_left ?? 0),
+  });
 }

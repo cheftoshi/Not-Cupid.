@@ -1,0 +1,84 @@
+import { supabaseAdmin } from '@/lib/supabase';
+import { RAFFLE, raffleLaunchBlockers } from '@/lib/raffle';
+
+export type DatingExperimentEvent = {
+  event_key: string;
+  public_name: string;
+  city: string;
+  metro: string;
+  center_zip: string;
+  radius_miles: number;
+  status: 'draft' | 'entry_open' | 'entry_closed' | 'shortlisting' | 'resolved' | 'cancelled';
+  entry_cap: number;
+  shortlist_max_options: number;
+  winner_pair_limit: number;
+  max_attempts: number;
+  response_hours: number;
+  prize_per_pair_cents: number;
+  terms_version: string;
+  algorithm_version: string;
+  minimum_pair_score: number;
+  winner_fulfillment_details: string | null;
+  entry_opens_at: string;
+  entry_closes_at: string;
+  happens_at: string;
+  prize_funding_confirmed: boolean;
+  venue_confirmed: boolean;
+  sponsor_details_confirmed: boolean;
+  legal_review_approved: boolean;
+};
+
+export async function getDatingExperimentEvent(
+  eventKey = RAFFLE.key,
+): Promise<DatingExperimentEvent | null> {
+  const { data, error } = await supabaseAdmin
+    .from('dating_experiment_events')
+    .select([
+      'event_key', 'public_name', 'city', 'metro', 'center_zip', 'radius_miles',
+      'status', 'entry_cap', 'shortlist_max_options', 'winner_pair_limit',
+      'max_attempts', 'response_hours', 'prize_per_pair_cents', 'terms_version',
+      'algorithm_version', 'minimum_pair_score', 'winner_fulfillment_details',
+      'entry_opens_at', 'entry_closes_at', 'happens_at',
+      'prize_funding_confirmed', 'venue_confirmed', 'sponsor_details_confirmed',
+      'legal_review_approved',
+    ].join(', '))
+    .eq('event_key', eventKey)
+    .maybeSingle();
+  if (error) {
+    console.error('[dating-experiment-event]', error);
+    return null;
+  }
+  return data as DatingExperimentEvent | null;
+}
+
+function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
+  return event.prize_funding_confirmed
+    && event.venue_confirmed
+    && event.sponsor_details_confirmed
+    && event.legal_review_approved
+    && event.terms_version === RAFFLE.termsVersion
+    && event.algorithm_version === RAFFLE.algorithmVersion;
+}
+
+// Code and database gates must both agree. A partial deployment, stale event
+// row, or missing migration therefore leaves the experiment safely closed.
+export function datingExperimentEntriesOpen(
+  event: DatingExperimentEvent | null,
+  now = Date.now(),
+): boolean {
+  return RAFFLE.entriesOpen
+    && raffleLaunchBlockers().length === 0
+    && event != null
+    && event.status === 'entry_open'
+    && hasDatabaseLaunchApproval(event)
+    && now >= new Date(event.entry_opens_at).getTime()
+    && now < new Date(event.entry_closes_at).getTime();
+}
+
+export function datingExperimentCanShortlist(event: DatingExperimentEvent | null): boolean {
+  return RAFFLE.entriesOpen
+    && raffleLaunchBlockers().length === 0
+    && event != null
+    && ['entry_open', 'entry_closed', 'shortlisting'].includes(event.status)
+    && hasDatabaseLaunchApproval(event);
+}

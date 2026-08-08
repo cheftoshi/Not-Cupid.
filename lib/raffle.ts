@@ -77,9 +77,12 @@ export function raffleClosed(): boolean {
 // Keep the first experiment in one jurisdiction and within a practical trip of
 // the fixed Boston dinner. ZIP distance is approximate and exact location is
 // never shown to another participant.
-export function raffleEligible(user: any): boolean {
-  const distance = zipDistanceMiles(user?.zip, RAFFLE.centerZip);
-  return distance != null && distance <= RAFFLE.radiusMiles;
+export function raffleEligible(
+  user: any,
+  location: { centerZip: string; radiusMiles: number } = RAFFLE,
+): boolean {
+  const distance = zipDistanceMiles(user?.zip, location.centerZip);
+  return distance != null && distance <= location.radiusMiles;
 }
 
 const overlap = (a?: string[] | null, b?: string[] | null) => {
@@ -115,8 +118,7 @@ export function raffleScore(a: any, b: any): number {
 
 // Stronger mutual pairs are more likely to receive the dinner, but the narrow
 // 1×–3× band keeps the final selection meaningfully random.
-export function pairSelectionWeight(score: number): number {
-  const floor = RAFFLE.minimumPairScore;
+export function pairSelectionWeight(score: number, floor = RAFFLE.minimumPairScore): number {
   if (score <= floor) return 1;
   return Math.min(3, 1 + ((score - floor) / Math.max(1, 100 - floor)) * 2);
 }
