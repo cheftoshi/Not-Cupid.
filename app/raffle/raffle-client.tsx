@@ -79,7 +79,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const credOk = cred.every((c) => c.ok);
   const basicsOk = !!gender && seekingGenders.length > 0
     && Number.isInteger(ageMin) && Number.isInteger(ageMax)
-    && ageMin >= 18 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
+    && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   const questionsOk = !!intention && !!energy && conversationStarter.trim().length >= 3;
   const consentOk = attendanceConfirmed && termsAccepted && videoConsent && safetyAcknowledged;
   const canEnter = credOk && basicsOk && questionsOk && !!videoUrl && videoDuration != null && consentOk;
@@ -300,9 +300,9 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                 <div>
                   <div style={qLabel}>ages I’m open to</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input aria-label="minimum age" type="number" min={18} max={99} value={ageMin} onChange={(e) => setAgeMin(+e.target.value)} style={numIn} />
+                    <input aria-label="minimum age" type="number" min={21} max={99} value={ageMin} onChange={(e) => setAgeMin(+e.target.value)} style={numIn} />
                     <span style={{ color: 'var(--h-text-faint)' }}>to</span>
-                    <input aria-label="maximum age" type="number" min={18} max={99} value={ageMax} onChange={(e) => setAgeMax(+e.target.value)} style={numIn} />
+                    <input aria-label="maximum age" type="number" min={21} max={99} value={ageMax} onChange={(e) => setAgeMax(+e.target.value)} style={numIn} />
                   </div>
                   <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Age preferences must work both ways too—you must fall inside their selected range.</div>
                 </div>

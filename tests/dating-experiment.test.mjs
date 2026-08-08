@@ -53,6 +53,10 @@ test('experiment age preferences are inclusive and must work both ways', () => {
   assert.equal(reciprocalExperimentAgeMatch(a, { age: 36, age_min: 30, age_max: 40 }), false);
   assert.equal(reciprocalExperimentAgeMatch(a, { age: 35, age_min: 31, age_max: 40 }), false);
   assert.equal(reciprocalExperimentAgeMatch(a, { age: 35, age_min: 40, age_max: 30 }), false);
+  assert.equal(reciprocalExperimentAgeMatch(
+    { age: 30, age_min: 18, age_max: 35 },
+    { age: 35, age_min: 21, age_max: 40 },
+  ), false);
 });
 
 test('entry-time preference snapshots override later profile edits', () => {
@@ -130,7 +134,7 @@ test('entry requires versioned, separate consent records', () => {
   ]) assert.match(source, new RegExp(required));
   assert.match(source, /preferences: \{ gender, seekingGenders, ageMin, ageMax \}/);
   assert.match(source, /Choose at least one gender you would like to meet/);
-  assert.match(source, /Choose a valid age range between 18 and 99/);
+  assert.match(source, /Choose a valid age range between 21 and 99/);
   assert.doesNotMatch(source, /profilePatch/);
   assert.match(statusSource, /ownEntry\.terms_version === RAFFLE\.termsVersion/);
   assert.match(statusSource, /needs-preference-refresh/);

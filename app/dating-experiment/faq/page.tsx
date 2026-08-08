@@ -43,7 +43,7 @@ const FAQS = [
   },
   {
     q: 'How do age and gender preferences work?',
-    a: 'They are reciprocal and saved with your experiment entry. Someone can appear only if their identity is among the genders you selected, your identity is among the genders they selected, their age is inside your inclusive minimum-to-maximum range, and your age is inside theirs. These experiment choices do not change your general Love Line settings, and editing your general profile later does not silently change this entry.',
+    a: 'They are reciprocal and saved with your experiment entry. You choose an inclusive range from 21 through 99 because this experiment is 21+. Someone can appear only if their identity is among the genders you selected, your identity is among the genders they selected, their age is inside your range, and your age is inside theirs. These experiment choices do not change your general Love Line settings, and editing your general profile later does not silently change this entry.',
   },
   {
     q: 'Do women and men receive different numbers of options?',

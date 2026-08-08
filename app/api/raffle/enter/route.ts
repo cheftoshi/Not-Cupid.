@@ -38,10 +38,10 @@ export async function POST(req: NextRequest) {
     : experimentGendersFromLegacy(rawSeeking);
   const ageMin = Number(body.ageMin), ageMax = Number(body.ageMax);
   const ageOk = Number.isInteger(ageMin) && Number.isInteger(ageMax)
-    && ageMin >= 18 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
+    && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   if (!gender) return NextResponse.json({ error: 'Choose how you identify for this experiment.' }, { status: 400 });
   if (!seekingGenders.length) return NextResponse.json({ error: 'Choose at least one gender you would like to meet.' }, { status: 400 });
-  if (!ageOk) return NextResponse.json({ error: 'Choose a valid age range between 18 and 99.' }, { status: 400 });
+  if (!ageOk) return NextResponse.json({ error: 'Choose a valid age range between 21 and 99.' }, { status: 400 });
 
   // These choices are experiment-specific. Do not silently widen or otherwise
   // mutate the user's general Love Line preferences.

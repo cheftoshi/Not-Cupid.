@@ -28,7 +28,7 @@ export function experimentGendersFromLegacy(value: unknown): ExperimentGender[] 
 function validAgeRange(ageMin: unknown, ageMax: unknown): ageMin is number {
   return Number.isInteger(ageMin)
     && Number.isInteger(ageMax)
-    && Number(ageMin) >= 18
+    && Number(ageMin) >= 21
     && Number(ageMin) <= 99
     && Number(ageMax) >= Number(ageMin)
     && Number(ageMax) <= 99;
