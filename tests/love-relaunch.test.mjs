@@ -47,7 +47,9 @@ test('Dating Experiment email stays preview-only until approval and launch gates
   assert.match(route, /No purchase necessary/);
   assert.match(route, /Only people who choose each other enter the dinner selection/);
   assert.match(route, /5–15 second hello video/);
-  assert.match(admin, /Preview experiment email \(no send\)/);
+  assert.match(admin, /Preview ready variant \(no send\)/);
+  assert.match(admin, /Preview profile variant \(no send\)/);
+  assert.match(admin, /Preview live-match variant \(no send\)/);
   assert.doesNotMatch(admin, /Send next Love wave/);
   assert.doesNotMatch(admin, /Send me Love email test/);
 });

@@ -818,13 +818,20 @@ export default function AdminClient() {
               }}>✨ Quiz-retake blast</button>
               <button className={`${s.btn} ${s.btnLav}`} onClick={async () => {
                 window.open('/api/admin/send-love-relaunch?variant=ready', '_blank', 'noopener,noreferrer')
-              }}>👀 Preview experiment email (no send)</button>
+              }}>👀 Preview ready variant (no send)</button>
+              <button className={`${s.btn} ${s.btnLav}`} onClick={async () => {
+                window.open('/api/admin/send-love-relaunch?variant=profile', '_blank', 'noopener,noreferrer')
+              }}>👀 Preview profile variant (no send)</button>
+              <button className={`${s.btn} ${s.btnLav}`} onClick={async () => {
+                window.open('/api/admin/send-love-relaunch?variant=live', '_blank', 'noopener,noreferrer')
+              }}>👀 Preview live-match variant (no send)</button>
               <button className={`${s.btn} ${s.btnInk}`} onClick={async () => {
                 const dryRes = await fetch('/api/admin/send-love-relaunch?dry=1', { method: 'POST' })
                 const dry = await parseResponse<any>(dryRes).catch(() => null)
                 if (!dryRes.ok || !dry) { alert(`Dry run failed: ${dry?.error || dryRes.status}`); return }
                 const b = dry.breakdown || {}
-                const preview = `${dry.wouldSend} would receive it · ${dry.eligibleActiveBostonUsers} eligible Boston users (${dry.activeWindowDays}d activity) · ${dry.excludedDormant || 0} dormant excluded · ${dry.alreadySent} already handled\n\n${b.live || 0} live-match · ${b.ready || 0} experiment-ready · ${b.profile || 0} need profile work\n\nEntries open: ${dry.entriesOpen ? 'yes' : 'no'} · send approval configured: ${dry.approvalConfigured ? 'yes' : 'no'}`
+                const links = dry.links || {}
+                const preview = `Subject: ${dry.subject}\nFrom: ${dry.sender}\nReply-to: ${dry.replyTo}\nSend type: ${dry.sendType}\n\nAudience: ${dry.audienceDefinition}\n\nCurrent count: ${dry.wouldSend} would receive it · ${dry.eligibleActiveBostonUsers} eligible Boston users (${dry.activeWindowDays}d activity) · ${dry.excludedDormant || 0} dormant excluded · ${dry.alreadySent} already handled\n\nVariants: ${b.live || 0} live-match · ${b.ready || 0} experiment-ready · ${b.profile || 0} need profile work\n\nLinks:\nReady CTA: ${links.primaryReady}\nProfile CTA: ${links.primaryNeedsProfile}\nLove Line: ${links.loveLine}\nFAQ: ${links.faq}\nRules: ${links.officialRules}\nUnsubscribe: ${links.unsubscribe}\n\nEntries open: ${dry.entriesOpen ? 'yes' : 'no'} · send approval configured: ${dry.approvalConfigured ? 'yes' : 'no'}`
                 alert(`Dating Experiment email dry run — NOTHING SENT\n\n${preview}`)
               }}>📋 Experiment email audience (dry run)</button>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
