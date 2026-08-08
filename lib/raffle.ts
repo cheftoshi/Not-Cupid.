@@ -5,6 +5,12 @@ export type ExperimentAnswers = {
   intention: 'relationship' | 'intentional' | 'open';
   energy: 'conversation' | 'playful' | 'foodie';
   conversationStarter: string;
+  preferences?: {
+    gender: 'm' | 'f' | 'nb';
+    seekingGenders: ('m' | 'f' | 'nb')[];
+    ageMin: number;
+    ageMax: number;
+  };
 };
 
 // Publicly this is the NotCupid Dating Experiment. The legacy RAFFLE symbol and
@@ -24,7 +30,7 @@ export const RAFFLE = {
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v3-2026-08-08',
+  termsVersion: 'boston-v4-2026-08-08',
   algorithmVersion: 'dating-experiment-two-pair-v3',
   minimumPairScore: 55,
   videoMinSeconds: 5,
@@ -112,11 +118,4 @@ export function pairSelectionWeight(score: number): number {
   const floor = RAFFLE.minimumPairScore;
   if (score <= floor) return 1;
   return Math.min(3, 1 + ((score - floor) / Math.max(1, 100 - floor)) * 2);
-}
-
-// Mutually within each other's age window.
-export function ageMutual(a: any, b: any): boolean {
-  const ok = (x: any, y: any) =>
-    x.age == null || ((y.age_min == null || x.age >= y.age_min) && (y.age_max == null || x.age <= y.age_max));
-  return ok(a, b) && ok(b, a);
 }

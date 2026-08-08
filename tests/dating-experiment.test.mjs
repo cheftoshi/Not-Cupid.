@@ -7,6 +7,12 @@ import {
   selectMutualDinnerPair,
   selectMutualDinnerPairs,
 } from '../lib/experiment-shortlist.ts';
+import {
+  experimentGendersFromLegacy,
+  reciprocalExperimentAgeMatch,
+  reciprocalExperimentGenderMatch,
+  resolveExperimentPreferences,
+} from '../lib/experiment-preferences.ts';
 
 const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.url), 'utf8');
 
@@ -25,6 +31,41 @@ test('selection weight is bounded and compatibility score remains normalized', (
   assert.match(experimentSource, /Math\.min\(3,/);
   assert.match(experimentSource, /Math\.max\(0,\s*Math\.min\(100,/);
   assert.match(experimentSource, /base\s*\*\s*0\.75\s*\+\s*sharedScore\s*\*\s*0\.15\s*\+\s*answerScore\s*\*\s*0\.10/);
+});
+
+test('experiment gender preferences support every one-or-more combination reciprocally', () => {
+  assert.deepEqual(experimentGendersFromLegacy('both'), ['m', 'f', 'nb']);
+  const woman = { gender: 'f', seeking_genders: ['m', 'nb'] };
+  const nonbinary = { gender: 'nb', seeking_genders: ['f'] };
+  const man = { gender: 'm', seeking_genders: ['f'] };
+  assert.equal(reciprocalExperimentGenderMatch(woman, nonbinary), true);
+  assert.equal(reciprocalExperimentGenderMatch(woman, man), true);
+  assert.equal(reciprocalExperimentGenderMatch(nonbinary, man), false);
+  assert.equal(reciprocalExperimentGenderMatch(
+    { gender: 'f', seeking_genders: ['nb'] },
+    { gender: 'nb', seeking_genders: ['m'] },
+  ), false);
+});
+
+test('experiment age preferences are inclusive and must work both ways', () => {
+  const a = { age: 30, age_min: 25, age_max: 35 };
+  assert.equal(reciprocalExperimentAgeMatch(a, { age: 35, age_min: 30, age_max: 40 }), true);
+  assert.equal(reciprocalExperimentAgeMatch(a, { age: 36, age_min: 30, age_max: 40 }), false);
+  assert.equal(reciprocalExperimentAgeMatch(a, { age: 35, age_min: 31, age_max: 40 }), false);
+  assert.equal(reciprocalExperimentAgeMatch(a, { age: 35, age_min: 40, age_max: 30 }), false);
+});
+
+test('entry-time preference snapshots override later profile edits', () => {
+  const snapshot = resolveExperimentPreferences(
+    { gender: 'm', seeking: 'f', age_min: 18, age_max: 99 },
+    { preferences: { gender: 'nb', seekingGenders: ['f', 'nb'], ageMin: 27, ageMax: 39 } },
+  );
+  assert.deepEqual(snapshot, {
+    gender: 'nb',
+    seekingGenders: ['f', 'nb'],
+    ageMin: 27,
+    ageMax: 39,
+  });
 });
 
 test('V2 shortlist prioritizes coverage and never gives anyone more than two options', () => {
@@ -79,6 +120,7 @@ test('V3 preserves a two-pair outcome when a valid disjoint configuration exists
 
 test('entry requires versioned, separate consent records', () => {
   const source = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
+  const statusSource = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
   for (const required of [
     'terms_version',
     'terms_accepted_at',
@@ -86,6 +128,12 @@ test('entry requires versioned, separate consent records', () => {
     'safety_acknowledged_at',
     'attendance_confirmed_at',
   ]) assert.match(source, new RegExp(required));
+  assert.match(source, /preferences: \{ gender, seekingGenders, ageMin, ageMax \}/);
+  assert.match(source, /Choose at least one gender you would like to meet/);
+  assert.match(source, /Choose a valid age range between 18 and 99/);
+  assert.doesNotMatch(source, /profilePatch/);
+  assert.match(statusSource, /ownEntry\.terms_version === RAFFLE\.termsVersion/);
+  assert.match(statusSource, /needs-preference-refresh/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {
@@ -103,6 +151,8 @@ test('experiment has a quiet-mode FAQ beside the public flow', () => {
   assert.match(flow, /\/dating-experiment\/faq/);
   assert.match(faq, /same cap of up to/);
   assert.match(faq, /maximum aggregate prize value/);
+  assert.match(faq, /saved with your experiment entry/);
+  assert.match(flow, /choose one or more/);
   assert.match(flow, /No purchase necessary/);
 });
 

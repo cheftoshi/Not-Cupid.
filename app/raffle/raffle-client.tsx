@@ -22,21 +22,21 @@ type Event = {
   entriesOpen?: boolean;
   statusLabel?: string;
 };
-type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seeking: string; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
+type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seekingGenders: string[]; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
 
 const ORANGE = '#ff6a1f';
 const ORANGE_DEEP = '#d2530f';
 const BLUE = '#2563ff';
 const GREEN = '#2d7a4f';
 const GENDERS = [['m', 'a man'], ['f', 'a woman'], ['nb', 'non-binary / another identity']];
-const SEEKING = [['f', 'women'], ['m', 'men'], ['b', 'anyone']];
+const SEEKING_GENDERS = [['f', 'women'], ['m', 'men'], ['nb', 'non-binary / another identity']];
 
 // The public Dating Experiment flow. Legacy route/API names stay internal.
 export default function RaffleClient({ firstName, eligible, profile, event }: {
   firstName: string; eligible: boolean; profile: Profile; event: Event;
 }) {
   const [gender, setGender] = useState(profile.gender);
-  const [seeking, setSeeking] = useState(profile.seeking);
+  const [seekingGenders, setSeekingGenders] = useState<string[]>(profile.seekingGenders);
   const [ageMin, setAgeMin] = useState(profile.ageMin);
   const [ageMax, setAgeMax] = useState(profile.ageMax);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -77,10 +77,18 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     { ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/profile' : undefined },
   ];
   const credOk = cred.every((c) => c.ok);
-  const basicsOk = !!gender && !!seeking && ageMin >= 18 && ageMax >= ageMin;
+  const basicsOk = !!gender && seekingGenders.length > 0
+    && Number.isInteger(ageMin) && Number.isInteger(ageMax)
+    && ageMin >= 18 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   const questionsOk = !!intention && !!energy && conversationStarter.trim().length >= 3;
   const consentOk = attendanceConfirmed && termsAccepted && videoConsent && safetyAcknowledged;
   const canEnter = credOk && basicsOk && questionsOk && !!videoUrl && videoDuration != null && consentOk;
+
+  function toggleSeekingGender(value: string) {
+    setSeekingGenders((current) => current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value]);
+  }
 
   async function onVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -117,7 +125,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           videoDurationSeconds: videoDuration,
           notify,
           gender,
-          seeking,
+          seekingGenders,
           ageMin,
           ageMax,
           intention,
@@ -281,18 +289,22 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   </div>
                 </div>
                 <div>
-                  <div style={qLabel}>match me with…</div>
+                  <div style={qLabel}>match me with… <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose one or more)</span></div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {SEEKING.map(([v, l]) => <button key={v} onClick={() => setSeeking(v)} style={chip(seeking === v)}>{l}</button>)}
+                    {SEEKING_GENDERS.map(([v, l]) => (
+                      <button key={v} type="button" aria-pressed={seekingGenders.includes(v)} onClick={() => toggleSeekingGender(v)} style={chip(seekingGenders.includes(v))}>{l}</button>
+                    ))}
                   </div>
+                  <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Only people whose own preferences include you can appear. These choices are saved for this experiment and won’t change your general Love Line settings.</div>
                 </div>
                 <div>
                   <div style={qLabel}>ages I’m open to</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input type="number" min={18} max={99} value={ageMin} onChange={(e) => setAgeMin(+e.target.value)} style={numIn} />
+                    <input aria-label="minimum age" type="number" min={18} max={99} value={ageMin} onChange={(e) => setAgeMin(+e.target.value)} style={numIn} />
                     <span style={{ color: 'var(--h-text-faint)' }}>to</span>
-                    <input type="number" min={18} max={99} value={ageMax} onChange={(e) => setAgeMax(+e.target.value)} style={numIn} />
+                    <input aria-label="maximum age" type="number" min={18} max={99} value={ageMax} onChange={(e) => setAgeMax(+e.target.value)} style={numIn} />
                   </div>
+                  <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Age preferences must work both ways too—you must fall inside their selected range.</div>
                 </div>
               </div>
             </div>

@@ -39,13 +39,14 @@ export async function GET() {
 
   try {
     const { data: ownEntry } = await supabaseAdmin.from('raffle_entries')
-      .select('status')
+      .select('status, terms_version')
       .eq('user_id', user.id)
       .eq('event_key', RAFFLE.key)
       .maybeSingle();
     if (ownEntry) {
-      entered = ownEntry.status === 'entered' || ownEntry.status === 'picked';
-      entry = ownEntry;
+      const currentEntry = ownEntry.terms_version === RAFFLE.termsVersion;
+      entered = currentEntry && (ownEntry.status === 'entered' || ownEntry.status === 'picked');
+      entry = currentEntry ? ownEntry : { status: 'needs-preference-refresh' };
     }
 
     const { data: offerRows } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')

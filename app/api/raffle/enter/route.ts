@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible, raffleClosed, raffleEntriesOpen } from '@/lib/raffle';
 import { drawRaffle } from '@/lib/raffle-draw';
 import { isManagedStorageUrl } from '@/lib/request-security';
+import { experimentGendersFromLegacy, normalizeExperimentGenders } from '@/lib/experiment-preferences';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,27 +28,25 @@ export async function POST(req: NextRequest) {
   const energy = ENERGIES.has(body.energy) ? body.energy : null;
   const conversationStarter = String(body.conversationStarter || '').trim().slice(0, 160);
 
-  // Match basics from the form — set them on the real profile (the matcher reads
-  // user.gender/seeking/age) so they're not raffle-only.
+  // Match basics are validated server-side and frozen into this experiment
+  // entry. This supports any one-or-more combination of men, women, and
+  // non-binary / another identity without broadening the user's Love profile.
   const gender = ['m', 'f', 'nb'].includes(body.gender) ? body.gender : null;
   const rawSeeking = ['m', 'f', 'b', 'both'].includes(body.seeking) ? body.seeking : null;
-  const seeking = rawSeeking === 'both' ? 'b' : rawSeeking;
+  const seekingGenders = Array.isArray(body.seekingGenders)
+    ? normalizeExperimentGenders(body.seekingGenders)
+    : experimentGendersFromLegacy(rawSeeking);
   const ageMin = Number(body.ageMin), ageMax = Number(body.ageMax);
-  const ageOk = ageMin >= 18 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
-  const profilePatch: any = {};
-  if (gender) profilePatch.gender = gender;
-  if (seeking) profilePatch.seeking = seeking;
-  if (ageOk) { profilePatch.age_min = ageMin; profilePatch.age_max = ageMax; }
-  if (Object.keys(profilePatch).length) {
-    const { error: profileError } = await supabaseAdmin.from('users').update(profilePatch).eq('id', user.id);
-    if (profileError) {
-      console.error('[dating-experiment-profile]', profileError);
-      return NextResponse.json({ error: 'Could not save your match preferences.' }, { status: 500 });
-    }
-  }
+  const ageOk = Number.isInteger(ageMin) && Number.isInteger(ageMax)
+    && ageMin >= 18 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
+  if (!gender) return NextResponse.json({ error: 'Choose how you identify for this experiment.' }, { status: 400 });
+  if (!seekingGenders.length) return NextResponse.json({ error: 'Choose at least one gender you would like to meet.' }, { status: 400 });
+  if (!ageOk) return NextResponse.json({ error: 'Choose a valid age range between 18 and 99.' }, { status: 400 });
 
-  // "Established cred" gate — pull from the (now-updated) profile.
-  const g = gender || user.gender, sk = seeking || user.seeking;
+  // These choices are experiment-specific. Do not silently widen or otherwise
+  // mutate the user's general Love Line preferences.
+
+  // "Established cred" gate — pull identity signals from the existing profile.
   const interests = (user.hobbies?.length || 0) + (user.music?.length || 0) + (user.food?.length || 0) + (user.sports?.length || 0);
   const missing: string[] = [];
   if (!user.photo_url) missing.push('a profile photo');
@@ -55,8 +54,6 @@ export async function POST(req: NextRequest) {
   if (!(user.bio || '').trim()) missing.push('a bio');
   if (interests < 3) missing.push('3+ interests');
   if (user.age == null) missing.push('your age');
-  if (!g) missing.push('your gender');
-  if (!sk) missing.push('who to match you with');
   if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
   if (user.age < 21) return NextResponse.json({ error: 'This dinner is 21 and over — you’re not eligible for this round.' }, { status: 400 });
   if (!video_url) return NextResponse.json({ error: 'Your intro video is required to enter.' }, { status: 400 });
@@ -104,7 +101,12 @@ export async function POST(req: NextRequest) {
     // Publicity/marketing permission must use a future, separate consent flow;
     // this entry endpoint never infers or accepts it.
     publicity_consent_at: null,
-    questionnaire: { intention, energy, conversationStarter },
+    questionnaire: {
+      intention,
+      energy,
+      conversationStarter,
+      preferences: { gender, seekingGenders, ageMin, ageMax },
+    },
     withdrawn_at: null,
   };
   const { error } = await supabaseAdmin.from('raffle_entries').upsert(row, { onConflict: 'user_id,event_key' });

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { RAFFLE, raffleEligible, raffleEntriesOpen } from '@/lib/raffle';
 import DatingExperimentClient from '@/app/raffle/raffle-client';
+import { experimentGendersFromLegacy } from '@/lib/experiment-preferences';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export default async function DatingExperimentPage() {
     quiz: !!user.archetype && typeof user.score_honesty === 'number',
     bio: !!(user.bio || '').trim(),
     gender: user.gender || '',
-    seeking: user.seeking === 'both' ? 'b' : (user.seeking || ''),
+    seekingGenders: experimentGendersFromLegacy(user.seeking),
     age: user.age ?? null,
     ageMin: user.age_min ?? 22,
     ageMax: user.age_max ?? 38,

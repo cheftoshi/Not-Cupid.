@@ -39,7 +39,11 @@ const FAQS = [
   },
   {
     q: 'Can all genders and orientations participate?',
-    a: 'Yes. Participants can identify as a man, woman, or non-binary / another identity and can seek men, women, or anyone. The system requires reciprocal preferences, so it supports different-gender, same-gender, bisexual/pansexual, and non-binary-inclusive pairings. Everyone receives the same shortlist cap, and actual options depend on the compatible local pool.',
+    a: 'Yes. Participants can identify as a man, woman, or non-binary / another identity and can select any one-or-more combination of men, women, and non-binary / another-identity people they would meet. That supports different-gender, same-gender, bisexual/pansexual, and non-binary-inclusive preferences without forcing “anyone” as the only multi-gender choice. Everyone receives the same shortlist cap, and actual options depend on the compatible local pool.',
+  },
+  {
+    q: 'How do age and gender preferences work?',
+    a: 'They are reciprocal and saved with your experiment entry. Someone can appear only if their identity is among the genders you selected, your identity is among the genders they selected, their age is inside your inclusive minimum-to-maximum range, and your age is inside theirs. These experiment choices do not change your general Love Line settings, and editing your general profile later does not silently change this entry.',
   },
   {
     q: 'Do women and men receive different numbers of options?',

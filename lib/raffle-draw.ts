@@ -1,8 +1,12 @@
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleScore, pairSelectionWeight, ageMutual, raffleClosed, raffleEligible, raffleEntriesOpen } from '@/lib/raffle';
-import { isGenderMatch } from '@/lib/matching';
+import { RAFFLE, raffleScore, pairSelectionWeight, raffleClosed, raffleEligible, raffleEntriesOpen } from '@/lib/raffle';
 import { sendPushToUser } from '@/lib/push';
 import { randomInt } from 'crypto';
+import {
+  reciprocalExperimentAgeMatch,
+  reciprocalExperimentGenderMatch,
+  resolveExperimentPreferences,
+} from '@/lib/experiment-preferences';
 import {
   buildCoverageFirstShortlist,
   mutualSelectionWeight,
@@ -324,14 +328,26 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
   const seenPairs = new Set<string>((priorPairs ?? []).map((pair: any) => pairKey(pair.user_a_id, pair.user_b_id)));
   const pool: any[] = ((usersData as any[]) ?? [])
     .filter((user) => user.is_test !== true && user.photo_url && user.archetype && raffleEligible(user) && !wonBefore.has(user.id))
-    .map((user) => ({ ...user, experiment_answers: (entryByUser.get(user.id) as any)?.questionnaire ?? null }));
+    .map((user) => {
+      const experimentAnswers = (entryByUser.get(user.id) as any)?.questionnaire ?? null;
+      const preferences = resolveExperimentPreferences(user, experimentAnswers);
+      return {
+        ...user,
+        gender: preferences.gender,
+        seeking_genders: preferences.seekingGenders,
+        age_min: preferences.ageMin,
+        age_max: preferences.ageMax,
+        experiment_answers: experimentAnswers,
+      };
+    })
+    .filter((user) => user.gender && user.seeking_genders.length && user.age_min != null && user.age_max != null);
 
   const candidates: { a: any; b: any; score: number }[] = [];
   for (let i = 0; i < pool.length; i++) {
     for (let j = i + 1; j < pool.length; j++) {
       const a = pool[i], b = pool[j];
       if (seenPairs.has(pairKey(a.id, b.id))) continue;
-      if (!isGenderMatch(a, b) || !isGenderMatch(b, a) || !ageMutual(a, b)) continue;
+      if (!reciprocalExperimentGenderMatch(a, b) || !reciprocalExperimentAgeMatch(a, b)) continue;
       const score = raffleScore(a, b);
       if (score >= RAFFLE.minimumPairScore) candidates.push({ a, b, score });
     }
