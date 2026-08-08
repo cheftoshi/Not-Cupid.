@@ -1,0 +1,1349 @@
+-- CONSOLIDATED IDEMPOTENT MIGRATION — apply all schema in order.
+-- Safe to re-run: every statement is 'if not exists' or drop-then-add.
+-- Generated 2026-05-31 to resync production schema with code.
+--
+-- ⚠️ RUN `supabase/base-schema.sql` FIRST. The CORE love-side tables — `users`,
+-- `matches`, `messages`, `sessions`, `otp_codes`, `match_history` — were created
+-- in the Supabase dashboard and aren't created here; this file only ALTERs/
+-- indexes them. `base-schema.sql` is the authoritative pg_dump of those 6 tables
+-- (captured 2026-06-17, PG 17.6). Fresh env = base-schema.sql, then this file.
+-- Everything else (friend_*, unlocks, push_subscriptions, aux, functions) IS here.
+
+-- ==================== 20260527_security_hardening.sql ====================
+-- Security hardening migration
+-- Run this against your Supabase project before deploying the matching security code.
+
+-- 1. Rate limit table: keyed by an arbitrary string (email, ip, or composite).
+--    `count` is incremented on each attempt; `window_start` resets when the window expires.
+create table if not exists rate_limits (
+  key text primary key,
+  count int not null default 0,
+  window_start timestamptz not null default now(),
+  blocked_until timestamptz
+);
+
+-- 2. Stripe webhook idempotency: prevent replay of valid Stripe events.
+create table if not exists stripe_events (
+  event_id text primary key,
+  type text,
+  received_at timestamptz not null default now()
+);
+
+-- 3. Index for cleaning up expired OTP codes (optional but useful).
+create index if not exists otp_codes_email_created_idx
+  on otp_codes (email, created_at desc);
+
+-- ==================== 20260528_date_vibes.sql ====================
+-- "Date vibes" surface — interactive activity-picking game between two
+-- matched users.
+--
+-- Flow:
+--   1. Each user picks 3-5 interests (food/music/sports/...) for THIS match.
+--      Stored in match_date_vibes (one row per match × user).
+--   2. They independently swipe yes/no on activities from a deck filtered
+--      by their combined interests. Each swipe stored in activity_swipes
+--      (one row per match × user × activity).
+--   3. When BOTH users have swiped 'yes' on the same activity_id, that's
+--      a "mutual match" — computed on read by joining activity_swipes
+--      against itself.
+--
+-- activity_id is a string ('curated:walk-esplanade' or
+-- 'live:ticketmaster:K8vZ9173f-Z') because activities come from both a
+-- code-defined curated catalog and live external feeds — no point in a
+-- separate activities table since the curated source of truth is code
+-- and the live feed is fetched JIT.
+
+create table if not exists match_date_vibes (
+  match_id uuid not null references matches(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  interests text[] not null default '{}',
+  updated_at timestamptz not null default now(),
+  primary key (match_id, user_id)
+);
+
+create table if not exists activity_swipes (
+  match_id uuid not null references matches(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  activity_id text not null,
+  decision text not null check (decision in ('yes', 'no')),
+  created_at timestamptz not null default now(),
+  primary key (match_id, user_id, activity_id)
+);
+
+-- For fast "what did both users say yes to?" lookups.
+create index if not exists activity_swipes_match_yes_idx
+  on activity_swipes (match_id, activity_id)
+  where decision = 'yes';
+
+grant all on match_date_vibes to service_role;
+grant all on activity_swipes to service_role;
+alter table match_date_vibes enable row level security;
+alter table activity_swipes enable row level security;
+
+-- ==================== 20260528_email_notifications.sql ====================
+-- Email notification infrastructure
+--
+-- Three additions:
+--   1. users.email_notifications + notifications_paused_at — per-user opt-out.
+--      When set to false, ALL activity emails stop AND the user is removed
+--      from the matching pool (pool_active=false) since they can't be
+--      notified about matches anyway.
+--   2. matches.expiring_reminder_sent_at — set once when the hourly
+--      cron sends the "4 hours left to accept" reminder, so we never
+--      double-send.
+--   3. match_notifications table — tracks the last time we emailed each
+--      recipient about a new message in a given match. Used to throttle
+--      back-to-back chat emails so a rapid-fire convo doesn't fire 20
+--      emails in five minutes.
+
+alter table users add column if not exists email_notifications boolean not null default true;
+alter table users add column if not exists notifications_paused_at timestamptz;
+
+alter table matches add column if not exists expiring_reminder_sent_at timestamptz;
+
+create index if not exists matches_expiring_lookup_idx
+  on matches (expires_at)
+  where status = 'pending' and expiring_reminder_sent_at is null;
+
+create table if not exists match_notifications (
+  match_id uuid not null references matches(id) on delete cascade,
+  recipient_id uuid not null references users(id) on delete cascade,
+  last_message_email_at timestamptz,
+  primary key (match_id, recipient_id)
+);
+
+grant all on match_notifications to service_role;
+alter table match_notifications enable row level security;
+
+-- ==================== 20260528_end_match_flow.sql ====================
+-- End-match flow: date feedback + ghosting reports + matching cooldown
+
+-- Ghost / cooldown tracking on the user being reported
+alter table users add column if not exists ghost_reports_received int not null default 0;
+alter table users add column if not exists matching_cooldown_until timestamptz;
+alter table users add column if not exists matching_disabled_at timestamptz;
+-- Permanent lifetime ghost counter (reactivate can't zero it; drives escalation + hard cap)
+alter table users add column if not exists ghost_strikes int not null default 0;
+
+-- Date feedback per (match, reporting user). Each user gets one row per match.
+create table if not exists date_feedback (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references matches(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  rating int not null check (rating between 1 and 5),
+  would_again boolean,
+  notes text,
+  created_at timestamptz not null default now(),
+  unique(match_id, user_id)
+);
+
+create index if not exists date_feedback_user_idx on date_feedback(user_id);
+create index if not exists date_feedback_match_idx on date_feedback(match_id);
+
+-- service_role access (we hit this via supabaseAdmin)
+grant all on date_feedback to service_role;
+alter table date_feedback enable row level security;
+
+-- Optional: store the most recent end-reason from a user against the other (for admin moderation context)
+create table if not exists end_reports (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references matches(id) on delete cascade,
+  reporter_id uuid not null references users(id) on delete cascade,
+  target_id uuid not null references users(id) on delete cascade,
+  reason text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists end_reports_target_idx on end_reports(target_id);
+create index if not exists end_reports_match_idx on end_reports(match_id);
+grant all on end_reports to service_role;
+alter table end_reports enable row level security;
+
+-- ==================== 20260528_friend_waitlist.sql ====================
+-- Friend Maxxin waitlist: track interest from existing NotCupid users
+-- (anonymous waitlist signups via email collected separately if needed).
+
+alter table users add column if not exists friend_waitlist_at timestamptz;
+
+create index if not exists users_friend_waitlist_idx on users(friend_waitlist_at)
+  where friend_waitlist_at is not null;
+
+-- ==================== 20260528_live_events_blacklist.sql ====================
+-- Admin blacklist for the live-events feed.
+--
+-- The date-vibes deck pulls live local events from external sources
+-- (Ticketmaster, Yelp, Boston Calendar). Rule-based filters catch most
+-- junk automatically (venue whitelist, classification, on-sale status,
+-- time window), but admins can hide specific items from the deck if
+-- something inappropriate slips through.
+--
+-- Hidden items stay hidden permanently — the activity_id is stable per
+-- source so we never have to re-hide the same event.
+
+create table if not exists live_activity_blacklist (
+  activity_id text primary key,
+  hidden_by uuid references users(id) on delete set null,
+  hidden_at timestamptz not null default now(),
+  reason text
+);
+
+grant all on live_activity_blacklist to service_role;
+alter table live_activity_blacklist enable row level security;
+
+-- ==================== 20260528_match_constraint_fix.sql ====================
+-- Allow the new ended_reason values from the end-match flow.
+-- The original matches_status_check rejected 'ghosted' / 'not_vibing' / 'user_ended'.
+
+alter table matches drop constraint if exists matches_status_check;
+
+alter table matches add constraint matches_status_check
+  check (status in (
+    'pending',
+    'both_accepted',
+    'active',
+    'passed',
+    'ended',
+    'expired',
+    'matched'
+  ));
+
+-- NOTE: the ended_reason CHECK from this 5/28 migration is intentionally
+-- omitted here — it predates the 'reported' value now present in live data
+-- and would fail. The authoritative ended_reason constraint (including
+-- 'reported') is set by the 20260531_reports.sql section below.
+
+-- ==================== 20260528_pool_rotation.sql ====================
+-- Pool rotation: wave drops + activity ejection
+-- A user must have pool_active=true to be eligible for matching.
+-- The rematch cron toggles this based on activity + wave logic.
+
+alter table users add column if not exists pool_active boolean not null default true;
+alter table users add column if not exists pool_drop_at timestamptz;
+
+create index if not exists users_pool_active_idx on users(pool_active, status);
+create index if not exists users_pool_drop_at_idx on users(pool_drop_at);
+
+-- Helpful index for the activity-ejection query
+create index if not exists sessions_user_last_used_idx on sessions(user_id, last_used_at desc);
+
+-- ==================== 20260528_profile_gallery.sql ====================
+-- Profile gallery: up to 3 additional photos per user, beyond the single
+-- primary photo_url. These are part of the $2.99 unlock — a matched user
+-- only sees them after paying. The primary photo stays always-visible.
+--
+-- Stored as an array of public storage URLs (max 3 enforced in the API).
+
+alter table users add column if not exists gallery text[] not null default '{}';
+
+-- ==================== 20260528_quiz_blast_tracking.sql ====================
+-- Track which users have received the "retake the quiz" email so re-running
+-- the blast only targets people we haven't reached yet.
+
+alter table users add column if not exists quiz_blast_sent_at timestamptz;
+
+create index if not exists users_quiz_blast_unsent_idx on users(id)
+  where quiz_blast_sent_at is null;
+
+-- ==================== 20260528_relationship_style.sql ====================
+-- Add a single-select "relationship style" field so users can self-identify as
+-- DINK, ENM/poly, marriage-track, casual, etc. Separate from the existing
+-- "future" vibe (which is a seriousness-of-intent scale) — this captures the
+-- shape of the relationship someone wants, not the timeline.
+--
+-- Nullable so existing users don't need a backfill; the quiz and profile form
+-- both prompt for it going forward.
+
+alter table users add column if not exists relationship_style text;
+
+-- Constrain to known values. Easy to extend later by altering the check.
+alter table users drop constraint if exists users_relationship_style_check;
+alter table users add constraint users_relationship_style_check
+  check (
+    relationship_style is null
+    or relationship_style in ('marriage_track', 'dink', 'enm_poly', 'casual', 'open')
+  );
+
+create index if not exists users_relationship_style_idx on users(relationship_style);
+
+-- ==================== 20260528_vibes.sql ====================
+-- Vibes mini-quiz: lifestyle/compat dimensions outside HEXACO.
+-- Stored as JSONB so we can iterate without schema churn.
+
+alter table users add column if not exists vibes jsonb;
+
+create index if not exists users_vibes_idx on users using gin (vibes);
+
+-- ==================== 20260529_feedback.sql ====================
+-- User feedback drop (from the dashboard "send feedback" spot).
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete set null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists feedback_created_idx on feedback(created_at desc);
+grant all on feedback to service_role;
+alter table feedback enable row level security;
+
+-- ==================== 20260529_match_radius.sql ====================
+-- Per-user match radius. Default 15mi (tight); users widen in 15mi steps up
+-- to 75mi when their pool runs thin. The matcher uses the SEARCHER's radius.
+alter table users add column if not exists match_radius int not null default 15;
+
+-- When we last emailed this user "your area is quiet, widen your radius" —
+-- dedupes the nudge (3-day cooldown), cleared when they actually widen.
+alter table users add column if not exists radius_nudge_sent_at timestamptz;
+
+-- ==================== 20260529_pool_balance.sql ====================
+-- Pool freshness: gender-balance intake gating + equity rotation.
+--
+-- balance_hold_at: set when a new over-represented-gender signup is put on a
+--   soft "early access" hold in a skewed metro (pool_active=false). The cron
+--   releases them as the scarce side joins, or after a 3-day cap. Null = not
+--   balance-held. Users never see a "you're held because too many men"
+--   message — they just see the normal positive "in the queue" state.
+--
+-- last_matched_at: when this user was last put into a match. Drives equity
+--   rotation — the matcher boosts candidates who haven't matched recently so
+--   the same high-scoring people don't monopolize the scarce side.
+
+alter table users add column if not exists balance_hold_at timestamptz;
+alter table users add column if not exists last_matched_at timestamptz;
+
+create index if not exists users_balance_hold_idx on users(balance_hold_at) where balance_hold_at is not null;
+
+-- ==================== 20260531_relaunch_blast.sql ====================
+-- Track who received the "we relaunched matching" announcement blast so
+-- re-running it only targets people we haven't reached yet (idempotent +
+-- resumable, same pattern as quiz_blast_sent_at).
+
+alter table users add column if not exists relaunch_blast_sent_at timestamptz;
+
+create index if not exists users_relaunch_blast_unsent_idx on users(id)
+  where relaunch_blast_sent_at is null;
+
+-- ==================== 20260624_press_invite.sql ====================
+-- Track who got the "would you share your NotCupid date story?" press invite
+-- so re-running only targets people we haven't reached yet (idempotent +
+-- resumable, same pattern as the other blast markers).
+
+alter table users add column if not exists press_invite_at timestamptz;
+
+create index if not exists users_press_invite_unsent_idx on users(id)
+  where press_invite_at is null;
+
+-- ==================== 20260531_reports.sql ====================
+-- Block & report — core safety feature.
+--
+-- user_reports: one row per (reporter → reported) report, with a reason and
+-- optional detail. The reported pair is also written to match_history so the
+-- matcher never pairs them again (reuses the existing no-repeat path).
+--
+-- users.is_blocked: a hard platform block set by admin after reviewing
+-- reports — excludes the user from matching entirely (separate from the
+-- ghost-driven matching_disabled_at so admins can distinguish the reason).
+
+create table if not exists user_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references users(id) on delete cascade,
+  reported_id uuid not null references users(id) on delete cascade,
+  match_id uuid references matches(id) on delete set null,
+  reason text not null,
+  detail text,
+  created_at timestamptz not null default now()
+);
+create index if not exists user_reports_reported_idx on user_reports(reported_id);
+create index if not exists user_reports_created_idx on user_reports(created_at desc);
+grant all on user_reports to service_role;
+alter table user_reports enable row level security;
+
+alter table users add column if not exists is_blocked boolean not null default false;
+
+-- Allow 'reported' as a match ended_reason (the report flow ends the match).
+alter table matches drop constraint if exists matches_ended_reason_check;
+alter table matches add constraint matches_ended_reason_check
+  check (ended_reason in (
+    'expired','one_passed','mutual_pass','completed','user_deleted',
+    'user_ended','ghosted','not_vibing','user_requiz','reported'
+  ));
+
+-- ==================== 20260531_roster_snapshot.sql ====================
+-- Roster stability: persist each user's current roster so it doesn't reshuffle
+-- on every page load. The snapshot rotates at most every 12h (or sooner when
+-- members get taken and we backfill). roster_snapshot holds candidate user ids
+-- in display order; roster_refreshed_at is when it was last fully recomputed.
+alter table users add column if not exists roster_snapshot text[] not null default '{}';
+alter table users add column if not exists roster_refreshed_at timestamptz;
+
+
+-- ==================== unlock tables (were dashboard-created) ====================
+-- `match_unlocks`: current per-(user,match) unlock state (lib/record-unlock).
+-- `unlocks`: legacy payment ledger still read by admin stats + written by the
+-- stripe webhook. Both were created in the dashboard and missing from this file;
+-- folded in idempotently so admin reads don't break + a rebuild includes them.
+create table if not exists match_unlocks (
+  user_id uuid not null,
+  match_id uuid not null,
+  unlocked_user_id uuid,
+  amount_cents int,
+  stripe_payment_id text,
+  created_at timestamptz not null default now(),
+  primary key (user_id, match_id)
+);
+create table if not exists unlocks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  stripe_payment_id text,
+  amount int,
+  created_at timestamptz not null default now()
+);
+alter table match_unlocks enable row level security;
+alter table unlocks enable row level security;
+
+-- ==================== 20260531_unlock_tiers.sql ====================
+-- Two-tier match unlock:
+--   $0.99 hexaco_unlocked  → reveal the match's HEXACO personality bars
+--   $1.99 profile_unlocked → reveal the full profile (gallery, bio, music, …)
+-- $1.99 is a superset: profile_unlocked also implies HEXACO is visible.
+-- Kept as two booleans on the existing one-row-per-(user,match) shape so we
+-- don't have to change the (user_id, match_id) upsert key.
+
+alter table match_unlocks add column if not exists hexaco_unlocked boolean not null default false;
+alter table match_unlocks add column if not exists profile_unlocked boolean not null default false;
+
+-- Backfill: any pre-existing row was the old single $2.99 full unlock.
+-- Guarded so re-running can't clobber a later hexaco-only row.
+update match_unlocks
+  set profile_unlocked = true
+  where profile_unlocked = false and hexaco_unlocked = false;
+
+-- ==================== 20260531_date_feedback_fix.sql ====================
+-- Fix: date_feedback existed in prod (early partial run) WITHOUT the rating
+-- columns, so the later `create table if not exists` was skipped and never
+-- added them. The admin date-feedback panel errors on date_feedback.rating.
+-- Patch the existing table explicitly. Nullable (can't add NOT NULL to a table
+-- that may have rows without a default); the API already validates rating 1-5.
+
+alter table date_feedback add column if not exists rating int;
+alter table date_feedback add column if not exists would_again boolean;
+alter table date_feedback add column if not exists notes text;
+alter table date_feedback add column if not exists created_at timestamptz not null default now();
+
+-- ==================== 20260531_page_views.sql ====================
+-- First-party pageview tracking for the in-admin "web traffic" view.
+-- One row per client route change (anonymous-friendly; anon_id is a random
+-- localStorage id, NOT tied to identity). Low-volume early-stage; roll up later
+-- if it grows. Vercel Analytics still covers raw traffic — this is the
+-- in-dashboard slice.
+
+create table if not exists page_views (
+  id bigint generated always as identity primary key,
+  path text not null,
+  anon_id text,
+  referrer text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists page_views_created_idx on page_views(created_at desc);
+create index if not exists page_views_path_idx on page_views(path);
+
+grant all on page_views to service_role;
+alter table page_views enable row level security;
+
+-- ==================== 20260531_test_accounts.sql ====================
+-- Test accounts: flag throwaway users so the magic dev-login can ONLY ever
+-- create a session for a test account, never a real user (the hard safety gate).
+alter table users add column if not exists is_test boolean not null default false;
+create index if not exists users_is_test_idx on users(is_test) where is_test = true;
+
+-- ==================== 20260601_friend_maxxin.sql ====================
+-- Friend Line core: opt-in + quiz data on users, pairwise connections, circles
+-- (group chats), messages, and no-repeat history. (Was never folded in — these
+-- tables exist in prod from the migration, but apply-all needs them to be a
+-- complete from-zero rebuild, and friend_chat_unlocks below FKs friend_circles.)
+alter table users add column if not exists friend_opted_in_at timestamptz;
+alter table users add column if not exists friend_vibes jsonb;
+alter table users add column if not exists friend_seeking text[] not null default '{}';
+create index if not exists users_friend_pool_idx on users(friend_opted_in_at) where friend_opted_in_at is not null;
+-- 20260624_friend_cooldown.sql — 3 ignored packs → 15-day friend-line break
+alter table users add column if not exists friend_skips int not null default 0;
+alter table users add column if not exists friend_pack_seen_at timestamptz;
+alter table users add column if not exists friend_cooldown_until timestamptz;
+
+create table if not exists friend_connections (
+  id uuid primary key default gen_random_uuid(),
+  user_a_id uuid not null references users(id) on delete cascade,
+  user_b_id uuid not null references users(id) on delete cascade,
+  a_picked boolean not null default false,
+  b_picked boolean not null default false,
+  status text not null default 'pending' check (status in ('pending','connected','declined')),
+  circle_id uuid,
+  compatibility_score int,
+  created_at timestamptz not null default now(),
+  connected_at timestamptz,
+  unique (user_a_id, user_b_id)
+);
+create index if not exists friend_connections_a_idx on friend_connections(user_a_id);
+create index if not exists friend_connections_b_idx on friend_connections(user_b_id);
+-- 20260621_friend_packs: opened_at = when the user revealed this connection in a
+-- cinematic pack (null = still sealed). Existing rows backfill to opened below.
+alter table friend_connections add column if not exists opened_at timestamptz;
+
+create table if not exists friend_circles (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now()
+);
+create table if not exists friend_circle_members (
+  circle_id uuid not null references friend_circles(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  joined_at timestamptz not null default now(),
+  left_at timestamptz,
+  primary key (circle_id, user_id)
+);
+create index if not exists friend_circle_members_user_idx on friend_circle_members(user_id) where left_at is null;
+create index if not exists friend_circle_members_circle_idx on friend_circle_members(circle_id) where left_at is null;
+
+create table if not exists friend_messages (
+  id uuid primary key default gen_random_uuid(),
+  circle_id uuid not null references friend_circles(id) on delete cascade,
+  sender_id uuid not null references users(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_messages_circle_idx on friend_messages(circle_id, created_at);
+
+-- 20260624_friend_dms.sql — private 1:1 DMs between connected friends (separate from the group circle)
+create table if not exists friend_dms (
+  id uuid primary key default gen_random_uuid(),
+  user_a_id uuid not null,   -- canonical: user_a_id < user_b_id
+  user_b_id uuid not null,
+  sender_id uuid not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_dms_pair_idx on friend_dms (user_a_id, user_b_id, created_at);
+alter table if exists friend_dms enable row level security;
+grant all on table friend_dms to anon, authenticated, service_role;  -- or the server hits "permission denied for table friend_dms"
+
+create table if not exists friend_match_history (
+  user_a_id uuid not null,
+  user_b_id uuid not null,
+  outcome text,
+  created_at timestamptz not null default now(),
+  primary key (user_a_id, user_b_id)
+);
+
+-- ==================== 20260601_friend_activities.sql ====================
+-- Friend Line activity board ("the Scene") + RSVPs. (kind / audience / response
+-- columns are added by the 20260602 + 20260607 blocks further down.)
+create table if not exists friend_activities (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid not null references users(id) on delete cascade,
+  title text not null,
+  body text,
+  category text not null default 'hang' check (category in
+    ('food','drinks','active','outdoors','culture','nightlife','games','chill','hang')),
+  area text,
+  happens_at timestamptz,
+  expires_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_activities_live_idx on friend_activities(expires_at, created_at desc);
+create index if not exists friend_activities_area_idx on friend_activities(area);
+create index if not exists friend_activities_cat_idx on friend_activities(category);
+
+create table if not exists friend_activity_rsvps (
+  activity_id uuid not null references friend_activities(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (activity_id, user_id)
+);
+create index if not exists friend_activity_rsvps_act_idx on friend_activity_rsvps(activity_id);
+
+-- 20260625_friend_comments.sql — comments on Scene posts
+create table if not exists friend_activity_comments (
+  id uuid primary key default gen_random_uuid(),
+  activity_id uuid not null references friend_activities(id) on delete cascade,
+  user_id uuid not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_activity_comments_act_idx on friend_activity_comments (activity_id, created_at);
+alter table if exists friend_activity_comments enable row level security;
+grant all on table friend_activity_comments to anon, authenticated, service_role;
+
+-- 20260625_friend_clubs.sql — City Pulse communities: clubs (join-by-request + own chat) + submitted community links (admin-approved)
+create table if not exists friend_clubs (
+  id uuid primary key default gen_random_uuid(),
+  name text not null, category text, description text,
+  creator_id uuid not null, area text, metro text,
+  is_test boolean not null default false, report_count int not null default 0,
+  hidden_at timestamptz, created_at timestamptz not null default now()
+);
+create index if not exists friend_clubs_metro_idx on friend_clubs (metro, created_at desc);
+create table if not exists friend_club_members (
+  club_id uuid not null references friend_clubs(id) on delete cascade,
+  user_id uuid not null, status text not null default 'pending',
+  created_at timestamptz not null default now(), primary key (club_id, user_id)
+);
+create table if not exists friend_club_messages (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references friend_clubs(id) on delete cascade,
+  sender_id uuid not null, body text not null, created_at timestamptz not null default now()
+);
+create index if not exists friend_club_messages_idx on friend_club_messages (club_id, created_at);
+create table if not exists friend_club_reports (
+  club_id uuid not null references friend_clubs(id) on delete cascade,
+  user_id uuid not null, created_at timestamptz not null default now(), primary key (club_id, user_id)
+);
+create table if not exists friend_community_links (
+  id uuid primary key default gen_random_uuid(),
+  title text not null, url text not null, kind text, description text,
+  submitter_id uuid not null, metro text, is_test boolean not null default false,
+  approved boolean not null default false, approved_at timestamptz, created_at timestamptz not null default now()
+);
+create index if not exists friend_community_links_idx on friend_community_links (metro, approved);
+alter table if exists friend_clubs enable row level security;
+alter table if exists friend_club_members enable row level security;
+alter table if exists friend_club_messages enable row level security;
+alter table if exists friend_club_reports enable row level security;
+alter table if exists friend_community_links enable row level security;
+grant all on table friend_clubs, friend_club_members, friend_club_messages, friend_club_reports, friend_community_links to anon, authenticated, service_role;
+
+-- ==================== 20260604_friend_match_rounds.sql ====================
+-- The $0.99 "another round of matches" purchases (idempotent per Stripe payment).
+create table if not exists friend_match_rounds (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  stripe_payment_id text unique,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_match_rounds_user_idx on friend_match_rounds (user_id);
+
+-- ==================== 20260602_friend_billing.sql ====================
+-- Friend Maxxin billing v2: per-crew $0.99 chat unlocks + $2.99/mo Pro subscription.
+-- Replaces the one-time "founding" model (friend_paid_at kept for back-compat:
+-- anyone who already paid founding is grandfathered into Pro-equivalent access).
+
+-- Pro subscription window. Renewals push this forward; cancel lets it lapse.
+alter table users add column if not exists friend_pro_until timestamptz;
+alter table users add column if not exists stripe_customer_id text;
+alter table users add column if not exists friend_sub_id text;          -- active subscription id (null when canceled)
+
+-- One row per (user, circle) the user has paid $0.99 to unlock the chat for.
+create table if not exists friend_chat_unlocks (
+  user_id uuid not null references users(id) on delete cascade,
+  circle_id uuid not null references friend_circles(id) on delete cascade,
+  stripe_payment_id text,
+  created_at timestamptz not null default now(),
+  primary key (user_id, circle_id)
+);
+create index if not exists friend_chat_unlocks_user_idx on friend_chat_unlocks(user_id);
+grant all on friend_chat_unlocks to service_role;
+alter table friend_chat_unlocks enable row level security;
+
+-- ==================== 20260604_feedback_reply.sql ====================
+-- Admin reply to user feedback (emails the user + stamps the reply).
+alter table feedback add column if not exists replied_at timestamptz;
+alter table feedback add column if not exists reply_body text;
+
+-- ==================== 20260604_friend_age_pref.sql ====================
+-- Friend Line age preference (symmetric, NULL = no bound).
+alter table users add column if not exists friend_age_min int;
+alter table users add column if not exists friend_age_max int;
+
+-- ==================== 20260604_profile_refresh.sql ====================
+-- Profile refresh counter (max 3 full resets per account).
+alter table users add column if not exists profile_refresh_count int not null default 0;
+
+-- ==================== 20260605_ghost_strikes.sql ====================
+-- Permanent lifetime ghost counter (reactivate can't zero it; drives escalation + hard cap).
+alter table users add column if not exists ghost_strikes int not null default 0;
+
+-- ==================== 20260606_rls_core_tables.sql ====================
+-- Defense-in-depth: RLS deny-by-default on sensitive tables. Safe because the
+-- app uses the SERVICE key (bypasses RLS) and the anon client never queries
+-- tables. RULE: never query tables with the anon `supabase` client client-side.
+alter table if exists users                  enable row level security;
+alter table if exists sessions               enable row level security;
+alter table if exists otp_codes              enable row level security;
+alter table if exists matches                enable row level security;
+alter table if exists messages               enable row level security;
+alter table if exists match_history          enable row level security;
+alter table if exists end_reports            enable row level security;
+alter table if exists user_reports           enable row level security;
+alter table if exists feedback               enable row level security;
+alter table if exists inbound_messages       enable row level security;
+alter table if exists match_date_vibes       enable row level security;
+alter table if exists activity_swipes        enable row level security;
+alter table if exists live_activity_blacklist enable row level security;
+alter table if exists page_views             enable row level security;
+alter table if exists friend_circles         enable row level security;
+alter table if exists friend_circle_members  enable row level security;
+alter table if exists friend_messages        enable row level security;
+alter table if exists friend_connections     enable row level security;
+alter table if exists friend_match_history   enable row level security;
+alter table if exists friend_activities      enable row level security;
+alter table if exists friend_activity_rsvps  enable row level security;
+alter table if exists friend_chat_unlocks    enable row level security;
+alter table if exists friend_match_rounds    enable row level security;
+
+-- ==================== 20260602_friend_post_kind.sql ====================
+-- post vs event distinction (was never folded into apply-all — caused a
+-- "could not find the 'kind' column" error when posting events).
+alter table friend_activities add column if not exists kind text not null default 'event'
+  check (kind in ('post', 'event'));
+create index if not exists friend_activities_kind_idx on friend_activities(kind);
+
+-- ==================== 20260607_friend_event_audience.sql ====================
+-- Event audience targeting (gender + age) + yes/maybe/no RSVPs + digest stamp.
+alter table friend_activities add column if not exists audience_gender text[];
+alter table friend_activities add column if not exists audience_age_min int;
+alter table friend_activities add column if not exists audience_age_max int;
+-- 20260625_friend_event_location.sql — events can tag a specific place/venue
+alter table friend_activities add column if not exists location text;
+-- 20260627_event_capacity.sql — optional headcount cap for events (null = unlimited)
+alter table friend_activities add column if not exists capacity int;
+-- 20260627_event_dating_friendly.sql — host opts the plan as "dating-friendly"
+alter table friend_activities add column if not exists dating_friendly boolean not null default false;
+-- 20260630_typing.sql — live "typing…" indicator for the love chat
+alter table matches add column if not exists user_1_typing_at timestamptz;
+alter table matches add column if not exists user_2_typing_at timestamptz;
+-- 20260630_invites.sql — invite/referral loop (friends bring friends)
+alter table users add column if not exists invite_code text unique;
+alter table users add column if not exists referred_by uuid references users(id);
+-- 20260702_roster_nudge.sql — daily "fresh faces" push throttle
+alter table users add column if not exists roster_nudged_at timestamptz;
+-- 20260704_read_receipts.sql — chat read stamps + DM reads
+alter table matches add column if not exists user_1_read_at timestamptz;
+alter table matches add column if not exists user_2_read_at timestamptz;
+-- 20260708_today_move.sql — AI concierge: day-cached "today's move" per user
+alter table users add column if not exists today_move jsonb;
+alter table users add column if not exists today_move_at timestamptz;
+create table if not exists friend_dm_reads (
+  user_id uuid not null references users(id) on delete cascade,
+  other_id uuid not null references users(id) on delete cascade,
+  read_at timestamptz not null default now(),
+  primary key (user_id, other_id)
+);
+alter table friend_dm_reads enable row level security;
+grant all on table friend_dm_reads to anon, authenticated, service_role;
+alter table friend_activity_rsvps add column if not exists response text not null default 'yes'
+  check (response in ('yes', 'maybe', 'no'));
+alter table users add column if not exists friend_digest_sent_at timestamptz;
+
+-- ==================== 20260608_friend_lgbtq.sql ====================
+-- Self-ID so LGBTQ+ audiences/seeking gate accurately (null = unset → gender fallback).
+alter table users add column if not exists is_lgbtq boolean;
+
+-- ==================== 20260609_quiz_v2.sql ====================
+-- Quiz v2: attachment + values (the dimensions that actually predict compatibility).
+alter table users add column if not exists attach_anxiety int;
+alter table users add column if not exists attach_avoidance int;
+alter table users add column if not exists attach_style text;
+alter table users add column if not exists values_profile jsonb;
+
+-- ───────────────────────── 20260610_perf_indexes ─────────────────────────
+-- Hot-path indexes: chat polling, open-match lookups, pending sweeps, history.
+create index if not exists messages_match_created_idx
+  on messages (match_id, created_at);
+create index if not exists matches_user1_open_idx
+  on matches (user_1_id) where ended_at is null;
+create index if not exists matches_user2_open_idx
+  on matches (user_2_id) where ended_at is null;
+create index if not exists matches_pending_created_idx
+  on matches (created_at) where status = 'pending';
+create index if not exists match_history_user_a_idx on match_history (user_a_id);
+create index if not exists match_history_user_b_idx on match_history (user_b_id);
+
+-- ──────────────────────── 20260611_push_subscriptions ────────────────────────
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subs_user_idx on push_subscriptions(user_id);
+alter table push_subscriptions enable row level security;
+
+-- ──────────────────────── 20260617_activity_rsvp_counts ────────────────────────
+-- Per-activity RSVP tallies via DB aggregate (was an O(all-rsvps) fetch in JS).
+create or replace function activity_rsvp_counts(p_ids uuid[])
+returns table (activity_id uuid, yes int, maybe int, no int)
+language sql
+stable
+as $$
+  select
+    activity_id,
+    count(*) filter (where coalesce(response, 'yes') = 'yes')::int   as yes,
+    count(*) filter (where coalesce(response, 'yes') = 'maybe')::int as maybe,
+    count(*) filter (where coalesce(response, 'yes') = 'no')::int    as no
+  from friend_activity_rsvps
+  where activity_id = any(p_ids)
+  group by activity_id
+$$;
+
+-- ──────────────────────── 20260619_ignored_picks ────────────────────────
+-- Responsiveness gate: bench chronic no-shows (got picked, never accepted) from
+-- rosters once they've ignored > MAX_IGNORED_PICKS picks. Resets on any accept.
+alter table users add column if not exists ignored_picks int not null default 0;
+create or replace function bump_ignored_picks(p_id uuid)
+returns void
+language sql
+as $$
+  update users set ignored_picks = ignored_picks + 1 where id = p_id;
+$$;
+
+-- ──────────────────────── 20260621_friend_packs ────────────────────────
+-- Friendship packs. opened_at (added with the friend_connections table above)
+-- marks revealed connections. Backfill existing rows to "opened" so live crews
+-- aren't re-sealed into a pack; new matches arrive unopened. (No-op on a fresh
+-- build; idempotent on re-run.) The $3.99/mo All-Access sub reuses the existing
+-- users.friend_pro_until column — no new columns needed.
+update friend_connections set opened_at = now() where opened_at is null;
+
+-- ──────────────────────── 20260621_sun_sign ────────────────────────
+-- Sun sign — profile flavor only, never used in matching. One of the 12 keys.
+alter table users add column if not exists sun_sign text;
+
+-- ──────────────────────── 20260625_intro_video ────────────────────────
+-- Short profile intro video (optional). Stored in the private `raffle-videos`
+-- bucket under a `profile/` prefix; this column holds the public URL.
+alter table users add column if not exists intro_video_url text;
+
+-- ──────────────────────── 20260622_sports ────────────────────────
+-- Sports & fitness interests — a new "what you're into" bubble category.
+alter table users add column if not exists sports text[] not null default '{}'::text[];
+
+-- ──────────────────────── 20260622_raffle ────────────────────────
+-- Summer of Connection — event raffle (entries + algo-drawn pairs → $200 date).
+create table if not exists raffle_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  event_key text not null default 'boston-2026-07-02',
+  video_url text,
+  notify boolean not null default true,
+  attempts int not null default 0,
+  agreed_at timestamptz,
+  status text not null default 'entered' check (status in ('entered','picked','passed')),
+  created_at timestamptz not null default now(),
+  unique (user_id, event_key)
+);
+create index if not exists raffle_entries_event_idx on raffle_entries(event_key, status);
+alter table if exists raffle_entries add column if not exists attempts int not null default 0;
+alter table if exists raffle_entries add column if not exists agreed_at timestamptz;
+create table if not exists raffle_draws (
+  id uuid primary key default gen_random_uuid(),
+  event_key text not null,
+  user_a_id uuid not null references users(id) on delete cascade,
+  user_b_id uuid not null references users(id) on delete cascade,
+  compatibility_score int,
+  a_accepted boolean not null default false,
+  b_accepted boolean not null default false,
+  status text not null default 'pending' check (status in ('pending','both_accepted','declined','expired')),
+  restaurant text,
+  happens_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (event_key, user_a_id, user_b_id)
+);
+create index if not exists raffle_draws_users_idx on raffle_draws(user_a_id, user_b_id);
+
+-- ==================== 20260803_security_remediation.sql ====================
+-- Sensitive server-only tables must not be reachable through the anon key.
+alter table if exists public.otp_codes enable row level security;
+drop policy if exists "allow all on otp_codes" on public.otp_codes;
+revoke all on table public.otp_codes from anon, authenticated;
+grant all on table public.otp_codes to service_role;
+alter table if exists public.unlocks enable row level security;
+revoke all on table public.unlocks from anon, authenticated;
+grant all on table public.unlocks to service_role;
+drop policy if exists "Anyone can read photos yndkpx_0" on storage.objects;
+update storage.buckets
+set file_size_limit = 4194304,
+    allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']::text[]
+where id = 'profile-photos';
+update storage.buckets
+set public = false,
+    file_size_limit = 83886080,
+    allowed_mime_types = array['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v']::text[]
+where id = 'raffle-videos';
+
+create or replace function public.bump_ignored_picks(p_id uuid)
+returns void language sql security invoker set search_path = '' as $function$
+  update public.users set ignored_picks = ignored_picks + 1 where id = p_id;
+$function$;
+create or replace function public.activity_rsvp_counts(p_ids uuid[])
+returns table(activity_id uuid, yes integer, maybe integer, no integer)
+language sql stable security invoker set search_path = '' as $function$
+  select activity_id,
+    count(*) filter (where coalesce(response, 'yes') = 'yes')::int,
+    count(*) filter (where coalesce(response, 'yes') = 'maybe')::int,
+    count(*) filter (where coalesce(response, 'yes') = 'no')::int
+  from public.friend_activity_rsvps
+  where activity_id = any(p_ids)
+  group by activity_id
+$function$;
+revoke all on function public.bump_ignored_picks(uuid) from public, anon, authenticated;
+revoke all on function public.activity_rsvp_counts(uuid[]) from public, anon, authenticated;
+grant execute on function public.bump_ignored_picks(uuid) to service_role;
+grant execute on function public.activity_rsvp_counts(uuid[]) to service_role;
+revoke all on function public.rls_auto_enable() from public, anon, authenticated;
+
+create or replace function public.consume_rate_limit(
+  p_key text, p_window_sec integer, p_max_attempts integer, p_block_sec integer default 0
+)
+returns table(allowed boolean, retry_after_sec integer, reason text)
+language plpgsql security invoker set search_path = '' as $function$
+declare
+  v_now timestamptz := pg_catalog.clock_timestamp();
+  v_row public.rate_limits%rowtype;
+  v_count integer;
+  v_retry integer;
+  v_blocked_until timestamptz;
+begin
+  if p_key is null or p_key = '' or pg_catalog.length(p_key) > 300
+     or p_window_sec < 1 or p_max_attempts < 1 or p_block_sec < 0 then
+    raise exception 'invalid rate-limit arguments';
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_key, 0));
+  select * into v_row from public.rate_limits where key = p_key;
+  if found and v_row.blocked_until is not null and v_row.blocked_until > v_now then
+    v_retry := greatest(1, pg_catalog.ceil(extract(epoch from (v_row.blocked_until - v_now)))::integer);
+    return query select false, v_retry, 'blocked'::text; return;
+  end if;
+  if not found or v_row.window_start <= v_now - pg_catalog.make_interval(secs => p_window_sec) then
+    insert into public.rate_limits as rl (key, count, window_start, blocked_until)
+    values (p_key, 1, v_now, null)
+    on conflict (key) do update set count = 1, window_start = excluded.window_start, blocked_until = null;
+    return query select true, 0, 'allowed'::text; return;
+  end if;
+  v_count := coalesce(v_row.count, 0) + 1;
+  if v_count > p_max_attempts then
+    v_blocked_until := case when p_block_sec > 0
+      then v_now + pg_catalog.make_interval(secs => p_block_sec)
+      else v_row.window_start + pg_catalog.make_interval(secs => p_window_sec) end;
+    update public.rate_limits set count = v_count, blocked_until = v_blocked_until where key = p_key;
+    v_retry := greatest(1, pg_catalog.ceil(extract(epoch from (v_blocked_until - v_now)))::integer);
+    return query select false, v_retry, 'throttled'::text; return;
+  end if;
+  update public.rate_limits set count = v_count where key = p_key;
+  return query select true, 0, 'allowed'::text;
+end;
+$function$;
+revoke all on function public.consume_rate_limit(text, integer, integer, integer) from public, anon, authenticated;
+grant execute on function public.consume_rate_limit(text, integer, integer, integer) to service_role;
+
+delete from public.rate_limits where key not like 'v2:%';
+update public.page_views set referrer = pg_catalog.regexp_replace(referrer, '[?#].*$', '') where referrer ~ '[?#]';
+
+create unique index if not exists inbound_messages_resend_email_id_uq
+  on public.inbound_messages (resend_email_id)
+  where resend_email_id is not null;
+alter table public.stripe_events add column if not exists processing_started_at timestamptz;
+alter table public.stripe_events add column if not exists processed_at timestamptz;
+alter table public.stripe_events add column if not exists last_error text;
+create or replace function public.claim_stripe_event(p_event_id text, p_type text)
+returns boolean language plpgsql security invoker set search_path = '' as $function$
+declare v_rows integer;
+begin
+  if p_event_id is null or p_event_id = '' or pg_catalog.length(p_event_id) > 255 then return false; end if;
+  insert into public.stripe_events (event_id, type, received_at, processing_started_at, last_error)
+  values (p_event_id, pg_catalog.left(p_type, 255), pg_catalog.clock_timestamp(), pg_catalog.clock_timestamp(), null)
+  on conflict (event_id) do nothing;
+  get diagnostics v_rows = row_count;
+  if v_rows = 1 then return true; end if;
+  update public.stripe_events
+  set processing_started_at = pg_catalog.clock_timestamp(), last_error = null
+  where event_id = p_event_id and processed_at is null
+    and (processing_started_at is null or processing_started_at < pg_catalog.clock_timestamp() - interval '10 minutes');
+  get diagnostics v_rows = row_count;
+  return v_rows = 1;
+end;
+$function$;
+revoke all on function public.claim_stripe_event(text, text) from public, anon, authenticated;
+grant execute on function public.claim_stripe_event(text, text) to service_role;
+alter table public.sessions add column if not exists token_hash_version smallint not null default 0;
+update public.sessions
+set token = pg_catalog.encode(extensions.digest(token, 'sha256'), 'hex'), token_hash_version = 1
+where token_hash_version = 0;
+
+-- ==================== 20260804_roster_rotation.sql ====================
+create table if not exists public.roster_exposures (
+  user_id uuid not null references public.users(id) on delete cascade,
+  candidate_id uuid not null references public.users(id) on delete cascade,
+  shown_at timestamptz not null default now(),
+  primary key (user_id, candidate_id),
+  constraint roster_exposures_not_self check (user_id <> candidate_id)
+);
+create index if not exists roster_exposures_user_shown_idx
+  on public.roster_exposures (user_id, shown_at desc);
+create index if not exists roster_exposures_candidate_shown_idx
+  on public.roster_exposures (candidate_id, shown_at desc);
+alter table public.roster_exposures enable row level security;
+revoke all on table public.roster_exposures from public, anon, authenticated;
+grant all on table public.roster_exposures to service_role;
+
+-- ==================== 20260804_match_exclusivity.sql ====================
+create or replace function public.create_exclusive_pending_match(
+  p_picker_id uuid,
+  p_candidate_id uuid,
+  p_compatibility_score integer,
+  p_expires_at timestamptz
+)
+returns uuid language plpgsql security invoker set search_path = '' as $function$
+declare v_match_id uuid; v_user_count integer;
+begin
+  if p_picker_id is null or p_candidate_id is null or p_picker_id = p_candidate_id then return null; end if;
+  perform u.id from public.users u
+    where u.id in (p_picker_id, p_candidate_id) order by u.id for update;
+  select count(*) into v_user_count from public.users u
+    where u.id in (p_picker_id, p_candidate_id) and u.deleted_at is null;
+  if v_user_count <> 2 then return null; end if;
+  if exists (
+    select 1 from public.matches m
+    where m.ended_at is null and m.status not in ('ended', 'passed', 'expired')
+      and ((coalesce(m.user_1_accepted, false) and coalesce(m.user_2_accepted, false))
+        or m.expires_at is null or m.expires_at >= pg_catalog.clock_timestamp())
+      and (m.user_1_id in (p_picker_id, p_candidate_id) or m.user_2_id in (p_picker_id, p_candidate_id))
+  ) then return null; end if;
+  if exists (
+    select 1 from public.match_history h
+    where h.user_a_id = least(p_picker_id, p_candidate_id)
+      and h.user_b_id = greatest(p_picker_id, p_candidate_id)
+  ) then return null; end if;
+  insert into public.matches (user_1_id, user_2_id, compatibility_score, status, expires_at)
+  values (p_picker_id, p_candidate_id, greatest(0, least(100, coalesce(p_compatibility_score, 0))), 'pending', p_expires_at)
+  returning id into v_match_id;
+  update public.users set status = 'matched', last_matched_at = pg_catalog.clock_timestamp()
+    where id in (p_picker_id, p_candidate_id);
+  return v_match_id;
+end;
+$function$;
+create or replace function public.purge_roster_candidates(p_candidate_ids text[])
+returns integer language plpgsql security invoker set search_path = '' as $function$
+declare v_rows integer;
+begin
+  if p_candidate_ids is null or cardinality(p_candidate_ids) = 0 or cardinality(p_candidate_ids) > 10 then return 0; end if;
+  update public.users u
+  set roster_snapshot = case when u.id::text = any(p_candidate_ids) then '{}'::text[]
+        else array(select candidate_id from unnest(coalesce(u.roster_snapshot, '{}'::text[])) as exposed(candidate_id)
+          where candidate_id <> all(p_candidate_ids)) end,
+      roster_refreshed_at = null
+  where u.id::text = any(p_candidate_ids) or coalesce(u.roster_snapshot, '{}'::text[]) && p_candidate_ids;
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$function$;
+revoke all on function public.create_exclusive_pending_match(uuid, uuid, integer, timestamptz) from public, anon, authenticated;
+revoke all on function public.purge_roster_candidates(text[]) from public, anon, authenticated;
+grant execute on function public.create_exclusive_pending_match(uuid, uuid, integer, timestamptz) to service_role;
+grant execute on function public.purge_roster_candidates(text[]) to service_role;
+
+-- ==================== 20260804_match_capacity_three.sql ====================
+create or replace function public.create_capacity_pending_match(
+  p_picker_id uuid,
+  p_candidate_id uuid,
+  p_compatibility_score integer,
+  p_expires_at timestamptz,
+  p_max_connections integer
+)
+returns uuid language plpgsql security invoker set search_path = '' as $function$
+declare v_match_id uuid; v_user_count integer; v_picker_live integer; v_candidate_live integer;
+begin
+  if p_picker_id is null or p_candidate_id is null or p_picker_id = p_candidate_id
+    or p_max_connections is null or p_max_connections < 1 or p_max_connections > 10 then return null; end if;
+  perform u.id from public.users u
+    where u.id in (p_picker_id, p_candidate_id) order by u.id for update;
+  select count(*) into v_user_count from public.users u
+    where u.id in (p_picker_id, p_candidate_id) and u.deleted_at is null;
+  if v_user_count <> 2 then return null; end if;
+  select
+    count(*) filter (where m.user_1_id = p_picker_id or m.user_2_id = p_picker_id),
+    count(*) filter (where m.user_1_id = p_candidate_id or m.user_2_id = p_candidate_id)
+  into v_picker_live, v_candidate_live from public.matches m
+  where m.ended_at is null and m.status not in ('ended', 'passed', 'expired')
+    and ((coalesce(m.user_1_accepted, false) and coalesce(m.user_2_accepted, false))
+      or m.expires_at is null or m.expires_at >= pg_catalog.clock_timestamp())
+    and (m.user_1_id in (p_picker_id, p_candidate_id) or m.user_2_id in (p_picker_id, p_candidate_id));
+  if v_picker_live >= p_max_connections or v_candidate_live >= p_max_connections then return null; end if;
+  if exists (
+    select 1 from public.matches m
+    where m.ended_at is null and m.status not in ('ended', 'passed', 'expired')
+      and ((coalesce(m.user_1_accepted, false) and coalesce(m.user_2_accepted, false))
+        or m.expires_at is null or m.expires_at >= pg_catalog.clock_timestamp())
+      and ((m.user_1_id = p_picker_id and m.user_2_id = p_candidate_id)
+        or (m.user_1_id = p_candidate_id and m.user_2_id = p_picker_id))
+  ) then return null; end if;
+  if exists (
+    select 1 from public.match_history h
+    where h.user_a_id = least(p_picker_id, p_candidate_id)
+      and h.user_b_id = greatest(p_picker_id, p_candidate_id)
+  ) then return null; end if;
+  insert into public.matches (user_1_id, user_2_id, compatibility_score, status, expires_at)
+  values (p_picker_id, p_candidate_id, greatest(0, least(100, coalesce(p_compatibility_score, 0))), 'pending', p_expires_at)
+  returning id into v_match_id;
+  update public.users set status = 'matched', last_matched_at = pg_catalog.clock_timestamp()
+    where id in (p_picker_id, p_candidate_id);
+  return v_match_id;
+end;
+$function$;
+create or replace function public.sync_match_rosters(p_user_ids uuid[], p_max_connections integer)
+returns integer language plpgsql security invoker set search_path = '' as $function$
+declare v_user_ids_text text[]; v_saturated_ids text[]; v_rows integer;
+begin
+  if p_user_ids is null or cardinality(p_user_ids) = 0 or cardinality(p_user_ids) > 10
+    or p_max_connections is null or p_max_connections < 1 or p_max_connections > 10 then return 0; end if;
+  select coalesce(array_agg(distinct participant_id::text), '{}'::text[]) into v_user_ids_text
+    from unnest(p_user_ids) as participants(participant_id);
+  select coalesce(array_agg(participant_id::text), '{}'::text[]) into v_saturated_ids
+    from unnest(p_user_ids) as participants(participant_id)
+    where (select count(*) from public.matches m
+      where m.ended_at is null and m.status not in ('ended', 'passed', 'expired')
+        and ((coalesce(m.user_1_accepted, false) and coalesce(m.user_2_accepted, false))
+          or m.expires_at is null or m.expires_at >= pg_catalog.clock_timestamp())
+        and (m.user_1_id = participant_id or m.user_2_id = participant_id)) >= p_max_connections;
+  update public.users u set roster_snapshot = array(
+      select candidate_id from unnest(coalesce(u.roster_snapshot, '{}'::text[])) as roster(candidate_id)
+      where not ((u.id = any(p_user_ids) and candidate_id = any(v_user_ids_text))
+        or candidate_id = any(v_saturated_ids))), roster_refreshed_at = null
+    where u.id = any(p_user_ids) or coalesce(u.roster_snapshot, '{}'::text[]) && v_saturated_ids;
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$function$;
+revoke all on function public.create_capacity_pending_match(uuid, uuid, integer, timestamptz, integer) from public, anon, authenticated;
+revoke all on function public.sync_match_rosters(uuid[], integer) from public, anon, authenticated;
+grant execute on function public.create_capacity_pending_match(uuid, uuid, integer, timestamptz, integer) to service_role;
+grant execute on function public.sync_match_rosters(uuid[], integer) to service_role;
+
+-- ==================== 20260804_monetization_events.sql ====================
+create table if not exists public.monetization_events (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.users(id) on delete cascade,
+  event text not null check (event in ('paywall_viewed', 'checkout_started', 'checkout_failed', 'purchase_completed')),
+  product text not null check (product in ('love_profile', 'friend_pack', 'pro')),
+  surface text not null check (char_length(surface) between 1 and 80),
+  match_id uuid references public.matches(id) on delete set null,
+  amount_cents integer check (amount_cents is null or amount_cents between 0 and 100000),
+  external_event_id text unique check (external_event_id is null or char_length(external_event_id) between 1 and 255),
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists monetization_events_created_idx on public.monetization_events (created_at desc);
+create index if not exists monetization_events_product_event_idx on public.monetization_events (product, event, created_at desc);
+create index if not exists monetization_events_user_idx on public.monetization_events (user_id, created_at desc);
+alter table public.monetization_events enable row level security;
+revoke all on table public.monetization_events from public, anon, authenticated;
+grant all on table public.monetization_events to service_role;
+
+-- ==================== 20260804_matching_v31_ai_coach.sql ====================
+alter table public.matches
+  add column if not exists algorithm_version text not null default 'legacy',
+  add column if not exists match_score_details jsonb not null default '{}'::jsonb;
+create index if not exists matches_algorithm_created_idx on public.matches (algorithm_version, created_at desc);
+create index if not exists matches_user_1_created_idx on public.matches (user_1_id, created_at desc);
+create index if not exists matches_user_2_created_idx on public.matches (user_2_id, created_at desc);
+alter table public.roster_exposures
+  add column if not exists position smallint,
+  add column if not exists score integer,
+  add column if not exists algorithm_version text,
+  add column if not exists reason_codes text[] not null default '{}'::text[],
+  add column if not exists reciprocal_adjustment numeric(4,1) not null default 0,
+  add column if not exists picked_at timestamptz,
+  add column if not exists picked_match_id uuid references public.matches(id) on delete set null;
+create index if not exists roster_exposures_algorithm_shown_idx on public.roster_exposures (algorithm_version, shown_at desc);
+create index if not exists roster_exposures_picked_idx on public.roster_exposures (picked_at desc) where picked_at is not null;
+create table if not exists public.love_ai_coach_cache (
+  match_id uuid not null references public.matches(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  stage text not null check (stage in ('opener', 'wait', 'reply', 'deepen', 'plan')),
+  response jsonb not null,
+  source text not null check (source in ('ai', 'curated')),
+  generated_at timestamptz not null default now(),
+  primary key (match_id, user_id, stage)
+);
+create index if not exists love_ai_coach_generated_idx on public.love_ai_coach_cache (generated_at desc);
+alter table public.love_ai_coach_cache enable row level security;
+revoke all on table public.love_ai_coach_cache from public, anon, authenticated;
+grant all on table public.love_ai_coach_cache to service_role;
+create or replace function public.candidate_reciprocity_stats(p_candidate_ids uuid[], p_since timestamptz)
+returns table (candidate_id uuid, invitations bigint, accepted_invitations bigint, mutual_matches bigint, replied_matches bigint)
+language sql security invoker set search_path = '' as $function$
+  with candidates as (
+    select distinct candidate_id from unnest(p_candidate_ids) as ids(candidate_id)
+    where p_since is not null and cardinality(p_candidate_ids) between 1 and 500
+  ), expanded as (
+    select c.candidate_id, m.id as match_id,
+      case when m.user_1_id = c.candidate_id then coalesce(m.user_1_accepted, false) else coalesce(m.user_2_accepted, false) end as candidate_accepted,
+      case when m.user_1_id = c.candidate_id then coalesce(m.user_2_accepted, false) else coalesce(m.user_1_accepted, false) end as other_accepted
+    from candidates c join public.matches m
+      on (m.user_1_id = c.candidate_id or m.user_2_id = c.candidate_id) and m.created_at >= p_since
+  ), base as (
+    select e.candidate_id,
+      count(*) filter (where e.other_accepted) as invitations,
+      count(*) filter (where e.other_accepted and e.candidate_accepted) as accepted_invitations,
+      count(*) filter (where e.other_accepted and e.candidate_accepted) as mutual_matches
+    from expanded e group by e.candidate_id
+  ), replies as (
+    select e.candidate_id, count(distinct e.match_id) as replied_matches
+    from expanded e join public.messages msg on msg.match_id = e.match_id and msg.sender_id = e.candidate_id
+    where e.other_accepted and e.candidate_accepted group by e.candidate_id
+  )
+  select c.candidate_id, coalesce(b.invitations, 0)::bigint, coalesce(b.accepted_invitations, 0)::bigint,
+    coalesce(b.mutual_matches, 0)::bigint, coalesce(r.replied_matches, 0)::bigint
+  from candidates c left join base b using (candidate_id) left join replies r using (candidate_id);
+$function$;
+revoke all on function public.candidate_reciprocity_stats(uuid[], timestamptz) from public, anon, authenticated;
+grant execute on function public.candidate_reciprocity_stats(uuid[], timestamptz) to service_role;
+
+-- ==================== 20260804_friend_discovery_v1.sql ====================
+-- A short-lived social intent can route into an existing plan, recurring club,
+-- vetted external community, or another person who wants the same thing.
+alter table public.friend_activities
+  add column if not exists metro text,
+  add column if not exists is_test boolean;
+update public.friend_activities a set is_test = coalesce(u.is_test, false)
+from public.users u where a.author_id = u.id and a.is_test is null;
+update public.friend_activities set is_test = false where is_test is null;
+alter table public.friend_activities alter column is_test set default false;
+alter table public.friend_activities alter column is_test set not null;
+create index if not exists friend_activities_realm_metro_live_idx
+  on public.friend_activities (is_test, metro, expires_at, created_at desc);
+alter table public.friend_clubs
+  add column if not exists activity_key text,
+  add column if not exists cadence text not null default 'ongoing',
+  add column if not exists next_meet_at timestamptz,
+  add column if not exists join_mode text not null default 'request',
+  add column if not exists external_url text,
+  add column if not exists last_active_at timestamptz not null default now();
+alter table public.friend_community_links
+  add column if not exists activity_key text,
+  add column if not exists area text,
+  add column if not exists cadence text not null default 'ongoing',
+  add column if not exists audience text,
+  add column if not exists last_verified_at timestamptz,
+  add column if not exists join_count integer not null default 0,
+  add column if not exists last_joined_at timestamptz;
+create table if not exists public.friend_intents (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  activity_key text not null,
+  time_window text not null default 'this_week' check (time_window in ('today','this_week','weekend','ongoing')),
+  role text not null default 'either' check (role in ('join','host','either')),
+  group_size text not null default 'small' check (group_size in ('one','small','group')),
+  note text, activity_id uuid references public.friend_activities(id) on delete set null,
+  metro text, area text, is_test boolean not null default false,
+  status text not null default 'open' check (status in ('open','closed','expired')),
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists friend_intents_one_open_per_user_idx on public.friend_intents (user_id) where status = 'open';
+create index if not exists friend_intents_discovery_idx on public.friend_intents (is_test, metro, activity_key, status, expires_at, created_at desc);
+alter table public.friend_intents add column if not exists activity_id uuid references public.friend_activities(id) on delete set null;
+create table if not exists public.friend_intent_members (
+  intent_id uuid not null references public.friend_intents(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  created_at timestamptz not null default now(), primary key (intent_id, user_id)
+);
+create index if not exists friend_intent_members_user_idx on public.friend_intent_members (user_id, created_at desc);
+create table if not exists public.friend_action_events (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.users(id) on delete cascade,
+  event text not null check (event in ('discovery_viewed','intent_created','intent_joined','intent_closed','community_opened','club_joined','plan_rsvp')),
+  subject_type text, subject_id text, metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists friend_action_events_created_idx on public.friend_action_events (created_at desc);
+create index if not exists friend_action_events_funnel_idx on public.friend_action_events (event, created_at desc);
+create index if not exists friend_action_events_user_idx on public.friend_action_events (user_id, created_at desc);
+create or replace function public.record_friend_community_open(p_link_id uuid)
+returns void language sql security invoker set search_path = '' as $function$
+  update public.friend_community_links set join_count = join_count + 1, last_joined_at = pg_catalog.clock_timestamp()
+  where id = p_link_id and approved = true;
+$function$;
+alter table public.friend_intents enable row level security;
+alter table public.friend_intent_members enable row level security;
+alter table public.friend_action_events enable row level security;
+revoke all on table public.friend_intents, public.friend_intent_members, public.friend_action_events from public, anon, authenticated;
+grant all on table public.friend_intents, public.friend_intent_members, public.friend_action_events to service_role;
+revoke all on function public.record_friend_community_open(uuid) from public, anon, authenticated;
+grant execute on function public.record_friend_community_open(uuid) to service_role;
+
+-- ==================== 20260804_friend_travel_mode.sql ====================
+create table if not exists public.friend_trips (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  origin_metro text, destination_metro text not null, destination_area text,
+  starts_on date not null, ends_on date not null,
+  is_test boolean not null default false,
+  status text not null default 'active' check (status in ('active','cancelled')),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  check (ends_on >= starts_on), check ((ends_on - starts_on) <= 60)
+);
+create unique index if not exists friend_trips_one_active_user_idx on public.friend_trips (user_id) where status = 'active';
+create index if not exists friend_trips_destination_window_idx on public.friend_trips (is_test, destination_metro, status, starts_on, ends_on);
+create index if not exists friend_trips_user_idx on public.friend_trips (user_id, created_at desc);
+alter table public.friend_connections add column if not exists match_metro text;
+alter table public.friend_connections add column if not exists match_context jsonb not null default '{}'::jsonb;
+alter table public.friend_connections add column if not exists match_expires_at timestamptz;
+create index if not exists friend_connections_match_metro_idx on public.friend_connections (match_metro, created_at desc);
+create index if not exists friend_connections_match_expiry_idx on public.friend_connections (match_expires_at) where status = 'pending' and match_expires_at is not null;
+alter table public.friend_intents add column if not exists trip_id uuid references public.friend_trips(id) on delete set null;
+alter table public.friend_trips enable row level security;
+revoke all on table public.friend_trips from public, anon, authenticated;
+grant all on table public.friend_trips to service_role;
+
+-- ==================== 20260804_realm_isolation.sql ====================
+-- Enforce the test/real realm boundary below the application layer. Invalid
+-- cross-realm Friend rows are retired before the write guards are installed.
+update public.friend_connections as connection
+set status = 'declined', circle_id = null, match_expires_at = null
+from public.users as first_user, public.users as second_user
+where first_user.id = connection.user_a_id
+  and second_user.id = connection.user_b_id
+  and coalesce(first_user.is_test, false) is distinct from coalesce(second_user.is_test, false)
+  and (connection.status <> 'declined' or connection.circle_id is not null);
+with mixed_circles as (
+  select member.circle_id from public.friend_circle_members as member
+  join public.users as circle_user on circle_user.id = member.user_id
+  where member.left_at is null group by member.circle_id
+  having bool_or(coalesce(circle_user.is_test, false))
+     and bool_or(not coalesce(circle_user.is_test, false))
+)
+update public.friend_circle_members as member
+set left_at = pg_catalog.clock_timestamp()
+where member.left_at is null and member.circle_id in (select circle_id from mixed_circles);
+create or replace function public.enforce_match_realm()
+returns trigger language plpgsql security invoker set search_path = '' as $function$
+declare realm_count integer; user_count integer;
+begin
+  select count(*), count(distinct coalesce(app_user.is_test, false)) into user_count, realm_count
+  from public.users as app_user where app_user.id in (new.user_1_id, new.user_2_id);
+  if user_count <> 2 or realm_count <> 1 then
+    raise exception 'cross-realm Love matches are not allowed' using errcode = '23514';
+  end if;
+  return new;
+end;
+$function$;
+drop trigger if exists matches_same_realm on public.matches;
+create trigger matches_same_realm before insert or update of user_1_id, user_2_id on public.matches
+for each row execute function public.enforce_match_realm();
+create or replace function public.enforce_friend_connection_realm()
+returns trigger language plpgsql security invoker set search_path = '' as $function$
+declare realm_count integer; user_count integer;
+begin
+  select count(*), count(distinct coalesce(app_user.is_test, false)) into user_count, realm_count
+  from public.users as app_user where app_user.id in (new.user_a_id, new.user_b_id);
+  if user_count <> 2 or realm_count <> 1 then
+    raise exception 'cross-realm Friend connections are not allowed' using errcode = '23514';
+  end if;
+  return new;
+end;
+$function$;
+drop trigger if exists friend_connections_same_realm on public.friend_connections;
+create trigger friend_connections_same_realm before insert or update of user_a_id, user_b_id on public.friend_connections
+for each row execute function public.enforce_friend_connection_realm();
+revoke all on function public.enforce_match_realm() from public, anon, authenticated;
+revoke all on function public.enforce_friend_connection_realm() from public, anon, authenticated;

@@ -54,7 +54,7 @@ test('test seeder owns a canonical namespace and stamps Scene realm fields', () 
 });
 
 test('database migration rejects cross-realm Love and Friend pairs', () => {
-  const migration = source('supabase/migrations/20260804_realm_isolation.sql');
+  const migration = source('supabase/legacy-migrations/20260804_realm_isolation.sql');
   assert.match(migration, /create trigger matches_same_realm/);
   assert.match(migration, /create trigger friend_connections_same_realm/);
   assert.match(migration, /coalesce\(first_user\.is_test, false\) is distinct from coalesce\(second_user\.is_test, false\)/);
