@@ -92,19 +92,57 @@ export function mutualSelectionWeight<T>(
   return compatibilityWeight(edge.score) * favoriteMultiplier;
 }
 
+export function mutualWinnerSelectionPool<T>(
+  pool: ShortlistDecisionEdge<T>[],
+  remainingSlots: number,
+): ShortlistDecisionEdge<T>[] {
+  if (remainingSlots <= 1) return pool;
+  const keepsAnotherPairAvailable = pool.filter((edge) => {
+    const used = new Set([keyOf(edge.a), keyOf(edge.b)]);
+    return pool.some((other) => other.id !== edge.id && !used.has(keyOf(other.a)) && !used.has(keyOf(other.b)));
+  });
+  return keepsAnotherPairAvailable.length ? keepsAnotherPairAvailable : pool;
+}
+
 /** Pick one dinner pair only from mutual yes edges. */
 export function selectMutualDinnerPair<T>(
   candidates: ShortlistDecisionEdge<T>[],
   compatibilityWeight: (score: number) => number,
   random = Math.random,
 ): ShortlistDecisionEdge<T> | null {
-  const mutual = candidates.filter((edge) => edge.aAccepted === true && edge.bAccepted === true);
-  if (!mutual.length) return null;
-  const total = mutual.reduce((sum, edge) => sum + mutualSelectionWeight(edge, compatibilityWeight), 0);
-  let cursor = Math.max(0, Math.min(0.999999999, random())) * total;
-  for (const edge of mutual) {
-    cursor -= mutualSelectionWeight(edge, compatibilityWeight);
-    if (cursor <= 0) return edge;
+  return selectMutualDinnerPairs(candidates, 1, compatibilityWeight, random)[0] ?? null;
+}
+
+/**
+ * Select up to `maxPairs` mutual dinner pairs without replacement. Once a pair
+ * wins, every edge containing either participant is removed so nobody can win
+ * two dinners in the same experiment.
+ */
+export function selectMutualDinnerPairs<T>(
+  candidates: ShortlistDecisionEdge<T>[],
+  maxPairs: number,
+  compatibilityWeight: (score: number) => number,
+  random = Math.random,
+): ShortlistDecisionEdge<T>[] {
+  let pool = candidates.filter((edge) => edge.aAccepted === true && edge.bAccepted === true);
+  const selected: ShortlistDecisionEdge<T>[] = [];
+  while (selected.length < Math.max(0, maxPairs) && pool.length) {
+    // If two disjoint mutual pairs exist, do not let the first random choice
+    // consume the only participant configuration that makes two prizes possible.
+    const selectionPool = mutualWinnerSelectionPool(pool, maxPairs - selected.length);
+    const total = selectionPool.reduce((sum, edge) => sum + mutualSelectionWeight(edge, compatibilityWeight), 0);
+    let cursor = Math.max(0, Math.min(0.999999999, random())) * total;
+    let winner = selectionPool[selectionPool.length - 1];
+    for (const edge of selectionPool) {
+      cursor -= mutualSelectionWeight(edge, compatibilityWeight);
+      if (cursor <= 0) {
+        winner = edge;
+        break;
+      }
+    }
+    selected.push(winner);
+    const used = new Set([keyOf(winner.a), keyOf(winner.b)]);
+    pool = pool.filter((edge) => !used.has(keyOf(edge.a)) && !used.has(keyOf(edge.b)));
   }
-  return mutual[mutual.length - 1];
+  return selected;
 }

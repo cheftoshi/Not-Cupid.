@@ -31,7 +31,7 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
     { label: 'Obsessions', items: user.hobbies || [], variant: 'lav' },
   ];
 
-  const seekingLabel = user.seeking === 'm' ? 'men' : user.seeking === 'f' ? 'women' : user.seeking === 'both' ? 'anyone' : '—';
+  const seekingLabel = user.seeking === 'm' ? 'men' : user.seeking === 'f' ? 'women' : (user.seeking === 'b' || user.seeking === 'both') ? 'anyone' : '—';
   const genderLabel = user.gender === 'm' ? 'man' : user.gender === 'f' ? 'woman' : user.gender === 'nb' ? 'non-binary' : user.gender === 'o' ? 'other' : '—';
 
   // HEXACO dimension bars — raw scores are 0–16 (4 questions × 4pts). Show as

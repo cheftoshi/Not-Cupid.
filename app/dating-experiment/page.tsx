@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { RAFFLE, raffleEligible } from '@/lib/raffle';
+import { RAFFLE, raffleEligible, raffleEntriesOpen } from '@/lib/raffle';
 import DatingExperimentClient from '@/app/raffle/raffle-client';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,7 @@ export default async function DatingExperimentPage() {
     quiz: !!user.archetype && typeof user.score_honesty === 'number',
     bio: !!(user.bio || '').trim(),
     gender: user.gender || '',
-    seeking: user.seeking || '',
+    seeking: user.seeking === 'both' ? 'b' : (user.seeking || ''),
     age: user.age ?? null,
     ageMin: user.age_min ?? 22,
     ageMax: user.age_max ?? 38,
@@ -42,7 +42,8 @@ export default async function DatingExperimentPage() {
         videoMaxSeconds: RAFFLE.videoMaxSeconds,
         videoMaxBytes: RAFFLE.videoMaxBytes,
         shortlistMaxOptions: RAFFLE.shortlistMaxOptions,
-        entriesOpen: RAFFLE.entriesOpen,
+        winnerPairCount: RAFFLE.winnerPairCount,
+        entriesOpen: raffleEntriesOpen(),
         statusLabel: RAFFLE.statusLabel,
       }}
     />

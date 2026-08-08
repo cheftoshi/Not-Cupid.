@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleEligible, raffleClosed } from '@/lib/raffle';
+import { RAFFLE, raffleEligible, raffleClosed, raffleEntriesOpen } from '@/lib/raffle';
 import { signPrivateVideoReference } from '@/lib/private-media';
 
 export const dynamic = 'force-dynamic';
@@ -123,10 +123,11 @@ export async function GET() {
     event: {
       series: RAFFLE.series, city: RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: RAFFLE.budget,
       tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: RAFFLE.cap, entryCloseLabel: RAFFLE.entryCloseLabel,
-      statusLabel: RAFFLE.statusLabel, entriesOpen: RAFFLE.entriesOpen,
+      statusLabel: RAFFLE.statusLabel, entriesOpen: raffleEntriesOpen(),
       radiusMiles: RAFFLE.radiusMiles, centerZip: RAFFLE.centerZip, termsVersion: RAFFLE.termsVersion,
       videoMinSeconds: RAFFLE.videoMinSeconds, videoMaxSeconds: RAFFLE.videoMaxSeconds, videoMaxBytes: RAFFLE.videoMaxBytes,
       shortlistMaxOptions: RAFFLE.shortlistMaxOptions,
+      winnerPairCount: RAFFLE.winnerPairCount,
       spotsLeft, closed: raffleClosed() || spotsLeft === 0,
     },
     eligible, hasProfile, entered, entry, shortlist, shortlistRound, draw, other,

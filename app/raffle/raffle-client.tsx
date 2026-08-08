@@ -18,6 +18,7 @@ type Event = {
   videoMaxSeconds: number;
   videoMaxBytes: number;
   shortlistMaxOptions?: number;
+  winnerPairCount?: number;
   entriesOpen?: boolean;
   statusLabel?: string;
 };
@@ -27,8 +28,8 @@ const ORANGE = '#ff6a1f';
 const ORANGE_DEEP = '#d2530f';
 const BLUE = '#2563ff';
 const GREEN = '#2d7a4f';
-const GENDERS = [['m', 'a man'], ['f', 'a woman'], ['nb', 'non-binary']];
-const SEEKING = [['f', 'women'], ['m', 'men'], ['both', 'anyone']];
+const GENDERS = [['m', 'a man'], ['f', 'a woman'], ['nb', 'non-binary / another identity']];
+const SEEKING = [['f', 'women'], ['m', 'men'], ['b', 'anyone']];
 
 // The public Dating Experiment flow. Legacy route/API names stay internal.
 export default function RaffleClient({ firstName, eligible, profile, event }: {
@@ -158,7 +159,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
         <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
-          up to two compatibility-led options, private mutual choices, and one dinner up to <b>${ev.budget}*</b>. <b>{ev.dateLabel}</b>.
+          up to two compatibility-led options, private mutual choices, and up to {ev.winnerPairCount || 2} dinner pairs covered to <b>${ev.budget} each*</b>. <b>{ev.dateLabel}</b>.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', margin: '-0.85rem 0 1.25rem' }}>
           <Link href="/dating-experiment/faq" style={infoLink}>how it works + FAQ</Link>
@@ -370,7 +371,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             </button>
             {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'answer the three quick questions' : !videoUrl ? 'upload your intro video' : 'confirm the terms and safety notices'}</p>}
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
-              <b>*</b> Free entry. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Up to two reciprocal options; only mutual yes pairs enter the final compatibility-weighted dinner selection. Odds depend on the qualified pool and private choices. Dinner value up to ${ev.budget}. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Experiment Terms</Link>.
+              <b>*</b> No purchase necessary. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Up to two reciprocal options; only mutual yes pairs enter the final compatibility-weighted selection. Up to {ev.winnerPairCount || 2} disjoint pairs; ${ev.budget} maximum value per dinner. Odds depend on the qualified pool and private choices. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
             </p>
           </div>
         )}

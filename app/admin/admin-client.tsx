@@ -785,7 +785,7 @@ export default function AdminClient() {
                 setSeedAccounts(d.accounts || []);
               }}>🧪 Seed full test world + login links</button>
               <button className={`${s.btn} ${s.btnDeep}`} onClick={async () => {
-                if (!confirm('Run the Dating Experiment V2 shortlist now? This creates reciprocal private options for qualified entrants and sends participating users a push notification.')) return;
+                if (!confirm('Run the Dating Experiment shortlist now? This creates reciprocal private options for qualified entrants, can ultimately select up to two disjoint dinner pairs, and sends participating users a push notification.')) return;
                 const res = await fetch('/api/admin/raffle-draw', { method: 'POST' });
                 const d = await parseResponse<any>(res);
                 if (!d.ok) { alert('Failed: ' + (d.error || d.message || 'unknown')); return; }

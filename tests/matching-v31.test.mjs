@@ -4,6 +4,7 @@ import {
   MATCHING_ALGORITHM_VERSION,
   compatibilityBreakdown,
   hasHardDealbreakerConflict,
+  isGenderMatch,
   rankCandidates,
 } from '../lib/matching.ts';
 import { reciprocalMomentumAdjustment } from '../lib/reciprocity.ts';
@@ -26,6 +27,13 @@ test('V3.1 blocks only explicit kids dealbreakers', () => {
     { ...base, values_profile: { kids: 'maybe' } },
     { ...base, values_profile: { kids: 'no' } },
   ), false);
+});
+
+test('reciprocal gender preferences cover straight, same-gender, anyone, and non-binary pairings', () => {
+  assert.equal(isGenderMatch({ gender: 'f', seeking: 'm' }, { gender: 'm', seeking: 'f' }), true);
+  assert.equal(isGenderMatch({ gender: 'f', seeking: 'f' }, { gender: 'f', seeking: 'f' }), true);
+  assert.equal(isGenderMatch({ gender: 'nb', seeking: 'b' }, { gender: 'm', seeking: 'both' }), true);
+  assert.equal(isGenderMatch({ gender: 'nb', seeking: 'f' }, { gender: 'm', seeking: 'b' }), false);
 });
 
 test('rankCandidates never returns a hard-dealbreaker conflict', () => {

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { RAFFLE } from '@/lib/raffle';
+import { RAFFLE, raffleEntriesOpen } from '@/lib/raffle';
 
 export const dynamic = 'force-static';
 
@@ -17,7 +17,7 @@ const STEPS = [
   ['1', 'Join for free', `Complete your profile, answer three quick questions, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello video.`],
   ['2', 'Meet up to two', 'The system prioritizes broad coverage, then gives each qualified participant up to two strong reciprocal options.'],
   ['3', 'Choose privately', `You have ${RAFFLE.respondHours} hours to say yes to either, both, or neither—and optionally favorite one. Every choice stays sealed.`],
-  ['4', 'Mutual wins', `Only mutual yes pairs qualify. One is selected for a Boston dinner covered up to $${RAFFLE.budget}.`],
+  ['4', 'Mutual wins', `Only mutual yes pairs qualify. Up to ${RAFFLE.winnerPairCount} disjoint pairs are selected, with each dinner covered up to $${RAFFLE.budget}.`],
 ];
 
 const FAQS = [
@@ -35,7 +35,11 @@ const FAQS = [
   },
   {
     q: 'How is a pair selected?',
-    a: `The system checks mutual preferences, local eligibility, prior pairings, and a minimum compatibility score. It first tries to give as many people as possible one strong reciprocal option, then fills second slots where the pool supports it. You may say yes to one, both, or neither. Only mutual yes pairs enter the final selection. Compatibility gets a limited 1×–3× weight, and favorites add a small disclosed boost.`,
+    a: `The system checks mutual preferences, local eligibility, prior pairings, and a minimum compatibility score. It first tries to give as many people as possible one strong reciprocal option, then fills second slots where the pool supports it. You may say yes to one, both, or neither. Only mutual yes pairs enter the final selection. Compatibility gets a limited 1×–3× weight, and favorites add a small disclosed boost. The system selects up to ${RAFFLE.winnerPairCount} pairs without replacement, so nobody can win twice.`,
+  },
+  {
+    q: 'Can all genders and orientations participate?',
+    a: 'Yes. Participants can identify as a man, woman, or non-binary / another identity and can seek men, women, or anyone. The system requires reciprocal preferences, so it supports different-gender, same-gender, bisexual/pansexual, and non-binary-inclusive pairings. Everyone receives the same shortlist cap, and actual options depend on the compatible local pool.',
   },
   {
     q: 'Do women and men receive different numbers of options?',
@@ -55,15 +59,15 @@ const FAQS = [
   },
   {
     q: 'What do we see before deciding?',
-    a: `You privately see each shortlist option’s first name, age, photos, profile context, short experiment answer, and intro video. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the final mutual pair is selected.`,
+    a: `You privately see each shortlist option’s first name, age, photos, profile context, short experiment answer, and intro video. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the winning mutual pairs are selected.`,
   },
   {
     q: 'What if one person passes or does not respond?',
     a: `That offer cannot become a mutual pair. NotCupid does not tell either person who passed or failed to respond. If the round produces no mutual pair, eligible participants may receive another shortlist, up to ${RAFFLE.maxAttempts} shortlist rounds in the experiment.`,
   },
   {
-    q: `What does the $${RAFFLE.budget} dinner cover?`,
-    a: `NotCupid plans to cover one dinner for the mutually accepting pair up to $${RAFFLE.budget} total, including ordinary tax and gratuity within that limit. Alcohol, transportation, and spending above the limit are not included. There is no cash alternative.`,
+    q: `What do the $${RAFFLE.budget} dinner prizes cover?`,
+    a: `Up to ${RAFFLE.winnerPairCount} winning pairs can each receive one dinner valued up to $${RAFFLE.budget}, for a maximum aggregate prize value of $${RAFFLE.budget * RAFFLE.winnerPairCount}. Ordinary tax and gratuity count toward each limit. Alcohol, transportation, and spending above the limit are not included. There is no cash alternative.`,
   },
   {
     q: 'Does NotCupid background-check participants?',
@@ -71,7 +75,7 @@ const FAQS = [
   },
   {
     q: 'How will I know if I am selected?',
-    a: 'The app can send an opted-in push notification when your shortlist is ready and when a final mutual dinner pair is selected. Participants are responsible for checking the app during the response window. No promotional email campaign is part of joining.',
+    a: 'The app can send an opted-in push notification when your shortlist is ready and when winning mutual dinner pairs are selected. Participants are responsible for checking the app during the response window. No promotional email campaign is part of joining.',
   },
 ];
 
@@ -89,10 +93,10 @@ export default function DatingExperimentFaqPage() {
         <div style={{ marginTop: '2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>Dinner on Us · Boston</div>
         <h1 style={{ margin: '0.45rem 0 0.65rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.45rem, 9vw, 4rem)', lineHeight: 1 }}>the simple plan.</h1>
         <p style={{ margin: 0, maxWidth: 620, color: 'var(--h-text-dim)', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '1.05rem', lineHeight: 1.55 }}>
-          Four steps, two private decisions, one compatibility-led Boston dinner. Here’s exactly how the experiment is intended to work.
+          Four steps, two private decisions, and up to two compatibility-led Boston dinner pairs. Here’s exactly how the experiment is intended to work.
         </p>
 
-        {!RAFFLE.entriesOpen && (
+        {!raffleEntriesOpen() && (
           <div style={{ marginTop: '1.25rem', padding: '0.85rem 1rem', border: '1px solid rgba(255,106,31,0.35)', borderRadius: 12, background: 'rgba(255,106,31,0.08)', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.5 }}>
             <b style={{ color: 'var(--h-text)' }}>Quiet mode:</b> entries and video uploads are paused. The public date and restaurant are still TBD.
           </div>

@@ -36,7 +36,7 @@ export default function RaffleCard() {
   } else if (ev.closed) {
     head = 'experiment entries are closed.'; sub = 'watch here for the next dinner round.'; label = '';
   } else {
-    head = ev.tagline; sub = `dinner up to $${ev.budget}* · ${ev.dateLabel} · ${ev.spotsLeft} of ${ev.cap} spots left.`; label = 'join the experiment →'; fine = true;
+    head = ev.tagline; sub = `up to ${ev.winnerPairCount || 2} dinner pairs · $${ev.budget} each* · ${ev.dateLabel} · ${ev.spotsLeft} of ${ev.cap} spots left.`; label = 'join the experiment →'; fine = true;
   }
 
   return (
@@ -49,13 +49,13 @@ export default function RaffleCard() {
       )}
       {fine && (
         <div style={{ marginTop: '0.6rem', fontSize: '0.62rem', color: 'var(--h-text-faint)', lineHeight: 1.4 }}>
-          * Free entry · 21+ · compatibility-weighted selection
+          * No purchase necessary · 21+ · compatibility-weighted selection
         </div>
       )}
       <div style={{ marginTop: fine ? '0.3rem' : '0.7rem', fontSize: '0.56rem', letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace" }}>
         <Link href="/dating-experiment/faq" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>how it works + FAQ</Link>
         <span style={{ color: 'var(--h-text-faint)' }}> · </span>
-        <Link href="/dating-experiment/terms" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>terms</Link>
+        <Link href="/dating-experiment/terms" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>official rules</Link>
       </div>
     </div>
   );

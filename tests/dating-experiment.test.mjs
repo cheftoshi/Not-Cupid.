@@ -5,6 +5,7 @@ import {
   buildCoverageFirstShortlist,
   mutualSelectionWeight,
   selectMutualDinnerPair,
+  selectMutualDinnerPairs,
 } from '../lib/experiment-shortlist.ts';
 
 const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.url), 'utf8');
@@ -12,6 +13,7 @@ const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.ur
 test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
+  assert.match(experimentSource, /winnerPairCount:\s*2/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
   assert.match(experimentSource, /radiusMiles:\s*20/);
   assert.doesNotMatch(experimentSource, /proEntries/);
@@ -53,6 +55,28 @@ test('V2 dinner selection uses only mutual yes pairs and bounded favorite boosts
   assert.equal(mutualSelectionWeight(edges[1], () => 2), 3);
 });
 
+test('V3 selects up to two mutual dinner pairs without reusing a participant', () => {
+  const edges = [
+    { id: 'ab', a: 'a', b: 'b', score: 90, aAccepted: true, bAccepted: true },
+    { id: 'ac', a: 'a', b: 'c', score: 89, aAccepted: true, bAccepted: true },
+    { id: 'cd', a: 'c', b: 'd', score: 88, aAccepted: true, bAccepted: true },
+    { id: 'no', a: 'e', b: 'f', score: 100, aAccepted: true, bAccepted: false },
+  ];
+  const selected = selectMutualDinnerPairs(edges, 2, () => 1, () => 0);
+  assert.deepEqual(selected.map((edge) => edge.id), ['ab', 'cd']);
+  assert.equal(new Set(selected.flatMap((edge) => [edge.a, edge.b])).size, 4);
+});
+
+test('V3 preserves a two-pair outcome when a valid disjoint configuration exists', () => {
+  const edges = [
+    { id: 'blocking', a: 'a', b: 'b', score: 100, aAccepted: true, bAccepted: true },
+    { id: 'left', a: 'a', b: 'c', score: 80, aAccepted: true, bAccepted: true },
+    { id: 'right', a: 'b', b: 'd', score: 80, aAccepted: true, bAccepted: true },
+  ];
+  const selected = selectMutualDinnerPairs(edges, 2, () => 1, () => 0);
+  assert.deepEqual(selected.map((edge) => edge.id), ['left', 'right']);
+});
+
 test('entry requires versioned, separate consent records', () => {
   const source = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
   for (const required of [
@@ -78,6 +102,8 @@ test('experiment has a quiet-mode FAQ beside the public flow', () => {
   assert.match(faq, /short-lived links/);
   assert.match(flow, /\/dating-experiment\/faq/);
   assert.match(faq, /same cap of up to/);
+  assert.match(faq, /maximum aggregate prize value/);
+  assert.match(flow, /No purchase necessary/);
 });
 
 test('V2 decisions stay service-only and test accounts are rejected by the database', () => {
@@ -91,4 +117,22 @@ test('V2 decisions stay service-only and test accounts are rejected by the datab
   assert.match(sealingMigration, /revoke all on function public\.submit_dating_experiment_shortlist_choices[\s\S]*from public, anon, authenticated/i);
   assert.match(sealingMigration, /for update/i);
   assert.match(responseRoute, /rpc\([\s\S]*submit_dating_experiment_shortlist_choices/i);
+});
+
+test('V3 database guardrails enforce two disjoint winner slots', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260808170515_dating_experiment_two_winning_pairs.sql', import.meta.url), 'utf8');
+  assert.match(migration, /winner_slot is null or winner_slot between 1 and 2/i);
+  assert.match(migration, /participant cannot win twice/i);
+  assert.match(migration, /limited to two winning pairs/i);
+  assert.match(migration, /revoke all on function public\.enforce_dating_experiment_winner_capacity[\s\S]*from public, anon, authenticated/i);
+});
+
+test('public entry remains fail-closed until every launch prerequisite is approved', () => {
+  const drawSource = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  for (const gate of ['prizeFundingConfirmed: false', 'venueConfirmed: false', 'sponsorDetailsConfirmed: false', 'legalReviewApproved: false']) {
+    assert.match(experimentSource, new RegExp(gate));
+  }
+  assert.match(experimentSource, /raffleLaunchBlockers\(\)\.length === 0/);
+  assert.match(drawSource, /if \(!raffleEntriesOpen\(\)\) return \{ ok: true, entrants: 0, drawn: 0, state: 'paused' \}/);
+  assert.doesNotMatch(drawSource, /!raffleEntriesOpen\(\) && !force/);
 });

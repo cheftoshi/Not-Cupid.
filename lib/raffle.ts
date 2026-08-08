@@ -22,9 +22,10 @@ export const RAFFLE = {
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // at most two sealed shortlist rounds per entrant
   shortlistMaxOptions: 2,
+  winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v2-2026-08-08',
-  algorithmVersion: 'dating-experiment-mutual-shortlist-v2',
+  termsVersion: 'boston-v3-2026-08-08',
+  algorithmVersion: 'dating-experiment-two-pair-v3',
   minimumPairScore: 55,
   videoMinSeconds: 5,
   videoMaxSeconds: 15,
@@ -35,14 +36,35 @@ export const RAFFLE = {
   dateLabel: 'TBD',
   drawLabel: 'TBD',
   budget: 200,
+  // These readiness acknowledgments stay false until the operator confirms the
+  // $400 maximum funding, venue, sponsor details, and counsel-reviewed rules.
+  prizeFundingConfirmed: false,
+  venueConfirmed: false,
+  sponsorDetailsConfirmed: false,
+  legalReviewApproved: false,
   // The actual venue — revealed ONLY to a winning pair (set on the draw at mutual
   // accept; never in the public status payload). Kept secret until someone wins.
   restaurant: 'The Berkeley · 154 Berkeley Street, Back Bay, Boston — we’ll confirm the time with you.',
-  tagline: 'One compatible Boston pair. Dinner is on us.',
+  tagline: 'Two compatible Boston pairs. Dinner is on us.',
 };
 
+export function raffleLaunchBlockers(): string[] {
+  const blockers: string[] = [];
+  if (!RAFFLE.prizeFundingConfirmed) blockers.push(`confirm funding for up to $${RAFFLE.budget * RAFFLE.winnerPairCount} in dinner prizes`);
+  if (!RAFFLE.venueConfirmed) blockers.push('confirm the restaurant and fulfillment plan');
+  if (!RAFFLE.sponsorDetailsConfirmed) blockers.push('confirm the Sponsor legal identity and public mailing address');
+  if (!RAFFLE.legalReviewApproved) blockers.push('complete Massachusetts counsel review of the Official Rules');
+  if ([RAFFLE.entryCloseLabel, RAFFLE.dateLabel, RAFFLE.drawLabel].some((label) => !label || label === 'TBD')) blockers.push('set the public entry, draw, and dinner dates');
+  if (new Date(RAFFLE.entryClose).getUTCFullYear() >= 2099 || new Date(RAFFLE.happensAt).getUTCFullYear() >= 2099) blockers.push('replace placeholder server deadlines');
+  return blockers;
+}
+
+export function raffleEntriesOpen(): boolean {
+  return RAFFLE.entriesOpen && raffleLaunchBlockers().length === 0;
+}
+
 export function raffleClosed(): boolean {
-  return !RAFFLE.entriesOpen || Date.now() > new Date(RAFFLE.entryClose).getTime();
+  return !raffleEntriesOpen() || Date.now() > new Date(RAFFLE.entryClose).getTime();
 }
 
 // Keep the first experiment in one jurisdiction and within a practical trip of

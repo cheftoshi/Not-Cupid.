@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleEligible, raffleClosed } from '@/lib/raffle';
+import { RAFFLE, raffleEligible, raffleClosed, raffleEntriesOpen } from '@/lib/raffle';
 import { drawRaffle } from '@/lib/raffle-draw';
 import { isManagedStorageUrl } from '@/lib/request-security';
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.is_test === true) return NextResponse.json({ error: 'Test accounts cannot enter the live Dating Experiment.' }, { status: 403 });
-  if (!RAFFLE.entriesOpen) return NextResponse.json({ error: 'Entries are paused while we set up the next round.' }, { status: 403 });
+  if (!raffleEntriesOpen()) return NextResponse.json({ error: 'Entries are paused while we finish the public-launch checklist.' }, { status: 403 });
   if (!raffleEligible(user)) return NextResponse.json({ error: `This experiment is for Massachusetts residents within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}.` }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
@@ -30,14 +30,21 @@ export async function POST(req: NextRequest) {
   // Match basics from the form — set them on the real profile (the matcher reads
   // user.gender/seeking/age) so they're not raffle-only.
   const gender = ['m', 'f', 'nb'].includes(body.gender) ? body.gender : null;
-  const seeking = ['m', 'f', 'both'].includes(body.seeking) ? body.seeking : null;
+  const rawSeeking = ['m', 'f', 'b', 'both'].includes(body.seeking) ? body.seeking : null;
+  const seeking = rawSeeking === 'both' ? 'b' : rawSeeking;
   const ageMin = Number(body.ageMin), ageMax = Number(body.ageMax);
   const ageOk = ageMin >= 18 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   const profilePatch: any = {};
   if (gender) profilePatch.gender = gender;
   if (seeking) profilePatch.seeking = seeking;
   if (ageOk) { profilePatch.age_min = ageMin; profilePatch.age_max = ageMax; }
-  if (Object.keys(profilePatch).length) await supabaseAdmin.from('users').update(profilePatch).eq('id', user.id);
+  if (Object.keys(profilePatch).length) {
+    const { error: profileError } = await supabaseAdmin.from('users').update(profilePatch).eq('id', user.id);
+    if (profileError) {
+      console.error('[dating-experiment-profile]', profileError);
+      return NextResponse.json({ error: 'Could not save your match preferences.' }, { status: 500 });
+    }
+  }
 
   // "Established cred" gate — pull from the (now-updated) profile.
   const g = gender || user.gender, sk = seeking || user.seeking;

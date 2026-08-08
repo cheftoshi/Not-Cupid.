@@ -329,8 +329,11 @@ export function thresholdFor(
 // roster (/api/match/roster → ranked.slice(0,N)), so they always agree.
 
 export function isGenderMatch(user: any, candidate: any): boolean {
-  const userWantsCand = user.seeking === 'b' || user.seeking === candidate.gender;
-  const candWantsUser = candidate.seeking === 'b' || candidate.seeking === user.gender;
+  // `b` is canonical for "anyone". Accept the historical `both` value too so
+  // older profiles and experiment entries cannot silently lose valid matches.
+  const wantsAnyone = (seeking: unknown) => seeking === 'b' || seeking === 'both';
+  const userWantsCand = wantsAnyone(user.seeking) || user.seeking === candidate.gender;
+  const candWantsUser = wantsAnyone(candidate.seeking) || candidate.seeking === user.gender;
   return userWantsCand && candWantsUser;
 }
 
