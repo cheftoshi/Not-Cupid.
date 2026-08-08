@@ -878,7 +878,8 @@ export default function AdminClient() {
                     <b>Current count:</b> {dry.wouldSend} would receive it · {dry.eligibleActiveBostonUsers} eligible Boston users ({dry.activeWindowDays}d activity) · {dry.excludedDormant || 0} dormant excluded · {dry.alreadySent} already handled<br />
                     <b>Variants:</b> {b.live || 0} live-match · {b.ready || 0} experiment-ready · {b.profile || 0} need profile work<br /><br />
                     <b>Ready CTA:</b> {links.primaryReady}<br />
-                    <b>Profile CTA:</b> {links.primaryNeedsProfile}<br />
+                    <b>Incomplete-profile CTA:</b> {links.primaryNeedsProfile}<br />
+                    <b>Incomplete-profile fix link:</b> {links.profileFix}<br />
                     <b>Love Line:</b> {links.loveLine}<br />
                     <b>FAQ:</b> {links.faq}<br />
                     <b>Rules:</b> {links.officialRules}<br />

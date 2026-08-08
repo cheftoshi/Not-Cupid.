@@ -18,7 +18,7 @@ const USER_ID = '11111111-1111-4111-8111-111111111111';
 test('Dating Experiment comeback links are campaign-bound and destination-bound', () => {
   const token = loveRelaunchToken(USER_ID, 'dashboard', Date.now() + 60_000);
   assert.equal(LOVE_RELAUNCH_CAMPAIGN, 'dating_experiment_comeback_aug_2026');
-  assert.equal(LOVE_RELAUNCH_APPROVAL_VERSION, 'dating-experiment-comeback-v1-2026-08-08');
+  assert.equal(LOVE_RELAUNCH_APPROVAL_VERSION, 'dating-experiment-comeback-v2-2026-08-08');
   assert.equal(LOVE_RELAUNCH_SUBJECT, 'Boston: want to try the NotCupid Dating Experiment?');
   assert.equal(verifyLoveRelaunchToken(USER_ID, 'dashboard', token), true);
   assert.equal(verifyLoveRelaunchToken(USER_ID, 'profile', token), false);
@@ -47,6 +47,10 @@ test('Dating Experiment email stays preview-only until approval and launch gates
   assert.match(route, /No purchase necessary/);
   assert.match(route, /Only people who choose each other enter the dinner selection/);
   assert.match(route, /5–15 second hello video/);
+  assert.match(route, /const cta = 'join the Dating Experiment →'/);
+  assert.match(route, /Before you can enter:/);
+  assert.match(route, /Finish the missing profile basics →/);
+  assert.match(route, /if \(missingProfileItems\(user\)\.length > 0\) return 'profile'/);
   assert.match(admin, /Preview ready variant \(no send\)/);
   assert.match(admin, /Preview profile variant \(no send\)/);
   assert.match(admin, /Preview live-match variant \(no send\)/);

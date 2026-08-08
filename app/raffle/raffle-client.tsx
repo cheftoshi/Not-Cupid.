@@ -177,6 +177,9 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <Link href="/dating-experiment/terms" style={infoLink}>experiment terms</Link>
           <Link href="/safety" style={infoLink}>safety</Link>
         </div>
+        <div style={{ ...card, marginBottom: '1.1rem', padding: '0.9rem 1rem', background: 'rgba(37,99,255,0.05)', borderColor: 'rgba(37,99,255,0.22)' }}>
+          <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your experiment video, three quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
+        </div>
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
