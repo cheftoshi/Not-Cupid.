@@ -26,6 +26,15 @@ export type DatingExperimentEvent = {
   venue_confirmed: boolean;
   sponsor_details_confirmed: boolean;
   legal_review_approved: boolean;
+  dinner_dates: DatingExperimentDinnerDate[];
+};
+
+export type DatingExperimentDinnerDate = {
+  event_date: string;
+  public_label: string;
+  starts_at: string | null;
+  venue_details: string | null;
+  status: 'date_confirmed' | 'details_confirmed' | 'cancelled';
 };
 
 export async function getDatingExperimentEvent(
@@ -48,7 +57,19 @@ export async function getDatingExperimentEvent(
     console.error('[dating-experiment-event]', error);
     return null;
   }
-  return data as DatingExperimentEvent | null;
+  if (!data) return null;
+  const { data: dinnerDates, error: dinnerDatesError } = await supabaseAdmin
+    .from('dating_experiment_event_dates')
+    .select('event_date, public_label, starts_at, venue_details, status')
+    .eq('event_key', eventKey)
+    .neq('status', 'cancelled')
+    .order('event_date', { ascending: true });
+  if (dinnerDatesError) {
+    console.error('[dating-experiment-event-dates]', dinnerDatesError);
+    return null;
+  }
+  const event = data as unknown as Omit<DatingExperimentEvent, 'dinner_dates'>;
+  return { ...event, dinner_dates: (dinnerDates ?? []) as DatingExperimentDinnerDate[] };
 }
 
 function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
@@ -57,7 +78,18 @@ function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
     && event.sponsor_details_confirmed
     && event.legal_review_approved
     && event.terms_version === RAFFLE.termsVersion
-    && event.algorithm_version === RAFFLE.algorithmVersion;
+    && event.algorithm_version === RAFFLE.algorithmVersion
+    && event.dinner_dates.length >= event.winner_pair_limit
+    && event.dinner_dates.every((date) => (
+      date.status === 'details_confirmed'
+      && date.starts_at != null
+      && date.venue_details != null
+    ));
+}
+
+export function datingExperimentDateLabel(event: DatingExperimentEvent | null): string {
+  if (!event?.dinner_dates.length) return RAFFLE.dateLabel;
+  return `${event.dinner_dates.map((date) => date.public_label).join(' or ')} — time and restaurant details to come`;
 }
 
 // Code and database gates must both agree. A partial deployment, stale event

@@ -182,6 +182,7 @@ async function resolveCollectingRound(
   }
 
   for (const [index, winner] of selected.entries()) {
+    const dinnerDate = event.dinner_dates[index % event.dinner_dates.length];
     const { error: drawError } = await supabaseAdmin.from('raffle_draws').upsert({
       event_key: event.event_key,
       user_a_id: winner.a,
@@ -191,8 +192,8 @@ async function resolveCollectingRound(
       b_accepted: true,
       status: 'both_accepted',
       winner_slot: index + 1,
-      restaurant: event.winner_fulfillment_details ?? RAFFLE.restaurant,
-      happens_at: event.happens_at,
+      restaurant: dinnerDate?.venue_details ?? event.winner_fulfillment_details ?? RAFFLE.restaurant,
+      happens_at: dinnerDate?.starts_at ?? event.happens_at,
       algorithm_version: event.algorithm_version,
       eligible_pair_count: mutual.length,
       selection_weight: mutualSelectionWeight(winner, eventSelectionWeight),

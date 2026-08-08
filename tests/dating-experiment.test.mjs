@@ -23,7 +23,9 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v5-2026-08-08'/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v6-2026-08-08'/);
+  assert.match(experimentSource, /2026-08-19/);
+  assert.match(experimentSource, /2026-08-21/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
   assert.match(experimentSource, /radiusMiles:\s*20/);
   assert.doesNotMatch(experimentSource, /proEntries/);
@@ -181,6 +183,22 @@ test('every experiment has an isolated ledger and atomic limited entry transacti
   assert.match(migration, /new\.winner_slot > v_winner_limit/i);
   assert.match(entryRoute, /rpc\([\s\S]*reserve_dating_experiment_entry/i);
   assert.doesNotMatch(entryRoute, /\.from\('raffle_entries'\)\.upsert/);
+});
+
+test('the Boston experiment owns two dates while time and venue remain fail-closed', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260808195154_dating_experiment_event_dates.sql', import.meta.url), 'utf8');
+  const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
+  const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
+  assert.match(migration, /create table public\.dating_experiment_event_dates/i);
+  assert.match(migration, /'2026-08-19'/);
+  assert.match(migration, /'2026-08-21'/);
+  assert.match(migration, /winner_fulfillment_details = null/i);
+  assert.match(migration, /terms_version = 'boston-v6-2026-08-08'/i);
+  assert.match(eventSource, /date\.status === 'details_confirmed'/);
+  assert.match(eventSource, /date\.starts_at != null/);
+  assert.match(eventSource, /date\.venue_details != null/);
+  assert.match(terms, /August 19 and August 21, 2026/);
+  assert.match(terms, /Exact times, restaurant details, and final pair-to-date assignments will be confirmed later/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {

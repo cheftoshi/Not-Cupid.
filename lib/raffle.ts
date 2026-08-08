@@ -25,13 +25,13 @@ export const RAFFLE = {
   centerZip: '02116',
   radiusMiles: 20,
   entriesOpen: false, // quiet mode: keep the flow/rules live, but block new public entries
-  statusLabel: 'TBD',
+  statusLabel: 'August 19 & 21',
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // at most two sealed shortlist rounds per entrant
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v5-2026-08-08',
+  termsVersion: 'boston-v6-2026-08-08',
   algorithmVersion: 'dating-experiment-two-pair-v3',
   minimumPairScore: 55,
   videoMinSeconds: 5,
@@ -40,7 +40,11 @@ export const RAFFLE = {
   entryClose: '2099-12-31T04:59:59.000Z',
   entryCloseLabel: 'TBD',
   happensAt: '2099-12-31T23:00:00.000Z',
-  dateLabel: 'TBD',
+  dateLabel: 'August 19 or August 21, 2026 — time and restaurant details to come',
+  dateOptions: [
+    { key: '2026-08-19', label: 'August 19, 2026' },
+    { key: '2026-08-21', label: 'August 21, 2026' },
+  ],
   drawLabel: 'TBD',
   budget: 200,
   // These readiness acknowledgments stay false until the operator confirms the
@@ -49,9 +53,9 @@ export const RAFFLE = {
   venueConfirmed: false,
   sponsorDetailsConfirmed: false,
   legalReviewApproved: false,
-  // The actual venue — revealed ONLY to a winning pair (set on the draw at mutual
-  // accept; never in the public status payload). Kept secret until someone wins.
-  restaurant: 'The Berkeley · 154 Berkeley Street, Back Bay, Boston — we’ll confirm the time with you.',
+  // Time and venue will be attached to each event date only after fulfillment
+  // is confirmed, and revealed privately to selected mutual pairs.
+  restaurant: 'Boston restaurant and time to be confirmed with the selected pair.',
   tagline: 'Two compatible Boston pairs. Dinner is on us.',
 };
 
@@ -61,8 +65,8 @@ export function raffleLaunchBlockers(): string[] {
   if (!RAFFLE.venueConfirmed) blockers.push('confirm the restaurant and fulfillment plan');
   if (!RAFFLE.sponsorDetailsConfirmed) blockers.push('confirm the Sponsor legal identity and public mailing address');
   if (!RAFFLE.legalReviewApproved) blockers.push('complete Massachusetts counsel review of the Official Rules');
-  if ([RAFFLE.entryCloseLabel, RAFFLE.dateLabel, RAFFLE.drawLabel].some((label) => !label || label === 'TBD')) blockers.push('set the public entry, draw, and dinner dates');
-  if (new Date(RAFFLE.entryClose).getUTCFullYear() >= 2099 || new Date(RAFFLE.happensAt).getUTCFullYear() >= 2099) blockers.push('replace placeholder server deadlines');
+  if ([RAFFLE.entryCloseLabel, RAFFLE.drawLabel].some((label) => !label || label === 'TBD')) blockers.push('set the public entry and shortlist deadlines');
+  if (new Date(RAFFLE.entryClose).getUTCFullYear() >= 2099 || new Date(RAFFLE.happensAt).getUTCFullYear() >= 2099) blockers.push('set the exact entry deadline and dinner time');
   return blockers;
 }
 

@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import { signPrivateVideoReference } from '@/lib/private-media';
 import { experimentOrientationLabel } from '@/lib/experiment-preferences';
-import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
+import { datingExperimentDateLabel, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 
 export const dynamic = 'force-dynamic';
 
@@ -131,13 +131,14 @@ export async function GET() {
 
   return NextResponse.json({
     event: {
-      series: event?.public_name ?? RAFFLE.series, city: event?.city ?? RAFFLE.city, dateLabel: RAFFLE.dateLabel, budget: (event?.prize_per_pair_cents ?? RAFFLE.budget * 100) / 100,
+      series: event?.public_name ?? RAFFLE.series, city: event?.city ?? RAFFLE.city, dateLabel: datingExperimentDateLabel(event), budget: (event?.prize_per_pair_cents ?? RAFFLE.budget * 100) / 100,
       tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: eventCap, entryCloseLabel: RAFFLE.entryCloseLabel,
       statusLabel: RAFFLE.statusLabel, entriesOpen,
       radiusMiles: Number(event?.radius_miles ?? RAFFLE.radiusMiles), centerZip: event?.center_zip ?? RAFFLE.centerZip, termsVersion: event?.terms_version ?? RAFFLE.termsVersion,
       videoMinSeconds: RAFFLE.videoMinSeconds, videoMaxSeconds: RAFFLE.videoMaxSeconds, videoMaxBytes: RAFFLE.videoMaxBytes,
       shortlistMaxOptions: event?.shortlist_max_options ?? RAFFLE.shortlistMaxOptions,
       winnerPairCount: event?.winner_pair_limit ?? RAFFLE.winnerPairCount,
+      dateOptions: event?.dinner_dates.map((date) => ({ key: date.event_date, label: date.public_label })) ?? RAFFLE.dateOptions,
       spotsLeft, closed: !entriesOpen || spotsLeft === 0,
     },
     eligible, hasProfile, entered, entry, shortlist, shortlistRound, draw, other,

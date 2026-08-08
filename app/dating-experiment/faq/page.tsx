@@ -23,7 +23,7 @@ const STEPS = [
 const FAQS = [
   {
     q: 'Is the Dating Experiment open now?',
-    a: `Not yet. The first Boston round is in quiet mode while the date, restaurant, safeguards, and operating plan are finalized. If the date says “TBD,” entries are closed. Reading this page or visiting the experiment does not enter you.`,
+    a: `Not yet. The dinner dates are ${RAFFLE.dateLabel}. The entry window, shortlist timing, exact dinner times, restaurant, safeguards, and operating plan are still being finalized. Reading this page or visiting the experiment does not enter you.`,
   },
   {
     q: 'Who will be able to join?',
@@ -106,7 +106,7 @@ export default function DatingExperimentFaqPage() {
 
         {!raffleEntriesOpen() && (
           <div style={{ marginTop: '1.25rem', padding: '0.85rem 1rem', border: '1px solid rgba(255,106,31,0.35)', borderRadius: 12, background: 'rgba(255,106,31,0.08)', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--h-text)' }}>Quiet mode:</b> entries and video uploads are paused. The public date and restaurant are still TBD.
+            <b style={{ color: 'var(--h-text)' }}>Quiet mode:</b> entries and video uploads are paused. Dinner dates are August 19 and August 21, 2026; exact times and restaurant details are still to come.
           </div>
         )}
 

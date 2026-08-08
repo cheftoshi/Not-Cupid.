@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   }
   if (body.videoConsent !== true) return NextResponse.json({ error: 'Please consent to the private profile and video preview.' }, { status: 400 });
   if (body.safetyAcknowledged !== true) return NextResponse.json({ error: 'Please acknowledge the participant safety notice.' }, { status: 400 });
-  if (body.attendanceConfirmed !== true) return NextResponse.json({ error: 'Please confirm you can attend the stated dinner.' }, { status: 400 });
+  if (body.attendanceConfirmed !== true) return NextResponse.json({ error: 'Please confirm you can attend at least one listed dinner date.' }, { status: 400 });
 
   const acceptedAt = new Date().toISOString();
   // Capacity reservation and the entry write happen under one event-row lock.
