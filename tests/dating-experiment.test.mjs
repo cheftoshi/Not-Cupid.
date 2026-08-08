@@ -8,7 +8,10 @@ import {
   selectMutualDinnerPairs,
 } from '../lib/experiment-shortlist.ts';
 import {
+  EXPERIMENT_ORIENTATION_OPTIONS,
   experimentGendersFromLegacy,
+  experimentOrientationLabel,
+  normalizeExperimentOrientation,
   reciprocalExperimentAgeMatch,
   reciprocalExperimentGenderMatch,
   resolveExperimentPreferences,
@@ -20,6 +23,7 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v5-2026-08-08'/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
   assert.match(experimentSource, /radiusMiles:\s*20/);
   assert.doesNotMatch(experimentSource, /proEntries/);
@@ -47,6 +51,14 @@ test('experiment gender preferences support every one-or-more combination recipr
   ), false);
 });
 
+test('bisexual is a first-class orientation while gender selections remain authoritative', () => {
+  assert.ok(EXPERIMENT_ORIENTATION_OPTIONS.some((option) => option.value === 'bisexual' && option.label === 'bisexual'));
+  assert.equal(normalizeExperimentOrientation('bisexual'), 'bisexual');
+  assert.equal(experimentOrientationLabel('bisexual'), 'bisexual');
+  assert.equal(experimentOrientationLabel('unlabeled'), null);
+  assert.equal(normalizeExperimentOrientation('not-a-real-option'), null);
+});
+
 test('experiment age preferences are inclusive and must work both ways', () => {
   const a = { age: 30, age_min: 25, age_max: 35 };
   assert.equal(reciprocalExperimentAgeMatch(a, { age: 35, age_min: 30, age_max: 40 }), true);
@@ -62,10 +74,11 @@ test('experiment age preferences are inclusive and must work both ways', () => {
 test('entry-time preference snapshots override later profile edits', () => {
   const snapshot = resolveExperimentPreferences(
     { gender: 'm', seeking: 'f', age_min: 18, age_max: 99 },
-    { preferences: { gender: 'nb', seekingGenders: ['f', 'nb'], ageMin: 27, ageMax: 39 } },
+    { preferences: { gender: 'nb', orientation: 'bisexual', seekingGenders: ['f', 'nb'], ageMin: 27, ageMax: 39 } },
   );
   assert.deepEqual(snapshot, {
     gender: 'nb',
+    orientation: 'bisexual',
     seekingGenders: ['f', 'nb'],
     ageMin: 27,
     ageMax: 39,
@@ -132,12 +145,14 @@ test('entry requires versioned, separate consent records', () => {
     'safety_acknowledged_at',
     'attendance_confirmed_at',
   ]) assert.match(source, new RegExp(required));
-  assert.match(source, /preferences: \{ gender, seekingGenders, ageMin, ageMax \}/);
+  assert.match(source, /preferences: \{ gender, orientation, seekingGenders, ageMin, ageMax \}/);
+  assert.match(source, /Choose the orientation label that feels closest to you/);
   assert.match(source, /Choose at least one gender you would like to meet/);
   assert.match(source, /Choose a valid age range between 21 and 99/);
   assert.doesNotMatch(source, /profilePatch/);
   assert.match(statusSource, /ownEntry\.terms_version === RAFFLE\.termsVersion/);
   assert.match(statusSource, /needs-preference-refresh/);
+  assert.match(statusSource, /experimentOrientationLabel/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {
@@ -156,6 +171,9 @@ test('experiment has a quiet-mode FAQ beside the public flow', () => {
   assert.match(faq, /same cap of up to/);
   assert.match(faq, /maximum aggregate prize value/);
   assert.match(faq, /saved with your experiment entry/);
+  assert.match(faq, /Bisexual is a first-class orientation choice/);
+  assert.match(flow, /EXPERIMENT_ORIENTATION_OPTIONS/);
+  assert.match(flow, /profile, orientation, photos, answers/);
   assert.match(flow, /choose one or more/);
   assert.match(flow, /No purchase necessary/);
 });

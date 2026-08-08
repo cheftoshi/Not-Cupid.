@@ -334,13 +334,14 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       return {
         ...user,
         gender: preferences.gender,
+        orientation: preferences.orientation,
         seeking_genders: preferences.seekingGenders,
         age_min: preferences.ageMin,
         age_max: preferences.ageMax,
         experiment_answers: experimentAnswers,
       };
     })
-    .filter((user) => user.gender && user.seeking_genders.length && user.age_min != null && user.age_max != null);
+    .filter((user) => user.gender && user.orientation && user.seeking_genders.length && user.age_min != null && user.age_max != null);
 
   const candidates: { a: any; b: any; score: number }[] = [];
   for (let i = 0; i < pool.length; i++) {

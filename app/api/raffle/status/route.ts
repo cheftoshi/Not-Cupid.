@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible, raffleClosed, raffleEntriesOpen } from '@/lib/raffle';
 import { signPrivateVideoReference } from '@/lib/private-media';
+import { experimentOrientationLabel } from '@/lib/experiment-preferences';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,7 @@ async function privateCandidate(candidateId: string) {
     photo_url: profile.photo_url,
     gallery: Array.isArray(profile.gallery) ? profile.gallery.slice(0, 3) : [],
     archetype: profile.archetype,
+    orientation: experimentOrientationLabel((entry as any)?.questionnaire?.preferences?.orientation),
     introVideoPreviewUrl,
     conversationStarter: (entry as any)?.questionnaire?.conversationStarter || null,
     energy: (entry as any)?.questionnaire?.energy || null,

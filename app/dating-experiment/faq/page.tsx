@@ -39,7 +39,11 @@ const FAQS = [
   },
   {
     q: 'Can all genders and orientations participate?',
-    a: 'Yes. Participants can identify as a man, woman, or non-binary / another identity and can select any one-or-more combination of men, women, and non-binary / another-identity people they would meet. That supports different-gender, same-gender, bisexual/pansexual, and non-binary-inclusive preferences without forcing “anyone” as the only multi-gender choice. Everyone receives the same shortlist cap, and actual options depend on the compatible local pool.',
+    a: 'Yes. Orientation is an explicit choice: straight, bisexual, gay, lesbian, pansexual, queer, asexual / ace-spectrum, questioning, or prefer not to label. Participants can identify as a man, woman, or non-binary / another identity and select any one-or-more combination of those genders they would meet. Everyone receives the same shortlist cap, and actual options depend on the compatible local pool.',
+  },
+  {
+    q: 'Is bisexual a main choice?',
+    a: 'Yes. Bisexual is a first-class orientation choice, shown directly alongside the other orientation options rather than inferred from selecting more than one gender. Your selected genders still control who can be considered, so a label never makes assumptions about your current dating preferences.',
   },
   {
     q: 'How do age and gender preferences work?',
@@ -55,7 +59,7 @@ const FAQS = [
   },
   {
     q: 'Who can see my video and profile?',
-    a: `Only the people placed on reciprocal shortlists with you—no more than ${RAFFLE.shortlistMaxOptions} in a round—and limited NotCupid administrators who operate or safeguard the experiment. Videos are stored privately and played through short-lived links. Joining does not give NotCupid permission to use your name, photos, video, or story in advertising.`,
+    a: `Only the people placed on reciprocal shortlists with you—no more than ${RAFFLE.shortlistMaxOptions} in a round—and limited NotCupid administrators who operate or safeguard the experiment. A disclosed orientation label is included in that private preview; “prefer not to label” shows no label. Videos are stored privately and played through short-lived links. Joining does not give NotCupid permission to use your name, photos, video, or story in advertising.`,
   },
   {
     q: 'How long is the video kept?',

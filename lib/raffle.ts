@@ -7,6 +7,7 @@ export type ExperimentAnswers = {
   conversationStarter: string;
   preferences?: {
     gender: 'm' | 'f' | 'nb';
+    orientation: 'straight' | 'bisexual' | 'gay' | 'lesbian' | 'pansexual' | 'queer' | 'asexual' | 'questioning' | 'unlabeled';
     seekingGenders: ('m' | 'f' | 'nb')[];
     ageMin: number;
     ageMax: number;
@@ -30,7 +31,7 @@ export const RAFFLE = {
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v4-2026-08-08',
+  termsVersion: 'boston-v5-2026-08-08',
   algorithmVersion: 'dating-experiment-two-pair-v3',
   minimumPairScore: 55,
   videoMinSeconds: 5,

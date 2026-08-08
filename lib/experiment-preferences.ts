@@ -1,9 +1,22 @@
 export const EXPERIMENT_GENDERS = ['m', 'f', 'nb'] as const;
+export const EXPERIMENT_ORIENTATION_OPTIONS = [
+  { value: 'straight', label: 'straight' },
+  { value: 'bisexual', label: 'bisexual' },
+  { value: 'gay', label: 'gay' },
+  { value: 'lesbian', label: 'lesbian' },
+  { value: 'pansexual', label: 'pansexual' },
+  { value: 'queer', label: 'queer' },
+  { value: 'asexual', label: 'asexual / ace-spectrum' },
+  { value: 'questioning', label: 'questioning / figuring it out' },
+  { value: 'unlabeled', label: 'prefer not to label' },
+] as const;
 
 export type ExperimentGender = (typeof EXPERIMENT_GENDERS)[number];
+export type ExperimentOrientation = (typeof EXPERIMENT_ORIENTATION_OPTIONS)[number]['value'];
 
 export type ExperimentPreferenceSnapshot = {
   gender: ExperimentGender | null;
+  orientation: ExperimentOrientation | null;
   seekingGenders: ExperimentGender[];
   ageMin: number | null;
   ageMax: number | null;
@@ -11,6 +24,18 @@ export type ExperimentPreferenceSnapshot = {
 
 const isGender = (value: unknown): value is ExperimentGender =>
   EXPERIMENT_GENDERS.includes(value as ExperimentGender);
+
+export function normalizeExperimentOrientation(value: unknown): ExperimentOrientation | null {
+  return EXPERIMENT_ORIENTATION_OPTIONS.some((option) => option.value === value)
+    ? value as ExperimentOrientation
+    : null;
+}
+
+export function experimentOrientationLabel(value: unknown): string | null {
+  const orientation = normalizeExperimentOrientation(value);
+  if (!orientation || orientation === 'unlabeled') return null;
+  return EXPERIMENT_ORIENTATION_OPTIONS.find((option) => option.value === orientation)?.label ?? null;
+}
 
 export function normalizeExperimentGenders(value: unknown): ExperimentGender[] {
   if (!Array.isArray(value)) return [];
@@ -48,6 +73,7 @@ export function resolveExperimentPreferences(
   const savedAgeRangeValid = validAgeRange(saved.ageMin, saved.ageMax);
   return {
     gender: isGender(saved.gender) ? saved.gender : isGender(user?.gender) ? user.gender : null,
+    orientation: normalizeExperimentOrientation(saved.orientation),
     seekingGenders: savedSeeking.length ? savedSeeking : fallbackSeeking,
     ageMin: savedAgeRangeValid ? saved.ageMin : Number.isInteger(user?.age_min) ? user.age_min : null,
     ageMax: savedAgeRangeValid ? saved.ageMax : Number.isInteger(user?.age_max) ? user.age_max : null,

@@ -4,7 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible, raffleClosed, raffleEntriesOpen } from '@/lib/raffle';
 import { drawRaffle } from '@/lib/raffle-draw';
 import { isManagedStorageUrl } from '@/lib/request-security';
-import { experimentGendersFromLegacy, normalizeExperimentGenders } from '@/lib/experiment-preferences';
+import {
+  experimentGendersFromLegacy,
+  normalizeExperimentGenders,
+  normalizeExperimentOrientation,
+} from '@/lib/experiment-preferences';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +36,7 @@ export async function POST(req: NextRequest) {
   // entry. This supports any one-or-more combination of men, women, and
   // non-binary / another identity without broadening the user's Love profile.
   const gender = ['m', 'f', 'nb'].includes(body.gender) ? body.gender : null;
+  const orientation = normalizeExperimentOrientation(body.orientation);
   const rawSeeking = ['m', 'f', 'b', 'both'].includes(body.seeking) ? body.seeking : null;
   const seekingGenders = Array.isArray(body.seekingGenders)
     ? normalizeExperimentGenders(body.seekingGenders)
@@ -40,6 +45,7 @@ export async function POST(req: NextRequest) {
   const ageOk = Number.isInteger(ageMin) && Number.isInteger(ageMax)
     && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   if (!gender) return NextResponse.json({ error: 'Choose how you identify for this experiment.' }, { status: 400 });
+  if (!orientation) return NextResponse.json({ error: 'Choose the orientation label that feels closest to you.' }, { status: 400 });
   if (!seekingGenders.length) return NextResponse.json({ error: 'Choose at least one gender you would like to meet.' }, { status: 400 });
   if (!ageOk) return NextResponse.json({ error: 'Choose a valid age range between 21 and 99.' }, { status: 400 });
 
@@ -105,7 +111,7 @@ export async function POST(req: NextRequest) {
       intention,
       energy,
       conversationStarter,
-      preferences: { gender, seekingGenders, ageMin, ageMax },
+      preferences: { gender, orientation, seekingGenders, ageMin, ageMax },
     },
     withdrawn_at: null,
   };

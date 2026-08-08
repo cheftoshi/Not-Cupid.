@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
+import { EXPERIMENT_ORIENTATION_OPTIONS } from '@/lib/experiment-preferences';
 
 type Event = {
   series: string;
@@ -36,6 +37,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   firstName: string; eligible: boolean; profile: Profile; event: Event;
 }) {
   const [gender, setGender] = useState(profile.gender);
+  const [orientation, setOrientation] = useState('');
   const [seekingGenders, setSeekingGenders] = useState<string[]>(profile.seekingGenders);
   const [ageMin, setAgeMin] = useState(profile.ageMin);
   const [ageMax, setAgeMax] = useState(profile.ageMax);
@@ -77,7 +79,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     { ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/profile' : undefined },
   ];
   const credOk = cred.every((c) => c.ok);
-  const basicsOk = !!gender && seekingGenders.length > 0
+  const basicsOk = !!gender && !!orientation && seekingGenders.length > 0
     && Number.isInteger(ageMin) && Number.isInteger(ageMax)
     && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   const questionsOk = !!intention && !!energy && conversationStarter.trim().length >= 3;
@@ -125,6 +127,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           videoDurationSeconds: videoDuration,
           notify,
           gender,
+          orientation,
           seekingGenders,
           ageMin,
           ageMax,
@@ -228,6 +231,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                 {st.other.introVideoPreviewUrl && (
                   <video src={st.other.introVideoPreviewUrl} controls playsInline preload="metadata" style={{ width: '100%', display: 'block', marginTop: '0.65rem', borderRadius: 10, background: '#000' }} />
                 )}
+                {st.other.orientation && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{st.other.orientation}</p>}
                 {st.other.conversationStarter && <p style={{ margin: '0.7rem 0 0', fontSize: '0.84rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}><b style={{ color: 'var(--h-text)' }}>ask {other} about:</b> {st.other.conversationStarter}</p>}
               </div>
             )}
@@ -285,8 +289,17 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                 <div>
                   <div style={qLabel}>I’m…</div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {GENDERS.map(([v, l]) => <button key={v} onClick={() => setGender(v)} style={chip(gender === v)}>{l}</button>)}
+                    {GENDERS.map(([v, l]) => <button key={v} type="button" aria-pressed={gender === v} onClick={() => setGender(v)} style={chip(gender === v)}>{l}</button>)}
                   </div>
+                </div>
+                <div>
+                  <div style={qLabel}>my orientation… <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose one)</span></div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {EXPERIMENT_ORIENTATION_OPTIONS.map((option) => (
+                      <button key={option.value} type="button" aria-pressed={orientation === option.value} onClick={() => setOrientation(option.value)} style={chip(orientation === option.value)}>{option.label}</button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>This describes you and is shown only to your private shortlist. The gender choices below—not an assumed label—control who can be considered.</div>
                 </div>
                 <div>
                   <div style={qLabel}>match me with… <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose one or more)</span></div>
@@ -368,7 +381,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               {[
                 [attendanceConfirmed, setAttendanceConfirmed, `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend the stated dinner.`],
                 [termsAccepted, setTermsAccepted, <>I agree to the <Link href="/dating-experiment/terms" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Dating Experiment Terms</Link>.</>],
-                [videoConsent, setVideoConsent, `I consent to my profile, photos, answers, and intro video being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.`],
+                [videoConsent, setVideoConsent, `I consent to my profile, orientation, photos, answers, and intro video being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.`],
                 [safetyAcknowledged, setSafetyAcknowledged, 'I understand NotCupid does not conduct criminal background checks or guarantee another participant’s identity, behavior, or compatibility.'],
               ].map(([checked, setter, label], i) => (
                 <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.7rem' }}>
@@ -477,6 +490,7 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: BLUE }}>{offer.score}% fit</span>
               </div>
               {person?.introVideoPreviewUrl && <video src={person.introVideoPreviewUrl} controls playsInline preload="metadata" style={{ width: '100%', display: 'block', marginTop: '0.55rem', borderRadius: 9, background: '#000' }} />}
+              {person?.orientation && <p style={{ margin: '0.55rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{person.orientation}</p>}
               {person?.conversationStarter && <p style={{ margin: '0.55rem 0 0', fontSize: '0.8rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}><b style={{ color: 'var(--h-text)' }}>ask about:</b> {person.conversationStarter}</p>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.7rem' }}>
                 <button onClick={() => decide(offer.id, true)} style={{ ...choiceBtn, background: choice.accept === true ? BLUE : 'var(--h-surface-2)', color: choice.accept === true ? '#fff' : 'var(--h-text)' }}>yes, I’d meet</button>
