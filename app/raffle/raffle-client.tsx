@@ -184,7 +184,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
             <h2 style={cardH}>quiet mode for now.</h2>
-            <p style={cardP}>we’re keeping the first {ev.series} round under wraps while we finish the safeguards and logistics. Date is <b>TBD</b>, and entries are paused for now.</p>
+            <p style={cardP}>we’re keeping this first Dating Experiment round under wraps while we finish the safeguards and logistics. Date is <b>TBD</b>, and entries are paused for now.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
               <Link href="/dating-experiment/faq" style={backLink}>see the simple plan →</Link>
               <Link href="/hub" style={backLink}>back to hub →</Link>
