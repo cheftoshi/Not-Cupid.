@@ -98,6 +98,7 @@ export default function AdminClient() {
   const [appFeedback, setAppFeedback] = useState<any>(null)
   const [reports, setReports] = useState<any>(null)
   const [waveBusy, setWaveBusy] = useState(false)
+  const [experimentEmailDryRun, setExperimentEmailDryRun] = useState<any>(null)
   const [seedAccounts, setSeedAccounts] = useState<Array<{ name: string; email: string; loginUrl: string }> | null>(null)
   const [replyOpen, setReplyOpen] = useState<string | null>(null) // feedback id being replied to
   const [replyText, setReplyText] = useState('')
@@ -826,13 +827,11 @@ export default function AdminClient() {
                 window.open('/api/admin/send-love-relaunch?variant=live', '_blank', 'noopener,noreferrer')
               }}>👀 Preview live-match variant (no send)</button>
               <button className={`${s.btn} ${s.btnInk}`} onClick={async () => {
+                setExperimentEmailDryRun(null)
                 const dryRes = await fetch('/api/admin/send-love-relaunch?dry=1', { method: 'POST' })
                 const dry = await parseResponse<any>(dryRes).catch(() => null)
                 if (!dryRes.ok || !dry) { alert(`Dry run failed: ${dry?.error || dryRes.status}`); return }
-                const b = dry.breakdown || {}
-                const links = dry.links || {}
-                const preview = `Subject: ${dry.subject}\nFrom: ${dry.sender}\nReply-to: ${dry.replyTo}\nSend type: ${dry.sendType}\n\nAudience: ${dry.audienceDefinition}\n\nCurrent count: ${dry.wouldSend} would receive it · ${dry.eligibleActiveBostonUsers} eligible Boston users (${dry.activeWindowDays}d activity) · ${dry.excludedDormant || 0} dormant excluded · ${dry.alreadySent} already handled\n\nVariants: ${b.live || 0} live-match · ${b.ready || 0} experiment-ready · ${b.profile || 0} need profile work\n\nLinks:\nReady CTA: ${links.primaryReady}\nProfile CTA: ${links.primaryNeedsProfile}\nLove Line: ${links.loveLine}\nFAQ: ${links.faq}\nRules: ${links.officialRules}\nUnsubscribe: ${links.unsubscribe}\n\nEntries open: ${dry.entriesOpen ? 'yes' : 'no'} · send approval configured: ${dry.approvalConfigured ? 'yes' : 'no'}`
-                alert(`Dating Experiment email dry run — NOTHING SENT\n\n${preview}`)
+                setExperimentEmailDryRun(dry)
               }}>📋 Experiment email audience (dry run)</button>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
                 const dry = await fetch('/api/admin/send-friend-blast?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
@@ -863,6 +862,32 @@ export default function AdminClient() {
                 alert(`Friend digest: sent ${d.sent || 0}${d.reason ? ` (${d.reason})` : ` · ${d.events} events, ${d.posts} posts`}`)
               }}>📨 Send friend digest now</button>
             </div>
+            {experimentEmailDryRun && (() => {
+              const dry = experimentEmailDryRun
+              const b = dry.breakdown || {}
+              const links = dry.links || {}
+              return (
+                <div role="status" style={{ background: '#f4f8ff', border: '1px solid #b9cdfd', borderRadius: 12, padding: '1rem 1.1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ fontWeight: 800, marginBottom: '0.65rem' }}>Dating Experiment email dry run — NOTHING SENT</div>
+                  <div style={{ fontSize: '0.82rem', lineHeight: 1.6, wordBreak: 'break-word' }}>
+                    <b>Subject:</b> {dry.subject}<br />
+                    <b>From:</b> {dry.sender}<br />
+                    <b>Reply-to:</b> {dry.replyTo}<br />
+                    <b>Send type:</b> {dry.sendType}<br /><br />
+                    <b>Audience:</b> {dry.audienceDefinition}<br /><br />
+                    <b>Current count:</b> {dry.wouldSend} would receive it · {dry.eligibleActiveBostonUsers} eligible Boston users ({dry.activeWindowDays}d activity) · {dry.excludedDormant || 0} dormant excluded · {dry.alreadySent} already handled<br />
+                    <b>Variants:</b> {b.live || 0} live-match · {b.ready || 0} experiment-ready · {b.profile || 0} need profile work<br /><br />
+                    <b>Ready CTA:</b> {links.primaryReady}<br />
+                    <b>Profile CTA:</b> {links.primaryNeedsProfile}<br />
+                    <b>Love Line:</b> {links.loveLine}<br />
+                    <b>FAQ:</b> {links.faq}<br />
+                    <b>Rules:</b> {links.officialRules}<br />
+                    <b>Unsubscribe:</b> {links.unsubscribe}<br /><br />
+                    <b>Entries open:</b> {dry.entriesOpen ? 'yes' : 'no'} · <b>send approval configured:</b> {dry.approvalConfigured ? 'yes' : 'no'}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
 
           {/* ── SIGNUPS CHART ── */}
