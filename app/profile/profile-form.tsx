@@ -435,6 +435,17 @@ export default function ProfileForm({ initialUser, relaunchMode = false, onSaved
           </select>
         </div>
         <div className={styles.field}>
+          <label className={styles.label}>Love Line availability · <span className={styles.labelHint}>shown on your roster card</span></label>
+          <select
+            className={styles.select}
+            value={user.love_availability || 'open_to_meeting'}
+            onChange={e => setUser({ ...user, love_availability: e.target.value })}
+          >
+            <option value="actively_looking">Actively looking</option>
+            <option value="open_to_meeting">Open to meeting, no rush</option>
+          </select>
+        </div>
+        <div className={styles.field}>
           <label className={styles.label}>Sun sign · <span className={styles.labelHint}>just for fun — not used in matching</span></label>
           <select
             className={styles.select}

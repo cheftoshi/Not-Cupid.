@@ -62,7 +62,7 @@ export async function POST() {
       vibes: null,
       // profile content
       bio: null, music: null, food: null, hobbies: null, prompts: null,
-      gallery: [], relationship_style: null,
+      gallery: [], relationship_style: null, love_availability: 'open_to_meeting',
       // love-line pool state
       status: 'waiting', pool_active: true, roster_snapshot: [], roster_refreshed_at: null,
       // NOTE: a refresh wipes profile DATA but is NOT a way out of a ghost pause

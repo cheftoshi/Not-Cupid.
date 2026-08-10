@@ -18,6 +18,8 @@ type LiveConnection = { matchId: string; name: string };
 type Candidate = {
   id: string; name: string; age: number | null; photo_url: string | null;
   archetype: string | null; metro: string | null; relationship_style: string | null; occupation?: string | null; score: number;
+  loveAvailability?: 'actively_looking' | 'open_to_meeting';
+  activityLabel?: 'active recently' | 'active lately' | null;
   why?: string | null;
   scoreConfidence?: number;
   hasIntroVideo?: boolean;
@@ -62,6 +64,13 @@ export default function RosterPicker({
     const timer = window.setInterval(() => setClock(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (!nextRotationAt) return;
+    const remaining = new Date(nextRotationAt).getTime() - Date.now();
+    if (!Number.isFinite(remaining)) return;
+    const timer = window.setTimeout(() => void load(), Math.max(1_000, remaining + 1_000));
+    return () => window.clearTimeout(timer);
+  }, [nextRotationAt]);
 
   async function load() {
     try {
@@ -80,16 +89,16 @@ export default function RosterPicker({
   const rotationMs = nextRotationAt ? new Date(nextRotationAt).getTime() - clock : 0;
   const rotationLabel = (() => {
     if (!nextRotationAt) return null;
-    if (rotationMs <= 0) return 'new options are ready';
+    if (rotationMs <= 0) return 'checking your roster now';
     const target = new Date(nextRotationAt);
     const today = new Date(clock);
     const tomorrow = new Date(clock);
     tomorrow.setDate(tomorrow.getDate() + 1);
     if (target.toDateString() === today.toDateString()) {
-      return `new options today at ${target.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+      return `next roster check today at ${target.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
     }
-    if (target.toDateString() === tomorrow.toDateString()) return 'new options tomorrow';
-    return `new options ${target.toLocaleDateString('en-US', { weekday: 'long' })}`;
+    if (target.toDateString() === tomorrow.toDateString()) return 'next roster check tomorrow';
+    return `next roster check ${target.toLocaleDateString('en-US', { weekday: 'long' })}`;
   })();
 
   function pick(c: Candidate) {
@@ -189,7 +198,7 @@ export default function RosterPicker({
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>✦</div>
         <h2 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>in the queue.</h2>
         <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 440, margin: '0 auto' }}>
-          recently active people rotate through first. come back tomorrow to refresh your place in line — we&apos;ll also email when your weekly rotation is ready.
+          recently active people rotate through first. Love Line checks again after 24 hours when you return; in a smaller pool, some compatible people may stay.
         </p>
         <ExpandRadiusButton radius={radius} maxRadius={maxRadius} />
       </div>
@@ -220,7 +229,7 @@ export default function RosterPicker({
 
       {rotationLabel && (
         <div style={{ margin: '-0.45rem 0 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>
-          {rotationLabel} · opening Love Line keeps your roster current
+          {rotationLabel} · fresh people appear when compatible options are available
         </div>
       )}
 
@@ -274,6 +283,9 @@ export default function RosterPicker({
                 {c.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{c.archetype}</div>}
                 {c.occupation && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>💼 {c.occupation}</div>}
                 {style && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-accent-2)' }}>
+                  ● {c.loveAvailability === 'actively_looking' ? 'actively looking' : 'open to meeting'}{c.activityLabel ? ` · ${c.activityLabel}` : ''}
+                </div>
                 {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
                 {pickedId === c.id ? (
                   <div style={{ marginTop: 'auto', textAlign: 'center', background: 'rgba(37,99,255,0.1)', border: '1.5px solid #2563ff', color: '#2563ff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, animation: 'ncPickedIn .4s var(--ease) both' }}>
@@ -301,7 +313,7 @@ export default function RosterPicker({
       </div>
 
       <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
-        active picks rotate daily · weekly reminder by email + push
+        checks for fresh options every 24h · shown people cool down for 7 days
       </p>
 
       {/* At-capacity: choosing prompts the user to close one existing chat. */}

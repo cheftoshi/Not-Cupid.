@@ -3,131 +3,29 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { releaseBalanceHolds } from '@/lib/balance'
 import { ignoringParty } from '@/lib/match-actions'
-import { sendPushToUser } from '@/lib/push'
 import { isAuthorizedCronRequest } from '@/lib/request-security'
-import { button, renderEmail, sendEmail } from '@/lib/email'
-import {
-  LOVE_ROTATION_HOUR_UTC,
-  activeUserCutoffIso,
-  rosterExposureCutoffIso,
-} from '@/lib/matching-policy'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-function loveRotationEmail(user: { id: string; name?: string | null }) {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com'
-  const first = (user.name || 'there').split(' ')[0]
-  return renderEmail({
-    preheader: 'Your Love Line roster has rotated. Active people and fresh introductions now come first.',
-    eyebrow: 'love line rotation ✦',
-    headline: `${first}, your roster moved.`,
-    bodyHtml: `
-      <p style="margin:0 0 14px 0;">We refreshed your place in the Love Line and moved recently active people to the front.</p>
-      <p style="margin:0 0 18px 0;">People shown during the last seven days rotate out when another compatible option is available. Open your roster to see who is ready now.</p>
-      ${button({ href: `${base}/dashboard#roster`, label: 'open the new roster →' })}
-    `,
-    recipientId: user.id,
-    footerNote: 'fresh people first. no endless swiping.',
-  })
-}
-
 export async function GET(req: NextRequest) {
   const cronAuthorized = isAuthorizedCronRequest(req)
-  let adminAuthorized = false
   if (!cronAuthorized) {
     const admin = await getCurrentAdmin()
     if (!admin) {
       console.warn('[cron/rematch] 403 — invalid bearer and no admin session')
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    adminAuthorized = true
   }
-  // Manual forcing is deliberately admin-session-only. The normal Vercel cron
-  // cannot be turned into an email blast just by adding a query parameter.
-  const forceRotation = adminAuthorized && req.nextUrl.searchParams.get('rotate') === '1'
 
   try {
     const nowIso = new Date().toISOString()
 
-    // ============== 0) Weekly active-user roster rotation ==============
-    // During the daily noon-ET window, rotate users who authenticated in the
-    // last 12 days and have not been rotated in seven days. Clearing the saved
-    // snapshot makes the next open use the exposure-aware roster composer.
-    // Both channels are attempted: email is the reliable baseline and push is
-    // immediate for anyone who has installed/subscribed.
-    let heartbeatPushed = 0
-    let heartbeatEmailed = 0
-    let rostersRotated = 0
-    const hbNow = new Date()
-    if (forceRotation || (hbNow.getUTCHours() === LOVE_ROTATION_HOUR_UTC && hbNow.getUTCMinutes() < 20)) {
-      try {
-        const { data: recentSessions, error: sessionErr } = await supabaseAdmin
-          .from('sessions')
-          .select('user_id')
-          .gte('last_used_at', activeUserCutoffIso())
-          .limit(5000)
-
-        if (!sessionErr) {
-          const activeIds = Array.from(new Set((recentSessions ?? []).map((session) => session.user_id)))
-          if (activeIds.length > 0) {
-            const { data: rotationUsers, error: hbErr } = await supabaseAdmin
-              .from('users')
-              .select('id, name, email, email_notifications, notifications_paused_at')
-              .in('id', activeIds)
-              .eq('pool_active', true)
-              .eq('is_blocked', false)
-              .is('deleted_at', null)
-              .not('is_test', 'is', true)
-              .is('matching_disabled_at', null)
-              .not('archetype', 'is', null)
-              .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`)
-              .or(`roster_nudged_at.is.null,roster_nudged_at.lt.${rosterExposureCutoffIso()}`)
-              .limit(200)
-
-            if (!hbErr) {
-              for (const u of rotationUsers ?? []) {
-                const { error: rotateErr } = await supabaseAdmin
-                  .from('users')
-                  .update({ roster_snapshot: [], roster_refreshed_at: null })
-                  .eq('id', u.id)
-                if (rotateErr) continue
-
-                rostersRotated++
-                const shouldEmail = !!u.email && u.email_notifications !== false && !u.notifications_paused_at
-                const [emailResult, pushed] = await Promise.all([
-                  shouldEmail
-                    ? sendEmail({
-                        to: u.email,
-                        subject: 'Your Love Line roster just rotated',
-                        html: loveRotationEmail(u),
-                      })
-                    : Promise.resolve({ ok: false }),
-                  sendPushToUser(u.id, {
-                    title: 'your Love Line roster rotated ✦',
-                    body: 'open the app to check your refreshed picks.',
-                    url: '/dashboard#roster',
-                    tag: 'roster-rotation',
-                  }),
-                ])
-                if (emailResult.ok) heartbeatEmailed++
-                if (pushed) heartbeatPushed++
-
-                // If a subscribed channel failed, leave the nudge timestamp
-                // untouched so the next daily rotation window can retry. Users
-                // with email disabled are marked handled to avoid futile daily
-                // retries when they also have no push subscription.
-                if (emailResult.ok || pushed || !shouldEmail) {
-                  await supabaseAdmin.from('users').update({ roster_nudged_at: nowIso }).eq('id', u.id)
-                }
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Love roster rotation failed:', error)
-      }
-    }
+    // Roster composition belongs to /api/match/roster, where eligibility and
+    // membership can actually be verified. This maintenance cron must never
+    // clear snapshots or announce a "rotation" that may resolve to the same
+    // people. Any future roster email needs an approved template and a proven
+    // before/after membership change.
 
     // ============== Activity ejection: DISABLED ==============
     // Activity-based ejection (no login in 7 days -> pool_active=false) was wrong
@@ -256,9 +154,6 @@ export async function GET(req: NextRequest) {
         poolEjected: toEject.length,
         poolWaked: wakeIds.length,
         cooldownReleased: releasedIds.length,
-        rostersRotated,
-        rotationEmails: heartbeatEmailed,
-        rotationPushes: heartbeatPushed,
       })
     }
 
@@ -281,9 +176,6 @@ export async function GET(req: NextRequest) {
       poolEjected: toEject.length,
       poolWaked: wakeIds.length,
       cooldownReleased: releasedIds.length,
-      rostersRotated,
-      rotationEmails: heartbeatEmailed,
-      rotationPushes: heartbeatPushed,
     })
   } catch (err) {
     console.error('Rematch cron error:', err)

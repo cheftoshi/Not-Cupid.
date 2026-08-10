@@ -90,7 +90,7 @@ export async function GET() {
   // pool on every roster load: a PII over-fetch that scales with user count.
   const POOL_COLS =
     'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, intro_video_url, archetype, occupation, ' +
-    'relationship_style, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, music, food, hobbies, sports, ' +
+    'relationship_style, love_availability, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, music, food, hobbies, sports, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
     'score_conscientiousness, score_openness, last_matched_at, ignored_picks, is_test';
   const nowIso = new Date().toISOString();
@@ -315,6 +315,12 @@ export async function GET() {
       // Privacy: never expose the exact ZIP. Show the metro label only.
       metro: metroLabel(c.user.zip),
       relationship_style: c.user.relationship_style,
+      loveAvailability: c.user.love_availability === 'actively_looking' ? 'actively_looking' : 'open_to_meeting',
+      activityLabel: activityByCandidateId.get(c.user.id) === 'recent'
+        ? 'active recently'
+        : activityByCandidateId.get(c.user.id) === 'active'
+          ? 'active lately'
+          : null,
       score: c.score,
       why: breakdownByCandidateId.get(c.user.id)?.reasons[0] ?? 'there is enough overlap here to be curious',
       reasonCodes: breakdownByCandidateId.get(c.user.id)?.reasonCodes ?? [],

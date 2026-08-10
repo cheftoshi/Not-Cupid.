@@ -23,13 +23,14 @@ export async function PUT(req: NextRequest) {
     'bio', 'height_cm', 'occupation', 'education',
     'music', 'food', 'hobbies', 'sports', 'prompts',
     'age_min', 'age_max', 'auto_rematch',
-    'vibes', 'relationship_style', 'sun_sign', 'intro_video_url',
+    'vibes', 'relationship_style', 'love_availability', 'sun_sign', 'intro_video_url',
     'email_notifications',
   ];
 
   const VALID_RELATIONSHIP_STYLES = new Set([
     'marriage_track', 'dink', 'enm_poly', 'casual', 'open',
   ]);
+  const VALID_LOVE_AVAILABILITY = new Set(['actively_looking', 'open_to_meeting']);
 
   const updates: Record<string, any> = {};
   for (const key of allowed) {
@@ -125,6 +126,9 @@ export async function PUT(req: NextRequest) {
   }
   if (updates.relationship_style != null && !VALID_RELATIONSHIP_STYLES.has(updates.relationship_style)) {
     return NextResponse.json({ error: 'Invalid relationship style' }, { status: 400 });
+  }
+  if (updates.love_availability != null && !VALID_LOVE_AVAILABILITY.has(updates.love_availability)) {
+    return NextResponse.json({ error: 'Invalid Love Line availability' }, { status: 400 });
   }
   // sun_sign is one of the 12 keys, or '' / null to clear it.
   if (updates.sun_sign != null && updates.sun_sign !== '' && !isSunSign(updates.sun_sign)) {

@@ -97,7 +97,6 @@ export default function AdminClient() {
   const [metroHealth, setMetroHealth] = useState<any>(null)
   const [appFeedback, setAppFeedback] = useState<any>(null)
   const [reports, setReports] = useState<any>(null)
-  const [waveBusy, setWaveBusy] = useState(false)
   const [experimentEmailDryRun, setExperimentEmailDryRun] = useState<any>(null)
   const [seedAccounts, setSeedAccounts] = useState<Array<{ name: string; email: string; loginUrl: string }> | null>(null)
   const [replyOpen, setReplyOpen] = useState<string | null>(null) // feedback id being replied to
@@ -217,25 +216,6 @@ export default function AdminClient() {
       body: JSON.stringify({ action, userId }),
     })
     refreshPools()
-  }
-
-  async function runWave() {
-    if (!confirm('Rotate Love Line rosters for users active in the last 12 days? This refreshes their roster and sends the weekly email + push notification when enabled.')) return
-    setWaveBusy(true)
-    try {
-      const r = await fetch('/api/cron/rematch?rotate=1')
-      const j = await parseResponse<any>(r)
-      alert(
-        r.ok
-          ? `Love rotation done.\n\nRosters: ${j.rostersRotated ?? 0}\nEmails: ${j.rotationEmails ?? 0}\nPushes: ${j.rotationPushes ?? 0}\nCooldowns released: ${j.cooldownReleased ?? 0}`
-          : `Failed: ${j.error || r.status}`
-      )
-      refreshPools()
-    } catch (e: any) {
-      alert(`Failed: ${e?.message || 'error'}`)
-    } finally {
-      setWaveBusy(false)
-    }
   }
 
   async function refreshLiveEvents() {
@@ -538,9 +518,6 @@ export default function AdminClient() {
               <p className={s.cardTitle}>Dating pool — <b>live segments</b></p>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className={`${s.btn} ${s.btnGhost}`} onClick={refreshPools}>refresh</button>
-                <button className={`${s.btn} ${s.btnDeep}`} onClick={runWave} disabled={waveBusy}>
-                  {waveBusy ? 'running…' : '🔄 rotate love rosters'}
-                </button>
               </div>
             </div>
 
