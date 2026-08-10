@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import MatchReveal from './match-reveal';
 import RosterPicker from './roster-picker';
+import LoveConnections from './love-connections';
 import LocationControls from '@/components/location-controls';
 import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
@@ -136,10 +136,6 @@ export default async function DashboardPage({
     return sameRealm(user, historyOtherById.get(otherId));
   });
 
-  const newest = connections[0] || null;
-  const newestFresh = !!newest?.match?.created_at &&
-    Date.now() - new Date(newest.match.created_at).getTime() < 12 * 60 * 1000;
-
   const dashMetro = metroOf(user.zip);
   const dashCity = dashMetro && METRO_CENTERS[dashMetro] ? `${METRO_CENTERS[dashMetro].city}, ${METRO_CENTERS[dashMetro].state}` : null;
   const cityLabel = (zip: string | null | undefined): string | null => {
@@ -189,24 +185,6 @@ export default async function DashboardPage({
   }
 
   const yourMoveCount = activeCards.filter((card) => card.status === 'your-move').length;
-  const chattingCount = activeCards.filter((card) => card.status === 'chatting').length;
-  const waitingCount = activeCards.filter((card) => card.status === 'waiting').length;
-  const nextCard = activeCards.find((card) => card.status === 'your-move') || activeCards.find((card) => card.status === 'chatting') || null;
-  const nextTitle = yourMoveCount > 0
-    ? `${yourMoveCount} ${yourMoveCount === 1 ? 'person is' : 'people are'} waiting for your hello.`
-    : chattingCount > 0
-      ? 'keep one conversation warm today.'
-      : 'choose someone from your roster.';
-  const nextBody = yourMoveCount > 0
-    ? 'A small opener beats a perfect one. Make it specific and easy to answer.'
-    : chattingCount > 0
-      ? 'Reply, suggest a window, or ask the thing you actually want to know.'
-      : 'Love Line gives you room for three active connections and five curated options. Start with the profile that gives you a real reason to say yes.';
-  const nextAction = nextCard?.status === 'your-move'
-    ? `say hi to ${nextCard.name.split(' ')[0]}`
-    : nextCard
-      ? `continue with ${nextCard.name.split(' ')[0]}`
-      : 'see your five options';
   const loveProfileTags = [
     ...(Array.isArray((user as any).music) ? (user as any).music : []),
     ...(Array.isArray((user as any).food) ? (user as any).food : []),
@@ -297,36 +275,6 @@ export default async function DashboardPage({
               </section>
             )}
 
-            <section className={styles.loveChatPanel}>
-              <div className={styles.panelKicker}>your conversations</div>
-              {activeCards.length > 0 ? (
-                <div className={styles.loveChatList}>
-                  {activeCards.map((card) => (
-                    <a key={card.matchId} href={`/match/${card.matchId}`} className={styles.loveChatRow}>
-                      <span className={styles.chatAvatar}>
-                        {card.photo_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={card.photo_url} alt="" />
-                        ) : (
-                          <b>{card.name.charAt(0)}</b>
-                        )}
-                      </span>
-                      <span className={styles.chatCopy}>
-                        <strong>{card.name.split(' ')[0]}{card.age ? `, ${card.age}` : ''}</strong>
-                        <em>
-                          {card.status === 'chatting' ? 'chat open' : card.status === 'your-move' ? 'your move' : 'waiting on them'}
-                          {card.hasIntroVideo ? ' · video hello' : ''}
-                          {!card.profileUnlocked && card.unlockAvailable ? ' · compatibility details locked' : ''}
-                        </em>
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.loveEmpty}>No live conversations yet. Your next one starts in the roster.</p>
-              )}
-            </section>
-
             {safeHistoryMatches.length > 0 && (
               <section className={styles.loveHistoryPanel}>
                 <div>
@@ -353,34 +301,19 @@ export default async function DashboardPage({
           </aside>
 
           <main className={styles.loveMain}>
-            <section className={styles.loveNext}>
-              <div className={styles.loveNextCopy}>
-                <div className={styles.loveNextSignal}>
-                  <div className={styles.loveNextEyebrow}>next best move</div>
-                </div>
-                <h2>{nextTitle}</h2>
-                <p>{nextBody}</p>
-              </div>
-              <div className={styles.loveNextPanel}>
-                <div className={styles.loveNextTiles}>
-                  <div className={styles.loveNextTile}><strong>{yourMoveCount}</strong><span>your move</span></div>
-                  <div className={styles.loveNextTile}><strong>{chattingCount}</strong><span>chatting</span></div>
-                  <div className={styles.loveNextTile}><strong>{waitingCount}</strong><span>waiting</span></div>
-                </div>
-                <a href={nextCard ? `/match/${nextCard.matchId}` : '#roster'} className={styles.loveNextButton}>
-                  {nextAction} →
-                </a>
-              </div>
-            </section>
-
-            {newest && newestFresh && (
-              <MatchReveal
-                matchId={newest.match.id}
-                name={newest.otherUser.name || 'your match'}
-                score={newest.match.compatibility_score ?? null}
-                archetype={newest.otherUser.archetype}
-              />
-            )}
+            <LoveConnections
+              maxConnections={MAX_CONNECTIONS}
+              connections={activeCards.map((card) => ({
+                matchId: card.matchId,
+                name: card.name,
+                age: card.age,
+                photo_url: card.photo_url,
+                archetype: card.archetype,
+                score: card.score,
+                unread: card.unread,
+                status: card.status,
+              }))}
+            />
 
             <div id="roster" className={styles.rosterAnchor}>
               <RosterPicker

@@ -112,6 +112,7 @@ export default function ChatRoom({
   const [endOpen, setEndOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<'chat' | 'plan' | 'profile'>('chat');
   const [unlocking, setUnlocking] = useState(false);
   const [coach, setCoach] = useState<LoveCoach | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
@@ -374,7 +375,7 @@ export default function ChatRoom({
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-mobile-panel={mobilePanel}>
       <div className={styles.chatCol}>
       <header className={styles.header}>
         <a href="/dashboard" className={styles.back}>←</a>
@@ -419,6 +420,25 @@ export default function ChatRoom({
           )}
         </div>
       </header>
+
+      <div className={styles.mobileMatchTabs} role="tablist" aria-label={`${firstName} connection views`}>
+        {(['chat', 'plan', 'profile'] as const).map((panel) => (
+          <button
+            key={panel}
+            type="button"
+            role="tab"
+            aria-selected={mobilePanel === panel}
+            onClick={() => setMobilePanel(panel)}
+          >
+            {panel}
+          </button>
+        ))}
+        {!readOnly && (
+          <button type="button" className={styles.mobileEndButton} onClick={() => setEndOpen(true)}>
+            end
+          </button>
+        )}
+      </div>
 
       <div className={styles.messages} ref={scrollRef} onScroll={trackScroll}>
         {/* algo narrator — frames every chat */}
@@ -746,6 +766,7 @@ export default function ChatRoom({
         <EndMatchDialog
           matchId={matchId}
           otherName={otherUser?.name || 'them'}
+          mutual={!!(liveMatch?.user_1_accepted && liveMatch?.user_2_accepted)}
           onClose={() => setEndOpen(false)}
           onEnded={() => { window.location.href = '/dashboard'; }}
         />

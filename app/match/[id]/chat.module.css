@@ -1,5 +1,6 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--app-top-nav-height, 0px));
+  min-height: calc(100dvh - var(--app-top-nav-height, 0px));
   display: flex;
   flex-direction: column;
   /* ambient brand depth — soft, large, low-opacity glows over the base. */
@@ -19,8 +20,8 @@
 .chatCol {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - var(--app-top-nav-height, 0px));
+  height: calc(100dvh - var(--app-top-nav-height, 0px));
   flex: 1;
   min-width: 0;
 }
@@ -257,12 +258,12 @@
 }
 
 @media (min-width: 880px) {
-  .page { flex-direction: row; align-items: stretch; justify-content: center; height: 100vh; }
+  .page { flex-direction: row; align-items: stretch; justify-content: center; height: calc(100dvh - var(--app-top-nav-height, 0px)); min-height: 0; }
   .chatCol {
     order: 2;
     flex: 0 1 620px;
     max-width: 620px;
-    height: 100vh;
+    height: 100%;
     min-height: 0;
     border-right: 1px solid var(--h-border);
     border-left: 1px solid color-mix(in srgb, var(--h-border) 72%, transparent);
@@ -273,7 +274,7 @@
     width: min(42vw, 500px);
     min-width: 400px;
     flex: 0 1 500px;
-    height: 100vh;
+    height: 100%;
     overflow-y: auto;
     border-top: none;
     border-left: none;
@@ -394,6 +395,8 @@
   background: linear-gradient(135deg, #e8edff 0%, #c8c4dc 100%);
   flex-shrink: 0;
 }
+
+.mobileMatchTabs { display: none; }
 
 /* ============= MESSAGES ============= */
 .messages {
@@ -645,4 +648,71 @@
   .bubbleBody { font-size: 0.9rem; }
   .inputForm { padding: 0.6rem 0.85rem calc(0.6rem + env(safe-area-inset-bottom, 0)); }
   .input { padding: 0.7rem 1rem; }
+}
+
+@media (max-width: 879px) {
+  .page { min-height: calc(100dvh - var(--app-top-nav-height, 0px)); }
+  .chatCol {
+    height: calc(100dvh - var(--app-top-nav-height, 0px));
+    min-height: 0;
+  }
+
+  .mobileMatchTabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--h-border);
+    background: var(--h-surface);
+  }
+
+  .mobileMatchTabs button {
+    min-height: 40px;
+    border: 1px solid var(--h-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--h-text-dim);
+    cursor: pointer;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 0.52rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mobileMatchTabs button[aria-selected='true'] {
+    border-color: #2563ff;
+    background: #2563ff;
+    color: #fff;
+  }
+
+  .mobileMatchTabs .mobileEndButton {
+    min-width: 48px;
+    border-color: rgba(192, 57, 43, 0.22);
+    color: #c0392b;
+  }
+
+  .vibesCol { display: none; }
+
+  .page[data-mobile-panel='plan'] .chatCol,
+  .page[data-mobile-panel='profile'] .chatCol {
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .page[data-mobile-panel='plan'] .messages,
+  .page[data-mobile-panel='plan'] .inputForm,
+  .page[data-mobile-panel='plan'] .nudge,
+  .page[data-mobile-panel='profile'] .messages,
+  .page[data-mobile-panel='profile'] .inputForm,
+  .page[data-mobile-panel='profile'] .nudge {
+    display: none;
+  }
+
+  .page[data-mobile-panel='plan'] .vibesCol,
+  .page[data-mobile-panel='profile'] .vibesCol {
+    display: flex;
+  }
+
+  .page[data-mobile-panel='plan'] .matchProfile { display: none; }
+  .page[data-mobile-panel='profile'] .vibesInner { display: none; }
 }

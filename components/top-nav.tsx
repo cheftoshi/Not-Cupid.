@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import Wordmark from '@/components/wordmark';
 import ThemeToggle from '@/components/theme-toggle';
 import NavExtras from '@/components/nav-extras';
@@ -19,7 +20,33 @@ const APP_ROUTE = (p: string) =>
 
 export default function TopNav() {
   const p = usePathname() || '';
-  if (!APP_ROUTE(p)) return null;
+  const navRef = useRef<HTMLElement>(null);
+  const isAppRoute = APP_ROUTE(p);
+
+  // Match rooms need the exact space left beneath this responsive, safe-area
+  // aware header. On an installed iPhone PWA the nav is two rows tall, so a
+  // guessed pixel offset makes the chat a full viewport *plus* the header and
+  // pushes the composer/date tools into a broken stacked view.
+  useEffect(() => {
+    const root = document.documentElement;
+    const nav = navRef.current;
+    if (!isAppRoute || !nav) {
+      root.style.setProperty('--app-top-nav-height', '0px');
+      return;
+    }
+
+    const sync = () => root.style.setProperty('--app-top-nav-height', `${Math.ceil(nav.getBoundingClientRect().height)}px`);
+    sync();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
+    observer?.observe(nav);
+    window.addEventListener('resize', sync);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', sync);
+    };
+  }, [isAppRoute, p]);
+
+  if (!isAppRoute) return null;
 
   const active =
     p.startsWith('/dashboard') || p.startsWith('/match') ? 'love'
@@ -49,7 +76,7 @@ export default function TopNav() {
   const linkStyle: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 
   return (
-    <header className="appTopNav" style={{
+    <header ref={navRef} className="appTopNav" style={{
       position: 'sticky', top: 0, zIndex: 45, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gap: '0.6rem', padding: '0.6rem 1rem', background: 'var(--h-glass)',
       backdropFilter: 'saturate(180%) blur(14px)', WebkitBackdropFilter: 'saturate(180%) blur(14px)',

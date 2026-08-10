@@ -40,3 +40,39 @@ test('admin engagement metrics exclude test accounts and show notification reach
   assert.match(route, /pushReachable12d/);
   assert.match(route, /rosterNotified7d/);
 });
+
+test('Love dashboard keeps pending and mutual people in one filterable connection inbox', () => {
+  const dashboard = readFileSync(new URL('../app/dashboard/page.tsx', import.meta.url), 'utf8');
+  const inbox = readFileSync(new URL('../app/dashboard/love-connections.tsx', import.meta.url), 'utf8');
+  assert.match(dashboard, /<LoveConnections/);
+  assert.doesNotMatch(dashboard, /className=\{styles\.loveChatPanel\}/);
+  assert.match(inbox, /your-move/);
+  assert.match(inbox, /chatting/);
+  assert.match(inbox, /waiting/);
+  assert.match(inbox, /free spot/);
+  assert.match(inbox, /<EndMatchDialog/);
+});
+
+test('phone match room separates chat, plan, and profile below the measured PWA nav', () => {
+  const room = readFileSync(new URL('../app/match/[id]/chat-room.tsx', import.meta.url), 'utf8');
+  const roomCss = readFileSync(new URL('../app/match/[id]/chat.module.css', import.meta.url), 'utf8');
+  const nav = readFileSync(new URL('../components/top-nav.tsx', import.meta.url), 'utf8');
+  assert.match(room, /'chat' \| 'plan' \| 'profile'/);
+  assert.match(room, /data-mobile-panel=\{mobilePanel\}/);
+  assert.match(room, /role="tablist"/);
+  assert.match(room, /mutual=\{!!\(liveMatch\?\.user_1_accepted/);
+  assert.match(roomCss, /var\(--app-top-nav-height/);
+  assert.match(roomCss, /data-mobile-panel='plan'/);
+  assert.match(roomCss, /data-mobile-panel='profile'/);
+  assert.match(nav, /ResizeObserver/);
+});
+
+test('ending a Love connection closes it and immediately returns both slots to the pool', () => {
+  const route = readFileSync(new URL('../app/api/matches/[id]/end/route.ts', import.meta.url), 'utf8');
+  const dialog = readFileSync(new URL('../components/end-match-dialog.tsx', import.meta.url), 'utf8');
+  assert.match(route, /status: 'ended'/);
+  assert.match(route, /status: 'waiting'/);
+  assert.match(route, /match_history/);
+  assert.match(dialog, /Your spot opens immediately/);
+  assert.match(dialog, /end &amp; free spot/);
+});

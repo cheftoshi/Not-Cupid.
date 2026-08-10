@@ -10,11 +10,13 @@ type Step = 'choose' | 'confirm-ghost' | 'confirm-not-vibing' | 'submitting' | '
 export default function EndMatchDialog({
   matchId,
   otherName,
+  mutual = true,
   onClose,
   onEnded,
 }: {
   matchId: string;
   otherName: string;
+  mutual?: boolean;
   onClose: () => void;
   onEnded?: () => void;
 }) {
@@ -47,23 +49,29 @@ export default function EndMatchDialog({
 
         {step === 'choose' && (
           <>
-            <div className={styles.endEyebrow}>end this match</div>
-            <h2 className={styles.endTitle}>what happened with <em>{otherName}?</em></h2>
-            <p className={styles.endSub}>this helps us protect everyone — and improve the algo.</p>
+            <div className={styles.endEyebrow}>{mutual ? 'end this connection' : 'free this Love Line spot'}</div>
+            <h2 className={styles.endTitle}>{mutual ? 'what happened with' : 'move on from'} <em>{otherName}?</em></h2>
+            <p className={styles.endSub}>
+              {mutual
+                ? 'This closes the chat and frees one of your three Love Line spots.'
+                : 'No penalty. This ends the pending connection, frees your spot, and keeps this person out of your future roster.'}
+            </p>
 
-            <button onClick={() => setStep('confirm-ghost')} className={styles.endOpt}>
-              <span className={styles.endOptIcon}>👻</span>
-              <div className={styles.endOptBody}>
-                <div className={styles.endOptTitle}>they ghosted me</div>
-                <div className={styles.endOptDesc}>stopped responding without explanation</div>
-              </div>
-            </button>
+            {mutual && (
+              <button onClick={() => setStep('confirm-ghost')} className={styles.endOpt}>
+                <span className={styles.endOptIcon}>👻</span>
+                <div className={styles.endOptBody}>
+                  <div className={styles.endOptTitle}>they ghosted me</div>
+                  <div className={styles.endOptDesc}>stopped responding without explanation</div>
+                </div>
+              </button>
+            )}
 
             <button onClick={() => setStep('confirm-not-vibing')} className={styles.endOpt}>
               <span className={styles.endOptIcon}>🌀</span>
               <div className={styles.endOptBody}>
-                <div className={styles.endOptTitle}>not vibing</div>
-                <div className={styles.endOptDesc}>no spark, mutual fade, just didn't click</div>
+                <div className={styles.endOptTitle}>{mutual ? 'not vibing' : 'free this spot'}</div>
+                <div className={styles.endOptDesc}>{mutual ? "no spark, mutual fade, just didn't click" : 'end this pending connection and choose someone else'}</div>
               </div>
             </button>
 
@@ -89,12 +97,12 @@ export default function EndMatchDialog({
 
         {step === 'confirm-not-vibing' && (
           <>
-            <div className={styles.endEyebrow}>end this match</div>
-            <h2 className={styles.endTitle}>no spark with {otherName}?</h2>
-            <p className={styles.endSub}>no penalty — you both go back in the pool.</p>
+            <div className={styles.endEyebrow}>free your Love Line spot</div>
+            <h2 className={styles.endTitle}>move on from {otherName}?</h2>
+            <p className={styles.endSub}>No penalty. Your spot opens immediately so you can choose someone else.</p>
             <div className={styles.endActions}>
               <button onClick={() => setStep('choose')} className={styles.endGhostBtn}>← back</button>
-              <button onClick={() => submit('not_vibing')} className={styles.endPrimaryBtn}>end match →</button>
+              <button onClick={() => submit('not_vibing')} className={styles.endPrimaryBtn}>end &amp; free spot →</button>
             </div>
           </>
         )}
