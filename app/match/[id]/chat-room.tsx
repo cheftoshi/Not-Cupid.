@@ -201,7 +201,14 @@ export default function ChatRoom({
       else setVibesError(true);
     } catch { setVibesError(true); }
   }
-  useEffect(() => { loadVibes(); }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (pendingAccept) {
+      setVibes(null);
+      setVibesError(false);
+      return;
+    }
+    loadVibes();
+  }, [matchId, pendingAccept]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tap an option to pick it (or tap a picked one to clear it). When both pick
   // the same thing it locks in as a mutual "you both want this".
@@ -668,9 +675,11 @@ export default function ChatRoom({
               <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>one easy plan</div>
               <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.45rem', lineHeight: 1.08, color: 'var(--h-text)' }}>make meeting feel simple.</div>
             </div>
-            <button onClick={() => setFeedbackOpen(true)} className={styles.dateDoneButton}>
-              we went on a date
-            </button>
+            {!pendingAccept && (
+              <button onClick={() => setFeedbackOpen(true)} className={styles.dateDoneButton}>
+                we went on a date
+              </button>
+            )}
           </div>
           {vibes?.dateNumber && (
             <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.3rem' }}>
@@ -678,6 +687,14 @@ export default function ChatRoom({
             </div>
           )}
 
+          {pendingAccept ? (
+            <div className={styles.pendingPlanLock}>
+              <span>plan together after the mutual yes</span>
+              <strong>waiting for {firstName} to connect.</strong>
+              <p>Once they say yes, both of you can privately pick date ideas and anything you choose in common will lock in here.</p>
+            </div>
+          ) : (
+          <>
           <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#2563ff', margin: '1.1rem 0 0.6rem' }}>✓ you both want this</div>
           {vibesError ? (
             <div style={{ color: 'var(--h-text-dim)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.85rem' }}>
@@ -749,6 +766,8 @@ export default function ChatRoom({
             </div>
           ) : (
             <div style={{ color: 'var(--h-text-faint)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem' }}>they haven&apos;t picked their interests yet.</div>
+          )}
+          </>
           )}
         </div>
       </aside>

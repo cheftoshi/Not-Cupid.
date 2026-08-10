@@ -257,6 +257,39 @@
   padding: 0.74rem 0.82rem;
 }
 
+.pendingPlanLock {
+  display: grid;
+  gap: 0.48rem;
+  margin-top: 1rem;
+  border: 1px dashed color-mix(in srgb, #2563ff 30%, var(--h-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--h-surface) 84%, var(--blue-pale));
+  padding: 1rem;
+}
+
+.pendingPlanLock span {
+  color: #2563ff;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pendingPlanLock strong {
+  color: var(--h-text);
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.pendingPlanLock p {
+  margin: 0;
+  color: var(--h-text-dim);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 @media (min-width: 880px) {
   .page { flex-direction: row; align-items: stretch; justify-content: center; height: calc(100dvh - var(--app-top-nav-height, 0px)); min-height: 0; }
   .chatCol {
