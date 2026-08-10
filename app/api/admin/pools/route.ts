@@ -23,15 +23,19 @@ export async function GET() {
   try {
     const now = new Date();
 
-    const [{ data: users }, { data: sessions }] = await Promise.all([
+    const [{ data: users }, { data: sessions }, { data: pushSubscriptions }] = await Promise.all([
       supabaseAdmin
         .from('users')
-        .select('id, name, email, gender, status, pool_active, zip, relationship_style, vibes, matching_cooldown_until, matching_disabled_at, ghost_reports_received')
-        .is('deleted_at', null),
+        .select('id, name, email, gender, status, pool_active, zip, relationship_style, vibes, matching_cooldown_until, matching_disabled_at, ghost_reports_received, email_notifications, notifications_paused_at, roster_changed_at, roster_change_notified_at, roster_nudged_at')
+        .is('deleted_at', null)
+        .not('is_test', 'is', true),
       supabaseAdmin
         .from('sessions')
         .select('user_id, last_used_at')
         .order('last_used_at', { ascending: false }),
+      supabaseAdmin
+        .from('push_subscriptions')
+        .select('user_id'),
     ]);
 
     // Latest session timestamp per user (sessions came back desc, so first wins).
@@ -41,6 +45,34 @@ export async function GET() {
         lastSeen.set(s.user_id, new Date(s.last_used_at));
       }
     }
+
+    const realUserIds = new Set((users ?? []).map((user) => user.id));
+    const pushUserIds = new Set(
+      (pushSubscriptions ?? [])
+        .map((subscription) => subscription.user_id)
+        .filter((id) => realUserIds.has(id)),
+    );
+    const seenWithin = (days: number) => {
+      const cutoff = now.getTime() - days * 86_400_000;
+      return (users ?? []).filter((user) => (lastSeen.get(user.id)?.getTime() ?? 0) >= cutoff);
+    };
+    const active12 = seenWithin(12);
+    const notificationCutoff = now.getTime() - 7 * 86_400_000;
+    const pendingRosterChanges = (users ?? []).filter((user) => {
+      const changed = user.roster_changed_at ? new Date(user.roster_changed_at).getTime() : 0;
+      const handled = user.roster_change_notified_at ? new Date(user.roster_change_notified_at).getTime() : 0;
+      return changed > handled;
+    }).length;
+    const engagement = {
+      loggedIn24h: seenWithin(1).length,
+      loggedIn48h: seenWithin(2).length,
+      loggedIn7d: seenWithin(7).length,
+      loggedIn12d: active12.length,
+      emailReachable12d: active12.filter((user) => !!user.email && user.email_notifications !== false && !user.notifications_paused_at).length,
+      pushReachable12d: active12.filter((user) => pushUserIds.has(user.id)).length,
+      rosterNotified7d: (users ?? []).filter((user) => user.roster_nudged_at && new Date(user.roster_nudged_at).getTime() >= notificationCutoff).length,
+      pendingRosterChanges,
+    };
 
     // grid[intent][tier] = count
     const grid: Record<Intent, Record<Tier, number>> = {
@@ -98,6 +130,7 @@ export async function GET() {
       byMetro,
       metroLabels: Object.fromEntries(Object.entries(METRO_CENTERS).map(([k, v]) => [k, v.label])),
       penalty: { cooldown, banned },
+      engagement,
       summary: {
         total: users?.length ?? 0,
         active: activeTotal,

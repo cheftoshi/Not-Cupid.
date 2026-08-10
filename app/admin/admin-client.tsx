@@ -527,11 +527,24 @@ export default function AdminClient() {
             {pools && !pools.__error && (
               <>
                 <div className={s.chips}>
-                  <span className={s.chip}>Active <b>{pools.summary?.active ?? 0}</b></span>
+                  <span className={s.chip}>Pool eligible <b>{pools.summary?.active ?? 0}</b></span>
                   <span className={s.chip}>In a match <b>{pools.summary?.matched ?? 0}</b></span>
                   <span className={`${s.chip} ${s.chipGold}`}>Cooldown <b>{pools.summary?.cooldown ?? 0}</b></span>
                   <span className={`${s.chip} ${s.chipRed}`}>Banned <b>{pools.summary?.banned ?? 0}</b></span>
                 </div>
+
+                {pools.engagement && (
+                  <div className={s.chips} style={{ marginTop: '-0.5rem' }}>
+                    <span className={s.chip}>Logged in 24h <b>{pools.engagement.loggedIn24h ?? 0}</b></span>
+                    <span className={s.chip}>48h <b>{pools.engagement.loggedIn48h ?? 0}</b></span>
+                    <span className={s.chip}>7d <b>{pools.engagement.loggedIn7d ?? 0}</b></span>
+                    <span className={`${s.chip} ${s.chipGold}`}>12d active <b>{pools.engagement.loggedIn12d ?? 0}</b></span>
+                    <span className={s.chip}>Email reachable <b>{pools.engagement.emailReachable12d ?? 0}</b></span>
+                    <span className={s.chip}>Push reachable <b>{pools.engagement.pushReachable12d ?? 0}</b></span>
+                    <span className={s.chip}>Roster notified 7d <b>{pools.engagement.rosterNotified7d ?? 0}</b></span>
+                    <span className={s.chip}>Fresh roster pending <b>{pools.engagement.pendingRosterChanges ?? 0}</b></span>
+                  </div>
+                )}
 
                 {pools.byMetro && (
                   <div className={s.chips} style={{ marginTop: '-0.5rem' }}>

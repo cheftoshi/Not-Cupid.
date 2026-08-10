@@ -8,6 +8,7 @@
 export const RECENT_USER_DAYS = 3;
 export const ACTIVE_USER_DAYS = 12;
 export const ROSTER_EXPOSURE_COOLDOWN_DAYS = 7;
+export const ROSTER_NOTIFICATION_COOLDOWN_DAYS = 7;
 export const ROSTER_RETURN_ROTATION_HOURS = 24;
 export const LOVE_MAX_CONNECTIONS = 3;
 export const LOVE_ROSTER_OPTIONS = 5;
@@ -20,6 +21,10 @@ export function activeUserCutoffIso(nowMs: number = Date.now()): string {
 
 export function rosterExposureCutoffIso(nowMs: number = Date.now()): string {
   return new Date(nowMs - ROSTER_EXPOSURE_COOLDOWN_DAYS * DAY_MS).toISOString();
+}
+
+export function rosterNotificationCutoffIso(nowMs: number = Date.now()): string {
+  return new Date(nowMs - ROSTER_NOTIFICATION_COOLDOWN_DAYS * DAY_MS).toISOString();
 }
 
 export function rosterVerificationCutoffIso(nowMs: number = Date.now()): string {

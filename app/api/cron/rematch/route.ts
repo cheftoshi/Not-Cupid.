@@ -9,7 +9,7 @@ import { button, renderEmail, sendEmail } from '@/lib/email'
 import { composeLoveRosterForUser } from '@/app/api/match/roster/route'
 import {
   activeUserCutoffIso,
-  rosterExposureCutoffIso,
+  rosterNotificationCutoffIso,
   rosterVerificationCutoffIso,
 } from '@/lib/matching-policy'
 
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
             .limit(100)
 
           if (!pendingErr) {
-            const nudgeCutoff = new Date(rosterExposureCutoffIso()).getTime()
+            const nudgeCutoff = new Date(rosterNotificationCutoffIso()).getTime()
             for (const u of pendingUsers ?? []) {
               const changedAt = new Date(u.roster_changed_at).getTime()
               const handledAt = u.roster_change_notified_at ? new Date(u.roster_change_notified_at).getTime() : 0
@@ -138,6 +138,8 @@ export async function GET(req: NextRequest) {
                       to: u.email,
                       subject: 'Your Love Line roster just rotated',
                       html: loveRotationEmail(u),
+                      idempotencyKey: `roster-rotation-${u.id}-${u.roster_changed_at}`,
+                      tags: [{ name: 'category', value: 'roster_rotation' }],
                     })
                   : Promise.resolve({ ok: false }),
                 sendPushToUser(u.id, {

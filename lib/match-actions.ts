@@ -182,10 +182,18 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
 
   // First to accept → nudge the other person.
   const otherId = isUser1 ? match.user_2_id : match.user_1_id;
-  await sendInterestNudge(matchId, otherId, userId).catch((e) =>
-    console.error('acceptMatch: interest nudge failed', e)
-  );
-  await sendPushToUser(otherId, { title: 'Someone said yes 👀', body: 'A match is waiting on your answer.', url: '/dashboard', tag: `match-${matchId}` });
+  let accepterFirst = 'Someone';
+  try {
+    accepterFirst = await sendInterestNudge(matchId, otherId, userId);
+  } catch (e) {
+    console.error('acceptMatch: interest nudge failed', e);
+  }
+  await sendPushToUser(otherId, {
+    title: `${accepterFirst} chose you 👀`,
+    body: 'Say yes back to make it mutual and open the chat.',
+    url: '/dashboard',
+    tag: `match-${matchId}`,
+  });
   return { ok: true, mutual: false };
 }
 
@@ -225,29 +233,36 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
       to: user1.email,
       subject: `${user2.name.split(' ')[0]} said yes — here's their email`,
       html: html(user2.name, user2.email, user1.id),
+      idempotencyKey: `mutual-match-${matchId}-${user1.id}`,
+      tags: [{ name: 'category', value: 'mutual_match' }],
     }),
     sendEmail({
       to: user2.email,
       subject: `${user1.name.split(' ')[0]} said yes — here's their email`,
       html: html(user1.name, user1.email, user2.id),
+      idempotencyKey: `mutual-match-${matchId}-${user2.id}`,
+      tags: [{ name: 'category', value: 'mutual_match' }],
     }),
   ]);
 }
 
-async function sendInterestNudge(matchId: string, otherId: string, accepterId: string) {
-  const { data: other } = await supabaseAdmin
-    .from('users')
-    .select('id, name, email, email_notifications')
-    .eq('id', otherId)
-    .single();
-  if (!other?.email || other.email_notifications === false) return;
-
-  const { data: accepter } = await supabaseAdmin
-    .from('users')
-    .select('name')
-    .eq('id', accepterId)
-    .single();
+async function sendInterestNudge(matchId: string, otherId: string, accepterId: string): Promise<string> {
+  const [{ data: other }, { data: accepter }] = await Promise.all([
+    supabaseAdmin
+      .from('users')
+      .select('id, name, email, email_notifications')
+      .eq('id', otherId)
+      .single(),
+    supabaseAdmin
+      .from('users')
+      .select('name')
+      .eq('id', accepterId)
+      .single(),
+  ]);
   const accepterFirst = (accepter?.name || 'your match').split(' ')[0];
+  // Email can be disabled independently; the caller still uses the resolved
+  // first name for web push on subscribed devices.
+  if (!other?.email || other.email_notifications === false) return accepterFirst;
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const acceptToken = signMatchToken({ matchId, userId: otherId, action: 'accept' });
@@ -270,5 +285,8 @@ async function sendInterestNudge(matchId: string, otherId: string, accepterId: s
     to: other.email,
     subject: `${accepterFirst} is interested — your move`,
     html,
+    idempotencyKey: `match-interest-${matchId}-${other.id}`,
+    tags: [{ name: 'category', value: 'match_interest' }],
   });
+  return accepterFirst;
 }
