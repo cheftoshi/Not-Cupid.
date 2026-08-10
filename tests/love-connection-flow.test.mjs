@@ -44,13 +44,20 @@ test('admin engagement metrics exclude test accounts and show notification reach
 test('Love dashboard keeps pending and mutual people in one filterable connection inbox', () => {
   const dashboard = readFileSync(new URL('../app/dashboard/page.tsx', import.meta.url), 'utf8');
   const inbox = readFileSync(new URL('../app/dashboard/love-connections.tsx', import.meta.url), 'utf8');
+  const offer = readFileSync(new URL('../app/dashboard/love-unlock-offer.tsx', import.meta.url), 'utf8');
   assert.match(dashboard, /<LoveConnections/);
   assert.doesNotMatch(dashboard, /className=\{styles\.loveChatPanel\}/);
+  assert.doesNotMatch(dashboard, /activeCards\.find\(\(card\) => !card\.profileUnlocked/);
+  assert.match(dashboard, /lockedOffers\.map/);
   assert.match(inbox, /your-move/);
   assert.match(inbox, /chatting/);
   assert.match(inbox, /waiting/);
   assert.match(inbox, /free spot/);
   assert.match(inbox, /<EndMatchDialog/);
+  assert.match(inbox, /visible\.map\(\(connection\)/);
+  assert.match(inbox, /<LoveUnlockOffer/);
+  assert.match(inbox, /unlockItems/);
+  assert.match(offer, /unlock \$\{first\} · \$0\.99/);
 });
 
 test('phone match room separates chat, plan, and profile below the measured PWA nav', () => {

@@ -10,7 +10,6 @@ import { isPro } from '@/lib/pro';
 import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
 import { profileUnlockSummary } from '@/lib/profile-unlock';
 import { recordMonetizationEvent } from '@/lib/monetization';
-import LoveUnlockOffer from './love-unlock-offer';
 import styles from './dashboard.module.css';
 import { sameRealm } from '@/lib/realm';
 import { profileReadiness } from '@/lib/profile-readiness';
@@ -172,16 +171,16 @@ export default async function DashboardPage({
     };
   });
 
-  const lockedOffer = activeCards.find((card) => !card.profileUnlocked && card.unlockAvailable) ?? null;
-  if (lockedOffer && !isTestViewer) {
-    await recordMonetizationEvent({
+  const lockedOffers = activeCards.filter((card) => !card.profileUnlocked && card.unlockAvailable);
+  if (lockedOffers.length > 0 && !isTestViewer) {
+    await Promise.all(lockedOffers.map((card) => recordMonetizationEvent({
       userId: user.id,
       event: 'paywall_viewed',
       product: 'love_profile',
-      surface: 'love_dashboard',
-      matchId: lockedOffer.matchId,
+      surface: 'love_dashboard_connection',
+      matchId: card.matchId,
       amountCents: 99,
-    });
+    })));
   }
 
   const yourMoveCount = activeCards.filter((card) => card.status === 'your-move').length;
@@ -312,6 +311,9 @@ export default async function DashboardPage({
                 score: card.score,
                 unread: card.unread,
                 status: card.status,
+                profileUnlocked: card.profileUnlocked,
+                unlockAvailable: card.unlockAvailable,
+                unlockItems: card.unlockItems,
               }))}
             />
 
@@ -328,14 +330,6 @@ export default async function DashboardPage({
                 }))}
               />
             </div>
-
-            {lockedOffer && (
-              <LoveUnlockOffer
-                matchId={lockedOffer.matchId}
-                name={lockedOffer.name}
-                items={lockedOffer.unlockItems}
-              />
-            )}
 
           </main>
         </div>

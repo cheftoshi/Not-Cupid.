@@ -710,94 +710,93 @@
 .connectionEmpty p { margin: 0; font-size: 0.86rem; }
 .connectionFilterEmpty { font-family: Georgia, ui-serif, serif; font-size: 0.84rem; font-style: italic; }
 
-.loveUnlockOffer {
+.connectionUnlock {
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1rem;
-  padding: 1.15rem 1.25rem;
-  border: 1px solid rgba(37, 99, 255, 0.24);
-  border-radius: 18px;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--blue) 20%, var(--h-border));
+  border-radius: 13px;
   background: linear-gradient(110deg, rgba(37, 99, 255, 0.08), rgba(255, 106, 31, 0.08));
-  box-shadow: 0 18px 50px -38px rgba(37, 99, 255, 0.75);
-  margin-top: 1rem;
 }
 
-.loveUnlockIcon {
+.connectionUnlockIcon {
   display: grid;
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 2rem;
+  height: 2rem;
   place-items: center;
   border-radius: 999px;
-  background: #fff;
-  font-size: 1.15rem;
+  background: var(--h-surface);
+  font-size: 0.84rem;
 }
 
-.loveUnlockCopy { min-width: 0; }
+.connectionUnlockCopy { display: grid; gap: 0.12rem; min-width: 0; }
 
-.loveUnlockEyebrow {
-  margin-bottom: 0.25rem;
+.connectionUnlockEyebrow {
+  overflow: hidden;
+  color: var(--blue-deep);
   font-family: 'DM Mono', monospace;
-  font-size: 0.52rem;
-  letter-spacing: 0.14em;
+  font-size: 0.48rem;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
-  color: var(--h-accent);
+  white-space: nowrap;
 }
 
-.loveUnlockCopy h2 {
-  margin: 0;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.25rem, 2.8vw, 1.65rem);
-  line-height: 1.05;
+.connectionUnlockCopy strong {
   color: var(--h-text);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 0.95rem;
+  line-height: 1.15;
 }
 
-.loveUnlockCopy p {
-  margin: 0.35rem 0 0;
+.connectionUnlockCopy small {
+  overflow: hidden;
   color: var(--h-text-dim);
   font-family: Georgia, serif;
-  font-size: 0.84rem;
-  line-height: 1.45;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.loveUnlockActions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.45rem;
-  min-width: 205px;
-}
-
-.loveUnlockActions button {
+.connectionUnlockButton {
   border: 0;
   border-radius: 999px;
-  padding: 0.78rem 1rem;
+  min-height: 40px;
+  padding: 0.58rem 0.8rem;
   background: #2563ff;
   color: #fff;
   font-family: 'DM Mono', monospace;
-  font-size: 0.62rem;
+  font-size: 0.5rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.loveUnlockActions button:disabled { opacity: 0.55; cursor: wait; }
+.connectionUnlockButton:disabled { opacity: 0.55; cursor: wait; }
 
-.loveUnlockActions a {
+.connectionProLink {
+  display: block;
+  margin-top: 0.65rem;
   color: var(--h-text-dim);
   font-family: 'DM Mono', monospace;
   font-size: 0.5rem;
   letter-spacing: 0.05em;
-  text-align: center;
+  text-align: right;
   text-decoration: none;
+  text-transform: uppercase;
 }
 
-.loveUnlockActions a:hover { color: var(--h-accent); }
+.connectionProLink:hover { color: var(--h-accent); }
 
 @media (max-width: 720px) {
-  .loveUnlockOffer { grid-template-columns: auto minmax(0, 1fr); }
-  .loveUnlockActions { grid-column: 1 / -1; min-width: 0; }
+  .connectionUnlock { grid-template-columns: auto minmax(0, 1fr); }
+  .connectionUnlockButton { grid-column: 1 / -1; width: 100%; }
 }
 
 @media (max-width: 760px) {
@@ -849,7 +848,7 @@
     grid-column: auto;
   }
 
-  .loveLinks a, .historyDetails summary, .loveUnlockActions button { min-height: 44px; }
+  .loveLinks a, .historyDetails summary, .connectionUnlockButton { min-height: 44px; }
   .loveRosterCard { width: min(76vw, 270px); flex-basis: min(76vw, 270px); }
   .loveRosterRail { margin-inline: -0.15rem; padding-bottom: 0.85rem; }
   .loveSwapSheet { align-self: flex-end; border-radius: 20px 20px 0 0; padding: 1.2rem; padding-bottom: max(1.2rem, var(--app-safe-bottom, 0px)); }

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { toast } from '@/components/feedback';
@@ -41,19 +40,27 @@ export default function LoveUnlockOffer({
   }
 
   return (
-    <section className={styles.loveUnlockOffer} aria-label={`${first}'s compatibility profile`}>
-      <div className={styles.loveUnlockIcon}>🔒</div>
-      <div className={styles.loveUnlockCopy}>
-        <div className={styles.loveUnlockEyebrow}>go beyond the first impression</div>
-        <h2>{first} shared more with you.</h2>
-        <p>{items.slice(0, 4).join(' · ')}{items.length > 4 ? ` · +${items.length - 4} more` : ''}</p>
+    <div className={styles.connectionUnlock} aria-label={`${first}'s private compatibility profile`}>
+      <div className={styles.connectionUnlockIcon} aria-hidden="true">🔒</div>
+      <div className={styles.connectionUnlockCopy}>
+        <div className={styles.connectionUnlockEyebrow}>
+          {first}&apos;s private profile · {items.length} {items.length === 1 ? 'detail' : 'details'}
+        </div>
+        <strong>{first} has more to share.</strong>
+        <small>
+          {items.slice(0, 3).join(' · ')}
+          {items.length > 3 ? ` · +${items.length - 3} more` : ''}
+        </small>
       </div>
-      <div className={styles.loveUnlockActions}>
-        <button type="button" onClick={unlock} disabled={busy}>
-          {busy ? 'opening…' : 'unlock once · $0.99'}
-        </button>
-        <Link href="/pro">or unlock every profile with Pro</Link>
-      </div>
-    </section>
+      <button
+        className={styles.connectionUnlockButton}
+        type="button"
+        onClick={unlock}
+        disabled={busy}
+        aria-label={`Unlock ${first}'s private profile for 99 cents`}
+      >
+        {busy ? 'opening…' : `unlock ${first} · $0.99`}
+      </button>
+    </div>
   );
 }
