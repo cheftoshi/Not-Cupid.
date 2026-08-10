@@ -13,6 +13,7 @@ import { recordMonetizationEvent } from '@/lib/monetization';
 import LoveUnlockOffer from './love-unlock-offer';
 import styles from './dashboard.module.css';
 import { sameRealm } from '@/lib/realm';
+import { profileReadiness } from '@/lib/profile-readiness';
 
 export const dynamic = 'force-dynamic';
 
@@ -212,6 +213,7 @@ export default async function DashboardPage({
     ...(Array.isArray((user as any).hobbies) ? (user as any).hobbies : []),
     ...(Array.isArray((user as any).sports) ? (user as any).sports : []),
   ].filter(Boolean).slice(0, 6);
+  const readiness = profileReadiness(user);
 
   return (
     <div className={styles.page}>
@@ -282,6 +284,18 @@ export default async function DashboardPage({
                 <a href="/quiz?retake=1">restart core quiz</a>
               </div>
             </section>
+
+            {!readiness.complete && (
+              <section className={styles.loveCompletionCard}>
+                <div className={styles.panelKicker}>{readiness.coreReady ? 'your profile is live' : 'matching setup'}</div>
+                <h2>Complete your profile</h2>
+                <p>Better context gives each person a clearer reason to choose you.</p>
+                <div>
+                  {readiness.missing.map((item) => <span key={item.key}>+ {item.label}</span>)}
+                </div>
+                <a href="/profile?mode=edit&from=love-completion">finish these details →</a>
+              </section>
+            )}
 
             <section className={styles.loveChatPanel}>
               <div className={styles.panelKicker}>your conversations</div>

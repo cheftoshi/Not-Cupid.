@@ -17,6 +17,7 @@ import { isHardLocked } from '@/lib/ghost';
 import {
   LOVE_ROSTER_OPTIONS,
   ROSTER_RETURN_ROTATION_HOURS,
+  addedRosterCandidateIds,
   activeUserCutoffIso,
   matchingActivitySegment,
   orderForRosterRotation,
@@ -39,10 +40,10 @@ export const dynamic = 'force-dynamic';
 // rotation time so the dashboard can make the daily return loop visible.
 const ROSTER_TTL_MS = ROSTER_RETURN_ROTATION_HOURS * 60 * 60 * 1000;
 
-export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+export async function composeLoveRosterForUser(
+  user: any,
+  options: { recordNotificationChange?: boolean; interactive?: boolean } = {},
+) {
   // Free any of the caller's timed-out matches first, so a just-expired match
   // doesn't block their roster (and so they show as 'waiting' for picking).
   await releaseTimedOutMatches(user.id);
@@ -58,21 +59,21 @@ export async function GET() {
   // At capacity, the roster is still BROWSABLE — the user just can't open a new
   // chat without closing one first (the client gates picking on `atCapacity`).
   const atCapacity = myLive.length >= MAX_CONNECTIONS;
-  if (user.pool_active === false) return NextResponse.json({ roster: [], paused: true });
+  if (user.pool_active === false) return { roster: [], paused: true, rosterChanged: false };
 
   // Ghosted/paused users are locked out of matching on BOTH lines. They can
   // self-reactivate (free, non-destructive) unless they're past the hard cap,
   // in which case only an admin can restore them.
   const cooldownActive = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > now;
   if (user.matching_disabled_at || cooldownActive) {
-    return NextResponse.json({ roster: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes) });
+    return { roster: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes), rosterChanged: false };
   }
 
   // Opening the Love roster is a direct signal that this person is available
   // again. Clear the ignored-pick penalty so a previously benched member can
   // re-enter other active users' candidate pools without needing an incoming
   // pick (which a benched member could never receive) to recover.
-  if ((user.ignored_picks ?? 0) > 0) {
+  if (options.interactive !== false && (user.ignored_picks ?? 0) > 0) {
     await supabaseAdmin.from('users').update({ ignored_picks: 0 }).eq('id', user.id);
   }
 
@@ -118,7 +119,7 @@ export async function GET() {
     ({ data: pool } = await buildPool(false));
   }
 
-  if (!pool || pool.length === 0) return NextResponse.json({ roster: [], atCapacity });
+  pool = pool ?? [];
 
   // Wait-time decay input (same derivation as /api/match).
   const { data: lastEnded } = await supabaseAdmin
@@ -328,11 +329,22 @@ export async function GET() {
       algorithmVersion: MATCHING_ALGORITHM_VERSION,
     }));
 
+  const priorIds = snapshot.slice(0, size);
+  const currentIds = roster.map((candidate) => candidate.id);
+  // "Changed" means at least one genuinely new person entered a previously
+  // composed roster. Reordering the same people, first-time composition, or a
+  // roster shrinking to empty never earns a rotation notification.
+  const addedCandidateIds = addedRosterCandidateIds(priorIds, currentIds);
+  const rosterChanged = priorIds.length > 0 && addedCandidateIds.length > 0;
+
   if (persist) {
-    // Fresh recompute resets the 12h clock; a backfill-only change keeps the
+    // Fresh recompute resets the 24-hour clock; a backfill-only change keeps the
     // existing clock so the rotation cadence stays honest.
     const updates: Record<string, any> = { roster_snapshot: roster.map((r) => r.id) };
     if (!snapshotFresh) updates.roster_refreshed_at = new Date().toISOString();
+    if (!snapshotFresh && rosterChanged && options.recordNotificationChange) {
+      updates.roster_changed_at = new Date().toISOString();
+    }
     await supabaseAdmin.from('users').update(updates).eq('id', user.id);
 
     // Record only rosters that were actually composed/persisted. Upsert keeps
@@ -359,10 +371,31 @@ export async function GET() {
   }
 
   const rotationStart = snapshotFresh ? refreshedAt : Date.now();
-  return NextResponse.json({
+  return {
     roster,
     atCapacity,
+    rosterChanged: !snapshotFresh && rosterChanged,
+    addedCandidateCount: !snapshotFresh ? addedCandidateIds.length : 0,
     nextRotationAt: new Date(rotationStart + ROSTER_TTL_MS).toISOString(),
     rotationHours: ROSTER_RETURN_ROTATION_HOURS,
-  });
+  };
+}
+
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // If a background verification already produced a fresh roster, opening it
+  // is the notification: mark that pending change seen so cron cannot email a
+  // user about profiles they have already viewed.
+  const changedAt = user.roster_changed_at ? new Date(user.roster_changed_at).getTime() : 0;
+  const notifiedAt = user.roster_change_notified_at ? new Date(user.roster_change_notified_at).getTime() : 0;
+  if (changedAt > notifiedAt) {
+    await supabaseAdmin
+      .from('users')
+      .update({ roster_change_notified_at: user.roster_changed_at })
+      .eq('id', user.id);
+  }
+
+  return NextResponse.json(await composeLoveRosterForUser(user));
 }

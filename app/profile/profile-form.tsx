@@ -12,6 +12,7 @@ import { SUN_SIGNS } from '@/lib/astrology';
 import { compressImage } from '@/lib/compress-image';
 import { confirmDialog } from '@/components/feedback';
 import { profilePromptDrafts, PROFILE_PROMPT_OPTIONS, type ProfilePrompt } from '@/lib/profile-prompts';
+import { profileReadiness } from '@/lib/profile-readiness';
 
 type Props = {
   initialUser: any;
@@ -32,23 +33,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, onSaved
 
   const needsQuiz = !user.archetype || typeof user.score_honesty !== 'number';
   const gallery: string[] = Array.isArray(user.gallery) ? user.gallery : [];
-  const interestsCount = [
-    ...(Array.isArray(user.hobbies) ? user.hobbies : []),
-    ...(Array.isArray(user.music) ? user.music : []),
-    ...(Array.isArray(user.food) ? user.food : []),
-  ].filter(Boolean).length;
   const prompts = profilePromptDrafts(user.prompts);
-  const qualityItems = [
-    { label: 'face photo', done: Boolean(user.photo_url) },
-    { label: '2+ extra photos', done: gallery.length >= 2 },
-    { label: 'short hello video', done: Boolean(user.intro_video_url) },
-    { label: 'bio with texture', done: (user.bio || '').trim().length >= 80 },
-    { label: 'conversation prompt', done: prompts.length >= 1 },
-    { label: '3+ interests', done: interestsCount >= 3 },
-    { label: 'relationship style', done: Boolean(user.relationship_style) },
-    { label: 'basics filled', done: Boolean(user.age && user.gender && user.seeking && user.zip) },
-    { label: 'quiz complete', done: !needsQuiz },
-  ];
+  const qualityItems = profileReadiness(user).items.map((item) => ({ label: item.label, done: item.ready }));
   const qualityPercent = Math.round((qualityItems.filter((item) => item.done).length / qualityItems.length) * 100);
   const nextQualityItem = qualityItems.find((item) => !item.done);
 

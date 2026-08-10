@@ -8,6 +8,7 @@ import {
   RETURNING_USER_STORAGE_KEY,
 } from '@/lib/returning-user';
 import styles from './returning-user-welcome.module.css';
+import { profileReadiness } from '@/lib/profile-readiness';
 
 type ProfileSnapshot = {
   name?: string | null;
@@ -21,6 +22,18 @@ type ProfileSnapshot = {
   matching_disabled_at?: string | null;
   matching_cooldown_until?: string | null;
   ghost_strikes?: number | null;
+  age?: number | null;
+  gender?: string | null;
+  seeking?: string | null;
+  zip?: string | null;
+  archetype?: string | null;
+  score_honesty?: number | null;
+  bio?: string | null;
+  gallery?: unknown;
+  music?: unknown;
+  food?: unknown;
+  hobbies?: unknown;
+  sports?: unknown;
 };
 
 function trackReactivation(action: string) {
@@ -52,6 +65,7 @@ function ReturningUserWelcomeInner() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileSnapshot | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [reactivating, setReactivating] = useState(false);
   const [reactivationMessage, setReactivationMessage] = useState('');
   const handled = useRef(false);
@@ -69,11 +83,13 @@ function ReturningUserWelcomeInner() {
 
     if (alreadySeen) return;
     setOpen(true);
+    setProfileLoading(true);
     trackReactivation('welcome_viewed');
     fetch('/api/profile')
       .then((response) => response.ok ? response.json() : null)
       .then((data) => setProfile(data?.user || null))
-      .catch(() => setProfile(null));
+      .catch(() => setProfile(null))
+      .finally(() => setProfileLoading(false));
   }, [pathname, searchParams]);
 
   useEffect(() => {
@@ -132,16 +148,7 @@ function ReturningUserWelcomeInner() {
 
   if (!open) return null;
 
-  const prompts = Array.isArray(profile?.prompts)
-    ? profile.prompts.filter((prompt: any) => typeof prompt?.answer === 'string' && prompt.answer.trim()).length
-    : 0;
-  const readiness = [
-    { label: 'main photo', ready: !!profile?.photo_url },
-    { label: 'video hello', ready: !!profile?.intro_video_url },
-    { label: 'conversation prompt', ready: prompts > 0 },
-    { label: 'Love answers', ready: !!profile?.attach_style && !!profile?.relationship_style },
-  ];
-  const readyCount = readiness.filter((item) => item.ready).length;
+  const readiness = profileReadiness(profile || {});
   const firstName = (profile?.name || 'there').split(' ')[0];
   const cooldownActive = !!profile?.matching_cooldown_until && new Date(profile.matching_cooldown_until).getTime() > Date.now();
   const hardLocked = Number(profile?.ghost_strikes || 0) >= 5;
@@ -160,24 +167,28 @@ function ReturningUserWelcomeInner() {
         <button className={styles.close} type="button" onClick={() => dismiss('welcome_dismissed')} aria-label="Close welcome back update" autoFocus>×</button>
 
         <div className={styles.eyebrow}>Love Line · welcome back</div>
-        <h2 id="returning-user-title">{firstName}, your old profile doesn’t have to do all the work.</h2>
+        <h2 id="returning-user-title">{profileLoading ? `${firstName}, checking your profile…` : `${firstName}, ${readiness.coreReady ? 'your Love Line is ready.' : 'let’s finish your Love Line.'}`}</h2>
         <p className={styles.lede}>
-          Love Line changed while you were away. Take two minutes to check what still feels like you, add the new profile pieces, then jump back into your rotation.
+          {profileLoading
+            ? 'One moment while we load the profile people will actually see.'
+            : readiness.coreReady
+            ? 'You can use the app now. The profile card below shows the exact details that would make it easier for someone to choose you.'
+            : 'Finish the matching basics first, then your profile card will guide the optional improvements without blocking the rest of the app.'}
         </p>
 
-        <div className={styles.readiness}>
+        {!profileLoading && <div className={styles.readiness}>
           <div className={styles.readinessTop}>
-            <span>your relaunch check</span>
-            <strong>{readyCount}/4 ready</strong>
+            <span>{readiness.coreReady ? 'match-ready profile' : 'matching basics needed'}</span>
+            <strong>{readiness.readyCount}/{readiness.items.length} profile details</strong>
           </div>
           <div className={styles.checks}>
-            {readiness.map((item) => (
+            {readiness.items.map((item) => (
               <span key={item.label} className={item.ready ? styles.ready : ''}>
                 {item.ready ? '✓' : '+'} {item.label}
               </span>
             ))}
           </div>
-        </div>
+        </div>}
 
         {needsReactivation && (
           <div className={styles.reactivateCard}>
@@ -197,10 +208,10 @@ function ReturningUserWelcomeInner() {
         {reactivationMessage && <div className={styles.reactivationMessage}>{reactivationMessage}</div>}
 
         <div className={styles.actions}>
-          <button type="button" className={styles.primary} onClick={() => go('/profile?mode=edit&from=welcome-back', 'profile_review_started')}>
-            <span>recommended · about 2 minutes</span>
-            <strong>review & relaunch my profile</strong>
-            <em>photos · video · prompts · preferences →</em>
+          <button type="button" className={styles.primary} disabled={profileLoading} onClick={() => go('/profile?mode=edit&from=welcome-back', 'profile_review_started')}>
+            <span>{readiness.complete ? 'everything important is filled' : `${readiness.missing.length} profile ${readiness.missing.length === 1 ? 'detail' : 'details'} left`}</span>
+            <strong>{readiness.complete ? 'review my profile' : 'complete my profile'}</strong>
+            <em>{readiness.complete ? 'photos · answers · preferences →' : `${readiness.missing.map((item) => item.label).join(' · ')} →`}</em>
           </button>
           <button type="button" className={styles.secondary} onClick={() => go('/quiz?line=love&returning=1', 'love_answers_started')}>
             <strong>retune my Love answers</strong>

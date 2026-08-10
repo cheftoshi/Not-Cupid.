@@ -197,6 +197,7 @@
 .loveSwapChoice { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; min-height: 48px; }
 
 .loveProfileCard,
+.loveCompletionCard,
 .loveChatPanel,
 .loveHistoryPanel {
   background: color-mix(in srgb, var(--h-surface) 96%, transparent);
@@ -211,6 +212,57 @@
   gap: 0.9rem;
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--h-surface) 94%, var(--blue-pale)), var(--h-surface));
+}
+
+.loveCompletionCard {
+  display: grid;
+  gap: 0.6rem;
+  border-color: rgba(255, 106, 31, 0.28);
+  background: linear-gradient(145deg, rgba(255, 106, 31, 0.08), var(--h-surface));
+}
+
+.loveCompletionCard h2 {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: 1.35rem;
+  font-style: italic;
+}
+
+.loveCompletionCard p {
+  margin: 0;
+  color: var(--h-text-dim);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.loveCompletionCard > div:not(.panelKicker) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.36rem;
+}
+
+.loveCompletionCard > div:not(.panelKicker) span {
+  border: 1px dashed rgba(255, 106, 31, 0.35);
+  border-radius: 999px;
+  color: var(--h-accent-2);
+  padding: 0.32rem 0.52rem;
+  font-size: 0.64rem;
+}
+
+.loveCompletionCard a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 999px;
+  background: #0b0b0b;
+  color: #fff;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-decoration: none;
+  text-transform: uppercase;
 }
 
 .loveProfileTop {

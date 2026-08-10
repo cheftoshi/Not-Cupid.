@@ -22,6 +22,10 @@ export function rosterExposureCutoffIso(nowMs: number = Date.now()): string {
   return new Date(nowMs - ROSTER_EXPOSURE_COOLDOWN_DAYS * DAY_MS).toISOString();
 }
 
+export function rosterVerificationCutoffIso(nowMs: number = Date.now()): string {
+  return new Date(nowMs - ROSTER_RETURN_ROTATION_HOURS * 60 * 60 * 1000).toISOString();
+}
+
 export function isActiveWithinWindow(
   lastUsedAt: string | null | undefined,
   nowMs: number = Date.now(),
@@ -47,6 +51,12 @@ export function matchingActivitySegment(
 }
 
 type RankedWithId = { user: { id: string } };
+
+export function addedRosterCandidateIds(previousIds: string[], currentIds: string[]): string[] {
+  if (previousIds.length === 0) return [];
+  const previous = new Set(previousIds);
+  return currentIds.filter((id) => !previous.has(id));
+}
 
 /**
  * Stable, policy-first ordering:

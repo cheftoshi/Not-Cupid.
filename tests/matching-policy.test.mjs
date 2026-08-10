@@ -7,6 +7,7 @@ import {
   RECENT_USER_DAYS,
   ROSTER_EXPOSURE_COOLDOWN_DAYS,
   ROSTER_RETURN_ROTATION_HOURS,
+  addedRosterCandidateIds,
   activeUserCutoffIso,
   isActiveWithinWindow,
   matchingActivitySegment,
@@ -31,6 +32,13 @@ test('matching activity and exposure cutoffs use 12 and 7 days', () => {
   assert.equal(matchingActivitySegment(new Date(now - 2 * DAY_MS).toISOString(), now), 'recent');
   assert.equal(matchingActivitySegment(new Date(now - 8 * DAY_MS).toISOString(), now), 'active');
   assert.equal(matchingActivitySegment(new Date(now - 13 * DAY_MS).toISOString(), now), 'dormant');
+});
+
+test('roster change detection requires a fresh candidate in an existing roster', () => {
+  assert.deepEqual(addedRosterCandidateIds([], ['a', 'b']), []);
+  assert.deepEqual(addedRosterCandidateIds(['a', 'b'], ['b', 'a']), []);
+  assert.deepEqual(addedRosterCandidateIds(['a', 'b'], ['b', 'c']), ['c']);
+  assert.deepEqual(addedRosterCandidateIds(['a', 'b'], []), []);
 });
 
 test('roster rotation prefers active unseen candidates and preserves score order inside tiers', () => {

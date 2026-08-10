@@ -713,6 +713,38 @@
   font-style: normal;
 }
 
+.profileCompletionCard {
+  display: grid;
+  gap: 0.28rem;
+  border: 1px solid rgba(255, 106, 31, 0.3);
+  border-radius: 15px;
+  background: rgba(255, 106, 31, 0.07);
+  padding: 0.76rem 0.82rem;
+}
+
+.profileCompletionCard span {
+  color: var(--h-accent-2);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.49rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.profileCompletionCard strong {
+  color: var(--h-text);
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.96rem;
+  font-style: italic;
+}
+
+.profileCompletionCard p {
+  margin: 0;
+  color: var(--h-text-dim);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
 .profileMiniTags {
   display: flex;
   flex-wrap: wrap;

@@ -8,10 +8,12 @@ import { VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import styles from './hub.module.css';
 import { SkeletonStyles, SkeletonRow } from '@/components/skeleton';
+import { profileReadiness } from '@/lib/profile-readiness';
 
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
   gallery?: string[]; bio?: string | null; relationship_style?: string | null;
+  gender?: string | null; seeking?: string | null; zip?: string | null; score_honesty?: number | null;
   hasIntroVideo?: boolean; hasPrompt?: boolean;
   attach_style?: string | null; vibes?: Record<string, number> | null; sun_sign?: string | null;
   music?: string[]; food?: string[]; hobbies?: string[]; sports?: string[];
@@ -129,16 +131,13 @@ export default function HubClient({
   const yourMoveLove = loveMatches.filter((m) => !m.iAccepted);
   const waitingLove = loveMatches.filter((m) => m.iAccepted && !m.bothAccepted);
   const interestCount = interestCats.reduce((sum, c) => sum + c.items.length, 0);
-  const profileChecks = [
-    !!photo,
-    hasArchetype,
-    !needsLoveDeep,
-    interestCount >= 3,
-    vibeTags.length >= 3,
-    !!profile.hasIntroVideo,
-    !!profile.hasPrompt,
-  ];
-  const profilePercent = Math.round((profileChecks.filter(Boolean).length / profileChecks.length) * 100);
+  const readiness = profileReadiness({
+    ...profile,
+    photo_url: photo,
+    intro_video_url: profile.hasIntroVideo ? 'present' : null,
+    prompts: profile.hasPrompt ? [{ answer: 'present' }] : [],
+  });
+  const profilePercent = readiness.percent;
 
   return (
     <main className={styles.hub}>
@@ -147,7 +146,7 @@ export default function HubClient({
 
       <div className={styles.dashWrap}>
         <section className={styles.hubTop}>
-          <Link href="/profile" className={styles.profileMini}>
+          <Link href={readiness.complete ? '/profile' : '/profile?mode=edit&from=hub-completion'} className={styles.profileMini}>
             <div className={styles.profileMiniTop}>
               <div className={styles.profileMiniAvatar}>
                 {photo
@@ -182,6 +181,14 @@ export default function HubClient({
               {msg && <em>{msg}</em>}
             </div>
 
+            {!readiness.complete && (
+              <div className={styles.profileCompletionCard}>
+                <span>{readiness.coreReady ? 'your profile is live' : 'finish your matching basics'}</span>
+                <strong>Complete your profile</strong>
+                <p>Still missing: {readiness.missing.map((item) => item.label).join(' · ')}.</p>
+              </div>
+            )}
+
             <div className={styles.profileMiniTags}>
               {[...(profile.music ?? []), ...(profile.food ?? []), ...(profile.hobbies ?? []), ...(profile.sports ?? [])].slice(0, 8).map((t, i) => (
                 <span key={`${t}-${i}`}>{t}</span>
@@ -201,7 +208,7 @@ export default function HubClient({
               </div>
             )}
 
-            <div className={styles.profileMiniCta}>edit baseline profile →</div>
+            <div className={styles.profileMiniCta}>{readiness.complete ? 'edit baseline profile →' : 'complete your profile →'}</div>
           </Link>
 
           <div className={styles.todayCard}>

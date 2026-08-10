@@ -149,6 +149,7 @@
 
 .actions { display: grid; gap: 0.65rem; margin-top: 1rem; }
 .actions button { width: 100%; font-family: inherit; cursor: pointer; text-align: left; }
+.actions button:disabled { opacity: 0.55; cursor: wait; }
 .primary {
   display: grid;
   gap: 0.25rem;

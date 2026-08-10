@@ -2,12 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-test('maintenance cron cannot clear rosters or announce an unverified rotation', () => {
+test('maintenance cron only announces a roster after verified membership change', () => {
   const route = readFileSync(new URL('../app/api/cron/rematch/route.ts', import.meta.url), 'utf8');
-  assert.doesNotMatch(route, /sendEmail/);
-  assert.doesNotMatch(route, /sendPushToUser/);
+  assert.match(route, /composeLoveRosterForUser/);
+  assert.match(route, /if \(result\.rosterChanged\) rostersChanged\+\+/);
+  assert.match(route, /changedAt <= handledAt/);
+  assert.match(route, /nudgedAt >= nudgeCutoff/);
+  assert.match(route, /roster_notification_attempted_at/);
+  assert.match(route, /6 \* 60 \* 60 \* 1000/);
+  assert.match(route, /sendEmail/);
+  assert.match(route, /sendPushToUser/);
   assert.doesNotMatch(route, /roster_snapshot:\s*\[\]/);
-  assert.doesNotMatch(route, /Your Love Line roster just rotated/);
+  assert.match(route, /At least one fresh compatible person is now in your roster/);
 });
 
 test('Love roster exposes only consented availability and coarse activity labels', () => {
