@@ -5,6 +5,7 @@ export type ExperimentAnswers = {
   intention: 'relationship' | 'intentional' | 'open';
   energy: 'conversation' | 'playful' | 'foodie';
   conversationStarter: string;
+  availableSlotKeys?: string[];
   preferences?: {
     gender: 'm' | 'f' | 'nb';
     orientation: 'straight' | 'bisexual' | 'gay' | 'lesbian' | 'pansexual' | 'queer' | 'asexual' | 'questioning' | 'unlabeled';
@@ -25,37 +26,36 @@ export const RAFFLE = {
   centerZip: '02116',
   radiusMiles: 20,
   entriesOpen: false, // quiet mode: keep the flow/rules live, but block new public entries
-  statusLabel: 'August 19 & 21',
+  statusLabel: 'Thursday, August 20',
   cap: 100, // entry closes at 100 entrants → auto-draw fires
   maxAttempts: 2, // at most two sealed shortlist rounds per entrant
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v6-2026-08-08',
+  termsVersion: 'boston-v7-2026-08-15',
   algorithmVersion: 'dating-experiment-two-pair-v3',
   minimumPairScore: 55,
   videoMinSeconds: 5,
   videoMaxSeconds: 15,
   videoMaxBytes: 25 * 1024 * 1024,
-  entryClose: '2099-12-31T04:59:59.000Z',
-  entryCloseLabel: 'TBD',
-  happensAt: '2099-12-31T23:00:00.000Z',
-  dateLabel: 'August 19 or August 21, 2026 — time and restaurant details to come',
+  entryClose: '2026-08-18T16:00:00.000Z',
+  entryCloseLabel: 'Tuesday, August 18 at 12:00 PM ET',
+  happensAt: '2026-08-21T00:30:00.000Z',
+  dateLabel: 'Thursday, August 20, 2026 — 6:30 PM or 8:30 PM ET; restaurant revealed privately later',
   dateOptions: [
-    { key: '2026-08-19', label: 'August 19, 2026' },
-    { key: '2026-08-21', label: 'August 21, 2026' },
+    { key: 'aug20-1830', label: 'Thursday, August 20 · 6:30 PM ET' },
+    { key: 'aug20-2030', label: 'Thursday, August 20 · 8:30 PM ET' },
   ],
-  drawLabel: 'TBD',
+  drawLabel: 'Tuesday, August 18 after 12:00 PM ET',
   budget: 200,
-  // These readiness acknowledgments stay false until the operator confirms the
-  // $400 maximum funding, venue, sponsor details, and counsel-reviewed rules.
-  prizeFundingConfirmed: false,
+  // The operator confirmed the $400 maximum prize funding on August 15. Venue,
+  // sponsor details, and counsel review remain independent fail-closed gates.
+  prizeFundingConfirmed: true,
   venueConfirmed: false,
   sponsorDetailsConfirmed: false,
   legalReviewApproved: false,
-  // Time and venue will be attached to each event date only after fulfillment
-  // is confirmed, and revealed privately to selected mutual pairs.
-  restaurant: 'Boston restaurant and time to be confirmed with the selected pair.',
+  // Times are public. The venue is revealed privately only after selection.
+  restaurant: 'Restaurant details will be shared privately with the selected pair.',
   tagline: 'Two compatible Boston pairs. Dinner is on us.',
 };
 

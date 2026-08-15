@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { RAFFLE, raffleEligible, raffleEntriesOpen } from '@/lib/raffle';
+import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import { drawRaffle } from '@/lib/raffle-draw';
 import { isManagedStorageUrl } from '@/lib/request-security';
+import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 import {
   experimentGendersFromLegacy,
   normalizeExperimentGenders,
@@ -21,8 +22,10 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.is_test === true) return NextResponse.json({ error: 'Test accounts cannot enter the live Dating Experiment.' }, { status: 403 });
-  if (!raffleEntriesOpen()) return NextResponse.json({ error: 'Entries are paused while we finish the public-launch checklist.' }, { status: 403 });
-  if (!raffleEligible(user)) return NextResponse.json({ error: `This experiment is for Massachusetts residents within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}.` }, { status: 400 });
+  const event = await getDatingExperimentEvent();
+  if (!datingExperimentEntriesOpen(event)) return NextResponse.json({ error: 'Entries are paused while we finish the public-launch checklist.' }, { status: 403 });
+  const eventLocation = { centerZip: event!.center_zip, radiusMiles: Number(event!.radius_miles) };
+  if (!raffleEligible(user, eventLocation)) return NextResponse.json({ error: `This experiment is for Massachusetts residents within ${eventLocation.radiusMiles} miles of ${eventLocation.centerZip}.` }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
   const video_url = body.video_url ? String(body.video_url).slice(0, 2000) : null;
@@ -42,12 +45,17 @@ export async function POST(req: NextRequest) {
     ? normalizeExperimentGenders(body.seekingGenders)
     : experimentGendersFromLegacy(rawSeeking);
   const ageMin = Number(body.ageMin), ageMax = Number(body.ageMax);
+  const eventSlotKeys = new Set(event!.dinner_dates.map((slot) => slot.slot_key));
+  const availableSlotKeys = Array.isArray(body.availableSlotKeys)
+    ? [...new Set(body.availableSlotKeys.map((value: unknown) => String(value)).filter((value: string) => eventSlotKeys.has(value)))]
+    : [];
   const ageOk = Number.isInteger(ageMin) && Number.isInteger(ageMax)
     && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   if (!gender) return NextResponse.json({ error: 'Choose how you identify for this experiment.' }, { status: 400 });
   if (!orientation) return NextResponse.json({ error: 'Choose the orientation label that feels closest to you.' }, { status: 400 });
   if (!seekingGenders.length) return NextResponse.json({ error: 'Choose at least one gender you would like to meet.' }, { status: 400 });
   if (!ageOk) return NextResponse.json({ error: 'Choose a valid age range between 21 and 99.' }, { status: 400 });
+  if (!availableSlotKeys.length) return NextResponse.json({ error: 'Choose at least one dinner time you can attend.' }, { status: 400 });
 
   // These choices are experiment-specific. Do not silently widen or otherwise
   // mutate the user's general Love Line preferences.
@@ -72,7 +80,7 @@ export async function POST(req: NextRequest) {
   if (!intention || !energy || conversationStarter.length < 3) {
     return NextResponse.json({ error: 'Finish the three short experiment questions before entering.' }, { status: 400 });
   }
-  if (body.termsVersion !== RAFFLE.termsVersion || body.termsAccepted !== true) {
+  if (body.termsVersion !== event!.terms_version || body.termsAccepted !== true) {
     return NextResponse.json({ error: 'Please agree to the current Dating Experiment Terms.' }, { status: 400 });
   }
   if (body.videoConsent !== true) return NextResponse.json({ error: 'Please consent to the private profile and video preview.' }, { status: 400 });
@@ -90,11 +98,12 @@ export async function POST(req: NextRequest) {
       p_video_url: video_url,
       p_video_duration_seconds: videoDuration,
       p_notify: notify,
-      p_terms_version: RAFFLE.termsVersion,
+      p_terms_version: event!.terms_version,
       p_questionnaire: {
         intention,
         energy,
         conversationStarter,
+        availableSlotKeys,
         preferences: { gender, orientation, seekingGenders, ageMin, ageMax },
       },
       p_accepted_at: acceptedAt,

@@ -23,11 +23,11 @@ const STEPS = [
 const FAQS = [
   {
     q: 'Is the Dating Experiment open now?',
-    a: `Not yet. The dinner dates are ${RAFFLE.dateLabel}. The entry window, shortlist timing, exact dinner times, restaurant, safeguards, and operating plan are still being finalized. Reading this page or visiting the experiment does not enter you.`,
+    a: `The experiment screen always shows the live entry status. The two planned dinner slots are ${RAFFLE.dateLabel}. Reading this page, reviewing the rules, or visiting the experiment does not enter you.`,
   },
   {
     q: 'Who will be able to join?',
-    a: `The first round is planned for genuine NotCupid members who are 21 or older, live in Massachusetts within about ${RAFFLE.radiusMiles} miles of ZIP ${RAFFLE.centerZip}, have a complete profile, and can attend the fixed Boston dinner. Test accounts cannot enter.`,
+    a: `The first round is for genuine NotCupid members who are 21 or older, live in Massachusetts within about ${RAFFLE.radiusMiles} miles of ZIP ${RAFFLE.centerZip}, have a complete profile, and can attend at least one August 20 dinner slot. Test accounts cannot enter.`,
   },
   {
     q: 'Does it cost anything?',
@@ -35,7 +35,7 @@ const FAQS = [
   },
   {
     q: 'How is a pair selected?',
-    a: `The system checks mutual preferences, local eligibility, prior pairings, and a minimum compatibility score. It first tries to give as many people as possible one strong reciprocal option, then fills second slots where the pool supports it. You may say yes to one, both, or neither. Only mutual yes pairs enter the final selection. Compatibility gets a limited 1×–3× weight, and favorites add a small disclosed boost. The system selects up to ${RAFFLE.winnerPairCount} pairs without replacement, so nobody can win twice.`,
+    a: `The system checks mutual preferences, shared dinner-time availability, local eligibility, prior pairings, and a minimum compatibility score. It first tries to give as many people as possible one strong reciprocal option, then fills second slots where the pool supports it. You may say yes to one, both, or neither. Only mutual yes pairs enter the final selection. Compatibility gets a limited 1×–3× weight, and favorites add a small disclosed boost. The system selects up to ${RAFFLE.winnerPairCount} pairs without replacement and assigns different shared time slots, so nobody can win twice and nobody is assigned a time they did not choose.`,
   },
   {
     q: 'Can all genders and orientations participate?',
@@ -56,6 +56,10 @@ const FAQS = [
   {
     q: 'Why is a short video required?',
     a: `A real ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello adds presence and trust that photos alone cannot. Keep it simple: your name and one thing you would enjoy doing or talking about on a Boston date. It is not a public audition.`,
+  },
+  {
+    q: 'What if I can make only one dinner time?',
+    a: 'Choose only that time. You can choose 6:30 PM, 8:30 PM, or both. A person can appear in your shortlist only when you both marked at least one of the same slots available, and a winning pair is assigned only to a shared slot.',
   },
   {
     q: 'Who can see my video and profile?',
@@ -106,7 +110,7 @@ export default function DatingExperimentFaqPage() {
 
         {!raffleEntriesOpen() && (
           <div style={{ marginTop: '1.25rem', padding: '0.85rem 1rem', border: '1px solid rgba(255,106,31,0.35)', borderRadius: 12, background: 'rgba(255,106,31,0.08)', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--h-text)' }}>Quiet mode:</b> entries and video uploads are paused. Dinner dates are August 19 and August 21, 2026; exact times and restaurant details are still to come.
+            <b style={{ color: 'var(--h-text)' }}>Launch checklist:</b> entries and video uploads are paused until the remaining operating and legal gates are confirmed. The two dinner slots are Thursday, August 20 at 6:30 PM and 8:30 PM ET; the restaurant will be revealed privately to selected pairs.
           </div>
         )}
 

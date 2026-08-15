@@ -138,7 +138,7 @@ export async function GET() {
       videoMinSeconds: RAFFLE.videoMinSeconds, videoMaxSeconds: RAFFLE.videoMaxSeconds, videoMaxBytes: RAFFLE.videoMaxBytes,
       shortlistMaxOptions: event?.shortlist_max_options ?? RAFFLE.shortlistMaxOptions,
       winnerPairCount: event?.winner_pair_limit ?? RAFFLE.winnerPairCount,
-      dateOptions: event?.dinner_dates.map((date) => ({ key: date.event_date, label: date.public_label })) ?? RAFFLE.dateOptions,
+      dateOptions: event?.dinner_dates.map((date) => ({ key: date.slot_key, label: date.public_label })) ?? RAFFLE.dateOptions,
       spotsLeft, closed: !entriesOpen || spotsLeft === 0,
     },
     eligible, hasProfile, entered, entry, shortlist, shortlistRound, draw, other,

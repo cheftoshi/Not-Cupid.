@@ -12,6 +12,15 @@ export type ShortlistDecisionEdge<T = string> = ShortlistCandidateEdge<T> & {
   bFavorite?: boolean;
 };
 
+export type SlotAwareDecisionEdge<T = string> = ShortlistDecisionEdge<T> & {
+  availableSlotKeys: string[];
+};
+
+export type DinnerSlotSelection<T = string> = {
+  edge: SlotAwareDecisionEdge<T>;
+  slotKey: string;
+};
+
 const keyOf = (value: unknown) => {
   if (value && typeof value === 'object' && 'id' in value) {
     return String((value as { id: unknown }).id);
@@ -143,6 +152,100 @@ export function selectMutualDinnerPairs<T>(
     selected.push(winner);
     const used = new Set([keyOf(winner.a), keyOf(winner.b)]);
     pool = pool.filter((edge) => !used.has(keyOf(edge.a)) && !used.has(keyOf(edge.b)));
+  }
+  return selected;
+}
+
+/** Assign a fixed, ordered set of disjoint pairs to different dinner slots. */
+export function assignDinnerSlots<T>(
+  pairs: SlotAwareDecisionEdge<T>[],
+  slotKeys: string[],
+): DinnerSlotSelection<T>[] | null {
+  const allowed = new Set(slotKeys);
+  const assigned: DinnerSlotSelection<T>[] = [];
+  const used = new Set<string>();
+  function visit(index: number): boolean {
+    if (index >= pairs.length) return true;
+    const pair = pairs[index];
+    for (const slotKey of pair.availableSlotKeys) {
+      if (!allowed.has(slotKey) || used.has(slotKey)) continue;
+      used.add(slotKey);
+      assigned.push({ edge: pair, slotKey });
+      if (visit(index + 1)) return true;
+      assigned.pop();
+      used.delete(slotKey);
+    }
+    return false;
+  }
+  return visit(0) ? assigned : null;
+}
+
+/**
+ * Slot-aware winner selection. When two disjoint mutual pairs can use two
+ * different reservations, the first weighted choice is restricted to a pair
+ * that preserves that outcome. Every selected pair is returned with a shared
+ * time that both participants marked available.
+ */
+export function selectMutualDinnerPairsForSlots<T>(
+  candidates: SlotAwareDecisionEdge<T>[],
+  maxPairs: number,
+  slotKeys: string[],
+  compatibilityWeight: (score: number) => number,
+  random = Math.random,
+): DinnerSlotSelection<T>[] {
+  const allowed = new Set(slotKeys);
+  let pool = candidates
+    .filter((edge) => edge.aAccepted === true && edge.bAccepted === true)
+    .map((edge) => ({ ...edge, availableSlotKeys: [...new Set(edge.availableSlotKeys)].filter((key) => allowed.has(key)) }))
+    .filter((edge) => edge.availableSlotKeys.length > 0);
+  const selected: DinnerSlotSelection<T>[] = [];
+  const openSlots = [...slotKeys];
+
+  while (selected.length < Math.max(0, maxPairs) && pool.length && openSlots.length) {
+    const remainingCapacity = Math.min(maxPairs - selected.length, openSlots.length);
+    let selectionPool = pool;
+    if (remainingCapacity > 1) {
+      const preservesAnotherSlot = pool.filter((edge) => {
+        const usedPeople = new Set([keyOf(edge.a), keyOf(edge.b)]);
+        return edge.availableSlotKeys.some((firstSlot) => pool.some((other) => (
+          other.id !== edge.id
+          && !usedPeople.has(keyOf(other.a))
+          && !usedPeople.has(keyOf(other.b))
+          && other.availableSlotKeys.some((otherSlot) => otherSlot !== firstSlot)
+        )));
+      });
+      if (preservesAnotherSlot.length) selectionPool = preservesAnotherSlot;
+    }
+
+    const total = selectionPool.reduce((sum, edge) => sum + mutualSelectionWeight(edge, compatibilityWeight), 0);
+    let cursor = Math.max(0, Math.min(0.999999999, random())) * total;
+    let winner = selectionPool[selectionPool.length - 1];
+    for (const edge of selectionPool) {
+      cursor -= mutualSelectionWeight(edge, compatibilityWeight);
+      if (cursor <= 0) {
+        winner = edge;
+        break;
+      }
+    }
+
+    let winnerSlot = winner.availableSlotKeys[0];
+    if (remainingCapacity > 1) {
+      const usedPeople = new Set([keyOf(winner.a), keyOf(winner.b)]);
+      winnerSlot = winner.availableSlotKeys.find((firstSlot) => pool.some((other) => (
+        other.id !== winner.id
+        && !usedPeople.has(keyOf(other.a))
+        && !usedPeople.has(keyOf(other.b))
+        && other.availableSlotKeys.some((otherSlot) => otherSlot !== firstSlot)
+      ))) ?? winnerSlot;
+    }
+    selected.push({ edge: winner, slotKey: winnerSlot });
+    const usedPeople = new Set([keyOf(winner.a), keyOf(winner.b)]);
+    const slotIndex = openSlots.indexOf(winnerSlot);
+    if (slotIndex >= 0) openSlots.splice(slotIndex, 1);
+    pool = pool
+      .filter((edge) => !usedPeople.has(keyOf(edge.a)) && !usedPeople.has(keyOf(edge.b)))
+      .map((edge) => ({ ...edge, availableSlotKeys: edge.availableSlotKeys.filter((key) => key !== winnerSlot) }))
+      .filter((edge) => edge.availableSlotKeys.length > 0);
   }
   return selected;
 }

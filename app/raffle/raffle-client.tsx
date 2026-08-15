@@ -22,6 +22,7 @@ type Event = {
   winnerPairCount?: number;
   entriesOpen?: boolean;
   statusLabel?: string;
+  dateOptions?: { key: string; label: string }[];
 };
 type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seekingGenders: string[]; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
 
@@ -41,6 +42,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [seekingGenders, setSeekingGenders] = useState<string[]>(profile.seekingGenders);
   const [ageMin, setAgeMin] = useState(profile.ageMin);
   const [ageMax, setAgeMax] = useState(profile.ageMax);
+  const [availableSlotKeys, setAvailableSlotKeys] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -55,6 +57,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
+  const [rulesSeen, setRulesSeen] = useState(false);
+  const [rulesReady, setRulesReady] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Live experiment state (entered / selected / accepted / it's-a-date).
@@ -70,6 +74,19 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const ev = { ...event, ...(st?.event || {}) } as any;
   const other = st?.other?.name ? st.other.name.split(' ')[0] : 'your match';
 
+  useEffect(() => {
+    const key = `notcupid-dating-experiment-rules:${ev.termsVersion}`;
+    try { setRulesSeen(window.localStorage.getItem(key) === 'reviewed'); }
+    catch { setRulesSeen(false); }
+    setRulesReady(true);
+  }, [ev.termsVersion]);
+
+  function continueFromRules() {
+    const key = `notcupid-dating-experiment-rules:${ev.termsVersion}`;
+    try { window.localStorage.setItem(key, 'reviewed'); } catch { /* the legal consent remains in the form */ }
+    setRulesSeen(true);
+  }
+
   // "Established cred" from the real profile — entry isn't one click.
   const cred = [
     { ok: profile.photo, label: 'a profile photo', fix: '/profile' },
@@ -81,13 +98,22 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const credOk = cred.every((c) => c.ok);
   const basicsOk = !!gender && !!orientation && seekingGenders.length > 0
     && Number.isInteger(ageMin) && Number.isInteger(ageMax)
-    && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
+    && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99
+    && availableSlotKeys.length > 0;
   const questionsOk = !!intention && !!energy && conversationStarter.trim().length >= 3;
   const consentOk = attendanceConfirmed && termsAccepted && videoConsent && safetyAcknowledged;
   const canEnter = credOk && basicsOk && questionsOk && !!videoUrl && videoDuration != null && consentOk;
+  const showRulesGate = ev.entriesOpen && !ev.closed && eligible && loaded && rulesReady && !rulesSeen
+    && !(done || st?.entered || st?.draw || st?.shortlist?.length);
 
   function toggleSeekingGender(value: string) {
     setSeekingGenders((current) => current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value]);
+  }
+
+  function toggleAvailableSlot(value: string) {
+    setAvailableSlotKeys((current) => current.includes(value)
       ? current.filter((item) => item !== value)
       : [...current, value]);
   }
@@ -131,6 +157,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           seekingGenders,
           ageMin,
           ageMax,
+          availableSlotKeys,
           intention,
           energy,
           conversationStarter: conversationStarter.trim(),
@@ -164,6 +191,29 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+      {showRulesGate && (
+        <div role="presentation" style={rulesBackdrop}>
+          <section role="dialog" aria-modal="true" aria-labelledby="experiment-rules-title" style={rulesModal}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>before you join · 2 minutes</div>
+            <h2 id="experiment-rules-title" style={{ ...cardH, fontSize: 'clamp(1.8rem,8vw,2.45rem)', marginTop: '0.45rem' }}>the rules, without the legal fog.</h2>
+            <p style={{ ...cardP, fontSize: '0.94rem' }}>This is a free, compatibility-led Dating Experiment—not a blind date and not a paid-entry raffle.</p>
+            <div style={{ display: 'grid', gap: '0.65rem', marginTop: '1rem' }}>
+              <RuleLine icon="📍" title="Boston + 21 only" body={`You must live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}.`} />
+              <RuleLine icon="📸" title="A real profile" body="Add a clear profile photo, your quiz, a short bio, and at least three interests." />
+              <RuleLine icon="🎬" title="A private 10-second hello" body={`Upload an original ${ev.videoMinSeconds}–${ev.videoMaxSeconds}-second intro. Only your private shortlist and limited operators can view it.`} />
+              <RuleLine icon="✦" title="You both choose" body={`You may see up to ${ev.shortlistMaxOptions || 2} reciprocal options. Your yes/pass stays sealed; only mutual yes pairs can be selected.`} />
+              <RuleLine icon="🍽️" title="Two dinners on August 20" body={`${(ev.dateOptions || []).map((slot: any) => slot.label).join(' or ')}. One pair per slot, up to $${ev.budget} per pair. Restaurant details come privately later.`} />
+              <RuleLine icon="🛡️" title="Keep it safe" body="The dinner is in public, but NotCupid does not run criminal background checks or guarantee identity, behavior, chemistry, or attendance." />
+            </div>
+            <p style={{ margin: '0.9rem 0 0', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)' }}>No purchase necessary. Four people maximum across two winning pairs. Payment and Pro status never affect selection. Reviewing this summary is not entry or legal consent—you will confirm each required notice separately in the form.</p>
+            <div style={{ display: 'grid', gap: '0.55rem', marginTop: '1rem' }}>
+              <button type="button" onClick={continueFromRules} style={{ border: 'none', borderRadius: 14, padding: '0.85rem 1rem', background: ORANGE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.45rem', letterSpacing: '0.04em', cursor: 'pointer' }}>I understand — continue →</button>
+              <Link href="/dating-experiment/terms" target="_blank" style={{ ...btnGhost, textAlign: 'center' }}>read the full Official Rules ↗</Link>
+              <Link href="/hub" style={{ textAlign: 'center', color: 'var(--h-text-faint)', fontSize: '0.72rem' }}>not now — back to hub</Link>
+            </div>
+          </section>
+        </div>
+      )}
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <Link href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← hub</Link>
 
@@ -183,8 +233,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
-            <h2 style={cardH}>quiet mode for now.</h2>
-            <p style={cardP}>the dinner dates are set for <b>{ev.dateLabel}</b>. We’re still confirming the entry window, exact times, restaurant, and final safeguards, so entries remain paused.</p>
+            <h2 style={cardH}>launch checklist in progress.</h2>
+            <p style={cardP}>the two dinner slots are set for <b>{ev.dateLabel}</b>. The $400 maximum dinner budget is confirmed; entries stay paused until restaurant fulfillment, Sponsor details, and final legal review are confirmed.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
               <Link href="/dating-experiment/faq" style={backLink}>see the simple plan →</Link>
               <Link href="/hub" style={backLink}>back to hub →</Link>
@@ -266,6 +316,11 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <h2 style={cardH}>entries are closed.</h2>
             <p style={cardP}>this experiment filled up — watch the hub for the next round.</p>
           </div>
+        ) : !rulesReady || !rulesSeen ? (
+          <div style={{ ...card, textAlign: 'center' }}>
+            <h2 style={cardH}>review the experiment rules first.</h2>
+            <p style={cardP}>The short rules card explains the two dinner slots, private video, mutual choice, eligibility, and safety before the entry form opens.</p>
+          </div>
         ) : (
           // ── register ──
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
@@ -321,6 +376,15 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                     <input aria-label="maximum age" type="number" min={21} max={99} value={ageMax} onChange={(e) => setAgeMax(+e.target.value)} style={numIn} />
                   </div>
                   <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Age preferences must work both ways too—you must fall inside their selected range.</div>
+                </div>
+                <div>
+                  <div style={qLabel}>times I can attend <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose one or both)</span></div>
+                  <div style={{ display: 'grid', gap: '0.4rem' }}>
+                    {(ev.dateOptions || []).map((slot: any) => (
+                      <button key={slot.key} type="button" aria-pressed={availableSlotKeys.includes(slot.key)} onClick={() => toggleAvailableSlot(slot.key)} style={{ ...chip(availableSlotKeys.includes(slot.key)), width: '100%', textAlign: 'left' }}>{availableSlotKeys.includes(slot.key) ? '✓ ' : ''}{slot.label}</button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>We only consider a pair when both people selected at least one of the same dinner times.</div>
                 </div>
               </div>
             </div>
@@ -382,7 +446,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <div style={card}>
               <div style={cardLabel}>⑥ confirm before joining <span style={{ color: ORANGE_DEEP }}>· required</span></div>
               {[
-                [attendanceConfirmed, setAttendanceConfirmed, `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend at least one of the listed dinner dates.`],
+                [attendanceConfirmed, setAttendanceConfirmed, `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend every dinner time I selected above.`],
                 [termsAccepted, setTermsAccepted, <>I agree to the <Link href="/dating-experiment/terms" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Dating Experiment Terms</Link>.</>],
                 [videoConsent, setVideoConsent, `I consent to my profile, orientation, photos, answers, and intro video being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.`],
                 [safetyAcknowledged, setSafetyAcknowledged, 'I understand NotCupid does not conduct criminal background checks or guarantee another participant’s identity, behavior, or compatibility.'],
@@ -509,6 +573,15 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
   );
 }
 
+function RuleLine({ icon, title, body }: { icon: string; title: string; body: string }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1.6rem minmax(0,1fr)', gap: '0.55rem', alignItems: 'start' }}>
+      <span aria-hidden="true" style={{ lineHeight: 1.4 }}>{icon}</span>
+      <p style={{ margin: 0, color: 'var(--h-text-dim)', fontSize: '0.8rem', lineHeight: 1.45 }}><b style={{ color: 'var(--h-text)' }}>{title}.</b> {body}</p>
+    </div>
+  );
+}
+
 const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 16, padding: '1.1rem 1.2rem' };
 const cardH: React.CSSProperties = { fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.35rem', margin: '0 0 0.35rem', color: 'var(--h-text)' };
 const cardP: React.CSSProperties = { fontFamily: 'system-ui, sans-serif', fontSize: '0.88rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: 0 };
@@ -519,6 +592,8 @@ const numIn: React.CSSProperties = { width: 60, background: 'var(--h-surface-2)'
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const infoLink: React.CSSProperties = { display: 'inline-block', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.42rem 0.7rem', background: 'var(--h-surface)', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const choiceBtn: React.CSSProperties = { border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.55rem 0.35rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' };
+const rulesBackdrop: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 'max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))', background: 'rgba(10,8,14,0.72)', backdropFilter: 'blur(8px)', overflowY: 'auto' };
+const rulesModal: React.CSSProperties = { width: 'min(100%, 520px)', maxHeight: 'calc(100dvh - 2rem)', overflowY: 'auto', boxSizing: 'border-box', background: 'var(--h-surface)', border: '1px solid rgba(255,106,31,0.34)', borderRadius: 22, padding: 'clamp(1rem,4vw,1.45rem)', boxShadow: '0 26px 80px rgba(0,0,0,0.35)' };
 function chip(on: boolean): React.CSSProperties {
   return { background: on ? ORANGE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? ORANGE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', cursor: 'pointer' };
 }

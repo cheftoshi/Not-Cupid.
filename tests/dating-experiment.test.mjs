@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   buildCoverageFirstShortlist,
+  assignDinnerSlots,
   mutualSelectionWeight,
   selectMutualDinnerPair,
   selectMutualDinnerPairs,
+  selectMutualDinnerPairsForSlots,
 } from '../lib/experiment-shortlist.ts';
 import {
   EXPERIMENT_ORIENTATION_OPTIONS,
@@ -23,9 +25,9 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v6-2026-08-08'/);
-  assert.match(experimentSource, /2026-08-19/);
-  assert.match(experimentSource, /2026-08-21/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v7-2026-08-15'/);
+  assert.match(experimentSource, /aug20-1830/);
+  assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
   assert.match(experimentSource, /radiusMiles:\s*20/);
   assert.doesNotMatch(experimentSource, /proEntries/);
@@ -137,8 +139,23 @@ test('V3 preserves a two-pair outcome when a valid disjoint configuration exists
   assert.deepEqual(selected.map((edge) => edge.id), ['left', 'right']);
 });
 
+test('slot-aware selection preserves two winners and never assigns an unavailable time', () => {
+  const edges = [
+    { id: 'ab', a: 'a', b: 'b', score: 99, aAccepted: true, bAccepted: true, availableSlotKeys: ['early'] },
+    { id: 'ac', a: 'a', b: 'c', score: 95, aAccepted: true, bAccepted: true, availableSlotKeys: ['late'] },
+    { id: 'bd', a: 'b', b: 'd', score: 94, aAccepted: true, bAccepted: true, availableSlotKeys: ['early'] },
+  ];
+  const selected = selectMutualDinnerPairsForSlots(edges, 2, ['early', 'late'], () => 1, () => 0);
+  assert.deepEqual(selected.map(({ edge, slotKey }) => [edge.id, slotKey]), [['ac', 'late'], ['bd', 'early']]);
+  assert.equal(new Set(selected.map((selection) => selection.slotKey)).size, 2);
+  assert.ok(selected.every(({ edge, slotKey }) => edge.availableSlotKeys.includes(slotKey)));
+  assert.deepEqual(assignDinnerSlots([edges[1], edges[2]], ['early', 'late'])?.map((item) => item.slotKey), ['late', 'early']);
+  assert.equal(assignDinnerSlots([edges[0], edges[2]], ['early', 'late']), null);
+});
+
 test('entry requires versioned, separate consent records', () => {
   const source = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
+  const uploadSource = readFileSync(new URL('../app/api/raffle/upload-url/route.ts', import.meta.url), 'utf8');
   const eventMigration = readFileSync(new URL('../supabase/migrations/20260808193341_dating_experiment_event_ledger.sql', import.meta.url), 'utf8');
   const statusSource = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
   for (const required of [
@@ -157,6 +174,10 @@ test('entry requires versioned, separate consent records', () => {
   assert.match(source, /Choose the orientation label that feels closest to you/);
   assert.match(source, /Choose at least one gender you would like to meet/);
   assert.match(source, /Choose a valid age range between 21 and 99/);
+  assert.match(source, /Choose at least one dinner time you can attend/);
+  assert.match(source, /availableSlotKeys/);
+  assert.match(source, /datingExperimentEntriesOpen\(event\)/);
+  assert.match(uploadSource, /datingExperimentEntriesOpen\(event\)/);
   assert.doesNotMatch(source, /profilePatch/);
   assert.match(statusSource, /ownEntry\.terms_version === RAFFLE\.termsVersion/);
   assert.match(statusSource, /needs-preference-refresh/);
@@ -185,20 +206,25 @@ test('every experiment has an isolated ledger and atomic limited entry transacti
   assert.doesNotMatch(entryRoute, /\.from\('raffle_entries'\)\.upsert/);
 });
 
-test('the Boston experiment owns two dates while time and venue remain fail-closed', () => {
-  const migration = readFileSync(new URL('../supabase/migrations/20260808195154_dating_experiment_event_dates.sql', import.meta.url), 'utf8');
+test('the Boston experiment owns two August 20 time slots while venue remains fail-closed', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260815143000_dating_experiment_august_20_slots.sql', import.meta.url), 'utf8');
   const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
   const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
-  assert.match(migration, /create table public\.dating_experiment_event_dates/i);
-  assert.match(migration, /'2026-08-19'/);
-  assert.match(migration, /'2026-08-21'/);
-  assert.match(migration, /winner_fulfillment_details = null/i);
-  assert.match(migration, /terms_version = 'boston-v6-2026-08-08'/i);
-  assert.match(eventSource, /date\.status === 'details_confirmed'/);
+  assert.match(migration, /slot_key text/i);
+  assert.match(migration, /primary key \(event_key, slot_key\)/i);
+  assert.match(migration, /'2026-08-20'/);
+  assert.match(migration, /'2026-08-20T22:30:00Z'/);
+  assert.match(migration, /'2026-08-21T00:30:00Z'/);
+  assert.match(migration, /terms_version = 'boston-v7-2026-08-15'/i);
+  assert.match(migration, /prize_funding_confirmed = true/i);
+  assert.match(migration, /venue_confirmed = false/i);
+  assert.match(migration, /validate_dating_experiment_slot_availability/i);
+  assert.match(migration, /dinner availability contains an unknown slot/i);
+  assert.match(eventSource, /date\.status === 'time_confirmed'/);
   assert.match(eventSource, /date\.starts_at != null/);
-  assert.match(eventSource, /date\.venue_details != null/);
-  assert.match(terms, /August 19 and August 21, 2026/);
-  assert.match(terms, /Exact times, restaurant details, and final pair-to-date assignments will be confirmed later/);
+  assert.match(terms, /Thursday, August 20, 2026/);
+  assert.match(terms, /6:30 PM Eastern Time/);
+  assert.match(terms, /8:30 PM Eastern Time/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {
@@ -210,7 +236,7 @@ test('experiment terms do not bundle a marketing likeness license', () => {
 test('experiment has a quiet-mode FAQ beside the public flow', () => {
   const faq = readFileSync(new URL('../app/dating-experiment/faq/page.tsx', import.meta.url), 'utf8');
   const flow = readFileSync(new URL('../app/raffle/raffle-client.tsx', import.meta.url), 'utf8');
-  assert.match(faq, /Quiet mode:/);
+  assert.match(faq, /Launch checklist:/);
   assert.match(faq, /Paying for Pro[\s\S]*never adds entries or improves selection odds/);
   assert.match(faq, /short-lived links/);
   assert.match(flow, /\/dating-experiment\/faq/);
@@ -248,7 +274,8 @@ test('V3 database guardrails enforce two disjoint winner slots', () => {
 test('public entry remains fail-closed until every launch prerequisite is approved', () => {
   const drawSource = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
   const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
-  for (const gate of ['prizeFundingConfirmed: false', 'venueConfirmed: false', 'sponsorDetailsConfirmed: false', 'legalReviewApproved: false']) {
+  assert.match(experimentSource, /prizeFundingConfirmed: true/);
+  for (const gate of ['venueConfirmed: false', 'sponsorDetailsConfirmed: false', 'legalReviewApproved: false']) {
     assert.match(experimentSource, new RegExp(gate));
   }
   assert.match(experimentSource, /raffleLaunchBlockers\(\)\.length === 0/);

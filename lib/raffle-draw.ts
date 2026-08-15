@@ -14,10 +14,11 @@ import {
 } from '@/lib/experiment-preferences';
 import {
   buildCoverageFirstShortlist,
+  assignDinnerSlots,
   mutualSelectionWeight,
   mutualWinnerSelectionPool,
-  selectMutualDinnerPairs,
-  type ShortlistDecisionEdge,
+  selectMutualDinnerPairsForSlots,
+  type SlotAwareDecisionEdge,
 } from '@/lib/experiment-shortlist';
 
 const COLS = 'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, hobbies, music, food, sports, ' +
@@ -81,7 +82,21 @@ async function resolveCollectingRound(
     return { ok: true, entrants: 0, drawn: 0, state: 'resolving-shortlist', roundNumber: round.round_number };
   }
 
-  const decisionEdges: ShortlistDecisionEdge<string>[] = pairs.map((pair) => ({
+  const participantIds = [...new Set(pairs.flatMap((pair) => [pair.user_a_id, pair.user_b_id]))];
+  const { data: availabilityEntries, error: availabilityError } = await supabaseAdmin.from('raffle_entries')
+    .select('user_id, questionnaire')
+    .eq('event_key', event.event_key)
+    .in('user_id', participantIds);
+  if (availabilityError) throw availabilityError;
+  const eventSlotKeys = event.dinner_dates.map((slot) => slot.slot_key);
+  const eventSlotSet = new Set(eventSlotKeys);
+  const availabilityByUser = new Map((availabilityEntries ?? []).map((entry: any) => [
+    entry.user_id,
+    Array.isArray(entry.questionnaire?.availableSlotKeys)
+      ? [...new Set(entry.questionnaire.availableSlotKeys.map(String).filter((key: string) => eventSlotSet.has(key)))] as string[]
+      : [],
+  ]));
+  const decisionEdges: SlotAwareDecisionEdge<string>[] = pairs.map((pair) => ({
     id: pair.id,
     a: pair.user_a_id,
     b: pair.user_b_id,
@@ -90,6 +105,8 @@ async function resolveCollectingRound(
     bAccepted: pair.b_accepted,
     aFavorite: pair.a_favorite,
     bFavorite: pair.b_favorite,
+    availableSlotKeys: (availabilityByUser.get(pair.user_a_id) ?? [])
+      .filter((key) => (availabilityByUser.get(pair.user_b_id) ?? []).includes(key)),
   }));
   const mutual = decisionEdges.filter((pair) => pair.aAccepted === true && pair.bAccepted === true);
   const eventSelectionWeight = (score: number) => pairSelectionWeight(score, event.minimum_pair_score);
@@ -99,11 +116,15 @@ async function resolveCollectingRound(
       .filter((pair) => pair.status === 'selected')
       .sort((a, b) => (a.winner_slot ?? 99) - (b.winner_slot ?? 99))
       .map((pair) => pair.id);
-  let selected = recordedPairIds
+  let selected: SlotAwareDecisionEdge<string>[] = recordedPairIds
     .map((pairId) => decisionEdges.find((edge) => edge.id === pairId))
-    .filter((pair): pair is ShortlistDecisionEdge<string> => pair != null);
+    .filter((pair): pair is SlotAwareDecisionEdge<string> => pair != null);
+  let slotAssignments = recordedPairIds.length ? assignDinnerSlots(selected, eventSlotKeys) : null;
   if (recordedPairIds.length && selected.length !== recordedPairIds.length) {
     throw new Error('Recorded Dating Experiment winners do not match the active shortlist.');
+  }
+  if (recordedPairIds.length && !slotAssignments) {
+    throw new Error('Recorded Dating Experiment winners cannot be assigned to their shared dinner times.');
   }
   if (!recordedPairIds.length) {
     const randomValues = Array.from(
@@ -111,12 +132,14 @@ async function resolveCollectingRound(
       () => randomInt(0, 1_000_000_000) / 1_000_000_000,
     );
     let randomIndex = 0;
-    selected = selectMutualDinnerPairs(
+    slotAssignments = selectMutualDinnerPairsForSlots(
       decisionEdges,
       event.winner_pair_limit,
+      eventSlotKeys,
       eventSelectionWeight,
       () => randomValues[randomIndex++] ?? randomValues[randomValues.length - 1],
     );
+    selected = slotAssignments.map((assignment) => assignment.edge);
     const firstSelectionPool = mutualWinnerSelectionPool(mutual, event.winner_pair_limit);
     const totalSelectionWeight = firstSelectionPool.reduce((sum, pair) => sum + mutualSelectionWeight(pair, eventSelectionWeight), 0);
     const { error: auditError } = await supabaseAdmin.from('dating_experiment_rounds').update({
@@ -127,7 +150,7 @@ async function resolveCollectingRound(
     }).eq('id', round.id).eq('status', 'resolving');
     if (auditError) throw auditError;
   }
-  const participantIds = [...new Set(pairs.flatMap((pair) => [pair.user_a_id, pair.user_b_id]))];
+  const slotKeyByPairId = new Map((slotAssignments ?? []).map((assignment) => [assignment.edge.id, assignment.slotKey]));
   const now = new Date().toISOString();
 
   if (!selected.length) {
@@ -182,7 +205,8 @@ async function resolveCollectingRound(
   }
 
   for (const [index, winner] of selected.entries()) {
-    const dinnerDate = event.dinner_dates[index % event.dinner_dates.length];
+    const dinnerDate = event.dinner_dates.find((slot) => slot.slot_key === slotKeyByPairId.get(winner.id));
+    if (!dinnerDate) throw new Error('Selected Dating Experiment pair has no shared dinner slot.');
     const { error: drawError } = await supabaseAdmin.from('raffle_draws').upsert({
       event_key: event.event_key,
       user_a_id: winner.a,
@@ -364,11 +388,19 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     .filter((user) => user.gender && user.orientation && user.seeking_genders.length && user.age_min != null && user.age_max != null);
 
   const candidates: { a: any; b: any; score: number }[] = [];
+  const activeSlotKeys = new Set(event.dinner_dates.map((slot) => slot.slot_key));
   for (let i = 0; i < pool.length; i++) {
     for (let j = i + 1; j < pool.length; j++) {
       const a = pool[i], b = pool[j];
       if (seenPairs.has(pairKey(a.id, b.id))) continue;
       if (!reciprocalExperimentGenderMatch(a, b) || !reciprocalExperimentAgeMatch(a, b)) continue;
+      const aSlots = Array.isArray(a.experiment_answers?.availableSlotKeys)
+        ? a.experiment_answers.availableSlotKeys.map(String).filter((key: string) => activeSlotKeys.has(key))
+        : [];
+      const bSlots = new Set(Array.isArray(b.experiment_answers?.availableSlotKeys)
+        ? b.experiment_answers.availableSlotKeys.map(String).filter((key: string) => activeSlotKeys.has(key))
+        : []);
+      if (!aSlots.some((key: string) => bSlots.has(key))) continue;
       const score = raffleScore(a, b);
       if (score >= event.minimum_pair_score) candidates.push({ a, b, score });
     }

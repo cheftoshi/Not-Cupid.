@@ -30,11 +30,12 @@ export type DatingExperimentEvent = {
 };
 
 export type DatingExperimentDinnerDate = {
+  slot_key: string;
   event_date: string;
   public_label: string;
   starts_at: string | null;
   venue_details: string | null;
-  status: 'date_confirmed' | 'details_confirmed' | 'cancelled';
+  status: 'date_confirmed' | 'time_confirmed' | 'details_confirmed' | 'cancelled';
 };
 
 export async function getDatingExperimentEvent(
@@ -60,10 +61,10 @@ export async function getDatingExperimentEvent(
   if (!data) return null;
   const { data: dinnerDates, error: dinnerDatesError } = await supabaseAdmin
     .from('dating_experiment_event_dates')
-    .select('event_date, public_label, starts_at, venue_details, status')
+    .select('slot_key, event_date, public_label, starts_at, venue_details, status')
     .eq('event_key', eventKey)
     .neq('status', 'cancelled')
-    .order('event_date', { ascending: true });
+    .order('starts_at', { ascending: true });
   if (dinnerDatesError) {
     console.error('[dating-experiment-event-dates]', dinnerDatesError);
     return null;
@@ -81,15 +82,14 @@ function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
     && event.algorithm_version === RAFFLE.algorithmVersion
     && event.dinner_dates.length >= event.winner_pair_limit
     && event.dinner_dates.every((date) => (
-      date.status === 'details_confirmed'
+      (date.status === 'time_confirmed' || date.status === 'details_confirmed')
       && date.starts_at != null
-      && date.venue_details != null
     ));
 }
 
 export function datingExperimentDateLabel(event: DatingExperimentEvent | null): string {
   if (!event?.dinner_dates.length) return RAFFLE.dateLabel;
-  return `${event.dinner_dates.map((date) => date.public_label).join(' or ')} — time and restaurant details to come`;
+  return `${event.dinner_dates.map((date) => date.public_label).join(' or ')}; restaurant revealed privately later`;
 }
 
 // Code and database gates must both agree. A partial deployment, stale event

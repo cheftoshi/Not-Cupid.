@@ -11,7 +11,8 @@ import {
 } from '@/lib/love-relaunch';
 import { withReturningUserWelcome } from '@/lib/returning-user';
 import { defaultEmailReplyTo } from '@/lib/email-address';
-import { RAFFLE, raffleEligible, raffleEntriesOpen, raffleLaunchBlockers } from '@/lib/raffle';
+import { RAFFLE, raffleEligible, raffleLaunchBlockers } from '@/lib/raffle';
+import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -67,7 +68,7 @@ function campaignHtml(
   const firstHtml = escapeHtml(first);
   const missing = missingProfileItems(user);
   const directDestination = '/dating-experiment?from=dating-experiment-comeback-preview';
-  const primaryUrl = options.tracked === false
+  const experimentUrl = options.tracked === false
     ? `${baseUrl}${directDestination}`
     : loveRelaunchUrl(baseUrl, user.id, 'experiment');
   const profileUrl = options.tracked === false
@@ -78,7 +79,8 @@ function campaignHtml(
     : loveRelaunchUrl(baseUrl, user.id, 'dashboard');
   const faqUrl = `${baseUrl}/dating-experiment/faq`;
   const termsUrl = `${baseUrl}/dating-experiment/terms`;
-  const cta = 'join the Dating Experiment →';
+  const primaryUrl = variant === 'profile' ? profileUrl : experimentUrl;
+  const cta = variant === 'profile' ? 'get my profile ready →' : 'join the Dating Experiment →';
   const lead = variant === 'live'
     ? 'Your current conversations are still there. This is a separate, smaller way to meet someone new without giving up the connections you already have.'
     : variant === 'profile'
@@ -86,28 +88,28 @@ function campaignHtml(
       : 'Your NotCupid profile is ready for the first Boston Dating Experiment.';
 
   return renderEmail({
-    preheader: `${first}, a private shortlist, mutual choice, and up to two $${RAFFLE.budget} Boston dinners on us.`,
-    eyebrow: 'The NotCupid Dating Experiment · Boston',
-    headline: `${first}, want us to help set up the first date?`,
+    preheader: `${first}, August 20 in Boston: two mutual pairs and dinner up to $${RAFFLE.budget} per pair on us.`,
+    eyebrow: 'The NotCupid Dating Experiment · August 20 · Boston',
+    headline: `${first}, want us to put dinner on the calendar?`,
     bodyHtml: `
       <p style="margin:0 0 16px 0;">${firstHtml}, ${lead.charAt(0).toLowerCase()}${lead.slice(1)}</p>
-      <p style="margin:0 0 18px 0;">We&apos;re trying a more human way to date: not an infinite swipe deck, and not a blind assignment. You set the preferences. We build a small compatibility-led shortlist. You decide who you would actually meet.</p>
+      <p style="margin:0 0 18px 0;">We&apos;re trying a more human way to date: not an infinite swipe deck, and not a blind assignment. You set the preferences. We build a small compatibility-led shortlist. You decide who you would actually meet—and they decide privately too.</p>
 
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px 0;">
         <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Tell us what you actually want</strong><br><span style="font-size:13px;">Choose your age range, orientation, and one or more genders you&apos;re open to meeting. Preferences must work both ways.</span></td></tr>
-        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Meet up to two—privately</strong><br><span style="font-size:13px;">See a compatibility-led profile, photos, answers, and a private 5–15 second hello video.</span></td></tr>
+        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">Meet up to two—privately</strong><br><span style="font-size:13px;">See a compatibility-led profile, photos, answers, and a private hello video that is about 10 seconds (5–15 seconds accepted).</span></td></tr>
         <tr><td style="padding:11px 0;border-top:1px solid ${C.border};"><strong style="color:${C.ink};">You choose. They choose.</strong><br><span style="font-size:13px;">Say yes or pass in private. Only people who choose each other enter the dinner selection.</span></td></tr>
-        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};border-bottom:1px solid ${C.border};"><strong style="color:${C.ink};">Dinner is on us</strong><br><span style="font-size:13px;">Up to ${RAFFLE.winnerPairCount} mutual pairs can receive a Boston dinner worth up to $${RAFFLE.budget} per pair.</span></td></tr>
+        <tr><td style="padding:11px 0;border-top:1px solid ${C.border};border-bottom:1px solid ${C.border};"><strong style="color:${C.ink};">Dinner is on us · Thursday, August 20</strong><br><span style="font-size:13px;">One pair at 6:30 PM and one at 8:30 PM. Up to $${RAFFLE.budget} per pair; the Boston restaurant is shared privately later.</span></td></tr>
       </table>
 
       <div style="margin:0 0 18px 0;">${button({ href: primaryUrl, label: cta })}</div>
-      ${variant === 'profile' ? `<p style="margin:0 0 12px 0;padding:12px 14px;background:${C.lavSoft};border-radius:10px;font-size:13px;"><strong style="color:${C.ink};">Before you can enter:</strong> add ${escapeHtml(missing.join(', '))}. <a href="${profileUrl}" style="color:${C.lav};font-weight:600;">Finish the missing profile basics →</a></p>` : ''}
+      ${variant === 'profile' ? `<p style="margin:0 0 12px 0;padding:12px 14px;background:${C.lavSoft};border-radius:10px;font-size:13px;"><strong style="color:${C.ink};">Your next step:</strong> add ${escapeHtml(missing.join(', '))}. Once those basics are ready, the experiment screen will walk you through the private video and three short questions.</p>` : ''}
       <p style="margin:0 0 10px 0;font-size:13px;">Want the full plan first? <a href="${faqUrl}" style="color:${C.lav};font-weight:600;">Read how the experiment works.</a></p>
       <p style="margin:0 0 18px 0;font-size:13px;">The regular Love Line is still here too. <a href="${loveLineUrl}" style="color:${C.lav};font-weight:600;">See your current rotation and conversations.</a></p>
-      <p style="margin:0;font-size:11px;line-height:1.55;color:${C.muted};">No purchase necessary. Massachusetts residents age 21+ within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}. Entry is free, payment and Pro status never affect selection, and no match or prize is guaranteed. Up to ${RAFFLE.winnerPairCount} dinners; maximum value $${RAFFLE.budget} per selected pair and $${RAFFLE.budget * RAFFLE.winnerPairCount} total. Odds depend on the eligible pool, reciprocal preferences, compatibility, and private mutual choices. Void where prohibited. <a href="${termsUrl}" style="color:${C.lav};">Official Rules.</a></p>
+      <p style="margin:0;font-size:11px;line-height:1.55;color:${C.muted};">No purchase necessary. Entry closes ${RAFFLE.entryCloseLabel} or at ${RAFFLE.cap} eligible entries. Massachusetts residents age 21+ within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}. Entry is free, payment and Pro status never affect selection, and no match or prize is guaranteed. Up to ${RAFFLE.winnerPairCount} dinners; maximum value $${RAFFLE.budget} per selected pair and $${RAFFLE.budget * RAFFLE.winnerPairCount} total. Odds depend on the eligible pool, reciprocal preferences, compatibility, and private mutual choices. Void where prohibited. <a href="${termsUrl}" style="color:${C.lav};">Official Rules.</a></p>
     `,
     recipientId: options.tracked === false ? undefined : user.id,
-    footerNote: 'two private options. mutual choice. one real reason to meet.',
+    footerNote: 'two private options. mutual choice. two real dinner tables.',
     mailingAddress: options.mailingAddress,
   });
 }
@@ -184,16 +186,18 @@ export async function POST(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const mailingAddress = process.env.EMAIL_MAILING_ADDRESS?.trim();
   const approvalConfigured = process.env.DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION;
+  const experiment = await getDatingExperimentEvent();
+  const entriesOpen = datingExperimentEntriesOpen(experiment);
 
   // A test or production delivery is impossible until the exact draft version
   // is approved out-of-band AND the experiment itself passes every launch gate.
   // Dry runs remain available because they provably contact no recipient.
-  if (!dryRun && (!approvalConfigured || !raffleEntriesOpen())) {
+  if (!dryRun && (!approvalConfigured || !entriesOpen)) {
     return NextResponse.json({
       error: 'Dating Experiment email is preview-only until copy and send are separately approved and entries are open.',
       approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
       approvalConfigured,
-      entriesOpen: raffleEntriesOpen(),
+      entriesOpen,
       launchBlockers: raffleLaunchBlockers(),
     }, { status: 409 });
   }
@@ -271,7 +275,7 @@ export async function POST(req: NextRequest) {
       campaign: LOVE_RELAUNCH_CAMPAIGN,
       approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
       approvalConfigured,
-      entriesOpen: raffleEntriesOpen(),
+      entriesOpen,
       launchBlockers: raffleLaunchBlockers(),
       subject: LOVE_RELAUNCH_SUBJECT,
       sender: 'NotCupid <match@notcupid.com>',
@@ -286,7 +290,7 @@ export async function POST(req: NextRequest) {
       breakdown,
       links: {
         primaryReady: `${baseUrl}${loveRelaunchPath('experiment')}`,
-        primaryNeedsProfile: `${baseUrl}${loveRelaunchPath('experiment')}`,
+        primaryNeedsProfile: `${baseUrl}${loveRelaunchPath('profile')}`,
         profileFix: `${baseUrl}${loveRelaunchPath('profile')}`,
         loveLine: `${baseUrl}${loveRelaunchPath('dashboard')}`,
         faq: `${baseUrl}/dating-experiment/faq`,
