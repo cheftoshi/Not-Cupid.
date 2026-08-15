@@ -11,13 +11,15 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 - Dinner slots: Thursday, August 20 at 6:30 PM ET and 8:30 PM ET. Entrants choose every date/time slot they can attend. A pair needs shared availability.
 - Prize quantity/value: up to two dinner prizes, one per selected pair, up to $200 per pair and $400 aggregate.
 - Selection: reciprocal preferences and minimum compatibility first; sealed mutual choices second; payment-neutral weighted random selection without replacement last. Exact odds depend on the eligible pool, preferences, scores, mutual choices, favorites, and shared availability.
+- Fit model: mutual age, gender, location, and slot availability are hard gates. Qualified-pair score is 75% core NotCupid compatibility, 15% shared interests, and 10% event questionnaire. Every gender and orientation has the same maximum of two private options.
 
 ## Hard launch gates
 
 - [x] Prize ceiling funded: $200 per pair / $400 aggregate. Confirmed by operator August 15, 2026.
 - [ ] Sponsor legal name confirmed.
 - [ ] Sponsor valid public physical postal address confirmed. An email address alone is not sufficient for commercial email or the public rules.
-- [ ] Restaurant name and address confirmed for both reservations.
+- [x] Intended venue recorded privately: The Berkeley, 154 Berkeley Street, Boston, MA 02116.
+- [ ] The Berkeley has accepted/confirmed both reservations.
 - [ ] Reservation confirmation/reference recorded for 6:30 PM.
 - [ ] Reservation confirmation/reference recorded for 8:30 PM.
 - [ ] Fulfillment method confirmed in writing: who pays the restaurant, when, how the $200 cap is applied, and treatment of tax, gratuity, alcohol, transportation, excess charges, cancellation, no-show, and venue failure.
@@ -52,6 +54,8 @@ If Only in Boston receives money, a free meal, services, equity, reciprocal prom
 ## Safety, privacy, and proof
 
 - Re-test that test accounts cannot enter, private videos use signed access, withdrawals delete the experiment video, preferences are frozen per event, and no selected person can occupy both dinner slots.
+- Verify shortlist cards show only reciprocal candidates and include first name, age, photos, bio, archetype, disclosed orientation, shared interests, event answers, fit score, and signed intro video. Decisions must remain sealed.
+- Verify opted-out entrants receive no experiment push. Verify winner reminders atomically send no more than once in the 24-hour window and once in the three-hour window.
 - Verify the rules modal and all four separate consents on a real iPhone PWA viewport.
 - Keep intro videos private; no advertising/testimonial use without separate written consent. Confirm the scheduled deletion path and incident hold process.
 - Record production URL, deployment ID, database migration version, signed rules version, reviewer reference, restaurant confirmations, operator approval, and opening timestamp in this file or the private launch record.
@@ -61,7 +65,7 @@ If Only in Boston receives money, a free meal, services, equity, reciprocal prom
 
 - Sponsor legal name:
 - Sponsor public postal address:
-- Venue and address:
+- Venue and address: The Berkeley, 154 Berkeley Street, Boston, MA 02116 (intended; booking confirmation pending)
 - 6:30 PM reservation reference:
 - 8:30 PM reservation reference:
 - Prize fulfillment method:

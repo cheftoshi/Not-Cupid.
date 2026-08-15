@@ -60,7 +60,7 @@ function Chapter({ tag, title, accent, accentLight, steps }: { tag: string; titl
 
 // The Boston Dating Experiment — every point for the featured section below.
 const RAFFLE_POINTS = [
-  { e: '✅', t: 'how to join', b: `be 21+, live in Massachusetts within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}, complete your profile, answer three short questions, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}s intro video. joining is free.` },
+  { e: '✅', t: 'how to join', b: `be 21+, live in Massachusetts within ${RAFFLE.radiusMiles} miles of ${RAFFLE.centerZip}, complete your profile, answer four short experiment prompts, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}s intro video. joining is free.` },
   { e: '✦', t: 'up to two strong options', b: 'the system prioritizes giving qualified people one reciprocal option before adding a second. everyone has the same two-option cap; paid membership never changes offers or odds.' },
   { e: '🔒', t: 'private by design', b: 'only people placed on a reciprocal shortlist with you can view your experiment video. every yes, pass, and optional favorite stays sealed.' },
   { e: '🤝', t: 'mutual choice wins', b: `say yes to either, both, or neither. only mutual yes pairs enter the final compatibility-weighted selection for up to ${RAFFLE.winnerPairCount} dinner pairs, each covered to $${RAFFLE.budget}.` },

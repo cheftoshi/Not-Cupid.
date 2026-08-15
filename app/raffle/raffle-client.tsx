@@ -49,6 +49,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [notify, setNotify] = useState(true);
   const [intention, setIntention] = useState('');
   const [energy, setEnergy] = useState('');
+  const [planningStyle, setPlanningStyle] = useState('');
   const [conversationStarter, setConversationStarter] = useState('');
   const [attendanceConfirmed, setAttendanceConfirmed] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -107,7 +108,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     && Number.isInteger(ageMin) && Number.isInteger(ageMax)
     && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99
     && availableSlotKeys.length > 0;
-  const questionsOk = !!intention && !!energy && conversationStarter.trim().length >= 3;
+  const questionsOk = !!intention && !!energy && !!planningStyle && conversationStarter.trim().length >= 3;
   const consentOk = attendanceConfirmed && termsAccepted && videoConsent && safetyAcknowledged;
   const canEnter = credOk && basicsOk && questionsOk && !!videoUrl && videoDuration != null && consentOk;
   const showRulesGate = ev.entriesOpen && !ev.closed && eligible && loaded && rulesReady && !rulesSeen
@@ -167,6 +168,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           availableSlotKeys,
           intention,
           energy,
+          planningStyle,
           conversationStarter: conversationStarter.trim(),
           attendanceConfirmed,
           termsAccepted,
@@ -235,7 +237,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <Link href="/safety" style={infoLink}>safety</Link>
         </div>
         <div style={{ ...card, marginBottom: '1.1rem', padding: '0.9rem 1rem', background: 'rgba(37,99,255,0.05)', borderColor: 'rgba(37,99,255,0.22)' }}>
-          <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your experiment video, three quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
+          <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your experiment video, four quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
         </div>
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
@@ -403,10 +405,10 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               </div>
             </div>
 
-            {/* ③ short experiment questions */}
+            {/* ③ short experiment questionnaire */}
             <div style={card}>
-              <div style={cardLabel}>③ three quick questions</div>
-              <p style={cardP}>the main quiz still drives compatibility; these just give the dinner a little context.</p>
+              <div style={cardLabel}>③ your experiment questionnaire</div>
+              <p style={cardP}>your core personality, values, attachment, and lifestyle quiz stays the main signal. These four quick prompts tune this specific dinner.</p>
               <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 <div>
                   <div style={qLabel}>what are you hoping for?</div>
@@ -421,6 +423,12 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   </div>
                 </div>
                 <div>
+                  <div style={qLabel}>how I like plans to happen</div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {[['planned', 'clear plan'], ['spontaneous', 'go with the flow'], ['flexible', 'either works']].map(([v, l]) => <button key={v} type="button" onClick={() => setPlanningStyle(v)} style={chip(planningStyle === v)}>{l}</button>)}
+                  </div>
+                </div>
+                <div>
                   <div style={qLabel}>a good thing to ask you about</div>
                   <input
                     value={conversationStarter}
@@ -430,6 +438,9 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                     style={{ width: '100%', boxSizing: 'border-box', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.65rem 0.75rem', color: 'var(--h-text)', fontSize: '0.86rem' }}
                   />
                 </div>
+              </div>
+              <div style={{ marginTop: '0.85rem', padding: '0.7rem 0.75rem', borderRadius: 11, background: 'rgba(37,99,255,0.06)', border: '1px solid rgba(37,99,255,0.18)', color: 'var(--h-text-dim)', fontSize: '0.73rem', lineHeight: 1.5 }}>
+                <b style={{ color: 'var(--h-text)' }}>How the fit score works:</b> 75% core NotCupid compatibility, 15% shared interests, and 10% this questionnaire. Mutual gender, age, location, and date/time preferences are hard gates—not score boosts.
               </div>
             </div>
 
@@ -475,7 +486,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <button onClick={enter} disabled={busy || uploading || !canEnter} style={{ background: canEnter ? ORANGE : 'var(--h-surface-2)', color: canEnter ? '#fff' : 'var(--h-text-faint)', border: canEnter ? 'none' : '1px solid var(--h-border)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || !canEnter ? 'not-allowed' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
               {busy ? '…' : canEnter ? '✦ join the dating experiment' : 'finish the steps above'}
             </button>
-            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'answer the three quick questions' : !videoUrl ? 'upload your intro video' : 'confirm the terms and safety notices'}</p>}
+            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'finish the experiment questionnaire' : !videoUrl ? 'upload your intro video' : 'confirm the terms and safety notices'}</p>}
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
               <b>*</b> No purchase necessary. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Up to two reciprocal options; only mutual yes pairs enter the final compatibility-weighted selection. Up to {ev.winnerPairCount || 2} disjoint pairs; ${ev.budget} maximum value per dinner. Odds depend on the qualified pool and private choices. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
             </p>
@@ -571,7 +582,19 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: BLUE }}>{offer.score}% fit</span>
               </div>
               {person?.introVideoPreviewUrl && <video src={person.introVideoPreviewUrl} controls playsInline preload="metadata" style={{ width: '100%', display: 'block', marginTop: '0.55rem', borderRadius: 9, background: '#000' }} />}
-              {person?.orientation && <p style={{ margin: '0.55rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{person.orientation}</p>}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.55rem' }}>
+                {person?.orientation && <span style={profileFact}>{person.orientation}</span>}
+                {person?.archetype && <span style={profileFact}>{String(person.archetype).replaceAll('-', ' ')}</span>}
+              </div>
+              {person?.bio && <p style={{ margin: '0.55rem 0 0', fontSize: '0.8rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}>{person.bio}</p>}
+              {(person?.intention || person?.energy || person?.planningStyle) && (
+                <div style={{ marginTop: '0.55rem', padding: '0.55rem 0.6rem', borderRadius: 9, background: 'var(--h-surface-2)', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}>
+                  {person?.intention && <div><b style={{ color: 'var(--h-text)' }}>looking for:</b> {person.intention}</div>}
+                  {person?.energy && <div><b style={{ color: 'var(--h-text)' }}>dinner vibe:</b> {person.energy}</div>}
+                  {person?.planningStyle && <div><b style={{ color: 'var(--h-text)' }}>plans:</b> {person.planningStyle}</div>}
+                </div>
+              )}
+              {person?.sharedInterests?.length > 0 && <p style={{ margin: '0.55rem 0 0', fontSize: '0.72rem', lineHeight: 1.4, color: BLUE }}><b>you both like:</b> {person.sharedInterests.join(' · ')}</p>}
               {person?.conversationStarter && <p style={{ margin: '0.55rem 0 0', fontSize: '0.8rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}><b style={{ color: 'var(--h-text)' }}>ask about:</b> {person.conversationStarter}</p>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.7rem' }}>
                 <button onClick={() => decide(offer.id, true)} style={{ ...choiceBtn, background: choice.accept === true ? BLUE : 'var(--h-surface-2)', color: choice.accept === true ? '#fff' : 'var(--h-text)' }}>yes, I’d meet</button>
@@ -606,6 +629,7 @@ const numIn: React.CSSProperties = { width: 60, background: 'var(--h-surface-2)'
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const infoLink: React.CSSProperties = { display: 'inline-block', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.42rem 0.7rem', background: 'var(--h-surface)', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const choiceBtn: React.CSSProperties = { border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.55rem 0.35rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' };
+const profileFact: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', color: BLUE, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0.2rem 0.35rem', borderRadius: 999, background: 'rgba(37,99,255,0.08)' };
 const rulesBackdrop: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 'max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))', background: 'rgba(10,8,14,0.72)', backdropFilter: 'blur(8px)', overflowY: 'auto' };
 const rulesModal: React.CSSProperties = { width: 'min(100%, 520px)', maxHeight: 'calc(100dvh - 2rem)', overflowY: 'auto', boxSizing: 'border-box', background: 'var(--h-surface)', border: '1px solid rgba(255,106,31,0.34)', borderRadius: 22, padding: 'clamp(1rem,4vw,1.45rem)', boxShadow: '0 26px 80px rgba(0,0,0,0.35)' };
 function chip(on: boolean): React.CSSProperties {

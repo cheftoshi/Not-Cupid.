@@ -4,6 +4,7 @@ import { zipDistanceMiles } from '@/lib/quiz-data';
 export type ExperimentAnswers = {
   intention: 'relationship' | 'intentional' | 'open';
   energy: 'conversation' | 'playful' | 'foodie';
+  planningStyle: 'planned' | 'spontaneous' | 'flexible';
   conversationStarter: string;
   availableSlotKeys?: string[];
   preferences?: {
@@ -32,8 +33,8 @@ export const RAFFLE = {
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v8-2026-08-15',
-  algorithmVersion: 'dating-experiment-two-pair-v3',
+  termsVersion: 'boston-v9-2026-08-15',
+  algorithmVersion: 'dating-experiment-two-pair-v4',
   minimumPairScore: 55,
   videoMinSeconds: 5,
   videoMaxSeconds: 15,
@@ -55,7 +56,7 @@ export const RAFFLE = {
   sponsorDetailsConfirmed: false,
   legalReviewApproved: false,
   // Times are public. The venue is revealed privately only after selection.
-  restaurant: 'Restaurant details will be shared privately with the selected pair.',
+  restaurant: 'The Berkeley · 154 Berkeley Street, Boston, MA 02116',
   tagline: 'Two compatible Boston pairs. Dinner is on us.',
 };
 
@@ -99,7 +100,12 @@ function answerCompatibility(a?: Partial<ExperimentAnswers>, b?: Partial<Experim
   if (!a?.intention || !b?.intention || !a?.energy || !b?.energy) return null;
   const intention = a.intention === b.intention || a.intention === 'open' || b.intention === 'open' ? 100 : 55;
   const energy = a.energy === b.energy ? 100 : 65;
-  return intention * 0.65 + energy * 0.35;
+  const planning = !a.planningStyle || !b.planningStyle
+    ? 75
+    : a.planningStyle === b.planningStyle || a.planningStyle === 'flexible' || b.planningStyle === 'flexible'
+      ? 100
+      : 55;
+  return intention * 0.50 + energy * 0.30 + planning * 0.20;
 }
 
 // Compatibility drives who makes the eligible pair pool. Shared interests and

@@ -8,12 +8,26 @@ import { datingExperimentDateLabel, datingExperimentEntriesOpen, getDatingExperi
 
 export const dynamic = 'force-dynamic';
 
-async function privateCandidate(candidateId: string) {
+const answerLabel = (value: unknown, labels: Record<string, string>) => labels[String(value)] ?? null;
+const normalizedInterests = (profile: any): string[] => [
+  ...(Array.isArray(profile?.hobbies) ? profile.hobbies : []),
+  ...(Array.isArray(profile?.music) ? profile.music : []),
+  ...(Array.isArray(profile?.food) ? profile.food : []),
+  ...(Array.isArray(profile?.sports) ? profile.sports : []),
+].map((value) => String(value).trim()).filter(Boolean);
+
+async function privateCandidate(candidateId: string, viewer: any) {
   const [{ data: profile }, { data: entry }] = await Promise.all([
-    supabaseAdmin.from('users').select('name, age, photo_url, gallery, archetype').eq('id', candidateId).single(),
+    supabaseAdmin.from('users').select('name, age, photo_url, gallery, archetype, bio, hobbies, music, food, sports').eq('id', candidateId).single(),
     supabaseAdmin.from('raffle_entries').select('video_url, questionnaire').eq('event_key', RAFFLE.key).eq('user_id', candidateId).maybeSingle(),
   ]);
   if (!profile) return null;
+  const viewerInterests = new Set(normalizedInterests(viewer).map((value) => value.toLowerCase()));
+  const sharedInterests = normalizedInterests(profile)
+    .filter((value) => viewerInterests.has(value.toLowerCase()))
+    .filter((value, index, all) => all.findIndex((item) => item.toLowerCase() === value.toLowerCase()) === index)
+    .slice(0, 4);
+  const answers = (entry as any)?.questionnaire ?? {};
   const introVideoPreviewUrl = await signPrivateVideoReference(
     (entry as any)?.video_url,
     `${candidateId}/${RAFFLE.key}-`,
@@ -24,10 +38,14 @@ async function privateCandidate(candidateId: string) {
     photo_url: profile.photo_url,
     gallery: Array.isArray(profile.gallery) ? profile.gallery.slice(0, 3) : [],
     archetype: profile.archetype,
+    bio: String(profile.bio || '').trim().slice(0, 320) || null,
+    sharedInterests,
     orientation: experimentOrientationLabel((entry as any)?.questionnaire?.preferences?.orientation),
     introVideoPreviewUrl,
-    conversationStarter: (entry as any)?.questionnaire?.conversationStarter || null,
-    energy: (entry as any)?.questionnaire?.energy || null,
+    conversationStarter: answers.conversationStarter || null,
+    intention: answerLabel(answers.intention, { relationship: 'a relationship', intentional: 'intentional dating', open: 'open, but real' }),
+    energy: answerLabel(answers.energy, { conversation: 'deep conversation', playful: 'playful + easy', foodie: 'food-first adventure' }),
+    planningStyle: answerLabel(answers.planningStyle, { planned: 'a clear plan', spontaneous: 'go with the flow', flexible: 'either works' }),
   };
 }
 
@@ -80,7 +98,7 @@ export async function GET() {
             score: offer.compatibility_score,
             myAccepted: isA ? offer.a_accepted : offer.b_accepted,
             myFavorite: isA ? offer.a_favorite : offer.b_favorite,
-            candidate: await privateCandidate(candidateId),
+            candidate: await privateCandidate(candidateId, user),
           };
         }))).filter((offer) => offer.candidate != null);
         shortlistRound = {
@@ -113,7 +131,7 @@ export async function GET() {
         restaurant: latestDraw.restaurant,
         happensAt: latestDraw.happens_at,
       };
-      other = await privateCandidate(otherId);
+      other = await privateCandidate(otherId, user);
     }
   } catch (error) {
     console.error('[dating-experiment-status]', error);

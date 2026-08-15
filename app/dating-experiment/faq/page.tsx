@@ -14,7 +14,7 @@ const ORANGE_DEEP = '#d2530f';
 const BLUE = '#2563ff';
 
 const STEPS = [
-  ['1', 'Join for free', `Complete your profile, answer three quick questions, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello video.`],
+  ['1', 'Join for free', `Complete your profile, answer four quick experiment prompts, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello video.`],
   ['2', 'Meet up to two', 'The system prioritizes broad coverage, then gives each qualified participant up to two strong reciprocal options.'],
   ['3', 'Choose privately', `You have ${RAFFLE.respondHours} hours to say yes to either, both, or neither—and optionally favorite one. Every choice stays sealed.`],
   ['4', 'Mutual wins', `Only mutual yes pairs qualify. Up to ${RAFFLE.winnerPairCount} disjoint pairs are selected, with each dinner covered up to $${RAFFLE.budget}.`],
@@ -35,7 +35,7 @@ const FAQS = [
   },
   {
     q: 'How is a pair selected?',
-    a: `The system checks mutual preferences, shared dinner-time availability, local eligibility, prior pairings, and a minimum compatibility score. It first tries to give as many people as possible one strong reciprocal option, then fills second slots where the pool supports it. You may say yes to one, both, or neither. Only mutual yes pairs enter the final selection. Compatibility gets a limited 1×–3× weight, and favorites add a small disclosed boost. The system selects up to ${RAFFLE.winnerPairCount} pairs without replacement and assigns different shared time slots, so nobody can win twice and nobody is assigned a time they did not choose.`,
+    a: `Mutual gender, age, location, and dinner-time availability are hard gates. Eligible pairs then receive a fit score: 75% the core NotCupid personality, values, attachment, and lifestyle model; 15% shared interests; and 10% the experiment questionnaire. Pairs below the minimum score are removed. The system first tries to give as many people as possible one strong reciprocal option, then fills second slots where the pool supports it. You may say yes to one, both, or neither. Only mutual yes pairs enter the final selection. Compatibility gets a limited 1×–3× weight, and favorites add a small disclosed boost. The system selects up to ${RAFFLE.winnerPairCount} pairs without replacement and assigns different shared time slots, so nobody can win twice and nobody is assigned a time they did not choose.`,
   },
   {
     q: 'Can all genders and orientations participate?',
@@ -71,7 +71,7 @@ const FAQS = [
   },
   {
     q: 'What do we see before deciding?',
-    a: `You privately see each shortlist option’s first name, age, photos, profile context, short experiment answer, and intro video. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the winning mutual pairs are selected.`,
+    a: `You privately see each shortlist option’s first name, age, photos, bio, archetype, disclosed orientation, shared interests, experiment answers, conversation prompt, fit score, and intro video. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the winning mutual pairs are selected.`,
   },
   {
     q: 'What if one person passes or does not respond?',
@@ -87,7 +87,7 @@ const FAQS = [
   },
   {
     q: 'How will I know if I am selected?',
-    a: 'The app can send an opted-in push notification when your shortlist is ready and when winning mutual dinner pairs are selected. Participants are responsible for checking the app during the response window. No promotional email campaign is part of joining.',
+    a: 'If you opt in, the app can send a push when your shortlist is ready, when a winning mutual pair is selected, and once during the final 24 hours plus once during the final three hours before the dinner. The app remains the source of truth. No promotional email campaign is part of joining.',
   },
 ];
 

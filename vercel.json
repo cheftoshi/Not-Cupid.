@@ -21,6 +21,10 @@
       "schedule": "15 5 * * *"
     },
     {
+      "path": "/api/cron/dating-experiment-reminders",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/weekly-drop",
       "schedule": "0 23 * * 4"
     }

@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
 
 const INTENTIONS = new Set(['relationship', 'intentional', 'open']);
 const ENERGIES = new Set(['conversation', 'playful', 'foodie']);
+const PLANNING_STYLES = new Set(['planned', 'spontaneous', 'flexible']);
 
 // Enter the Dating Experiment. The public flow is intentionally short, while
 // the server records each material consent separately for an auditable trail.
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
   const notify = body.notify !== false;
   const intention = INTENTIONS.has(body.intention) ? body.intention : null;
   const energy = ENERGIES.has(body.energy) ? body.energy : null;
+  const planningStyle = PLANNING_STYLES.has(body.planningStyle) ? body.planningStyle : null;
   const conversationStarter = String(body.conversationStarter || '').trim().slice(0, 160);
 
   // Match basics are validated server-side and frozen into this experiment
@@ -77,8 +79,8 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(videoDuration) || videoDuration < RAFFLE.videoMinSeconds || videoDuration > RAFFLE.videoMaxSeconds) {
     return NextResponse.json({ error: `Your intro video must be ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds} seconds long.` }, { status: 400 });
   }
-  if (!intention || !energy || conversationStarter.length < 3) {
-    return NextResponse.json({ error: 'Finish the three short experiment questions before entering.' }, { status: 400 });
+  if (!intention || !energy || !planningStyle || conversationStarter.length < 3) {
+    return NextResponse.json({ error: 'Finish the short experiment questionnaire before entering.' }, { status: 400 });
   }
   if (body.termsVersion !== event!.terms_version || body.termsAccepted !== true) {
     return NextResponse.json({ error: 'Please agree to the current Dating Experiment Terms.' }, { status: 400 });
@@ -102,6 +104,7 @@ export async function POST(req: NextRequest) {
       p_questionnaire: {
         intention,
         energy,
+        planningStyle,
         conversationStarter,
         availableSlotKeys,
         preferences: { gender, orientation, seekingGenders, ageMin, ageMax },

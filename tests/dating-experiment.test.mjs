@@ -25,7 +25,7 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v8-2026-08-15'/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v9-2026-08-15'/);
   assert.match(experimentSource, /aug20-1830/);
   assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
@@ -242,6 +242,31 @@ test('public launch approvals are dated, attributable, and required in code and 
   assert.match(migration, /terms_version = 'boston-v8-2026-08-15'/i);
   assert.match(eventSource, /event\.legal_review_approved_at != null/);
   assert.match(eventSource, /event\.sponsor_public_mailing_address\?\.trim\(\)/);
+});
+
+test('V9 adds a transparent event questionnaire, private Berkeley reveal, and opted-in reminders', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260815232000_dating_experiment_berkeley_questionnaire_v9.sql', import.meta.url), 'utf8');
+  const entry = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
+  const status = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
+  const draw = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  const reminders = readFileSync(new URL('../app/api/cron/dating-experiment-reminders/route.ts', import.meta.url), 'utf8');
+  const cron = readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
+  assert.match(migration, /The Berkeley · 154 Berkeley Street, Boston, MA 02116/);
+  assert.match(migration, /venue_confirmed = false/i);
+  assert.match(migration, /terms_version = 'boston-v9-2026-08-15'/i);
+  assert.match(migration, /algorithm_version = 'dating-experiment-two-pair-v4'/i);
+  assert.match(migration, /reminder_24h_sent_at/);
+  assert.match(migration, /reminder_3h_sent_at/);
+  assert.match(entry, /PLANNING_STYLES/);
+  assert.match(entry, /planningStyle/);
+  assert.match(status, /sharedInterests/);
+  assert.match(status, /introVideoPreviewUrl/);
+  assert.match(draw, /notify === false/);
+  assert.match(draw, /notificationsEnabled\.has\(id\)/);
+  assert.match(reminders, /\.eq\('status', 'both_accepted'\)/);
+  assert.match(reminders, /\.is\(field, null\)/);
+  assert.match(reminders, /entry\.notify !== false/);
+  assert.match(cron, /\/api\/cron\/dating-experiment-reminders/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {

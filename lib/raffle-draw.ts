@@ -84,7 +84,7 @@ async function resolveCollectingRound(
 
   const participantIds = [...new Set(pairs.flatMap((pair) => [pair.user_a_id, pair.user_b_id]))];
   const { data: availabilityEntries, error: availabilityError } = await supabaseAdmin.from('raffle_entries')
-    .select('user_id, questionnaire')
+    .select('user_id, questionnaire, notify')
     .eq('event_key', event.event_key)
     .in('user_id', participantIds);
   if (availabilityError) throw availabilityError;
@@ -96,6 +96,9 @@ async function resolveCollectingRound(
       ? [...new Set(entry.questionnaire.availableSlotKeys.map(String).filter((key: string) => eventSlotSet.has(key)))] as string[]
       : [],
   ]));
+  const notificationsEnabled = new Set((availabilityEntries ?? [])
+    .filter((entry: any) => entry.notify !== false)
+    .map((entry: any) => entry.user_id));
   const decisionEdges: SlotAwareDecisionEdge<string>[] = pairs.map((pair) => ({
     id: pair.id,
     a: pair.user_a_id,
@@ -256,7 +259,9 @@ async function resolveCollectingRound(
     url: '/dating-experiment',
     tag: `dating-experiment-winner-${round.id}`,
   };
-  await Promise.allSettled(winnerIds.map((id) => sendPushToUser(id, message)));
+  await Promise.allSettled(winnerIds
+    .filter((id) => notificationsEnabled.has(id))
+    .map((id) => sendPushToUser(id, message)));
   const selectedSummaries = selected.map((pair) => ({
     a: nameById.get(pair.a) ?? 'Participant A',
     b: nameById.get(pair.b) ?? 'Participant B',
@@ -344,7 +349,7 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     supabaseAdmin.from('dating_experiment_rounds').select('round_number').eq('event_key', event.event_key).order('round_number', { ascending: false }),
     supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', event.event_key).neq('status', 'withdrawn'),
     supabaseAdmin.from('raffle_entries')
-      .select('user_id, attempts, questionnaire, terms_version')
+      .select('user_id, attempts, questionnaire, terms_version, notify')
       .eq('event_key', event.event_key)
       .eq('status', 'entered'),
   ]);
@@ -458,6 +463,7 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     optionCount.set(edge.b.id, (optionCount.get(edge.b.id) ?? 0) + 1);
   });
   await Promise.allSettled(participants.map((id) => {
+    if ((entryByUser.get(id) as any)?.notify === false) return Promise.resolve(false);
     const count = optionCount.get(id) ?? 1;
     return sendPushToUser(id, {
       title: `Your private shortlist is ready ✦`,
