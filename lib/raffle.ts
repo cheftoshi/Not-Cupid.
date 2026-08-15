@@ -50,8 +50,9 @@ export const RAFFLE = {
   drawLabel: 'Tuesday, August 18 after 12:00 PM ET',
   budget: 200,
   // The operator confirmed the $400 maximum prize funding, both prepaid
-  // reservations, and Lemon Labs Sponsor details on August 15. Counsel review
-  // remains a separate launch gate.
+  // reservations, NotCupid as the public Sponsor, and its Quincy mailing
+  // address on August 15. Lemon Labs owns NotCupid; it is not presented as the
+  // public prize Sponsor. Counsel review remains a separate launch gate.
   prizeFundingConfirmed: true,
   venueConfirmed: true,
   sponsorDetailsConfirmed: true,

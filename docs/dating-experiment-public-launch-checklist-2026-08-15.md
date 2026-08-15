@@ -16,7 +16,7 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 ## Hard launch gates
 
 - [x] Prize ceiling funded: $200 per pair / $400 aggregate. Confirmed by operator August 15, 2026.
-- [x] Sponsor public name confirmed as Lemon Labs by the operator on August 15, 2026.
+- [x] Public Sponsor/operator name confirmed as NotCupid by the operator on August 15, 2026. Lemon Labs owns NotCupid but is not separately presented as the public prize Sponsor.
 - [x] Sponsor public physical postal address confirmed as 109 California Ave, Quincy, MA 02169 by the operator on August 15, 2026.
 - [x] Intended venue recorded privately: The Berkeley, 154 Berkeley Street, Boston, MA 02116.
 - [x] Operator confirmed both Berkeley reservations are booked and prepaid for August 20 at 6:30 PM and 8:30 PM ET on August 15.
@@ -62,7 +62,8 @@ Private internal publisher record: NotCupid is paying Only in Boston $200 to dis
 
 ## Opening record
 
-- Sponsor public name: Lemon Labs (operator-confirmed August 15, 2026)
+- Public Sponsor/operator name: NotCupid (operator-confirmed August 15, 2026)
+- Owner company: Lemon Labs; owns and operates the NotCupid product, not separately presented as the public prize Sponsor
 - Sponsor public postal address: 109 California Ave, Quincy, MA 02169
 - Venue and address: The Berkeley, 154 Berkeley Street, Boston, MA 02116 (confirmed and prepaid; reveal privately to selected pairs)
 - 6:30 PM reservation reference: Operator attestation, August 15, 2026

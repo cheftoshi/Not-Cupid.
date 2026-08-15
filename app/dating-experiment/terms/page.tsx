@@ -26,7 +26,7 @@ export default async function DatingExperimentTermsPage() {
       <p><strong>NO PURCHASE OR PAYMENT IS NECESSARY TO ENTER OR WIN. A PURCHASE WILL NOT IMPROVE THE CHANCE OF RECEIVING A SHORTLIST OR PRIZE. VOID WHERE PROHIBITED.</strong></p>
       <p>These Official Rules and Terms apply to the <strong>{RAFFLE.series}</strong>. By entering, you agree to the version shown at entry: <strong>{RAFFLE.termsVersion}</strong>. For the plain-language plan, read the <a href="/dating-experiment/faq">Dating Experiment FAQ</a>. Questions may be sent to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.</p>
       {sponsorConfirmed ? (
-        <p><strong>Sponsor:</strong> {event!.sponsor_legal_name}. <strong>Public mailing address:</strong> <span style={{ whiteSpace: 'pre-line' }}>{event!.sponsor_public_mailing_address}</span>. NotCupid operates the experiment for the Sponsor.</p>
+        <p><strong>Public Sponsor and operator:</strong> {event!.sponsor_legal_name}. <strong>Owner:</strong> Lemon Labs. Lemon Labs owns and operates the NotCupid product but is not separately presented as the public prize Sponsor. <strong>Public mailing address:</strong> <span style={{ whiteSpace: 'pre-line' }}>{event!.sponsor_public_mailing_address}</span>.</p>
       ) : (
         <p><strong>Draft Sponsor notice:</strong> NotCupid is the intended operator. The Sponsor&apos;s exact legal name and valid public postal address are pending final confirmation and must appear here before entries open.</p>
       )}
@@ -78,7 +78,7 @@ export default async function DatingExperimentTermsPage() {
       <p>Participants are responsible for any taxes that legally apply to the value they receive. NotCupid will provide required tax reporting only where applicable.</p>
 
       <h2>15. Disclaimers and limits</h2>
-      <p>Participation and the dinner are voluntary. To the fullest extent permitted by law, NotCupid and Lemon Labs disclaim warranties and are not responsible for indirect or consequential losses arising from participation or another participant&apos;s independent conduct. Nothing in these terms excludes or limits liability that cannot legally be excluded, including liability arising from gross negligence or intentional misconduct.</p>
+      <p>Participation and the dinner are voluntary. To the fullest extent permitted by law, NotCupid and its owner, Lemon Labs, disclaim warranties and are not responsible for indirect or consequential losses arising from participation or another participant&apos;s independent conduct. Nothing in these terms excludes or limits liability that cannot legally be excluded, including liability arising from gross negligence or intentional misconduct.</p>
 
       <h2>16. Governing law</h2>
       <p>These terms are governed by Massachusetts law, without regard to conflict-of-laws rules. Any proceeding concerning the experiment must be brought in a court of competent jurisdiction in Massachusetts.</p>
