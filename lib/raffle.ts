@@ -33,7 +33,7 @@ export const RAFFLE = {
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v9-2026-08-15',
+  termsVersion: 'boston-v10-2026-08-15',
   algorithmVersion: 'dating-experiment-two-pair-v4',
   minimumPairScore: 55,
   videoMinSeconds: 5,
@@ -49,10 +49,10 @@ export const RAFFLE = {
   ],
   drawLabel: 'Tuesday, August 18 after 12:00 PM ET',
   budget: 200,
-  // The operator confirmed the $400 maximum prize funding on August 15. Venue,
-  // sponsor details, and counsel review remain independent fail-closed gates.
+  // The operator confirmed the $400 maximum prize funding and both prepaid
+  // reservations on August 15. Sponsor details and counsel review remain gates.
   prizeFundingConfirmed: true,
-  venueConfirmed: false,
+  venueConfirmed: true,
   sponsorDetailsConfirmed: false,
   legalReviewApproved: false,
   // Times are public. The venue is revealed privately only after selection.

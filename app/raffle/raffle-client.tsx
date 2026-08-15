@@ -263,7 +263,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <h2 style={cardH}>it’s a date with {other}.</h2>
             <p style={cardP}>your <b>${ev.budget} dinner</b> is locked in · <b>{ev.dateLabel}</b>. {st.draw.restaurant}</p>
             <p style={{ fontSize: '0.76rem', color: 'var(--h-text-faint)', lineHeight: 1.5, margin: '0.85rem 0 0' }}>
-              💛 a little cushion: meet in public, tell a friend where you’ll be, and arrange your own ride home. trust your gut.
+              💛 meet in public, tell a friend where you’ll be, and arrange your own ride home. Parking, valet costs or tips, and transportation are not included. trust your gut.
             </p>
             <Link href="/hub" style={backLink}>back to hub →</Link>
           </div>

@@ -19,10 +19,9 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 - [ ] Sponsor legal name confirmed.
 - [ ] Sponsor valid public physical postal address confirmed. An email address alone is not sufficient for commercial email or the public rules.
 - [x] Intended venue recorded privately: The Berkeley, 154 Berkeley Street, Boston, MA 02116.
-- [ ] The Berkeley has accepted/confirmed both reservations.
-- [ ] Reservation confirmation/reference recorded for 6:30 PM.
-- [ ] Reservation confirmation/reference recorded for 8:30 PM.
-- [ ] Fulfillment method confirmed in writing: who pays the restaurant, when, how the $200 cap is applied, and treatment of tax, gratuity, alcohol, transportation, excess charges, cancellation, no-show, and venue failure.
+- [x] Operator confirmed both Berkeley reservations are booked and prepaid for August 20 at 6:30 PM and 8:30 PM ET on August 15.
+- [x] Reservation confirmation recorded as an operator attestation for both slots. External booking identifiers were not supplied and remain private if added later.
+- [x] Fulfillment method: NotCupid prepaid The Berkeley directly; participants do not pay or seek reimbursement for the included dinner. The $200-per-pair cap includes ordinary tax and gratuity. Alcohol, parking, valet costs/tips, transportation, and items outside the prepaid arrangement are excluded.
 - [ ] Massachusetts promotions counsel approves the exact published terms version and provides a written reference/date.
 - [ ] Production database sign-off fields populated; event status changed from `draft` to `entry_open` only after every item above.
 - [ ] `RAFFLE.entriesOpen` changed to `true`, reviewed, tested, committed, deployed, and production entry/upload endpoints verified.
@@ -30,18 +29,18 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 ## Restaurant operating plan
 
 - Put both reservations under a clear host name and give the restaurant a day-of contact.
-- Prefer Sponsor payment directly to the restaurant. Confirm in writing whether the $200 includes tax and gratuity and exclude alcohol, transportation, and charges above the cap unless the final rules say otherwise.
+- NotCupid has prepaid the restaurant directly. Retain the payment confirmation privately and verify that the $200 includes ordinary tax and gratuity; alcohol, parking, valet costs/tips, transportation, and charges outside the prepaid arrangement remain the participants' responsibility.
 - Record allergy/accommodation contact instructions without promising an accommodation the venue has not confirmed.
 - Establish a no-show and late-arrival cutoff, a private participant support contact, and a backup/reschedule plan.
 - Share the venue only with selected participants. Do not put private reservation references in a public API, client bundle, post, or email.
 
 ## Required public-post footer
 
-Use this in the Only in Boston post and every promotional Reddit post, close to the call to action:
+Use the following prize-promotion footer in every promotional post, close to the call to action. Because NotCupid is paying Only in Boston $200 for distribution, its post must begin with a conspicuous `Paid advertisement for NotCupid` or an equally clear Instagram advertising disclosure; do not describe Only in Boston as a partner, Sponsor, administrator, or selector.
 
 > NO PURCHASE NECESSARY. Open to eligible Massachusetts residents 21+ within approximately 20 miles of 02116. Entry closes August 18 at 12 PM ET or at 100 eligible entries. Up to two dinner prizes; maximum $200 per selected pair / $400 total. Odds depend on eligible entries, reciprocal preferences, compatibility weighting, mutual choices, and shared availability. Official Rules: https://notcupid.com/dating-experiment/terms. Apple and Reddit do not sponsor or administer the experiment. Only in Boston is not the prize sponsor or administrator.
 
-If Only in Boston receives money, a free meal, services, equity, reciprocal promotion, or anything else of value, place `Paid partnership with NotCupid` or `Sponsored by NotCupid` conspicuously at the beginning of the post. Do not rely only on a platform tag, the comments, or a disclosure after “more.” If there is no material connection, do not falsely label the independent post as sponsored.
+Internal publisher record: NotCupid is paying Only in Boston $200 to promote the experiment on its social channels. Only in Boston is a paid promotional publisher, not the prize Sponsor or administrator. Use `Paid advertisement for NotCupid` if the operator does not want partnership language, and place it where viewers see it before expanding the caption. Do not rely on comments or a disclosure after “more.”
 
 ## Campaign email
 
@@ -65,13 +64,13 @@ If Only in Boston receives money, a free meal, services, equity, reciprocal prom
 
 - Sponsor legal name:
 - Sponsor public postal address:
-- Venue and address: The Berkeley, 154 Berkeley Street, Boston, MA 02116 (intended; booking confirmation pending)
-- 6:30 PM reservation reference:
-- 8:30 PM reservation reference:
-- Prize fulfillment method:
+- Venue and address: The Berkeley, 154 Berkeley Street, Boston, MA 02116 (confirmed and prepaid; reveal privately to selected pairs)
+- 6:30 PM reservation reference: Operator attestation, August 15, 2026
+- 8:30 PM reservation reference: Operator attestation, August 15, 2026
+- Prize fulfillment method: NotCupid prepaid The Berkeley directly; no guest reimbursement step; $200 per pair including ordinary tax and gratuity; parking/valet/transport excluded
 - Legal reviewer and written reference:
 - Terms version reviewed:
-- Only in Boston relationship/disclosure:
+- Only in Boston relationship/disclosure: Paid promotional publisher; $200 fee; use “Paid advertisement for NotCupid”; no partnership, Sponsor, administrator, data, matching, or selection role
 - Operator approval timestamp:
 - Production deployment ID:
 - Production opening verification:

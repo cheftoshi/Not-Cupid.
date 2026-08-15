@@ -89,6 +89,10 @@ const FAQS = [
     q: 'How will I know if I am selected?',
     a: 'If you opt in, the app can send a push when your shortlist is ready, when a winning mutual pair is selected, and once during the final 24 hours plus once during the final three hours before the dinner. The app remains the source of truth. No promotional email campaign is part of joining.',
   },
+  {
+    q: 'Does Only in Boston run or sponsor the experiment?',
+    a: 'No. Only in Boston is paid $200 to promote the experiment on its social channels. It does not sponsor the prizes, administer entries, receive private participant data, form matches, select winners, or operate the dinner. NotCupid is responsible for the experiment and its prizes.',
+  },
 ];
 
 export default function DatingExperimentFaqPage() {

@@ -25,7 +25,7 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v9-2026-08-15'/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v10-2026-08-15'/);
   assert.match(experimentSource, /aug20-1830/);
   assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
@@ -317,7 +317,8 @@ test('public entry remains fail-closed until every launch prerequisite is approv
   const drawSource = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
   const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
   assert.match(experimentSource, /prizeFundingConfirmed: true/);
-  for (const gate of ['venueConfirmed: false', 'sponsorDetailsConfirmed: false', 'legalReviewApproved: false']) {
+  assert.match(experimentSource, /venueConfirmed: true/);
+  for (const gate of ['sponsorDetailsConfirmed: false', 'legalReviewApproved: false']) {
     assert.match(experimentSource, new RegExp(gate));
   }
   assert.match(experimentSource, /raffleLaunchBlockers\(\)\.length === 0/);
@@ -326,4 +327,28 @@ test('public entry remains fail-closed until every launch prerequisite is approv
   assert.match(eventSource, /hasDatabaseLaunchApproval\(event\)/);
   assert.match(drawSource, /if \(!datingExperimentCanShortlist\(event\)\) return \{ ok: true, entrants: 0, drawn: 0, state: 'paused' \}/);
   assert.doesNotMatch(drawSource, /!datingExperimentCanShortlist\(event\) && !force/);
+});
+
+test('Berkeley reservations and direct prepayment are confirmed without opening entries', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260815235500_dating_experiment_confirm_berkeley_fulfillment.sql', import.meta.url), 'utf8');
+  assert.match(migration, /venue_confirmed = true/i);
+  assert.match(migration, /venue_confirmed_at = now\(\)/i);
+  assert.match(migration, /both Berkeley dinner reservations confirmed/i);
+  assert.match(migration, /NotCupid prepaid The Berkeley directly/i);
+  assert.match(migration, /not required to pay or request reimbursement/i);
+  assert.match(migration, /parking, valet charges or tips, transportation/i);
+  assert.match(migration, /terms_version = 'boston-v10-2026-08-15'/i);
+  assert.match(migration, /status = 'draft'/i);
+  assert.doesNotMatch(migration, /sponsor_details_confirmed = true/i);
+  assert.doesNotMatch(migration, /legal_review_approved = true/i);
+});
+
+test('paid Only in Boston promotion is disclosed without granting an operating role', () => {
+  const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
+  const checklist = readFileSync(new URL('../docs/dating-experiment-public-launch-checklist-2026-08-15.md', import.meta.url), 'utf8');
+  assert.match(terms, /Only in Boston is a paid promotional publisher/);
+  assert.match(terms, /not the Sponsor, prize provider, administrator, matching service, selection authority, or venue/);
+  assert.match(checklist, /paying Only in Boston \$200/);
+  assert.match(checklist, /Paid advertisement for NotCupid/);
+  assert.doesNotMatch(checklist, /Only in Boston relationship\/disclosure:\s*$/m);
 });
