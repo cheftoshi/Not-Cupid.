@@ -37,7 +37,7 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 
 Use this in the Only in Boston post and every promotional Reddit post, close to the call to action:
 
-> NO PURCHASE NECESSARY. Open to eligible Massachusetts residents 21+ within approximately 20 miles of 02116. Entry closes August 18 at 12 PM ET or at 100 eligible entries. Up to two dinner prizes; maximum $200 per selected pair / $400 total. Odds depend on eligible entries, reciprocal preferences, compatibility weighting, mutual choices, and shared availability. Official Rules: https://notcupid.com/dating-experiment/terms. Not sponsored or administered by Apple, Reddit, or Only in Boston.
+> NO PURCHASE NECESSARY. Open to eligible Massachusetts residents 21+ within approximately 20 miles of 02116. Entry closes August 18 at 12 PM ET or at 100 eligible entries. Up to two dinner prizes; maximum $200 per selected pair / $400 total. Odds depend on eligible entries, reciprocal preferences, compatibility weighting, mutual choices, and shared availability. Official Rules: https://notcupid.com/dating-experiment/terms. Apple and Reddit do not sponsor or administer the experiment. Only in Boston is not the prize sponsor or administrator.
 
 If Only in Boston receives money, a free meal, services, equity, reciprocal promotion, or anything else of value, place `Paid partnership with NotCupid` or `Sponsored by NotCupid` conspicuously at the beginning of the post. Do not rely only on a platform tag, the comments, or a disclosure after “more.” If there is no material connection, do not falsely label the independent post as sponsored.
 
