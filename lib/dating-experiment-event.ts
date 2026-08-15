@@ -23,9 +23,18 @@ export type DatingExperimentEvent = {
   entry_closes_at: string;
   happens_at: string;
   prize_funding_confirmed: boolean;
+  prize_funding_confirmed_at: string | null;
   venue_confirmed: boolean;
+  venue_confirmed_at: string | null;
+  venue_confirmation_reference: string | null;
+  prize_fulfillment_method: string | null;
   sponsor_details_confirmed: boolean;
+  sponsor_details_confirmed_at: string | null;
+  sponsor_legal_name: string | null;
+  sponsor_public_mailing_address: string | null;
   legal_review_approved: boolean;
+  legal_review_approved_at: string | null;
+  legal_review_reference: string | null;
   dinner_dates: DatingExperimentDinnerDate[];
 };
 
@@ -49,8 +58,12 @@ export async function getDatingExperimentEvent(
       'max_attempts', 'response_hours', 'prize_per_pair_cents', 'terms_version',
       'algorithm_version', 'minimum_pair_score', 'winner_fulfillment_details',
       'entry_opens_at', 'entry_closes_at', 'happens_at',
-      'prize_funding_confirmed', 'venue_confirmed', 'sponsor_details_confirmed',
-      'legal_review_approved',
+      'prize_funding_confirmed', 'prize_funding_confirmed_at',
+      'venue_confirmed', 'venue_confirmed_at', 'venue_confirmation_reference',
+      'prize_fulfillment_method',
+      'sponsor_details_confirmed', 'sponsor_details_confirmed_at',
+      'sponsor_legal_name', 'sponsor_public_mailing_address',
+      'legal_review_approved', 'legal_review_approved_at', 'legal_review_reference',
     ].join(', '))
     .eq('event_key', eventKey)
     .maybeSingle();
@@ -75,9 +88,18 @@ export async function getDatingExperimentEvent(
 
 function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
   return event.prize_funding_confirmed
+    && event.prize_funding_confirmed_at != null
     && event.venue_confirmed
+    && event.venue_confirmed_at != null
+    && !!event.venue_confirmation_reference?.trim()
+    && !!event.prize_fulfillment_method?.trim()
     && event.sponsor_details_confirmed
+    && event.sponsor_details_confirmed_at != null
+    && !!event.sponsor_legal_name?.trim()
+    && !!event.sponsor_public_mailing_address?.trim()
     && event.legal_review_approved
+    && event.legal_review_approved_at != null
+    && !!event.legal_review_reference?.trim()
     && event.terms_version === RAFFLE.termsVersion
     && event.algorithm_version === RAFFLE.algorithmVersion
     && event.dinner_dates.length >= event.winner_pair_limit

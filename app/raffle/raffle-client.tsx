@@ -22,7 +22,7 @@ type Event = {
   winnerPairCount?: number;
   entriesOpen?: boolean;
   statusLabel?: string;
-  dateOptions?: { key: string; label: string }[];
+  dateOptions?: { key: string; label: string; eventDate?: string; dateLabel?: string; timeLabel?: string }[];
 };
 type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seekingGenders: string[]; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
 
@@ -73,6 +73,13 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
   const ev = { ...event, ...(st?.event || {}) } as any;
   const other = st?.other?.name ? st.other.name.split(' ')[0] : 'your match';
+  const availabilityGroups = ((ev.dateOptions || []) as NonNullable<Event['dateOptions']>).reduce((groups, slot) => {
+    const groupKey = slot.eventDate || slot.dateLabel || slot.label;
+    const current = groups.find((group) => group.key === groupKey);
+    if (current) current.slots.push(slot);
+    else groups.push({ key: groupKey, label: slot.dateLabel || slot.label, slots: [slot] });
+    return groups;
+  }, [] as { key: string; label: string; slots: NonNullable<Event['dateOptions']> }[]);
 
   useEffect(() => {
     const key = `notcupid-dating-experiment-rules:${ev.termsVersion}`;
@@ -378,13 +385,20 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Age preferences must work both ways too—you must fall inside their selected range.</div>
                 </div>
                 <div>
-                  <div style={qLabel}>times I can attend <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose one or both)</span></div>
-                  <div style={{ display: 'grid', gap: '0.4rem' }}>
-                    {(ev.dateOptions || []).map((slot: any) => (
-                      <button key={slot.key} type="button" aria-pressed={availableSlotKeys.includes(slot.key)} onClick={() => toggleAvailableSlot(slot.key)} style={{ ...chip(availableSlotKeys.includes(slot.key)), width: '100%', textAlign: 'left' }}>{availableSlotKeys.includes(slot.key) ? '✓ ' : ''}{slot.label}</button>
+                  <div style={qLabel}>date + time I can attend <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose every slot that works)</span></div>
+                  <div style={{ display: 'grid', gap: '0.65rem' }}>
+                    {availabilityGroups.map((group) => (
+                      <fieldset key={group.key} style={{ margin: 0, padding: '0.65rem', border: '1px solid var(--h-border)', borderRadius: 12 }}>
+                        <legend style={{ padding: '0 0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', fontWeight: 700 }}>{group.label}</legend>
+                        <div style={{ display: 'grid', gap: '0.4rem' }}>
+                          {group.slots.map((slot) => (
+                            <button key={slot.key} type="button" aria-pressed={availableSlotKeys.includes(slot.key)} onClick={() => toggleAvailableSlot(slot.key)} style={{ ...chip(availableSlotKeys.includes(slot.key)), width: '100%', textAlign: 'left' }}>{availableSlotKeys.includes(slot.key) ? '✓ ' : ''}{slot.timeLabel || slot.label}</button>
+                          ))}
+                        </div>
+                      </fieldset>
                     ))}
                   </div>
-                  <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>We only consider a pair when both people selected at least one of the same dinner times.</div>
+                  <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Choose only slots you can commit to. We consider a pair only when both people selected the same date and time.</div>
                 </div>
               </div>
             </div>

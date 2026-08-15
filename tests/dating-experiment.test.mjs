@@ -25,7 +25,7 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v7-2026-08-15'/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v8-2026-08-15'/);
   assert.match(experimentSource, /aug20-1830/);
   assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
@@ -225,6 +225,23 @@ test('the Boston experiment owns two August 20 time slots while venue remains fa
   assert.match(terms, /Thursday, August 20, 2026/);
   assert.match(terms, /6:30 PM Eastern Time/);
   assert.match(terms, /8:30 PM Eastern Time/);
+});
+
+test('public launch approvals are dated, attributable, and required in code and database', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260815223000_dating_experiment_launch_signoffs.sql', import.meta.url), 'utf8');
+  const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
+  for (const field of [
+    'prize_funding_confirmed_at', 'venue_confirmed_at', 'venue_confirmation_reference',
+    'prize_fulfillment_method', 'sponsor_details_confirmed_at', 'sponsor_legal_name',
+    'sponsor_public_mailing_address', 'legal_review_approved_at', 'legal_review_reference',
+  ]) {
+    assert.match(migration, new RegExp(field));
+    assert.match(eventSource, new RegExp(field));
+  }
+  assert.match(migration, /status <> 'entry_open'/i);
+  assert.match(migration, /terms_version = 'boston-v8-2026-08-15'/i);
+  assert.match(eventSource, /event\.legal_review_approved_at != null/);
+  assert.match(eventSource, /event\.sponsor_public_mailing_address\?\.trim\(\)/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {

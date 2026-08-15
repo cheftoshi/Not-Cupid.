@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import LegalPage from '@/components/legal-page';
-import { RAFFLE, raffleEntriesOpen } from '@/lib/raffle';
+import { RAFFLE } from '@/lib/raffle';
+import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Dating Experiment Official Rules & Terms — NotCupid',
@@ -9,13 +12,24 @@ export const metadata: Metadata = {
 
 const CONTACT = 'match@notcupid.com';
 
-export default function DatingExperimentTermsPage() {
+export default async function DatingExperimentTermsPage() {
+  const event = await getDatingExperimentEvent();
+  const entriesOpen = datingExperimentEntriesOpen(event);
+  const sponsorConfirmed = event?.sponsor_details_confirmed === true
+    && !!event.sponsor_legal_name?.trim()
+    && !!event.sponsor_public_mailing_address?.trim();
+
   return (
     <LegalPage title="Dating Experiment Official Rules & Terms" subtitle="No purchase necessary. The complete rules for Dinner on Us: Boston." updated="August 15, 2026">
-      {!raffleEntriesOpen() && <p><strong>Quiet mode:</strong> entries are not currently open. These rules are published for transparency and may be updated before the entry period begins.</p>}
+      {!entriesOpen && <p><strong>Quiet mode:</strong> entries are not currently open. These rules are published for transparency and may be updated before the entry period begins.</p>}
 
       <p><strong>NO PURCHASE OR PAYMENT IS NECESSARY TO ENTER OR WIN. A PURCHASE WILL NOT IMPROVE THE CHANCE OF RECEIVING A SHORTLIST OR PRIZE. VOID WHERE PROHIBITED.</strong></p>
-      <p>These Official Rules and Terms apply to the <strong>{RAFFLE.series}</strong>, operated by NotCupid, a Lemon Labs property (the &quot;Sponsor&quot;). By entering, you agree to the version shown at entry: <strong>{RAFFLE.termsVersion}</strong>. For the plain-language plan, read the <a href="/dating-experiment/faq">Dating Experiment FAQ</a>. Questions may be sent to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.</p>
+      <p>These Official Rules and Terms apply to the <strong>{RAFFLE.series}</strong>. By entering, you agree to the version shown at entry: <strong>{RAFFLE.termsVersion}</strong>. For the plain-language plan, read the <a href="/dating-experiment/faq">Dating Experiment FAQ</a>. Questions may be sent to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.</p>
+      {sponsorConfirmed ? (
+        <p><strong>Sponsor:</strong> {event!.sponsor_legal_name}. <strong>Public mailing address:</strong> <span style={{ whiteSpace: 'pre-line' }}>{event!.sponsor_public_mailing_address}</span>. NotCupid operates the experiment for the Sponsor.</p>
+      ) : (
+        <p><strong>Draft Sponsor notice:</strong> NotCupid is the intended operator. The Sponsor&apos;s exact legal name and valid public postal address are pending final confirmation and must appear here before entries open.</p>
+      )}
 
       <h2>1. Free entry</h2>
       <p>Entry is free through the Dating Experiment screen. No purchase or payment is necessary to enter, receive a shortlist, or be selected. A purchase, subscription, donation, profile unlock, or NotCupid Pro membership does not add entries, change shortlist priority, or improve selection odds. Limit one entry per person.</p>
@@ -40,6 +54,7 @@ export default function DatingExperimentTermsPage() {
 
       <h2>7. Dinner</h2>
       <p>Up to {RAFFLE.winnerPairCount} dinner prizes are available, one for each selected pair: one reservation on Thursday, August 20, 2026, at 6:30 PM Eastern Time and one at 8:30 PM Eastern Time. The restaurant and final slot assignment will be shared privately after selection. Each prize is one dinner at a selected Boston restaurant with a maximum approximate retail value of ${RAFFLE.budget} per pair, including ordinary tax and gratuity within that cap. The maximum aggregate value of all prizes is ${RAFFLE.budget * RAFFLE.winnerPairCount}. Alcohol, transportation, charges above the cap, and other expenses are not covered. A prize has no cash alternative, is not transferable, and may be rescheduled or substituted only with an equal-or-greater-value experience if the venue becomes unavailable or circumstances make fulfillment impracticable.</p>
+      {entriesOpen && event?.prize_fulfillment_method && <p><strong>Confirmed fulfillment method:</strong> {event.prize_fulfillment_method}</p>}
 
       <h2>8. Winner confirmation and list</h2>
       <p>A potential winning participant may be required to confirm eligibility, identity, availability, and compliance with these rules before the prize is finalized. Failure to respond by a stated deadline, false information, or inability to attend may result in disqualification where permitted, but Sponsor will not reveal another participant&apos;s private yes/pass/favorite choice. Where required by law, a written request sent to <a href={`mailto:${CONTACT}`}>{CONTACT}</a> within 90 days after the dinner date may request the winners&apos; names, cities or towns, prize-receipt dates, and prize values. Required winner-list disclosure is separate from advertising or testimonial permission.</p>
@@ -71,7 +86,7 @@ export default function DatingExperimentTermsPage() {
       <h2>17. Platform disclosure</h2>
       <p>Apple Inc., Google LLC, Reddit, and any social platform used to discuss the experiment do not sponsor, endorse, administer, or have any association with this promotion. Entrants release those platforms from responsibility to the extent permitted by law. Sponsor, not Apple or another platform, is solely responsible for operating the experiment and fulfilling any dinner prize.</p>
 
-      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>These Official Rules are a working legal document for a recreational project and must receive Massachusetts counsel review, along with confirmation of Sponsor legal details and restaurant fulfillment, before entries open. Contact <a href={`mailto:${CONTACT}`}>{CONTACT}</a> for a copy or question.</p>
+      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>{entriesOpen ? 'These are the rules version accepted at entry.' : 'These Official Rules are a working legal document for a recreational project and must receive Massachusetts counsel review, along with confirmation of Sponsor legal details and restaurant fulfillment, before entries open.'} Contact <a href={`mailto:${CONTACT}`}>{CONTACT}</a> for a copy or question.</p>
     </LegalPage>
   );
 }
