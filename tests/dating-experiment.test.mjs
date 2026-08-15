@@ -318,9 +318,8 @@ test('public entry remains fail-closed until every launch prerequisite is approv
   const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
   assert.match(experimentSource, /prizeFundingConfirmed: true/);
   assert.match(experimentSource, /venueConfirmed: true/);
-  for (const gate of ['sponsorDetailsConfirmed: false', 'legalReviewApproved: false']) {
-    assert.match(experimentSource, new RegExp(gate));
-  }
+  assert.match(experimentSource, /sponsorDetailsConfirmed: true/);
+  assert.match(experimentSource, /legalReviewApproved: false/);
   assert.match(experimentSource, /raffleLaunchBlockers\(\)\.length === 0/);
   assert.match(eventSource, /RAFFLE\.entriesOpen[\s\S]*raffleLaunchBlockers\(\)\.length === 0/);
   assert.match(eventSource, /event\.status === 'entry_open'/);

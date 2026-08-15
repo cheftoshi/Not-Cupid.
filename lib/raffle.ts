@@ -49,11 +49,12 @@ export const RAFFLE = {
   ],
   drawLabel: 'Tuesday, August 18 after 12:00 PM ET',
   budget: 200,
-  // The operator confirmed the $400 maximum prize funding and both prepaid
-  // reservations on August 15. Sponsor details and counsel review remain gates.
+  // The operator confirmed the $400 maximum prize funding, both prepaid
+  // reservations, and Lemon Labs Sponsor details on August 15. Counsel review
+  // remains a separate launch gate.
   prizeFundingConfirmed: true,
   venueConfirmed: true,
-  sponsorDetailsConfirmed: false,
+  sponsorDetailsConfirmed: true,
   legalReviewApproved: false,
   // Times are public. The venue is revealed privately only after selection.
   restaurant: 'The Berkeley · 154 Berkeley Street, Boston, MA 02116',

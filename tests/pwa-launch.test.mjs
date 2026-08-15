@@ -48,7 +48,7 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(experiment, /safe-area-inset-top/);
   assert.match(experiment, /safe-area-inset-bottom/);
   assert.match(experiment, /minHeight:\s*44/);
-  assert.match(experiment, /prepaid restaurant fulfillment are confirmed/);
+  assert.match(experiment, /prepaid restaurant fulfillment, and Lemon Labs Sponsor details are confirmed/);
   assert.doesNotMatch(experiment, /until restaurant fulfillment/);
   assert.match(faq, /parking, valet charges or tips, transportation/);
   assert.match(login, /min-height:\s*100dvh/);

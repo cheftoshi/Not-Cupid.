@@ -247,7 +247,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
             <h2 style={cardH}>launch checklist in progress.</h2>
-            <p style={cardP}>the two dinner slots and prepaid restaurant fulfillment are confirmed for <b>{ev.dateLabel}</b>. Entries stay paused until the Sponsor&apos;s legal identity, public postal address, and final legal review are confirmed.</p>
+            <p style={cardP}>the two dinner slots, prepaid restaurant fulfillment, and Lemon Labs Sponsor details are confirmed for <b>{ev.dateLabel}</b>. Entries stay paused until final Massachusetts legal review is confirmed.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
               <Link href="/dating-experiment/faq" style={backLink}>see the simple plan →</Link>
               <Link href="/hub" style={backLink}>back to hub →</Link>
