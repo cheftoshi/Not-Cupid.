@@ -25,7 +25,7 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v10-2026-08-15'/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v11-2026-08-15'/);
   assert.match(experimentSource, /aug20-1830/);
   assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
@@ -343,12 +343,17 @@ test('Berkeley reservations and direct prepayment are confirmed without opening 
   assert.doesNotMatch(migration, /legal_review_approved = true/i);
 });
 
-test('paid Only in Boston promotion is disclosed without granting an operating role', () => {
+test('paid Only in Boston promotion stays off product pages and in the private launch record', () => {
   const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
+  const faq = readFileSync(new URL('../app/dating-experiment/faq/page.tsx', import.meta.url), 'utf8');
   const checklist = readFileSync(new URL('../docs/dating-experiment-public-launch-checklist-2026-08-15.md', import.meta.url), 'utf8');
-  assert.match(terms, /Only in Boston is a paid promotional publisher/);
-  assert.match(terms, /not the Sponsor, prize provider, administrator, matching service, selection authority, or venue/);
+  const migration = readFileSync(new URL('../supabase/migrations/20260815235900_dating_experiment_terms_v11.sql', import.meta.url), 'utf8');
+  assert.doesNotMatch(terms, /Only in Boston/);
+  assert.doesNotMatch(faq, /Only in Boston/);
   assert.match(checklist, /paying Only in Boston \$200/);
-  assert.match(checklist, /Paid advertisement for NotCupid/);
+  assert.match(checklist, /Ad · NotCupid Dating Experiment/);
+  assert.match(checklist, /not on NotCupid's product pages/);
   assert.doesNotMatch(checklist, /Only in Boston relationship\/disclosure:\s*$/m);
+  assert.match(migration, /terms_version = 'boston-v11-2026-08-15'/);
+  assert.match(migration, /status = 'draft'/);
 });

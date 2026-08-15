@@ -36,11 +36,11 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 
 ## Required public-post footer
 
-Use the following prize-promotion footer in every promotional post, close to the call to action. Because NotCupid is paying Only in Boston $200 for distribution, its post must begin with a conspicuous `Paid advertisement for NotCupid` or an equally clear Instagram advertising disclosure; do not describe Only in Boston as a partner, Sponsor, administrator, or selector.
+Use the following prize-promotion footer in every promotional post, close to the call to action. On the specific paid Only in Boston post, place a compact, conspicuous disclosure such as `Ad · NotCupid Dating Experiment` or `#ad` before the caption expands. Do not call the account a partner, Sponsor, administrator, or selector, and do not add the publisher to the NotCupid FAQ or Official Rules.
 
-> NO PURCHASE NECESSARY. Open to eligible Massachusetts residents 21+ within approximately 20 miles of 02116. Entry closes August 18 at 12 PM ET or at 100 eligible entries. Up to two dinner prizes; maximum $200 per selected pair / $400 total. Odds depend on eligible entries, reciprocal preferences, compatibility weighting, mutual choices, and shared availability. Official Rules: https://notcupid.com/dating-experiment/terms. Apple and Reddit do not sponsor or administer the experiment. Only in Boston is not the prize sponsor or administrator.
+> NO PURCHASE NECESSARY. Open to eligible Massachusetts residents 21+ within approximately 20 miles of 02116. Entry closes August 18 at 12 PM ET or at 100 eligible entries. Up to two dinner prizes; maximum $200 per selected pair / $400 total. Odds depend on eligible entries, reciprocal preferences, compatibility weighting, mutual choices, and shared availability. Official Rules: https://notcupid.com/dating-experiment/terms. Apple and Reddit do not sponsor or administer the experiment.
 
-Internal publisher record: NotCupid is paying Only in Boston $200 to promote the experiment on its social channels. Only in Boston is a paid promotional publisher, not the prize Sponsor or administrator. Use `Paid advertisement for NotCupid` if the operator does not want partnership language, and place it where viewers see it before expanding the caption. Do not rely on comments or a disclosure after “more.”
+Private internal publisher record: NotCupid is paying Only in Boston $200 to distribute the promotion on its social channels. This does not make it a partner, prize Sponsor, or administrator. The disclosure belongs on that paid post itself—not on NotCupid's product pages—and must be visible before “more,” not buried in comments.
 
 ## Campaign email
 
@@ -70,7 +70,7 @@ Internal publisher record: NotCupid is paying Only in Boston $200 to promote the
 - Prize fulfillment method: NotCupid prepaid The Berkeley directly; no guest reimbursement step; $200 per pair including ordinary tax and gratuity; parking/valet/transport excluded
 - Legal reviewer and written reference:
 - Terms version reviewed:
-- Only in Boston relationship/disclosure: Paid promotional publisher; $200 fee; use “Paid advertisement for NotCupid”; no partnership, Sponsor, administrator, data, matching, or selection role
+- Only in Boston relationship/disclosure: Private internal record—paid promotional publisher; $200 fee; paid post uses a clear `Ad`/`#ad` disclosure; no public FAQ/rules mention and no partnership, Sponsor, administrator, data, matching, or selection role
 - Operator approval timestamp:
 - Production deployment ID:
 - Production opening verification:

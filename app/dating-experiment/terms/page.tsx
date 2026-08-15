@@ -85,8 +85,6 @@ export default async function DatingExperimentTermsPage() {
 
       <h2>17. Platform disclosure</h2>
       <p>Apple Inc., Google LLC, and Reddit do not sponsor, endorse, administer, or have any association with this promotion. Entrants release those platforms from responsibility to the extent permitted by law. Sponsor, not Apple or another platform, is solely responsible for operating the experiment and fulfilling any dinner prize.</p>
-      <p>Only in Boston is a paid promotional publisher for this experiment. It is not the Sponsor, prize provider, administrator, matching service, selection authority, or venue, and it does not receive participant entry data or make participant or winner decisions.</p>
-
       <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>{entriesOpen ? 'These are the rules version accepted at entry.' : 'These Official Rules are a working legal document for a recreational project and must receive Massachusetts counsel review, along with confirmation of Sponsor legal details, before entries open.'} Contact <a href={`mailto:${CONTACT}`}>{CONTACT}</a> for a copy or question.</p>
     </LegalPage>
   );

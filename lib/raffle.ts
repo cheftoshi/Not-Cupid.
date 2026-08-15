@@ -33,7 +33,7 @@ export const RAFFLE = {
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v10-2026-08-15',
+  termsVersion: 'boston-v11-2026-08-15',
   algorithmVersion: 'dating-experiment-two-pair-v4',
   minimumPairScore: 55,
   videoMinSeconds: 5,
