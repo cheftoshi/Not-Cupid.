@@ -6,7 +6,9 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(self)',
+  // Experiment/profile video capture is allowed only for NotCupid itself.
+  // Browser-level user permission is still required; embeds receive nothing.
+  'Permissions-Policy': 'camera=(self), microphone=(self), geolocation=(), payment=(self)',
   'Cross-Origin-Opener-Policy': 'same-origin',
   'Origin-Agent-Cluster': '?1',
   'X-Permitted-Cross-Domain-Policies': 'none',
@@ -17,7 +19,9 @@ const SECURITY_HEADERS: Record<string, string> = {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https:",
     "font-src 'self' https://fonts.gstatic.com",
-    "media-src 'self' https://*.supabase.co",
+    // Camera/file previews use object URLs while validating video duration on
+    // the device. Playback after upload still comes from signed Supabase URLs.
+    "media-src 'self' blob: https://*.supabase.co",
     "connect-src 'self' https://*.supabase.co https://api.stripe.com",
     "frame-src https://js.stripe.com https://hooks.stripe.com",
     "frame-ancestors 'none'",

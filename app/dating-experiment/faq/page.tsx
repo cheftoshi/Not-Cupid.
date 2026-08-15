@@ -79,7 +79,7 @@ const FAQS = [
   },
   {
     q: `What do the $${RAFFLE.budget} dinner prizes cover?`,
-    a: `Up to ${RAFFLE.winnerPairCount} winning pairs can each receive one dinner valued up to $${RAFFLE.budget}, for a maximum aggregate prize value of $${RAFFLE.budget * RAFFLE.winnerPairCount}. Ordinary tax and gratuity count toward each limit. Alcohol, transportation, and spending above the limit are not included. There is no cash alternative.`,
+    a: `Up to ${RAFFLE.winnerPairCount} winning pairs can each receive one prepaid dinner valued up to $${RAFFLE.budget}, for a maximum aggregate prize value of $${RAFFLE.budget * RAFFLE.winnerPairCount}. Ordinary tax and gratuity count toward each limit. Alcohol, parking, valet charges or tips, transportation, and spending outside the prepaid arrangement are not included. There is no cash alternative.`,
   },
   {
     q: 'Does NotCupid background-check participants?',
@@ -94,7 +94,11 @@ const FAQS = [
 export default function DatingExperimentFaqPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-      <main style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
+      <main style={{
+        maxWidth: 760,
+        margin: '0 auto',
+        padding: 'calc(1.5rem + env(safe-area-inset-top, 0px)) calc(1.25rem + env(safe-area-inset-right, 0px)) calc(4rem + env(safe-area-inset-bottom, 0px)) calc(1.25rem + env(safe-area-inset-left, 0px))',
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <Link href="/dating-experiment" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.2rem', textDecoration: 'none' }}>
             <span style={{ color: BLUE }}>Not</span><span style={{ color: ORANGE }}>Cupid</span>

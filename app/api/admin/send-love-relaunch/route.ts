@@ -10,7 +10,7 @@ import {
   loveRelaunchUrl,
 } from '@/lib/love-relaunch';
 import { withReturningUserWelcome } from '@/lib/returning-user';
-import { defaultEmailReplyTo } from '@/lib/email-address';
+import { defaultEmailReplyTo, looksLikePublicPostalAddress } from '@/lib/email-address';
 import { RAFFLE, raffleEligible, raffleLaunchBlockers } from '@/lib/raffle';
 import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 
@@ -185,6 +185,7 @@ export async function POST(req: NextRequest) {
   const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(requestedLimit, 100)) : null;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const mailingAddress = process.env.EMAIL_MAILING_ADDRESS?.trim();
+  const mailingAddressReady = looksLikePublicPostalAddress(mailingAddress);
   const approvalConfigured = process.env.DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION;
   const experiment = await getDatingExperimentEvent();
   const entriesOpen = datingExperimentEntriesOpen(experiment);
@@ -198,6 +199,8 @@ export async function POST(req: NextRequest) {
       approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
       approvalConfigured,
       entriesOpen,
+      mailingAddressConfigured: !!mailingAddress,
+      mailingAddressReady,
       launchBlockers: raffleLaunchBlockers(),
     }, { status: 409 });
   }
@@ -276,6 +279,8 @@ export async function POST(req: NextRequest) {
       approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
       approvalConfigured,
       entriesOpen,
+      mailingAddressConfigured: !!mailingAddress,
+      mailingAddressReady,
       launchBlockers: raffleLaunchBlockers(),
       subject: LOVE_RELAUNCH_SUBJECT,
       sender: 'NotCupid <match@notcupid.com>',
@@ -310,9 +315,9 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (!mailingAddress) {
+  if (!mailingAddressReady) {
     return NextResponse.json({
-      error: 'Set EMAIL_MAILING_ADDRESS to a valid physical postal address before sending this marketing campaign.',
+      error: 'Set EMAIL_MAILING_ADDRESS to a complete physical postal address or registered PO Box, including ZIP code, before sending this marketing campaign.',
     }, { status: 503 });
   }
 

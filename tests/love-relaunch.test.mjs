@@ -15,6 +15,8 @@ const {
 
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 
+const { looksLikePublicPostalAddress } = await import('../lib/email-address.ts');
+
 test('Dating Experiment comeback links are campaign-bound and destination-bound', () => {
   const token = loveRelaunchToken(USER_ID, 'dashboard', Date.now() + 60_000);
   assert.equal(LOVE_RELAUNCH_CAMPAIGN, 'dating_experiment_comeback_aug_2026');
@@ -44,6 +46,8 @@ test('Dating Experiment email stays preview-only until approval and launch gates
   assert.match(route, /DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION/);
   assert.match(route, /!dryRun && \(!approvalConfigured \|\| !entriesOpen\)/);
   assert.match(route, /preview-only until copy and send are separately approved/);
+  assert.match(route, /looksLikePublicPostalAddress\(mailingAddress\)/);
+  assert.match(route, /mailingAddressReady/);
   assert.match(route, /No purchase necessary/);
   assert.match(route, /Only people who choose each other enter the dinner selection/);
   assert.match(route, /5–15 seconds accepted/);
@@ -56,4 +60,11 @@ test('Dating Experiment email stays preview-only until approval and launch gates
   assert.match(admin, /Preview live-match variant \(no send\)/);
   assert.doesNotMatch(admin, /Send next Love wave/);
   assert.doesNotMatch(admin, /Send me Love email test/);
+});
+
+test('marketing campaign rejects city-only and email-only footer values', () => {
+  assert.equal(looksLikePublicPostalAddress('Boston, MA'), false);
+  assert.equal(looksLikePublicPostalAddress('match@notcupid.com'), false);
+  assert.equal(looksLikePublicPostalAddress('PO Box 123, Boston, MA 02116'), true);
+  assert.equal(looksLikePublicPostalAddress('154 Berkeley Street, Boston, MA 02116'), true);
 });

@@ -6,7 +6,7 @@ export default function LegalPage({ title, subtitle, updated, children }: {
 }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--h-bg)', color: 'var(--h-text)' }}>
-      <header style={{ borderBottom: '1px solid var(--h-border)', padding: '1.1rem 1.25rem' }}>
+      <header style={{ borderBottom: '1px solid var(--h-border)', padding: 'calc(1.1rem + env(safe-area-inset-top, 0px)) calc(1.25rem + env(safe-area-inset-right, 0px)) 1.1rem calc(1.25rem + env(safe-area-inset-left, 0px))' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <a href="/" style={{ textDecoration: 'none', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.4rem' }}>
             <span style={{ color: '#2563ff' }}>Not</span><span style={{ color: '#ff6a1f' }}>Cupid</span>
@@ -15,7 +15,7 @@ export default function LegalPage({ title, subtitle, updated, children }: {
         </div>
       </header>
 
-      <main style={{ flex: 1, maxWidth: 760, margin: '0 auto', padding: '2.5rem 1.25rem 1rem', width: '100%' }}>
+      <main style={{ flex: 1, maxWidth: 760, margin: '0 auto', padding: '2.5rem calc(1.25rem + env(safe-area-inset-right, 0px)) calc(1rem + env(safe-area-inset-bottom, 0px)) calc(1.25rem + env(safe-area-inset-left, 0px))', width: '100%' }}>
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.2rem, 7vw, 3.2rem)', lineHeight: 1, margin: 0 }}>{title}</h1>
         {subtitle && <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '0.5rem 0 0', fontSize: '1.05rem' }}>{subtitle}</p>}
         {updated && <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', margin: '0.9rem 0 0' }}>last updated · {updated}</p>}
