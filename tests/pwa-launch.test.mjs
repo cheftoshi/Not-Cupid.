@@ -40,6 +40,7 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   const csp = source('proxy.ts');
   const experiment = source('app/raffle/raffle-client.tsx');
   const faq = source('app/dating-experiment/faq/page.tsx');
+  const terms = source('app/dating-experiment/terms/page.tsx');
   const login = source('app/login/login.module.css');
   const quiz = source('app/quiz/quiz.module.css');
   assert.match(csp, /Permissions-Policy': 'camera=\(self\), microphone=\(self\)/);
@@ -48,8 +49,8 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(experiment, /safe-area-inset-top/);
   assert.match(experiment, /safe-area-inset-bottom/);
   assert.match(experiment, /minHeight:\s*44/);
-  assert.match(experiment, /prepaid restaurant fulfillment, and NotCupid Sponsor details are confirmed/);
-  assert.match(experiment, /Lemon Labs owns NotCupid; it is not the public prize Sponsor/);
+  assert.match(experiment, /the two Boston dinner slots are set/);
+  assert.match(terms, /Owner:<\/strong> Lemon Labs/);
   assert.match(experiment, /Private admin rehearsal/);
   assert.match(experiment, /Public entries are still closed/);
   assert.doesNotMatch(experiment, /until restaurant fulfillment/);

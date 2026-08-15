@@ -253,8 +253,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
-            <h2 style={cardH}>launch checklist in progress.</h2>
-            <p style={cardP}>the two dinner slots, prepaid restaurant fulfillment, and NotCupid Sponsor details are confirmed for <b>{ev.dateLabel}</b>. Lemon Labs owns NotCupid; it is not the public prize Sponsor. Public entries stay paused until the final iPhone/PWA rehearsal is complete.</p>
+            <h2 style={cardH}>opening soon.</h2>
+            <p style={cardP}>the two Boston dinner slots are set for <b>{ev.dateLabel}</b>. Public entries stay paused until the final iPhone/PWA rehearsal is complete.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
               <Link href="/dating-experiment/faq" style={backLink}>see the simple plan →</Link>
               <Link href="/hub" style={backLink}>back to hub →</Link>
