@@ -21,6 +21,7 @@ type Event = {
   shortlistMaxOptions?: number;
   winnerPairCount?: number;
   entriesOpen?: boolean;
+  rehearsal?: boolean;
   statusLabel?: string;
   dateOptions?: { key: string; label: string; eventDate?: string; dateLabel?: string; timeLabel?: string }[];
 };
@@ -230,6 +231,12 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
       }}>
         <Link href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← hub</Link>
 
+        {ev.rehearsal && (
+          <div role="status" style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', border: '1px solid rgba(37,99,255,0.35)', borderRadius: 12, background: 'rgba(37,99,255,0.08)', color: 'var(--h-text-dim)', fontSize: '0.78rem', lineHeight: 1.45 }}>
+            <b style={{ color: 'var(--h-text)' }}>Private admin rehearsal.</b> You can test the real form, video upload, submission, persistence, and withdrawal. Public entries are still closed.
+          </div>
+        )}
+
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
         <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
@@ -247,7 +254,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
             <h2 style={cardH}>launch checklist in progress.</h2>
-            <p style={cardP}>the two dinner slots, prepaid restaurant fulfillment, and NotCupid Sponsor details are confirmed for <b>{ev.dateLabel}</b>. Lemon Labs owns NotCupid; it is not the public prize Sponsor. Entries stay paused until final Massachusetts legal review is confirmed.</p>
+            <p style={cardP}>the two dinner slots, prepaid restaurant fulfillment, and NotCupid Sponsor details are confirmed for <b>{ev.dateLabel}</b>. Lemon Labs owns NotCupid; it is not the public prize Sponsor. Public entries stay paused until the final iPhone/PWA rehearsal is complete.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
               <Link href="/dating-experiment/faq" style={backLink}>see the simple plan →</Link>
               <Link href="/hub" style={backLink}>back to hub →</Link>

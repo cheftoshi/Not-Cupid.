@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import { signPrivateVideoReference } from '@/lib/private-media';
 import { experimentOrientationLabel } from '@/lib/experiment-preferences';
-import { datingExperimentDateLabel, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
+import { datingExperimentAdminRehearsalOpen, datingExperimentDateLabel, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +57,8 @@ export async function GET() {
   const eventLocation = event
     ? { centerZip: event.center_zip, radiusMiles: Number(event.radius_miles) }
     : RAFFLE;
-  const entriesOpen = datingExperimentEntriesOpen(event);
+  const rehearsal = datingExperimentAdminRehearsalOpen(event, user);
+  const entriesOpen = datingExperimentEntriesOpen(event) || rehearsal;
   const eligible = user.is_test !== true && raffleEligible(user, eventLocation);
   const hasProfile = !!user.photo_url && !!user.archetype;
   let entered = false, entry: any = null, draw: any = null, other: any = null;
@@ -151,7 +152,7 @@ export async function GET() {
     event: {
       series: event?.public_name ?? RAFFLE.series, city: event?.city ?? RAFFLE.city, dateLabel: datingExperimentDateLabel(event), budget: (event?.prize_per_pair_cents ?? RAFFLE.budget * 100) / 100,
       tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: eventCap, entryCloseLabel: RAFFLE.entryCloseLabel,
-      statusLabel: RAFFLE.statusLabel, entriesOpen,
+      statusLabel: RAFFLE.statusLabel, entriesOpen, rehearsal,
       radiusMiles: Number(event?.radius_miles ?? RAFFLE.radiusMiles), centerZip: event?.center_zip ?? RAFFLE.centerZip, termsVersion: event?.terms_version ?? RAFFLE.termsVersion,
       videoMinSeconds: RAFFLE.videoMinSeconds, videoMaxSeconds: RAFFLE.videoMaxSeconds, videoMaxBytes: RAFFLE.videoMaxBytes,
       shortlistMaxOptions: event?.shortlist_max_options ?? RAFFLE.shortlistMaxOptions,

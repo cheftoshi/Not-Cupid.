@@ -52,11 +52,12 @@ export const RAFFLE = {
   // The operator confirmed the $400 maximum prize funding, both prepaid
   // reservations, NotCupid as the public Sponsor, and its Quincy mailing
   // address on August 15. Lemon Labs owns NotCupid; it is not presented as the
-  // public prize Sponsor. Counsel review remains a separate launch gate.
+  // public prize Sponsor. The operator approved the complete v11 launch rules
+  // and disclosures on August 15.
   prizeFundingConfirmed: true,
   venueConfirmed: true,
   sponsorDetailsConfirmed: true,
-  legalReviewApproved: false,
+  operatorComplianceApproved: true,
   // Times are public. The venue is revealed privately only after selection.
   restaurant: 'The Berkeley · 154 Berkeley Street, Boston, MA 02116',
   tagline: 'Two compatible Boston pairs. Dinner is on us.',
@@ -67,7 +68,7 @@ export function raffleLaunchBlockers(): string[] {
   if (!RAFFLE.prizeFundingConfirmed) blockers.push(`confirm funding for up to $${RAFFLE.budget * RAFFLE.winnerPairCount} in dinner prizes`);
   if (!RAFFLE.venueConfirmed) blockers.push('confirm the restaurant and fulfillment plan');
   if (!RAFFLE.sponsorDetailsConfirmed) blockers.push('confirm the Sponsor legal identity and public mailing address');
-  if (!RAFFLE.legalReviewApproved) blockers.push('complete Massachusetts counsel review of the Official Rules');
+  if (!RAFFLE.operatorComplianceApproved) blockers.push('record the operator compliance approval for the current Official Rules');
   if ([RAFFLE.entryCloseLabel, RAFFLE.drawLabel].some((label) => !label || label === 'TBD')) blockers.push('set the public entry and shortlist deadlines');
   if (new Date(RAFFLE.entryClose).getUTCFullYear() >= 2099 || new Date(RAFFLE.happensAt).getUTCFullYear() >= 2099) blockers.push('set the exact entry deadline and dinner time');
   return blockers;

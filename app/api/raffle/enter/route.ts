@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import { drawRaffle } from '@/lib/raffle-draw';
 import { isManagedStorageUrl } from '@/lib/request-security';
-import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
+import { datingExperimentAdminRehearsalOpen, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 import {
   experimentGendersFromLegacy,
   normalizeExperimentGenders,
@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.is_test === true) return NextResponse.json({ error: 'Test accounts cannot enter the live Dating Experiment.' }, { status: 403 });
   const event = await getDatingExperimentEvent();
-  if (!datingExperimentEntriesOpen(event)) return NextResponse.json({ error: 'Entries are paused while we finish the public-launch checklist.' }, { status: 403 });
+  const entriesOpen = datingExperimentEntriesOpen(event) || datingExperimentAdminRehearsalOpen(event, user);
+  if (!entriesOpen) return NextResponse.json({ error: 'Entries are paused while we finish the public-launch checklist.' }, { status: 403 });
   const eventLocation = { centerZip: event!.center_zip, radiusMiles: Number(event!.radius_miles) };
   if (!raffleEligible(user, eventLocation)) return NextResponse.json({ error: `This experiment is for Massachusetts residents within ${eventLocation.radiusMiles} miles of ${eventLocation.centerZip}.` }, { status: 400 });
 

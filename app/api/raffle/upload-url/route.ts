@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import { VIDEO_UPLOAD_TYPES } from '@/lib/request-security';
 import { rateLimit } from '@/lib/rate-limit';
-import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
+import { datingExperimentAdminRehearsalOpen, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
   const eventLocation = event
     ? { centerZip: event.center_zip, radiusMiles: Number(event.radius_miles) }
     : RAFFLE;
-  if (!datingExperimentEntriesOpen(event) || !raffleEligible(user, eventLocation)) return NextResponse.json({ error: 'Dating Experiment video uploads are not open for this account.' }, { status: 403 });
+  const entriesOpen = datingExperimentEntriesOpen(event) || datingExperimentAdminRehearsalOpen(event, user);
+  if (!entriesOpen || !raffleEligible(user, eventLocation)) return NextResponse.json({ error: 'Dating Experiment video uploads are not open for this account.' }, { status: 403 });
   const limit = await rateLimit({ key: `dating-experiment-video:${user.id}`, windowSec: 3600, maxAttempts: 10, blockSec: 3600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many upload attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 

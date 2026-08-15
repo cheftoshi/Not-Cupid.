@@ -85,7 +85,7 @@ export default async function DatingExperimentTermsPage() {
 
       <h2>17. Platform disclosure</h2>
       <p>Apple Inc., Google LLC, and Reddit do not sponsor, endorse, administer, or have any association with this promotion. Entrants release those platforms from responsibility to the extent permitted by law. Sponsor, not Apple or another platform, is solely responsible for operating the experiment and fulfilling any dinner prize.</p>
-      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>{entriesOpen ? 'These are the rules version accepted at entry.' : sponsorConfirmed ? 'These Official Rules are a working legal document for a recreational project and must receive Massachusetts counsel review before entries open.' : 'These Official Rules are a working legal document for a recreational project and must receive Massachusetts counsel review, along with confirmation of Sponsor legal details, before entries open.'} Contact <a href={`mailto:${CONTACT}`}>{CONTACT}</a> for a copy or question.</p>
+      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>{entriesOpen ? 'These are the rules version accepted at entry.' : sponsorConfirmed ? 'These Official Rules are final. Public entries remain paused for final product verification.' : 'Public entries remain paused until the Sponsor details and final product verification are complete.'} Contact <a href={`mailto:${CONTACT}`}>{CONTACT}</a> for a copy or question.</p>
     </LegalPage>
   );
 }

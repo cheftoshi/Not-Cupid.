@@ -50,6 +50,8 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(experiment, /minHeight:\s*44/);
   assert.match(experiment, /prepaid restaurant fulfillment, and NotCupid Sponsor details are confirmed/);
   assert.match(experiment, /Lemon Labs owns NotCupid; it is not the public prize Sponsor/);
+  assert.match(experiment, /Private admin rehearsal/);
+  assert.match(experiment, /Public entries are still closed/);
   assert.doesNotMatch(experiment, /until restaurant fulfillment/);
   assert.match(faq, /parking, valet charges or tips, transportation/);
   assert.match(login, /min-height:\s*100dvh/);

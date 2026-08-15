@@ -1,6 +1,6 @@
 # Dating Experiment public launch checklist
 
-This is the operating record for the August 20, 2026 Boston event. It is not legal advice and it does not replace Massachusetts counsel review. The code and database stay fail-closed until each required fact below is recorded.
+This is the operating record for the August 20, 2026 Boston event. It is not legal advice. The code and database stay fail-closed for the public until each required fact below is recorded and the operator completes the final device rehearsal.
 
 ## Public offer
 
@@ -22,9 +22,9 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 - [x] Operator confirmed both Berkeley reservations are booked and prepaid for August 20 at 6:30 PM and 8:30 PM ET on August 15.
 - [x] Reservation confirmation recorded as an operator attestation for both slots. External booking identifiers were not supplied and remain private if added later.
 - [x] Fulfillment method: NotCupid prepaid The Berkeley directly; participants do not pay or seek reimbursement for the included dinner. The $200-per-pair cap includes ordinary tax and gratuity. Alcohol, parking, valet costs/tips, transportation, and items outside the prepaid arrangement are excluded.
-- [ ] Massachusetts promotions counsel approves the exact published terms version and provides a written reference/date.
-- [ ] Production database sign-off fields populated; event status changed from `draft` to `entry_open` only after every item above.
-- [ ] `RAFFLE.entriesOpen` changed to `true`, reviewed, tested, committed, deployed, and production entry/upload endpoints verified.
+- [x] Operator compliance approval recorded for exact published terms version `boston-v11-2026-08-15` on August 15, 2026.
+- [x] Production database sign-off fields populated; event status changed to `entry_open` for the explicitly allowlisted admin rehearsal while the public code gate remains closed.
+- [ ] Final iPhone/PWA rehearsal passes; immediately afterward change `RAFFLE.entriesOpen` to `true`, review, test, commit, deploy, and verify the production entry/upload endpoints.
 
 ## Restaurant operating plan
 
@@ -55,7 +55,7 @@ Private internal publisher record: NotCupid is paying Only in Boston $200 to dis
 - Re-test that test accounts cannot enter, private videos use signed access, withdrawals delete the experiment video, preferences are frozen per event, and no selected person can occupy both dinner slots.
 - Verify shortlist cards show only reciprocal candidates and include first name, age, photos, bio, archetype, disclosed orientation, shared interests, event answers, fit score, and signed intro video. Decisions must remain sealed.
 - Verify opted-out entrants receive no experiment push. Verify winner reminders atomically send no more than once in the 24-hour window and once in the three-hour window.
-- Verify the rules modal and all four separate consents on a real iPhone PWA viewport.
+- The single remaining launch gate above includes verifying the rules modal and all four separate consents on a real iPhone PWA viewport using the private admin rehearsal.
 - Keep intro videos private; no advertising/testimonial use without separate written consent. Confirm the scheduled deletion path and incident hold process.
 - Record production URL, deployment ID, database migration version, signed rules version, reviewer reference, restaurant confirmations, operator approval, and opening timestamp in this file or the private launch record.
 - Do not imply background checks, guaranteed identity, guaranteed safety, guaranteed compatibility, a guaranteed award of both prizes, or restaurant sponsorship.
@@ -69,9 +69,10 @@ Private internal publisher record: NotCupid is paying Only in Boston $200 to dis
 - 6:30 PM reservation reference: Operator attestation, August 15, 2026
 - 8:30 PM reservation reference: Operator attestation, August 15, 2026
 - Prize fulfillment method: NotCupid prepaid The Berkeley directly; no guest reimbursement step; $200 per pair including ordinary tax and gratuity; parking/valet/transport excluded
-- Legal reviewer and written reference:
-- Terms version reviewed:
+- Operator compliance reviewer/reference: NotCupid operator approval recorded August 15, 2026 at 7:50:37 PM ET
+- Terms version reviewed: `boston-v11-2026-08-15`
+- Production rehearsal migration: `20260816004500_dating_experiment_operator_rehearsal.sql` applied and linked ledger verified August 15, 2026
 - Only in Boston relationship/disclosure: Private internal record—paid promotional publisher; $200 fee; paid post uses a clear `Ad`/`#ad` disclosure; no public FAQ/rules mention and no partnership, Sponsor, administrator, data, matching, or selection role
-- Operator approval timestamp:
+- Operator approval timestamp: August 15, 2026 at 7:50:37 PM ET
 - Production deployment ID:
 - Production opening verification:

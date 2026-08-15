@@ -4,6 +4,7 @@ import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import DatingExperimentClient from '@/app/raffle/raffle-client';
 import { experimentGendersFromLegacy } from '@/lib/experiment-preferences';
 import {
+  datingExperimentAdminRehearsalOpen,
   datingExperimentDateLabel,
   datingExperimentEntriesOpen,
   getDatingExperimentEvent,
@@ -15,6 +16,7 @@ export default async function DatingExperimentPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/dating-experiment');
   const experiment = await getDatingExperimentEvent();
+  const rehearsal = datingExperimentAdminRehearsalOpen(experiment, user);
   const eventLocation = experiment
     ? { centerZip: experiment.center_zip, radiusMiles: Number(experiment.radius_miles) }
     : RAFFLE;
@@ -60,7 +62,8 @@ export default async function DatingExperimentPage() {
         videoMaxBytes: RAFFLE.videoMaxBytes,
         shortlistMaxOptions: experiment?.shortlist_max_options ?? RAFFLE.shortlistMaxOptions,
         winnerPairCount: experiment?.winner_pair_limit ?? RAFFLE.winnerPairCount,
-        entriesOpen: datingExperimentEntriesOpen(experiment),
+        entriesOpen: datingExperimentEntriesOpen(experiment) || rehearsal,
+        rehearsal,
         statusLabel: RAFFLE.statusLabel,
       }}
     />

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleLaunchBlockers } from '@/lib/raffle';
+import { isAdminEmail } from '@/lib/admin';
 
 export type DatingExperimentEvent = {
   event_key: string;
@@ -32,9 +33,9 @@ export type DatingExperimentEvent = {
   sponsor_details_confirmed_at: string | null;
   sponsor_legal_name: string | null;
   sponsor_public_mailing_address: string | null;
-  legal_review_approved: boolean;
-  legal_review_approved_at: string | null;
-  legal_review_reference: string | null;
+  operator_compliance_approved: boolean;
+  operator_compliance_approved_at: string | null;
+  operator_compliance_reference: string | null;
   dinner_dates: DatingExperimentDinnerDate[];
 };
 
@@ -63,7 +64,7 @@ export async function getDatingExperimentEvent(
       'prize_fulfillment_method',
       'sponsor_details_confirmed', 'sponsor_details_confirmed_at',
       'sponsor_legal_name', 'sponsor_public_mailing_address',
-      'legal_review_approved', 'legal_review_approved_at', 'legal_review_reference',
+      'operator_compliance_approved', 'operator_compliance_approved_at', 'operator_compliance_reference',
     ].join(', '))
     .eq('event_key', eventKey)
     .maybeSingle();
@@ -86,7 +87,7 @@ export async function getDatingExperimentEvent(
   return { ...event, dinner_dates: (dinnerDates ?? []) as DatingExperimentDinnerDate[] };
 }
 
-function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
+export function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
   return event.prize_funding_confirmed
     && event.prize_funding_confirmed_at != null
     && event.venue_confirmed
@@ -97,9 +98,9 @@ function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
     && event.sponsor_details_confirmed_at != null
     && !!event.sponsor_legal_name?.trim()
     && !!event.sponsor_public_mailing_address?.trim()
-    && event.legal_review_approved
-    && event.legal_review_approved_at != null
-    && !!event.legal_review_reference?.trim()
+    && event.operator_compliance_approved
+    && event.operator_compliance_approved_at != null
+    && !!event.operator_compliance_reference?.trim()
     && event.terms_version === RAFFLE.termsVersion
     && event.algorithm_version === RAFFLE.algorithmVersion
     && event.dinner_dates.length >= event.winner_pair_limit
@@ -107,6 +108,34 @@ function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean {
       (date.status === 'time_confirmed' || date.status === 'details_confirmed')
       && date.starts_at != null
     ));
+}
+
+function rehearsalEmails(): string[] {
+  return (process.env.DATING_EXPERIMENT_REHEARSAL_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+// Rehearsal access is deliberately narrower than normal admin access. It lets
+// explicitly named real admin accounts exercise the production PWA entry flow
+// while RAFFLE.entriesOpen remains false for everyone else. Test fixtures stay
+// excluded, and the database must still have every non-public sign-off.
+export function datingExperimentAdminRehearsalOpen(
+  event: DatingExperimentEvent | null,
+  user: { email?: string | null; is_test?: boolean | null } | null,
+  now = Date.now(),
+): boolean {
+  const email = user?.email?.trim().toLowerCase();
+  return user?.is_test !== true
+    && !!email
+    && isAdminEmail(email)
+    && rehearsalEmails().includes(email)
+    && event != null
+    && event.status === 'entry_open'
+    && hasDatabaseLaunchApproval(event)
+    && now >= new Date(event.entry_opens_at).getTime()
+    && now < new Date(event.entry_closes_at).getTime();
 }
 
 export function datingExperimentDateLabel(event: DatingExperimentEvent | null): string {
