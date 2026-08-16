@@ -20,6 +20,7 @@ import {
 } from '../lib/experiment-preferences.ts';
 
 const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.url), 'utf8');
+const launchChecklist = readFileSync(new URL('../docs/dating-experiment-public-launch-checklist-2026-08-15.md', import.meta.url), 'utf8');
 
 test('Dating Experiment public launch stays free, local, limited, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
@@ -27,6 +28,10 @@ test('Dating Experiment public launch stays free, local, limited, and payment-ne
   assert.match(experimentSource, /cap:\s*400/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
   assert.match(experimentSource, /termsVersion:\s*'boston-v13-2026-08-15'/);
+  assert.match(experimentSource, /entryClose:\s*'2026-08-19T04:00:00\.000Z'/);
+  assert.match(experimentSource, /entryCloseLabel:\s*'Tuesday, August 18 at 11:59 PM ET'/);
+  assert.match(launchChecklist, /Entry closes Tuesday, August 18, 2026 at 11:59 PM ET/);
+  assert.doesNotMatch(launchChecklist, /Entry closes[^\n]*(?:12:00 PM|12 PM|noon)/i);
   assert.match(experimentSource, /aug20-1830/);
   assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);

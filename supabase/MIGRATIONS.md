@@ -1,5 +1,18 @@
 # Supabase migration workflow
 
+## Reading current state
+
+Migration files are an immutable timeline, not a current product manifest. An
+older Dating Experiment migration may still contain retired event dates,
+deadlines, limits, or terms versions. Do not edit an applied migration to remove
+those historical values.
+
+As of August 16, 2026, current code is `lib/raffle.ts`, current mutable state is
+the linked production event row, and the latest deadline override is
+`20260816160000_dating_experiment_extend_entry_deadline.sql`. The live Boston
+event closes Tuesday, August 18 at 11:59 PM ET and has two dinner slots on
+Thursday, August 20 at 6:30 PM and 8:30 PM ET.
+
 Production was originally maintained by running the dated SQL files manually.
 Those files used date-only prefixes, including duplicate versions, so they
 cannot safely remain in the CLI migration directory.
@@ -27,6 +40,8 @@ supabase migration list --linked
 Use the CLI-generated 14-digit timestamp. Never reuse a version and never make
 production schema changes directly in the Dashboard SQL or Table editor.
 Coordinate production pushes so only one person runs `db push` at a time.
+Never rewrite an applied migration to make its data look current; create a new
+forward migration that supersedes it.
 
 ## Safety
 

@@ -44,6 +44,8 @@ export const RAFFLE = {
   // so nobody reads "midnight August 18" as the start of Tuesday.
   entryClose: '2026-08-19T04:00:00.000Z',
   entryCloseLabel: 'Tuesday, August 18 at 11:59 PM ET',
+  // This is the later 8:30 PM ET dinner slot. Its UTC timestamp falls on
+  // August 21 because Boston is four hours behind UTC in August.
   happensAt: '2026-08-21T00:30:00.000Z',
   dateLabel: 'Thursday, August 20, 2026 — 6:30 PM or 8:30 PM ET; restaurant revealed privately later',
   dateOptions: [

@@ -2,6 +2,12 @@
 -- Safe to re-run: every statement is 'if not exists' or drop-then-add.
 -- Generated 2026-05-31 to resync production schema with code.
 --
+-- HISTORICAL RECOVERY MATERIAL ONLY. This file is not the current Dating
+-- Experiment manifest and contains retired June/July event defaults. Do not
+-- infer live dates, terms, prices, or entry status from it. Current event code
+-- lives in lib/raffle.ts; current mutable state lives in the linked production
+-- database; new changes belong in timestamped supabase/migrations files.
+--
 -- ⚠️ RUN `supabase/base-schema.sql` FIRST. The CORE love-side tables — `users`,
 -- `matches`, `messages`, `sessions`, `otp_codes`, `match_history` — were created
 -- in the Supabase dashboard and aren't created here; this file only ALTERs/
