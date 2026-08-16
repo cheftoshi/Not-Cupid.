@@ -39,15 +39,18 @@ export const RAFFLE = {
   videoMinSeconds: 5,
   videoMaxSeconds: 15,
   videoMaxBytes: 25 * 1024 * 1024,
-  entryClose: '2026-08-18T16:00:00.000Z',
-  entryCloseLabel: 'Tuesday, August 18 at 12:00 PM ET',
+  // Keep entry open through all of Tuesday. The server boundary is exactly
+  // midnight starting Wednesday (EDT = UTC-4); the public label uses 11:59 PM
+  // so nobody reads "midnight August 18" as the start of Tuesday.
+  entryClose: '2026-08-19T04:00:00.000Z',
+  entryCloseLabel: 'Tuesday, August 18 at 11:59 PM ET',
   happensAt: '2026-08-21T00:30:00.000Z',
   dateLabel: 'Thursday, August 20, 2026 — 6:30 PM or 8:30 PM ET; restaurant revealed privately later',
   dateOptions: [
     { key: 'aug20-1830', label: 'Thursday, August 20 · 6:30 PM ET', eventDate: '2026-08-20', dateLabel: 'Thursday, August 20, 2026', timeLabel: '6:30 PM ET' },
     { key: 'aug20-2030', label: 'Thursday, August 20 · 8:30 PM ET', eventDate: '2026-08-20', dateLabel: 'Thursday, August 20, 2026', timeLabel: '8:30 PM ET' },
   ],
-  drawLabel: 'Tuesday, August 18 after 12:00 PM ET',
+  drawLabel: 'Wednesday, August 19 after entries close',
   budget: 200,
   // The operator confirmed the $400 maximum prize funding, both prepaid
   // reservations, NotCupid as the public Sponsor, and its Quincy mailing
