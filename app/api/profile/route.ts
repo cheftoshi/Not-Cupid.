@@ -5,6 +5,7 @@ import { isSunSign } from '@/lib/astrology';
 import { isManagedStorageUrl } from '@/lib/request-security';
 import { withPrivateVideoPreview } from '@/lib/private-media';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
+import { normalizeProfileText } from '@/lib/profile-text';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -42,12 +43,6 @@ export async function PUT(req: NextRequest) {
   }
 
   const isInteger = (value: unknown) => typeof value === 'number' && Number.isInteger(value);
-  const normalizeShortText = (key: string, max: number, required = false) => {
-    if (!(key in updates)) return true;
-    if (typeof updates[key] !== 'string') return false;
-    updates[key] = updates[key].trim();
-    return updates[key].length <= max && (!required || updates[key].length > 0);
-  };
   const normalizeStringList = (key: string) => {
     if (!(key in updates)) return true;
     if (!Array.isArray(updates[key]) || updates[key].length > 50) return false;
@@ -61,11 +56,24 @@ export async function PUT(req: NextRequest) {
     try { return JSON.stringify(value).length <= max; } catch { return false; }
   };
 
-  if (!normalizeShortText('name', 100, true)
-    || !normalizeShortText('bio', 500)
-    || !normalizeShortText('occupation', 120)
-    || !normalizeShortText('education', 120)) {
-    return NextResponse.json({ error: 'Invalid profile text' }, { status: 400 });
+  const textFields = [
+    { key: 'name', label: 'Name', max: 100, required: true },
+    { key: 'bio', label: 'Bio', max: 500, required: false },
+    { key: 'occupation', label: 'Occupation', max: 120, required: false },
+    { key: 'education', label: 'Education', max: 120, required: false },
+  ] as const;
+  for (const field of textFields) {
+    if (!(field.key in updates)) continue;
+    const result = normalizeProfileText(updates[field.key], field.max, field.required);
+    if (!result.ok) {
+      const message = result.reason === 'required'
+        ? `${field.label} is required`
+        : result.reason === 'length'
+          ? `${field.label} must be ${field.max} characters or fewer`
+          : `${field.label} must be plain text`;
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    updates[field.key] = result.value;
   }
   if (typeof updates.name === 'string') {
     updates.name = updates.name.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
