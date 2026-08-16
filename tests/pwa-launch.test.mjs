@@ -49,7 +49,7 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(experiment, /safe-area-inset-top/);
   assert.match(experiment, /safe-area-inset-bottom/);
   assert.match(experiment, /minHeight:\s*44/);
-  assert.match(experiment, /the two Boston dinner slots are set/);
+  assert.match(experiment, /the live experiment status can pause entry/);
   assert.match(terms, /Owner:<\/strong> Lemon Labs/);
   assert.match(experiment, /Private admin rehearsal/);
   assert.match(experiment, /Public entries are still closed/);

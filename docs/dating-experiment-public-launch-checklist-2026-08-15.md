@@ -7,7 +7,7 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 - Public name: The NotCupid Dating Experiment — never call it a raffle in public copy.
 - Free entry; no purchase, subscription, payment, or donation changes selection.
 - Eligibility: age 21+, Massachusetts resident within approximately 20 miles of ZIP 02116, genuine non-test account, and complete profile. A private 5–15 second intro video is optional and selection-neutral.
-- Entry closes Tuesday, August 18, 2026 at 12:00 PM ET or at 100 eligible entrants, whichever is earlier.
+- Entry closes Tuesday, August 18, 2026 at 12:00 PM ET or at 400 eligible entrants, whichever is earlier. This is one shared cap, not a gender quota.
 - Dinner slots: Thursday, August 20 at 6:30 PM ET and 8:30 PM ET. Entrants choose every date/time slot they can attend. A pair needs shared availability.
 - Prize quantity/value: up to two dinner prizes, one per selected pair, up to $200 per pair and $400 aggregate.
 - Selection: reciprocal preferences and minimum compatibility first; sealed mutual choices second; payment-neutral weighted random selection without replacement last. Exact odds depend on the eligible pool, preferences, scores, mutual choices, favorites, and shared availability.
@@ -22,9 +22,9 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 - [x] Operator confirmed both Berkeley reservations are booked and prepaid for August 20 at 6:30 PM and 8:30 PM ET on August 15.
 - [x] Reservation confirmation recorded as an operator attestation for both slots. External booking identifiers were not supplied and remain private if added later.
 - [x] Fulfillment method: NotCupid prepaid The Berkeley directly; participants do not pay or seek reimbursement for the included dinner. The $200-per-pair cap includes ordinary tax and gratuity. Alcohol, parking, valet costs/tips, transportation, and items outside the prepaid arrangement are excluded.
-- [x] Operator compliance approval recorded for exact published terms version `boston-v12-2026-08-15` on August 15, 2026, including the optional-video rule.
-- [x] Production database sign-off fields populated; event status changed to `entry_open` for the explicitly allowlisted admin rehearsal while the public code gate remains closed.
-- [ ] Final iPhone/PWA rehearsal passes; immediately afterward change `RAFFLE.entriesOpen` to `true`, review, test, commit, deploy, and verify the production entry/upload endpoints.
+- [x] Operator compliance approval recorded for exact published terms version `boston-v13-2026-08-15` on August 15, 2026, including the optional-video rule and 400-entry cap.
+- [x] Production database sign-off fields populated; event status is `entry_open`, and the public code gate was approved after the device rehearsal.
+- [x] Final iPhone/PWA rehearsal passed on August 15, 2026. The operator confirmed the quiz, mobile layout, UI, and UX were seamless and approved opening the public code gate.
 
 ## Restaurant operating plan
 
@@ -38,7 +38,7 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 
 Use the following prize-promotion footer in every promotional post, close to the call to action. On the specific paid Only in Boston post, place a compact, conspicuous disclosure such as `Ad · NotCupid Dating Experiment` or `#ad` before the caption expands. Do not call the account a partner, Sponsor, administrator, or selector, and do not add the publisher to the NotCupid FAQ or Official Rules.
 
-> NO PURCHASE NECESSARY. Open to eligible Massachusetts residents 21+ within approximately 20 miles of 02116. Entry closes August 18 at 12 PM ET or at 100 eligible entries. Up to two dinner prizes; maximum $200 per selected pair / $400 total. Odds depend on eligible entries, reciprocal preferences, compatibility weighting, mutual choices, and shared availability. Official Rules: https://notcupid.com/dating-experiment/terms. Apple and Reddit do not sponsor or administer the experiment.
+> NO PURCHASE NECESSARY. Open to eligible Massachusetts residents 21+ within approximately 20 miles of 02116. Entry closes August 18 at 12 PM ET or at 400 eligible entries. Up to two dinner prizes; maximum $200 per selected pair / $400 total. Odds depend on eligible entries, reciprocal preferences, compatibility weighting, mutual choices, and shared availability. Official Rules: https://notcupid.com/dating-experiment/terms. Apple and Reddit do not sponsor or administer the experiment.
 
 Private internal publisher record: NotCupid is paying Only in Boston $200 to distribute the promotion on its social channels. This does not make it a partner, prize Sponsor, or administrator. The disclosure belongs on that paid post itself—not on NotCupid's product pages—and must be visible before “more,” not buried in comments.
 
@@ -69,10 +69,11 @@ Private internal publisher record: NotCupid is paying Only in Boston $200 to dis
 - 6:30 PM reservation reference: Operator attestation, August 15, 2026
 - 8:30 PM reservation reference: Operator attestation, August 15, 2026
 - Prize fulfillment method: NotCupid prepaid The Berkeley directly; no guest reimbursement step; $200 per pair including ordinary tax and gratuity; parking/valet/transport excluded
-- Operator compliance reviewer/reference: NotCupid operator approval of optional-video v12 recorded August 15, 2026
-- Terms version reviewed: `boston-v12-2026-08-15`
+- Operator compliance reviewer/reference: NotCupid operator approval of the optional-video, 400-entry public-launch v13 after the iPhone/PWA walkthrough, recorded August 15, 2026
+- Terms version reviewed: `boston-v13-2026-08-15`
 - Production rehearsal migration: `20260816004500_dating_experiment_operator_rehearsal.sql` applied and linked ledger verified August 15, 2026
 - Optional-video migration: `20260816011500_dating_experiment_optional_video_v12.sql` applied; linked ledger and database lint verified August 15, 2026
+- Public-launch migration: `20260816013000_dating_experiment_public_launch_v13.sql` applied; linked ledger and database lint verified August 15, 2026. It raises the shared entry cap to 400, makes capacity counts current-terms-only, and records the completed iPhone/PWA walkthrough approval.
 - Only in Boston relationship/disclosure: Private internal record—paid promotional publisher; $200 fee; paid post uses a clear `Ad`/`#ad` disclosure; no public FAQ/rules mention and no partnership, Sponsor, administrator, data, matching, or selection role
 - Operator approval timestamp: August 15, 2026 at 7:50:37 PM ET
 - Production deployment ID:

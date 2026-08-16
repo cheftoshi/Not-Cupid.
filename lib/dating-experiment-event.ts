@@ -119,15 +119,16 @@ function rehearsalEmails(): string[] {
 
 // Rehearsal access is deliberately narrower than normal admin access. It lets
 // explicitly named real admin accounts exercise the production PWA entry flow
-// while RAFFLE.entriesOpen remains false for everyone else. Test fixtures stay
-// excluded, and the database must still have every non-public sign-off.
+// only while the public code gate is closed. Test fixtures stay excluded, and
+// the database must still have every non-public sign-off.
 export function datingExperimentAdminRehearsalOpen(
   event: DatingExperimentEvent | null,
   user: { email?: string | null; is_test?: boolean | null } | null,
   now = Date.now(),
 ): boolean {
   const email = user?.email?.trim().toLowerCase();
-  return user?.is_test !== true
+  return !RAFFLE.entriesOpen
+    && user?.is_test !== true
     && !!email
     && isAdminEmail(email)
     && rehearsalEmails().includes(email)

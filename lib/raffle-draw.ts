@@ -341,13 +341,16 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
   }
 
   // `force` may start an already launch-ready experiment before its normal
-  // cap/deadline trigger, but it must never bypass quiet mode or any legal /
-  // operational launch gate. Active rounds are still recoverable above.
+  // cap/deadline trigger, but it must never bypass the code, database, or
+  // operational launch gates. Active rounds are still recoverable above.
   if (!datingExperimentCanShortlist(event)) return { ok: true, entrants: 0, drawn: 0, state: 'paused' };
 
   const [{ data: priorRounds }, { count: totalEntries }, { data: entries }] = await Promise.all([
     supabaseAdmin.from('dating_experiment_rounds').select('round_number').eq('event_key', event.event_key).order('round_number', { ascending: false }),
-    supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true }).eq('event_key', event.event_key).neq('status', 'withdrawn'),
+    supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true })
+      .eq('event_key', event.event_key)
+      .eq('terms_version', event.terms_version)
+      .neq('status', 'withdrawn'),
     supabaseAdmin.from('raffle_entries')
       .select('user_id, attempts, questionnaire, terms_version, notify')
       .eq('event_key', event.event_key)

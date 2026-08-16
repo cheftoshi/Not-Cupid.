@@ -270,8 +270,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
           <div style={card}>
-            <h2 style={cardH}>opening soon.</h2>
-            <p style={cardP}>the two Boston dinner slots are set for <b>{ev.dateLabel}</b>. Public entries stay paused until the final iPhone/PWA rehearsal is complete.</p>
+            <h2 style={cardH}>entries aren’t open right now.</h2>
+            <p style={cardP}>the live experiment status can pause entry at the deadline, at capacity, or if an operating check needs attention.</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem' }}>
               <Link href="/dating-experiment/faq" style={backLink}>see the simple plan →</Link>
               <Link href="/hub" style={backLink}>back to hub →</Link>
@@ -351,7 +351,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           // ── entries closed ──
           <div style={card}>
             <h2 style={cardH}>entries are closed.</h2>
-            <p style={cardP}>this experiment filled up — watch the hub for the next round.</p>
+            <p style={cardP}>the entry window ended or this round reached its cap — watch the hub for the next one.</p>
           </div>
         ) : !rulesReady || !rulesSeen ? (
           <div style={{ ...card, textAlign: 'center' }}>

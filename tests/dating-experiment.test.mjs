@@ -21,11 +21,12 @@ import {
 
 const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.url), 'utf8');
 
-test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
+test('Dating Experiment public launch stays free, local, limited, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
-  assert.match(experimentSource, /entriesOpen:\s*false/);
+  assert.match(experimentSource, /entriesOpen:\s*true/);
+  assert.match(experimentSource, /cap:\s*400/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v12-2026-08-15'/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v13-2026-08-15'/);
   assert.match(experimentSource, /aug20-1830/);
   assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
@@ -301,10 +302,11 @@ test('experiment terms do not bundle a marketing likeness license', () => {
   assert.doesNotMatch(terms, /royalty-free, worldwide license/i);
 });
 
-test('experiment has a quiet-mode FAQ beside the public flow', () => {
+test('experiment has a current-status FAQ beside the public flow', () => {
   const faq = readFileSync(new URL('../app/dating-experiment/faq/page.tsx', import.meta.url), 'utf8');
   const flow = readFileSync(new URL('../app/raffle/raffle-client.tsx', import.meta.url), 'utf8');
-  assert.match(faq, /Final rehearsal:/);
+  assert.doesNotMatch(faq, /Final rehearsal:/);
+  assert.match(faq, /Entries are open:/);
   assert.match(faq, /Paying for Pro[\s\S]*never adds entries or improves selection odds/);
   assert.match(faq, /short-lived links/);
   assert.match(flow, /\/dating-experiment\/faq/);
@@ -339,7 +341,7 @@ test('V3 database guardrails enforce two disjoint winner slots', () => {
   assert.match(migration, /revoke all on function public\.enforce_dating_experiment_winner_capacity[\s\S]*from public, anon, authenticated/i);
 });
 
-test('public entry remains fail-closed until every launch prerequisite is approved', () => {
+test('public entry is open only while every launch prerequisite remains approved', () => {
   const drawSource = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
   const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
   const pageSource = readFileSync(new URL('../app/dating-experiment/page.tsx', import.meta.url), 'utf8');
@@ -350,7 +352,7 @@ test('public entry remains fail-closed until every launch prerequisite is approv
   assert.match(experimentSource, /venueConfirmed: true/);
   assert.match(experimentSource, /sponsorDetailsConfirmed: true/);
   assert.match(experimentSource, /operatorComplianceApproved: true/);
-  assert.match(experimentSource, /entriesOpen:\s*false/);
+  assert.match(experimentSource, /entriesOpen:\s*true/);
   assert.match(experimentSource, /raffleLaunchBlockers\(\)\.length === 0/);
   assert.match(eventSource, /RAFFLE\.entriesOpen[\s\S]*raffleLaunchBlockers\(\)\.length === 0/);
   assert.match(eventSource, /event\.status === 'entry_open'/);
@@ -358,11 +360,25 @@ test('public entry remains fail-closed until every launch prerequisite is approv
   assert.match(eventSource, /DATING_EXPERIMENT_REHEARSAL_EMAILS/);
   assert.match(eventSource, /isAdminEmail\(email\)/);
   assert.match(eventSource, /user\?\.is_test !== true/);
+  assert.match(eventSource, /!RAFFLE\.entriesOpen/);
   for (const routeSource of [pageSource, statusSource, entrySource, uploadSource]) {
     assert.match(routeSource, /datingExperimentAdminRehearsalOpen/);
   }
   assert.match(drawSource, /if \(!datingExperimentCanShortlist\(event\)\) return \{ ok: true, entrants: 0, drawn: 0, state: 'paused' \}/);
   assert.doesNotMatch(drawSource, /!datingExperimentCanShortlist\(event\) && !force/);
+});
+
+test('V13 records the 400-person public launch without counting stale terms', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260816013000_dating_experiment_public_launch_v13.sql', import.meta.url), 'utf8');
+  const statusSource = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
+  const drawSource = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  assert.match(migration, /entry_cap = 400/i);
+  assert.match(migration, /terms_version = 'boston-v13-2026-08-15'/i);
+  assert.match(migration, /status = 'entry_open'/i);
+  assert.match(migration, /v_existing_terms_version is distinct from v_event\.terms_version/i);
+  assert.match(migration, /terms_version = v_event\.terms_version/i);
+  assert.match(statusSource, /\.eq\('terms_version', event\?\.terms_version \?\? RAFFLE\.termsVersion\)/);
+  assert.match(drawSource, /\.eq\('terms_version', event\.terms_version\)/);
 });
 
 test('Berkeley reservations and direct prepayment are confirmed without opening entries', () => {

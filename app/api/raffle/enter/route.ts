@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (user.is_test === true) return NextResponse.json({ error: 'Test accounts cannot enter the live Dating Experiment.' }, { status: 403 });
   const event = await getDatingExperimentEvent();
   const entriesOpen = datingExperimentEntriesOpen(event) || datingExperimentAdminRehearsalOpen(event, user);
-  if (!entriesOpen) return NextResponse.json({ error: 'Entries are paused while we finish the public-launch checklist.' }, { status: 403 });
+  if (!entriesOpen) return NextResponse.json({ error: 'Dating Experiment entries are not currently open.' }, { status: 403 });
   const eventLocation = { centerZip: event!.center_zip, radiusMiles: Number(event!.radius_miles) };
   if (!raffleEligible(user, eventLocation)) return NextResponse.json({ error: `This experiment is for Massachusetts residents within ${eventLocation.radiusMiles} miles of ${eventLocation.centerZip}.` }, { status: 400 });
 

@@ -144,6 +144,7 @@ export async function GET() {
     const { count } = await supabaseAdmin.from('raffle_entries')
       .select('user_id', { count: 'exact', head: true })
       .eq('event_key', RAFFLE.key)
+      .eq('terms_version', event?.terms_version ?? RAFFLE.termsVersion)
       .neq('status', 'withdrawn');
     spotsLeft = Math.max(0, eventCap - (count ?? 0));
   } catch { /* migration not ready */ }

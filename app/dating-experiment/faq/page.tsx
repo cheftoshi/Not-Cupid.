@@ -112,9 +112,9 @@ export default function DatingExperimentFaqPage() {
           Four steps, two private decisions, and up to two compatibility-led Boston dinner pairs. Here’s exactly how the experiment is intended to work.
         </p>
 
-        {!raffleEntriesOpen() && (
+        {raffleEntriesOpen() && (
           <div style={{ marginTop: '1.25rem', padding: '0.85rem 1rem', border: '1px solid rgba(255,106,31,0.35)', borderRadius: 12, background: 'rgba(255,106,31,0.08)', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--h-text)' }}>Final rehearsal:</b> public entries are paused while we complete the iPhone/PWA walkthrough. The two dinner slots are Thursday, August 20 at 6:30 PM and 8:30 PM ET; the restaurant will be revealed privately to selected pairs.
+            <b style={{ color: 'var(--h-text)' }}>Entries are open:</b> join free before {RAFFLE.entryCloseLabel} or before the {RAFFLE.cap}-person cap is reached. The two dinner slots are Thursday, August 20 at 6:30 PM and 8:30 PM ET; the restaurant is revealed privately to selected pairs.
           </div>
         )}
 

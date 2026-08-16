@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // Manual override: starts a launch-ready shortlist round before the normal
 // public trigger, or resolves the collecting round when decisions permit it.
-// It cannot bypass quiet mode or the legal/operational launch gates.
+// It cannot bypass the code, database, or operational launch gates.
 export async function POST() {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

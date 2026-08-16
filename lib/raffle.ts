@@ -26,14 +26,14 @@ export const RAFFLE = {
   metro: 'boston',
   centerZip: '02116',
   radiusMiles: 20,
-  entriesOpen: false, // quiet mode: keep the flow/rules live, but block new public entries
+  entriesOpen: true, // public launch approved after the August 15 iPhone/PWA walkthrough
   statusLabel: 'Thursday, August 20',
-  cap: 100, // entry closes at 100 entrants → auto-draw fires
+  cap: 400, // one shared, gender-neutral entrant cap; the deadline can trigger first
   maxAttempts: 2, // at most two sealed shortlist rounds per entrant
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v12-2026-08-15',
+  termsVersion: 'boston-v13-2026-08-15',
   algorithmVersion: 'dating-experiment-two-pair-v4',
   minimumPairScore: 55,
   videoMinSeconds: 5,
@@ -52,8 +52,8 @@ export const RAFFLE = {
   // The operator confirmed the $400 maximum prize funding, both prepaid
   // reservations, NotCupid as the public Sponsor, and its Quincy mailing
   // address on August 15. Lemon Labs owns NotCupid; it is not presented as the
-  // public prize Sponsor. The operator approved the complete v12 launch rules,
-  // including the optional-video decision, on August 15.
+  // public prize Sponsor. The operator approved the complete v13 launch rules,
+  // including the optional-video decision and 400-entry cap, on August 15.
   prizeFundingConfirmed: true,
   venueConfirmed: true,
   sponsorDetailsConfirmed: true,
