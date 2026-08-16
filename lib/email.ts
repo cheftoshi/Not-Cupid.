@@ -265,8 +265,27 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; id?: str
       }),
     });
     if (!res.ok) {
-      console.error('sendEmail: Resend non-2xx', { status: res.status, recipientId });
-      return { ok: false, error: `Resend ${res.status}` };
+      const raw = await res.text().catch(() => '');
+      let providerMessage = '';
+      try {
+        const parsed = JSON.parse(raw);
+        providerMessage = String(parsed?.message || parsed?.name || '');
+      } catch {
+        providerMessage = raw;
+      }
+      // Keep enough provider detail to diagnose 409/422 responses while
+      // ensuring a returned address or multiline body never reaches logs.
+      const safeProviderMessage = providerMessage
+        .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[redacted-email]')
+        .replace(/[\r\n\t]+/g, ' ')
+        .trim()
+        .slice(0, 180);
+      console.error('sendEmail: Resend non-2xx', {
+        status: res.status,
+        recipientId,
+        ...(safeProviderMessage ? { providerMessage: safeProviderMessage } : {}),
+      });
+      return { ok: false, error: `Resend ${res.status}${safeProviderMessage ? `: ${safeProviderMessage}` : ''}` };
     }
     const data = await res.json().catch(() => ({}));
     return { ok: true, id: typeof data?.id === 'string' ? data.id : undefined };

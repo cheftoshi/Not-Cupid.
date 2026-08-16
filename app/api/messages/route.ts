@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
   // this message just activated the match — acceptMatch already sent the
   // "it's a match" email in that case, so we don't double up.
   if (bothBefore) {
-    notifyNewMessage(match_id, isU1 ? match.user_2_id : match.user_1_id, user.id).catch((e) =>
+    notifyNewMessage(match_id, isU1 ? match.user_2_id : match.user_1_id, user.id, message.id).catch((e) =>
       console.error('notifyNewMessage failed', e)
     );
   }
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ message });
 }
 
-async function notifyNewMessage(matchId: string, recipientId: string, senderId: string) {
+async function notifyNewMessage(matchId: string, recipientId: string, senderId: string, messageId: string) {
   const { data: recipient } = await supabaseAdmin
     .from('users').select('email, email_notifications').eq('id', recipientId).single();
   if (!recipient?.email || recipient.email_notifications === false) return;
@@ -196,7 +196,7 @@ async function notifyNewMessage(matchId: string, recipientId: string, senderId: 
   const senderName = senderFirst;
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
 
-  await sendEmail({
+  const emailResult = await sendEmail({
     to: recipient.email,
     subject: `${senderName} sent you a message`,
     html: renderEmail({
@@ -205,7 +205,13 @@ async function notifyNewMessage(matchId: string, recipientId: string, senderId: 
       headline: `${senderName} sent you a message.`,
       bodyHtml: `<p style="margin:0 0 18px 0;">Don't leave them hanging — the chat goes quiet after 36h of silence.</p>${button({ href: `${base}/match/${matchId}`, label: 'Open the chat →' })}`,
     }),
+    idempotencyKey: `chat-message-${matchId}-${recipientId}-${messageId}`,
   });
+
+  // A provider failure must not consume the one-hour throttle. The next real
+  // message may retry the notification; the stable per-message key protects a
+  // route retry from creating a duplicate email.
+  if (!emailResult.ok) return;
 
   await supabaseAdmin.from('match_notifications').upsert(
     { match_id: matchId, recipient_id: recipientId, last_message_email_at: new Date().toISOString() },

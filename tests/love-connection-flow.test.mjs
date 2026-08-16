@@ -30,6 +30,16 @@ test('roster rotation email retries are idempotent', () => {
   assert.match(rematch, /value: 'roster_rotation'/);
 });
 
+test('chat notification email failures remain retryable and route retries are idempotent', () => {
+  const messages = readFileSync(new URL('../app/api/messages/route.ts', import.meta.url), 'utf8');
+  const email = readFileSync(new URL('../lib/email.ts', import.meta.url), 'utf8');
+  assert.match(messages, /idempotencyKey: `chat-message-/);
+  assert.match(messages, /if \(!emailResult\.ok\) return/);
+  assert.match(messages, /notifyNewMessage\(match_id,[\s\S]*message\.id/);
+  assert.match(email, /providerMessage: safeProviderMessage/);
+  assert.match(email, /redacted-email/);
+});
+
 test('admin engagement metrics exclude test accounts and show notification reach', () => {
   const route = readFileSync(new URL('../app/api/admin/pools/route.ts', import.meta.url), 'utf8');
   assert.match(route, /\.not\('is_test', 'is', true\)/);
