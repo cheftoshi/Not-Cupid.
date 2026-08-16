@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { RAFFLE, raffleEligible } from '@/lib/raffle';
@@ -11,6 +12,26 @@ import {
 } from '@/lib/dating-experiment-event';
 
 export const dynamic = 'force-dynamic';
+
+const SOCIAL_TITLE = 'The Boston Dating Experiment — NotCupid';
+const SOCIAL_DESCRIPTION = 'Choose privately from compatibility-led options. Up to two mutual Boston pairs get dinner on NotCupid on August 20.';
+
+export const metadata: Metadata = {
+  title: SOCIAL_TITLE,
+  description: SOCIAL_DESCRIPTION,
+  alternates: { canonical: '/dating-experiment' },
+  openGraph: {
+    title: SOCIAL_TITLE,
+    description: SOCIAL_DESCRIPTION,
+    type: 'website',
+    url: '/dating-experiment',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SOCIAL_TITLE,
+    description: SOCIAL_DESCRIPTION,
+  },
+};
 
 function PublicExperimentLanding({ experiment }: { experiment: Awaited<ReturnType<typeof getDatingExperimentEvent>> }) {
   const entriesOpen = datingExperimentEntriesOpen(experiment);

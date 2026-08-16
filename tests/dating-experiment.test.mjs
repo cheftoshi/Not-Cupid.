@@ -377,6 +377,9 @@ test('the public promotion funnel preserves Dating Experiment intent through log
   assert.doesNotMatch(pageSource, /if \(!user\) redirect/);
   assert.match(pageSource, /\/login\?next=\/dating-experiment/);
   assert.match(pageSource, /\/quiz\?next=experiment/);
+  assert.match(pageSource, /The Boston Dating Experiment — NotCupid/);
+  assert.match(pageSource, /alternates: \{ canonical: '\/dating-experiment' \}/);
+  assert.match(pageSource, /card: 'summary_large_image'/);
   assert.match(loginSource, /experimentNext = nextPath === '\/dating-experiment'/);
   assert.match(loginSource, /router\.push\('\/quiz\?next=experiment'\)/);
   assert.match(quizSource, /requestedNext === 'experiment'/);
