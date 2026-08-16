@@ -33,7 +33,7 @@ export const RAFFLE = {
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
   respondHours: 12,
-  termsVersion: 'boston-v11-2026-08-15',
+  termsVersion: 'boston-v12-2026-08-15',
   algorithmVersion: 'dating-experiment-two-pair-v4',
   minimumPairScore: 55,
   videoMinSeconds: 5,
@@ -52,8 +52,8 @@ export const RAFFLE = {
   // The operator confirmed the $400 maximum prize funding, both prepaid
   // reservations, NotCupid as the public Sponsor, and its Quincy mailing
   // address on August 15. Lemon Labs owns NotCupid; it is not presented as the
-  // public prize Sponsor. The operator approved the complete v11 launch rules
-  // and disclosures on August 15.
+  // public prize Sponsor. The operator approved the complete v12 launch rules,
+  // including the optional-video decision, on August 15.
   prizeFundingConfirmed: true,
   venueConfirmed: true,
   sponsorDetailsConfirmed: true,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleEligible } from '@/lib/raffle';
-import { VIDEO_UPLOAD_TYPES } from '@/lib/request-security';
+import { managedStoragePath, VIDEO_UPLOAD_TYPES } from '@/lib/request-security';
 import { rateLimit } from '@/lib/rate-limit';
 import { datingExperimentAdminRehearsalOpen, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 
@@ -40,4 +40,18 @@ export async function POST(req: NextRequest) {
   // `storageRef` is a stable object reference, not a publicly readable URL. The
   // bucket is private and playback always uses a short-lived signed URL.
   return NextResponse.json({ signedUrl: data.signedUrl, token: data.token, path, storageRef: pub.publicUrl, contentType });
+}
+
+// Let a participant remove an optional upload before submitting the entry.
+// The user-scoped path check prevents deleting another person's media.
+export async function DELETE(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (user.is_test === true) return NextResponse.json({ error: 'Test accounts cannot modify the live Dating Experiment.' }, { status: 403 });
+  const body = await req.json().catch(() => ({}));
+  const path = managedStoragePath(body.video_url, 'raffle-videos', `${user.id}/${RAFFLE.key}-`);
+  if (!path) return NextResponse.json({ error: 'Invalid experiment video reference.' }, { status: 400 });
+  const { error } = await supabaseAdmin.storage.from('raffle-videos').remove([path]);
+  if (error) return NextResponse.json({ error: 'Could not remove that video right now.' }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }

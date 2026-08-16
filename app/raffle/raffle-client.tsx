@@ -54,7 +54,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [conversationStarter, setConversationStarter] = useState('');
   const [attendanceConfirmed, setAttendanceConfirmed] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [videoConsent, setVideoConsent] = useState(false);
+  const [previewConsent, setPreviewConsent] = useState(false);
   const [safetyAcknowledged, setSafetyAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -110,8 +110,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99
     && availableSlotKeys.length > 0;
   const questionsOk = !!intention && !!energy && !!planningStyle && conversationStarter.trim().length >= 3;
-  const consentOk = attendanceConfirmed && termsAccepted && videoConsent && safetyAcknowledged;
-  const canEnter = credOk && basicsOk && questionsOk && !!videoUrl && videoDuration != null && consentOk;
+  const consentOk = attendanceConfirmed && termsAccepted && previewConsent && safetyAcknowledged;
+  const canEnter = credOk && basicsOk && questionsOk && consentOk;
   const showRulesGate = ev.entriesOpen && !ev.closed && eligible && loaded && rulesReady && !rulesSeen
     && !(done || st?.entered || st?.draw || st?.shortlist?.length);
 
@@ -150,6 +150,23 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
+  async function removeVideo() {
+    if (!videoUrl || uploading) return;
+    setUploading(true); setErr('');
+    try {
+      const r = await fetch('/api/raffle/upload-url', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ video_url: videoUrl }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setErr(d.error || 'could not remove that video'); return; }
+      setVideoUrl(null);
+      setVideoDuration(null);
+    } catch { setErr('could not remove that video — try again'); }
+    finally { setUploading(false); }
+  }
+
   async function enter() {
     if (!canEnter) { setErr('finish your cred + match basics first.'); return; }
     setBusy(true); setErr('');
@@ -174,7 +191,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           attendanceConfirmed,
           termsAccepted,
           termsVersion: ev.termsVersion,
-          videoConsent,
+          previewConsent,
           safetyAcknowledged,
         }),
       });
@@ -191,7 +208,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     if (r.ok) window.location.reload(); else { setBusy(false); setErr('try again'); }
   }
   async function withdraw() {
-    if (!window.confirm('Withdraw from this Dating Experiment round and delete your experiment video?')) return;
+    if (!window.confirm('Withdraw from this Dating Experiment round? Any optional experiment video will also be deleted.')) return;
     setBusy(true); setErr('');
     const r = await fetch('/api/raffle/withdraw', { method: 'POST' });
     if (r.ok) window.location.reload();
@@ -210,7 +227,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <div style={{ display: 'grid', gap: '0.65rem', marginTop: '1rem' }}>
               <RuleLine icon="📍" title="Boston + 21 only" body={`You must live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}.`} />
               <RuleLine icon="📸" title="A real profile" body="Add a clear profile photo, your quiz, a short bio, and at least three interests." />
-              <RuleLine icon="🎬" title="A private 10-second hello" body={`Upload an original ${ev.videoMinSeconds}–${ev.videoMaxSeconds}-second intro. Only your private shortlist and limited operators can view it.`} />
+              <RuleLine icon="🎬" title="A private hello — if you want" body={`An original ${ev.videoMinSeconds}–${ev.videoMaxSeconds}-second intro is optional. It never changes your eligibility, fit score, or selection odds, and only your private shortlist and limited operators can view it.`} />
               <RuleLine icon="✦" title="You both choose" body={`You may see up to ${ev.shortlistMaxOptions || 2} reciprocal options. Your yes/pass stays sealed; only mutual yes pairs can be selected.`} />
               <RuleLine icon="🍽️" title="Two dinners on August 20" body={`${(ev.dateOptions || []).map((slot: any) => slot.label).join(' or ')}. One pair per slot, up to $${ev.budget} per pair. Restaurant details come privately later.`} />
               <RuleLine icon="🛡️" title="Keep it safe" body="The dinner is in public, but NotCupid does not run criminal background checks or guarantee identity, behavior, chemistry, or attendance." />
@@ -233,7 +250,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
         {ev.rehearsal && (
           <div role="status" style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', border: '1px solid rgba(37,99,255,0.35)', borderRadius: 12, background: 'rgba(37,99,255,0.08)', color: 'var(--h-text-dim)', fontSize: '0.78rem', lineHeight: 1.45 }}>
-            <b style={{ color: 'var(--h-text)' }}>Private admin rehearsal.</b> You can test the real form, video upload, submission, persistence, and withdrawal. Public entries are still closed.
+            <b style={{ color: 'var(--h-text)' }}>Private admin rehearsal.</b> You can test the real form, optional video upload, submission, persistence, and withdrawal. Public entries are still closed.
           </div>
         )}
 
@@ -248,7 +265,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <Link href="/safety" style={infoLink}>safety</Link>
         </div>
         <div style={{ ...card, marginBottom: '1.1rem', padding: '0.9rem 1rem', background: 'rgba(37,99,255,0.05)', borderColor: 'rgba(37,99,255,0.22)' }}>
-          <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your experiment video, four quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
+          <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your optional experiment video, four quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
         </div>
 
         {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
@@ -339,7 +356,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         ) : !rulesReady || !rulesSeen ? (
           <div style={{ ...card, textAlign: 'center' }}>
             <h2 style={cardH}>review the experiment rules first.</h2>
-            <p style={cardP}>The short rules card explains the two dinner slots, private video, mutual choice, eligibility, and safety before the entry form opens.</p>
+            <p style={cardP}>The short rules card explains the two dinner slots, optional private video, mutual choice, eligibility, and safety before the entry form opens.</p>
           </div>
         ) : (
           // ── register ──
@@ -455,12 +472,12 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               </div>
             </div>
 
-            {/* ④ intro video */}
+            {/* ④ optional intro video */}
             <div style={card}>
-              <div style={cardLabel}>④ your intro video <span style={{ color: ORANGE_DEEP }}>· required</span></div>
-              <p style={cardP}>aim for about 10 seconds: “hi, I’m {firstName} — my ideal Boston date is…” Only a selected potential date can view it.</p>
+              <div style={cardLabel}>④ your intro video <span style={{ color: 'var(--h-text-faint)' }}>· optional</span></div>
+              <p style={cardP}>Skip this if it is not your thing. If you add one, aim for about 10 seconds: “hi, I’m {firstName} — my ideal Boston date is…” Only a selected potential date can view it, and it never changes your fit score or odds.</p>
               {videoUrl ? (
-                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: GREEN, letterSpacing: '0.06em' }}>✓ {videoDuration?.toFixed(1)}s video added · <button onClick={() => { setVideoUrl(null); setVideoDuration(null); }} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: 'pointer', textDecoration: 'underline' }}>replace</button></div>
+                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: GREEN, letterSpacing: '0.06em' }}>✓ {videoDuration?.toFixed(1)}s video added · <button type="button" onClick={removeVideo} disabled={uploading} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: uploading ? 'wait' : 'pointer', textDecoration: 'underline' }}>{uploading ? 'removing…' : 'remove'}</button></div>
               ) : (
                 <label style={{ ...btnGhost, display: 'inline-block', marginTop: '0.7rem', cursor: uploading ? 'wait' : 'pointer' }}>
                   {uploading ? 'uploading…' : '🎬 upload a video'}
@@ -484,7 +501,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               {[
                 [attendanceConfirmed, setAttendanceConfirmed, `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend every dinner time I selected above.`],
                 [termsAccepted, setTermsAccepted, <>I agree to the <Link href="/dating-experiment/terms" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Dating Experiment Terms</Link>.</>],
-                [videoConsent, setVideoConsent, `I consent to my profile, orientation, photos, answers, and intro video being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.`],
+                [previewConsent, setPreviewConsent, `I consent to my profile, orientation, photos, answers, and any optional intro video I add being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.`],
                 [safetyAcknowledged, setSafetyAcknowledged, 'I understand NotCupid does not conduct criminal background checks or guarantee another participant’s identity, behavior, or compatibility.'],
               ].map(([checked, setter, label], i) => (
                 <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.7rem' }}>
@@ -497,7 +514,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <button onClick={enter} disabled={busy || uploading || !canEnter} style={{ background: canEnter ? ORANGE : 'var(--h-surface-2)', color: canEnter ? '#fff' : 'var(--h-text-faint)', border: canEnter ? 'none' : '1px solid var(--h-border)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || !canEnter ? 'not-allowed' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
               {busy ? '…' : canEnter ? '✦ join the dating experiment' : 'finish the steps above'}
             </button>
-            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'finish the experiment questionnaire' : !videoUrl ? 'upload your intro video' : 'confirm the terms and safety notices'}</p>}
+            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'finish the experiment questionnaire' : 'confirm the terms and safety notices'}</p>}
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
               <b>*</b> No purchase necessary. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Up to two reciprocal options; only mutual yes pairs enter the final compatibility-weighted selection. Up to {ev.winnerPairCount || 2} disjoint pairs; ${ev.budget} maximum value per dinner. Odds depend on the qualified pool and private choices. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
             </p>

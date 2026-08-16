@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const video_url = body.video_url ? String(body.video_url).slice(0, 2000) : null;
-  const videoDuration = Number(body.videoDurationSeconds);
+  const videoDuration = body.videoDurationSeconds == null ? null : Number(body.videoDurationSeconds);
   const notify = body.notify !== false;
   const intention = INTENTIONS.has(body.intention) ? body.intention : null;
   const energy = ENERGIES.has(body.energy) ? body.energy : null;
@@ -73,20 +73,20 @@ export async function POST(req: NextRequest) {
   if (user.age == null) missing.push('your age');
   if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
   if (user.age < 21) return NextResponse.json({ error: 'This dinner is 21 and over — you’re not eligible for this round.' }, { status: 400 });
-  if (!video_url) return NextResponse.json({ error: 'Your intro video is required to enter.' }, { status: 400 });
-  if (!isManagedStorageUrl(video_url, 'raffle-videos', `${user.id}/${RAFFLE.key}-`)) {
+  if (video_url && !isManagedStorageUrl(video_url, 'raffle-videos', `${user.id}/${RAFFLE.key}-`)) {
     return NextResponse.json({ error: 'Upload your intro video through NotCupid before entering.' }, { status: 400 });
   }
-  if (!Number.isFinite(videoDuration) || videoDuration < RAFFLE.videoMinSeconds || videoDuration > RAFFLE.videoMaxSeconds) {
+  if (video_url && (!Number.isFinite(videoDuration) || videoDuration! < RAFFLE.videoMinSeconds || videoDuration! > RAFFLE.videoMaxSeconds)) {
     return NextResponse.json({ error: `Your intro video must be ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds} seconds long.` }, { status: 400 });
   }
+  if (!video_url && videoDuration != null) return NextResponse.json({ error: 'Upload your intro video through NotCupid before adding its duration.' }, { status: 400 });
   if (!intention || !energy || !planningStyle || conversationStarter.length < 3) {
     return NextResponse.json({ error: 'Finish the short experiment questionnaire before entering.' }, { status: 400 });
   }
   if (body.termsVersion !== event!.terms_version || body.termsAccepted !== true) {
     return NextResponse.json({ error: 'Please agree to the current Dating Experiment Terms.' }, { status: 400 });
   }
-  if (body.videoConsent !== true) return NextResponse.json({ error: 'Please consent to the private profile and video preview.' }, { status: 400 });
+  if (body.previewConsent !== true) return NextResponse.json({ error: 'Please consent to the private shortlist preview.' }, { status: 400 });
   if (body.safetyAcknowledged !== true) return NextResponse.json({ error: 'Please acknowledge the participant safety notice.' }, { status: 400 });
   if (body.attendanceConfirmed !== true) return NextResponse.json({ error: 'Please confirm you can attend at least one listed dinner date.' }, { status: 400 });
 

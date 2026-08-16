@@ -6,7 +6,7 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 
 - Public name: The NotCupid Dating Experiment — never call it a raffle in public copy.
 - Free entry; no purchase, subscription, payment, or donation changes selection.
-- Eligibility: age 21+, Massachusetts resident within approximately 20 miles of ZIP 02116, genuine non-test account, complete profile and private 5–15 second intro video.
+- Eligibility: age 21+, Massachusetts resident within approximately 20 miles of ZIP 02116, genuine non-test account, and complete profile. A private 5–15 second intro video is optional and selection-neutral.
 - Entry closes Tuesday, August 18, 2026 at 12:00 PM ET or at 100 eligible entrants, whichever is earlier.
 - Dinner slots: Thursday, August 20 at 6:30 PM ET and 8:30 PM ET. Entrants choose every date/time slot they can attend. A pair needs shared availability.
 - Prize quantity/value: up to two dinner prizes, one per selected pair, up to $200 per pair and $400 aggregate.
@@ -22,7 +22,7 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 - [x] Operator confirmed both Berkeley reservations are booked and prepaid for August 20 at 6:30 PM and 8:30 PM ET on August 15.
 - [x] Reservation confirmation recorded as an operator attestation for both slots. External booking identifiers were not supplied and remain private if added later.
 - [x] Fulfillment method: NotCupid prepaid The Berkeley directly; participants do not pay or seek reimbursement for the included dinner. The $200-per-pair cap includes ordinary tax and gratuity. Alcohol, parking, valet costs/tips, transportation, and items outside the prepaid arrangement are excluded.
-- [x] Operator compliance approval recorded for exact published terms version `boston-v11-2026-08-15` on August 15, 2026.
+- [x] Operator compliance approval recorded for exact published terms version `boston-v12-2026-08-15` on August 15, 2026, including the optional-video rule.
 - [x] Production database sign-off fields populated; event status changed to `entry_open` for the explicitly allowlisted admin rehearsal while the public code gate remains closed.
 - [ ] Final iPhone/PWA rehearsal passes; immediately afterward change `RAFFLE.entriesOpen` to `true`, review, test, commit, deploy, and verify the production entry/upload endpoints.
 
@@ -52,11 +52,11 @@ Private internal publisher record: NotCupid is paying Only in Boston $200 to dis
 
 ## Safety, privacy, and proof
 
-- Re-test that test accounts cannot enter, private videos use signed access, withdrawals delete the experiment video, preferences are frozen per event, and no selected person can occupy both dinner slots.
-- Verify shortlist cards show only reciprocal candidates and include first name, age, photos, bio, archetype, disclosed orientation, shared interests, event answers, fit score, and signed intro video. Decisions must remain sealed.
+- Re-test that test accounts cannot enter, an entry can be completed without video, optional private videos use signed access, withdrawals delete any experiment video, preferences are frozen per event, and no selected person can occupy both dinner slots.
+- Verify shortlist cards show only reciprocal candidates and include first name, age, photos, bio, archetype, disclosed orientation, shared interests, event answers, fit score, and a signed intro video only when one was provided. Decisions must remain sealed.
 - Verify opted-out entrants receive no experiment push. Verify winner reminders atomically send no more than once in the 24-hour window and once in the three-hour window.
-- The single remaining launch gate above includes verifying the rules modal and all four separate consents on a real iPhone PWA viewport using the private admin rehearsal.
-- Keep intro videos private; no advertising/testimonial use without separate written consent. Confirm the scheduled deletion path and incident hold process.
+- The single remaining launch gate above includes verifying the rules modal, all four separate consents, entry without a video, and optional-video upload on a real iPhone PWA viewport using the private admin rehearsal.
+- Keep optional intro videos private; no advertising/testimonial use without separate written consent. Confirm the scheduled deletion path and incident hold process.
 - Record production URL, deployment ID, database migration version, signed rules version, reviewer reference, restaurant confirmations, operator approval, and opening timestamp in this file or the private launch record.
 - Do not imply background checks, guaranteed identity, guaranteed safety, guaranteed compatibility, a guaranteed award of both prizes, or restaurant sponsorship.
 
@@ -69,9 +69,10 @@ Private internal publisher record: NotCupid is paying Only in Boston $200 to dis
 - 6:30 PM reservation reference: Operator attestation, August 15, 2026
 - 8:30 PM reservation reference: Operator attestation, August 15, 2026
 - Prize fulfillment method: NotCupid prepaid The Berkeley directly; no guest reimbursement step; $200 per pair including ordinary tax and gratuity; parking/valet/transport excluded
-- Operator compliance reviewer/reference: NotCupid operator approval recorded August 15, 2026 at 7:50:37 PM ET
-- Terms version reviewed: `boston-v11-2026-08-15`
+- Operator compliance reviewer/reference: NotCupid operator approval of optional-video v12 recorded August 15, 2026
+- Terms version reviewed: `boston-v12-2026-08-15`
 - Production rehearsal migration: `20260816004500_dating_experiment_operator_rehearsal.sql` applied and linked ledger verified August 15, 2026
+- Optional-video migration: `20260816011500_dating_experiment_optional_video_v12.sql` applied; linked ledger and database lint verified August 15, 2026
 - Only in Boston relationship/disclosure: Private internal record—paid promotional publisher; $200 fee; paid post uses a clear `Ad`/`#ad` disclosure; no public FAQ/rules mention and no partnership, Sponsor, administrator, data, matching, or selection role
 - Operator approval timestamp: August 15, 2026 at 7:50:37 PM ET
 - Production deployment ID:

@@ -53,6 +53,9 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(terms, /Owner:<\/strong> Lemon Labs/);
   assert.match(experiment, /Private admin rehearsal/);
   assert.match(experiment, /Public entries are still closed/);
+  assert.match(experiment, /optional video upload/);
+  assert.match(experiment, /Skip this if it is not your thing/);
+  assert.match(faq, /The [^`]*second hello is completely optional/);
   assert.doesNotMatch(experiment, /until restaurant fulfillment/);
   assert.match(faq, /parking, valet charges or tips, transportation/);
   assert.match(login, /min-height:\s*100dvh/);

@@ -20,7 +20,7 @@ const { looksLikePublicPostalAddress } = await import('../lib/email-address.ts')
 test('Dating Experiment comeback links are campaign-bound and destination-bound', () => {
   const token = loveRelaunchToken(USER_ID, 'dashboard', Date.now() + 60_000);
   assert.equal(LOVE_RELAUNCH_CAMPAIGN, 'dating_experiment_comeback_aug_2026');
-  assert.equal(LOVE_RELAUNCH_APPROVAL_VERSION, 'dating-experiment-comeback-v3-2026-08-15');
+  assert.equal(LOVE_RELAUNCH_APPROVAL_VERSION, 'dating-experiment-comeback-v4-2026-08-15');
   assert.equal(LOVE_RELAUNCH_SUBJECT, 'Boston: dinner is on us — join the Dating Experiment');
   assert.equal(verifyLoveRelaunchToken(USER_ID, 'dashboard', token), true);
   assert.equal(verifyLoveRelaunchToken(USER_ID, 'profile', token), false);
@@ -50,7 +50,7 @@ test('Dating Experiment email stays preview-only until approval and launch gates
   assert.match(route, /mailingAddressReady/);
   assert.match(route, /No purchase necessary/);
   assert.match(route, /Only people who choose each other enter the dinner selection/);
-  assert.match(route, /5–15 seconds accepted/);
+  assert.match(route, /private 5–15 second hello video is optional and never changes eligibility or selection/);
   assert.match(route, /variant === 'profile' \? 'get my profile ready →' : 'join the Dating Experiment →'/);
   assert.match(route, /Your next step:/);
   assert.match(route, /primaryNeedsProfile:.*loveRelaunchPath\('profile'\)/);

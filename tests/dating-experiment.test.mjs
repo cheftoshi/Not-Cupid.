@@ -25,7 +25,7 @@ test('Dating Experiment stays quiet, free, local, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
   assert.match(experimentSource, /entriesOpen:\s*false/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
-  assert.match(experimentSource, /termsVersion:\s*'boston-v11-2026-08-15'/);
+  assert.match(experimentSource, /termsVersion:\s*'boston-v12-2026-08-15'/);
   assert.match(experimentSource, /aug20-1830/);
   assert.match(experimentSource, /aug20-2030/);
   assert.match(experimentSource, /centerZip:\s*'02116'/);
@@ -153,10 +153,13 @@ test('slot-aware selection preserves two winners and never assigns an unavailabl
   assert.equal(assignDinnerSlots([edges[0], edges[2]], ['early', 'late']), null);
 });
 
-test('entry requires versioned, separate consent records', () => {
+test('entry requires versioned, separate consent records while video stays optional', () => {
   const source = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
+  const client = readFileSync(new URL('../app/raffle/raffle-client.tsx', import.meta.url), 'utf8');
+  const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
   const uploadSource = readFileSync(new URL('../app/api/raffle/upload-url/route.ts', import.meta.url), 'utf8');
   const eventMigration = readFileSync(new URL('../supabase/migrations/20260808193341_dating_experiment_event_ledger.sql', import.meta.url), 'utf8');
+  const optionalVideoMigration = readFileSync(new URL('../supabase/migrations/20260816011500_dating_experiment_optional_video_v12.sql', import.meta.url), 'utf8');
   const statusSource = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
   for (const required of [
     'terms_version',
@@ -165,11 +168,21 @@ test('entry requires versioned, separate consent records', () => {
     'safety_acknowledged_at',
     'attendance_confirmed_at',
   ]) assert.match(eventMigration, new RegExp(required));
+  assert.match(optionalVideoMigration, /preview_consent_at/);
   assert.match(source, /p_accepted_at: acceptedAt/);
   assert.match(source, /body\.termsAccepted !== true/);
-  assert.match(source, /body\.videoConsent !== true/);
+  assert.match(source, /body\.previewConsent !== true/);
   assert.match(source, /body\.safetyAcknowledged !== true/);
   assert.match(source, /body\.attendanceConfirmed !== true/);
+  assert.doesNotMatch(source, /intro video is required to enter/);
+  assert.match(optionalVideoMigration, /if p_accepted_at is null or p_questionnaire is null then/i);
+  assert.doesNotMatch(optionalVideoMigration, /p_accepted_at is null or p_video_url is null or p_questionnaire/i);
+  assert.match(optionalVideoMigration, /case when p_video_url is not null then p_accepted_at else null end/i);
+  assert.match(optionalVideoMigration, /terms_version = 'boston-v12-2026-08-15'/i);
+  assert.match(client, /const canEnter = credOk && basicsOk && questionsOk && consentOk/);
+  assert.doesNotMatch(client, /canEnter =[^;]*!!videoUrl/);
+  assert.match(client, /your intro video[\s\S]*· optional/);
+  assert.match(terms, /Choosing not to add a video does not affect eligibility, fit score, shortlist priority, or selection odds/);
   assert.match(source, /preferences: \{ gender, orientation, seekingGenders, ageMin, ageMax \}/);
   assert.match(source, /Choose the orientation label that feels closest to you/);
   assert.match(source, /Choose at least one gender you would like to meet/);
@@ -178,6 +191,8 @@ test('entry requires versioned, separate consent records', () => {
   assert.match(source, /availableSlotKeys/);
   assert.match(source, /datingExperimentEntriesOpen\(event\)/);
   assert.match(uploadSource, /datingExperimentEntriesOpen\(event\)/);
+  assert.match(uploadSource, /export async function DELETE/);
+  assert.match(uploadSource, /managedStoragePath\(body\.video_url, 'raffle-videos', `\$\{user\.id\}\/\$\{RAFFLE\.key\}-`\)/);
   assert.doesNotMatch(source, /profilePatch/);
   assert.match(statusSource, /ownEntry\.terms_version === RAFFLE\.termsVersion/);
   assert.match(statusSource, /needs-preference-refresh/);

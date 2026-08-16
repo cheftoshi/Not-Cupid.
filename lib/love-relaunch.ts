@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 
 export const LOVE_RELAUNCH_CAMPAIGN = 'dating_experiment_comeback_aug_2026';
-export const LOVE_RELAUNCH_APPROVAL_VERSION = 'dating-experiment-comeback-v3-2026-08-15';
+export const LOVE_RELAUNCH_APPROVAL_VERSION = 'dating-experiment-comeback-v4-2026-08-15';
 export const LOVE_RELAUNCH_SUBJECT = 'Boston: dinner is on us — join the Dating Experiment';
 
 export type LoveRelaunchDestination = 'experiment' | 'dashboard' | 'profile';

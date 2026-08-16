@@ -6,7 +6,7 @@ export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
   title: 'Dating Experiment FAQ — NotCupid',
-  description: 'A simple guide to joining, private previews, compatibility-weighted selection, dinner, video privacy, and safety.',
+  description: 'A simple guide to joining, private previews, compatibility-weighted selection, dinner, optional video privacy, and safety.',
 };
 
 const ORANGE = '#ff6a1f';
@@ -14,7 +14,7 @@ const ORANGE_DEEP = '#d2530f';
 const BLUE = '#2563ff';
 
 const STEPS = [
-  ['1', 'Join for free', `Complete your profile, answer four quick experiment prompts, and add a private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello video.`],
+  ['1', 'Join for free', `Complete your profile and answer four quick experiment prompts. A private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello video is optional.`],
   ['2', 'Meet up to two', 'The system prioritizes broad coverage, then gives each qualified participant up to two strong reciprocal options.'],
   ['3', 'Choose privately', `You have ${RAFFLE.respondHours} hours to say yes to either, both, or neither—and optionally favorite one. Every choice stays sealed.`],
   ['4', 'Mutual wins', `Only mutual yes pairs qualify. Up to ${RAFFLE.winnerPairCount} disjoint pairs are selected, with each dinner covered up to $${RAFFLE.budget}.`],
@@ -54,8 +54,8 @@ const FAQS = [
     a: `No. Everyone has the same cap of up to ${RAFFLE.shortlistMaxOptions} options. Actual shortlist size depends on reciprocal age and gender preferences, compatibility, prior pairings, and pool supply. The coverage-first system gives people a first option before it starts giving others a second.`,
   },
   {
-    q: 'Why is a short video required?',
-    a: `A real ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello adds presence and trust that photos alone cannot. Keep it simple: your name and one thing you would enjoy doing or talking about on a Boston date. It is not a public audition.`,
+    q: 'Is a short video required?',
+    a: `No. The ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello is completely optional. It can add personality if you want it, but skipping it never changes eligibility, fit score, shortlist priority, or selection odds. If you add one, keep it simple: your name and one thing you would enjoy doing or talking about on a Boston date. It is not a public audition.`,
   },
   {
     q: 'What if I can make only one dinner time?',
@@ -71,7 +71,7 @@ const FAQS = [
   },
   {
     q: 'What do we see before deciding?',
-    a: `You privately see each shortlist option’s first name, age, photos, bio, archetype, disclosed orientation, shared interests, experiment answers, conversation prompt, fit score, and intro video. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the winning mutual pairs are selected.`,
+    a: `You privately see each shortlist option’s first name, age, photos, bio, archetype, disclosed orientation, shared interests, experiment answers, conversation prompt, fit score, and an intro video when they chose to add one. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the winning mutual pairs are selected.`,
   },
   {
     q: 'What if one person passes or does not respond?',
@@ -114,7 +114,7 @@ export default function DatingExperimentFaqPage() {
 
         {!raffleEntriesOpen() && (
           <div style={{ marginTop: '1.25rem', padding: '0.85rem 1rem', border: '1px solid rgba(255,106,31,0.35)', borderRadius: 12, background: 'rgba(255,106,31,0.08)', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--h-text)' }}>Final rehearsal:</b> public entries and video uploads are paused while we complete the iPhone/PWA walkthrough. The two dinner slots are Thursday, August 20 at 6:30 PM and 8:30 PM ET; the restaurant will be revealed privately to selected pairs.
+            <b style={{ color: 'var(--h-text)' }}>Final rehearsal:</b> public entries are paused while we complete the iPhone/PWA walkthrough. The two dinner slots are Thursday, August 20 at 6:30 PM and 8:30 PM ET; the restaurant will be revealed privately to selected pairs.
           </div>
         )}
 
