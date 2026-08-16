@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     let pageViews: any[] | null = null
     try {
-      const r = await supabaseAdmin.from('page_views').select('path, anon_id, created_at').gte('created_at', sevenDaysAgo)
+      const r = await supabaseAdmin.from('page_views').select('path, anon_id, display_mode, device_class, orientation, created_at').gte('created_at', sevenDaysAgo)
       pageViews = r.data ?? []
     } catch { pageViews = null }
 
@@ -339,6 +339,7 @@ export async function GET(req: NextRequest) {
     if (pageViews) {
       const pathCounts: Record<string, number> = {}
       const sessions = new Set<string>()
+      const pwaSessions = new Set<string>()
       const viewsByDay: Record<string, number> = {}
       for (let i = 6; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i)
@@ -347,6 +348,7 @@ export async function GET(req: NextRequest) {
       pageViews.forEach((v: any) => {
         pathCounts[v.path] = (pathCounts[v.path] || 0) + 1
         if (v.anon_id) sessions.add(v.anon_id)
+        if (v.display_mode === 'standalone' && v.anon_id) pwaSessions.add(v.anon_id)
         const day = v.created_at?.split('T')[0]
         if (day && viewsByDay[day] !== undefined) viewsByDay[day]++
       })
@@ -357,6 +359,11 @@ export async function GET(req: NextRequest) {
       traffic = {
         totalViews: pageViews.length,
         uniqueSessions: sessions.size,
+        pwaViews: pageViews.filter((view: any) => view.display_mode === 'standalone').length,
+        pwaSessions: pwaSessions.size,
+        browserViews: pageViews.filter((view: any) => view.display_mode === 'browser').length,
+        phoneViews: pageViews.filter((view: any) => view.device_class === 'phone').length,
+        landscapePhoneViews: pageViews.filter((view: any) => view.device_class === 'phone' && view.orientation === 'landscape').length,
         topPaths,
         viewsByDay,
         reactivation: {

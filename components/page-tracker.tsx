@@ -28,6 +28,30 @@ function safeReferrer(): string | null {
   }
 }
 
+// Coarse rendering context only: enough to separate installed PWA behavior
+// from browser traffic without retaining a user agent, device model, or raw
+// dimensions. `navigator.standalone` is the iOS Home Screen signal.
+function clientContext() {
+  try {
+    const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const displayMode = iosStandalone || window.matchMedia('(display-mode: standalone)').matches
+      ? 'standalone'
+      : window.matchMedia('(display-mode: minimal-ui)').matches
+        ? 'minimal-ui'
+        : window.matchMedia('(display-mode: fullscreen)').matches
+          ? 'fullscreen'
+          : 'browser';
+    const width = window.innerWidth;
+    return {
+      displayMode,
+      deviceClass: width < 600 ? 'phone' : width < 1024 ? 'tablet' : 'desktop',
+      orientation: window.matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait',
+    };
+  } catch {
+    return { displayMode: 'unknown', deviceClass: 'unknown', orientation: 'unknown' };
+  }
+}
+
 export default function PageTracker() {
   const pathname = usePathname();
   useEffect(() => {
@@ -37,6 +61,7 @@ export default function PageTracker() {
       path: pathname,
       ref: safeReferrer(),
       anonId: anonId(),
+      ...clientContext(),
     });
     try {
       if (navigator.sendBeacon) {

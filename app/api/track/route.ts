@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const limit = await rateLimit({ key: `track:${getClientIp(req)}`, windowSec: 60, maxAttempts: 240, blockSec: 60 });
     if (!limit.ok) return NextResponse.json({ ok: false }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
-    const { path, ref, anonId } = await req.json().catch(() => ({}));
+    const { path, ref, anonId, displayMode, deviceClass, orientation } = await req.json().catch(() => ({}));
     if (!path || typeof path !== 'string' || !path.startsWith('/')) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
@@ -32,10 +32,16 @@ export async function POST(req: NextRequest) {
     if (clean.startsWith('/admin') || clean.startsWith('/api')) {
       return NextResponse.json({ ok: true, skipped: true });
     }
+    const safeDisplayMode = ['standalone', 'minimal-ui', 'fullscreen', 'browser', 'unknown'].includes(displayMode) ? displayMode : 'unknown';
+    const safeDeviceClass = ['phone', 'tablet', 'desktop', 'unknown'].includes(deviceClass) ? deviceClass : 'unknown';
+    const safeOrientation = ['portrait', 'landscape', 'unknown'].includes(orientation) ? orientation : 'unknown';
     await supabaseAdmin.from('page_views').insert({
       path: clean,
       anon_id: typeof anonId === 'string' ? anonId.slice(0, 64) : null,
       referrer: safeReferrer(ref),
+      display_mode: safeDisplayMode,
+      device_class: safeDeviceClass,
+      orientation: safeOrientation,
     });
     return NextResponse.json({ ok: true });
   } catch {

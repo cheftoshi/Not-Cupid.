@@ -24,6 +24,21 @@ test('PWA metadata and install assets cover iOS and standalone installs', () => 
   ]) assert.equal(existsSync(new URL(path, import.meta.url)), true, `${path} should exist`);
 });
 
+test('traffic tracking separates installed PWA use with privacy-minimal context', () => {
+  const tracker = source('components/page-tracker.tsx');
+  const endpoint = source('app/api/track/route.ts');
+  const migration = source('supabase/migrations/20260816150000_pwa_traffic_context.sql');
+  const stats = source('app/api/admin-stats/route.ts');
+  assert.match(tracker, /navigator as Navigator & \{ standalone\?: boolean \}/);
+  assert.match(tracker, /display-mode: standalone/);
+  assert.match(tracker, /deviceClass: width < 600 \? 'phone'/);
+  assert.match(endpoint, /safeDisplayMode/);
+  assert.match(endpoint, /display_mode: safeDisplayMode/);
+  assert.match(migration, /No model, OS, raw screen/);
+  assert.match(migration, /display_mode text/);
+  assert.match(stats, /pwaSessions/);
+});
+
 test('service worker keeps pages and APIs network-first while supporting install and push', () => {
   const register = source('components/sw-register.tsx');
   const worker = source('public/sw.js');

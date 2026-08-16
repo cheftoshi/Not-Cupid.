@@ -476,6 +476,11 @@ export default function AdminClient() {
                 <div className={s.chips}>
                   <span className={s.chip}>Pageviews <b>{data.traffic.totalViews}</b></span>
                   <span className={s.chip}>Unique sessions <b>{data.traffic.uniqueSessions}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>Installed PWA views <b>{data.traffic.pwaViews}</b></span>
+                  <span className={s.chip}>PWA sessions <b>{data.traffic.pwaSessions}</b></span>
+                  <span className={s.chip}>Browser views <b>{data.traffic.browserViews}</b></span>
+                  <span className={s.chip}>Phone views <b>{data.traffic.phoneViews}</b></span>
+                  <span className={s.chip}>Phone landscape <b>{data.traffic.landscapePhoneViews}</b></span>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', height: 60, margin: '0.75rem 0 1.25rem' }}>
                   {Object.entries(data.traffic.viewsByDay).map(([day, count]: any) => {
