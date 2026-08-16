@@ -61,7 +61,8 @@ export async function GET() {
   const rehearsal = datingExperimentAdminRehearsalOpen(event, user);
   const entriesOpen = datingExperimentEntriesOpen(event) || rehearsal;
   const eligible = user.is_test !== true && raffleEligible(user, eventLocation);
-  const hasProfile = experimentProfileReadiness(user).complete;
+  const profileReadiness = experimentProfileReadiness(user);
+  const hasProfile = profileReadiness.complete;
   let entered = false, entry: any = null, draw: any = null, other: any = null;
   let shortlist: any[] = [], shortlistRound: any = null;
 
@@ -168,6 +169,9 @@ export async function GET() {
       })) ?? RAFFLE.dateOptions,
       spotsLeft, closed: !entriesOpen || spotsLeft === 0,
     },
-    eligible, hasProfile, entered, entry, shortlist, shortlistRound, draw, other,
+    eligible,
+    hasProfile,
+    profileMissing: profileReadiness.missing.map((item) => item.label),
+    entered, entry, shortlist, shortlistRound, draw, other,
   });
 }

@@ -34,6 +34,15 @@ const GREEN = '#2d7a4f';
 const GENDERS = [['m', 'a man'], ['f', 'a woman'], ['nb', 'non-binary / another identity']];
 const SEEKING_GENDERS = [['f', 'women'], ['m', 'men'], ['nb', 'non-binary / another identity']];
 
+function trackExperimentFunnel(event: string, metadata?: Record<string, unknown>) {
+  return fetch('/api/campaign/dating-experiment-funnel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event, metadata }),
+    keepalive: true,
+  }).catch(() => null);
+}
+
 // The public Dating Experiment flow. Legacy route/API names stay internal.
 export default function RaffleClient({ firstName, eligible, profile, event }: {
   firstName: string; eligible: boolean; profile: Profile; event: Event;
@@ -70,12 +79,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
   useEffect(() => {
     fetch('/api/raffle/status').then((r) => (r.ok ? r.json() : null)).then((d) => { setSt(d); setLoaded(true); }).catch(() => setLoaded(true));
-    fetch('/api/campaign/dating-experiment-funnel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event: 'experiment_viewed' }),
-      keepalive: true,
-    }).catch(() => {});
+    trackExperimentFunnel('experiment_viewed');
     if (typeof Notification !== 'undefined') setPushOn(Notification.permission === 'granted');
   }, []);
 
@@ -100,26 +104,41 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     const key = `notcupid-dating-experiment-rules:${ev.termsVersion}`;
     try { window.localStorage.setItem(key, 'reviewed'); } catch { /* the legal consent remains in the form */ }
     setRulesSeen(true);
+    trackExperimentFunnel('rules_continued');
   }
 
   // "Established cred" from the real profile — entry isn't one click.
   const cred = [
-    { ok: profile.photo, label: 'a profile photo', fix: '/profile' },
-    { ok: profile.quiz, label: 'the personality quiz', fix: '/quiz?retake=1' },
-    { ok: profile.bio, label: 'a bio (a few words about you)', fix: '/profile' },
-    { ok: profile.interests >= 3, label: '3+ interests (music, food, hobbies, sports)', fix: '/profile' },
-    { ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/profile' : undefined },
+    { ok: profile.photo, label: 'a profile photo', fix: '/dating-experiment/profile?from=experiment' },
+    { ok: profile.quiz, label: 'the personality quiz', fix: '/quiz?next=experiment' },
+    { ok: profile.bio, label: 'a bio (a few words about you)', fix: '/dating-experiment/profile?from=experiment' },
+    { ok: profile.interests >= 3, label: '3+ interests (music, food, hobbies, sports)', fix: '/dating-experiment/profile?from=experiment' },
+    { ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/dating-experiment/profile?from=experiment' : undefined },
   ];
   const credOk = cred.every((c) => c.ok);
-  const basicsOk = !!gender && !!orientation && seekingGenders.length > 0
+  const preferencesOk = !!gender && !!orientation && seekingGenders.length > 0
     && Number.isInteger(ageMin) && Number.isInteger(ageMax)
-    && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99
-    && availableSlotKeys.length > 0;
+    && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
+  const scheduleOk = availableSlotKeys.length > 0;
+  const basicsOk = preferencesOk && scheduleOk;
   const questionsOk = !!intention && !!energy && !!planningStyle && conversationStarter.trim().length >= 3;
   const consentOk = attendanceConfirmed && termsAccepted && previewConsent && safetyAcknowledged;
   const canEnter = credOk && basicsOk && questionsOk && consentOk;
   const showRulesGate = ev.entriesOpen && !ev.closed && eligible && loaded && rulesReady && !rulesSeen
     && !(done || st?.entered || st?.draw || st?.shortlist?.length);
+
+  useEffect(() => {
+    if (preferencesOk) trackExperimentFunnel('preferences_completed');
+  }, [preferencesOk]);
+  useEffect(() => {
+    if (scheduleOk) trackExperimentFunnel('schedule_selected');
+  }, [scheduleOk]);
+  useEffect(() => {
+    if (questionsOk) trackExperimentFunnel('questionnaire_completed');
+  }, [questionsOk]);
+  useEffect(() => {
+    if (consentOk) trackExperimentFunnel('consent_completed');
+  }, [consentOk]);
 
   function toggleSeekingGender(value: string) {
     setSeekingGenders((current) => current.includes(value)
@@ -176,6 +195,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   async function enter() {
     if (!canEnter) { setErr('finish your cred + match basics first.'); return; }
     setBusy(true); setErr('');
+    trackExperimentFunnel('entry_submit_attempted');
     try {
       if (notify) await subscribeToPush().catch(() => {});
       const r = await fetch('/api/raffle/enter', {
@@ -201,10 +221,19 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           safetyAcknowledged,
         }),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(d.error || 'could not enter'); return; }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const reason = d.error || 'could not enter';
+        setErr(reason);
+        trackExperimentFunnel('entry_submit_failed', { status: r.status, reason });
+        return;
+      }
       setDone(true);
-    } catch { setErr('could not enter — try again'); }
+    } catch {
+      const reason = 'could not enter — try again';
+      setErr(reason);
+      trackExperimentFunnel('entry_submit_failed', { status: 0, reason: 'network-or-client-error' });
+    }
     finally { setBusy(false); }
   }
 

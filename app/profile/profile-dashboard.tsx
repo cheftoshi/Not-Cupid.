@@ -6,6 +6,7 @@ import styles from './profile.module.css';
 import { ARCHETYPES, VIBE_HEADS, vibeLabel, relationshipStyleLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import { signLabel } from '@/lib/astrology';
+import RaffleCard from '@/components/raffle-card';
 
 export default function ProfileDashboard({ user, onEdit, onLogout }: {
   user: any;
@@ -82,6 +83,8 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
           <Link href="/quiz?retake=1" className={styles.dashBannerBtn}>take the quiz</Link>
         </div>
       )}
+
+      <RaffleCard />
 
       {/* QUICK STATS GRID */}
       <div className={styles.dashStats}>

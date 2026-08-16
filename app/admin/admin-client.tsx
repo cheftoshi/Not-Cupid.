@@ -360,6 +360,13 @@ export default function AdminClient() {
                       <span className={`${s.chip} ${s.chipGold}`}>Became eligible <b>{data.loveCampaign.funnel.profileEligible}</b></span>
                       <span className={s.chip}>Eligible now <b>{data.loveCampaign.funnel.profileNowEligible}</b></span>
                       <span className={s.chip}>Experiment viewed <b>{data.loveCampaign.funnel.experimentViewed}</b></span>
+                      <span className={s.chip}>Rules continued <b>{data.loveCampaign.funnel.rulesContinued}</b></span>
+                      <span className={s.chip}>Preferences done <b>{data.loveCampaign.funnel.preferencesCompleted}</b></span>
+                      <span className={s.chip}>Schedule picked <b>{data.loveCampaign.funnel.scheduleSelected}</b></span>
+                      <span className={s.chip}>Questions done <b>{data.loveCampaign.funnel.questionnaireCompleted}</b></span>
+                      <span className={s.chip}>Consent done <b>{data.loveCampaign.funnel.consentCompleted}</b></span>
+                      <span className={s.chip}>Submit attempted <b>{data.loveCampaign.funnel.entrySubmitAttempted}</b></span>
+                      <span className={`${s.chip} ${s.chipRed}`}>Submit failed <b>{data.loveCampaign.funnel.entrySubmitFailed}</b></span>
                       <span className={`${s.chip} ${s.chipGold}`}>Entries from campaign <b>{data.loveCampaign.funnel.entrySubmitted}</b></span>
                       <span className={s.chip}>All current entries <b>{data.loveCampaign.funnel.totalCurrentExperimentEntries}</b></span>
                       <span className={s.chip}>Profile click → eligible <b>{data.loveCampaign.funnel.profileClickToEligiblePct == null ? '—' : `${data.loveCampaign.funnel.profileClickToEligiblePct}%`}</b></span>

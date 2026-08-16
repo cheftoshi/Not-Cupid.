@@ -180,6 +180,13 @@ export async function GET(req: NextRequest) {
         const profileSaved = uniqueAt('profile_saved')
         const profileEligible = Math.max(uniqueAt('profile_eligible'), profileNowEligible)
         const experimentViewed = uniqueAt('experiment_viewed')
+        const rulesContinued = uniqueAt('rules_continued')
+        const preferencesCompleted = uniqueAt('preferences_completed')
+        const scheduleSelected = uniqueAt('schedule_selected')
+        const questionnaireCompleted = uniqueAt('questionnaire_completed')
+        const consentCompleted = uniqueAt('consent_completed')
+        const entrySubmitAttempted = uniqueAt('entry_submit_attempted')
+        const entrySubmitFailed = uniqueAt('entry_submit_failed')
         const entrySubmitted = uniqueAt('entry_submitted')
         const percent = (numerator: number, denominator: number) => denominator > 0
           ? Math.round((numerator / denominator) * 100)
@@ -206,6 +213,13 @@ export async function GET(req: NextRequest) {
             profileEligible,
             profileNowEligible,
             experimentViewed,
+            rulesContinued,
+            preferencesCompleted,
+            scheduleSelected,
+            questionnaireCompleted,
+            consentCompleted,
+            entrySubmitAttempted,
+            entrySubmitFailed,
             entrySubmitted,
             totalCurrentExperimentEntries: entriesResult.count ?? 0,
             profileClickToEligiblePct: percent(profileEligible, profileClickerIds.size),

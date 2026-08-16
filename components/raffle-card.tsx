@@ -14,7 +14,7 @@ export default function RaffleCard() {
 
   const ev = s.event;
   const other = s.other?.name ? s.other.name.split(' ')[0] : 'your match';
-  let border = '#ff6a1f', accent = '#ff6a1f', head = ev.tagline, sub = '', label = 'join the experiment →', fine = false;
+  let border = '#ff6a1f', accent = '#ff6a1f', head = ev.tagline, sub = '', label = 'join the experiment →', href = '/dating-experiment', fine = false;
 
   if (s.draw?.bothAccepted) {
     border = accent = '#2d7a4f'; head = `it’s a date with ${other}. ✦`; sub = `your $${ev.budget} dinner is locked · ${ev.dateLabel}`; label = 'see the details →';
@@ -35,8 +35,18 @@ export default function RaffleCard() {
     fine = false;
   } else if (ev.closed) {
     head = 'experiment entries are closed.'; sub = 'watch here for the next dinner round.'; label = '';
+  } else if (!s.hasProfile) {
+    const missing = Array.isArray(s.profileMissing) ? s.profileMissing.join(', ') : 'a few profile basics';
+    head = 'your experiment profile needs a quick finish.';
+    sub = `Add ${missing}. We’ll bring everything else you already completed.`;
+    label = 'finish my profile →';
+    href = '/dating-experiment/profile?from=hub';
   } else {
-    head = ev.tagline; sub = `up to ${ev.winnerPairCount || 2} dinner pairs · $${ev.budget} each* · ${ev.dateLabel} · ${ev.spotsLeft} of ${ev.cap} spots left.`; label = 'join the experiment →'; fine = true;
+    head = 'your profile is ready—finish your entry.';
+    sub = `Choose your preferences and available dinner time. ${ev.spotsLeft} of ${ev.cap} spots remain.`;
+    label = 'continue to the experiment →';
+    href = '/dating-experiment?from=hub-ready';
+    fine = true;
   }
 
   return (
@@ -45,7 +55,7 @@ export default function RaffleCard() {
       <h3 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.3rem' }}>{head}</h3>
       <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: 0 }}>{sub}</p>
       {label && (
-        <Link href="/dating-experiment" style={{ display: 'inline-block', marginTop: '0.9rem', background: accent, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.04em', textDecoration: 'none' }}>{label}</Link>
+        <Link href={href} style={{ display: 'inline-block', marginTop: '0.9rem', background: accent, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.04em', textDecoration: 'none' }}>{label}</Link>
       )}
       {fine && (
         <div style={{ marginTop: '0.6rem', fontSize: '0.62rem', color: 'var(--h-text-faint)', lineHeight: 1.4 }}>

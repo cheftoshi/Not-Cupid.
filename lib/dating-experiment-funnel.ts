@@ -8,6 +8,13 @@ export const DATING_EXPERIMENT_FUNNEL_EVENTS = [
   'profile_saved',
   'profile_eligible',
   'experiment_viewed',
+  'rules_continued',
+  'preferences_completed',
+  'schedule_selected',
+  'questionnaire_completed',
+  'consent_completed',
+  'entry_submit_attempted',
+  'entry_submit_failed',
   'entry_submitted',
 ] as const;
 
