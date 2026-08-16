@@ -27,6 +27,9 @@ test('PWA metadata and install assets cover iOS and standalone installs', () => 
 test('service worker keeps pages and APIs network-first while supporting install and push', () => {
   const register = source('components/sw-register.tsx');
   const worker = source('public/sw.js');
+  const subscribe = source('app/api/push/subscribe/route.ts');
+  const pushMigration = source('supabase/migrations/20260816014500_push_subscription_service_role.sql');
+  const privateMedia = source('lib/private-media.ts');
   assert.match(register, /serviceWorker\.register\('\/sw\.js'\)/);
   assert.match(worker, /event\.request\.mode === 'navigate'/);
   assert.match(worker, /fetch\(event\.request\)\.catch/);
@@ -34,6 +37,11 @@ test('service worker keeps pages and APIs network-first while supporting install
   assert.match(worker, /showNotification/);
   assert.match(worker, /notificationclick/);
   assert.doesNotMatch(worker, /url\.pathname\.startsWith\('\/api\/'\)/);
+  assert.match(subscribe, /Subscription write failed/);
+  assert.match(subscribe, /Subscription delete failed/);
+  assert.match(pushMigration, /revoke all on table public\.push_subscriptions from public, anon, authenticated/i);
+  assert.match(pushMigration, /grant select, insert, update, delete on table public\.push_subscriptions to service_role/i);
+  assert.match(privateMedia, /if \(!user\?\.intro_video_url\) return/);
 });
 
 test('mobile experiment and onboarding flows respect safe areas and camera video previews', () => {

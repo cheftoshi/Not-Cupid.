@@ -37,8 +37,7 @@ export async function POST(req: NextRequest) {
     );
 
   if (error) {
-    // Most likely the migration hasn't run yet — don't break the client.
-    console.error('push subscribe failed (run 20260611_push_subscriptions.sql?):', error.message);
+    console.error('[push] Subscription write failed:', error.message);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
@@ -52,10 +51,14 @@ export async function DELETE(req: NextRequest) {
   if (typeof body?.endpoint !== 'string' || body.endpoint.length > 2048) {
     return NextResponse.json({ error: 'endpoint required' }, { status: 400 });
   }
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('push_subscriptions')
     .delete()
     .eq('endpoint', body.endpoint)
     .eq('user_id', user.id);
+  if (error) {
+    console.error('[push] Subscription delete failed:', error.message);
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

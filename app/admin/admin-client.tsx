@@ -874,7 +874,7 @@ export default function AdminClient() {
                     <b>FAQ:</b> {links.faq}<br />
                     <b>Rules:</b> {links.officialRules}<br />
                     <b>Unsubscribe:</b> {links.unsubscribe}<br /><br />
-                    <b>Entries open:</b> {dry.entriesOpen ? 'yes' : 'no'} · <b>send approval configured:</b> {dry.approvalConfigured ? 'yes' : 'no'}
+                    <b>Entries open:</b> {dry.entriesOpen ? 'yes' : 'no'} · <b>copy approval configured:</b> {dry.approvalConfigured ? 'yes' : 'no'} · <b>final send approval configured:</b> {dry.sendApprovalConfigured ? 'yes' : 'no'}
                   </div>
                 </div>
               )

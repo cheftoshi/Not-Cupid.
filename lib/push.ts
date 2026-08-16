@@ -37,8 +37,11 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth')
       .eq('user_id', userId);
-    // Pre-migration (table missing) or query error → quiet no-op.
-    if (error || !subs || subs.length === 0) return false;
+    if (error) {
+      console.error('[push] Could not load subscriptions:', error.message);
+      return false;
+    }
+    if (!subs || subs.length === 0) return false;
 
     const body = JSON.stringify(payload);
     const delivered = await Promise.all(

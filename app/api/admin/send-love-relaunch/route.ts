@@ -187,17 +187,20 @@ export async function POST(req: NextRequest) {
   const mailingAddress = process.env.EMAIL_MAILING_ADDRESS?.trim();
   const mailingAddressReady = looksLikePublicPostalAddress(mailingAddress);
   const approvalConfigured = process.env.DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION;
+  const sendApprovalConfigured = process.env.DATING_EXPERIMENT_EMAIL_SEND_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION;
   const experiment = await getDatingExperimentEvent();
   const entriesOpen = datingExperimentEntriesOpen(experiment);
 
   // A test or production delivery is impossible until the exact draft version
-  // is approved out-of-band AND the experiment itself passes every launch gate.
-  // Dry runs remain available because they provably contact no recipient.
-  if (!dryRun && (!approvalConfigured || !entriesOpen)) {
+  // and the final recipient count receive separate out-of-band approvals, AND
+  // the experiment itself passes every launch gate. Dry runs remain available
+  // because they provably contact no recipient.
+  if (!dryRun && (!approvalConfigured || !sendApprovalConfigured || !entriesOpen)) {
     return NextResponse.json({
       error: 'Dating Experiment email is preview-only until copy and send are separately approved and entries are open.',
       approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
       approvalConfigured,
+      sendApprovalConfigured,
       entriesOpen,
       mailingAddressConfigured: !!mailingAddress,
       mailingAddressReady,
@@ -278,6 +281,7 @@ export async function POST(req: NextRequest) {
       campaign: LOVE_RELAUNCH_CAMPAIGN,
       approvalVersion: LOVE_RELAUNCH_APPROVAL_VERSION,
       approvalConfigured,
+      sendApprovalConfigured,
       entriesOpen,
       mailingAddressConfigured: !!mailingAddress,
       mailingAddressReady,

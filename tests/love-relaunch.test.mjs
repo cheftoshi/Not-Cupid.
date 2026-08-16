@@ -20,7 +20,7 @@ const { looksLikePublicPostalAddress } = await import('../lib/email-address.ts')
 test('Dating Experiment comeback links are campaign-bound and destination-bound', () => {
   const token = loveRelaunchToken(USER_ID, 'dashboard', Date.now() + 60_000);
   assert.equal(LOVE_RELAUNCH_CAMPAIGN, 'dating_experiment_comeback_aug_2026');
-  assert.equal(LOVE_RELAUNCH_APPROVAL_VERSION, 'dating-experiment-comeback-v4-2026-08-15');
+  assert.equal(LOVE_RELAUNCH_APPROVAL_VERSION, 'dating-experiment-comeback-v5-2026-08-15');
   assert.equal(LOVE_RELAUNCH_SUBJECT, 'Boston: dinner is on us — join the Dating Experiment');
   assert.equal(verifyLoveRelaunchToken(USER_ID, 'dashboard', token), true);
   assert.equal(verifyLoveRelaunchToken(USER_ID, 'profile', token), false);
@@ -44,7 +44,8 @@ test('Dating Experiment email stays preview-only until approval and launch gates
   const route = readFileSync(new URL('../app/api/admin/send-love-relaunch/route.ts', import.meta.url), 'utf8');
   const admin = readFileSync(new URL('../app/admin/admin-client.tsx', import.meta.url), 'utf8');
   assert.match(route, /DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION/);
-  assert.match(route, /!dryRun && \(!approvalConfigured \|\| !entriesOpen\)/);
+  assert.match(route, /DATING_EXPERIMENT_EMAIL_SEND_APPROVAL_VERSION === LOVE_RELAUNCH_APPROVAL_VERSION/);
+  assert.match(route, /!dryRun && \(!approvalConfigured \|\| !sendApprovalConfigured \|\| !entriesOpen\)/);
   assert.match(route, /preview-only until copy and send are separately approved/);
   assert.match(route, /looksLikePublicPostalAddress\(mailingAddress\)/);
   assert.match(route, /mailingAddressReady/);
@@ -58,6 +59,7 @@ test('Dating Experiment email stays preview-only until approval and launch gates
   assert.match(admin, /Preview ready variant \(no send\)/);
   assert.match(admin, /Preview profile variant \(no send\)/);
   assert.match(admin, /Preview live-match variant \(no send\)/);
+  assert.match(admin, /final send approval configured/);
   assert.doesNotMatch(admin, /Send next Love wave/);
   assert.doesNotMatch(admin, /Send me Love email test/);
 });
