@@ -51,6 +51,8 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   const terms = source('app/dating-experiment/terms/page.tsx');
   const login = source('app/login/login.module.css');
   const quiz = source('app/quiz/quiz.module.css');
+  const navExtras = source('components/nav-extras.tsx');
+  const changelog = source('lib/changelog.ts');
   assert.match(csp, /Permissions-Policy': 'camera=\(self\), microphone=\(self\)/);
   assert.match(csp, /media-src 'self' blob: https:\/\/\*\.supabase\.co/);
   assert.match(experiment, /URL\.createObjectURL\(file\)/);
@@ -70,4 +72,13 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(login, /safe-area-inset-bottom/);
   assert.match(quiz, /min-height:\s*100dvh/);
   assert.match(quiz, /safe-area-inset-top/);
+  assert.match(navExtras, /createPortal/);
+  assert.match(navExtras, /nxModalToolbar/);
+  assert.match(navExtras, /nxModalBody/);
+  assert.match(navExtras, /100dvh/);
+  assert.match(navExtras, /safe-area-inset-top/);
+  assert.match(navExtras, /document\.body\.style\.overflow = 'hidden'/);
+  assert.match(navExtras, /scrollTo\(\{ top: 0 \}\)/);
+  assert.match(changelog, /2026-08-16-dating-experiment/);
+  assert.match(changelog, /Boston Dating Experiment is live/);
 });

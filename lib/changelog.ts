@@ -8,12 +8,14 @@ export interface ChangelogEntry {
 
 // Bump this string whenever you add an entry. The dashboard compares it to
 // the version the user last saw (localStorage) to show a "new" indicator.
-export const CHANGELOG_VERSION = '2026-08-04-mobile';
+export const CHANGELOG_VERSION = '2026-08-16-dating-experiment';
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: 'August 2026',
     items: [
+      '🍽️ The Boston Dating Experiment is live — opt in free, meet up to 2 private compatibility options, and mutually choose who you would actually meet. Up to 2 mutual pairs get dinner on us.',
+      '🎥 Video is optional — add a private 5–15 second hello if you want to show more personality. Skipping it never affects eligibility or compatibility.',
       '💘 More room to meet — keep up to 3 active Love connections while 5 curated options rotate with your activity.',
       '✈ Going somewhere? Add an upcoming trip and Friend Line will route local people, plans, clubs, and communities before you arrive.',
       '📱 Friend Line is smoother on phones — thumb-sized controls, compact navigation, safer modal scrolling, and better support for notched screens.',
