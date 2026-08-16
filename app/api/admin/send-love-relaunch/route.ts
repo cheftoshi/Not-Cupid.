@@ -13,6 +13,7 @@ import { withReturningUserWelcome } from '@/lib/returning-user';
 import { defaultEmailReplyTo, looksLikePublicPostalAddress } from '@/lib/email-address';
 import { RAFFLE, raffleEligible, raffleLaunchBlockers } from '@/lib/raffle';
 import { datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
+import { experimentProfileReadiness } from '@/lib/experiment-profile';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -34,6 +35,8 @@ type CampaignUser = {
   music: string[] | null;
   food: string[] | null;
   sports: string[] | null;
+  archetype: string | null;
+  score_honesty: number | null;
   created_at: string;
 };
 
@@ -50,12 +53,7 @@ function variantFor(user: CampaignUser, hasLiveMatch: boolean): Variant {
 }
 
 function missingProfileItems(user: CampaignUser): string[] {
-  const interests = (user.hobbies?.length ?? 0) + (user.music?.length ?? 0) + (user.food?.length ?? 0) + (user.sports?.length ?? 0);
-  const missing: string[] = [];
-  if (!user.photo_url) missing.push('a profile photo');
-  if (!user.bio?.trim()) missing.push('a short bio');
-  if (interests < 3) missing.push('at least 3 interests');
-  return missing;
+  return experimentProfileReadiness(user).missing.map((item) => item.label);
 }
 
 function campaignHtml(
@@ -117,7 +115,7 @@ function campaignHtml(
 async function loadAudience() {
   const { data: users, error } = await supabaseAdmin
     .from('users')
-    .select('id, name, email, age, zip, photo_url, bio, hobbies, music, food, sports, created_at')
+    .select('id, name, email, age, zip, photo_url, bio, hobbies, music, food, sports, archetype, score_honesty, created_at')
     .is('deleted_at', null)
     .not('email', 'is', null)
     .not('archetype', 'is', null)
@@ -149,6 +147,8 @@ function previewUser(admin: any): CampaignUser {
     music: admin.music || ['live music'],
     food: admin.food || ['dinner'],
     sports: admin.sports || null,
+    archetype: admin.archetype || 'grounded-optimist',
+    score_honesty: typeof admin.score_honesty === 'number' ? admin.score_honesty : 70,
     created_at: admin.created_at || new Date().toISOString(),
   };
 }

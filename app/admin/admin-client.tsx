@@ -346,6 +346,31 @@ export default function AdminClient() {
                 <p className={s.note} style={{ marginTop: '0.75rem' }}>
                   CTA clicks are first-party. Opens are only directional because mailbox privacy tools can preload tracking pixels.
                 </p>
+                {data.loveCampaign.funnel && (
+                  <>
+                    <div className={s.divider} />
+                    <p className={s.note} style={{ marginBottom: '0.65rem' }}>
+                      Recipient conversion funnel · unique people, first-party
+                    </p>
+                    <div className={s.chips}>
+                      <span className={s.chip}>Email clicked <b>{data.loveCampaign.funnel.emailClicked}</b></span>
+                      <span className={s.chip}>Profile CTA <b>{data.loveCampaign.funnel.profileCtaClicked}</b></span>
+                      <span className={s.chip}>Profile started <b>{data.loveCampaign.funnel.profileStarted}</b></span>
+                      <span className={s.chip}>Profile saved <b>{data.loveCampaign.funnel.profileSaved}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>Became eligible <b>{data.loveCampaign.funnel.profileEligible}</b></span>
+                      <span className={s.chip}>Eligible now <b>{data.loveCampaign.funnel.profileNowEligible}</b></span>
+                      <span className={s.chip}>Experiment viewed <b>{data.loveCampaign.funnel.experimentViewed}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>Entries from campaign <b>{data.loveCampaign.funnel.entrySubmitted}</b></span>
+                      <span className={s.chip}>All current entries <b>{data.loveCampaign.funnel.totalCurrentExperimentEntries}</b></span>
+                      <span className={s.chip}>Profile click → eligible <b>{data.loveCampaign.funnel.profileClickToEligiblePct == null ? '—' : `${data.loveCampaign.funnel.profileClickToEligiblePct}%`}</b></span>
+                      <span className={s.chip}>Eligible → entry <b>{data.loveCampaign.funnel.eligibleToEntryPct == null ? '—' : `${data.loveCampaign.funnel.eligibleToEntryPct}%`}</b></span>
+                      <span className={s.chip}>Email click → entry <b>{data.loveCampaign.funnel.clickToEntryPct == null ? '—' : `${data.loveCampaign.funnel.clickToEntryPct}%`}</b></span>
+                    </div>
+                    {!data.loveCampaign.funnel.trackingReady && (
+                      <p className={s.note} style={{ marginTop: '0.65rem' }}>Apply the campaign funnel migration to begin user-bound stage tracking.</p>
+                    )}
+                  </>
+                )}
               </>
             )}
             {data?.traffic?.reactivation && (

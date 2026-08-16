@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import ChipInput from './chip-input';
@@ -13,15 +13,17 @@ import { compressImage } from '@/lib/compress-image';
 import { confirmDialog } from '@/components/feedback';
 import { profilePromptDrafts, PROFILE_PROMPT_OPTIONS, type ProfilePrompt } from '@/lib/profile-prompts';
 import { profileReadiness } from '@/lib/profile-readiness';
+import { experimentProfileReadiness } from '@/lib/experiment-profile';
 
 type Props = {
   initialUser: any;
   relaunchMode?: boolean;
+  experimentMode?: boolean;
   onSaved?: (user: any) => void;
   onCancel?: () => void;
 };
 
-export default function ProfileForm({ initialUser, relaunchMode = false, onSaved, onCancel }: Props) {
+export default function ProfileForm({ initialUser, relaunchMode = false, experimentMode = false, onSaved, onCancel }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<any>(initialUser);
   const [saving, setSaving] = useState(false);
@@ -37,6 +39,17 @@ export default function ProfileForm({ initialUser, relaunchMode = false, onSaved
   const qualityItems = profileReadiness(user).items.map((item) => ({ label: item.label, done: item.ready }));
   const qualityPercent = Math.round((qualityItems.filter((item) => item.done).length / qualityItems.length) * 100);
   const nextQualityItem = qualityItems.find((item) => !item.done);
+  const experimentReadiness = experimentProfileReadiness(user);
+
+  useEffect(() => {
+    if (!experimentMode) return;
+    fetch('/api/campaign/dating-experiment-funnel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'profile_started' }),
+      keepalive: true,
+    }).catch(() => {});
+  }, [experimentMode]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +58,10 @@ export default function ProfileForm({ initialUser, relaunchMode = false, onSaved
     try {
       const res = await fetch('/api/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(experimentMode ? { 'X-NotCupid-Funnel': 'dating-experiment-comeback' } : {}),
+        },
         body: JSON.stringify(user),
       });
       if (!res.ok) {
@@ -54,7 +70,12 @@ export default function ProfileForm({ initialUser, relaunchMode = false, onSaved
       }
       const data = await parseResponse<any>(res);
       setUser(data.user);
-      setMessage('✓ saved');
+      const savedExperimentReadiness = experimentProfileReadiness(data.user);
+      setMessage(experimentMode
+        ? savedExperimentReadiness.complete
+          ? '✓ profile ready — opening the Dating Experiment…'
+          : `saved — still add ${savedExperimentReadiness.missing.map((item) => item.label).join(', ')}`
+        : '✓ saved');
       if (relaunchMode) {
         const payload = JSON.stringify({ path: '/reactivation/profile_saved', ref: null, anonId: '' });
         try {
@@ -231,6 +252,23 @@ export default function ProfileForm({ initialUser, relaunchMode = false, onSaved
             <em>1 · photos & video</em>
             <em>2 · story & prompts</em>
             <em>3 · match preferences</em>
+          </div>
+        </div>
+      )}
+
+      {experimentMode && (
+        <div className={styles.relaunchBanner}>
+          <div>
+            <span>Dating Experiment profile gate</span>
+            <strong>{experimentReadiness.complete ? 'Your profile is ready.' : 'Finish the basics, then go straight to entry.'}</strong>
+          </div>
+          <p>
+            The Experiment reuses your real NotCupid profile. Save a photo, completed personality quiz, short bio, at least three interests, and your age. Video, gallery photos, prompts, and paid features are optional.
+          </p>
+          <div>
+            {experimentReadiness.requirements.map((item) => (
+              <em key={item.key}>{item.ready ? '✓' : '+'} {item.label}</em>
+            ))}
           </div>
         </div>
       )}
@@ -558,7 +596,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, onSaved
       {/* SAVE BAR */}
       <div className={styles.saveBar}>
         <button type="submit" disabled={saving} className={styles.saveButton}>
-          {saving ? 'saving...' : (onSaved ? 'save & done →' : 'save changes')}
+          {saving ? 'saving...' : experimentMode ? 'save & continue to experiment →' : (onSaved ? 'save & done →' : 'save changes')}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className={styles.cancelButton} disabled={saving}>

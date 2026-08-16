@@ -37,7 +37,7 @@ test('Dating Experiment comeback links reject expiry and tampering', () => {
 test('Dating Experiment comeback destinations stay internal and explicit', () => {
   assert.equal(loveRelaunchPath('experiment'), '/dating-experiment?from=dating-experiment-comeback');
   assert.equal(loveRelaunchPath('dashboard'), '/dashboard?from=dating-experiment-comeback&welcome=love-refresh-2026-08');
-  assert.equal(loveRelaunchPath('profile'), '/profile?from=dating-experiment-comeback&welcome=love-refresh-2026-08');
+  assert.equal(loveRelaunchPath('profile'), '/profile?mode=edit&from=dating-experiment-comeback');
 });
 
 test('Dating Experiment email stays preview-only until approval and launch gates pass', () => {

@@ -5,6 +5,7 @@ import { RAFFLE, raffleEligible } from '@/lib/raffle';
 import { signPrivateVideoReference } from '@/lib/private-media';
 import { experimentOrientationLabel } from '@/lib/experiment-preferences';
 import { datingExperimentAdminRehearsalOpen, datingExperimentDateLabel, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
+import { experimentProfileReadiness } from '@/lib/experiment-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,7 @@ export async function GET() {
   const rehearsal = datingExperimentAdminRehearsalOpen(event, user);
   const entriesOpen = datingExperimentEntriesOpen(event) || rehearsal;
   const eligible = user.is_test !== true && raffleEligible(user, eventLocation);
-  const hasProfile = !!user.photo_url && !!user.archetype;
+  const hasProfile = experimentProfileReadiness(user).complete;
   let entered = false, entry: any = null, draw: any = null, other: any = null;
   let shortlist: any[] = [], shortlistRound: any = null;
 

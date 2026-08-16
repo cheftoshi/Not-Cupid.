@@ -70,6 +70,12 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
   useEffect(() => {
     fetch('/api/raffle/status').then((r) => (r.ok ? r.json() : null)).then((d) => { setSt(d); setLoaded(true); }).catch(() => setLoaded(true));
+    fetch('/api/campaign/dating-experiment-funnel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'experiment_viewed' }),
+      keepalive: true,
+    }).catch(() => {});
     if (typeof Notification !== 'undefined') setPushOn(Notification.permission === 'granted');
   }, []);
 

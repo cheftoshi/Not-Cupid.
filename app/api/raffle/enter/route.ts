@@ -10,6 +10,8 @@ import {
   normalizeExperimentGenders,
   normalizeExperimentOrientation,
 } from '@/lib/experiment-preferences';
+import { experimentProfileReadiness } from '@/lib/experiment-profile';
+import { recordDatingExperimentFunnelEvent } from '@/lib/dating-experiment-funnel';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,15 +66,10 @@ export async function POST(req: NextRequest) {
   // mutate the user's general Love Line preferences.
 
   // "Established cred" gate — pull identity signals from the existing profile.
-  const interests = (user.hobbies?.length || 0) + (user.music?.length || 0) + (user.food?.length || 0) + (user.sports?.length || 0);
-  const missing: string[] = [];
-  if (!user.photo_url) missing.push('a profile photo');
-  if (!user.archetype || typeof user.score_honesty !== 'number') missing.push('the personality quiz');
-  if (!(user.bio || '').trim()) missing.push('a bio');
-  if (interests < 3) missing.push('3+ interests');
-  if (user.age == null) missing.push('your age');
-  if (missing.length) return NextResponse.json({ error: `Finish your profile first — still need: ${missing.join(', ')}.` }, { status: 400 });
-  if (user.age < 21) return NextResponse.json({ error: 'This dinner is 21 and over — you’re not eligible for this round.' }, { status: 400 });
+  const profileReadiness = experimentProfileReadiness(user);
+  if (!profileReadiness.complete) {
+    return NextResponse.json({ error: `Finish your profile first — still need: ${profileReadiness.missing.map((item) => item.label).join(', ')}.` }, { status: 400 });
+  }
   if (video_url && !isManagedStorageUrl(video_url, 'raffle-videos', `${user.id}/${RAFFLE.key}-`)) {
     return NextResponse.json({ error: 'Upload your intro video through NotCupid before entering.' }, { status: 400 });
   }
@@ -128,6 +125,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not enter — try again.' }, { status: 500 });
   }
   const reservation = Array.isArray(reservationRows) ? reservationRows[0] : reservationRows;
+  await recordDatingExperimentFunnelEvent(user.id, 'entry_submitted', {
+    eventKey: RAFFLE.key,
+    wasNew: !!reservation?.was_new,
+  });
 
   // Publicity/marketing permission remains outside this RPC and requires a
   // future, separate consent flow. Entry never infers or accepts it.

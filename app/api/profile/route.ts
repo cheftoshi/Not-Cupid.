@@ -6,6 +6,8 @@ import { isManagedStorageUrl } from '@/lib/request-security';
 import { withPrivateVideoPreview } from '@/lib/private-media';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 import { normalizeProfileText } from '@/lib/profile-text';
+import { experimentProfileReadiness } from '@/lib/experiment-profile';
+import { recordDatingExperimentFunnelEvent } from '@/lib/dating-experiment-funnel';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -18,6 +20,7 @@ export async function PUT(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
+  const experimentFunnel = req.headers.get('x-notcupid-funnel') === 'dating-experiment-comeback';
 
   const allowed = [
     'name', 'age', 'gender', 'seeking', 'zip',
@@ -185,6 +188,17 @@ export async function PUT(req: NextRequest) {
   if (error) {
     console.error('Profile update failed:', error);
     return NextResponse.json({ error: 'Profile update failed' }, { status: 500 });
+  }
+
+  if (experimentFunnel) {
+    const readiness = experimentProfileReadiness(data);
+    await recordDatingExperimentFunnelEvent(user.id, 'profile_saved', {
+      eligible: readiness.complete,
+      missing: readiness.missing.map((item) => item.key),
+    });
+    if (readiness.complete) {
+      await recordDatingExperimentFunnelEvent(user.id, 'profile_eligible');
+    }
   }
 
   return NextResponse.json({ user: await withPrivateVideoPreview(data) });

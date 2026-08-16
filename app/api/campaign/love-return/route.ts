@@ -5,6 +5,7 @@ import {
   loveRelaunchPath,
   verifyLoveRelaunchToken,
 } from '@/lib/love-relaunch';
+import { recordDatingExperimentFunnelEvent } from '@/lib/dating-experiment-funnel';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
       })
       .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN)
       .eq('user_id', userId);
+    await recordDatingExperimentFunnelEvent(userId, 'email_clicked');
   }
 
   return NextResponse.redirect(new URL(loveRelaunchPath(destination), url.origin));

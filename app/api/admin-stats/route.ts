@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch'
+import { experimentProfileReadiness } from '@/lib/experiment-profile'
+import { RAFFLE } from '@/lib/raffle'
 
 export const dynamic = 'force-dynamic'
 
@@ -140,7 +142,7 @@ export async function GET(req: NextRequest) {
     try {
       const result = await supabaseAdmin
         .from('email_campaign_deliveries')
-        .select('variant, status, sent_at, delivered_at, opened_at, clicked_at, bounced_at, complained_at')
+        .select('user_id, variant, status, sent_at, delivered_at, opened_at, clicked_at, bounced_at, complained_at')
         .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN)
       if (!result.error) {
         const rows = result.data ?? []
@@ -152,6 +154,36 @@ export async function GET(req: NextRequest) {
           counts[row.variant || 'unknown'] = (counts[row.variant || 'unknown'] || 0) + 1
           return counts
         }, {})
+        const profileClickerIds = new Set(rows
+          .filter((row: any) => row.variant === 'profile' && row.clicked_at)
+          .map((row: any) => row.user_id))
+        const profileNowEligible = (users ?? []).filter((user: any) =>
+          profileClickerIds.has(user.id) && experimentProfileReadiness(user).complete
+        ).length
+        const [funnelResult, entriesResult] = await Promise.all([
+          supabaseAdmin
+            .from('campaign_funnel_events')
+            .select('user_id, event')
+            .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN),
+          supabaseAdmin
+            .from('raffle_entries')
+            .select('user_id', { count: 'exact', head: true })
+            .eq('event_key', RAFFLE.key)
+            .eq('terms_version', RAFFLE.termsVersion)
+            .neq('status', 'withdrawn'),
+        ])
+        const funnelRows = funnelResult.data ?? []
+        const uniqueAt = (event: string) => new Set(
+          funnelRows.filter((row: any) => row.event === event).map((row: any) => row.user_id)
+        ).size
+        const profileStarted = uniqueAt('profile_started')
+        const profileSaved = uniqueAt('profile_saved')
+        const profileEligible = Math.max(uniqueAt('profile_eligible'), profileNowEligible)
+        const experimentViewed = uniqueAt('experiment_viewed')
+        const entrySubmitted = uniqueAt('entry_submitted')
+        const percent = (numerator: number, denominator: number) => denominator > 0
+          ? Math.round((numerator / denominator) * 100)
+          : null
         loveCampaign = {
           key: LOVE_RELAUNCH_CAMPAIGN,
           queued: rows.filter((row: any) => row.status === 'queued').length,
@@ -165,6 +197,21 @@ export async function GET(req: NextRequest) {
           deliveryRatePct: sent > 0 ? Math.round((delivered / sent) * 100) : null,
           clickRatePct: delivered > 0 ? Math.round((clicked / delivered) * 100) : null,
           variants,
+          funnel: {
+            trackingReady: !funnelResult.error,
+            emailClicked: clicked,
+            profileCtaClicked: profileClickerIds.size,
+            profileStarted,
+            profileSaved,
+            profileEligible,
+            profileNowEligible,
+            experimentViewed,
+            entrySubmitted,
+            totalCurrentExperimentEntries: entriesResult.count ?? 0,
+            profileClickToEligiblePct: percent(profileEligible, profileClickerIds.size),
+            eligibleToEntryPct: percent(entrySubmitted, profileEligible),
+            clickToEntryPct: percent(entrySubmitted, clicked),
+          },
         }
       }
     } catch { loveCampaign = null }

@@ -32,8 +32,9 @@ export default async function ProfilePage({
         </nav>
         <ProfileShell
           initialUser={user}
-          startEditing={params.mode === 'edit'}
+          startEditing={params.mode === 'edit' || params.from === 'dating-experiment-comeback'}
           relaunchMode={params.from === 'welcome-back'}
+          experimentMode={params.from === 'dating-experiment-comeback'}
         />
       </div>
     </div>

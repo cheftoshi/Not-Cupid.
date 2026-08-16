@@ -11,7 +11,7 @@ export type LoveRelaunchDestination = 'experiment' | 'dashboard' | 'profile';
 const DESTINATIONS: Record<LoveRelaunchDestination, string> = {
   experiment: '/dating-experiment?from=dating-experiment-comeback',
   dashboard: '/dashboard?from=dating-experiment-comeback&welcome=love-refresh-2026-08',
-  profile: '/profile?from=dating-experiment-comeback&welcome=love-refresh-2026-08',
+  profile: '/profile?mode=edit&from=dating-experiment-comeback',
 };
 
 function secret(): string {
