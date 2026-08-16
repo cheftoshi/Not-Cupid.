@@ -368,6 +368,22 @@ test('public entry is open only while every launch prerequisite remains approved
   assert.doesNotMatch(drawSource, /!datingExperimentCanShortlist\(event\) && !force/);
 });
 
+test('the public promotion funnel preserves Dating Experiment intent through login and signup', () => {
+  const pageSource = readFileSync(new URL('../app/dating-experiment/page.tsx', import.meta.url), 'utf8');
+  const loginSource = readFileSync(new URL('../app/login/page.tsx', import.meta.url), 'utf8');
+  const quizSource = readFileSync(new URL('../app/quiz/page.tsx', import.meta.url), 'utf8');
+  assert.match(pageSource, /PublicExperimentLanding/);
+  assert.match(pageSource, /if \(!user\) return <PublicExperimentLanding/);
+  assert.doesNotMatch(pageSource, /if \(!user\) redirect/);
+  assert.match(pageSource, /\/login\?next=\/dating-experiment/);
+  assert.match(pageSource, /\/quiz\?next=experiment/);
+  assert.match(loginSource, /experimentNext = nextPath === '\/dating-experiment'/);
+  assert.match(loginSource, /router\.push\('\/quiz\?next=experiment'\)/);
+  assert.match(quizSource, /requestedNext === 'experiment'/);
+  assert.match(quizSource, /nextIntent === 'experiment' \? '\/quiz\?line=love&next=experiment'/);
+  assert.match(quizSource, /nextIntent === 'experiment' \? '\/dating-experiment'/);
+});
+
 test('V13 records the 400-person public launch without counting stale terms', () => {
   const migration = readFileSync(new URL('../supabase/migrations/20260816013000_dating_experiment_public_launch_v13.sql', import.meta.url), 'utf8');
   const statusSource = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');

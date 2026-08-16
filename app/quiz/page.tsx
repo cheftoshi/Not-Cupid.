@@ -113,8 +113,9 @@ export default function QuizPage() {
 function QuizInner() {
   const searchParams = useSearchParams()
   const isRetake = searchParams.get('retake') === '1'
-  const nextIntent = searchParams.get('next') === 'friends' ? 'friends' : null
-  const afterCorePath = nextIntent === 'friends' ? '/friends/quiz' : '/hub'
+  const requestedNext = searchParams.get('next')
+  const nextIntent = requestedNext === 'friends' ? 'friends' : requestedNext === 'experiment' ? 'experiment' : null
+  const afterCorePath = nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/hub'
   // Love-line deep quiz: /quiz?line=love (logged-in users, after the core quiz).
   const isLoveDeep = searchParams.get('line') === 'love'
   // Invite attribution: /quiz?ref=<code> (from a /join/<code> link). Kept in
@@ -142,6 +143,7 @@ function QuizInner() {
   // browser-only storage during hydration.
   const [intent, setIntentState] = useState<'' | 'love' | 'friends' | 'both'>(() => {
     if (nextIntent === 'friends' && !isLoveDeep) return 'friends'
+    if (nextIntent === 'experiment') return 'love'
     return ''
   })
   const setIntent = (v: '' | 'love' | 'friends' | 'both') => {
@@ -463,7 +465,8 @@ function QuizInner() {
         // intent they picked at signup: straight into the right deep quiz, no
         // hub fork mid-flow.
         setPostQuizPath(
-          intent === 'friends' ? '/friends/quiz'
+          nextIntent === 'experiment' ? '/quiz?line=love&next=experiment'
+          : intent === 'friends' ? '/friends/quiz'
           : intent === 'both' ? '/quiz?line=love&next=friends'
           : intent === 'love' ? '/quiz?line=love'
           : afterCorePath
@@ -476,7 +479,7 @@ function QuizInner() {
       setOtpError('')
       setScreen('save-error')
     }
-  }, [form, isRetake, afterCorePath, intent])
+  }, [form, isRetake, afterCorePath, intent, nextIntent])
 
   // LOVE-DEEP submit — partner prefs + attachment + values. Enriches the love
   // profile (best-effort) and lands on the love dashboard.
@@ -1272,8 +1275,8 @@ function QuizInner() {
                 <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem', animation: 'fadeUp 0.45s ease 0.36s both' }}>
                   How you connect and what you value now shape your roster. You can tune these preferences anytime.
                 </p>
-                <button className="btn-primary" onClick={() => { window.location.href = nextIntent === 'friends' ? '/friends/quiz' : '/dashboard' }} style={{ width: '100%', justifyContent: 'center', animation: 'fadeUp 0.45s ease 0.5s both' }}>
-                  {nextIntent === 'friends' ? 'continue → Friend setup' : 'see your Love Line →'}
+                <button className="btn-primary" onClick={() => { window.location.href = nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/dashboard' }} style={{ width: '100%', justifyContent: 'center', animation: 'fadeUp 0.45s ease 0.5s both' }}>
+                  {nextIntent === 'friends' ? 'continue → Friend setup' : nextIntent === 'experiment' ? 'join the Dating Experiment →' : 'see your Love Line →'}
                 </button>
               </>
             )}

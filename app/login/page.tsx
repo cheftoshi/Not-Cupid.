@@ -28,6 +28,7 @@ function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = safeNextPath(searchParams.get('next'));
+  const experimentNext = nextPath === '/dating-experiment';
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -85,6 +86,8 @@ function LoginInner() {
         // Prefer ?next= if the user came from a gated page (e.g. /admin) and has an account
         if (nextPath && !data.needsQuiz) {
           router.push(welcomePath(nextPath));
+        } else if (data.needsQuiz && experimentNext) {
+          router.push('/quiz?next=experiment');
         } else if (data.needsQuiz && nextPath?.startsWith('/friends')) {
           router.push('/quiz?next=friends');
         } else {
@@ -95,7 +98,7 @@ function LoginInner() {
 
       // Legacy path: old verify-otp returned 404 + needsQuiz
       if (data.needsQuiz) {
-        router.push(nextPath?.startsWith('/friends') ? '/quiz?next=friends' : '/quiz');
+        router.push(experimentNext ? '/quiz?next=experiment' : nextPath?.startsWith('/friends') ? '/quiz?next=friends' : '/quiz');
         return;
       }
 
@@ -120,10 +123,12 @@ function LoginInner() {
         <Wordmark size={1.2} href="/" />
 
         <h1 className={styles.title}>
-          welcome <span className={styles.titleAccent}>back.</span>
+          {experimentNext ? <>join the <span className={styles.titleAccent}>experiment.</span></> : <>welcome <span className={styles.titleAccent}>back.</span></>}
         </h1>
         <p className={styles.subtitle}>
-          {step === 'email' ? "enter your email — we'll send a code →" : 'check your email for the code →'}
+          {step === 'email'
+            ? experimentNext ? "enter your email — we'll bring you straight back here →" : "enter your email — we'll send a code →"
+            : 'check your email for the code →'}
         </p>
 
         {step === 'email' ? (
@@ -192,7 +197,7 @@ function LoginInner() {
           <span>or</span>
         </div>
 
-        <Link href="/" className={styles.signupLink}>
+        <Link href={experimentNext ? '/quiz?next=experiment' : '/quiz'} className={styles.signupLink}>
           new here? take the quiz to sign up →
         </Link>
       </div>
