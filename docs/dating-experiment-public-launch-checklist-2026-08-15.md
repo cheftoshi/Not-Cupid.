@@ -76,5 +76,5 @@ Private internal publisher record: NotCupid is paying Only in Boston $200 to dis
 - Public-launch migration: `20260816013000_dating_experiment_public_launch_v13.sql` applied; linked ledger and database lint verified August 15, 2026. It raises the shared entry cap to 400, makes capacity counts current-terms-only, and records the completed iPhone/PWA walkthrough approval.
 - Only in Boston relationship/disclosure: Private internal record—paid promotional publisher; $200 fee; paid post uses a clear `Ad`/`#ad` disclosure; no public FAQ/rules mention and no partnership, Sponsor, administrator, data, matching, or selection role
 - Operator approval timestamp: August 15, 2026 at 7:50:37 PM ET
-- Production deployment ID:
-- Production opening verification:
+- Production deployment ID: `dpl_ZqaBNkPCkDpgez6psKs3uTDJyfiH` (Ready; aliased to `https://notcupid.com`)
+- Production opening verification: August 15, 2026 — live FAQ and Official Rules show entries open, the 400-person v13 cap, and no rehearsal copy; unauthenticated status, entry, and upload endpoints return `401`; linked database reports `entry_open`, 400 spots, two confirmed dinner slots, all sign-offs true, current-terms capacity accounting, and zero test entries.
