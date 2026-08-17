@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { normalizeFriendActivity } from '@/lib/friend-taxonomy';
 import { friendLocationContext } from '@/lib/friend-location';
+import { ensureFriendChatRead } from '@/lib/friend-chat-read';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,25 @@ export async function GET() {
     : { data: [] as any[] };
   const cName = new Map((creators ?? []).map((u: any) => [u.id, u.name]));
 
+  const readableIds = (clubs ?? []).filter((club: any) =>
+    club.creator_id === user.id || (mems ?? []).some((member: any) => member.club_id === club.id && member.user_id === user.id && member.status === 'member')
+  ).map((club: any) => club.id);
+  const { data: readRows } = readableIds.length
+    ? await supabaseAdmin.from('friend_chat_reads').select('thread_id, read_at').eq('user_id', user.id).eq('thread_kind', 'club').in('thread_id', readableIds)
+    : { data: [] as any[] };
+  const readByClub = new Map((readRows ?? []).map((row: any) => [row.thread_id, row.read_at]));
+  const missingReadIds = readableIds.filter((id: string) => !readByClub.has(id));
+  if (missingReadIds.length) await Promise.all(missingReadIds.map((id: string) => ensureFriendChatRead(user.id, 'club', id)));
+  const earliestRead = (readRows ?? []).map((row: any) => row.read_at).sort()[0];
+  const { data: unreadMessages } = readableIds.length && earliestRead
+    ? await supabaseAdmin.from('friend_club_messages').select('club_id, sender_id, created_at').in('club_id', readableIds).neq('sender_id', user.id).gt('created_at', earliestRead).limit(5000)
+    : { data: [] as any[] };
+  const unreadByClub = new Map<string, number>();
+  for (const message of unreadMessages ?? []) {
+    const readAt = readByClub.get(message.club_id);
+    if (readAt && new Date(message.created_at) > new Date(readAt)) unreadByClub.set(message.club_id, (unreadByClub.get(message.club_id) || 0) + 1);
+  }
+
   const out = (clubs ?? []).map((c) => {
     const cm = (mems ?? []).filter((m: any) => m.club_id === c.id);
     const mine = cm.find((m: any) => m.user_id === user.id);
@@ -44,6 +64,7 @@ export async function GET() {
       memberCount: cm.filter((m: any) => m.status === 'member').length,
       myStatus: isOwner ? 'owner' : (mine ? mine.status : null),
       pendingCount: isOwner ? cm.filter((m: any) => m.status === 'pending').length : 0,
+      unreadCount: unreadByClub.get(c.id) || 0,
       created_at: c.created_at,
     };
   });
@@ -77,5 +98,6 @@ export async function POST(req: NextRequest) {
   await supabaseAdmin.from('friend_club_members').upsert(
     { club_id: club.id, user_id: user.id, status: 'member' }, { onConflict: 'club_id,user_id' }
   );
+  await ensureFriendChatRead(user.id, 'club', club.id);
   return NextResponse.json({ ok: true, id: club.id });
 }

@@ -843,7 +843,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [confirmDrop, setConfirmDrop] = useState(false);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
-  const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [] });
+  const [chat, setChat] = useState<any>({ circleId: null, members: [], messages: [], unread: 0 });
   const [pulse, setPulse] = useState<any>(null);
   const [acts, setActs] = useState<any[]>([]);
   const [actsLoaded, setActsLoaded] = useState(false); // first Scene fetch landed → skeletons out
@@ -899,6 +899,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     const url = new URL(window.location.href);
     if (next === 'home') url.searchParams.delete('view');
     else url.searchParams.set('view', next);
+    if (next !== 'pulse') url.searchParams.delete('club');
+    if (next !== 'crew') url.searchParams.delete('chat');
     if (opts.replace) window.history.replaceState({ ncFriendView: next }, '', url.toString());
     else window.history.pushState({ ncFriendView: next }, '', url.toString());
   }
@@ -922,8 +924,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); setCooledUntil(d.friendCooled ? (d.cooledUntil || '') : null); }
     setRosterLoaded(true);
   }, []);
-  const loadChat = useCallback(async () => {
-    const r = await fetch('/api/friend/messages'); if (r.ok) setChat(await r.json());
+  const loadChat = useCallback(async (markRead = false) => {
+    const r = await fetch(`/api/friend/messages${markRead ? '?read=1' : ''}`); if (r.ok) setChat(await r.json());
   }, []);
   const loadPulse = useCallback(async () => {
     const r = await fetch('/api/friend/city-pulse'); if (r.ok) setPulse(await r.json());
@@ -963,7 +965,23 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   async function clubAct(id: string, action: string, userId?: string) {
     try { await fetch(`/api/friend/clubs/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, userId }) }); } catch { /* ignore */ }
   }
-  async function openClubChat(c: { id: string; name: string }) { setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); setClubError(null); await loadClubChat(c.id); setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 90); }
+  async function openClubChat(c: { id: string; name: string }, syncUrl = true) {
+    setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); setClubError(null);
+    setClubs((current) => current.map((club) => club.id === c.id ? { ...club, unreadCount: 0 } : club));
+    if (syncUrl && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', 'pulse'); url.searchParams.set('club', c.id);
+      window.history.replaceState({ ncFriendView: 'pulse' }, '', url.toString());
+    }
+    await loadClubChat(c.id);
+    setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 90);
+  }
+  function closeClubChat() {
+    setClubChat(null);
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href); url.searchParams.delete('club');
+    window.history.replaceState({ ncFriendView: view }, '', url.toString());
+  }
   async function sendClubMsg() {
     const body = clubText.trim(); if (!body || !clubChat || clubSending) return;
     const tmpId = 'tmp-' + Date.now();
@@ -1013,7 +1031,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  useEffect(() => { loadMatches(); loadChat(); loadPulse(); }, [loadMatches, loadChat, loadPulse]);
+  useEffect(() => { loadMatches(); loadPulse(); loadClubs(); }, [loadMatches, loadPulse, loadClubs]);
   useEffect(() => { loadActs(); }, [loadActs]);
   // Changing a Scene filter jumps back to the top of the feed — new results
   // shouldn't appear under your old scroll position. (Skips the mount run.)
@@ -1024,10 +1042,10 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   }, [kindFilter, sceneTime, nearMe, filterCat, filterMain, sceneSort, areaFilter]);
   // light polling for the group chat
   // only poll the group chat when it's actually on screen + the tab is visible
-  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(); }, 4000); return () => clearInterval(t); }, [loadChat, view]);
+  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(chatOpen); }, 4000); return () => clearInterval(t); }, [loadChat, view, chatOpen]);
   // Entering the crew view refetches immediately — no stale-message window
   // while waiting for the first 4s poll tick.
-  useEffect(() => { if (view === 'crew') loadChat(); }, [view, loadChat]);
+  useEffect(() => { loadChat(view === 'crew' && chatOpen); }, [view, chatOpen, loadChat]);
   // poll the Scene so new posts/events surface live (and can notify)
   useEffect(() => { const t = setInterval(loadActs, 45000); return () => clearInterval(t); }, [loadActs]);
 
@@ -1051,8 +1069,35 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // Opening the Scene clears the badge + toast.
   useEffect(() => { if (view === 'scene') { setNewScene(0); setEvToast(null); } }, [view]);
   useEffect(() => { if (view === 'pulse' || view === 'crew') loadClubs(); }, [view, loadClubs]);
+  useEffect(() => { const t = setInterval(() => { if (!document.hidden && !clubChat) loadClubs(); }, 45000); return () => clearInterval(t); }, [clubChat, loadClubs]);
   useEffect(() => { if (view === 'pulse') { loadComLinks(); loadPulse(); } }, [view, loadComLinks, loadPulse]);
   useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, 5000); return () => clearInterval(t); }, [clubChat, loadClubChat]);
+  // A push/email opens the exact club instead of dropping someone at the top
+  // of Communities. Fetch by id as a fallback for travel-mode memberships that
+  // are outside the currently browsed metro.
+  const clubParamDone = useRef(false);
+  useEffect(() => {
+    if (clubParamDone.current || typeof window === 'undefined') return;
+    const id = new URLSearchParams(window.location.search).get('club');
+    if (!id) { clubParamDone.current = true; return; }
+    const listed = clubs.find((club) => club.id === id && (club.myStatus === 'member' || club.myStatus === 'owner'));
+    if (listed) { clubParamDone.current = true; openClubChat(listed, false); return; }
+    fetch(`/api/friend/clubs/${encodeURIComponent(id)}`).then(async (response) => {
+      clubParamDone.current = true;
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (payload.club) openClubChat(payload.club, false);
+    }).catch(() => { clubParamDone.current = true; });
+  }, [clubs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const packParamDone = useRef(false);
+  useEffect(() => {
+    if (packParamDone.current || typeof window === 'undefined') return;
+    const wantsPack = new URLSearchParams(window.location.search).get('chat') === 'pack';
+    packParamDone.current = true;
+    if (!wantsPack) return;
+    setChatOpen(true); loadChat(true);
+    setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }, [loadChat]);
   // Chats render through a body portal, so the Friend page cannot clip them.
   // Lock the page beneath the sheet and follow iOS visual-viewport changes when
   // the keyboard opens without dismissing the focused input.
@@ -1063,6 +1108,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       setDmWith(null); setClubChat(null);
+      const url = new URL(window.location.href); url.searchParams.delete('club');
+      window.history.replaceState({ ncFriendView: view }, '', url.toString());
     };
     const keepLatestVisible = () => window.requestAnimationFrame(() => {
       (clubChat ? clubEndRef.current : dmEndRef.current)?.scrollIntoView({ block: 'end' });
@@ -1074,7 +1121,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       window.removeEventListener('keydown', closeOnEscape);
       window.visualViewport?.removeEventListener('resize', keepLatestVisible);
     };
-  }, [dmWith, clubChat]);
+  }, [dmWith, clubChat, view]);
   // Auto-dismiss the toast after a few seconds (the badge persists until viewed).
   useEffect(() => { if (!evToast) return; const t = setTimeout(() => setEvToast(null), 7000); return () => clearTimeout(t); }, [evToast]);
 
@@ -1381,6 +1428,10 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); toast('post deleted', 'success'); }
   }
 
+  const clubUnreadTotal = clubs.reduce((sum, club) => sum + Number(club.unreadCount || 0), 0);
+  const dmUnreadTotal = Object.values(dmUnread).reduce((sum, count) => sum + Number(count || 0), 0);
+  const crewUnreadTotal = Number(chat.unread || 0) + dmUnreadTotal;
+
   return (
     <div className={`friendDark ${s.friendPage}`} style={{ background: 'radial-gradient(95% 65% at 4% 0%, #f6d4b4 0%, transparent 46%), radial-gradient(90% 60% at 99% 5%, #f4cadd 0%, transparent 44%), radial-gradient(120% 80% at 50% 116%, #c9d9f5 0%, transparent 54%), #f0e4d0', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative' }}>
       <ConnectionBackdrop />
@@ -1615,7 +1666,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
       {/* CLUB CHAT — a member-only bottom-sheet thread for a club */}
       {clubChat && typeof document !== 'undefined' && createPortal(
-        <div onClick={() => setClubChat(null)} className={s.chatOverlay}>
+        <div onClick={closeClubChat} className={s.chatOverlay}>
           <section onClick={(e) => e.stopPropagation()} className={s.chatSheet} role="dialog" aria-modal="true" aria-label={`${clubChat.name} club chat`}>
             <header className={s.chatHeader}>
               <span style={{ fontSize: '1.4rem' }}>🤝</span>
@@ -1623,7 +1674,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 <div className={s.chatTitle}>{clubChat.name}</div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>club chat · members only</div>
               </div>
-              <button onClick={() => setClubChat(null)} aria-label="close club chat" className={s.chatClose}>✕</button>
+              <button onClick={closeClubChat} aria-label="close club chat" className={s.chatClose}>✕</button>
             </header>
             <div className={s.chatMessages}>
               {clubMsgs.length === 0 && <div className={s.chatEmpty}>say hi to the club 👋</div>}
@@ -1707,11 +1758,13 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
         <div className={s.fbTopNav}>
           {NAV.map((n) => {
             const active = view === n.key;
+            const unread = n.key === 'pulse' ? clubUnreadTotal : n.key === 'crew' ? crewUnreadTotal : 0;
             return (
               <button key={n.key} onClick={() => goView(n.key)}
                 style={{ flexShrink: 0, position: 'relative', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em', padding: '0.45rem 1.1rem', borderRadius: 999, border: `1px solid ${active ? LINE : 'var(--h-border)'}`, cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text-dim)', boxShadow: active ? '0 8px 20px -10px rgba(232,132,43,0.7)' : 'none' }}>
                 {n.icon} {n.label}
                 {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{newScene}</span>}
+                {unread > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{unread > 99 ? '99+' : unread}</span>}
               </button>
             );
           })}
@@ -1842,12 +1895,12 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       ))}
                     </div>
                   </div>
-                  <button onClick={() => { setChatOpen((v) => !v); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
+                  <button onClick={() => { const next = !chatOpen; setChatOpen(next); if (next) loadChat(true); setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80); }}
                     className={s.poppyBtn} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>💬 pack chat</span>
+                    <span>💬 pack chat{!chatOpen && Number(chat.unread || 0) > 0 ? ` · ${chat.unread} new` : ''}</span>
                     <span style={{ fontSize: '0.8rem' }}>{chatOpen ? '▲ hide' : `▾ ${crewRoster.length}`}</span>
                   </button>
-                  <div ref={chatRef} />
+                  <div ref={chatRef} id="pack-chat" />
                   {chatOpen && (
                     <div className={s.card} style={{ overflow: 'hidden', marginTop: '0.6rem', padding: 0 }}>
                       {/* header + who's-here roster — names, not just avatars */}
@@ -2018,9 +2071,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
                         {c.myStatus === 'owner' ? (<>
                           <button onClick={() => openClubManage(c)} className={s.pulseBtn}>requests{c.pendingCount ? ` (${c.pendingCount})` : ''}</button>
-                          <button onClick={() => openClubChat(c)} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat →</button>
+                          <button onClick={() => openClubChat(c)} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat{c.unreadCount ? ` · ${c.unreadCount} new` : ''} →</button>
                         </>) : c.myStatus === 'member' ? (<>
-                          <button onClick={() => openClubChat(c)} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat →</button>
+                          <button onClick={() => openClubChat(c)} className={s.poppyBtn} style={{ fontSize: '0.9rem', padding: '0.35rem 0.85rem' }}>chat{c.unreadCount ? ` · ${c.unreadCount} new` : ''} →</button>
                           <button onClick={async () => { await clubAct(c.id, 'leave'); await loadClubs(); }} className={s.pulseBtnGhost}>leave</button>
                         </>) : c.myStatus === 'pending' ? (
                           <span className={s.pulseBtnGhost} style={{ opacity: 0.7 }}>requested</span>

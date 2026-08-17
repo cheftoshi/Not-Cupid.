@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import { ensureFriendChatRead } from '@/lib/friend-chat-read';
 
 // The friend group chat = the connected component of the mutual-match graph.
 // When two people mutually match, they end up in ONE shared circle; matching
@@ -26,6 +27,7 @@ export async function joinCircle(aId: string, bId: string): Promise<string> {
     await supabaseAdmin.from('friend_circle_members').update({ circle_id: ca }).eq('circle_id', cb).is('left_at', null);
     await supabaseAdmin.from('friend_messages').update({ circle_id: ca }).eq('circle_id', cb);
     await supabaseAdmin.from('friend_connections').update({ circle_id: ca }).eq('circle_id', cb);
+    await Promise.all([ensureFriendChatRead(aId, 'circle', ca), ensureFriendChatRead(bId, 'circle', ca)]);
     return ca;
   }
 
@@ -35,6 +37,7 @@ export async function joinCircle(aId: string, bId: string): Promise<string> {
     await supabaseAdmin
       .from('friend_circle_members')
       .upsert({ circle_id: circle, user_id: missing, left_at: null }, { onConflict: 'circle_id,user_id' });
+    await ensureFriendChatRead(missing, 'circle', circle);
     return circle;
   }
 
@@ -48,6 +51,7 @@ export async function joinCircle(aId: string, bId: string): Promise<string> {
     ],
     { onConflict: 'circle_id,user_id' }
   );
+  await Promise.all([ensureFriendChatRead(aId, 'circle', cid), ensureFriendChatRead(bId, 'circle', cid)]);
   return cid;
 }
 

@@ -86,6 +86,42 @@ function SceneModerationAdmin() {
   )
 }
 
+function FriendChatEmailPreviewAdmin() {
+  const [preview, setPreview] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  async function load() {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/admin/friend-chat-notifications')
+      if (response.ok) setPreview(await response.json())
+    } finally { setLoading(false) }
+  }
+  useEffect(() => { load() }, [])
+  if (!preview) return null
+  return (
+    <div style={{ background: '#fff', border: `2px solid ${preview.enabled ? '#2d7a4f' : '#e0b05c'}`, borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
+        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.2rem' }}>💬 12-hour chat email fallback</div>
+        <span className={`${s.chip} ${preview.enabled ? s.chipGold : ''}`}>{preview.enabled ? 'active' : 'approval-gated'}</span>
+        <button onClick={load} disabled={loading} className={s.btn} style={{ marginLeft: 'auto' }}>{loading ? 'refreshing…' : 'refresh count'}</button>
+      </div>
+      <div className={s.chips} style={{ marginTop: '0.8rem' }}>
+        <span className={s.chip}>Eligible now <b>{preview.candidates}</b></span>
+        <span className={s.chip}>Club <b>{preview.clubCandidates}</b></span>
+        <span className={s.chip}>Pack <b>{preview.packCandidates}</b></span>
+        <span className={s.chip}>Delay <b>{preview.delayHours}h</b></span>
+      </div>
+      <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: '#faf7f3', borderRadius: 10, fontSize: '0.8rem', lineHeight: 1.55 }}>
+        <div><b>Subject:</b> {preview.template?.subject}</div>
+        <div><b>Headline:</b> {preview.template?.headline}</div>
+        <div><b>Body:</b> {preview.template?.body}</div>
+        <div><b>CTA:</b> {preview.template?.cta}</div>
+      </div>
+      <p className={s.note} style={{ marginTop: '0.7rem' }}>Read-only preview. There is no send button; opening a chat cancels its pending reminder.</p>
+    </div>
+  )
+}
+
 export default function AdminClient() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -300,6 +336,7 @@ export default function AdminClient() {
 
           <CommunityLinksAdmin />
           <SceneModerationAdmin />
+          <FriendChatEmailPreviewAdmin />
 
           {/* KPI row */}
           <div className={s.kpis}>

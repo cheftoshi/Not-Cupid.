@@ -5,6 +5,7 @@ import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordFriendAction } from '@/lib/friend-events';
 import { friendLocationContext } from '@/lib/friend-location';
+import { ensureFriendChatRead } from '@/lib/friend-chat-read';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const decorate = (m: any) => { const u: any = byId.get(m.user_id) || {}; return { id: m.user_id, name: u.name, photo_url: u.photo_url }; };
 
   return NextResponse.json({
+    club: { id: c.id, name: c.name },
     isOwner,
     members: visibleMems.filter((m: any) => m.status === 'member').map(decorate),
     // only the owner sees pending requests.
@@ -83,6 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (existing) return NextResponse.json({ ok: true, status: existing.status });
     const status = c.join_mode === 'open' ? 'member' : 'pending';
     await supabaseAdmin.from('friend_club_members').upsert({ club_id: id, user_id: user.id, status }, { onConflict: 'club_id,user_id', ignoreDuplicates: true });
+    if (status === 'member') await ensureFriendChatRead(user.id, 'club', id);
     await supabaseAdmin.from('friend_clubs').update({ last_active_at: new Date().toISOString() }).eq('id', id);
     await recordFriendAction({ userId: user.id, event: 'club_joined', subjectType: 'club', subjectId: id, metadata: { status } });
     if (status === 'pending') {
@@ -93,6 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (action === 'leave') {
     await supabaseAdmin.from('friend_club_members').delete().eq('club_id', id).eq('user_id', user.id);
+    await supabaseAdmin.from('friend_chat_reads').delete().eq('user_id', user.id).eq('thread_kind', 'club').eq('thread_id', id);
     return NextResponse.json({ ok: true, status: null });
   }
 
@@ -114,8 +118,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         return NextResponse.json({ error: 'That request is no longer available.' }, { status: 404 });
       }
       await supabaseAdmin.from('friend_club_members').update({ status: 'member' }).eq('club_id', id).eq('user_id', userId).eq('status', 'pending');
+      await ensureFriendChatRead(userId, 'club', id);
       await supabaseAdmin.from('friend_clubs').update({ last_active_at: new Date().toISOString() }).eq('id', id);
-      await sendPushToUser(userId, { title: `you're in ${c.name} 🎉`, body: 'open the club chat in your circle.', url: '/friends?view=crew', tag: `club-ok-${id}` }).catch(() => {});
+      await sendPushToUser(userId, { title: `you're in ${c.name} 🎉`, body: 'open the club chat in Communities.', url: `/friends?view=pulse&club=${encodeURIComponent(id)}`, tag: `club-ok-${id}` }).catch(() => {});
     } else {
       await supabaseAdmin.from('friend_club_members').delete().eq('club_id', id).eq('user_id', userId).eq('status', 'pending');
     }

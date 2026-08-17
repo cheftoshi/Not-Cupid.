@@ -13,6 +13,10 @@
       "schedule": "0 17 * * *"
     },
     {
+      "path": "/api/cron/friend-chat-unread",
+      "schedule": "5 * * * *"
+    },
+    {
       "path": "/api/cron/raffle-draw",
       "schedule": "0 * * * *"
     },

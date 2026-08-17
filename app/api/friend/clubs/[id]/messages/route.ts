@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
+import { markFriendChatRead } from '@/lib/friend-chat-read';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const ids = Array.from(new Set(rows.map((r) => r.sender_id)));
   const { data: users } = ids.length ? await supabaseAdmin.from('users').select('id, name, photo_url').in('id', ids) : { data: [] as any[] };
   const byId = new Map((users ?? []).map((u: any) => [u.id, u]));
+  await markFriendChatRead(user.id, 'club', id);
   return NextResponse.json({
     name: m.name,
     messages: rows.map((r) => { const u: any = byId.get(r.sender_id) || {}; return { id: r.id, body: r.body, created_at: r.created_at, name: u.name, photo_url: u.photo_url, isMe: r.sender_id === user.id }; }),
@@ -63,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const ids = new Set<string>([...(mems ?? []).map((x: any) => x.user_id), ...(m.creatorId ? [m.creatorId] : [])]);
   ids.delete(user.id);
   const first = ((user.name as string) || 'someone').split(' ')[0];
-  await Promise.all(Array.from(ids).map((recipientId) => sendPushToUser(recipientId, { title: `${first} · ${m.name || 'club'} 💬`, body: text.length > 80 ? text.slice(0, 80) + '…' : text, url: '/friends?view=crew', tag: `club-${id}` }).catch(() => {})));
+  await Promise.all(Array.from(ids).map((recipientId) => sendPushToUser(recipientId, { title: `${first} · ${m.name || 'club'} 💬`, body: text.length > 80 ? text.slice(0, 80) + '…' : text, url: `/friends?view=pulse&club=${encodeURIComponent(id)}`, tag: `club-${id}` }).catch(() => {})));
 
   return NextResponse.json({ ok: true, message: { id: row.id, body: row.body, created_at: row.created_at, name: user.name, photo_url: (user as any).photo_url, isMe: true } });
 }

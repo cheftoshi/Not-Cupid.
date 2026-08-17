@@ -6,20 +6,21 @@ import { hasCircleAccess, circleChatStatus } from '@/lib/friend-access';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { sameRealm } from '@/lib/realm';
+import { ensureFriendChatRead, markFriendChatRead } from '@/lib/friend-chat-read';
 
 export const dynamic = 'force-dynamic';
 
-// Push every other live member of a circle. Crew chat has no email notification,
-// so this is the ONLY ping crewmates get — the per-circle tag collapses a burst
-// of messages into one lock-screen notification.
+// Push every other live member of a circle immediately. The separate unread
+// cron may send one fallback email after 12 hours; the per-circle push tag
+// collapses a burst into one lock-screen notification.
 async function pushCrew(circleId: string, ids: string[], title: string, body: string) {
   await Promise.all(
-    ids.map((id) => sendPushToUser(id, { title, body, url: '/friends?view=crew', tag: `crew-${circleId}` }))
+    ids.map((id) => sendPushToUser(id, { title, body, url: '/friends?view=crew&chat=pack', tag: `crew-${circleId}` }))
   );
 }
 
 // GET: the caller's friend-circle group chat — members + messages.
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -65,8 +66,25 @@ export async function GET() {
     : { data: [] };
   const messages = (recentMsgs ?? []).slice().reverse();
 
+  let unread = 0;
+  if (canSee) {
+    const shouldMarkRead = req.nextUrl.searchParams.get('read') === '1';
+    const { data: cursor } = await supabaseAdmin.from('friend_chat_reads').select('read_at')
+      .eq('user_id', user.id).eq('thread_kind', 'circle').eq('thread_id', circleId).maybeSingle();
+    if (!cursor) {
+      await ensureFriendChatRead(user.id, 'circle', circleId);
+    } else if (shouldMarkRead) {
+      await markFriendChatRead(user.id, 'circle', circleId);
+    } else {
+      const { count } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
+        .eq('circle_id', circleId).neq('sender_id', user.id).gt('created_at', cursor.read_at);
+      unread = count ?? 0;
+    }
+  }
+
   return NextResponse.json({
     circleId, members: members ?? [], messages,
+    unread,
     locked: !canSee,
     iHaveAccess,
     chatLive: status.live,
