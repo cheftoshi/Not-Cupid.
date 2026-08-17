@@ -672,17 +672,18 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
     } catch { /* user closed the share sheet */ }
   }
   return (
-    <div className={s.card} style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', padding: '0.8rem 1rem 0.5rem' }}>
+    <div className={`${s.card} ${s.activityPost}`} style={{ padding: 0, overflow: 'hidden' }}>
+      <div className={s.activityPostHeader}>
         {/* author is clickable → their friend card (vet who's behind a post/event) */}
         <button onClick={() => onAuthor && !a.isMine && onAuthor(a)} title={a.isMine ? '' : `see ${a.authorName?.split(' ')[0] || 'who'}'s card`}
-          style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: onAuthor && !a.isMine ? 'pointer' : 'default', font: 'inherit', color: 'inherit' }}>
+          className={s.activityAuthor}
+          style={{ cursor: onAuthor && !a.isMine ? 'pointer' : 'default' }}>
           {a.authorPhoto
             ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
             : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}{onAuthor && !a.isMine && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', color: LINE_DEEP, marginLeft: '0.4rem', verticalAlign: 'middle' }}>view ›</span>}</div>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: isEvent ? LINE_DEEP : 'var(--h-text-dim)', marginTop: '0.2rem' }}>
+            <div className={s.activityAuthorMeta} style={{ color: isEvent ? LINE_DEEP : 'var(--h-text-dim)' }}>
               {isEvent ? '📅 organizing this' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
             </div>
           </div>
@@ -692,8 +693,8 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
           className={s.chip} style={{ flexShrink: 0, cursor: 'pointer', background: 'var(--h-surface-2)' }}>↗</button>
         {a.isMine && <button onClick={() => onDelete(a.id)} title="delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>✕</button>}
       </div>
-      <div style={{ padding: '0 1rem 0.75rem' }}>
-        <div style={{ fontSize: '1.02rem', lineHeight: 1.4 }}>{a.title}</div>
+      <div className={s.activityPostBody}>
+        <div className={s.activityTitle}>{a.title}</div>
         {isEvent && (() => {
           const st = planStatus(a);
           return (
@@ -713,7 +714,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
           </div>
         )}
         {isEvent && a.location && (
-          <div style={{ marginTop: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontFamily: "'DM Mono', monospace", fontSize: '0.64rem', letterSpacing: '0.03em', color: 'var(--h-text)' }}>
+          <div className={s.activityLocation}>
             📍 <b>{a.location}</b>{a.area ? <span style={{ color: 'var(--h-text-faint)' }}>· {a.area}</span> : null}
           </div>
         )}
@@ -730,13 +731,13 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
           </div>
         )}
         {isEvent && !a.isMine && (
-          <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.72rem', color: 'var(--h-text-dim)', lineHeight: 1.4, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.5rem 0.65rem' }}>
+          <div className={s.activitySafety}>
             <span style={{ flexShrink: 0 }}>🛡</span>
             <span>before you go — <button onClick={() => onAuthor && onAuthor(a)} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', fontStyle: 'italic', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>see who&apos;s organizing</button>, and keep the first hang somewhere public.</span>
           </div>
         )}
       </div>
-      <div style={{ borderTop: '1px solid var(--h-border)', padding: '0.45rem 0.6rem' }}>
+      <div className={s.activityPostFooter}>
         {!isEvent ? (
           <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
@@ -784,13 +785,14 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
           const full = !!cap && r.yes >= cap; // all spots taken
           return (
           <div>
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <div className={s.activityRsvpActions}>
               {RESP.map(([val, label]) => {
                 const on = a.myResponse === val;
                 const blocked = val === 'yes' && full && !on; // can't join a full plan
                 return (
                   <button key={val} onClick={() => !blocked && onRsvp(a.id, val)} disabled={blocked} title={blocked ? 'this plan is full' : ''}
-                    style={{ flex: 1, background: on ? (val === 'no' ? '#f0d2c8' : '#ffd23d') : 'transparent', border: `2px solid ${on ? INK : 'rgba(36,29,18,0.2)'}`, borderRadius: 8, padding: '0.45rem 0.3rem', cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.45 : 1, font: 'inherit', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', textTransform: 'uppercase', color: on ? INK : 'var(--h-text)', fontWeight: on ? 700 : 500 }}>
+                    className={s.activityRsvpButton}
+                    style={{ background: on ? (val === 'no' ? '#f0d2c8' : '#ffd23d') : 'transparent', border: `2px solid ${on ? INK : 'rgba(36,29,18,0.2)'}`, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.45 : 1, color: on ? INK : 'var(--h-text)', fontWeight: on ? 700 : 500 }}>
                     {blocked ? '🔒 full' : label}{val === 'yes' && r.yes ? ` · ${r.yes}` : val === 'maybe' && r.maybe ? ` · ${r.maybe}` : ''}
                   </button>
                 );
@@ -2016,9 +2018,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
         {view === 'scene' && (
         <div>
-        <div style={{ marginBottom: '1rem' }}>
+        <div className={s.sceneIntro}>
           <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2rem, 5.5vw, 2.8rem)', lineHeight: 0.95, letterSpacing: '0.01em', margin: 0 }}>The Scene</h1>
-          <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.9rem', color: 'var(--h-text-dim)', margin: '0.25rem 0 0' }}>Plans, posts and open invites from people in and around {city || 'your city'}.</p>
+          <p>Plans, posts and open invites from people in and around {city || 'your city'}.</p>
         </div>
 
         {/* unified filter bar — kind · time · near me */}
@@ -2040,14 +2042,14 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
           </div>
         </div>
         <div className={s.sceneGrid}>
-          <div className="sceneMid">
+          <div className={s.sceneMain}>
         {/* composer trigger → guided wizard */}
-        <button onClick={() => { setComposerStep(1); setComposerOpen(true); }} className={s.card} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'flex', gap: '0.7rem', alignItems: 'center' }}>
+        <button onClick={() => { setComposerStep(1); setComposerOpen(true); }} className={`${s.card} ${s.sceneComposer}`}>
           {me?.photo_url
             ? <img src={me.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
             : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
-          <span style={{ flex: 1, fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.95rem', color: 'var(--h-text-dim)' }}>what do you want to do, {firstName.toLowerCase()}?</span>
-          <span className={s.poppyBtn} style={{ fontSize: '0.95rem', padding: '0.4rem 1rem' }}>📣 start a plan →</span>
+          <span className={s.sceneComposerPrompt}>what do you want to do, {firstName.toLowerCase()}?</span>
+          <span className={`${s.poppyBtn} ${s.sceneComposerCta}`}>📣 start →</span>
         </button>
 
         {/* scroll target for filter changes — margin clears the sticky nav */}

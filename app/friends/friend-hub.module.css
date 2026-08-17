@@ -11,8 +11,9 @@
 
 /* ── LAYOUT SHELL / TOP NAV (nav floats on top; content = main feed + right rail) ── */
 .fbTopNav { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.4rem 0 0.2rem; }
-.fbShell { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.25rem; }
-.sceneFilterDock { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.85rem; }
+.fbShell { display: grid; grid-template-columns: minmax(0,1fr); gap: 1.5rem; margin-top: 1.25rem; min-width: 0; width: 100%; }
+.fbMain, .fbRail { min-width: 0; }
+.sceneFilterDock { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.85rem; min-width: 0; max-width: 100%; }
 @media (max-width: 879px) { .fbRail { order: 2; } .fbMain { order: 1; } }
 @media (min-width: 880px) {
   .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
@@ -122,7 +123,8 @@
   .fmMain { grid-column: 1; grid-row: 1; }
 }
 /* SCENE — filters/categories on the LEFT, the feed in the MIDDLE (pack + around live in the shared right rail). */
-.sceneGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+.sceneGrid { display: grid; grid-template-columns: minmax(0,1fr); gap: 1.25rem; min-width: 0; width: 100%; }
+.sceneMain { min-width: 0; width: 100%; }
 @media (min-width: 760px) {
   .sceneGrid { grid-template-columns: minmax(0,1fr); align-items: start; }
 }
@@ -154,8 +156,8 @@
 .chip { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.04em; background: var(--h-surface-2); border: 1px solid var(--h-border); border-radius: 999px; padding: 0.22rem 0.6rem; color: var(--h-text-dim); }
 /* Section headers: a small connection-node + a calmer (smaller) display size. */
 .sectionLabel { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.05em; margin: 1.7rem 0 0.8rem; display: flex; gap: 0.5rem; align-items: center; color: var(--h-text); }
-.friendPage { min-height: 100vh; min-height: 100dvh; overflow-x: clip; padding-bottom: var(--app-safe-bottom, 0px); }
-.friendPageContent { padding: 1.5rem 1.25rem calc(4rem + var(--app-safe-bottom, 0px)); }
+.friendPage { min-height: 100vh; min-height: 100dvh; overflow-x: clip; padding-bottom: var(--app-safe-bottom, 0px); width: 100%; max-width: 100vw; }
+.friendPageContent { padding: 1.5rem 1.25rem calc(4rem + var(--app-safe-bottom, 0px)); box-sizing: border-box; min-width: 0; width: 100%; }
 .poppyBtn { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.05em; color: #fff; background: #ff6a1f; border: none; border-radius: var(--r-pill); padding: 0.6rem 1.5rem; box-shadow: 0 12px 26px -14px rgba(255,106,31,0.55); cursor: pointer; transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
 .inputStyle { border: 1px solid var(--h-border); border-radius: 999px; padding: 0.5rem 0.9rem; font-family: 'DM Mono', monospace; font-size: 0.72rem; background: var(--h-surface); color: var(--h-text); outline: none; }
 .pulseBtn { background: var(--h-surface-2); border: 1px solid var(--h-border); border-radius: 999px; padding: 0.35rem 0.8rem; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.04em; color: var(--h-text-dim); font-weight: 700; }
@@ -166,6 +168,26 @@
 .sideEmpty { font-family: Georgia, serif; font-style: italic; color: var(--h-text-dim); font-size: 0.82rem; margin-top: 0.4rem; }
 /* Today page: horizontal scroll-snap rail. */
 .scrollRow { display: flex; gap: 0.85rem; overflow-x: auto; padding-bottom: 0.5rem; scroll-snap-type: x mandatory; }
+
+/* Scene: every layer in the grid can shrink to the phone viewport. */
+.sceneIntro { min-width: 0; max-width: 100%; margin-bottom: 1rem; }
+.sceneIntro p { max-width: 100%; margin: 0.25rem 0 0; color: var(--h-text-dim); font-family: Georgia, serif; font-size: 0.9rem; font-style: italic; line-height: 1.42; overflow-wrap: anywhere; }
+.sceneComposer { width: 100%; min-width: 0; box-sizing: border-box; margin-bottom: 1.1rem; padding: 0.9rem 1rem; display: flex; gap: 0.7rem; align-items: center; color: var(--h-text); text-align: left; cursor: pointer; }
+.sceneComposerPrompt { min-width: 0; flex: 1; color: var(--h-text-dim); font-family: Georgia, serif; font-size: 0.95rem; font-style: italic; line-height: 1.3; overflow-wrap: anywhere; }
+.sceneComposerCta { flex: 0 0 auto; padding: 0.4rem 1rem; font-size: 0.95rem; white-space: nowrap; }
+
+/* Scene post: compact desktop row, deliberate phone reflow below. */
+.activityPost { min-width: 0; max-width: 100%; }
+.activityPostHeader { min-width: 0; display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.8rem 1rem 0.5rem; }
+.activityAuthor { min-width: 0; flex: 1; display: flex; gap: 0.65rem; align-items: flex-start; background: none; border: none; padding: 0; color: inherit; font: inherit; text-align: left; }
+.activityAuthorMeta { min-width: 0; margin-top: 0.2rem; font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.06em; line-height: 1.4; overflow-wrap: anywhere; }
+.activityPostBody { min-width: 0; padding: 0 1rem 0.75rem; }
+.activityTitle { max-width: 100%; font-size: 1.02rem; line-height: 1.4; overflow-wrap: anywhere; }
+.activityLocation { max-width: 100%; margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.3rem; color: var(--h-text); font-family: 'DM Mono', monospace; font-size: 0.64rem; letter-spacing: 0.03em; flex-wrap: wrap; overflow-wrap: anywhere; }
+.activitySafety { min-width: 0; margin-top: 0.6rem; display: flex; align-items: flex-start; gap: 0.4rem; padding: 0.5rem 0.65rem; background: var(--h-surface-2); border: 1px solid var(--h-border); border-radius: 10px; color: var(--h-text-dim); font-family: Georgia, serif; font-size: 0.72rem; font-style: italic; line-height: 1.4; overflow-wrap: anywhere; }
+.activityPostFooter { min-width: 0; padding: 0.45rem 0.6rem; border-top: 1px solid var(--h-border); }
+.activityRsvpActions { min-width: 0; display: flex; gap: 0.4rem; }
+.activityRsvpButton { min-width: 0; flex: 1; border-radius: 8px; padding: 0.45rem 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; line-height: 1.25; text-transform: uppercase; }
 
 /* Travel discovery is intentionally one compact strip on desktop and a
    thumb-friendly form on phones. */
@@ -191,6 +213,18 @@
   .travelFormActions { align-items: stretch; flex-direction: column; }
   .travelFormActions > * { width: 100%; }
   .stepBox { border-radius: 18px 18px 0 0; align-self: flex-end; padding: 1.1rem; }
+  .sceneFilterDock { width: calc(100% + 0.4rem); max-width: calc(100% + 0.4rem); overscroll-behavior-inline: contain; }
+  .sceneComposer { padding: 0.75rem; gap: 0.55rem; }
+  .sceneComposerPrompt { font-size: 0.86rem; }
+  .sceneComposerCta { min-height: 40px; padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+  .activityPostHeader { display: grid; grid-template-columns: minmax(0,1fr) repeat(3,auto); gap: 0.45rem; padding: 0.75rem 0.75rem 0.5rem; }
+  .activityAuthor { gap: 0.5rem; }
+  .activityPostHeader > .chip { max-width: 6.5rem; overflow: hidden; text-overflow: ellipsis; }
+  .activityPostBody { padding: 0 0.75rem 0.7rem; }
+  .activityPostFooter { padding: 0.5rem 0.6rem 0.6rem; }
+  .activityRsvpActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .activityRsvpButton { min-height: 44px; width: 100%; padding: 0.45rem 0.35rem; }
+  .activityRsvpButton:first-child { grid-column: 1 / -1; }
 }
 @keyframes ncStepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .q { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; line-height: 1; margin: 0 0 1rem; }

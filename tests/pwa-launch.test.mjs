@@ -97,3 +97,16 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(changelog, /2026-08-16-dating-experiment/);
   assert.match(changelog, /Boston Dating Experiment is live/);
 });
+
+test('Friend Scene stays inside the phone viewport and keeps every response visible', () => {
+  const scene = source('app/friends/friend-hub-client.tsx');
+  const css = source('app/friends/friend-hub.module.css');
+  assert.match(scene, /className=\{s\.sceneMain\}/);
+  assert.match(scene, /className=\{s\.activityRsvpActions\}/);
+  assert.match(css, /\.fbShell \{[^}]*grid-template-columns: minmax\(0,1fr\)[^}]*min-width: 0/);
+  assert.match(css, /\.fbMain, \.fbRail \{ min-width: 0; \}/);
+  assert.match(css, /\.friendPageContent \{[^}]*box-sizing: border-box;[^}]*min-width: 0;[^}]*width: 100%/);
+  assert.match(css, /\.sceneFilterDock \{[^}]*overflow-x: auto/);
+  assert.match(css, /\.activityRsvpActions \{ display: grid; grid-template-columns: repeat\(2,minmax\(0,1fr\)\); \}/);
+  assert.match(css, /\.activityRsvpButton:first-child \{ grid-column: 1 \/ -1; \}/);
+});
