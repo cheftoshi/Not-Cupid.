@@ -320,7 +320,7 @@ export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date 
     schedule: `daily at ${DAILY_ACTIVITY_EMAIL_HOUR_ET}:00 ET`,
     sender: 'NotCupid <match@notcupid.com>', replyTo: defaultEmailReplyTo(),
     subject: DAILY_ACTIVITY_EMAIL_SUBJECT,
-    audienceDefinition: 'Real, non-deleted, non-blocked users with email notifications enabled who have at least one new or unread Love update, Friend conversation, Scene response, or eligible local plan since their last digest/open. Test accounts and cross-realm activity are excluded.',
+    audienceDefinition: 'Real, non-deleted, non-blocked users with email notifications enabled who have at least one actionable Love update, unread Friend conversation, new Scene response, or eligible local plan since their last daily drop. Opening a conversation clears its unread state. Test accounts and cross-realm activity are excluded.',
     candidates: candidates.length, totals, mailingAddressReady, sent, failed, skippedClaimed,
     reason: !activation.enabled ? 'automatic delivery remains template-and-send approval gated' : !mailingAddressReady ? 'mailing address is missing or invalid' : undefined,
     template: {
