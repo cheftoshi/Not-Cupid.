@@ -5,6 +5,7 @@ import { acceptMatch } from '@/lib/match-actions';
 import { renderEmail, sendEmail, button } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
+import { dailyActivityEmailActivation } from '@/lib/daily-activity-email';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,8 +169,8 @@ export async function POST(req: NextRequest) {
 
 async function notifyNewMessage(matchId: string, recipientId: string, senderId: string, messageId: string) {
   const { data: recipient } = await supabaseAdmin
-    .from('users').select('email, email_notifications').eq('id', recipientId).single();
-  if (!recipient?.email || recipient.email_notifications === false) return;
+    .from('users').select('email, email_notifications, notifications_paused_at, is_test, deleted_at').eq('id', recipientId).single();
+  if (!recipient || recipient.is_test === true || recipient.deleted_at) return;
 
   const { data: senderRow } = await supabaseAdmin.from('users').select('name').eq('id', senderId).single();
   const senderFirst = (senderRow?.name || 'Your match').split(' ')[0];
@@ -182,6 +183,11 @@ async function notifyNewMessage(matchId: string, recipientId: string, senderId: 
     url: `/match/${matchId}`,
     tag: `chat-${matchId}`,
   });
+
+  if (!recipient.email || recipient.email_notifications === false || recipient.notifications_paused_at) return;
+  // Once the consolidated drop is activated, Love chat email is held for that
+  // one daily message. Push remains immediate either way.
+  if (dailyActivityEmailActivation().enabled) return;
 
   const { data: throttle } = await supabaseAdmin
     .from('match_notifications')

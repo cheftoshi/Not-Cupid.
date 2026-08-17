@@ -13,6 +13,7 @@ test('Scene plans open a participant-only organizer chat after an interested RSV
   assert.match(client, /Choose “I’m interested” to open the plan chat\./);
   assert.match(comments, /response\?\.response === 'yes'/);
   assert.match(comments, /RSVP interested to join this plan chat\./);
+  assert.match(comments, /friend_plan_chat_reads/);
 });
 
 test('Plan-chat replies notify the organizer and interested participants with an exact deep link', () => {

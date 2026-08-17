@@ -9,12 +9,8 @@
       "schedule": "0 * * * *"
     },
     {
-      "path": "/api/cron/friend-digest",
+      "path": "/api/cron/daily-activity",
       "schedule": "0 17 * * *"
-    },
-    {
-      "path": "/api/cron/friend-chat-unread",
-      "schedule": "5 * * * *"
     },
     {
       "path": "/api/cron/raffle-draw",

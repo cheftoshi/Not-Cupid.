@@ -26,6 +26,7 @@ async function canUseEventChat(userId: string, activity: { author_id: string; ki
 
 // GET — the comment thread (oldest first), with each commenter's basics.
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const openedAt = new Date().toISOString();
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -54,6 +55,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .from('users').select('id, name, photo_url')
     .in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
   const byId = new Map((users ?? []).map((u) => [u.id, u]));
+
+  // Opening the plan conversation marks it read for the consolidated daily
+  // activity drop. Best-effort keeps the chat usable during a rolling deploy.
+  await supabaseAdmin.from('friend_plan_chat_reads').upsert({
+    activity_id: id, user_id: user.id, read_at: (comments ?? []).at(-1)?.created_at || openedAt,
+  }, { onConflict: 'activity_id,user_id' }).then(undefined, () => {});
 
   return NextResponse.json({
     comments: (comments ?? []).map((c) => {

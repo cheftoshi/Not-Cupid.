@@ -254,6 +254,9 @@ export async function POST(req: NextRequest) {
   await supabaseAdmin.from('friend_activity_rsvps').upsert(
     { activity_id: act.id, user_id: user.id }, { onConflict: 'activity_id,user_id' }
   );
+  await supabaseAdmin.from('friend_plan_chat_reads').upsert({
+    activity_id: act.id, user_id: user.id, read_at: new Date().toISOString(),
+  }, { onConflict: 'activity_id,user_id' }).then(undefined, () => {});
 
   return NextResponse.json({ ok: true, id: act.id });
 }

@@ -86,13 +86,13 @@ function SceneModerationAdmin() {
   )
 }
 
-function FriendChatEmailPreviewAdmin() {
+function DailyActivityEmailPreviewAdmin() {
   const [preview, setPreview] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   async function load() {
     setLoading(true)
     try {
-      const response = await fetch('/api/admin/friend-chat-notifications')
+      const response = await fetch('/api/admin/daily-activity-email')
       if (response.ok) setPreview(await response.json())
     } finally { setLoading(false) }
   }
@@ -101,23 +101,25 @@ function FriendChatEmailPreviewAdmin() {
   return (
     <div style={{ background: '#fff', border: `2px solid ${preview.enabled ? '#2d7a4f' : '#e0b05c'}`, borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
-        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.2rem' }}>💬 12-hour chat email fallback</div>
+        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.2rem' }}>📬 Daily Love + Friend activity drop</div>
         <span className={`${s.chip} ${preview.enabled ? s.chipGold : ''}`}>{preview.enabled ? 'active' : 'approval-gated'}</span>
         <button onClick={load} disabled={loading} className={s.btn} style={{ marginLeft: 'auto' }}>{loading ? 'refreshing…' : 'refresh count'}</button>
       </div>
       <div className={s.chips} style={{ marginTop: '0.8rem' }}>
         <span className={s.chip}>Eligible now <b>{preview.candidates}</b></span>
-        <span className={s.chip}>Club <b>{preview.clubCandidates}</b></span>
-        <span className={s.chip}>Pack <b>{preview.packCandidates}</b></span>
-        <span className={s.chip}>Delay <b>{preview.delayHours}h</b></span>
+        <span className={s.chip}>Love items <b>{preview.totals?.love || 0}</b></span>
+        <span className={s.chip}>Friend items <b>{preview.totals?.friend || 0}</b></span>
+        <span className={s.chip}>Plans <b>{preview.totals?.plans || 0}</b></span>
       </div>
       <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: '#faf7f3', borderRadius: 10, fontSize: '0.8rem', lineHeight: 1.55 }}>
-        <div><b>Subject:</b> {preview.template?.subject}</div>
+        <div><b>Subject:</b> {preview.subject}</div>
         <div><b>Headline:</b> {preview.template?.headline}</div>
-        <div><b>Body:</b> {preview.template?.body}</div>
-        <div><b>CTA:</b> {preview.template?.cta}</div>
+        <div><b>Body:</b> {preview.template?.intro}</div>
+        <div><b>Sections:</b> {(preview.template?.dynamicSections || []).join(' · ')}</div>
+        <div><b>CTA:</b> {preview.template?.primaryCta}</div>
+        <div><b>Cadence:</b> {preview.template?.cadence}</div>
       </div>
-      <p className={s.note} style={{ marginTop: '0.7rem' }}>Read-only preview. There is no send button; opening a chat cancels its pending reminder.</p>
+      <p className={s.note} style={{ marginTop: '0.7rem' }}>Read-only preview. No manual send button: once separately approved, the cron sends at most one consolidated email per person per day and only when something is new or unread.</p>
     </div>
   )
 }
@@ -336,7 +338,7 @@ export default function AdminClient() {
 
           <CommunityLinksAdmin />
           <SceneModerationAdmin />
-          <FriendChatEmailPreviewAdmin />
+          <DailyActivityEmailPreviewAdmin />
 
           {/* KPI row */}
           <div className={s.kpis}>
@@ -931,16 +933,6 @@ export default function AdminClient() {
                 const note = d.remaining > 0 ? `\n\n${d.remaining} remaining. Click again to continue.` : ''
                 alert(`Press invite: sent ${d.sent || 0}, failed ${d.failed || 0}, candidates ${d.totalCandidates || 0}${note}${d.errors?.length ? '\n\n' + d.errors.slice(0,5).join('\n') : ''}`)
               }}>📰 Press story invite</button>
-              <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
-                const dry = await fetch('/api/admin/send-friend-digest?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
-                const preview = dry
-                  ? (dry.reason ? `\n\n(${dry.reason})` : `\n\n${dry.candidates} recipients · ${dry.events} upcoming events · ${dry.posts} fresh posts.`)
-                  : ''
-                if (!confirm(`Send the Friend Line daily digest NOW?${preview}\n\n(Ignores the 20h throttle — a deliberate manual send.)`)) return
-                const res = await fetch('/api/admin/send-friend-digest', { method: 'POST' })
-                const d = await parseResponse<any>(res)
-                alert(`Friend digest: sent ${d.sent || 0}${d.reason ? ` (${d.reason})` : ` · ${d.events} events, ${d.posts} posts`}`)
-              }}>📨 Send friend digest now</button>
             </div>
             {experimentEmailDryRun && (() => {
               const dry = experimentEmailDryRun

@@ -89,6 +89,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   (all ?? []).forEach((r: any) => { const k = (r.response || 'yes') as Response; if (k in responses) responses[k]++; });
   const count = (all ?? []).length;
 
+  // A newly interested participant starts from "read now" so the daily drop
+  // never resurfaces plan-chat history from before they joined.
+  if (myResponse === 'yes') {
+    await supabaseAdmin.from('friend_plan_chat_reads').upsert({
+      activity_id: activityId, user_id: user.id, read_at: new Date().toISOString(),
+    }, { onConflict: 'activity_id,user_id' }).then(undefined, () => {});
+  }
+
   // Ping the host when someone's coming (yes/maybe). Events only — post 'likes'
   // would flood — and never on your own RSVP or on a clear. Per-event tag
   // collapses a wave of RSVPs into one notification for the host.

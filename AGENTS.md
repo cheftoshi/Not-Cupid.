@@ -105,6 +105,11 @@ supersede them.
   approval is not send approval: refresh the exact audience and obtain a
   separate count-specific authorization before setting the send-approval env or
   delivering it. The production route defaults to a no-delivery dry run.
+- The consolidated daily Love + Friend activity email is implemented as
+  `daily-activity-drop-v1-2026-08-17`, but is not yet content-approved or
+  authorized for standing automatic delivery. Its cron is fail-closed unless
+  both versioned production activation variables match. Do not enable it from
+  this note; show the exact dynamic template and obtain separate approvals.
 
 ## Current product behavior
 
@@ -136,10 +141,11 @@ supersede them.
   chat with the organizer. It does not bypass the 1:1 connection rule. Plan-chat
   replies push the organizer and interested participants and deep-link back to
   the exact plan.
-- Pack and club messages attempt immediate web push to every other approved
-  member with an active subscription. Unsubscribed devices receive in-app
-  unread badges. The one-per-unread-period 12-hour email fallback remains
-  template-version approval gated; deploying its cron alone cannot send it.
+- Pack, club, plan-chat, and Friend DM messages attempt immediate web push to
+  the relevant real recipients with an active subscription. Unsubscribed
+  devices receive in-app unread badges. The consolidated daily activity drop
+  can include still-new or unread Friend conversations and eligible local
+  plans, but remains template-and-standing-send approval gated.
 - Friend discovery and content are metro-bounded and realm-segregated. A user
   can change the active city on the relevant Love/Friend surface; existing
   connections persist.
