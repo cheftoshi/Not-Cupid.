@@ -4,8 +4,19 @@ import { getCurrentAdmin } from '@/lib/admin'
 import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch'
 import { experimentProfileReadiness } from '@/lib/experiment-profile'
 import { RAFFLE } from '@/lib/raffle'
+import { fetchAllSupabaseRows } from '@/lib/supabase-pagination'
 
 export const dynamic = 'force-dynamic'
+
+type PageViewRow = {
+  id: number
+  path: string
+  anon_id: string | null
+  display_mode: string | null
+  device_class: string | null
+  orientation: string | null
+  created_at: string
+}
 
 export async function GET(req: NextRequest) {
   const admin = await getCurrentAdmin()
@@ -94,10 +105,17 @@ export async function GET(req: NextRequest) {
     // Web traffic (last 7 days) for the in-admin flow view. Wrapped so a missing
     // page_views table (migration not run yet) doesn't break the whole dashboard.
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    let pageViews: any[] | null = null
+    let pageViews: PageViewRow[] | null = null
     try {
-      const r = await supabaseAdmin.from('page_views').select('path, anon_id, display_mode, device_class, orientation, created_at').gte('created_at', sevenDaysAgo)
-      pageViews = r.data ?? []
+      pageViews = await fetchAllSupabaseRows<PageViewRow>((from, to) =>
+        supabaseAdmin
+          .from('page_views')
+          .select('id, path, anon_id, display_mode, device_class, orientation, created_at')
+          .gte('created_at', sevenDaysAgo)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to)
+      )
     } catch { pageViews = null }
 
     // First-party payment funnel, last 30 days. This is intentionally derived
