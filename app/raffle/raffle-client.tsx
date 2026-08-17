@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
+import { datingExperimentGateIssues } from '@/lib/dating-experiment-gate';
 import { EXPERIMENT_ORIENTATION_OPTIONS } from '@/lib/experiment-preferences';
 
 type Event = {
@@ -109,21 +110,40 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
   // "Established cred" from the real profile — entry isn't one click.
   const cred = [
-    { ok: profile.photo, label: 'a profile photo', fix: '/dating-experiment/profile?from=experiment' },
-    { ok: profile.quiz, label: 'the personality quiz', fix: '/quiz?next=experiment' },
-    { ok: profile.bio, label: 'a bio (a few words about you)', fix: '/dating-experiment/profile?from=experiment' },
-    { ok: profile.interests >= 3, label: '3+ interests (music, food, hobbies, sports)', fix: '/dating-experiment/profile?from=experiment' },
-    { ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/dating-experiment/profile?from=experiment' : undefined },
+    { key: 'photo', ok: profile.photo, label: 'a profile photo', fix: '/dating-experiment/profile?from=experiment' },
+    { key: 'quiz', ok: profile.quiz, label: 'the personality quiz', fix: '/quiz?next=experiment' },
+    { key: 'bio', ok: profile.bio, label: 'a bio (a few words about you)', fix: '/dating-experiment/profile?from=experiment' },
+    { key: 'interests', ok: profile.interests >= 3, label: '3+ interests (music, food, hobbies, sports)', fix: '/dating-experiment/profile?from=experiment' },
+    { key: 'age', ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/dating-experiment/profile?from=experiment' : undefined },
   ];
-  const credOk = cred.every((c) => c.ok);
   const preferencesOk = !!gender && !!orientation && seekingGenders.length > 0
     && Number.isInteger(ageMin) && Number.isInteger(ageMax)
     && ageMin >= 21 && ageMin <= 99 && ageMax >= ageMin && ageMax <= 99;
   const scheduleOk = availableSlotKeys.length > 0;
-  const basicsOk = preferencesOk && scheduleOk;
   const questionsOk = !!intention && !!energy && !!planningStyle && conversationStarter.trim().length >= 3;
   const consentOk = attendanceConfirmed && termsAccepted && previewConsent && safetyAcknowledged;
-  const canEnter = credOk && basicsOk && questionsOk && consentOk;
+  const gateIssues = datingExperimentGateIssues({
+    photo: profile.photo,
+    quiz: profile.quiz,
+    bio: profile.bio,
+    interests: profile.interests,
+    age: profile.age,
+    gender,
+    orientation,
+    seekingGenders,
+    ageMin,
+    ageMax,
+    availableSlotKeys,
+    intention,
+    energy,
+    planningStyle,
+    conversationStarter,
+    attendanceConfirmed,
+    termsAccepted,
+    previewConsent,
+    safetyAcknowledged,
+  });
+  const canEnter = gateIssues.length === 0;
   const showRulesGate = ev.entriesOpen && !ev.closed && eligible && loaded && rulesReady && !rulesSeen
     && !(done || st?.entered || st?.draw || st?.shortlist?.length);
 
@@ -192,8 +212,24 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     finally { setUploading(false); }
   }
 
+  function focusGateIssue(targetId: string) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusable = target.matches('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])')
+      ? target
+      : target.querySelector<HTMLElement>('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])');
+    window.setTimeout(() => focusable?.focus({ preventScroll: true }), 350);
+  }
+
+  function guideToMissingRequirements() {
+    const first = gateIssues[0];
+    if (!first) return;
+    focusGateIssue(first.targetId);
+  }
+
   async function enter() {
-    if (!canEnter) { setErr('finish your cred + match basics first.'); return; }
+    if (!canEnter) { guideToMissingRequirements(); return; }
     setBusy(true); setErr('');
     trackExperimentFunnel('entry_submit_attempted');
     try {
@@ -402,7 +438,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <p style={cardP}>we match on who you actually are, so your profile has to be real first.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.7rem' }}>
                 {cred.map((c) => (
-                  <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: c.ok ? 'var(--h-text)' : 'var(--h-text-dim)' }}>
+                  <div id={`experiment-cred-${c.key}`} key={c.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: c.ok ? 'var(--h-text)' : 'var(--h-text-dim)', scrollMarginTop: '6rem' }}>
                     <span style={{ color: c.ok ? GREEN : ORANGE_DEEP, fontWeight: 700 }}>{c.ok ? '✓' : '○'}</span>
                     <span style={{ flex: 1 }}>{c.label}</span>
                     {!c.ok && c.fix && <Link href={c.fix} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>fix →</Link>}
@@ -416,13 +452,13 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <div style={cardLabel}>② your match basics</div>
               <p style={cardP}>so the system only considers people you’d actually want across the table.</p>
               <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-                <div>
+                <div id="experiment-gender" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>I’m…</div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {GENDERS.map(([v, l]) => <button key={v} type="button" aria-pressed={gender === v} onClick={() => setGender(v)} style={chip(gender === v)}>{l}</button>)}
                   </div>
                 </div>
-                <div>
+                <div id="experiment-orientation" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>my orientation… <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose one)</span></div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {EXPERIMENT_ORIENTATION_OPTIONS.map((option) => (
@@ -431,7 +467,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   </div>
                   <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>This describes you and is shown only to your private shortlist. The gender choices below—not an assumed label—control who can be considered.</div>
                 </div>
-                <div>
+                <div id="experiment-seeking" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>match me with… <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose one or more)</span></div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {SEEKING_GENDERS.map(([v, l]) => (
@@ -440,7 +476,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   </div>
                   <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Only people whose own preferences include you can appear. These choices are saved for this experiment and won’t change your general Love Line settings.</div>
                 </div>
-                <div>
+                <div id="experiment-age-range" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>ages I’m open to</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input aria-label="minimum age" type="number" min={21} max={99} value={ageMin} onChange={(e) => setAgeMin(+e.target.value)} style={numIn} />
@@ -449,7 +485,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   </div>
                   <div style={{ marginTop: '0.35rem', color: 'var(--h-text-faint)', fontSize: '0.72rem', lineHeight: 1.4 }}>Age preferences must work both ways too—you must fall inside their selected range.</div>
                 </div>
-                <div>
+                <div id="experiment-schedule" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>date + time I can attend <span style={{ textTransform: 'none', letterSpacing: 0 }}>(choose every slot that works)</span></div>
                   <div style={{ display: 'grid', gap: '0.65rem' }}>
                     {availabilityGroups.map((group) => (
@@ -473,25 +509,25 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <div style={cardLabel}>③ your experiment questionnaire</div>
               <p style={cardP}>your core personality, values, attachment, and lifestyle quiz stays the main signal. These four quick prompts tune this specific dinner.</p>
               <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                <div>
+                <div id="experiment-intention" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>what are you hoping for?</div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {[['relationship', 'a relationship'], ['intentional', 'intentional dating'], ['open', 'open, but real']].map(([v, l]) => <button key={v} onClick={() => setIntention(v)} style={chip(intention === v)}>{l}</button>)}
+                    {[['relationship', 'a relationship'], ['intentional', 'intentional dating'], ['open', 'open, but real']].map(([v, l]) => <button key={v} type="button" aria-pressed={intention === v} onClick={() => setIntention(v)} style={chip(intention === v)}>{l}</button>)}
                   </div>
                 </div>
-                <div>
+                <div id="experiment-energy" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>your ideal dinner energy</div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {[['conversation', 'deep conversation'], ['playful', 'playful + easy'], ['foodie', 'food-first adventure']].map(([v, l]) => <button key={v} onClick={() => setEnergy(v)} style={chip(energy === v)}>{l}</button>)}
+                    {[['conversation', 'deep conversation'], ['playful', 'playful + easy'], ['foodie', 'food-first adventure']].map(([v, l]) => <button key={v} type="button" aria-pressed={energy === v} onClick={() => setEnergy(v)} style={chip(energy === v)}>{l}</button>)}
                   </div>
                 </div>
-                <div>
+                <div id="experiment-planning" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>how I like plans to happen</div>
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {[['planned', 'clear plan'], ['spontaneous', 'go with the flow'], ['flexible', 'either works']].map(([v, l]) => <button key={v} type="button" onClick={() => setPlanningStyle(v)} style={chip(planningStyle === v)}>{l}</button>)}
+                    {[['planned', 'clear plan'], ['spontaneous', 'go with the flow'], ['flexible', 'either works']].map(([v, l]) => <button key={v} type="button" aria-pressed={planningStyle === v} onClick={() => setPlanningStyle(v)} style={chip(planningStyle === v)}>{l}</button>)}
                   </div>
                 </div>
-                <div>
+                <div id="experiment-conversation" style={{ scrollMarginTop: '6rem' }}>
                   <div style={qLabel}>a good thing to ask you about</div>
                   <input
                     value={conversationStarter}
@@ -534,28 +570,44 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <div style={card}>
               <div style={cardLabel}>⑥ confirm before joining <span style={{ color: ORANGE_DEEP }}>· required</span></div>
               {[
-                [attendanceConfirmed, setAttendanceConfirmed, `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend every dinner time I selected above.`],
-                [termsAccepted, setTermsAccepted, <>I agree to the <Link href="/dating-experiment/terms" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Dating Experiment Terms</Link>.</>],
-                [previewConsent, setPreviewConsent, `I consent to my profile, orientation, photos, answers, and any optional intro video I add being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.`],
-                [safetyAcknowledged, setSafetyAcknowledged, 'I understand NotCupid does not conduct criminal background checks or guarantee another participant’s identity, behavior, or compatibility.'],
-              ].map(([checked, setter, label], i) => (
-                <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.7rem' }}>
-                  <input type="checkbox" checked={checked as boolean} onChange={(e) => (setter as (value: boolean) => void)(e.target.checked)} style={{ width: 18, height: 18, accentColor: ORANGE, marginTop: '0.15rem', flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.82rem', color: 'var(--h-text)', lineHeight: 1.5 }}>{label as React.ReactNode}</span>
+                { id: 'experiment-attendance', checked: attendanceConfirmed, setter: setAttendanceConfirmed, label: `I’m 21+, live in Massachusetts within ${ev.radiusMiles} miles of ${ev.centerZip}, and can attend every dinner time I selected above.` },
+                { id: 'experiment-terms', checked: termsAccepted, setter: setTermsAccepted, label: <>I agree to the <Link href="/dating-experiment/terms" target="_blank" style={{ color: ORANGE_DEEP, fontWeight: 700 }}>Dating Experiment Terms</Link>.</> },
+                { id: 'experiment-preview', checked: previewConsent, setter: setPreviewConsent, label: `I consent to my profile, orientation, photos, answers, and any optional intro video I add being shown privately to up to ${ev.shortlistMaxOptions || 2} potential dates per shortlist round.` },
+                { id: 'experiment-safety', checked: safetyAcknowledged, setter: setSafetyAcknowledged, label: 'I understand NotCupid does not conduct criminal background checks or guarantee another participant’s identity, behavior, or compatibility.' },
+              ].map(({ id, checked, setter, label }) => (
+                <label id={id} key={id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', marginTop: '0.7rem', scrollMarginTop: '6rem' }}>
+                  <input type="checkbox" checked={checked} onChange={(e) => setter(e.target.checked)} style={{ width: 18, height: 18, accentColor: ORANGE, marginTop: '0.15rem', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.82rem', color: 'var(--h-text)', lineHeight: 1.5 }}>{label}</span>
                 </label>
               ))}
             </div>
 
-            <button onClick={enter} disabled={busy || uploading || !canEnter} style={{ background: canEnter ? ORANGE : 'var(--h-surface-2)', color: canEnter ? '#fff' : 'var(--h-text-faint)', border: canEnter ? 'none' : '1px solid var(--h-border)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || !canEnter ? 'not-allowed' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
-              {busy ? '…' : canEnter ? '✦ join the dating experiment' : 'finish the steps above'}
+            {!canEnter && (
+              <div id="experiment-gate-summary" role="status" aria-live="polite" style={{ padding: '0.85rem 0.95rem', borderRadius: 14, border: '1px solid rgba(255,106,31,0.34)', background: 'rgba(255,106,31,0.07)' }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>{gateIssues.length} {gateIssues.length === 1 ? 'item' : 'items'} left</div>
+                <p style={{ margin: '0.35rem 0 0', color: 'var(--h-text)', fontSize: '0.84rem', lineHeight: 1.45 }}><b>Next:</b> {gateIssues[0].label}.</p>
+                <details style={{ marginTop: '0.45rem' }}>
+                  <summary style={{ cursor: 'pointer', color: 'var(--h-text-dim)', fontSize: '0.72rem' }}>See every missing item</summary>
+                  <ol style={{ margin: '0.55rem 0 0', paddingLeft: '1.25rem', color: 'var(--h-text-dim)' }}>
+                    {gateIssues.map((issue) => (
+                      <li key={issue.key} style={{ marginTop: '0.3rem' }}>
+                        <button type="button" onClick={() => focusGateIssue(issue.targetId)} style={{ padding: 0, border: 'none', background: 'none', color: ORANGE_DEEP, textAlign: 'left', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.76rem' }}>{issue.label}</button>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              </div>
+            )}
+
+            <button type="button" onClick={enter} disabled={busy || uploading} aria-describedby={!canEnter ? 'experiment-gate-summary' : undefined} style={{ background: canEnter ? ORANGE : 'rgba(255,106,31,0.08)', color: canEnter ? '#fff' : ORANGE_DEEP, border: canEnter ? 'none' : '1px solid rgba(255,106,31,0.45)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || uploading ? 'wait' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
+              {busy ? '…' : canEnter ? '✦ join the dating experiment' : 'show me what’s missing ↑'}
             </button>
-            {!canEnter && <p style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>{!credOk ? 'establish your cred above' : !basicsOk ? 'pick your match basics' : !questionsOk ? 'finish the experiment questionnaire' : 'confirm the terms and safety notices'}</p>}
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
               <b>*</b> No purchase necessary. Massachusetts residents 21+ within {ev.radiusMiles} miles of {ev.centerZip}. Up to two reciprocal options; only mutual yes pairs enter the final compatibility-weighted selection. Up to {ev.winnerPairCount || 2} disjoint pairs; ${ev.budget} maximum value per dinner. Odds depend on the qualified pool and private choices. Void where prohibited. <Link href="/dating-experiment/terms" style={{ color: ORANGE_DEEP }}>Official Rules</Link>.
             </p>
           </div>
         )}
-        {err && <p style={{ color: ORANGE_DEEP, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', marginTop: '1rem' }}>{err}</p>}
+        {err && <p role="alert" aria-live="assertive" style={{ color: ORANGE_DEEP, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', marginTop: '1rem' }}>{err}</p>}
       </div>
     </div>
   );

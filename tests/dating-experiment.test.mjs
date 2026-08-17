@@ -185,7 +185,11 @@ test('entry requires versioned, separate consent records while video stays optio
   assert.doesNotMatch(optionalVideoMigration, /p_accepted_at is null or p_video_url is null or p_questionnaire/i);
   assert.match(optionalVideoMigration, /case when p_video_url is not null then p_accepted_at else null end/i);
   assert.match(optionalVideoMigration, /terms_version = 'boston-v12-2026-08-15'/i);
-  assert.match(client, /const canEnter = credOk && basicsOk && questionsOk && consentOk/);
+  assert.match(client, /const gateIssues = datingExperimentGateIssues/);
+  assert.match(client, /const canEnter = gateIssues\.length === 0/);
+  assert.match(client, /guideToMissingRequirements/);
+  assert.match(client, /disabled=\{busy \|\| uploading\}/);
+  assert.doesNotMatch(client, /disabled=\{busy \|\| uploading \|\| !canEnter\}/);
   assert.doesNotMatch(client, /canEnter =[^;]*!!videoUrl/);
   assert.match(client, /your intro video[\s\S]*· optional/);
   assert.match(terms, /Choosing not to add a video does not affect eligibility, fit score, shortlist priority, or selection odds/);
