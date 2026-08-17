@@ -111,9 +111,10 @@ supersede them.
   and standing automatic daily delivery of that exact version. The cron remains
   fail-closed unless both versioned production activation variables match. A
   content, sender, link, audience-policy, or cadence change requires fresh
-  content and send approval. Delivery is permitted only during the 1:00 PM
-  America/New_York hour, including manual invocations, and at most once per
-  recipient per Eastern calendar day.
+  content and send approval. Delivery is permitted only from 1:00 through 1:14
+  PM in `America/New_York`, including manual invocations, and at most once per
+  recipient per Eastern calendar day. A late scheduler run must skip delivery
+  rather than send outside that window.
 
 ## Current product behavior
 

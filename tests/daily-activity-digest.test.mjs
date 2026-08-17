@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { dailyActivityEasternDay, isDailyActivitySendWindow } from '../lib/daily-activity-cadence.ts';
 
 const source = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -19,18 +20,33 @@ test('daily activity email is one compact Love + Friend template', () => {
 
 test('daily delivery is version-gated and has no manual send endpoint', () => {
   const email = source('lib/daily-activity-email.ts');
+  const cadence = source('lib/daily-activity-cadence.ts');
   const cron = source('app/api/cron/daily-activity/route.ts');
   const admin = source('app/api/admin/daily-activity-email/route.ts');
   const vercel = source('vercel.json');
   const adminUi = source('app/admin/admin-client.tsx');
   assert.match(email, /DAILY_ACTIVITY_EMAILS_ENABLED === 'true'/);
   assert.match(email, /DAILY_ACTIVITY_EMAIL_TEMPLATE_VERSION/);
+  assert.match(cadence, /DAILY_ACTIVITY_EMAIL_WINDOW_MINUTES = 15/);
+  assert.match(cadence, /Number\(parts\.minute\) < DAILY_ACTIVITY_EMAIL_WINDOW_MINUTES/);
   assert.match(cron, /runDailyActivityDigest\(\{ send: activation\.enabled \}\)/);
   assert.match(admin, /runDailyActivityDigest\(\{ send: false \}\)/);
   assert.match(vercel, /"path": "\/api\/cron\/daily-activity"/);
   assert.match(vercel, /"schedule": "0 17,18 \* \* \*"/);
   assert.doesNotMatch(vercel, /friend-digest|friend-chat-unread/);
   assert.doesNotMatch(adminUi, /send-friend-digest|Send friend digest now/);
+});
+
+test('scheduled and manual daily drops are locked to 1:00–1:14 PM New York time', () => {
+  assert.equal(isDailyActivitySendWindow(new Date('2026-08-18T16:59:59Z')), false);
+  assert.equal(isDailyActivitySendWindow(new Date('2026-08-18T17:00:00Z')), true);
+  assert.equal(isDailyActivitySendWindow(new Date('2026-08-18T17:14:59Z')), true);
+  assert.equal(isDailyActivitySendWindow(new Date('2026-08-18T17:15:00Z')), false);
+  assert.equal(isDailyActivitySendWindow(new Date('2026-08-18T18:00:00Z')), false);
+  assert.equal(isDailyActivitySendWindow(new Date('2026-12-18T17:00:00Z')), false);
+  assert.equal(isDailyActivitySendWindow(new Date('2026-12-18T18:00:00Z')), true);
+  assert.equal(dailyActivityEasternDay(new Date('2026-08-18T03:59:59Z')), '2026-08-17');
+  assert.equal(dailyActivityEasternDay(new Date('2026-08-18T04:00:00Z')), '2026-08-18');
 });
 
 test('daily audience is preference-aware, realm-safe, actionable, and direct-linked', () => {

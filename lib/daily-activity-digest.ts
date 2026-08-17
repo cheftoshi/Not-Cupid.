@@ -5,6 +5,7 @@ import {
   DAILY_ACTIVITY_EMAIL_APPROVAL_VERSION,
   DAILY_ACTIVITY_EMAIL_HOUR_ET,
   DAILY_ACTIVITY_EMAIL_SUBJECT,
+  DAILY_ACTIVITY_EMAIL_WINDOW_MINUTES,
   DailyActivityItem,
   dailyActivityContentKey,
   dailyActivityCounts,
@@ -326,7 +327,7 @@ export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date 
     subject: DAILY_ACTIVITY_EMAIL_SUBJECT,
     audienceDefinition: 'Real, non-deleted, non-blocked users with email notifications enabled who have at least one actionable Love update, unread Friend conversation, new Scene response, or eligible local plan since their last daily drop. Opening a conversation clears its unread state. Test accounts and cross-realm activity are excluded.',
     candidates: candidates.length, totals, mailingAddressReady, sendWindowOpen, sent, failed, skippedClaimed,
-    reason: !activation.enabled ? 'automatic delivery remains template-and-send approval gated' : !mailingAddressReady ? 'mailing address is missing or invalid' : !sendWindowOpen ? `delivery is locked until the ${DAILY_ACTIVITY_EMAIL_HOUR_ET}:00 ET hour` : undefined,
+    reason: !activation.enabled ? 'automatic delivery remains template-and-send approval gated' : !mailingAddressReady ? 'mailing address is missing or invalid' : !sendWindowOpen ? `delivery is locked to ${DAILY_ACTIVITY_EMAIL_HOUR_ET}:00–${DAILY_ACTIVITY_EMAIL_HOUR_ET}:${String(DAILY_ACTIVITY_EMAIL_WINDOW_MINUTES - 1).padStart(2, '0')} America/New_York` : undefined,
     template: {
       greeting: 'Hi {{first_name}},', headline: 'Here’s what’s waiting for you.',
       intro: 'A quick daily drop of activity you haven’t opened yet.',
