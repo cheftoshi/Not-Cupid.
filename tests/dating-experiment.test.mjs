@@ -159,6 +159,22 @@ test('slot-aware selection preserves two winners and never assigns an unavailabl
   assert.equal(assignDinnerSlots([edges[0], edges[2]], ['early', 'late']), null);
 });
 
+test('experiment outcomes resolve cleanly and stay explicit on the participant screen', () => {
+  const draw = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  const status = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
+  const client = readFileSync(new URL('../app/raffle/raffle-client.tsx', import.meta.url), 'utf8');
+  assert.match(draw, /closeExperimentWithoutWinner/);
+  assert.match(draw, /eligibleIds\.length < 2[\s\S]*closeExperimentWithoutWinner/);
+  assert.match(draw, /!shortlist\.length[\s\S]*closeExperimentWithoutWinner/);
+  assert.match(draw, /status: 'resolved'/);
+  assert.match(status, /entry\?\.status === 'passed'[\s\S]*state: 'not-selected'/);
+  assert.match(status, /winnerSlot: latestDraw\.winner_slot/);
+  assert.match(client, /timeZone: 'America\/New_York'/);
+  assert.match(client, /your experiment entry is complete/);
+  assert.match(client, /Your yes, pass, and favorite choices remain private/);
+  assert.match(client, /This result does not change your regular Love Line profile or matches/);
+});
+
 test('entry requires versioned, separate consent records while video stays optional', () => {
   const source = readFileSync(new URL('../app/api/raffle/enter/route.ts', import.meta.url), 'utf8');
   const client = readFileSync(new URL('../app/raffle/raffle-client.tsx', import.meta.url), 'utf8');

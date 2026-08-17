@@ -131,6 +131,7 @@ export async function GET() {
         myAccepted: isA ? latestDraw.a_accepted : latestDraw.b_accepted,
         theyAccepted: isA ? latestDraw.b_accepted : latestDraw.a_accepted,
         bothAccepted: latestDraw.a_accepted && latestDraw.b_accepted,
+        winnerSlot: latestDraw.winner_slot,
         restaurant: latestDraw.restaurant,
         happensAt: latestDraw.happens_at,
       };
@@ -150,6 +151,18 @@ export async function GET() {
       .neq('status', 'withdrawn');
     spotsLeft = Math.max(0, eventCap - (count ?? 0));
   } catch { /* migration not ready */ }
+
+  const outcome = draw?.bothAccepted
+    ? { state: 'selected' }
+    : shortlist.length
+      ? { state: shortlistRound?.allResponded ? 'choices-sealed' : 'shortlisted' }
+      : entry?.status === 'passed'
+        ? { state: 'not-selected' }
+        : entry?.status === 'withdrawn'
+          ? { state: 'withdrawn' }
+          : entered
+            ? { state: 'waiting' }
+            : null;
 
   return NextResponse.json({
     event: {
@@ -172,6 +185,6 @@ export async function GET() {
     eligible,
     hasProfile,
     profileMissing: profileReadiness.missing.map((item) => item.label),
-    entered, entry, shortlist, shortlistRound, draw, other,
+    entered, entry, shortlist, shortlistRound, draw, other, outcome,
   });
 }

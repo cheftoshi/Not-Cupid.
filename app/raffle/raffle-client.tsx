@@ -86,6 +86,12 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
   const ev = { ...event, ...(st?.event || {}) } as any;
   const other = st?.other?.name ? st.other.name.split(' ')[0] : 'your match';
+  const assignedDinner = st?.draw?.happensAt
+    ? new Intl.DateTimeFormat('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short',
+    }).format(new Date(st.draw.happensAt))
+    : ev.dateLabel;
   const availabilityGroups = ((ev.dateOptions || []) as NonNullable<Event['dateOptions']>).reduce((groups, slot) => {
     const groupKey = slot.eventDate || slot.dateLabel || slot.label;
     const current = groups.find((group) => group.key === groupKey);
@@ -339,7 +345,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your optional experiment video, four quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
         </div>
 
-        {!ev.entriesOpen && !(st?.entered || st?.draw) ? (
+        {!ev.entriesOpen && !(st?.entered || st?.draw || st?.outcome) ? (
           <div style={card}>
             <h2 style={cardH}>entries aren’t open right now.</h2>
             <p style={cardP}>the live experiment status can pause entry at the deadline, at capacity, or if an operating check needs attention.</p>
@@ -348,7 +354,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <Link href="/hub" style={backLink}>back to hub →</Link>
             </div>
           </div>
-        ) : !eligible ? (
+        ) : !eligible && !st?.outcome ? (
           <div style={card}>
             <h2 style={cardH}>this one’s local to Boston.</h2>
             <p style={cardP}>you need to be a Massachusetts resident within {ev.radiusMiles} miles of {ev.centerZip} and able to attend the stated dinner. update your location on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love Line</Link> if that’s you.</p>
@@ -360,10 +366,27 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <div style={{ ...card, border: `2px solid ${GREEN}`, textAlign: 'center' }}>
             <div style={{ fontSize: '2.2rem' }}>✦</div>
             <h2 style={cardH}>it’s a date with {other}.</h2>
-            <p style={cardP}>your <b>${ev.budget} dinner</b> is locked in · <b>{ev.dateLabel}</b>. {st.draw.restaurant}</p>
+            <p style={cardP}>you chose each other. Your <b>${ev.budget} dinner</b> is confirmed for <b>{assignedDinner}</b>. {st.draw.restaurant}</p>
             <p style={{ fontSize: '0.76rem', color: 'var(--h-text-faint)', lineHeight: 1.5, margin: '0.85rem 0 0' }}>
               💛 meet in public, tell a friend where you’ll be, and arrange your own ride home. Parking, valet costs or tips, and transportation are not included. trust your gut.
             </p>
+            <Link href="/hub" style={backLink}>back to hub →</Link>
+          </div>
+        ) : st?.outcome?.state === 'not-selected' ? (
+          <div style={{ ...card, border: '1px solid rgba(37,99,255,0.28)', textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem' }}>✦</div>
+            <h2 style={cardH}>your experiment entry is complete.</h2>
+            <p style={cardP}>A dinner pair wasn’t confirmed for you this time. Your yes, pass, and favorite choices remain private—we never reveal whether another person passed or did not respond.</p>
+            <p style={{ ...cardP, fontSize: '0.8rem', marginTop: '0.65rem' }}>This result does not change your regular Love Line profile or matches.</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.9rem' }}>
+              <Link href="/dashboard" style={backLink}>open Love Line →</Link>
+              <Link href="/hub" style={backLink}>back to hub →</Link>
+            </div>
+          </div>
+        ) : st?.outcome?.state === 'withdrawn' ? (
+          <div style={{ ...card, textAlign: 'center' }}>
+            <h2 style={cardH}>your entry was withdrawn.</h2>
+            <p style={cardP}>You’re no longer in this experiment. Your regular NotCupid profile and Love Line are unchanged.</p>
             <Link href="/hub" style={backLink}>back to hub →</Link>
           </div>
         ) : st?.shortlist?.length ? (
@@ -677,6 +700,9 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
         <div style={cardLabel}>private shortlist · round {round?.roundNumber || 1}</div>
         <h2 style={{ ...cardH, marginTop: '0.35rem' }}>choose who you’d actually meet.</h2>
         <p style={cardP}>Say yes to one, both, or neither. If both appeal to you, mark one favorite. Your answers stay sealed; only mutual yes pairs enter the final dinner selection.</p>
+        {offers.length === 1 && (
+          <p style={{ ...cardP, marginTop: '0.55rem', fontSize: '0.78rem' }}><b>Why one option?</b> This was the only new person who cleared both people’s age and gender preferences, shared dinner availability, and the minimum fit score. We don’t force a weaker or one-way second choice.</p>
+        )}
         {round?.responseDeadline && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: 'var(--h-text-faint)', letterSpacing: '0.05em' }}>respond by {new Date(round.responseDeadline).toLocaleString()}</p>}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: '0.8rem' }}>

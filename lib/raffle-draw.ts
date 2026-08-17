@@ -60,6 +60,27 @@ type PairRow = {
   winner_slot: number | null;
 };
 
+async function closeExperimentWithoutWinner(
+  event: DatingExperimentEvent,
+  entrants: number,
+  state: 'not-enough' | 'no-eligible-pair',
+): Promise<DrawResult> {
+  const now = new Date().toISOString();
+  const { error: passEntriesError } = await supabaseAdmin.from('raffle_entries')
+    .update({ status: 'passed' })
+    .eq('event_key', event.event_key)
+    .in('status', ['entered', 'picked']);
+  if (passEntriesError) throw passEntriesError;
+
+  const { error: eventStatusError } = await supabaseAdmin.from('dating_experiment_events')
+    .update({ status: 'resolved', updated_at: now })
+    .eq('event_key', event.event_key)
+    .in('status', ['entry_open', 'entry_closed', 'shortlisting']);
+  if (eventStatusError) throw eventStatusError;
+
+  return { ok: true, entrants, drawn: 0, state };
+}
+
 async function resolveCollectingRound(
   event: DatingExperimentEvent,
   round: RoundRow,
@@ -360,14 +381,18 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     (entry.attempts ?? 0) < event.max_attempts && entry.terms_version === event.terms_version,
   );
   const eligibleIds = eligibleEntries.map((entry: any) => entry.user_id);
-  const canStart = force
-    || Date.now() >= new Date(event.entry_closes_at).getTime()
+  const naturallyTriggered = Date.now() >= new Date(event.entry_closes_at).getTime()
     || event.status === 'entry_closed'
     || event.status === 'shortlisting'
     || (totalEntries ?? 0) >= event.entry_cap
     || (priorRounds?.length ?? 0) > 0;
+  const canStart = force || naturallyTriggered;
   if (!canStart) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'waiting-for-trigger' };
-  if (eligibleIds.length < 2) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
+  if (eligibleIds.length < 2) {
+    return naturallyTriggered
+      ? closeExperimentWithoutWinner(event, eligibleIds.length, 'not-enough')
+      : { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
+  }
 
   const [{ data: usersData }, { data: priorPairs }] = await Promise.all([
     supabaseAdmin.from('users').select(COLS).in('id', eligibleIds),
@@ -414,7 +439,11 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     }
   }
   const shortlist = buildCoverageFirstShortlist(candidates, event.shortlist_max_options);
-  if (!shortlist.length) return { ok: true, entrants: pool.length, drawn: 0, state: 'no-eligible-pair' };
+  if (!shortlist.length) {
+    return naturallyTriggered
+      ? closeExperimentWithoutWinner(event, pool.length, 'no-eligible-pair')
+      : { ok: true, entrants: pool.length, drawn: 0, state: 'no-eligible-pair' };
+  }
 
   const roundNumber = ((priorRounds ?? [])[0]?.round_number ?? 0) + 1;
   const responseDeadline = new Date(Date.now() + event.response_hours * 3_600_000).toISOString();
