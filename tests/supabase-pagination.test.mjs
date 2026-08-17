@@ -42,3 +42,20 @@ test('admin traffic uses stable range pagination and keeps the API ceiling low',
   assert.match(stats, /\.range\(from, to\)/);
   assert.match(config, /max_rows = 1000/);
 });
+
+test('admin matching totals and pool health paginate every unbounded dataset', () => {
+  const stats = source('app/api/admin-stats/route.ts');
+  const poolHealth = source('app/api/admin/pool-health/route.ts');
+
+  for (const table of ['users', 'matches', 'messages', 'date_feedback', 'roster_exposures', 'sessions']) {
+    assert.match(stats, new RegExp(`fetchAllSupabaseRows[\\s\\S]{0,180}\\.from\\('${table}'\\)`));
+  }
+  assert.match(stats, /const matches = rawMatches\.filter/);
+  assert.match(stats, /loveUsage/);
+  assert.match(stats, /meaningfulLoveAccounts/);
+
+  for (const table of ['users', 'matches', 'date_feedback', 'messages', 'love_ai_coach_cache']) {
+    assert.match(poolHealth, new RegExp(`fetchAllSupabaseRows[\\s\\S]{0,180}\\.from\\('${table}'\\)`));
+  }
+  assert.doesNotMatch(poolHealth, /\.limit\(10000\)|\.limit\(5000\)/);
+});

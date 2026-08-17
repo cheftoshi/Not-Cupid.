@@ -318,6 +318,7 @@ export default function AdminClient() {
             <nav className={s.nav}>
               <a href="#funnel" className={s.navLink}>Funnel</a>
               <a href="#monetization" className={s.navLink}>Revenue funnel</a>
+              <a href="#love-usage" className={s.navLink}>Love usage</a>
               <a href="#love-campaign" className={s.navLink}>Love campaign</a>
               <a href="#traffic" className={s.navLink}>Traffic</a>
               <a href="#friend" className={s.navLink}>Friend</a>
@@ -351,7 +352,7 @@ export default function AdminClient() {
               ['Pending', stats?.pendingMatches, '⏳', null],
               ['Passed', stats?.passed, '👋', stats?.passRate != null ? `${stats.passRate}% pass rate` : null],
               ['Waiting', stats?.waiting, '👀', null],
-              ['M / F / Bi', `${stats?.men} / ${stats?.women} / ${stats?.bi}`, '⚖️', null],
+              ['M / F / other', `${stats?.men} / ${stats?.women} / ${stats?.other}`, '⚖️', null],
             ] as Array<[string, any, string, string | null]>).map(([label, val, icon, sub]) => (
               <div key={label} className={s.kpi}>
                 <div className={s.kpiIcon}>{icon}</div>
@@ -360,6 +361,52 @@ export default function AdminClient() {
                 {sub && <div className={s.kpiSub}>{sub}</div>}
               </div>
             ))}
+          </div>
+
+          {/* ── LOVE LINE PRODUCT USE — experiment participation is excluded ── */}
+          <div className={s.card} id="love-usage">
+            <div className={s.cardHead}>
+              <p className={s.cardTitle}>Love Line usage — <b>real product behavior</b></p>
+            </div>
+            {!data?.loveUsage ? (
+              <p className={s.note}>Love usage metrics are unavailable.</p>
+            ) : (
+              <>
+                {([
+                  ['Last 24 hours', data.loveUsage.last24h],
+                  ['Last 7 days', data.loveUsage.last7d],
+                ] as Array<[string, any]>).map(([label, usage]) => (
+                  <div key={label} style={{ marginBottom: '1rem' }}>
+                    <p className={s.note} style={{ marginBottom: '0.55rem' }}>{label.toUpperCase()}</p>
+                    <div className={s.chips}>
+                      <span className={s.chip}>App-active accounts <b>{usage.signedInAccounts}</b></span>
+                      <span className={s.chip}>Love visit sessions <b>{usage.loveVisitSessions}</b></span>
+                      <span className={s.chip}>Love page views <b>{usage.loveViews}</b></span>
+                      <span className={s.chip}>Rosters composed (auto + opens) <b>{usage.rosterCompositionAccounts}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>People who picked <b>{usage.pickers}</b></span>
+                      <span className={s.chip}>Picks <b>{usage.picks}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>People messaging <b>{usage.messageSenders}</b></span>
+                      <span className={s.chip}>Messages <b>{usage.messages}</b></span>
+                      <span className={s.chip}>Active chats <b>{usage.activeConversations}</b></span>
+                      <span className={s.chip}>New matches now mutual <b>{usage.newlyCreatedMutuals}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>Meaningful Love users <b>{usage.meaningfulLoveAccounts}</b></span>
+                    </div>
+                  </div>
+                ))}
+                <div className={s.divider} />
+                <p className={s.note} style={{ marginBottom: '0.55rem' }}>LIFETIME — EXACT, PAGINATED TOTALS</p>
+                <div className={s.chips}>
+                  <span className={s.chip}>Matches <b>{data.loveUsage.lifetime.matches}</b></span>
+                  <span className={s.chip}>Mutual matches <b>{data.loveUsage.lifetime.mutualMatches}</b></span>
+                  <span className={s.chip}>Ever matched <b>{data.loveUsage.lifetime.everMatchedAccounts}</b></span>
+                  <span className={s.chip}>Ever mutual <b>{data.loveUsage.lifetime.everMutualAccounts}</b></span>
+                  <span className={s.chip}>Ever sent a message <b>{data.loveUsage.lifetime.everMessageSenders}</b></span>
+                </div>
+                <p className={s.note} style={{ marginTop: '0.75rem', lineHeight: 1.6 }}>
+                  Picks, mutual participants and message senders are signed-in, real-user actions. Roster composition includes scheduled rotation, so it is context rather than meaningful use. Love visits are anonymous browser/PWA sessions and stay separate. Dating Experiment entries and test accounts never count here.
+                </p>
+              </>
+            )}
           </div>
 
           {/* ── LOVE LINE RELAUNCH CAMPAIGN ── */}

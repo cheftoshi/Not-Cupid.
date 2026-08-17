@@ -15,6 +15,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/admin';
 import { supabaseAdmin } from '@/lib/supabase';
+import { fetchAllSupabaseRows } from '@/lib/supabase-pagination';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,39 +43,45 @@ export async function GET() {
     const now = Date.now();
     const since90Iso = new Date(now - 90 * DAY).toISOString();
 
-    const [
-      { data: users },
-      { data: matches },
-      { count: feedbackCount },
-      { data: messageRows },
-      { data: coachRows },
-    ] = await Promise.all([
-      supabaseAdmin
+    const [users, matches, feedbackRows, messageRows, coachRows] = await Promise.all([
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('users')
         .select('id, name, email, gender, status, pool_active, archetype, created_at, matching_cooldown_until, matching_disabled_at')
         .is('deleted_at', null)
-        .not('is_test', 'is', true),
-      supabaseAdmin
+        .not('is_test', 'is', true)
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('matches')
-        .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at, ended_reason, created_at, compatibility_score, algorithm_version'),
-      supabaseAdmin
+        .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at, ended_reason, created_at, compatibility_score, algorithm_version')
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('date_feedback')
-        .select('id', { count: 'exact', head: true }),
-      supabaseAdmin
+        .select('id,user_id')
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('messages')
-        .select('match_id, sender_id')
+        .select('id,match_id,sender_id,created_at')
         .gte('created_at', since90Iso)
-        .limit(10000),
-      supabaseAdmin
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('love_ai_coach_cache')
-        .select('user_id, source, stage')
+        .select('match_id,user_id,source,stage,generated_at')
         .gte('generated_at', since90Iso)
-        .limit(5000),
+        .order('generated_at', { ascending: true })
+        .order('match_id', { ascending: true })
+        .order('user_id', { ascending: true })
+        .order('stage', { ascending: true })
+        .range(from, to)),
     ]);
 
-    const U = users ?? [];
+    const U = users;
     const realUserIds = new Set(U.map((u) => u.id));
-    const M = (matches ?? []).filter((m) => realUserIds.has(m.user_1_id) && realUserIds.has(m.user_2_id));
+    const M = matches.filter((m) => realUserIds.has(m.user_1_id) && realUserIds.has(m.user_2_id));
 
     // ── Per-user aggregates from matches ──────────────────────────────────
     type Agg = { involved: number; accepts: number; mutual: number; lastEndedAt: number | null };
@@ -178,7 +185,7 @@ export async function GET() {
     const recentMatchIds = new Set(recentMatches.map((m) => m.id));
     const sendersByMatch = new Map<string, Set<string>>();
     const messageCountByMatch = new Map<string, number>();
-    for (const row of messageRows ?? []) {
+    for (const row of messageRows) {
       if (!recentMatchIds.has(row.match_id) || !realUserIds.has(row.sender_id)) continue;
       const senders = sendersByMatch.get(row.match_id) ?? new Set<string>();
       senders.add(row.sender_id);
@@ -196,7 +203,7 @@ export async function GET() {
       const version = match.algorithm_version || 'legacy';
       algorithmVersions[version] = (algorithmVersions[version] ?? 0) + 1;
     }
-    const realCoachRows = (coachRows ?? []).filter((row) => realUserIds.has(row.user_id));
+    const realCoachRows = coachRows.filter((row) => realUserIds.has(row.user_id));
     const coachStages: Record<string, number> = {};
     for (const row of realCoachRows) coachStages[row.stage] = (coachStages[row.stage] ?? 0) + 1;
 
@@ -228,7 +235,7 @@ export async function GET() {
         curated: realCoachRows.filter((row) => row.source === 'curated').length,
         stages: coachStages,
       },
-      dates: { feedbackResponses: feedbackCount ?? 0 },
+      dates: { feedbackResponses: feedbackRows.filter((row) => realUserIds.has(row.user_id)).length },
     });
   } catch (err: any) {
     console.error('admin/pool-health error:', err);

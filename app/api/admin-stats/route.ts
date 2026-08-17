@@ -24,8 +24,57 @@ export async function GET(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
-    const { data: users } = await supabaseAdmin.from('users').select('*').not('is_test', 'is', true).order('created_at', { ascending: false })
-    const { data: matches } = await supabaseAdmin.from('matches').select('*').order('created_at', { ascending: false })
+    const nowMs = Date.now()
+    const oneDayAgo = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString()
+    const sevenDaysAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const thirtyDaysAgo = new Date(nowMs - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    // These datasets all exceed (or can soon exceed) Supabase's 1,000-row Data
+    // API ceiling. Stable range pagination keeps every admin total exact.
+    const [users, rawMatches, msgRows, feedbackRows, rosterExposures, recentSessions] = await Promise.all([
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('users')
+        .select('*')
+        .not('is_test', 'is', true)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('matches')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('messages')
+        .select('id,match_id,sender_id,created_at')
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('date_feedback')
+        .select('id,user_id')
+        .order('id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('roster_exposures')
+        .select('user_id,candidate_id,shown_at,picked_at,picked_match_id')
+        .order('shown_at', { ascending: true })
+        .order('user_id', { ascending: true })
+        .order('candidate_id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('sessions')
+        .select('user_id,last_used_at')
+        .gte('last_used_at', sevenDaysAgo)
+        .order('last_used_at', { ascending: true })
+        .order('user_id', { ascending: true })
+        .range(from, to)),
+    ])
+    const realUserIds = new Set(users.map((user: any) => user.id))
+    const matches = rawMatches.filter((match: any) =>
+      realUserIds.has(match.user_1_id) && realUserIds.has(match.user_2_id)
+    )
     // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):
     //   • match_unlocks.amount_cents = current love-profile unlocks ($0.99)
     //   • unlocks.amount = legacy standalone unlock ledger (cents)
@@ -33,11 +82,6 @@ export async function GET(req: NextRequest) {
     let matchUnlocks: any[] = []
     try { matchUnlocks = (await supabaseAdmin.from('match_unlocks').select('amount_cents')).data ?? [] }
     catch { /* table missing — fall back to legacy unlocks only */ }
-    // For the conversion funnel: which matches have ≥1 message, and which users gave date feedback.
-    const { data: msgRows } = await supabaseAdmin.from('messages').select('match_id')
-    const { data: feedbackRows } = await supabaseAdmin.from('date_feedback').select('user_id')
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-
     // ── Friend Maxxin metrics (wrapped so missing tables don't break the dashboard) ──
     // Hoisted so the top-level revenue total can fold in friend-side income.
     let friendPaidPacks = 0   // $0.99 packs actually bought (excludes free pro grants)
@@ -105,7 +149,6 @@ export async function GET(req: NextRequest) {
     }
     // Web traffic (last 7 days) for the in-admin flow view. Wrapped so a missing
     // page_views table (migration not run yet) doesn't break the whole dashboard.
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     let pageViews: PageViewRow[] | null = null
     try {
       pageViews = await fetchAllSupabaseRows<PageViewRow>((from, to) =>
@@ -285,8 +328,8 @@ export async function GET(req: NextRequest) {
       }
     } catch { eligibleReadyCampaign = null }
 
-    const totalUsers = users?.length ?? 0
-    const totalMatches = matches?.length ?? 0
+    const totalUsers = users.length
+    const totalMatches = matches.length
 
     // ── Revenue: count ALL of it, by real amount (cents → dollars) ──
     const loveUnlockCents =
@@ -296,8 +339,7 @@ export async function GET(req: NextRequest) {
     const friendLegacyCents = friendChatUnlocks * 99
     const oneTimeCents = loveUnlockCents + packCents + friendLegacyCents // collected to date
     // Active All-Access subscribers → monthly recurring revenue.
-    const nowMs = Date.now()
-    const activeSubs = (users ?? []).filter(
+    const activeSubs = users.filter(
       (u: any) => !u.deleted_at && u.friend_pro_until && new Date(u.friend_pro_until).getTime() > nowMs
     ).length
     const mrrCents = activeSubs * 399
@@ -325,7 +367,7 @@ export async function GET(req: NextRequest) {
     const matched = users?.filter(u => u.status === 'matched').length ?? 0
     const men = users?.filter(u => u.gender === 'm').length ?? 0
     const women = users?.filter(u => u.gender === 'f').length ?? 0
-    const bi = users?.filter(u => u.gender === 'b').length ?? 0
+    const other = users.filter(u => !['m', 'f'].includes(u.gender)).length
 
     const days: Record<string, number> = {}
     for (let i = 6; i >= 0; i--) {
@@ -355,8 +397,8 @@ export async function GET(req: NextRequest) {
     // ───────────── Conversion funnel (the app's "webflow") ─────────────
     // Distinct users at each stage of the journey, computed from real data so
     // you can see exactly where people drop off.
-    const allUsers = users ?? []
-    const allMatches = matches ?? []
+    const allUsers = users
+    const allMatches = matches
     const liveUsers = allUsers.filter(u => !u.deleted_at)
     const total = liveUsers.length
 
@@ -433,11 +475,100 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // ───────────── Love Line usage (independent of Dating Experiment) ─────────────
+    // Authenticated actions establish real product use. Anonymous /dashboard
+    // sessions are kept separate so a refresh or campaign landing cannot be
+    // mistaken for a person picking or talking to a match.
+    const realMatchIds = new Set(matches.map((match: any) => match.id))
+    const summarizeLoveUsage = (cutoff: string) => {
+      const loveViews = (pageViews ?? []).filter((view) =>
+        view.path === '/dashboard' && view.created_at >= cutoff
+      )
+      const loveVisitSessions = new Set(loveViews.map((view) => view.anon_id).filter(Boolean))
+      const signedInAccounts = new Set(recentSessions
+        .filter((session: any) => session.last_used_at >= cutoff && realUserIds.has(session.user_id))
+        .map((session: any) => session.user_id))
+      const recentExposures = rosterExposures.filter((exposure: any) =>
+        exposure.shown_at >= cutoff && realUserIds.has(exposure.user_id) && realUserIds.has(exposure.candidate_id)
+      )
+      const rosterCompositionAccounts = new Set(recentExposures.map((exposure: any) => exposure.user_id))
+      const recentPicks = rosterExposures.filter((exposure: any) =>
+        exposure.picked_at && exposure.picked_at >= cutoff && realUserIds.has(exposure.user_id) && realUserIds.has(exposure.candidate_id)
+      )
+      const pickers = new Set(recentPicks.map((exposure: any) => exposure.user_id))
+      const recentMessages = msgRows.filter((message: any) =>
+        message.created_at >= cutoff && realUserIds.has(message.sender_id) && realMatchIds.has(message.match_id)
+      )
+      const messageSenders = new Set(recentMessages.map((message: any) => message.sender_id))
+      const activeConversations = new Set(recentMessages.map((message: any) => message.match_id))
+      const newlyCreatedMutuals = matches.filter((match: any) =>
+        match.created_at >= cutoff && match.user_1_accepted && match.user_2_accepted
+      )
+      const mutualParticipants = new Set<string>()
+      newlyCreatedMutuals.forEach((match: any) => {
+        mutualParticipants.add(match.user_1_id)
+        mutualParticipants.add(match.user_2_id)
+      })
+      const meaningfulAccounts = new Set<string>([
+        ...pickers,
+        ...messageSenders,
+        ...mutualParticipants,
+      ])
+
+      return {
+        signedInAccounts: signedInAccounts.size,
+        loveViews: loveViews.length,
+        loveVisitSessions: loveVisitSessions.size,
+        rosterCompositionAccounts: rosterCompositionAccounts.size,
+        picks: recentPicks.length,
+        pickers: pickers.size,
+        messages: recentMessages.length,
+        messageSenders: messageSenders.size,
+        activeConversations: activeConversations.size,
+        newlyCreatedMutuals: newlyCreatedMutuals.length,
+        mutualParticipants: mutualParticipants.size,
+        meaningfulLoveAccounts: meaningfulAccounts.size,
+      }
+    }
+    const everMatchedIds = new Set<string>()
+    const everMutualIds = new Set<string>()
+    matches.forEach((match: any) => {
+      everMatchedIds.add(match.user_1_id)
+      everMatchedIds.add(match.user_2_id)
+      if (match.user_1_accepted && match.user_2_accepted) {
+        everMutualIds.add(match.user_1_id)
+        everMutualIds.add(match.user_2_id)
+      }
+    })
+    const everMessageSenders = new Set(msgRows
+      .filter((message: any) => realUserIds.has(message.sender_id) && realMatchIds.has(message.match_id))
+      .map((message: any) => message.sender_id))
+    const loveUsage = {
+      last24h: summarizeLoveUsage(oneDayAgo),
+      last7d: summarizeLoveUsage(sevenDaysAgo),
+      lifetime: {
+        matches: matches.length,
+        mutualMatches: bothAccepted,
+        everMatchedAccounts: everMatchedIds.size,
+        everMutualAccounts: everMutualIds.size,
+        everMessageSenders: everMessageSenders.size,
+      },
+      trafficAvailable: pageViews !== null,
+      measurementNotes: [
+        'Signed-in accounts come from authenticated session activity anywhere in the app.',
+        'Picks, mutual participants, and message senders are authenticated Love Line actions.',
+        'Roster compositions include both interactive opens and scheduled rotation, so they are context rather than meaningful use.',
+        'Love visits are anonymous browser/PWA sessions and are reported separately from people taking actions.',
+        'Dating Experiment entries and all test accounts are excluded.',
+      ],
+    }
+
     return NextResponse.json({
-      stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), mrr: revenue.mrr, activeSubs, revenue, pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, bi },
+      stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), mrr: revenue.mrr, activeSubs, revenue, pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, other },
       signupsPerDay: days,
       funnel,
       traffic,
+      loveUsage,
       monetization,
       loveCampaign,
       eligibleReadyCampaign,
