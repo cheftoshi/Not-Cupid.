@@ -210,7 +210,7 @@
 }
 
 /* ── user home base: today · next actions · people · plans ── */
-.dashWrap { position: relative; z-index: 5; max-width: 1180px; margin: 0 auto; padding: 1rem 1.25rem 3rem; width: 100%; }
+.dashWrap { position: relative; z-index: 5; max-width: 1180px; margin: 0 auto; padding: 1rem calc(1.25rem + var(--app-safe-right,0px)) calc(3rem + var(--app-safe-bottom,0px)) calc(1.25rem + var(--app-safe-left,0px)); width: 100%; min-width: 0; overflow-x: clip; }
 .homeHero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
@@ -1431,7 +1431,7 @@
 }
 /* mobile: single column — identity, then feed, then "into" */
 @media (max-width: 780px) {
-  .dashWrap { padding-inline: 1rem; }
+  .dashWrap { padding-left: calc(1rem + var(--app-safe-left,0px)); padding-right: calc(1rem + var(--app-safe-right,0px)); }
   .hubTopMain { align-items: flex-start; }
   .linePanelHead { align-items: stretch; }
   .linePanelHead h2 { max-width: 18ch; }

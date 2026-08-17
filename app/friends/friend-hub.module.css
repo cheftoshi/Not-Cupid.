@@ -189,6 +189,32 @@
 .activityRsvpActions { min-width: 0; display: flex; gap: 0.4rem; }
 .activityRsvpButton { min-width: 0; flex: 1; border-radius: 8px; padding: 0.45rem 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; line-height: 1.25; text-transform: uppercase; }
 
+/* Private + club chat use one viewport-safe shell. The portal keeps Safari
+   from clipping the sheet through .friendPage's horizontal containment. */
+.chatOverlay { position: fixed; inset: 0; z-index: 195; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; background: rgba(24,14,6,0.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.chatSheet { width: min(100%,520px); max-width: 100vw; min-width: 0; height: min(82dvh,680px); max-height: calc(100dvh - max(0.5rem,var(--app-safe-top,0px))); overflow: hidden; display: flex; flex-direction: column; background: var(--h-surface); border: 1px solid var(--h-border); border-bottom: 0; border-radius: 20px 20px 0 0; box-shadow: var(--shadow-lg); }
+.chatHeader { min-width: 0; flex: 0 0 auto; display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem max(0.75rem,var(--app-safe-right,0px)) 0.75rem max(0.75rem,var(--app-safe-left,0px)); background: var(--h-surface-2); border-bottom: 1px solid var(--h-border); }
+.chatHeaderText { min-width: 0; flex: 1; }
+.chatTitle { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; line-height: 1; }
+.chatClose { width: 44px; height: 44px; flex: 0 0 44px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: var(--h-surface-3); color: var(--h-text-dim); cursor: pointer; font-size: 0.9rem; touch-action: manipulation; }
+.chatMessages { min-width: 0; min-height: 0; flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 1rem max(1rem,var(--app-safe-right,0px)) 1rem max(1rem,var(--app-safe-left,0px)); display: flex; flex-direction: column; gap: 0.5rem; }
+.chatEmpty { margin: auto; padding: 1rem; max-width: 28rem; text-align: center; color: var(--h-text-dim); font-family: Georgia, serif; font-size: 0.9rem; font-style: italic; line-height: 1.5; }
+.chatMessage { min-width: 0; max-width: min(80%,420px); display: flex; flex-direction: column; }
+.chatMessageMine { align-self: flex-end; align-items: flex-end; }
+.chatMessageTheirs { align-self: flex-start; align-items: flex-start; }
+.chatBubble { max-width: 100%; padding: 0.55rem 0.8rem; font-size: 0.92rem; line-height: 1.4; overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap; }
+.chatBubbleMine { background: #ff6a1f; color: #fff; border: 0; border-radius: 14px 14px 4px 14px; }
+.chatBubbleTheirs { background: var(--h-surface-2); color: var(--h-text); border: 1px solid var(--h-border); border-radius: 14px 14px 14px 4px; }
+.chatBubbleFailed { background: var(--h-surface-3); color: var(--h-text-dim); border: 1px solid var(--h-border); border-radius: 14px 14px 4px 14px; }
+.chatFailed { margin-top: 0.15rem; color: #c0392b; font-family: 'DM Mono', monospace; font-size: 0.5rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.chatError { flex: 0 0 auto; padding: 0.5rem max(1rem,var(--app-safe-right,0px)) 0.5rem max(1rem,var(--app-safe-left,0px)); background: rgba(192,57,43,0.1); color: #c0392b; text-align: center; font-family: Georgia, serif; font-size: 0.82rem; line-height: 1.35; }
+.chatComposer { min-width: 0; width: 100%; max-width: 100%; flex: 0 0 auto; display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem max(0.75rem,var(--app-safe-right,0px)) max(0.65rem,var(--app-safe-bottom,0px)) max(0.75rem,var(--app-safe-left,0px)); background: var(--h-surface); border-top: 1px solid var(--h-border); }
+.chatInput { width: 0; min-width: 0; flex: 1 1 auto; min-height: 44px; border: 1px solid var(--h-border); border-radius: 999px; padding: 0.6rem 1rem; background: var(--h-surface); color: var(--h-text); font: inherit; font-size: 16px; outline: none; }
+.chatInput::placeholder { color: var(--h-text-faint); font-family: Georgia, serif; font-style: italic; }
+.chatInput:focus { border-color: #ff6a1f; box-shadow: 0 0 0 3px rgba(255,106,31,0.1); }
+.chatSend { min-width: 68px; min-height: 44px; flex: 0 0 auto; border: 0; border-radius: 999px; padding: 0.5rem 0.85rem; background: #ff6a1f; color: #fff; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.05em; text-transform: uppercase; touch-action: manipulation; }
+.chatSend:disabled { opacity: 0.42; cursor: default; }
+
 /* Travel discovery is intentionally one compact strip on desktop and a
    thumb-friendly form on phones. */
 .travelPanel { margin-top: 0.75rem; border: 1px solid rgba(255,106,31,0.28); background: rgba(255,106,31,0.055); border-radius: 14px; padding: 0.65rem 0.75rem; }
@@ -225,6 +251,16 @@
   .activityRsvpActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .activityRsvpButton { min-height: 44px; width: 100%; padding: 0.45rem 0.35rem; }
   .activityRsvpButton:first-child { grid-column: 1 / -1; }
+  .chatSheet { width: 100%; height: min(84dvh,680px); }
+  .chatMessage { max-width: 84%; }
+  .chatComposer { gap: 0.45rem; }
+}
+@media (max-width:360px) {
+  .chatHeader { gap: 0.45rem; }
+  .chatTitle { font-size: 1.15rem; }
+  .chatMessages { padding-left: max(0.75rem,var(--app-safe-left,0px)); padding-right: max(0.75rem,var(--app-safe-right,0px)); }
+  .chatComposer { padding-left: max(0.55rem,var(--app-safe-left,0px)); padding-right: max(0.55rem,var(--app-safe-right,0px)); }
+  .chatSend { min-width: 56px; padding-inline: 0.65rem; }
 }
 @keyframes ncStepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .q { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; line-height: 1; margin: 0 0 1rem; }

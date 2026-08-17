@@ -110,3 +110,31 @@ test('Friend Scene stays inside the phone viewport and keeps every response visi
   assert.match(css, /\.activityRsvpActions \{ display: grid; grid-template-columns: repeat\(2,minmax\(0,1fr\)\); \}/);
   assert.match(css, /\.activityRsvpButton:first-child \{ grid-column: 1 \/ -1; \}/);
 });
+
+test('phone-critical chats and app roots stay viewport-safe in the installed PWA', () => {
+  const friend = source('app/friends/friend-hub-client.tsx');
+  const friendCss = source('app/friends/friend-hub.module.css');
+  const loveChatCss = source('app/match/[id]/chat.module.css');
+  const hubCss = source('app/hub/hub.module.css');
+  const dashboardCss = source('app/dashboard/dashboard.module.css');
+  const profileCss = source('app/profile/profile.module.css');
+  const experimentProfileCss = source('app/dating-experiment/profile/experiment-profile.module.css');
+  assert.match(friend, /import \{ createPortal \} from 'react-dom'/);
+  assert.match(friend, /createPortal\([\s\S]*document\.body/);
+  assert.match(friend, /document\.body\.style\.overflow = 'hidden'/);
+  assert.match(friend, /visualViewport\?\.addEventListener\('resize'/);
+  assert.match(friend, /clubSending/);
+  assert.match(friend, /role="dialog" aria-modal="true"/);
+  assert.match(friendCss, /\.chatOverlay \{[^}]*width: 100vw;[^}]*height: 100dvh;[^}]*overflow: hidden/);
+  assert.match(friendCss, /\.chatSheet \{[^}]*max-width: 100vw;[^}]*min-width: 0;[^}]*100dvh/);
+  assert.match(friendCss, /\.chatComposer \{[^}]*min-width: 0;[^}]*width: 100%;[^}]*app-safe-right[^}]*app-safe-left/);
+  assert.match(friendCss, /\.chatInput \{[^}]*width: 0;[^}]*min-width: 0;[^}]*font-size: 16px/);
+  assert.match(friendCss, /\.chatBubble \{[^}]*overflow-wrap: anywhere/);
+  assert.match(loveChatCss, /\.inputForm \{[^}]*width: 100%;[^}]*min-width: 0;[^}]*safe-area-inset-right[^}]*safe-area-inset-left/);
+  assert.match(loveChatCss, /\.input \{[^}]*width: 0;[^}]*min-width: 0/);
+  assert.match(hubCss, /\.dashWrap \{[^}]*app-safe-right[^}]*app-safe-bottom[^}]*app-safe-left[^}]*overflow-x: clip/);
+  assert.match(dashboardCss, /\.page \{[\s\S]*app-safe-right[\s\S]*app-safe-left[\s\S]*overflow-x: clip/);
+  assert.match(profileCss, /\.page \{[\s\S]*min-height: 100dvh[\s\S]*app-safe-right[\s\S]*app-safe-bottom[\s\S]*app-safe-left[\s\S]*overflow-x: clip/);
+  assert.match(experimentProfileCss, /min-height: 100dvh/);
+  assert.match(experimentProfileCss, /safe-area-inset-right/);
+});

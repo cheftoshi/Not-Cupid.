@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { NEIGHBORHOODS } from '@/lib/neighborhoods';
 import ReactivateButton from '@/components/reactivate-button';
 import LocationControls from '@/components/location-controls';
@@ -944,6 +945,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [clubChat, setClubChat] = useState<{ id: string; name: string } | null>(null);
   const [clubMsgs, setClubMsgs] = useState<any[]>([]);
   const [clubText, setClubText] = useState('');
+  const [clubSending, setClubSending] = useState(false);
+  const [clubError, setClubError] = useState<string | null>(null);
   const clubEndRef = useRef<HTMLDivElement>(null);
   const [clubManage, setClubManage] = useState<{ id: string; name: string } | null>(null);
   const [clubReqs, setClubReqs] = useState<any[]>([]);
@@ -960,8 +963,30 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   async function clubAct(id: string, action: string, userId?: string) {
     try { await fetch(`/api/friend/clubs/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, userId }) }); } catch { /* ignore */ }
   }
-  async function openClubChat(c: { id: string; name: string }) { setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); await loadClubChat(c.id); setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 90); }
-  async function sendClubMsg() { const body = clubText.trim(); if (!body || !clubChat) return; setClubText(''); try { await fetch(`/api/friend/clubs/${clubChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) }); } catch { /* ignore */ } await loadClubChat(clubChat.id); setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 60); }
+  async function openClubChat(c: { id: string; name: string }) { setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); setClubError(null); await loadClubChat(c.id); setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 90); }
+  async function sendClubMsg() {
+    const body = clubText.trim(); if (!body || !clubChat || clubSending) return;
+    const tmpId = 'tmp-' + Date.now();
+    setClubText(''); setClubError(null); setClubSending(true);
+    setClubMsgs((prev) => [...prev, { id: tmpId, body, isMe: true, pending: true }]);
+    setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 40);
+    try {
+      const response = await fetch(`/api/friend/clubs/${clubChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        setClubMsgs((prev) => prev.map((message) => message.id === tmpId ? { ...message, pending: false, failed: true } : message));
+        setClubError(detail.error || 'Couldn’t send that message — try again.');
+        return;
+      }
+      await loadClubChat(clubChat.id);
+    } catch {
+      setClubMsgs((prev) => prev.map((message) => message.id === tmpId ? { ...message, pending: false, failed: true } : message));
+      setClubError('Couldn’t send — check your connection and try again.');
+    } finally {
+      setClubSending(false);
+      setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 60);
+    }
+  }
   async function openClubManage(c: { id: string; name: string }) { setClubChat(null); setClubManage(c); setClubReqs([]); try { const r = await fetch(`/api/friend/clubs/${c.id}`); if (r.ok) setClubReqs((await r.json()).requests || []); } catch { /* ignore */ } }
   async function reqAction(clubId: string, userId: string, action: 'approve' | 'decline') { setClubReqs((prev) => prev.filter((x) => x.id !== userId)); await clubAct(clubId, action, userId); await loadClubs(); }
   async function submitLink() {
@@ -1028,6 +1053,28 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   useEffect(() => { if (view === 'pulse' || view === 'crew') loadClubs(); }, [view, loadClubs]);
   useEffect(() => { if (view === 'pulse') { loadComLinks(); loadPulse(); } }, [view, loadComLinks, loadPulse]);
   useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, 5000); return () => clearInterval(t); }, [clubChat, loadClubChat]);
+  // Chats render through a body portal, so the Friend page cannot clip them.
+  // Lock the page beneath the sheet and follow iOS visual-viewport changes when
+  // the keyboard opens without dismissing the focused input.
+  useEffect(() => {
+    if (!dmWith && !clubChat) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setDmWith(null); setClubChat(null);
+    };
+    const keepLatestVisible = () => window.requestAnimationFrame(() => {
+      (clubChat ? clubEndRef.current : dmEndRef.current)?.scrollIntoView({ block: 'end' });
+    });
+    window.addEventListener('keydown', closeOnEscape);
+    window.visualViewport?.addEventListener('resize', keepLatestVisible);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+      window.visualViewport?.removeEventListener('resize', keepLatestVisible);
+    };
+  }, [dmWith, clubChat]);
   // Auto-dismiss the toast after a few seconds (the badge persists until viewed).
   useEffect(() => { if (!evToast) return; const t = setTimeout(() => setEvToast(null), 7000); return () => clearTimeout(t); }, [evToast]);
 
@@ -1532,69 +1579,70 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       ); })()}
 
       {/* PRIVATE DM — a 1:1 thread with a connection, as a bottom sheet (not a page) */}
-      {dmWith && (() => { const m = dmWith; const first = (m.name || '').split(' ')[0]; return (
-        <div onClick={() => setDmWith(null)} style={{ position: 'fixed', inset: 0, zIndex: 195, background: 'rgba(24,14,6,0.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82dvh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1rem', borderBottom: '1px solid var(--h-border)', background: 'var(--h-surface-2)', flexShrink: 0 }}>
+      {dmWith && typeof document !== 'undefined' && (() => { const m = dmWith; const first = (m.name || '').split(' ')[0]; return createPortal(
+        <div onClick={() => setDmWith(null)} className={s.chatOverlay}>
+          <section onClick={(e) => e.stopPropagation()} className={s.chatSheet} role="dialog" aria-modal="true" aria-label={`private chat with ${first}`}>
+            <header className={s.chatHeader}>
               {m.photo_url
                 ? <img src={m.photo_url} alt="" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} />
                 : <span style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', display: 'inline-block' }} />}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', lineHeight: 1 }}>{m.name}</div>
+              <div className={s.chatHeaderText}>
+                <div className={s.chatTitle}>{m.name}</div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>🔒 private message · just you two</div>
               </div>
-              <button onClick={() => setDmWith(null)} aria-label="close" style={{ marginLeft: 'auto', width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'var(--h-surface-3)', color: 'var(--h-text-dim)', fontSize: '0.9rem', flexShrink: 0 }}>✕</button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button onClick={() => setDmWith(null)} aria-label="close private chat" className={s.chatClose}>✕</button>
+            </header>
+            <div className={s.chatMessages}>
               {dmMsgs.length === 0 && (
-                <div style={{ margin: 'auto', textAlign: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>you&apos;re connected with {first} 🧡<br />say hi — this chat is just the two of you.</div>
+                <div className={s.chatEmpty}>you&apos;re connected with {first} 🧡<br />say hi — this chat is just the two of you.</div>
               )}
               {dmMsgs.map((msg: any) => (
-                <div key={msg.id} style={{ alignSelf: msg.isMe ? 'flex-end' : 'flex-start', maxWidth: '78%', display: 'flex', flexDirection: 'column', alignItems: msg.isMe ? 'flex-end' : 'flex-start' }}>
-                  <div style={{ background: msg.failed ? 'var(--h-surface-3)' : msg.isMe ? LINE : 'var(--h-surface-2)', color: msg.failed ? 'var(--h-text-dim)' : msg.isMe ? '#fff' : 'var(--h-text)', border: msg.isMe && !msg.failed ? 'none' : '1px solid var(--h-border)', borderRadius: msg.isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '0.5rem 0.8rem', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'break-word', opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
-                  {msg.failed && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#c0392b', marginTop: '0.15rem' }}>not sent</span>}
+                <div key={msg.id} className={`${s.chatMessage} ${msg.isMe ? s.chatMessageMine : s.chatMessageTheirs}`}>
+                  <div className={`${s.chatBubble} ${msg.failed ? s.chatBubbleFailed : msg.isMe ? s.chatBubbleMine : s.chatBubbleTheirs}`} style={{ opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
+                  {msg.failed && <span className={s.chatFailed}>not sent</span>}
                 </div>
               ))}
               <div ref={dmEndRef} />
             </div>
-            {dmError && <div style={{ padding: '0.5rem 1rem', background: 'rgba(192,57,43,0.1)', color: '#c0392b', fontFamily: 'Georgia,serif', fontSize: '0.82rem', textAlign: 'center', flexShrink: 0 }}>{dmError}</div>}
-            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.7rem', borderTop: '1px solid var(--h-border)', flexShrink: 0 }}>
-              <input value={dmText} onChange={(e) => setDmText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendDm()} placeholder={`message ${first}…`}
-                style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
-              <button onClick={sendDm} disabled={!dmText.trim()} className={s.poppyBtn} style={{ opacity: dmText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
-            </div>
-          </div>
-        </div>
+            {dmError && <div className={s.chatError} role="alert">{dmError}</div>}
+            <form onSubmit={(event) => { event.preventDefault(); sendDm(); }} className={s.chatComposer}>
+              <input value={dmText} onChange={(e) => setDmText(e.target.value)} onFocus={() => setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 80)} placeholder={`message ${first}…`} className={s.chatInput} enterKeyHint="send" autoComplete="off" maxLength={2000} aria-label={`message ${first}`} />
+              <button type="submit" disabled={!dmText.trim()} className={s.chatSend}>send</button>
+            </form>
+          </section>
+        </div>, document.body
       ); })()}
 
       {/* CLUB CHAT — a member-only bottom-sheet thread for a club */}
-      {clubChat && (
-        <div onClick={() => setClubChat(null)} style={{ position: 'fixed', inset: 0, zIndex: 195, background: 'rgba(24,14,6,0.5)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', width: '100%', maxWidth: 520, height: 'min(82dvh, 680px)', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--h-border)', borderBottom: 'none', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1rem', borderBottom: '1px solid var(--h-border)', background: 'var(--h-surface-2)', flexShrink: 0 }}>
+      {clubChat && typeof document !== 'undefined' && createPortal(
+        <div onClick={() => setClubChat(null)} className={s.chatOverlay}>
+          <section onClick={(e) => e.stopPropagation()} className={s.chatSheet} role="dialog" aria-modal="true" aria-label={`${clubChat.name} club chat`}>
+            <header className={s.chatHeader}>
               <span style={{ fontSize: '1.4rem' }}>🤝</span>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', lineHeight: 1 }}>{clubChat.name}</div>
+              <div className={s.chatHeaderText}>
+                <div className={s.chatTitle}>{clubChat.name}</div>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>club chat · members only</div>
               </div>
-              <button onClick={() => setClubChat(null)} aria-label="close" style={{ marginLeft: 'auto', width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'var(--h-surface-3)', color: 'var(--h-text-dim)', fontSize: '0.9rem', flexShrink: 0 }}>✕</button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {clubMsgs.length === 0 && <div style={{ margin: 'auto', textAlign: 'center', fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>say hi to the club 👋</div>}
+              <button onClick={() => setClubChat(null)} aria-label="close club chat" className={s.chatClose}>✕</button>
+            </header>
+            <div className={s.chatMessages}>
+              {clubMsgs.length === 0 && <div className={s.chatEmpty}>say hi to the club 👋</div>}
               {clubMsgs.map((msg: any) => (
-                <div key={msg.id} style={{ alignSelf: msg.isMe ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                <div key={msg.id} className={`${s.chatMessage} ${msg.isMe ? s.chatMessageMine : s.chatMessageTheirs}`}>
                   {!msg.isMe && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.04em', color: LINE_DEEP, margin: '0 0 0.1rem 0.5rem' }}>{(msg.name || 'someone').split(' ')[0]}</div>}
-                  <div style={{ background: msg.isMe ? LINE : 'var(--h-surface-2)', color: msg.isMe ? '#fff' : 'var(--h-text)', border: msg.isMe ? 'none' : '1px solid var(--h-border)', borderRadius: msg.isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '0.5rem 0.8rem', fontSize: '0.92rem', lineHeight: 1.4, wordBreak: 'break-word' }}>{msg.body}</div>
+                  <div className={`${s.chatBubble} ${msg.failed ? s.chatBubbleFailed : msg.isMe ? s.chatBubbleMine : s.chatBubbleTheirs}`} style={{ opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
+                  {msg.failed && <span className={s.chatFailed}>not sent</span>}
                 </div>
               ))}
               <div ref={clubEndRef} />
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', padding: '0.7rem', borderTop: '1px solid var(--h-border)', flexShrink: 0 }}>
-              <input value={clubText} onChange={(e) => setClubText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendClubMsg()} placeholder="message the club…" style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1rem', fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
-              <button onClick={sendClubMsg} disabled={!clubText.trim()} className={s.poppyBtn} style={{ opacity: clubText.trim() ? 1 : 0.5, padding: '0.5rem 1.1rem' }}>send</button>
-            </div>
-          </div>
-        </div>
+            {clubError && <div className={s.chatError} role="alert">{clubError}</div>}
+            <form onSubmit={(event) => { event.preventDefault(); sendClubMsg(); }} className={s.chatComposer}>
+              <input value={clubText} onChange={(e) => setClubText(e.target.value)} onFocus={() => setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 80)} placeholder="message the club…" className={s.chatInput} enterKeyHint="send" autoComplete="off" maxLength={2000} aria-label={`message ${clubChat.name}`} />
+              <button type="submit" disabled={!clubText.trim() || clubSending} className={s.chatSend}>{clubSending ? '…' : 'send'}</button>
+            </form>
+          </section>
+        </div>, document.body
       )}
 
       {/* CLUB MANAGE — the owner approves/declines join requests */}

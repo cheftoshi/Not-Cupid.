@@ -11,7 +11,7 @@
   background-size: 34px 34px, auto, auto, auto;
   color: var(--h-text);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 1.5rem 1.5rem var(--app-safe-bottom, 0px);
+  padding: 1.5rem calc(1.5rem + var(--app-safe-right,0px)) var(--app-safe-bottom,0px) calc(1.5rem + var(--app-safe-left,0px));
   overflow-x: clip;
 }
 
@@ -815,7 +815,7 @@
 
 @media (max-width: 520px) {
   .page {
-    padding: 1rem 0.75rem var(--app-safe-bottom, 0px);
+    padding: 1rem calc(0.75rem + var(--app-safe-right,0px)) var(--app-safe-bottom,0px) calc(0.75rem + var(--app-safe-left,0px));
   }
 
   .head { margin-bottom: 1rem; padding-bottom: 1rem; }
