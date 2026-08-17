@@ -5,6 +5,26 @@ export const DAILY_ACTIVITY_EMAIL_APPROVAL_VERSION = 'daily-activity-drop-v1-202
 export const DAILY_ACTIVITY_EMAIL_SUBJECT = 'You have something waiting on NotCupid';
 export const DAILY_ACTIVITY_EMAIL_HOUR_ET = 13;
 
+function easternParts(now: Date) {
+  return Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+  }).formatToParts(now).map((part) => [part.type, part.value]));
+}
+
+export function dailyActivityEasternDay(now: Date) {
+  const parts = easternParts(now);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function isDailyActivitySendWindow(now: Date) {
+  return Number(easternParts(now).hour) === DAILY_ACTIVITY_EMAIL_HOUR_ET;
+}
+
 export type DailyActivitySection = 'love' | 'friend' | 'plans';
 
 export type DailyActivityItem = {

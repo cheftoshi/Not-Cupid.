@@ -8,8 +8,10 @@ import {
   DailyActivityItem,
   dailyActivityContentKey,
   dailyActivityCounts,
+  dailyActivityEasternDay,
   dailyActivityEmailActivation,
   dailyActivityEmailHtml,
+  isDailyActivitySendWindow,
 } from '@/lib/daily-activity-email';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { metroOf } from '@/lib/quiz-data';
@@ -67,6 +69,7 @@ function eventWhen(activity: any) {
 export async function collectDailyActivityCandidates(now = new Date()): Promise<DailyActivityCandidate[]> {
   const nowIso = now.toISOString();
   const lookbackIso = new Date(now.getTime() - LOOKBACK_MS).toISOString();
+  const easternDay = dailyActivityEasternDay(now);
   const today = nowIso.slice(0, 10);
   const planningEnd = new Date(now.getTime() + 30 * DAY_MS).toISOString().slice(0, 10);
 
@@ -91,7 +94,7 @@ export async function collectDailyActivityCandidates(now = new Date()): Promise<
   ]);
 
   const userById = new Map(users.map((user) => [user.id, user]));
-  const targets = users.filter((user) => user.is_test !== true && !user.deleted_at && user.is_blocked !== true && !!user.email && user.email_notifications !== false && !user.notifications_paused_at);
+  const targets = users.filter((user) => user.is_test !== true && !user.deleted_at && user.is_blocked !== true && !!user.email && user.email_notifications !== false && !user.notifications_paused_at && (!user.activity_digest_sent_at || dailyActivityEasternDay(new Date(user.activity_digest_sent_at)) !== easternDay));
   const targetById = new Map(targets.map((user) => [user.id, user]));
   const itemsByUser = new Map<string, DailyActivityItem[]>();
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
@@ -259,8 +262,9 @@ export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date 
   const activation = dailyActivityEmailActivation();
   const mailingAddress = process.env.EMAIL_MAILING_ADDRESS?.trim() || '';
   const mailingAddressReady = looksLikePublicPostalAddress(mailingAddress);
+  const sendWindowOpen = isDailyActivitySendWindow(now);
   const candidates = await collectDailyActivityCandidates(now);
-  const send = opts.send === true && activation.enabled && mailingAddressReady;
+  const send = opts.send === true && activation.enabled && mailingAddressReady && sendWindowOpen;
   let sent = 0;
   let failed = 0;
   let skippedClaimed = 0;
@@ -321,8 +325,8 @@ export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date 
     sender: 'NotCupid <match@notcupid.com>', replyTo: defaultEmailReplyTo(),
     subject: DAILY_ACTIVITY_EMAIL_SUBJECT,
     audienceDefinition: 'Real, non-deleted, non-blocked users with email notifications enabled who have at least one actionable Love update, unread Friend conversation, new Scene response, or eligible local plan since their last daily drop. Opening a conversation clears its unread state. Test accounts and cross-realm activity are excluded.',
-    candidates: candidates.length, totals, mailingAddressReady, sent, failed, skippedClaimed,
-    reason: !activation.enabled ? 'automatic delivery remains template-and-send approval gated' : !mailingAddressReady ? 'mailing address is missing or invalid' : undefined,
+    candidates: candidates.length, totals, mailingAddressReady, sendWindowOpen, sent, failed, skippedClaimed,
+    reason: !activation.enabled ? 'automatic delivery remains template-and-send approval gated' : !mailingAddressReady ? 'mailing address is missing or invalid' : !sendWindowOpen ? `delivery is locked until the ${DAILY_ACTIVITY_EMAIL_HOUR_ET}:00 ET hour` : undefined,
     template: {
       greeting: 'Hi {{first_name}},', headline: 'Here’s what’s waiting for you.',
       intro: 'A quick daily drop of activity you haven’t opened yet.',

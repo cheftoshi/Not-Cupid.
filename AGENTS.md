@@ -105,11 +105,15 @@ supersede them.
   approval is not send approval: refresh the exact audience and obtain a
   separate count-specific authorization before setting the send-approval env or
   delivering it. The production route defaults to a no-delivery dry run.
-- The consolidated daily Love + Friend activity email is implemented as
-  `daily-activity-drop-v1-2026-08-17`, but is not yet content-approved or
-  authorized for standing automatic delivery. Its cron is fail-closed unless
-  both versioned production activation variables match. Do not enable it from
-  this note; show the exact dynamic template and obtain separate approvals.
+- The consolidated daily Love + Friend activity email is implemented and
+  content-approved as `daily-activity-drop-v1-2026-08-17`. On August 17, 2026,
+  the operator separately authorized the initial 112-recipient production send
+  and standing automatic daily delivery of that exact version. The cron remains
+  fail-closed unless both versioned production activation variables match. A
+  content, sender, link, audience-policy, or cadence change requires fresh
+  content and send approval. Delivery is permitted only during the 1:00 PM
+  America/New_York hour, including manual invocations, and at most once per
+  recipient per Eastern calendar day.
 
 ## Current product behavior
 

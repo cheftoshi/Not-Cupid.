@@ -28,6 +28,7 @@ test('daily delivery is version-gated and has no manual send endpoint', () => {
   assert.match(cron, /runDailyActivityDigest\(\{ send: activation\.enabled \}\)/);
   assert.match(admin, /runDailyActivityDigest\(\{ send: false \}\)/);
   assert.match(vercel, /"path": "\/api\/cron\/daily-activity"/);
+  assert.match(vercel, /"schedule": "0 17,18 \* \* \*"/);
   assert.doesNotMatch(vercel, /friend-digest|friend-chat-unread/);
   assert.doesNotMatch(adminUi, /send-friend-digest|Send friend digest now/);
 });
@@ -37,6 +38,8 @@ test('daily audience is preference-aware, realm-safe, actionable, and direct-lin
   assert.match(digest, /user\.is_test !== true/);
   assert.match(digest, /user\.email_notifications !== false/);
   assert.match(digest, /!user\.notifications_paused_at/);
+  assert.match(digest, /dailyActivityEasternDay\(new Date\(user\.activity_digest_sent_at\)\) !== easternDay/);
+  assert.match(digest, /isDailyActivitySendWindow\(now\)/);
   assert.match(digest, /other\.is_test === true/);
   assert.match(digest, /kind: 'love_interest'/);
   assert.match(digest, /kind: 'love_message'/);
