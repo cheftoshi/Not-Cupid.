@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch'
+import { ELIGIBLE_READY_REMINDER_CAMPAIGN } from '@/lib/eligible-ready-reminder'
 import { experimentProfileReadiness } from '@/lib/experiment-profile'
 import { RAFFLE } from '@/lib/raffle'
 import { fetchAllSupabaseRows } from '@/lib/supabase-pagination'
@@ -248,6 +249,42 @@ export async function GET(req: NextRequest) {
       }
     } catch { loveCampaign = null }
 
+    let eligibleReadyCampaign: any = null
+    try {
+      const [deliveryResult, funnelResult] = await Promise.all([
+        supabaseAdmin
+          .from('email_campaign_deliveries')
+          .select('status,sent_at,delivered_at,opened_at,clicked_at,bounced_at,complained_at')
+          .eq('campaign_key', ELIGIBLE_READY_REMINDER_CAMPAIGN),
+        supabaseAdmin
+          .from('campaign_funnel_events')
+          .select('user_id,event')
+          .eq('campaign_key', ELIGIBLE_READY_REMINDER_CAMPAIGN),
+      ])
+      if (!deliveryResult.error) {
+        const rows = deliveryResult.data ?? []
+        const funnelRows = funnelResult.data ?? []
+        const uniqueAt = (event: string) => new Set(funnelRows.filter((row: any) => row.event === event).map((row: any) => row.user_id)).size
+        const sent = rows.filter((row: any) => row.sent_at).length
+        const delivered = rows.filter((row: any) => row.delivered_at).length
+        const clicked = rows.filter((row: any) => row.clicked_at).length
+        eligibleReadyCampaign = {
+          key: ELIGIBLE_READY_REMINDER_CAMPAIGN,
+          sent,
+          delivered,
+          opened: rows.filter((row: any) => row.opened_at).length,
+          clicked,
+          bounced: rows.filter((row: any) => row.bounced_at).length,
+          complained: rows.filter((row: any) => row.complained_at).length,
+          failed: rows.filter((row: any) => row.status === 'failed').length,
+          deliveryRatePct: sent > 0 ? Math.round((delivered / sent) * 100) : null,
+          clickRatePct: delivered > 0 ? Math.round((clicked / delivered) * 100) : null,
+          experimentViewed: uniqueAt('experiment_viewed'),
+          entrySubmitted: uniqueAt('entry_submitted'),
+        }
+      }
+    } catch { eligibleReadyCampaign = null }
+
     const totalUsers = users?.length ?? 0
     const totalMatches = matches?.length ?? 0
 
@@ -403,6 +440,7 @@ export async function GET(req: NextRequest) {
       traffic,
       monetization,
       loveCampaign,
+      eligibleReadyCampaign,
       friend,
       recentUsers,
       recentMatches,

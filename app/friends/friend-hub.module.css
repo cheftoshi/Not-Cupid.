@@ -188,6 +188,18 @@
 .activityPostFooter { min-width: 0; padding: 0.45rem 0.6rem; border-top: 1px solid var(--h-border); }
 .activityRsvpActions { min-width: 0; display: flex; gap: 0.4rem; }
 .activityRsvpButton { min-width: 0; flex: 1; border-radius: 8px; padding: 0.45rem 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; line-height: 1.25; text-transform: uppercase; }
+.planChatButton { width: 100%; min-height: 44px; margin-top: 0.55rem; border: 1px solid rgba(255,106,31,0.34); border-radius: 999px; background: rgba(255,106,31,0.08); color: #d2530f; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.61rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; touch-action: manipulation; }
+.planChatHint { margin-top: 0.48rem; text-align: center; color: var(--h-text-faint); font-family: Georgia, serif; font-size: 0.74rem; font-style: italic; line-height: 1.35; }
+.activityComments { min-width: 0; margin-top: 0.6rem; border-top: 1px solid var(--h-border); padding-top: 0.6rem; }
+.activityCommentList { min-width: 0; max-height: 240px; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; gap: 0.55rem; }
+.activityCommentEmpty { color: var(--h-text-faint); font-family: Georgia, serif; font-size: 0.82rem; font-style: italic; }
+.activityCommentRow { min-width: 0; display: flex; gap: 0.5rem; align-items: flex-start; }
+.activityCommentPhoto { width: 26px; height: 26px; flex: 0 0 26px; display: inline-block; border: 1px solid var(--h-border); border-radius: 50%; background: var(--h-surface-3); object-fit: cover; }
+.activityCommentName { margin-right: 0.4rem; color: #d2530f; font-family: 'DM Mono', monospace; font-size: 0.56rem; letter-spacing: 0.04em; }
+.activityCommentBody { font-size: 0.86rem; line-height: 1.4; overflow-wrap: anywhere; word-break: break-word; }
+.activityCommentError { margin-top: 0.5rem; border-radius: 8px; padding: 0.4rem 0.7rem; background: rgba(192,57,43,0.1); color: #c0392b; font-family: Georgia, serif; font-size: 0.78rem; font-style: italic; }
+.activityCommentComposer { min-width: 0; display: flex; gap: 0.4rem; margin-top: 0.6rem; }
+.activityCommentInput { width: 0; min-width: 0; min-height: 44px; flex: 1 1 auto; border: 1px solid var(--h-border); border-radius: 999px; padding: 0.45rem 0.85rem; background: var(--h-surface); color: var(--h-text); font-size: 16px; }
 
 /* Private + club chat use one viewport-safe shell. The portal keeps Safari
    from clipping the sheet through .friendPage's horizontal containment. */

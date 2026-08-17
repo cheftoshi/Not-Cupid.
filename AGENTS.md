@@ -1,6 +1,6 @@
 # NotCupid — current project memory
 
-Last reconciled with the deployed application on **August 16, 2026**.
+Last reconciled with the deployed application on **August 17, 2026**.
 
 This file is a current-state handoff, not a chronological session log. Git history
 contains retired plans and earlier implementations. Do not reintroduce an older
@@ -99,6 +99,12 @@ supersede them.
 - The Dating Experiment comeback campaign v5 was explicitly approved for and
   sent once to 394 recipients. Do not resend it from this note. Query the live
   delivery ledger/Resend for current delivery and engagement data.
+- The short profile-ready reminder content
+  `dating-experiment-ready-reminder-v1-2026-08-17` is approved. Its dedicated
+  campaign key is `dating_experiment_ready_reminder_aug17_2026`. Content
+  approval is not send approval: refresh the exact audience and obtain a
+  separate count-specific authorization before setting the send-approval env or
+  delivering it. The production route defaults to a no-delivery dry run.
 
 ## Current product behavior
 
@@ -126,6 +132,14 @@ supersede them.
 - Friend Line is live. It includes intent-based discovery, persistent 1:1
   connections/DMs, group pack chat, Scene plans/posts, clubs, and approved
   community links.
+- Choosing “I’m interested” on a Scene plan opens that plan’s participant-only
+  chat with the organizer. It does not bypass the 1:1 connection rule. Plan-chat
+  replies push the organizer and interested participants and deep-link back to
+  the exact plan.
+- Pack and club messages attempt immediate web push to every other approved
+  member with an active subscription. Unsubscribed devices receive in-app
+  unread badges. The one-per-unread-period 12-hour email fallback remains
+  template-version approval gated; deploying its cron alone cannot send it.
 - Friend discovery and content are metro-bounded and realm-segregated. A user
   can change the active city on the relevant Love/Friend surface; existing
   connections persist.

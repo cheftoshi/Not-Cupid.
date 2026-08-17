@@ -621,13 +621,14 @@ function audienceLabel(a: any): string | null {
 // One Scene post, FB-post structured: header (who/when) · body · action bar.
 // Events carry an audience (gender+age) and a live countdown; eligible people
 // get yes/maybe/no, everyone else sees who it's open to. Posts keep a 👍 like.
-function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onAuthor?: (a: any) => void }) {
+function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: { a: any; onRsvp: (id: string, response?: 'yes' | 'maybe' | 'no') => void; onDelete: (id: string) => void; onAuthor?: (a: any) => void; autoOpenChat?: boolean }) {
   const isEvent = (a.kind || 'event') !== 'post';
   const aud = isEvent ? audienceLabel(a) : null;
   const r = a.responses || { yes: 0, maybe: 0, no: 0 };
   const eligible = a.eligible !== false;
   const RESP: Array<['yes' | 'maybe' | 'no', string]> = [['yes', '✅ i’m interested'], ['maybe', '🔖 save'], ['no', '🚫 pass']];
-  // Comments (talk posts become a little thread).
+  // Talk posts have public comments. Plans expose the same compact thread as a
+  // participant-only chat after the viewer chooses "I'm interested".
   const [showC, setShowC] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [cText, setCText] = useState('');
@@ -638,6 +639,12 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
     try { const res = await fetch(`/api/friend/activities/${a.id}/comments`); if (res.ok) { const d = await res.json(); setComments(d.comments || []); setCCount((d.comments || []).length); } } catch { /* ignore */ }
   }
   function toggleComments() { const next = !showC; setShowC(next); if (next) { setCErr(null); loadComments(); } }
+  useEffect(() => {
+    if (!autoOpenChat || showC) return;
+    setShowC(true);
+    setCErr(null);
+    loadComments();
+  }, [autoOpenChat]); // eslint-disable-line react-hooks/exhaustive-deps
   async function postComment() {
     const body = cText.trim(); if (!body || cBusy) return; setCBusy(true); setCText(''); setCErr(null);
     // optimistic — show it immediately so it never just "vanishes"
@@ -672,8 +679,32 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
       toast('link copied — send it to your people ↗', 'success');
     } catch { /* user closed the share sheet */ }
   }
+  const canUsePlanChat = isEvent && (a.isMine || a.myResponse === 'yes');
+  const commentsPanel = (
+    <div className={s.activityComments}>
+      <div className={s.activityCommentList}>
+        {comments.length === 0 && <div className={s.activityCommentEmpty}>{isEvent ? 'no messages yet — ask the organizer anything.' : 'no comments yet — say something.'}</div>}
+        {comments.map((c) => (
+          <div key={c.id} className={s.activityCommentRow}>
+            {c.photo_url
+              ? <img src={c.photo_url} alt="" className={s.activityCommentPhoto} />
+              : <span className={s.activityCommentPhoto} />}
+            <div style={{ minWidth: 0 }}>
+              <span className={s.activityCommentName}>{(c.name || 'someone').split(' ')[0]}</span>
+              <span className={s.activityCommentBody}>{c.body}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      {cErr && <div className={s.activityCommentError}>{cErr}</div>}
+      <div className={s.activityCommentComposer}>
+        <input value={cText} onChange={(e) => setCText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder={isEvent ? 'message the plan…' : 'add a comment…'} className={s.activityCommentInput} />
+        <button onClick={postComment} disabled={cBusy || !cText.trim()} className={s.poppyBtn} style={{ opacity: cText.trim() ? 1 : 0.5, padding: '0.4rem 0.9rem', fontSize: '0.9rem' }}>{cBusy ? '…' : 'post'}</button>
+      </div>
+    </div>
+  );
   return (
-    <div className={`${s.card} ${s.activityPost}`} style={{ padding: 0, overflow: 'hidden' }}>
+    <div id={`scene-plan-${a.id}`} className={`${s.card} ${s.activityPost}`} style={{ padding: 0, overflow: 'hidden', scrollMarginTop: 80 }}>
       <div className={s.activityPostHeader}>
         {/* author is clickable → their friend card (vet who's behind a post/event) */}
         <button onClick={() => onAuthor && !a.isMine && onAuthor(a)} title={a.isMine ? '' : `see ${a.authorName?.split(' ')[0] || 'who'}'s card`}
@@ -756,30 +787,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
               {a.iRsvped ? '♥' : '♡'} {a.rsvpCount || 0}
             </button>
           </div>
-          {showC && (
-            <div style={{ marginTop: '0.6rem', borderTop: '1px solid var(--h-border)', paddingTop: '0.6rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', maxHeight: 240, overflowY: 'auto' }}>
-                {comments.length === 0 && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'var(--h-text-faint)' }}>no comments yet — say something.</div>}
-                {comments.map((c) => (
-                  <div key={c.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                    {c.photo_url
-                      ? <img src={c.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
-                      : <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
-                    <div style={{ minWidth: 0 }}>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.04em', color: LINE_DEEP, marginRight: '0.4rem' }}>{(c.name || 'someone').split(' ')[0]}</span>
-                      <span style={{ fontSize: '0.86rem', lineHeight: 1.4, wordBreak: 'break-word' }}>{c.body}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {cErr && <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.7rem', background: 'rgba(192,57,43,0.1)', color: '#c0392b', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.78rem', borderRadius: 8 }}>{cErr}</div>}
-              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
-                <input value={cText} onChange={(e) => setCText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder="add a comment…"
-                  style={{ flex: 1, minWidth: 0, border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.45rem 0.85rem', fontSize: '0.85rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
-                <button onClick={postComment} disabled={cBusy || !cText.trim()} className={s.poppyBtn} style={{ opacity: cText.trim() ? 1 : 0.5, padding: '0.4rem 0.9rem', fontSize: '0.9rem' }}>{cBusy ? '…' : 'post'}</button>
-              </div>
-            </div>
-          )}
+          {showC && commentsPanel}
           </>
         ) : eligible ? (() => {
           const cap = a.capacity || null;
@@ -803,6 +811,16 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor }: { a: any; onRsvp: (id: 
               <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: full ? '#c0392b' : 'var(--h-text-dim)' }}>
                 {cap ? `${r.yes}/${cap} spots filled` : `${r.yes} going`}{full ? ' · full' : ''}{r.maybe ? ` · ${r.maybe} maybe` : ''}
               </div>
+            )}
+            {canUsePlanChat ? (
+              <>
+                <button onClick={toggleComments} className={s.planChatButton} aria-expanded={showC}>
+                  💬 {showC ? 'close plan chat' : `talk to the organizer${cCount ? ` · ${cCount}` : ''}`}
+                </button>
+                {showC && commentsPanel}
+              </>
+            ) : !a.isMine && (
+              <div className={s.planChatHint}>Choose “I’m interested” to open the plan chat.</div>
             )}
           </div>
           );
@@ -852,6 +870,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
   const [sceneSort, setSceneSort] = useState<'new' | 'popular'>('new');
   const [sceneTime, setSceneTime] = useState<'all' | 'tonight' | 'weekend'>('all'); // quick time filter
+  const [deepLinkedPlan, setDeepLinkedPlan] = useState<string | null>(null);
   const [nearMe, setNearMe] = useState(false); // only plans in my neighborhood
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
@@ -899,6 +918,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     const url = new URL(window.location.href);
     if (next === 'home') url.searchParams.delete('view');
     else url.searchParams.set('view', next);
+    if (next !== 'scene') url.searchParams.delete('plan');
     if (next !== 'pulse') url.searchParams.delete('club');
     if (next !== 'crew') url.searchParams.delete('chat');
     if (opts.replace) window.history.replaceState({ ncFriendView: next }, '', url.toString());
@@ -1033,6 +1053,13 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
   useEffect(() => { loadMatches(); loadPulse(); loadClubs(); }, [loadMatches, loadPulse, loadClubs]);
   useEffect(() => { loadActs(); }, [loadActs]);
+  useEffect(() => {
+    if (!actsLoaded || typeof window === 'undefined') return;
+    const planId = new URLSearchParams(window.location.search).get('plan');
+    if (!planId) return;
+    setDeepLinkedPlan(planId);
+    window.requestAnimationFrame(() => document.getElementById(`scene-plan-${planId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }, [actsLoaded]);
   // Changing a Scene filter jumps back to the top of the feed — new results
   // shouldn't appear under your old scroll position. (Skips the mount run.)
   const filterRanOnce = useRef(false);
@@ -2207,7 +2234,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                     </div>
                   )}
                   {actsLoaded && shown.length === 0 && <div className={`${s.card} ${s.cardEmpty}`}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
-                  {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} />)}
+                  {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} autoOpenChat={deepLinkedPlan === a.id} />)}
                 </div>
               );
             })()}

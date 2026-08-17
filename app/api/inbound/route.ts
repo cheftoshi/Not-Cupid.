@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase';
 import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch';
+import { ELIGIBLE_READY_REMINDER_CAMPAIGN } from '@/lib/eligible-ready-reminder';
 import { configuredInboundForwardTo, SUPPORT_EMAIL } from '@/lib/email-address';
 import { buildInboundForward, isMatchInboxRecipient, plainTextFromHtml } from '@/lib/inbound-forward';
 
@@ -38,7 +39,9 @@ async function recordCampaignEvent(event: any) {
   const mapped = CAMPAIGN_EVENT_MAP[event.type];
   const data = event?.data || {};
   const tags = data.tags && typeof data.tags === 'object' ? data.tags : {};
-  if (!mapped || tags.campaign !== LOVE_RELAUNCH_CAMPAIGN || typeof tags.user_id !== 'string') return false;
+  const campaignKey = typeof tags.campaign === 'string' ? tags.campaign : '';
+  const trackedCampaigns = new Set([LOVE_RELAUNCH_CAMPAIGN, ELIGIBLE_READY_REMINDER_CAMPAIGN]);
+  if (!mapped || !trackedCampaigns.has(campaignKey) || typeof tags.user_id !== 'string') return false;
 
   const userId = tags.user_id;
   if (!/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(userId)) return true;
@@ -46,7 +49,7 @@ async function recordCampaignEvent(event: any) {
   const { data: existing } = await supabaseAdmin
     .from('email_campaign_deliveries')
     .select('status, sent_at, delivered_at, opened_at, clicked_at, bounced_at, complained_at')
-    .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN)
+    .eq('campaign_key', campaignKey)
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -56,7 +59,7 @@ async function recordCampaignEvent(event: any) {
     ? currentStatus
     : mapped.status;
   const update: Record<string, any> = {
-    campaign_key: LOVE_RELAUNCH_CAMPAIGN,
+    campaign_key: campaignKey,
     user_id: userId,
     variant: ['ready', 'profile', 'live'].includes(tags.variant) ? tags.variant : 'ready',
     // Provider events may arrive out of order; never turn a click back into a

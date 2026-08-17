@@ -383,6 +383,22 @@ export default function AdminClient() {
                 <p className={s.note} style={{ marginTop: '0.75rem' }}>
                   CTA clicks are first-party. Opens are only directional because mailbox privacy tools can preload tracking pixels.
                 </p>
+                {data.eligibleReadyCampaign && (
+                  <>
+                    <div className={s.divider} />
+                    <p className={s.note} style={{ marginBottom: '0.65rem' }}>Profile-ready reminder · one-time cohort</p>
+                    <div className={s.chips}>
+                      <span className={s.chip}>Sent <b>{data.eligibleReadyCampaign.sent}</b></span>
+                      <span className={s.chip}>Delivered <b>{data.eligibleReadyCampaign.delivered}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>CTA clicks <b>{data.eligibleReadyCampaign.clicked}</b></span>
+                      <span className={s.chip}>Directional opens <b>{data.eligibleReadyCampaign.opened}</b></span>
+                      <span className={s.chip}>Experiment views <b>{data.eligibleReadyCampaign.experimentViewed}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>Entries <b>{data.eligibleReadyCampaign.entrySubmitted}</b></span>
+                      <span className={`${s.chip} ${s.chipRed}`}>Bounced <b>{data.eligibleReadyCampaign.bounced}</b></span>
+                      <span className={`${s.chip} ${s.chipRed}`}>Complaints <b>{data.eligibleReadyCampaign.complained}</b></span>
+                    </div>
+                  </>
+                )}
                 {data.loveCampaign.funnel && (
                   <>
                     <div className={s.divider} />

@@ -8,7 +8,21 @@ import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
 
-// Comments on a Scene post — a talk post becomes a little thread.
+// Comments on a Scene post, plus a participant-only plan chat for events.
+// Event chat deliberately stays attached to the plan instead of opening an
+// unrestricted 1:1 DM: only the organizer and people currently RSVP'd "yes"
+// can read or write it.
+
+async function canUseEventChat(userId: string, activity: { author_id: string; kind?: string | null }, activityId: string) {
+  if ((activity.kind || 'event') !== 'event' || activity.author_id === userId) return true;
+  const { data: response } = await supabaseAdmin
+    .from('friend_activity_rsvps')
+    .select('response')
+    .eq('activity_id', activityId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return response?.response === 'yes';
+}
 
 // GET — the comment thread (oldest first), with each commenter's basics.
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -17,12 +31,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: activity } = await supabaseAdmin.from('friend_activities')
-    .select('id, author_id, metro, is_test').eq('id', id).maybeSingle();
+    .select('id, author_id, kind, metro, is_test').eq('id', id).maybeSingle();
   if (!activity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!sameRealm(user, activity)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const retained = await hasFriendActivityHistory(user.id, id);
   if (!retained && !(await friendActivityInCurrentMetro(user, activity))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+  if (!(await canUseEventChat(user.id, activity, id))) {
+    return NextResponse.json({ error: 'RSVP interested to join this plan chat.' }, { status: 403 });
   }
 
   const { data: comments } = await supabaseAdmin
@@ -60,12 +77,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!text) return NextResponse.json({ error: 'Empty comment' }, { status: 400 });
 
   const { data: act } = await supabaseAdmin
-    .from('friend_activities').select('id, author_id, title, metro, is_test').eq('id', id).maybeSingle();
+    .from('friend_activities').select('id, author_id, title, kind, metro, is_test').eq('id', id).maybeSingle();
   if (!act) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!sameRealm(user, act)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const retained = await hasFriendActivityHistory(user.id, id);
   if (!retained && !(await friendActivityInCurrentMetro(user, act))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+  if (!(await canUseEventChat(user.id, act, id))) {
+    return NextResponse.json({ error: 'RSVP interested to join this plan chat.' }, { status: 403 });
   }
 
   const { data: row, error } = await supabaseAdmin
@@ -75,12 +95,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .single();
   if (error) return NextResponse.json({ error: 'Could not add comment' }, { status: 500 });
 
-  if (act.author_id && act.author_id !== user.id) {
-    const first = (user.name || 'someone').split(' ')[0];
+  const first = (user.name || 'someone').split(' ')[0];
+  const preview = text.length > 80 ? text.slice(0, 80) + '…' : text;
+  const isEvent = (act.kind || 'event') === 'event';
+  if (isEvent) {
+    // A plan chat is a small coordination room. Notify the host and everyone
+    // who has committed "interested", excluding the sender. A stable tag keeps
+    // an active exchange from stacking several lock-screen cards.
+    const { data: attendees } = await supabaseAdmin
+      .from('friend_activity_rsvps')
+      .select('user_id')
+      .eq('activity_id', id)
+      .eq('response', 'yes');
+    const recipients = new Set<string>([act.author_id, ...(attendees ?? []).map((row: any) => row.user_id)]);
+    recipients.delete(user.id);
+    await Promise.all(Array.from(recipients).map((recipientId) => sendPushToUser(recipientId, {
+      title: `${first} · ${act.title || 'plan chat'} 💬`,
+      body: preview,
+      url: `/friends?view=scene&plan=${encodeURIComponent(id)}`,
+      tag: `friend-plan-chat-${id}`,
+    }).catch(() => false)));
+  } else if (act.author_id && act.author_id !== user.id) {
     await sendPushToUser(act.author_id, {
       title: `${first} commented 💬`,
-      body: text.length > 80 ? text.slice(0, 80) + '…' : text,
-      url: '/friends?view=scene', tag: `friend-comment-${id}`,
+      body: preview,
+      url: `/friends?view=scene&plan=${encodeURIComponent(id)}`,
+      tag: `friend-comment-${id}`,
     }).catch(() => {});
   }
 

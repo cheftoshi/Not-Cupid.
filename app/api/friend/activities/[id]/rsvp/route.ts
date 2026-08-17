@@ -103,7 +103,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await sendPushToUser(activity.author_id, {
       title: `${who} ${verb} your event 🎟️`,
       body: `${what} — ${responses.yes} going, ${responses.maybe} maybe`,
-      url: '/friends?view=scene',
+      url: `/friends?view=scene&plan=${encodeURIComponent(activityId)}`,
       tag: `rsvp-${activityId}`,
     }).catch(() => {});
   }
