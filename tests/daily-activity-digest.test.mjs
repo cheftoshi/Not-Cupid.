@@ -32,7 +32,7 @@ test('daily delivery is version-gated and has no manual send endpoint', () => {
   assert.match(cron, /runDailyActivityDigest\(\{ send: activation\.enabled \}\)/);
   assert.match(admin, /runDailyActivityDigest\(\{ send: false \}\)/);
   assert.match(vercel, /"path": "\/api\/cron\/daily-activity"/);
-  assert.match(vercel, /"schedule": "0 17,18 \* \* \*"/);
+  assert.match(vercel, /"schedule": "0,5,10 17,18 \* \* \*"/);
   assert.doesNotMatch(vercel, /friend-digest|friend-chat-unread/);
   assert.doesNotMatch(adminUi, /send-friend-digest|Send friend digest now/);
 });
@@ -72,6 +72,7 @@ test('daily audience is preference-aware, realm-safe, actionable, and direct-lin
 
 test('digest migration provides idempotency and plan-chat read cursors', () => {
   const migration = source('supabase/migrations/20260817161455_daily_activity_digest.sql');
+  const dayLock = source('supabase/migrations/20260817173351_daily_activity_delivery_day_lock.sql');
   assert.match(migration, /activity_digest_sent_at/);
   assert.match(migration, /create table if not exists public\.activity_digest_deliveries/);
   assert.match(migration, /unique \(user_id, content_key\)/);
@@ -79,6 +80,10 @@ test('digest migration provides idempotency and plan-chat read cursors', () => {
   assert.match(migration, /primary key \(activity_id, user_id\)/);
   assert.match(migration, /grant select, insert, update, delete on table public\.activity_digest_deliveries to service_role/);
   assert.match(migration, /grant select, insert, update, delete on table public\.friend_plan_chat_reads to service_role/);
+  assert.match(dayLock, /add column if not exists delivery_day date/);
+  assert.match(dayLock, /activity_digest_deliveries_user_day_uq/);
+  assert.match(dayLock, /\(user_id, delivery_day\)/);
+  assert.match(dayLock, /at time zone 'America\/New_York'/);
 });
 
 test('opening or joining a plan conversation advances its read cursor', () => {

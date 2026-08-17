@@ -277,10 +277,11 @@ export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date 
 
   if (send) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
+    const deliveryDay = dailyActivityEasternDay(now);
     for (const candidate of candidates.slice(0, MAX_SENDS_PER_RUN)) {
       const counts = dailyActivityCounts(candidate.items);
       const { error: claimError } = await supabaseAdmin.from('activity_digest_deliveries').insert({
-        user_id: candidate.user.id, content_key: candidate.contentKey, status: 'queued', item_counts: counts,
+        user_id: candidate.user.id, content_key: candidate.contentKey, delivery_day: deliveryDay, status: 'queued', item_counts: counts,
       });
       if (claimError) {
         if ((claimError as any).code === '23505') skippedClaimed++;

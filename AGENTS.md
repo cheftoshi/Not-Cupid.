@@ -114,7 +114,9 @@ supersede them.
   content and send approval. Delivery is permitted only from 1:00 through 1:14
   PM in `America/New_York`, including manual invocations, and at most once per
   recipient per Eastern calendar day. A late scheduler run must skip delivery
-  rather than send outside that window.
+  rather than send outside that window. Vercel attempts the job at 1:00, 1:05,
+  and 1:10 PM; a database `(user_id, delivery_day)` claim prevents duplicates
+  while allowing provider failures to retry inside the approved window.
 
 ## Current product behavior
 
