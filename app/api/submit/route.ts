@@ -5,6 +5,7 @@ import { metroOf } from '@/lib/quiz-data'
 import { metroGenderCounts, shouldHoldForBalance } from '@/lib/balance'
 import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email'
 import { sendPushToUser } from '@/lib/push'
+import { acquisitionColumns, sanitizeAcquisition } from '@/lib/acquisition'
 
 async function sendCoreCompletionEmail(user: { id: string; email: string; name?: string | null; archetype?: string | null }, held: boolean) {
   if (!user.email) return
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
       score_extraversion: clampScore(score_extraversion), score_agreeableness: clampScore(score_agreeableness),
       score_conscientiousness: clampScore(score_conscientiousness), score_openness: clampScore(score_openness),
       archetype: archetype ? String(archetype).slice(0, 80) : archetype, status: 'waiting',
+      ...acquisitionColumns(sanitizeAcquisition(body.acquisition)),
     }
     if (vibes != null && !boundedObject(vibes)) {
       return NextResponse.json({ error: 'Invalid vibes' }, { status: 400 })
@@ -148,6 +150,8 @@ export async function POST(req: NextRequest) {
     // without them so signup never breaks (run 20260609_quiz_v2.sql to activate).
     if (error && /attach_|values_profile|referred_by|column|schema cache/i.test(error.message || '') && error.code !== '23505') {
       delete insertRow.attach_anxiety; delete insertRow.attach_avoidance; delete insertRow.attach_style; delete insertRow.values_profile; delete insertRow.referred_by
+      delete insertRow.acquisition_source; delete insertRow.acquisition_medium; delete insertRow.acquisition_campaign
+      delete insertRow.acquisition_kind; delete insertRow.acquisition_landing_path; delete insertRow.acquisition_captured_at
       console.warn('Submit: quiz-v2 columns missing — run 20260609 migration. Saving without them.')
       ;({ data, error } = await supabaseAdmin.from('users').insert([insertRow]).select().single())
     }

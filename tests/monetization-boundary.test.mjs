@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
-test('core Love identity, matching, chat and planning are never described as paid', () => {
+test('Love profiles, acceptance, replies, planning, and safety controls stay free', () => {
   const hub = read('../app/hub/hub-client.tsx');
   const faq = read('../app/faq/page.tsx');
   const how = read('../app/how-it-works/page.tsx');
@@ -12,29 +12,29 @@ test('core Love identity, matching, chat and planning are never described as pai
   const terms = read('../app/terms/page.tsx');
 
   assert.match(hub, /Every Love profile is free/);
-  assert.match(faq, /Chat and planning stay free/);
-  assert.match(how, /complete Love profiles, matching, chat, and planning are <b>free<\/b>/);
+  assert.match(faq, /The recipient never pays to accept or reply/);
+  assert.match(how, /accepting, replying, blocking and reporting never cost anything/);
   assert.match(privacy, /before choosing/);
-  assert.match(terms, /Core profiles, matching, messaging, and planning are free/);
+  assert.match(terms, /Core profiles, accepting, replying, blocking, reporting, and planning are free/);
   for (const source of [hub, faq, how, privacy, terms]) {
     assert.doesNotMatch(source, /unlocking a full match profile|Love profile unlocks|every private profile/i);
   }
 });
 
-test('paid decision support appears only after a mutual connection', () => {
-  const page = read('../app/match/[id]/page.tsx');
-  const room = read('../app/match/[id]/chat-room.tsx');
-  const checkout = read('../app/api/matches/[id]/unlock-checkout/route.ts');
-
-  assert.match(page, /const mutuallyConnected = !!match\.user_1_accepted && !!match\.user_2_accepted/);
-  assert.match(page, /const unlockAvailable = mutuallyConnected && !readOnly/);
-  assert.match(room, /!pendingAccept && unlockAvailable/);
-  assert.match(checkout, /The compatibility deep-dive opens after you both connect/);
-  assert.match(checkout, /This connection has ended/);
+test('only an outgoing pick after the three included roster picks is paywalled', () => {
+  const picker = read('../app/dashboard/roster-picker.tsx');
+  const pick = read('../app/api/match/pick/route.ts');
+  const migration = read('../supabase/migrations/20260818143000_love_connection_picks.sql');
+  assert.match(picker, /includedRemaining <= 0/);
+  assert.match(picker, /extra Love connection · one-time \$0\.99/);
+  assert.match(pick, /pickAccess\.includedRemaining > 0/);
+  assert.match(pick, /paywall: true/);
+  assert.match(migration, /recipient never pays/);
+  assert.match(migration, /return_included_love_pick/);
 });
 
 test('payment routes prevent test charges and duplicate subscriber purchases', () => {
-  const love = read('../app/api/matches/[id]/unlock-checkout/route.ts');
+  const love = read('../app/api/match/connection-checkout/route.ts');
   const friend = read('../app/api/friend/checkout/route.ts');
   const pro = read('../app/api/pro/checkout/route.ts');
 
@@ -51,8 +51,10 @@ test('Love coach uses free profile context without leaking paid deep answers', (
   assert.doesNotMatch(coach, /profileUnlocked|unlockedProfileContext|match_unlocks/);
 });
 
-test('a deep-dive purchase remains private from the other person', () => {
+test('an extra-connection purchase is pair-specific and never charges the recipient', () => {
   const webhook = read('../app/api/stripe-webhook/route.ts');
-  assert.match(webhook, /This purchase stays private/);
+  const checkout = read('../app/api/match/connection-checkout/route.ts');
+  assert.match(checkout, /metadata\[candidate_id\]/);
+  assert.match(checkout, /If interest is mutual, chat is included/);
   assert.doesNotMatch(webhook, /Someone unlocked your profile/);
 });

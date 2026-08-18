@@ -1,26 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { freeLoveProfileView, loveDeepDiveSummary } from '../lib/love-deep-dive.ts';
+import { freeLoveProfileView } from '../lib/love-deep-dive.ts';
 
-test('an empty profile never becomes a purchasable deep-dive', () => {
-  assert.deepEqual(loveDeepDiveSummary({ relationship_style: 'long-term' }), {
-    available: false,
-    items: [],
-    galleryCount: 0,
-  });
-});
-
-test('compatibility answers create an itemized deep-dive without gating the bio', () => {
-  const summary = loveDeepDiveSummary({
-    music: ['Jazz', 'jazz', 'House'],
-    values_profile: { family: 'important' },
-    attach_style: 'secure',
-  });
-  assert.equal(summary.available, true);
-  assert.deepEqual(summary.items, ['values & relationship fit', 'communication style']);
-});
-
-test('free view keeps profile basics and strips only deep-dive fields', () => {
+test('free roster view keeps profile basics and strips only mutual-only fields', () => {
   const profile = freeLoveProfileView({
     id: 'person-1',
     name: 'Ari',
@@ -41,12 +23,9 @@ test('free view keeps profile basics and strips only deep-dive fields', () => {
   assert.equal(profile.attach_style, null);
 });
 
-test('bio, interests and prompts alone never create a paywall', () => {
-  const summary = loveDeepDiveSummary({
-    bio: 'A real bio',
-    hobbies: ['climbing'],
-    prompts: [{ question: 'A tiny thing that makes my day is…', answer: 'Coffee.' }],
-  });
-  assert.equal(summary.available, false);
-  assert.deepEqual(summary.items, []);
+test('profile privacy filtering never introduces a payment flag', () => {
+  const profile = freeLoveProfileView({ bio: 'hello', hobbies: ['books'], prompts: [{ answer: 'yes' }] });
+  assert.equal(profile.bio, 'hello');
+  assert.deepEqual(profile.hobbies, ['books']);
+  assert.equal('paywall' in profile, false);
 });

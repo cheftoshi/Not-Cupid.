@@ -8,6 +8,7 @@ import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswer
 import type { VibeKey } from '@/lib/quiz-data'
 import { parseResponse } from '@/lib/fetch-helpers'
 import { toast } from '@/components/feedback'
+import { readStoredAcquisition } from '@/lib/acquisition'
 import styles from './quiz.module.css'
 
 type Screen = 'intro' | 'details' | 'verify' | 'save-error' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'love-preferences' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result' | 'love-done'
@@ -32,7 +33,7 @@ const INTENT_OPTIONS = [
     eyebrow: 'love line',
     icon: '💘',
     title: 'I want to date.',
-    body: 'Five curated options, up to three active connections, and help turning a chat into a real plan.',
+    body: 'Seven curated options, three included picks per roster, and help turning a chat into a real plan.',
     next: 'baseline first · Love setup after',
   },
   {
@@ -446,6 +447,7 @@ function QuizInner() {
           name: form.name, age: form.age, gender: form.gender, seeking: form.seek,
           zip: form.zip, email: form.email, age_min: parseInt(form.ageMin), age_max: parseInt(form.ageMax),
           ...(refCode ? { ref: refCode } : {}),
+          acquisition: readStoredAcquisition(),
           ...scorePayload,
         })
       })
@@ -1393,7 +1395,7 @@ function QuizInner() {
                   : intent === 'both'
                     ? 'Next we finish your Love setup, then your Friend setup. Each line stays separate, and you can pause between them.'
                     : intent === 'love'
-                      ? 'Next is a focused Love setup about what you want and how you connect. Then your five curated options can open.'
+                      ? 'Next is a focused Love setup about what you want and how you connect. Then your seven curated options can open.'
                       : 'Your baseline is ready. Open the Hub whenever you want to choose a line.'}
               </p>
             </div>

@@ -12,6 +12,7 @@ import {
 } from '@/lib/experiment-preferences';
 import { experimentProfileReadiness } from '@/lib/experiment-profile';
 import { recordDatingExperimentFunnelEvent } from '@/lib/dating-experiment-funnel';
+import { acquisitionColumns, sanitizeAcquisition } from '@/lib/acquisition';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,6 +126,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not enter — try again.' }, { status: 500 });
   }
   const reservation = Array.isArray(reservationRows) ? reservationRows[0] : reservationRows;
+  const acquisition = sanitizeAcquisition(body.acquisition);
+  if (acquisition) {
+    const { error: attributionError } = await supabaseAdmin
+      .from('raffle_entries')
+      .update(acquisitionColumns(acquisition))
+      .eq('user_id', user.id)
+      .eq('event_key', RAFFLE.key);
+    if (attributionError) console.error('dating experiment attribution update failed', attributionError.message);
+  }
   await recordDatingExperimentFunnelEvent(user.id, 'entry_submitted', {
     eventKey: RAFFLE.key,
     wasNew: !!reservation?.was_new,

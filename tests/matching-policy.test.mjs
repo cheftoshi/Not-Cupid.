@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ACTIVE_USER_DAYS,
+  LOVE_INCLUDED_PICKS,
   LOVE_MAX_CONNECTIONS,
   LOVE_ROSTER_OPTIONS,
   RECENT_USER_DAYS,
@@ -26,8 +27,9 @@ test('matching activity and exposure cutoffs use 12 and 7 days', () => {
   assert.equal(ROSTER_EXPOSURE_COOLDOWN_DAYS, 7);
   assert.equal(ROSTER_NOTIFICATION_COOLDOWN_DAYS, 7);
   assert.equal(ROSTER_RETURN_ROTATION_HOURS, 24);
-  assert.equal(LOVE_MAX_CONNECTIONS, 3);
-  assert.equal(LOVE_ROSTER_OPTIONS, 5);
+  assert.equal(LOVE_INCLUDED_PICKS, 3);
+  assert.equal(LOVE_MAX_CONNECTIONS, 10);
+  assert.equal(LOVE_ROSTER_OPTIONS, 7);
   assert.equal(activeUserCutoffIso(now), new Date(now - 12 * DAY_MS).toISOString());
   assert.equal(rosterExposureCutoffIso(now), new Date(now - 7 * DAY_MS).toISOString());
   assert.equal(rosterNotificationCutoffIso(now), new Date(now - 7 * DAY_MS).toISOString());

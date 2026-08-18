@@ -5,48 +5,23 @@ import RosterPicker from './roster-picker';
 import LoveConnections from './love-connections';
 import LocationControls from '@/components/location-controls';
 import { DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
-import { recordUnlock } from '@/lib/record-unlock';
 import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
 import styles from './dashboard.module.css';
 import { sameRealm } from '@/lib/realm';
 import { profileReadiness } from '@/lib/profile-readiness';
+import { LOVE_INCLUDED_PICKS, LOVE_ROSTER_OPTIONS } from '@/lib/matching-policy';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ unlock_session?: string }>;
+  searchParams: Promise<{ extra_connection?: string; candidate?: string }>;
 }) {
-  const { unlock_session: unlockSession } = await searchParams;
+  const { extra_connection: extraConnection, candidate: paidCandidateId } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/dashboard');
   if (!user.archetype) redirect('/quiz');
-
-  if (unlockSession) {
-    try {
-      const stripeRes = await fetch(
-        `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(unlockSession)}`,
-        { headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, cache: 'no-store' }
-      );
-      const session = await stripeRes.json();
-      if (
-        session.payment_status === 'paid' &&
-        session.metadata?.user_id === user.id &&
-        session.metadata?.type === 'match_unlock'
-      ) {
-        await recordUnlock({
-          userId: user.id,
-          matchId: session.metadata.match_id,
-          unlockedUserId: session.metadata.unlocked_user_id,
-          tier: session.metadata.unlock_tier === 'hexaco' ? 'hexaco' : 'profile',
-          paymentId: session.payment_intent,
-        });
-      }
-    } catch (e) {
-      console.error('Unlock verification failed:', e);
-    }
-  }
 
   await releaseTimedOutMatches(user.id);
   const [liveMatches, { data: historyMatches }] = await Promise.all([
@@ -152,14 +127,14 @@ export default async function DashboardPage({
           <h1 className={styles.title}>your matches, your move.</h1>
           <p className={styles.subtitle}>
             {connections.length > 0
-              ? `${activeCards.length} ${activeCards.length === 1 ? 'conversation' : 'conversations'} going · up to ${MAX_CONNECTIONS} at once · you set the pace`
+              ? `${activeCards.length} ${activeCards.length === 1 ? 'connection' : 'connections'} going · ${LOVE_INCLUDED_PICKS} picks included in each roster · you set the pace`
               : 'pick who you connect with · you set the pace'}
           </p>
           <details className={styles.lovePolicyDetails}>
             <summary>how Love Line works</summary>
             <div className={styles.lovePolicyBar} aria-label="Love Line matching limits">
-              <span><strong>{MAX_CONNECTIONS}</strong> active matches</span>
-              <span><strong>5</strong> curated options</span>
+              <span><strong>{LOVE_INCLUDED_PICKS}</strong> included picks</span>
+              <span><strong>{LOVE_ROSTER_OPTIONS}</strong> curated options</span>
               <span><strong>7d</strong> cooldown before repeats</span>
             </div>
           </details>
@@ -187,7 +162,7 @@ export default async function DashboardPage({
               <div className={styles.loveMiniStats}>
                 <div><strong>{activeCards.length}</strong><span>live</span></div>
                 <div><strong>{yourMoveCount}</strong><span>your move</span></div>
-                <div><strong>{MAX_CONNECTIONS}</strong><span>max chats</span></div>
+                <div><strong>{LOVE_INCLUDED_PICKS}</strong><span>included picks</span></div>
               </div>
 
               <div className={styles.loveProfileMeta}>
@@ -253,7 +228,7 @@ export default async function DashboardPage({
 
           <main className={styles.loveMain}>
             <LoveConnections
-              maxConnections={MAX_CONNECTIONS}
+              includedPicks={LOVE_INCLUDED_PICKS}
               connections={activeCards.map((card) => ({
                 matchId: card.matchId,
                 name: card.name,
@@ -271,8 +246,11 @@ export default async function DashboardPage({
                 radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
                 maxRadius={MAX_MATCH_RADIUS}
                 maxConnections={MAX_CONNECTIONS}
+                includedPicks={LOVE_INCLUDED_PICKS}
                 horizontal
                 hasActive={activeCards.length > 0}
+                paidCandidateId={extraConnection === 'ready' ? paidCandidateId : undefined}
+                checkoutError={extraConnection === 'error'}
                 liveConnections={connections.map((c: any) => ({
                   matchId: c.match.id,
                   name: c.otherUser.name || 'your match',

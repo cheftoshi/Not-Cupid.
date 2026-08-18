@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
   if (!limit.ok) return NextResponse.json({ ok: true });
 
   const body = await req.json().catch(() => ({}));
-  if (body.product !== 'friend_pack' || !['friend_pack_revealed', 'friend_pack_empty'].includes(body.surface)) {
+  const valid = (body.product === 'friend_pack' && ['friend_pack_revealed', 'friend_pack_empty'].includes(body.surface))
+    || (body.product === 'love_connection' && body.surface === 'love_roster_extra');
+  if (!valid) {
     return NextResponse.json({ error: 'Invalid event' }, { status: 400 });
   }
 
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
     await recordMonetizationEvent({
       userId: user.id,
       event: 'paywall_viewed',
-      product: 'friend_pack',
+      product: body.product,
       surface: body.surface,
       amountCents: 99,
     });

@@ -1,18 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { SkeletonStyles, SkeletonCard } from '@/components/skeleton';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
 import ReactivateButton from '@/components/reactivate-button';
-import EndMatchDialog from '@/components/end-match-dialog';
 import styles from './dashboard.module.css';
 
 type LiveConnection = { matchId: string; name: string };
 
-// The five compatible people a user can choose next. Active conversations live
+// The seven compatible people a user can choose next. Active conversations live
 // in their own section on the dashboard; keeping them out of this rail prevents
 // the same person appearing three times in one screen.
 type Candidate = {
@@ -32,16 +31,22 @@ export default function RosterPicker({
   radius,
   maxRadius,
   maxConnections = 3,
+  includedPicks = 3,
   liveConnections = [],
   horizontal = false,
   hasActive = false,
+  paidCandidateId,
+  checkoutError = false,
 }: {
   radius: number;
   maxRadius: number;
   maxConnections?: number;
+  includedPicks?: number;
   liveConnections?: LiveConnection[];
   horizontal?: boolean;
   hasActive?: boolean;
+  paidCandidateId?: string;
+  checkoutError?: boolean;
 }) {
   const router = useRouter();
   const [roster, setRoster] = useState<Candidate[] | null>(null);
@@ -53,16 +58,16 @@ export default function RosterPicker({
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [atCapacity, setAtCapacity] = useState(false);
+  const [includedRemaining, setIncludedRemaining] = useState(includedPicks);
+  const [pro, setPro] = useState(false);
+  const [creditCandidateIds, setCreditCandidateIds] = useState<string[]>([]);
+  const [hasFlexibleCredit, setHasFlexibleCredit] = useState(false);
   const [nextRotationAt, setNextRotationAt] = useState<string | null>(null);
   const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
   const [clock, setClock] = useState(() => Date.now());
-  // When at capacity, picking opens a "close one first" prompt for this person.
-  const [closePromptFor, setClosePromptFor] = useState<Candidate | null>(null);
-  // Which existing conversation's end-dialog (reason picker) is open.
-  const [endingMatchId, setEndingMatchId] = useState<string | null>(null);
-  // At the cap, keep the selected replacement through the end-match flow so
-  // confirming the drop completes the swap without asking for a second click.
-  const [swapCandidate, setSwapCandidate] = useState<Candidate | null>(null);
+  const [paywallCandidate, setPaywallCandidate] = useState<Candidate | null>(null);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const resumedCheckout = useRef(false);
   useEffect(() => { load(); }, []);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 60_000);
@@ -76,18 +81,29 @@ export default function RosterPicker({
     return () => window.clearTimeout(timer);
   }, [nextRotationAt]);
   useEffect(() => {
-    if (!previewCandidate) return;
+    if (!previewCandidate && !paywallCandidate) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setPreviewCandidate(null);
+      if (event.key === 'Escape') { setPreviewCandidate(null); setPaywallCandidate(null); }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [previewCandidate]);
+  }, [previewCandidate, paywallCandidate]);
+  useEffect(() => {
+    if (checkoutError) setNotice('Checkout did not complete. Nothing was charged; your roster is still here.');
+  }, [checkoutError]);
+  useEffect(() => {
+    if (!paywallCandidate) return;
+    void fetch('/api/monetization/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product: 'love_connection', surface: 'love_roster_extra' }),
+    });
+  }, [paywallCandidate]);
 
   async function load() {
     try {
@@ -96,12 +112,25 @@ export default function RosterPicker({
       setGhosted(!!data.ghosted);
       setHardLocked(!!data.hardLocked);
       setAtCapacity(!!data.atCapacity);
+      setIncludedRemaining(typeof data.includedPicksRemaining === 'number' ? data.includedPicksRemaining : includedPicks);
+      setPro(!!data.pro);
+      setCreditCandidateIds(Array.isArray(data.connectionCreditCandidateIds) ? data.connectionCreditCandidateIds : []);
+      setHasFlexibleCredit(!!data.hasFlexibleConnectionCredit);
       setNextRotationAt(typeof data.nextRotationAt === 'string' ? data.nextRotationAt : null);
       setRoster(Array.isArray(data.roster) ? data.roster : []);
     } catch {
       setRoster([]);
     }
   }
+
+  useEffect(() => {
+    if (resumedCheckout.current || !paidCandidateId || !Array.isArray(roster)) return;
+    resumedCheckout.current = true;
+    window.history.replaceState({}, '', '/dashboard#roster');
+    const candidate = roster.find((item) => item.id === paidCandidateId);
+    if (candidate) void submitPick(candidate, true);
+    else setNotice('Your $0.99 extra-connection credit is ready. Choose any available roster profile.');
+  }, [paidCandidateId, roster]);
 
   const rotationMs = nextRotationAt ? new Date(nextRotationAt).getTime() - clock : 0;
   const rotationLabel = (() => {
@@ -120,15 +149,19 @@ export default function RosterPicker({
 
   function pick(c: Candidate) {
     if (picking) return;
-    // At the cap → don't pick; prompt them to close an existing conversation.
     if (atCapacity || liveConnections.length >= maxConnections) {
-      setClosePromptFor(c);
+      setNotice(`You have reached the ${maxConnections}-connection safety limit. End one only when you actually want to close it.`);
       return;
     }
-    void submitPick(c);
+    const hasCredit = hasFlexibleCredit || creditCandidateIds.includes(c.id);
+    if (!pro && includedRemaining <= 0 && !hasCredit) {
+      setPaywallCandidate(c);
+      return;
+    }
+    void submitPick(c, hasCredit && includedRemaining <= 0);
   }
 
-  async function submitPick(c: Candidate) {
+  async function submitPick(c: Candidate, preferPaid = false) {
     if (picking) return;
     setPicking(c.id);
     setNotice(null);
@@ -136,16 +169,26 @@ export default function RosterPicker({
       const res = await fetch('/api/match/pick', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidateId: c.id }),
+        body: JSON.stringify({ candidateId: c.id, preferPaid }),
       });
       const data = await parseResponse<any>(res);
       if (res.ok && data.ok) {
+        if (data.accessType === 'included') setIncludedRemaining((remaining) => Math.max(0, remaining - 1));
+        if (data.accessType === 'paid') {
+          setCreditCandidateIds((ids) => ids.filter((id) => id !== c.id));
+          setHasFlexibleCredit(false);
+        }
         // Match created — flip THIS card to the "it's on" moment in place, then
         // soft-refresh the server data so the new chat appears. No hard reload:
         // scroll stays put and the reveal cinematic still fires for the fresh match.
         setPickedId(c.id);
         setPicking(null);
         setTimeout(() => router.refresh(), 1400);
+        return;
+      }
+      if (res.status === 402 && data.paywall) {
+        setPaywallCandidate(c);
+        setPicking(null);
         return;
       }
       // Conflict (taken / already matched) — show why + refresh the roster.
@@ -155,6 +198,35 @@ export default function RosterPicker({
     } catch {
       setNotice('Something went wrong. Try again.');
       setPicking(null);
+    }
+  }
+
+  async function openExtraConnectionCheckout(candidate: Candidate) {
+    if (checkoutBusy) return;
+    setCheckoutBusy(true);
+    setNotice(null);
+    try {
+      const res = await fetch('/api/match/connection-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: candidate.id }),
+      });
+      const data = await parseResponse<any>(res);
+      if (res.ok && data.creditReady) {
+        setPaywallCandidate(null);
+        setCheckoutBusy(false);
+        void submitPick(candidate, true);
+        return;
+      }
+      if (res.ok && typeof data.url === 'string') {
+        window.location.href = data.url;
+        return;
+      }
+      setNotice(data.error || 'Checkout could not open. Nothing was charged.');
+    } catch {
+      setNotice('Checkout could not open. Nothing was charged.');
+    } finally {
+      setCheckoutBusy(false);
     }
   }
 
@@ -236,8 +308,8 @@ export default function RosterPicker({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.9rem' }}>
         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
           {hasActive
-            ? `${roster.length} options for your next connection`
-            : `${roster.length} curated options · you choose`}
+            ? `${roster.length} options · ${pro ? 'extra picks included with Pro' : `${includedRemaining} of ${includedPicks} included picks left`}`
+            : `${roster.length} curated options · ${includedPicks} picks included`}
         </span>
         {horizontal && roster.length > 0 && (
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>scroll →</span>
@@ -252,7 +324,13 @@ export default function RosterPicker({
 
       {atCapacity && (
         <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.75rem 0.95rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>
-          your three connection slots are full. these five stay browseable — choose one to swap with a current match.
+          you reached the {maxConnections}-connection safety limit. profiles stay browseable, but open another only after you genuinely end one.
+        </div>
+      )}
+
+      {!atCapacity && !pro && includedRemaining === 0 && (
+        <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(37,99,255,0.35)', color: 'var(--h-text)', borderRadius: 12, padding: '0.8rem 0.95rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.86rem', textAlign: 'center', lineHeight: 1.5 }}>
+          you used this roster&apos;s {includedPicks} included picks. every profile stays free to view; each extra distinct connection is a one-time $0.99.
         </div>
       )}
 
@@ -332,7 +410,17 @@ export default function RosterPicker({
                     opacity: (picking && picking !== c.id) || pickedId ? 0.4 : 1,
                   }}
                 >
-                  {picking === c.id ? 'connecting…' : atCapacity ? `close a chat to open →` : `choose ${first} →`}
+                  {picking === c.id
+                    ? 'connecting…'
+                    : atCapacity
+                      ? 'safety limit reached'
+                      : pro
+                        ? `choose ${first} · Pro →`
+                        : includedRemaining > 0
+                          ? `choose ${first} · included →`
+                          : (hasFlexibleCredit || creditCandidateIds.includes(c.id))
+                            ? 'use extra credit →'
+                            : `choose ${first} · $0.99 →`}
                 </button>
                 )}
               </div>
@@ -394,7 +482,7 @@ export default function RosterPicker({
                   </div>
                 )}
                 <div className={styles.loveProfilePreviewBoundary}>
-                  <strong>this profile is free.</strong> if you both connect, chat and planning stay free too. Only then can an optional $0.99 deep-dive open extra photos and deeper lifestyle, values, and connection-style context.
+                  <strong>this profile is free.</strong> opening, accepting, replying, blocking, and reporting are never charged. This roster includes {includedPicks} distinct picks; an extra pick after that is a one-time $0.99 and chat is included if the interest becomes mutual.
                 </div>
                 <button
                   type="button"
@@ -405,7 +493,15 @@ export default function RosterPicker({
                     pick(candidate);
                   }}
                 >
-                  {atCapacity ? 'close a chat to choose →' : `choose ${first} →`}
+                  {atCapacity
+                    ? 'connection safety limit reached'
+                    : pro
+                      ? `choose ${first} · included with Pro →`
+                      : includedRemaining > 0
+                        ? `choose ${first} · included →`
+                        : (hasFlexibleCredit || creditCandidateIds.includes(candidate.id))
+                          ? `use extra-connection credit →`
+                          : `choose ${first} · $0.99 →`}
                 </button>
               </div>
             </section>
@@ -413,63 +509,39 @@ export default function RosterPicker({
         );
       })()}
 
-      {/* At-capacity: choosing prompts the user to close one existing chat. */}
-      {closePromptFor && (
+      {paywallCandidate && (
         <div
-          onClick={() => setClosePromptFor(null)}
+          onClick={() => setPaywallCandidate(null)}
           className={styles.loveModalOverlay}
         >
           <div onClick={(e) => e.stopPropagation()} className={styles.loveSwapSheet}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>your inbox is full</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>extra Love connection · one-time $0.99</div>
             <h3 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
-              close a chat to open one with {(closePromptFor.name || 'them').split(' ')[0]}.
+              choose {(paywallCandidate.name || 'them').split(' ')[0]} as an extra connection.
             </h3>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
-              Love Line keeps up to {maxConnections} connections active. choose which one to close, and we&apos;ll connect your new pick automatically:
+              You&apos;ve used the {includedPicks} picks included with this roster. Their full roster profile remains free. If the interest is mutual, chat and planning are included. A match or reply isn&apos;t guaranteed.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-              {liveConnections.map((lc) => (
-                <button
-                  className={styles.loveSwapChoice}
-                  key={lc.matchId}
-                  onClick={() => {
-                    setSwapCandidate(closePromptFor);
-                    setClosePromptFor(null);
-                    setEndingMatchId(lc.matchId);
-                  }}
-                  style={{ background: 'var(--h-surface-3)', border: '1.5px solid var(--h-border)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)' }}>{(lc.name || 'your match').split(' ')[0]}</span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-accent-2)' }}>end this →</span>
-                </button>
-              ))}
+            <div style={{ background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
+              one person · one payment · no subscription<br />
+              if they become unavailable before the pick is created, your payment stays as a credit for another roster profile
             </div>
             <button
-              onClick={() => setClosePromptFor(null)}
+              type="button"
+              disabled={checkoutBusy}
+              onClick={() => void openExtraConnectionCheckout(paywallCandidate)}
+              style={{ width: '100%', marginTop: '0.85rem', background: '#0b0b0b', color: '#fff', border: 0, borderRadius: 12, padding: '0.85rem 1rem', cursor: checkoutBusy ? 'wait' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+            >
+              {checkoutBusy ? 'opening secure checkout…' : `choose ${(paywallCandidate.name || 'them').split(' ')[0]} · $0.99 →`}
+            </button>
+            <button
+              onClick={() => setPaywallCandidate(null)}
               style={{ marginTop: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}
             >
               never mind
             </button>
           </div>
         </div>
-      )}
-
-      {/* The reason picker for closing a conversation (shared component). */}
-      {endingMatchId && (
-        <EndMatchDialog
-          matchId={endingMatchId}
-          otherName={(liveConnections.find((l) => l.matchId === endingMatchId)?.name || 'them').split(' ')[0]}
-          onClose={() => { setEndingMatchId(null); setSwapCandidate(null); }}
-          onEnded={() => {
-            const replacement = swapCandidate;
-            setEndingMatchId(null);
-            setSwapCandidate(null);
-            setAtCapacity(false);
-            void load();
-            router.refresh();
-            if (replacement) void submitPick(replacement);
-          }}
-        />
       )}
     </div>
   );

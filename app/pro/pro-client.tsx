@@ -8,10 +8,10 @@ const BLUE = '#2563ff';
 const ORANGE = '#ff6a1f';
 
 const PERKS = [
-  { icon: '💘', t: 'Every compatibility deep-dive, unlocked', d: 'Bio, prompts and interests are already free. Pro opens every match’s extra photos, lifestyle, values, and connection style — no $0.99 per unlock.' },
+  { icon: '💘', t: 'Extra Love connections, included', d: 'Every roster profile is free and three picks are included. Pro removes the $0.99 checkout for additional distinct picks.' },
   { icon: '🎒', t: 'Unlimited additional friendship packs', d: 'Open fresh packs without another checkout. Each one can add up to 5 new people to connect with.' },
   { icon: '🌱', t: 'Support an independent experiment', d: 'Help keep the core experience lightweight, ad-free, and free to use for everyone.' },
-  { icon: '✦', t: 'One price, no repeat checkout', d: 'Skip the per-deep-dive and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
+  { icon: '✦', t: 'One price, no repeat checkout', d: 'Skip the per-extra-connection and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
 ];
 
 export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: string | null }) {
@@ -49,7 +49,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
           <div style={{ margin: '0 0 1rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 14, background: 'rgba(255,255,255,0.04)' }}>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#9fbeff', marginBottom: '0.45rem' }}>always free</div>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.78)', fontSize: '0.86rem', lineHeight: 1.6 }}>
-              Complete roster profiles · five curated Love options · up to three active connections · matching · chat · date planning · Friend conversations
+              Complete roster profiles · seven curated Love options · three distinct picks per roster · accepting · replies · date planning · Friend conversations
             </p>
           </div>
         )}
@@ -59,7 +59,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
             <div style={{ fontSize: '2rem' }}>✦</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.02em' }}>you’re Pro</div>
             <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '0.3rem 0 0' }}>
-              {renewsOn ? `renews ${renewsOn}.` : 'active.'} deep-dives and additional Friend packs are open.
+              {renewsOn ? `renews ${renewsOn}.` : 'active.'} extra Love connection picks and additional Friend packs are open.
             </p>
             <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '1rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.7rem 1.6rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.04em', textDecoration: 'none' }}>open a pack →</Link>
           </div>
@@ -84,7 +84,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
               cancel anytime · keeps access through the month you paid for
             </p>
             <p style={{ textAlign: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', margin: '0.55rem auto 0', maxWidth: 430 }}>
-              Prefer to stay flexible? One compatibility deep-dive or one additional Friend pack remains $0.99.
+              Prefer to stay flexible? One extra Love connection or one additional Friend pack remains $0.99.
             </p>
             {err && <p style={{ textAlign: 'center', color: '#ffb3b3', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem' }}>{err}</p>}
           </>

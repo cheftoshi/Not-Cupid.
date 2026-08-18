@@ -21,10 +21,10 @@ const CORE_STEPS = [
 
 const LOVE_STEPS = [
   { emoji: '🧭', title: 'go deeper on love', body: 'a few more questions — what you’re looking for, how you connect (attachment style), and what matters most (values, kids, lifestyle, fitness). that’s what the matching actually weighs, not just vibes.' },
-  { emoji: '🃏', title: 'your curated roster', body: 'the algo hands you a small set of your most compatible people, ranked on values, attachment, personality and shared rapid-fire answers — no swiping, no endless feed.' },
-  { emoji: '👉', title: 'you pick', body: 'choose someone worth the first message. Keep up to three active connections while five curated options stay browseable; at the cap, drop one to swap in your next choice.' },
+  { emoji: '🃏', title: 'your curated roster', body: 'the algo hands you seven of your most compatible people, ranked on values, attachment, personality and shared rapid-fire answers — no swiping, no endless feed.' },
+  { emoji: '👉', title: 'you pick', body: 'every 24-hour roster includes three distinct connection picks. all seven profiles stay free to browse; after the included three, each extra person you choose is a one-time $0.99 (or included with Pro).' },
   { emoji: '💞', title: 'it’s a match', body: 'when you both accept, the chat opens and we email you both. set your match radius (5–75 mi) so you only see people you’d actually meet.' },
-  { emoji: '🔓', title: 'profiles stay free', body: 'open any Love roster card to see their bio, interests and prompts before choosing. matching, chat and planning stay free. only after you both connect, extra photos and the optional lifestyle, values and connection-style deep-dive can open once for $0.99 (included with Pro).' },
+  { emoji: '🔓', title: 'profiles stay free', body: 'open any Love roster card to see their bio, interests and prompts before choosing. accepting, replying, blocking and reporting never cost anything. once you both connect, the full compatibility profile, chat and planning are included.' },
   { emoji: '🍽️', title: 'plan the date', body: 'once you’re talking, Date Vibes makes choosing what to do a game — a deck of curated local spots and live events; a mutual yes reveals the plan.' },
 ];
 
@@ -112,10 +112,10 @@ export default function HowItWorks() {
         <div style={{ background: 'var(--h-surface)', border: `2px dashed ${BLUE}`, borderRadius: 16, padding: '1.25rem', margin: '0 0 1.75rem', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent)', margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
-            the quiz, complete Love profiles, matching, chat, and planning are <b>free</b>. after a mutual connection, an optional compatibility deep-dive is <b>$0.99</b>. on Friend, your first <b>friendship pack</b> (up to 5 people) is free — additional packs are <b>$0.99</b> each, and group chats are always free.
+            the quiz and every Love profile are <b>free</b>. each roster includes <b>three connection picks</b>; each additional distinct pick is a one-time <b>$0.99</b> and includes chat if mutual. on Friend, your first <b>friendship pack</b> is free — additional packs are <b>$0.99</b> each, and group chats are always free.
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent-2)', margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
-            or go <b>Pro</b> — every compatibility deep-dive and unlimited friendship packs for <b>$3.99/mo</b>. no swiping, no paywall on meeting or messaging.
+            or go <b>Pro</b> — extra Love connection picks and unlimited friendship packs for <b>$3.99/mo</b>. accepting and replying are always free.
           </p>
         </div>
 

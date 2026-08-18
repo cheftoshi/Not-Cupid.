@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { returnIncludedLovePick } from '@/lib/love-pick-access';
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,6 +31,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: 'Could not pass on match' }, { status: 500 });
+  if (!(match.user_1_accepted && match.user_2_accepted)) await returnIncludedLovePick(id, user.id);
 
   // Record in history to prevent re-match
   const a = match.user_1_id < match.user_2_id ? match.user_1_id : match.user_2_id;

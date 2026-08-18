@@ -10,15 +10,14 @@ export const dynamic = 'force-dynamic';
 // A self-contained TEST WORLD, segregated from real users (is_test = true; the
 // matcher/roster/pulse only ever pair test↔test). Built so logging in as
 // **Test Alex** exercises EVERY surface at once:
-//   LOVE  → "your chats" with one live both-accepted chat (Bailey, w/ messages +
-//           an available $0.99 compatibility deep-dive), plus a FULL
-//           browseable roster carousel of 5 more women.
+//   LOVE  → "your chats" with one live both-accepted chat (Bailey, w/ messages),
+//           plus a FULL browseable roster carousel of 7 more women.
 //   FRIEND→ a live 3-person crew + group chat (opened) AND a SEALED pack of 4
 //           waiting to be opened (the cinematic /friends/pack reveal).
 //   SCENE → events + posts on the board, with Alex RSVP'd / liked some so the
 //           hub's "your events", "for your vibe" and "you liked" all populate.
 // Every profile is fully filled (gallery, sun sign, sports, attachment, values)
-// so the bubbles, sign badges, unlock walls and personality bars all render.
+// so the bubbles, sign badges and personality bars all render.
 
 const gal = (a: number, b: number) => [`https://i.pravatar.cc/600?img=${a}`, `https://i.pravatar.cc/600?img=${b}`];
 const baseVibes = { chronotype: 2, date_freq: 3, future: 3, comm: 3, social: 3, risk: 2 };
@@ -85,6 +84,16 @@ const S: Spec[] = [
     occupation: 'Carpenter', education: 'Wentworth', img: 60, g: [61, 62], sign: 'virgo', height: 185, rstyle: 'marriage_track',
     music: ['country', 'rock'], food: ['bbq', 'burgers'], hobbies: ['woodworking', 'hiking', 'cooking'], sports: ['hiking', 'softball'],
     scores: [13, 8, 11, 13, 14, 11], attach: [1, 1, 'secure'], activities: ['outdoors & hikes', 'food & restaurants', 'bars & nightlife'] },
+  { email: 'noa+test@notcupid.dev', name: 'Test Noa', gender: 'f', seeking: 'm', age: 29, zip: '02116',
+    archetype: 'The Playful Planner', bio: 'Test account. Back Bay museum member, dumpling enthusiast, and the person who actually makes the group reservation.',
+    occupation: 'Producer', education: 'Suffolk', img: 44, g: [39, 40], sign: 'gemini', height: 166, rstyle: 'open',
+    music: ['r&b', 'pop'], food: ['dumplings', 'mediterranean'], hobbies: ['museums', 'cooking', 'travel'], sports: ['tennis', 'pilates'],
+    scores: [12, 11, 14, 13, 13, 12], attach: [2, 1, 'secure'], activities: ['creative & art', 'food & restaurants', 'coffee shops'] },
+  { email: 'priya+test@notcupid.dev', name: 'Test Priya', gender: 'f', seeking: 'm', age: 32, zip: '02446',
+    archetype: 'The Thoughtful Explorer', bio: 'Test account. Brookline bookstore regular, amateur pasta maker, happiest discovering a new corner of the city.',
+    occupation: 'Physician', education: 'Harvard', img: 49, g: [41, 42], sign: 'virgo', height: 164, rstyle: 'marriage_track',
+    music: ['jazz', 'indie'], food: ['italian', 'indian'], hobbies: ['reading', 'cooking', 'travel'], sports: ['running', 'yoga'],
+    scores: [14, 12, 10, 14, 14, 13], attach: [1, 1, 'secure'], activities: ['coffee shops', 'food & restaurants', 'outdoors & hikes'] },
 ];
 
 // Scene board — events + posts authored across the test crew, upcoming + open.
@@ -178,6 +187,10 @@ export async function POST(req: NextRequest) {
   const oldCircleIds = Array.from(new Set((oldMemberships ?? []).map((member: any) => member.circle_id)));
   if (oldCircleIds.length) await supabaseAdmin.from('friend_messages').delete().in('circle_id', oldCircleIds);
 
+  // Pick ledgers reference matches, and paid credits can reference a match.
+  // Clear these first so a re-seed is deterministic on the new Love model.
+  await del('love_pick_ledger', ['user_id', 'candidate_id']);
+  await del('love_connection_unlocks', ['user_id', 'intended_candidate_id']);
   await del('matches', ['user_1_id', 'user_2_id']);
   await del('match_history', ['user_a_id', 'user_b_id']);
   await del('match_unlocks', ['user_id', 'unlocked_user_id']);
@@ -251,7 +264,8 @@ export async function POST(req: NextRequest) {
     ]);
   }
   await supabaseAdmin.from('users').update({ status: 'matched', last_matched_at: now }).in('id', [alex, bailey]);
-  // Harper, Dev, Iris, Jules, Maya stay unmatched → they fill Alex's roster carousel.
+  // Harper, Dev, Iris, Jules, Maya, Noa and Priya stay unmatched → they fill
+  // Alex's seven-option roster carousel.
 
   // ── FRIEND: a live opened crew (Cam, Eli, Owen) + a SEALED pack (Dev,Iris,Jules,Maya) ──
   const crew = [cam, eli, owen];

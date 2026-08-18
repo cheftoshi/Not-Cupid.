@@ -26,9 +26,6 @@ interface Props {
   initialMessages: any[];
   readOnly?: boolean;
   profileUnlocked: boolean;
-  unlockAvailable: boolean;
-  unlockItems: string[];
-  unlockJustOpened?: boolean;
 }
 
 type LoveCoach = {
@@ -96,9 +93,6 @@ export default function ChatRoom({
   initialMessages,
   readOnly = false,
   profileUnlocked,
-  unlockAvailable,
-  unlockItems,
-  unlockJustOpened = false,
 }: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
   // Newest message timestamp we hold — lets the poll ask for only newer rows.
@@ -117,10 +111,6 @@ export default function ChatRoom({
   const [menuOpen, setMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'plan' | 'profile'>('chat');
-  const [unlocking, setUnlocking] = useState(false);
-  useEffect(() => {
-    if (unlockJustOpened) toast('compatibility deep-dive opened', 'success');
-  }, [unlockJustOpened]);
   const [coach, setCoach] = useState<LoveCoach | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
   // A new message changes the coach stage. Never leave stale guidance on the
@@ -307,28 +297,6 @@ export default function ChatRoom({
     setInput(text);
     setNudge(null);
     inputRef.current?.focus();
-  }
-
-  async function unlockProfile() {
-    if (unlocking) return;
-    setUnlocking(true);
-    try {
-      const response = await fetch(`/api/matches/${matchId}/unlock-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: 'profile' }),
-      });
-      const data = await parseResponse<any>(response);
-      if (response.ok && data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      toast(data.error || 'checkout didn’t open — try again', 'error');
-    } catch {
-      toast('checkout didn’t open — try again', 'error');
-    } finally {
-      setUnlocking(false);
-    }
   }
 
   async function loadCoach() {
@@ -672,7 +640,7 @@ export default function ChatRoom({
                 )}
                 {(profileVibes.length > 0 || profileValues.length > 0 || connectionStyle) && (
                   <div style={{ display: 'grid', gap: '0.55rem', padding: '0.75rem', border: '1px solid rgba(37,99,255,0.2)', borderRadius: 12, background: 'rgba(37,99,255,0.05)' }}>
-                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#2563ff' }}>compatibility deep-dive</div>
+                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#2563ff' }}>compatibility profile</div>
                     {connectionStyle && <strong style={{ fontSize: '0.82rem' }}>connection style · {connectionStyle}</strong>}
                     {profileVibes.length > 0 && (
                       <div className={styles.matchTags}>
@@ -687,25 +655,9 @@ export default function ChatRoom({
                   </div>
                 )}
                 <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.48rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#2d7a4f' }}>
-                  ✓ compatibility deep-dive opened
+                  ✓ full compatibility profile included
                 </div>
               </>
-            ) : !pendingAccept && unlockAvailable ? (
-              <div id="full-profile" style={{ background: 'linear-gradient(135deg,rgba(37,99,255,0.09),rgba(255,106,31,0.08))', border: '1px solid rgba(37,99,255,0.3)', borderRadius: 14, padding: '0.9rem' }}>
-                <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>🔒 compatibility deep-dive</div>
-                <strong style={{ display: 'block', fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)', marginBottom: '0.35rem' }}>
-                  the basics are open. go deeper if you want.
-                </strong>
-                <p style={{ margin: '0 0 0.7rem', fontSize: '0.76rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}>
-                  {unlockItems.slice(0, 4).join(' · ')}{unlockItems.length > 4 ? ` · +${unlockItems.length - 4} more` : ''}
-                </p>
-                <button onClick={unlockProfile} disabled={unlocking} style={{ width: '100%', border: 0, borderRadius: 10, background: '#0b0b0b', color: '#fff', padding: '0.65rem 0.75rem', cursor: unlocking ? 'wait' : 'pointer', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.56rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  {unlocking ? 'opening checkout…' : 'unlock once · $0.99 →'}
-                </button>
-                <a href="/pro" style={{ display: 'block', textAlign: 'center', marginTop: '0.55rem', color: '#2563ff', textDecoration: 'none', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  or unlock every match with Pro · $3.99/mo
-                </a>
-              </div>
             ) : null}
           </div>
         </section>

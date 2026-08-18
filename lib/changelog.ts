@@ -8,7 +8,7 @@ export interface ChangelogEntry {
 
 // Bump this string whenever you add an entry. The dashboard compares it to
 // the version the user last saw (localStorage) to show a "new" indicator.
-export const CHANGELOG_VERSION = '2026-08-18-love-profiles-free';
+export const CHANGELOG_VERSION = '2026-08-18-love-connection-picks';
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
@@ -16,12 +16,12 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       '🍽️ The Boston Dating Experiment is live — opt in free, meet up to 2 private compatibility options, and mutually choose who you would actually meet. Up to 2 mutual pairs get dinner on us.',
       '🎥 Video is optional — add a private 5–15 second hello if you want to show more personality. Skipping it never affects eligibility or compatibility.',
-      '💘 More room to meet — keep up to 3 active Love connections while 5 curated options rotate with your activity.',
-      '🪪 Love profiles are open — tap any roster card to read the bio, prompts and interests before choosing. Matching, chat and planning stay free.',
+      '💘 More people, still curated — every Love roster now shows up to 7 compatible options and includes 3 distinct connection picks.',
+      '🪪 Love profiles are open — tap any roster card to read the bio, prompts and interests before choosing. Accepting and replying are always free.',
       '✈ Going somewhere? Add an upcoming trip and Friend Line will route local people, plans, clubs, and communities before you arrive.',
       '📱 Friend Line is smoother on phones — thumb-sized controls, compact navigation, safer modal scrolling, and better support for notched screens.',
-      '🔎 Compatibility deep-dives — after a mutual connection, an optional $0.99 deep-dive opens extra photos plus deeper lifestyle, values and connection-style context.',
-      '✦ Prefer no repeat checkouts? Pro is still $3.99/mo for every Love deep-dive and additional Friend pack; either one stays $0.99 à la carte.',
+      '✦ Extra Love connections — after the 3 included picks in a roster, choosing one more person is a one-time $0.99. If mutual, chat and the full compatibility profile are included.',
+      '🎒 Pro stays $3.99/mo and now includes extra Love connection picks plus additional Friend packs.',
     ],
   },
   {

@@ -49,12 +49,12 @@ export default function EndMatchDialog({
 
         {step === 'choose' && (
           <>
-            <div className={styles.endEyebrow}>{mutual ? 'end this connection' : 'free this Love Line spot'}</div>
+            <div className={styles.endEyebrow}>end this connection</div>
             <h2 className={styles.endTitle}>{mutual ? 'what happened with' : 'move on from'} <em>{otherName}?</em></h2>
             <p className={styles.endSub}>
               {mutual
-                ? 'This closes the chat and frees one of your three Love Line spots.'
-                : 'No penalty. This ends the pending connection, frees your spot, and keeps this person out of your future roster.'}
+                ? 'This closes the chat permanently. It does not return one of this roster’s three included picks.'
+                : 'This ends the pending connection and keeps this person out of your future roster. A pick you started is not returned just because you end it.'}
             </p>
 
             {mutual && (
@@ -70,8 +70,8 @@ export default function EndMatchDialog({
             <button onClick={() => setStep('confirm-not-vibing')} className={styles.endOpt}>
               <span className={styles.endOptIcon}>🌀</span>
               <div className={styles.endOptBody}>
-                <div className={styles.endOptTitle}>{mutual ? 'not vibing' : 'free this spot'}</div>
-                <div className={styles.endOptDesc}>{mutual ? "no spark, mutual fade, just didn't click" : 'end this pending connection and choose someone else'}</div>
+                <div className={styles.endOptTitle}>{mutual ? 'not vibing' : 'end this pending connection'}</div>
+                <div className={styles.endOptDesc}>{mutual ? "no spark, mutual fade, just didn't click" : 'close this connection permanently'}</div>
               </div>
             </button>
 
@@ -97,12 +97,12 @@ export default function EndMatchDialog({
 
         {step === 'confirm-not-vibing' && (
           <>
-            <div className={styles.endEyebrow}>free your Love Line spot</div>
+            <div className={styles.endEyebrow}>end this connection</div>
             <h2 className={styles.endTitle}>move on from {otherName}?</h2>
-            <p className={styles.endSub}>No penalty. Your spot opens immediately so you can choose someone else.</p>
+            <p className={styles.endSub}>You can always leave. Ending is permanent and does not replenish a pick you started during this roster cycle.</p>
             <div className={styles.endActions}>
               <button onClick={() => setStep('choose')} className={styles.endGhostBtn}>← back</button>
-              <button onClick={() => submit('not_vibing')} className={styles.endPrimaryBtn}>end &amp; free spot →</button>
+              <button onClick={() => submit('not_vibing')} className={styles.endPrimaryBtn}>end connection →</button>
             </div>
           </>
         )}

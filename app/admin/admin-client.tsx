@@ -320,6 +320,7 @@ export default function AdminClient() {
               <a href="#monetization" className={s.navLink}>Revenue funnel</a>
               <a href="#love-usage" className={s.navLink}>Love usage</a>
               <a href="#love-campaign" className={s.navLink}>Love campaign</a>
+              <a href="#acquisition" className={s.navLink}>Acquisition</a>
               <a href="#traffic" className={s.navLink}>Traffic</a>
               <a href="#friend" className={s.navLink}>Friend</a>
               <a href="#pool" className={s.navLink}>Pool</a>
@@ -346,7 +347,7 @@ export default function AdminClient() {
             {([
               ['Total Users', stats?.totalUsers, '👥', null],
               ['Total Matches', stats?.totalMatches, '💘', null],
-              ['Revenue', `$${stats?.totalRevenue}`, '💰', stats?.revenue ? `unlocks $${stats.revenue.loveUnlocks} · packs $${stats.revenue.packs}` : 'collected to date'],
+              ['Revenue', `$${stats?.totalRevenue}`, '💰', stats?.revenue ? `Love extras $${stats.revenue.loveConnections ?? '0.00'} · packs $${stats.revenue.packs}` : 'collected to date'],
               ['Pro subs', stats?.activeSubs ?? 0, '✦', stats?.mrr != null ? `$${stats.mrr}/mo recurring` : null],
               ['Both Accepted', stats?.bothAccepted, '✅', null],
               ['Pending', stats?.pendingMatches, '⏳', null],
@@ -518,7 +519,8 @@ export default function AdminClient() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '0.7rem', marginTop: '0.8rem' }}>
                   {([
-                    ['love_profile', 'Love deep-dives'],
+                    ['love_connection', 'Extra Love connections'],
+                    ['love_profile', 'Legacy profile unlocks'],
                     ['friend_pack', 'Friend packs'],
                     ['pro', 'Pro'],
                   ] as const).map(([key, label]) => {
@@ -563,6 +565,42 @@ export default function AdminClient() {
                   );
                 })}
               </div>
+            )}
+          </div>
+
+          {/* ── ONLY IN BOSTON ACQUISITION ── */}
+          <div className={s.card} id="acquisition">
+            <div className={s.cardHead}>
+              <p className={s.cardTitle}>Only in Boston — <b>acquisition snapshot</b></p>
+            </div>
+            {!data?.onlyInBoston ? (
+              <p className={s.note}>acquisition data is not available yet.</p>
+            ) : (
+              <>
+                <p className={s.note} style={{ marginBottom: '0.65rem' }}>
+                  Live-window measurement starts {data.onlyInBoston.launchLabel}. Tagged numbers are direct attribution; launch-window and Instagram-referral numbers are directional and may include other traffic.
+                </p>
+                <div className={s.chips}>
+                  <span className={`${s.chip} ${s.chipGold}`}>Tagged visits <b>{data.onlyInBoston.attributedSessions}</b></span>
+                  <span className={s.chip}>Tagged Experiment visits <b>{data.onlyInBoston.attributedLandingSessions}</b></span>
+                  <span className={s.chip}>Tagged signups <b>{data.onlyInBoston.attributedSignups}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>Tagged entries <b>{data.onlyInBoston.attributedEntries}</b></span>
+                  <span className={s.chip}>Visit → signup <b>{data.onlyInBoston.attributedVisitToSignupPct == null ? '—' : `${data.onlyInBoston.attributedVisitToSignupPct}%`}</b></span>
+                  <span className={s.chip}>Visit → entry <b>{data.onlyInBoston.attributedVisitToEntryPct == null ? '—' : `${data.onlyInBoston.attributedVisitToEntryPct}%`}</b></span>
+                  <span className={s.chip}>Instagram referrals <b>{data.onlyInBoston.instagramReferralSessions}</b></span>
+                  <span className={s.chip}>All sessions since launch <b>{data.onlyInBoston.launchWindowSessions}</b></span>
+                  <span className={s.chip}>Experiment sessions since launch <b>{data.onlyInBoston.experimentSessions}</b></span>
+                  <span className={s.chip}>New signups since launch <b>{data.onlyInBoston.launchWindowSignups}</b></span>
+                  <span className={s.chip}>New entries since launch <b>{data.onlyInBoston.launchWindowEntries}</b></span>
+                </div>
+                <div className={s.divider} />
+                <p className={s.note}>
+                  Campaign link: <code>{data.onlyInBoston.taggedUrl}</code>
+                </p>
+                {!data.onlyInBoston.trackingReady && (
+                  <p className={s.note} style={{ marginTop: '0.45rem' }}>Apply the acquisition migration to enable exact tagged conversion.</p>
+                )}
+              </>
             )}
           </div>
 
@@ -908,7 +946,7 @@ export default function AdminClient() {
             </div>
             <div className={`${s.actionsGrid} ${s.actions2}`} style={{ marginBottom: '0.75rem' }}>
               <button className={`${s.btn} ${s.btnGhost}`} onClick={async () => {
-                if (!confirm('Build the full TEST WORLD? 10 test accounts (log in as Test Alex): one live Love chat + five roster options, a friend crew + a sealed pack to open, and a populated Scene with RSVPs. Re-running resets this isolated fixture namespace and retires obsolete test accounts.')) return;
+                if (!confirm('Build the full TEST WORLD? 12 test accounts (log in as Test Alex): one live Love chat + seven roster options, a friend crew + a sealed pack to open, and a populated Scene with RSVPs. Re-running resets this isolated fixture namespace and retires obsolete test accounts.')) return;
                 const res = await fetch('/api/admin/seed-test', { method: 'POST' });
                 const d = await parseResponse<any>(res);
                 if (!d.ok) { alert('Failed: ' + (d.error || 'unknown')); return; }

@@ -13,10 +13,11 @@ import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C, escapeHtml } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
 import { LOVE_MAX_CONNECTIONS } from '@/lib/matching-policy';
+import { returnIncludedLovePick } from '@/lib/love-pick-access';
 
-// Three live Love Line connections at a time. Pending picks reserve a slot, so
-// availability is honest while both people decide. Five additional roster
-// choices remain browseable; at the cap, choosing one becomes a deliberate swap.
+// Ten is a hard safety ceiling, not the free allowance. Each daily roster has
+// three included outgoing picks; extras are paid individually or included with
+// Pro. Pending picks reserve capacity so availability stays honest.
 // "Live" = both-accepted, or pending within the accept window.
 export const MAX_CONNECTIONS = LOVE_MAX_CONNECTIONS;
 
@@ -92,6 +93,7 @@ export async function releaseTimedOutMatches(userId: string): Promise<void> {
       .from('matches')
       .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
       .eq('id', m.id);
+    await returnIncludedLovePick(m.id, null);
     await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [m.user_1_id, m.user_2_id]);
     // Whoever got picked here and never accepted accrues an "ignored pick".
     const ignorer = ignoringParty(m);
@@ -128,6 +130,7 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
       .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
       .eq('id', matchId)
       .eq('status', 'pending');
+    await returnIncludedLovePick(matchId, null);
     return { ok: false, reason: 'ended' };
   }
 

@@ -5,6 +5,7 @@ import { verifyStripeSignature } from '@/lib/stripe-webhook'
 import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
 import { defaultEmailReplyTo } from '@/lib/email-address'
 import { recordMonetizationEvent } from '@/lib/monetization'
+import { recordLoveConnectionPurchase } from '@/lib/love-pick-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,6 +57,25 @@ export async function POST(req: NextRequest) {
       const session = event.data.object
       const userId = session.metadata?.userId
       const paymentIntent = session.payment_intent
+
+      // ============== $0.99 extra Love connection ==============
+      if (session.metadata?.type === 'love_connection') {
+        await recordLoveConnectionPurchase(session)
+        if (session.customer) {
+          await supabaseAdmin.from('users').update({ stripe_customer_id: session.customer }).eq('id', session.metadata.user_id)
+        }
+        await recordMonetizationEvent({
+          userId: session.metadata.user_id,
+          event: 'purchase_completed',
+          product: 'love_connection',
+          surface: 'stripe_webhook',
+          amountCents: session.amount_total ?? 99,
+          externalEventId: event.id,
+        })
+        await completeStripeEvent(event.id)
+        return NextResponse.json({ received: true })
+      }
+      // ============== End extra Love connection ==============
 
       // ============== Handle $0.99 Love compatibility deep-dive ==============
       if (session.metadata?.type === 'match_unlock') {

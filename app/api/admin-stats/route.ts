@@ -6,6 +6,7 @@ import { ELIGIBLE_READY_REMINDER_CAMPAIGN } from '@/lib/eligible-ready-reminder'
 import { experimentProfileReadiness } from '@/lib/experiment-profile'
 import { RAFFLE } from '@/lib/raffle'
 import { fetchAllSupabaseRows } from '@/lib/supabase-pagination'
+import { ONLY_IN_BOSTON_CAMPAIGN } from '@/lib/acquisition'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,9 +14,16 @@ type PageViewRow = {
   id: number
   path: string
   anon_id: string | null
+  referrer: string | null
   display_mode: string | null
   device_class: string | null
   orientation: string | null
+  acquisition_source?: string | null
+  acquisition_medium?: string | null
+  acquisition_campaign?: string | null
+  acquisition_kind?: string | null
+  acquisition_landing_path?: string | null
+  acquisition_captured_at?: string | null
   created_at: string
 }
 
@@ -76,12 +84,19 @@ export async function GET(req: NextRequest) {
       realUserIds.has(match.user_1_id) && realUserIds.has(match.user_2_id)
     )
     // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):
-    //   • match_unlocks.amount_cents = current Love compatibility deep-dives ($0.99)
+    //   • match_unlocks.amount_cents = historical Love compatibility deep-dives
     //   • unlocks.amount = legacy standalone unlock ledger (cents)
     const { data: unlocks } = await supabaseAdmin.from('unlocks').select('amount')
     let matchUnlocks: any[] = []
     try { matchUnlocks = (await supabaseAdmin.from('match_unlocks').select('amount_cents')).data ?? [] }
     catch { /* table missing — fall back to legacy unlocks only */ }
+    let loveConnectionUnlocks: any[] = []
+    try {
+      loveConnectionUnlocks = (await supabaseAdmin
+        .from('love_connection_unlocks')
+        .select('amount_cents, status')
+        .neq('status', 'refunded')).data ?? []
+    } catch { /* connection paywall migration not applied yet */ }
     // ── Friend Maxxin metrics (wrapped so missing tables don't break the dashboard) ──
     // Hoisted so the top-level revenue total can fold in friend-side income.
     let friendPaidPacks = 0   // $0.99 packs actually bought (excludes free pro grants)
@@ -150,17 +165,50 @@ export async function GET(req: NextRequest) {
     // Web traffic (last 7 days) for the in-admin flow view. Wrapped so a missing
     // page_views table (migration not run yet) doesn't break the whole dashboard.
     let pageViews: PageViewRow[] | null = null
+    let acquisitionTrackingReady = true
     try {
       pageViews = await fetchAllSupabaseRows<PageViewRow>((from, to) =>
         supabaseAdmin
           .from('page_views')
-          .select('id, path, anon_id, display_mode, device_class, orientation, created_at')
+          .select('id, path, anon_id, referrer, display_mode, device_class, orientation, acquisition_source, acquisition_medium, acquisition_campaign, acquisition_kind, acquisition_landing_path, acquisition_captured_at, created_at')
           .gte('created_at', sevenDaysAgo)
           .order('created_at', { ascending: true })
           .order('id', { ascending: true })
           .range(from, to)
       )
-    } catch { pageViews = null }
+    } catch {
+      acquisitionTrackingReady = false
+      try {
+        pageViews = await fetchAllSupabaseRows<PageViewRow>((from, to) => supabaseAdmin
+          .from('page_views')
+          .select('id, path, anon_id, referrer, display_mode, device_class, orientation, created_at')
+          .gte('created_at', sevenDaysAgo)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to))
+      } catch { pageViews = null }
+    }
+
+    let acquisitionEntries: any[] = []
+    try {
+      const result = await supabaseAdmin
+        .from('raffle_entries')
+        .select('user_id, created_at, acquisition_source, acquisition_medium, acquisition_campaign, acquisition_kind, acquisition_landing_path')
+        .eq('event_key', RAFFLE.key)
+        .eq('terms_version', RAFFLE.termsVersion)
+        .neq('status', 'withdrawn')
+      if (result.error) throw result.error
+      acquisitionEntries = result.data ?? []
+    } catch {
+      acquisitionTrackingReady = false
+      const fallback = await supabaseAdmin
+        .from('raffle_entries')
+        .select('user_id, created_at')
+        .eq('event_key', RAFFLE.key)
+        .eq('terms_version', RAFFLE.termsVersion)
+        .neq('status', 'withdrawn')
+      acquisitionEntries = fallback.data ?? []
+    }
 
     // First-party payment funnel, last 30 days. This is intentionally derived
     // from aggregate events and never exposes checkout/customer details.
@@ -172,7 +220,7 @@ export async function GET(req: NextRequest) {
         .gte('created_at', thirtyDaysAgo)
       if (!result.error) {
         const rows = result.data ?? []
-        const productNames = ['love_profile', 'friend_pack', 'pro']
+        const productNames = ['love_connection', 'love_profile', 'friend_pack', 'pro']
         const summarize = (product?: string) => {
           const subset = product ? rows.filter((row: any) => row.product === product) : rows
           const unique = (event: string) => new Set(
@@ -335,9 +383,10 @@ export async function GET(req: NextRequest) {
     const loveUnlockCents =
       matchUnlocks.reduce((s: number, r: any) => s + (r.amount_cents ?? 0), 0) +
       (unlocks ?? []).reduce((s: number, r: any) => s + (r.amount ?? 0), 0)
+    const loveConnectionCents = loveConnectionUnlocks.reduce((sum: number, row: any) => sum + (row.amount_cents ?? 0), 0)
     const packCents = friendPaidPacks * 99
     const friendLegacyCents = friendChatUnlocks * 99
-    const oneTimeCents = loveUnlockCents + packCents + friendLegacyCents // collected to date
+    const oneTimeCents = loveUnlockCents + loveConnectionCents + packCents + friendLegacyCents // collected to date
     // Active All-Access subscribers → monthly recurring revenue.
     const activeSubs = users.filter(
       (u: any) => !u.deleted_at && u.friend_pro_until && new Date(u.friend_pro_until).getTime() > nowMs
@@ -346,6 +395,7 @@ export async function GET(req: NextRequest) {
     const totalRevenue = oneTimeCents / 100 // one-time collected (subs shown separately as MRR)
     const revenue = {
       loveUnlocks: (loveUnlockCents / 100).toFixed(2),
+      loveConnections: (loveConnectionCents / 100).toFixed(2),
       packs: (packCents / 100).toFixed(2),
       friendLegacy: (friendLegacyCents / 100).toFixed(2),
       oneTimeTotal: totalRevenue.toFixed(2),
@@ -433,6 +483,7 @@ export async function GET(req: NextRequest) {
 
     // ───────────── Web traffic (last 7 days) ─────────────
     let traffic: any = null
+    let onlyInBoston: any = null
     if (pageViews) {
       const pathCounts: Record<string, number> = {}
       const sessions = new Set<string>()
@@ -472,6 +523,47 @@ export async function GET(req: NextRequest) {
           currentProfileUsed: pathCounts['/reactivation/current_profile_used'] || 0,
           dismissed: pathCounts['/reactivation/welcome_dismissed'] || 0,
         },
+      }
+
+      const campaign = ONLY_IN_BOSTON_CAMPAIGN
+      const launchViews = pageViews.filter((view) => view.created_at >= campaign.launchStartedAt)
+      const attributedViews = launchViews.filter((view) =>
+        view.acquisition_campaign === campaign.campaign || view.acquisition_source === campaign.source
+      )
+      const instagramReferralViews = launchViews.filter((view) =>
+        view.acquisition_source === 'instagram' || /(^|\.)instagram\.com/i.test((() => {
+          try { return view.referrer ? new URL(view.referrer).hostname : '' } catch { return '' }
+        })())
+      )
+      const experimentViews = launchViews.filter((view) => view.path === campaign.landingPath)
+      const sessionsOf = (views: PageViewRow[]) => new Set(views.map((view) => view.anon_id).filter(Boolean)).size
+      const campaignMatch = (row: any) => row.acquisition_campaign === campaign.campaign || row.acquisition_source === campaign.source
+      const newSignups = users.filter((user: any) => user.created_at >= campaign.launchStartedAt)
+      const directSignups = newSignups.filter(campaignMatch)
+      const launchEntries = acquisitionEntries.filter((entry: any) => entry.created_at >= campaign.launchStartedAt)
+      const directEntries = launchEntries.filter(campaignMatch)
+      const percent = (numerator: number, denominator: number) => denominator > 0
+        ? Math.round((numerator / denominator) * 100)
+        : null
+      onlyInBoston = {
+        launchStartedAt: campaign.launchStartedAt,
+        launchLabel: campaign.launchLabel,
+        measuredAt: new Date(nowMs).toISOString(),
+        trackingReady: acquisitionTrackingReady,
+        taggedUrl: `https://notcupid.com${campaign.shortPath}`,
+        attributedSessions: sessionsOf(attributedViews),
+        attributedLandingSessions: sessionsOf(attributedViews.filter((view) => view.path === campaign.landingPath)),
+        attributedPageViews: attributedViews.length,
+        attributedSignups: directSignups.length,
+        attributedEntries: directEntries.length,
+        attributedVisitToSignupPct: percent(directSignups.length, sessionsOf(attributedViews)),
+        attributedVisitToEntryPct: percent(directEntries.length, sessionsOf(attributedViews)),
+        instagramReferralSessions: sessionsOf(instagramReferralViews),
+        launchWindowSessions: sessionsOf(launchViews),
+        experimentSessions: sessionsOf(experimentViews),
+        launchWindowPageViews: launchViews.length,
+        launchWindowSignups: newSignups.length,
+        launchWindowEntries: launchEntries.length,
       }
     }
 
@@ -568,6 +660,7 @@ export async function GET(req: NextRequest) {
       signupsPerDay: days,
       funnel,
       traffic,
+      onlyInBoston,
       loveUsage,
       monetization,
       loveCampaign,

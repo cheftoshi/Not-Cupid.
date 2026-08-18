@@ -15,7 +15,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How does the matching actually work?',
-    a: 'A personality quiz — HEXACO traits, your attachment style, what you value, and a rapid-fire round — powers it. We score real compatibility on who you are and what you want, not photos or a swipe count, then hand you five curated options. You can keep up to three Love Line connections active and swap one when a better fit appears.',
+    a: 'A personality quiz — HEXACO traits, your attachment style, what you value, and a rapid-fire round — powers it. We score real compatibility on who you are and what you want, not photos or a swipe count, then hand you seven curated options. Each 24-hour roster includes three distinct connection picks.',
   },
   {
     q: 'No swiping — really?',
@@ -23,7 +23,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is it free?',
-    a: 'The quiz and matches are free, and you can open any Love roster card to read their bio, prompts and interests before choosing. Chat and planning stay free. Only after you both connect, extra photos and the optional lifestyle, values and connection-style deep-dive can open for a one-time $0.99. On the Friend Line, your first friendship pack (up to 5 people to connect with) is free; additional packs are $0.99 each, and group chats are always free. Pro is $3.99/mo — every Love deep-dive and unlimited Friend packs.',
+    a: 'The quiz and every Love roster profile are free. Each 24-hour roster includes three distinct connection picks. After those three, each extra connection you choose is a one-time $0.99 and includes chat and planning if the interest becomes mutual. The recipient never pays to accept or reply. Removing someone yourself does not return that pick during the current roster; a decline, expiry, or unavailable profile does. Blocking and reporting are always free. On Friend, your first friendship pack is free and additional packs are $0.99. Pro is $3.99/mo and includes extra Love picks plus unlimited Friend packs.',
   },
   {
     q: 'Where is NotCupid available?',

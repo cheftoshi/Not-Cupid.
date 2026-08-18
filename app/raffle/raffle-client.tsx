@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { subscribeToPush } from '@/lib/push-client';
 import { datingExperimentGateIssues } from '@/lib/dating-experiment-gate';
 import { EXPERIMENT_ORIENTATION_OPTIONS } from '@/lib/experiment-preferences';
+import { readStoredAcquisition } from '@/lib/acquisition';
 
 type Event = {
   series: string;
@@ -290,6 +291,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           termsVersion: ev.termsVersion,
           previewConsent,
           safetyAcknowledged,
+          acquisition: readStoredAcquisition(),
         }),
       });
       const d = await r.json().catch(() => ({}));

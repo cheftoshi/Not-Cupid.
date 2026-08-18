@@ -41,11 +41,17 @@ export async function GET(_req: NextRequest) {
       try { const { data } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id'); return (data ?? []).filter((r: any) => !/^(pro-|drop-|ref-|refwelcome-)/.test(String(r.stripe_payment_id ?? ''))).length }
       catch { return 0 }
     }
+    const loveConnectionRevenue = async () => {
+      try {
+        const { data } = await supabaseAdmin.from('love_connection_unlocks').select('amount_cents, status').neq('status', 'refunded')
+        return (data ?? []).reduce((sum: number, row: any) => sum + (row.amount_cents ?? 0), 0)
+      } catch { return 0 }
+    }
 
     const [
       totalUsers, men, women, bi, waiting, matched,
       totalMatches, bothAccepted, passed, pendingMatches,
-      loveCents, legacyCents, packs, chatUnlocks, activeSubs,
+      loveCents, loveConnectionCents, legacyCents, packs, chatUnlocks, activeSubs,
       recentUsersRes, recentMatchesRes, weekSignupsRes,
     ] = await Promise.all([
       countUsers(),
@@ -59,7 +65,8 @@ export async function GET(_req: NextRequest) {
       countMatches((q) => q.or('status.eq.passed,ended_reason.eq.one_passed')),
       countMatches((q) => q.eq('status', 'pending').is('ended_at', null)),
       // Revenue — count EVERY stream by real amount, not a flat proxy.
-      sumAmt('match_unlocks', 'amount_cents'), // current love unlocks
+      sumAmt('match_unlocks', 'amount_cents'), // historical Love profile unlocks
+      loveConnectionRevenue(),                 // extra Love connection picks
       sumAmt('unlocks', 'amount'),             // legacy unlock ledger
       paidPacks(),                             // $0.99 packs (excl. free pro grants)
       supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true }).then((r) => r.count ?? 0),
@@ -74,7 +81,7 @@ export async function GET(_req: NextRequest) {
       supabaseAdmin.from('users').select('created_at').gte('created_at', weekAgoIso),
     ])
 
-    const oneTimeCents = loveCents + legacyCents + packs * 99 + chatUnlocks * 99
+    const oneTimeCents = loveCents + loveConnectionCents + legacyCents + packs * 99 + chatUnlocks * 99
     const totalRevenue = (oneTimeCents / 100).toFixed(2)
     const mrr = (activeSubs * 399 / 100).toFixed(2)
     const decided = bothAccepted + passed

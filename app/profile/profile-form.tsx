@@ -338,7 +338,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         {/* GALLERY — up to 3 extra photos in the optional post-connection deep-dive */}
         <div className={styles.galleryBlock}>
           <div className={styles.galleryHead}>
-            <span className={styles.galleryTitle}>more photos · <span className={styles.galleryHint}>{gallery.length}/3 — shown in the optional $0.99 deep-dive after you both connect</span></span>
+            <span className={styles.galleryTitle}>more photos · <span className={styles.galleryHint}>{gallery.length}/3 — included in your full profile after you both connect</span></span>
           </div>
           <div className={styles.galleryGrid}>
             {gallery.map((url) => (

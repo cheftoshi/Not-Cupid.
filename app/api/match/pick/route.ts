@@ -27,6 +27,8 @@ import {
   syncMatchRosters,
 } from '@/lib/match-actions';
 import { DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data';
+import { LOVE_CONNECTION_PRICE_CENTS, LOVE_INCLUDED_PICKS } from '@/lib/matching-policy';
+import { creditForCandidate, lovePickAccessFor } from '@/lib/love-pick-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,13 +36,21 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { candidateId } = await req.json().catch(() => ({ candidateId: null }));
+  const { candidateId, preferPaid } = await req.json().catch(() => ({ candidateId: null, preferPaid: false }));
   if (!candidateId || typeof candidateId !== 'string') {
     return NextResponse.json({ error: 'candidateId required' }, { status: 400 });
   }
   if (candidateId === user.id) return NextResponse.json({ error: 'Cannot pick yourself' }, { status: 400 });
+  const preservePaidCredit = async () => {
+    if (preferPaid !== true) return;
+    await supabaseAdmin.from('love_connection_unlocks').update({
+      status: 'credit',
+      intended_candidate_id: null,
+    }).eq('user_id', user.id).eq('intended_candidate_id', candidateId).in('status', ['purchased', 'credit']);
+  };
   const rosterSnapshot: string[] = Array.isArray(user.roster_snapshot) ? user.roster_snapshot : [];
   if (!rosterSnapshot.includes(candidateId)) {
+    await preservePaidCredit();
     return NextResponse.json({ error: 'That person is not on your current roster.' }, { status: 403 });
   }
 
@@ -51,15 +61,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Your matching is paused. Refresh your profile to start over.' }, { status: 403 });
   }
 
-  // Free the caller's own timed-out matches first, then enforce the CONNECTION
-  // CAP: you can run up to MAX_CONNECTIONS live conversations at once (no longer
-  // strictly one). Past the cap, you wrap one up before starting another.
+  // Free timed-out matches first. The hard cap is only a safety ceiling; the
+  // actual product boundary is three included distinct picks per roster cycle,
+  // then a one-time extra-connection entitlement (or Pro).
   await releaseTimedOutMatches(user.id);
 
-  const myLive = await liveMatchesFor(user.id);
+  const [myLive, pickAccess] = await Promise.all([
+    liveMatchesFor(user.id),
+    lovePickAccessFor(user),
+  ]);
   if (myLive.length >= MAX_CONNECTIONS) {
     return NextResponse.json(
-      { error: `You're at your max of ${MAX_CONNECTIONS} conversations — wrap one up to start another.` },
+      { error: `You're at the safety limit of ${MAX_CONNECTIONS} live connections. Wrap one up before starting another.` },
       { status: 409 }
     );
   }
@@ -68,12 +81,16 @@ export async function POST(req: NextRequest) {
     (m: any) => m.user_1_id === candidateId || m.user_2_id === candidateId
   );
   if (alreadyWith) {
+    await preservePaidCredit();
     return NextResponse.json({ error: "You're already connected with them." }, { status: 409 });
   }
 
   // Load + validate the candidate (prevents picking arbitrary / ineligible ids).
   const { data: cand } = await supabaseAdmin.from('users').select('*').eq('id', candidateId).is('deleted_at', null).single();
-  if (!cand) return NextResponse.json({ error: 'That person is no longer available.' }, { status: 404 });
+  if (!cand) {
+    await preservePaidCredit();
+    return NextResponse.json({ error: 'That person is no longer available. Your extra-connection credit is saved.' }, { status: 404 });
+  }
 
   // Candidate must have spare capacity too (they can be talking to others, just
   // not maxed out). Replaces the old single-match `status === 'waiting'` gate.
@@ -99,7 +116,10 @@ export async function POST(req: NextRequest) {
       return true;
     })();
   if (!eligible) {
-    return NextResponse.json({ error: 'That person is no longer available.' }, { status: 409 });
+    await preservePaidCredit();
+    return NextResponse.json({ error: preferPaid === true
+      ? 'That person is no longer available. Your extra-connection credit is saved.'
+      : 'That person is no longer available.' }, { status: 409 });
   }
 
   // Don't allow re-matching a prior pair.
@@ -110,19 +130,50 @@ export async function POST(req: NextRequest) {
     .eq('user_a_id', a)
     .eq('user_b_id', b)
     .maybeSingle();
-  if (prior) return NextResponse.json({ error: 'You two have already been matched before.' }, { status: 409 });
+  if (prior) {
+    await preservePaidCredit();
+    return NextResponse.json({ error: preferPaid === true
+      ? 'You two have already been matched before. Your extra-connection credit is saved.'
+      : 'You two have already been matched before.' }, { status: 409 });
+  }
+
+  let accessType: 'included' | 'paid' | 'pro';
+  let unlockId: string | null = null;
+  if (pickAccess.pro) {
+    accessType = 'pro';
+  } else {
+    const credit = creditForCandidate(pickAccess.credits, candidateId);
+    if (preferPaid === true && credit) {
+      accessType = 'paid';
+      unlockId = credit.id;
+    } else if (pickAccess.includedRemaining > 0) {
+      accessType = 'included';
+    } else if (credit) {
+      accessType = 'paid';
+      unlockId = credit.id;
+    } else {
+      return NextResponse.json({
+        error: `You've used your ${LOVE_INCLUDED_PICKS} included picks for this roster.`,
+        paywall: true,
+        amountCents: LOVE_CONNECTION_PRICE_CENTS,
+        candidateId,
+      }, { status: 402 });
+    }
+  }
 
   // Final capacity/history claim happens inside Postgres while both user rows
   // are locked. Concurrent picks for either person serialize here, so nobody
   // can exceed three live slots and the same pair cannot be created twice.
   const breakdown = compatibilityBreakdown(user, cand);
   const score = breakdown.score;
-  const { data: matchId, error: claimErr } = await supabaseAdmin.rpc('create_capacity_pending_match', {
+  const { data: matchId, error: claimErr } = await supabaseAdmin.rpc('create_love_pick', {
     p_picker_id: user.id,
     p_candidate_id: candidateId,
     p_compatibility_score: score,
     p_expires_at: new Date(nowMs + 72 * 60 * 60 * 1000).toISOString(),
     p_max_connections: MAX_CONNECTIONS,
+    p_access_type: accessType,
+    p_unlock_id: unlockId,
   });
 
   if (claimErr) {
@@ -130,8 +181,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not create the match. Try again.' }, { status: 500 });
   }
   if (!matchId) {
+    // A purchased connection is never lost to a capacity race. Turn it into an
+    // unbound credit that can be used on another current roster profile.
+    if (accessType === 'paid' && unlockId) {
+      await supabaseAdmin.from('love_connection_unlocks').update({
+        status: 'credit',
+        intended_candidate_id: null,
+      }).eq('id', unlockId).eq('user_id', user.id).in('status', ['purchased', 'credit']);
+    }
     return NextResponse.json(
-      { error: 'That person just filled their available slots. Your roster has been refreshed.' },
+      { error: accessType === 'paid'
+        ? 'That person just became unavailable. Your $0.99 is saved as an extra-connection credit for another roster profile.'
+        : 'That person just filled their available slots. Your included pick was not used.' },
       { status: 409 },
     );
   }
@@ -164,5 +225,5 @@ export async function POST(req: NextRequest) {
   // one shared activation path so mutual-accept behaves identically.
   await acceptMatch(matchId, user.id).catch((e) => console.error('pick: acceptMatch failed', e));
 
-  return NextResponse.json({ ok: true, matchId, score });
+  return NextResponse.json({ ok: true, matchId, score, accessType });
 }

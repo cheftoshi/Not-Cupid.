@@ -6,7 +6,7 @@ export type MonetizationEvent =
   | 'checkout_failed'
   | 'purchase_completed';
 
-export type MonetizationProduct = 'love_profile' | 'friend_pack' | 'pro';
+export type MonetizationProduct = 'love_profile' | 'love_connection' | 'friend_pack' | 'pro';
 
 // Revenue instrumentation must never block the user or payment fulfillment.
 export async function recordMonetizationEvent(input: {

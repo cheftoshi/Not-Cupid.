@@ -32,10 +32,10 @@ function statusCopy(status: LoveConnectionCard['status']): string {
 
 export default function LoveConnections({
   connections,
-  maxConnections,
+  includedPicks,
 }: {
   connections: LoveConnectionCard[];
-  maxConnections: number;
+  includedPicks: number;
 }) {
   const [filter, setFilter] = useState<Filter>('all');
   const [ending, setEnding] = useState<LoveConnectionCard | null>(null);
@@ -49,12 +49,12 @@ export default function LoveConnections({
           <div className={styles.panelKicker}>your connections</div>
           <h2 id="love-connections-title">everyone waiting or talking, in one place.</h2>
           <p>
-            {connections.length >= maxConnections
-              ? `All ${maxConnections} spots are in use. End any connection to choose someone else.`
-              : `${connections.length} of ${maxConnections} spots in use. You can choose ${maxConnections - connections.length} more.`}
+            {connections.length >= includedPicks
+              ? `${connections.length} connections are in motion. Your roster still stays open; extra picks after the ${includedPicks} included ones are $0.99 each.`
+              : `${connections.length} connections are in motion. Each roster includes ${includedPicks} distinct picks.`}
           </p>
         </div>
-        {connections.length < maxConnections && <a href="#roster">see your options →</a>}
+        <a href="#roster">see your options →</a>
       </div>
 
       {connections.length > 0 ? (
@@ -96,7 +96,7 @@ export default function LoveConnections({
                   <a href={`/match/${connection.matchId}`}>
                     {connection.status === 'your-move' ? 'say hi' : connection.status === 'chatting' ? 'open chat' : 'view'}
                   </a>
-                  <button type="button" onClick={() => setEnding(connection)}>free spot</button>
+                  <button type="button" onClick={() => setEnding(connection)}>end</button>
                 </div>
               </article>
             )) : (
@@ -106,8 +106,8 @@ export default function LoveConnections({
         </>
       ) : (
         <div className={styles.connectionEmpty}>
-          <p>No connections yet. Your five curated choices are ready below.</p>
-          <a href="#roster">see your five options →</a>
+          <p>No connections yet. Your seven curated choices are ready below.</p>
+          <a href="#roster">see your seven options →</a>
         </div>
       )}
 

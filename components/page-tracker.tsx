@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { captureBrowserAcquisition } from '@/lib/acquisition';
 
 // Stable per-browser anonymous id (localStorage). Not tied to identity — just
 // lets us count unique sessions in the admin traffic view.
@@ -57,10 +58,12 @@ export default function PageTracker() {
   useEffect(() => {
     if (!pathname) return;
     if (pathname.startsWith('/admin') || pathname.startsWith('/api')) return;
+    const acquisition = captureBrowserAcquisition(pathname);
     const payload = JSON.stringify({
       path: pathname,
       ref: safeReferrer(),
       anonId: anonId(),
+      acquisition,
       ...clientContext(),
     });
     try {

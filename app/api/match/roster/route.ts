@@ -16,6 +16,7 @@ import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
 import {
   LOVE_ROSTER_OPTIONS,
+  LOVE_INCLUDED_PICKS,
   ROSTER_RETURN_ROTATION_HOURS,
   addedRosterCandidateIds,
   activeUserCutoffIso,
@@ -24,6 +25,7 @@ import {
   rosterExposureCutoffIso,
 } from '@/lib/matching-policy';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
+import { lovePickAccessFor } from '@/lib/love-pick-access';
 
 // ZIP → human metro label (e.g. "Boston, MA"), or "Boston area" fallback.
 // Never returns the raw ZIP — that's a location-privacy leak.
@@ -54,6 +56,9 @@ export async function composeLoveRosterForUser(
   // moment you have one match). We also exclude anyone you're already talking to.
   const now = Date.now();
   const myLive = await liveMatchesFor(user.id);
+  // A scheduled verification can refresh roster membership, but it must not
+  // start a person's 24-hour included-pick clock before they actually return.
+  const pickAccess = options.interactive === false ? null : await lovePickAccessFor(user);
   const livePartnerIds = new Set<string>(
     myLive.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
   );
@@ -258,10 +263,10 @@ export async function composeLoveRosterForUser(
     breakdownByCandidateId.set(p.id, breakdown);
     reciprocalByCandidateId.set(p.id, reciprocal);
     const confidenceBonus = Math.max(0, (breakdown.confidence - 0.45) * 2.5);
-    // The cap stays at three, but near-equal candidates with more room to
+    // Near-equal candidates with more room to
     // respond should surface first. This reduces invitation deadlocks without
     // hiding someone merely because they already have one or two chats.
-    const openCapacityBonus = Math.max(0, MAX_CONNECTIONS - live - 1) * 2;
+    const openCapacityBonus = Math.max(0, LOVE_INCLUDED_PICKS - live - 1) * 2;
     const adj =
       (neverMatched ? 2 : 0) +
       openCapacityBonus -
@@ -274,8 +279,7 @@ export async function composeLoveRosterForUser(
 
   const { ranked } = rankCandidates(user, freshPool, { waitDays, candidateAdjustments });
   const rotationRanked = orderForRosterRotation(ranked, activityByCandidateId, recentlyShownIds);
-  // Scarcity stays legible: everyone sees at most five additional choices,
-  // including while all three live connection slots are filled.
+  // Scarcity stays legible: everyone sees at most seven additional choices.
   const size = LOVE_ROSTER_OPTIONS;
 
   // Map of currently-eligible candidates by id (for snapshot validation +
@@ -383,9 +387,32 @@ export async function composeLoveRosterForUser(
   }
 
   const rotationStart = snapshotFresh ? refreshedAt : Date.now();
+  let connectionCredits = pickAccess?.credits ?? [];
+  if (connectionCredits.length > 0) {
+    const rosterIds = new Set(roster.map((candidate) => candidate.id));
+    const orphaned = connectionCredits.filter((credit) => credit.intendedCandidateId && !rosterIds.has(credit.intendedCandidateId));
+    if (orphaned.length > 0) {
+      await supabaseAdmin.from('love_connection_unlocks').update({
+        status: 'credit',
+        intended_candidate_id: null,
+      }).in('id', orphaned.map((credit) => credit.id)).eq('user_id', user.id).in('status', ['purchased', 'credit']);
+      const orphanedIds = new Set(orphaned.map((credit) => credit.id));
+      connectionCredits = connectionCredits.map((credit) => orphanedIds.has(credit.id)
+        ? { ...credit, intendedCandidateId: null }
+        : credit);
+    }
+  }
+
   return {
     roster,
     atCapacity,
+    includedPicksRemaining: pickAccess?.includedRemaining ?? LOVE_INCLUDED_PICKS,
+    includedPicksUsed: pickAccess?.includedUsed ?? 0,
+    hasConnectionCredit: connectionCredits.length > 0,
+    connectionCreditCandidateIds: connectionCredits.flatMap((credit) => credit.intendedCandidateId ? [credit.intendedCandidateId] : []),
+    hasFlexibleConnectionCredit: connectionCredits.some((credit) => credit.intendedCandidateId === null),
+    pro: pickAccess?.pro ?? false,
+    maxConnections: MAX_CONNECTIONS,
     rosterChanged: !snapshotFresh && rosterChanged,
     addedCandidateCount: !snapshotFresh ? addedCandidateIds.length : 0,
     nextRotationAt: new Date(rotationStart + ROSTER_TTL_MS).toISOString(),

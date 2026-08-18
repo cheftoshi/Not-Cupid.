@@ -1,7 +1,7 @@
 // NotCupid Pro (user-facing name; "All-Access" internally early on) — one
-// $3.99/mo subscription that covers every optional Love compatibility
-// deep-dive and additional Friend pack. Core profiles, chat, plans, and events
-// remain free for everyone. It reuses the
+// $3.99/mo subscription that covers extra Love connection picks and additional
+// Friend packs. Profiles, accepting, replies, plans, and safety controls remain
+// free for everyone. It reuses the
 // existing users.friend_pro_until column (app-wide now) + the stripe-webhook
 // `friend_pro` subscription handlers, so there's no separate sub plumbing.
 

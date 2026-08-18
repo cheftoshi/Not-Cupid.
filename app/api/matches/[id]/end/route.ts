@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { GHOST_COOLDOWN_DAYS, GHOST_PAUSE_AT } from '@/lib/ghost'
+import { returnIncludedLovePick } from '@/lib/love-pick-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     console.error('End match error:', matchError)
     return NextResponse.json({ error: 'Could not end match' }, { status: 500 })
   }
+  if (!bothAccepted) await returnIncludedLovePick(matchId, user.id)
 
   // Record end_reports row (admin moderation context, always)
   await supabaseAdmin.from('end_reports').insert({

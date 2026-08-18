@@ -32,6 +32,7 @@ test('traffic tracking separates installed PWA use with privacy-minimal context'
   assert.match(tracker, /navigator as Navigator & \{ standalone\?: boolean \}/);
   assert.match(tracker, /display-mode: standalone/);
   assert.match(tracker, /deviceClass: width < 600 \? 'phone'/);
+  assert.match(tracker, /captureBrowserAcquisition/);
   assert.match(endpoint, /safeDisplayMode/);
   assert.match(endpoint, /display_mode: safeDisplayMode/);
   assert.match(migration, /No model, OS, raw screen/);
@@ -94,7 +95,7 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(navExtras, /safe-area-inset-top/);
   assert.match(navExtras, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(navExtras, /scrollTo\(\{ top: 0 \}\)/);
-  assert.match(changelog, /2026-08-18-love-profiles-free/);
+  assert.match(changelog, /2026-08-18-love-connection-picks/);
   assert.match(changelog, /Boston Dating Experiment is live/);
 });
 

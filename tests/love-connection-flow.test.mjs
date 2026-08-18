@@ -1,15 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { LOVE_MAX_CONNECTIONS, LOVE_ROSTER_OPTIONS } from '../lib/matching-policy.ts';
+import { LOVE_INCLUDED_PICKS, LOVE_MAX_CONNECTIONS, LOVE_ROSTER_OPTIONS } from '../lib/matching-policy.ts';
 
-test('Love Line exposes five choices and reserves at most three pending or mutual connections', () => {
+test('Love Line exposes seven choices, three included picks, and a hard safety ceiling', () => {
   const pick = readFileSync(new URL('../app/api/match/pick/route.ts', import.meta.url), 'utf8');
-  assert.equal(LOVE_ROSTER_OPTIONS, 5);
-  assert.equal(LOVE_MAX_CONNECTIONS, 3);
-  assert.match(pick, /create_capacity_pending_match/);
+  const migration = readFileSync(new URL('../supabase/migrations/20260818143000_love_connection_picks.sql', import.meta.url), 'utf8');
+  assert.equal(LOVE_ROSTER_OPTIONS, 7);
+  assert.equal(LOVE_INCLUDED_PICKS, 3);
+  assert.equal(LOVE_MAX_CONNECTIONS, 10);
+  assert.match(pick, /create_love_pick/);
   assert.match(pick, /p_max_connections: MAX_CONNECTIONS/);
+  assert.match(pick, /status: 402/);
+  assert.match(pick, /p_access_type: accessType/);
   assert.match(pick, /await acceptMatch\(matchId, user\.id\)/);
+  assert.match(migration, /v_included_used >= 3/);
+  assert.match(migration, /p_access_type = 'paid'/);
+  assert.match(migration, /unique \(user_id, candidate_id\)/);
 });
 
 test('every Love roster option has a free, phone-safe profile preview before choosing', () => {
@@ -77,25 +84,49 @@ test('Love dashboard keeps pending and mutual people in one filterable connectio
   assert.match(inbox, /your-move/);
   assert.match(inbox, /chatting/);
   assert.match(inbox, /waiting/);
-  assert.match(inbox, /free spot/);
+  assert.match(inbox, />end</);
   assert.match(inbox, /<EndMatchDialog/);
   assert.match(inbox, /visible\.map\(\(connection\)/);
-  assert.doesNotMatch(inbox, /LoveUnlockOffer|unlockItems|\$0\.99|paywall/);
+  assert.doesNotMatch(inbox, /LoveUnlockOffer|unlockItems|paywall/);
 });
 
-test('Love deep-dive is private, post-mutual, and returns to the exact match', () => {
+test('the full compatibility profile is included after mutual connection', () => {
   const page = readFileSync(new URL('../app/match/[id]/page.tsx', import.meta.url), 'utf8');
   const room = readFileSync(new URL('../app/match/[id]/chat-room.tsx', import.meta.url), 'utf8');
-  const checkout = readFileSync(new URL('../app/api/matches/[id]/unlock-checkout/route.ts', import.meta.url), 'utf8');
+  assert.match(page, /visibleOtherUser = mutuallyConnected \? safeOtherUser : freeLoveProfileView/);
+  assert.match(page, /profileUnlocked=\{mutuallyConnected\}/);
+  assert.match(room, /full compatibility profile included/);
+  assert.doesNotMatch(room, /unlock-checkout|unlock once · \$0\.99|unlockAvailable/);
+});
+
+test('extra connection checkout is person-specific, transparent, and idempotent', () => {
+  const checkout = readFileSync(new URL('../app/api/match/connection-checkout/route.ts', import.meta.url), 'utf8');
+  const complete = readFileSync(new URL('../app/api/match/connection-complete/route.ts', import.meta.url), 'utf8');
+  const access = readFileSync(new URL('../lib/love-pick-access.ts', import.meta.url), 'utf8');
   const webhook = readFileSync(new URL('../app/api/stripe-webhook/route.ts', import.meta.url), 'utf8');
-  assert.match(page, /mutuallyConnected && \(isPro\(user\)/);
-  assert.match(page, /deep_dive=opened/);
-  assert.match(room, /!pendingAccept && unlockAvailable/);
-  assert.match(room, /compatibility deep-dive opened/);
-  assert.match(checkout, /if \(!match\.user_1_accepted \|\| !match\.user_2_accepted\)/);
+  const lintCleanup = readFileSync(new URL('../supabase/migrations/20260818144500_love_pick_lint_cleanup.sql', import.meta.url), 'utf8');
   assert.match(checkout, /Payments are disabled for test accounts/);
-  assert.match(checkout, /success_url.*\/match\/\$\{match\.id\}/);
-  assert.doesNotMatch(webhook, /Someone unlocked your profile/);
+  assert.match(checkout, /Their full roster profile stays free/);
+  assert.match(checkout, /A match or reply is not guaranteed/);
+  assert.match(checkout, /metadata\[candidate_id\]/);
+  assert.match(complete, /recordLoveConnectionPurchase/);
+  assert.match(access, /never reset an already-consumed credit/);
+  assert.match(access, /payment_status === 'paid'/);
+  assert.doesNotMatch(access, /payment_status === 'paid' \|\| session\?\.status === 'complete'/);
+  assert.match(webhook, /type === 'love_connection'/);
+  assert.match(webhook, /product: 'love_connection'/);
+  assert.match(lintCleanup, /perform u\.id from public\.love_connection_unlocks/);
+  assert.doesNotMatch(lintCleanup, /v_unlock/);
+});
+
+test('the isolated admin seed world mirrors the seven-option Love roster', () => {
+  const seeder = readFileSync(new URL('../app/api/admin/seed-test/route.ts', import.meta.url), 'utf8');
+  const admin = readFileSync(new URL('../app/admin/admin-client.tsx', import.meta.url), 'utf8');
+  assert.match(seeder, /seven-option roster carousel/);
+  assert.match(seeder, /love_pick_ledger/);
+  assert.match(seeder, /love_connection_unlocks/);
+  assert.match(admin, /12 test accounts/);
+  assert.match(admin, /seven roster options/);
 });
 
 test('phone match room separates chat, plan, and profile below the measured PWA nav', () => {
@@ -115,12 +146,13 @@ test('phone match room separates chat, plan, and profile below the measured PWA 
   assert.match(nav, /ResizeObserver/);
 });
 
-test('ending a Love connection closes it and immediately returns both slots to the pool', () => {
+test('ending remains free and safe but does not replenish a user-started roster pick', () => {
   const route = readFileSync(new URL('../app/api/matches/[id]/end/route.ts', import.meta.url), 'utf8');
   const dialog = readFileSync(new URL('../components/end-match-dialog.tsx', import.meta.url), 'utf8');
   assert.match(route, /status: 'ended'/);
   assert.match(route, /status: 'waiting'/);
   assert.match(route, /match_history/);
-  assert.match(dialog, /Your spot opens immediately/);
-  assert.match(dialog, /end &amp; free spot/);
+  assert.match(dialog, /does not replenish a pick you started/);
+  assert.match(dialog, /end connection →/);
+  assert.match(route, /returnIncludedLovePick\(matchId, user\.id\)/);
 });
