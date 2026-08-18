@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import EndMatchDialog from '@/components/end-match-dialog';
+import { trackLoveEvent } from '@/lib/love-events-client';
 import styles from './dashboard.module.css';
 
 export type LoveConnectionCard = {
@@ -12,6 +13,7 @@ export type LoveConnectionCard = {
   archetype: string | null;
   score: number | null;
   unread: boolean;
+  needsStarter: boolean;
   status: 'chatting' | 'waiting' | 'your-move';
 };
 
@@ -48,6 +50,7 @@ export default function LoveConnections({
   const visible = filter === 'all' ? connections : connections.filter((connection) => connection.status === filter);
   const countFor = (key: Filter) => key === 'all' ? connections.length : connections.filter((connection) => connection.status === key).length;
   const yourMoveCount = countFor('your-move');
+  const needsStarterCount = connections.filter((connection) => connection.needsStarter).length;
 
   useEffect(() => {
     if (!focusMatchId || !focused) return;
@@ -81,6 +84,12 @@ export default function LoveConnections({
               <span>Review each profile and choose Yes or Pass. Either answer keeps the Love Line moving.</span>
             </div>
           )}
+          {needsStarterCount > 0 && (
+            <div className={styles.connectionDecisionCallout} role="status">
+              <strong>{needsStarterCount} mutual {needsStarterCount === 1 ? 'match is' : 'matches are'} ready.</strong>
+              <span>The chat is open. Start with one specific question—the match coach can help.</span>
+            </div>
+          )}
           <div className={styles.connectionFilters} role="tablist" aria-label="Filter Love Line connections">
             {FILTERS.map((item) => (
               <button
@@ -104,11 +113,11 @@ export default function LoveConnections({
                 data-status={connection.status}
                 data-focused={connection.matchId === focusMatchId ? 'true' : undefined}
               >
-                <a href={`/match/${connection.matchId}`} className={styles.connectionPerson}>
+                <a href={`/match/${connection.matchId}`} className={styles.connectionPerson} onClick={() => trackLoveEvent(connection.needsStarter ? 'mutual_chat_open' : 'profile_open', { matchId: connection.matchId })}>
                   <span className={styles.connectionAvatar}>
                     {connection.photo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={connection.photo_url} alt="" />
+                      <img src={connection.photo_url} alt="" loading="lazy" decoding="async" />
                     ) : (
                       <b>{connection.name.charAt(0)}</b>
                     )}
@@ -121,8 +130,8 @@ export default function LoveConnections({
                   </span>
                 </a>
                 <div className={styles.connectionActions}>
-                  <a href={`/match/${connection.matchId}`}>
-                    {connection.status === 'your-move' ? 'review & decide' : connection.status === 'chatting' ? 'open chat' : 'view profile'}
+                  <a href={`/match/${connection.matchId}`} onClick={() => trackLoveEvent(connection.needsStarter ? 'mutual_chat_open' : 'profile_open', { matchId: connection.matchId })}>
+                    {connection.status === 'your-move' ? 'review & decide' : connection.needsStarter ? 'start chat' : connection.status === 'chatting' ? 'open chat' : 'view profile'}
                   </a>
                   <button type="button" onClick={() => setEnding(connection)}>end</button>
                 </div>
@@ -134,8 +143,8 @@ export default function LoveConnections({
         </>
       ) : (
         <div className={styles.connectionEmpty}>
-          <p>No connections yet. Your seven curated choices are ready below.</p>
-          <a href="#roster">see your seven options →</a>
+          <p>No connections yet. Your curated choices are ready below.</p>
+          <a href="#roster">see your options →</a>
         </div>
       )}
 

@@ -33,7 +33,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: 'Love Line',
         short_name: 'Love',
-        description: 'Browse 7 curated profiles and use 3 included connection picks.',
+        description: 'Browse up to 10 curated profiles and use 3 included connection picks.',
         url: '/dashboard?source=pwa-shortcut',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },

@@ -169,7 +169,14 @@
 .loveRosterRail::-webkit-scrollbar { display: none; }
 .loveRosterSkeleton { overflow: hidden; }
 .loveRosterGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; }
-.loveRosterCard { width: 210px; flex: 0 0 210px; scroll-snap-align: start; scroll-snap-stop: always; }
+.loveRosterCard {
+  width: 210px;
+  flex: 0 0 210px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  content-visibility: auto;
+  contain-intrinsic-size: 210px 390px;
+}
 .loveRosterAction { min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
 .loveRosterPreviewAction {
   min-height: 40px;

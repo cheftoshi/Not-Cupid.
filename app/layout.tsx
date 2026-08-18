@@ -1,13 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import PageTracker from '@/components/page-tracker'
-import SwRegister from '@/components/sw-register'
-import PwaPrompt from '@/components/pwa-prompt'
 import TopNav from '@/components/top-nav'
 import SiteFooter from '@/components/site-footer'
-import FeedbackHost from '@/components/feedback'
-import NativeShellBootstrap from '@/components/native-shell-bootstrap'
-import ReturningUserWelcome from '@/components/returning-user-welcome'
+import DeferredClientShell from '@/components/deferred-client-shell'
+import WebVitals from '@/components/web-vitals'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://notcupid.com'),
@@ -48,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* No-flash theme: apply the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('nc-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}` }} />
       </head>
-      <body><NativeShellBootstrap /><TopNav />{children}<SiteFooter /><ReturningUserWelcome /><PwaPrompt /><PageTracker /><SwRegister /><FeedbackHost /></body>
+      <body><WebVitals /><TopNav />{children}<SiteFooter /><DeferredClientShell /></body>
     </html>
   )
 }

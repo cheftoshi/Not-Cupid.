@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { parseResponse } from '@/lib/fetch-helpers';
+import { fetchWithTimeout, parseResponse } from '@/lib/fetch-helpers';
+import { trackLoveEvent } from '@/lib/love-events-client';
 import { SkeletonStyles, SkeletonCard } from '@/components/skeleton';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
 import ExpandRadiusButton from './expand-radius-button';
@@ -11,7 +12,7 @@ import styles from './dashboard.module.css';
 
 type LiveConnection = { matchId: string; name: string };
 
-// The seven compatible people a user can choose next. Active conversations live
+// Three included picks plus seven browseable alternatives. Active conversations live
 // in their own section on the dashboard; keeping them out of this rail prevents
 // the same person appearing three times in one screen.
 type Candidate = {
@@ -50,6 +51,7 @@ export default function RosterPicker({
 }) {
   const router = useRouter();
   const [roster, setRoster] = useState<Candidate[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [picking, setPicking] = useState<string | null>(null);
   // The just-picked candidate — their card flips to a "it's on" moment in place
   // (no hard reload; router.refresh() brings the new chat in behind it).
@@ -69,7 +71,10 @@ export default function RosterPicker({
   const [paywallCandidate, setPaywallCandidate] = useState<Candidate | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const resumedCheckout = useRef(false);
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    trackLoveEvent('love_dashboard_open');
+    void load();
+  }, []);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 60_000);
     return () => window.clearInterval(timer);
@@ -107,9 +112,12 @@ export default function RosterPicker({
   }, [paywallCandidate]);
 
   async function load() {
+    const startedAt = performance.now();
+    setLoadError(false);
     try {
-      const res = await fetch('/api/match/roster');
+      const res = await fetchWithTimeout('/api/match/roster', {}, 15_000);
       const data = await parseResponse<any>(res);
+      if (!res.ok) throw new Error(data.error || 'Roster unavailable');
       setGhosted(!!data.ghosted);
       setHardLocked(!!data.hardLocked);
       setAtCapacity(!!data.atCapacity);
@@ -121,9 +129,21 @@ export default function RosterPicker({
         ? data.flexibleConnectionCreditCount
         : data.hasFlexibleConnectionCredit ? 1 : 0);
       setNextRotationAt(typeof data.nextRotationAt === 'string' ? data.nextRotationAt : null);
-      setRoster(Array.isArray(data.roster) ? data.roster : []);
+      const nextRoster = Array.isArray(data.roster) ? data.roster : [];
+      setRoster(nextRoster);
+      const durationMs = Math.round(performance.now() - startedAt);
+      trackLoveEvent('roster_view', { durationMs, metadata: { candidate_count: nextRoster.length } });
+      const timingPayload = JSON.stringify({
+        eventName: 'api_timing', metricName: 'roster_api', durationMs,
+        path: window.location.pathname,
+        deviceClass: window.innerWidth < 600 ? 'phone' : window.innerWidth < 1024 ? 'tablet' : 'desktop',
+        displayMode: (navigator as Navigator & { standalone?: boolean }).standalone === true || window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+      });
+      if (navigator.sendBeacon) navigator.sendBeacon('/api/performance', new Blob([timingPayload], { type: 'application/json' }));
+      else void fetch('/api/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: timingPayload, keepalive: true });
     } catch {
       setRoster([]);
+      setLoadError(true);
     }
   }
 
@@ -160,6 +180,10 @@ export default function RosterPicker({
       return;
     }
     const hasCredit = hasFlexibleCredit || creditCandidateIds.includes(c.id);
+    trackLoveEvent('pick_attempt', {
+      candidateId: c.id,
+      metadata: { access: !pro && includedRemaining <= 0 && !hasCredit ? 'paywall' : hasCredit ? 'credit' : pro ? 'pro' : 'included' },
+    });
     if (!pro && includedRemaining <= 0 && !hasCredit) {
       setPaywallCandidate(c);
       return;
@@ -172,11 +196,11 @@ export default function RosterPicker({
     setPicking(c.id);
     setNotice(null);
     try {
-      const res = await fetch('/api/match/pick', {
+      const res = await fetchWithTimeout('/api/match/pick', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ candidateId: c.id, preferPaid }),
-      });
+      }, 15_000);
       const data = await parseResponse<any>(res);
       if (res.ok && data.ok) {
         if (data.accessType === 'included') setIncludedRemaining((remaining) => Math.max(0, remaining - 1));
@@ -196,6 +220,7 @@ export default function RosterPicker({
         // scroll stays put and the reveal cinematic still fires for the fresh match.
         setPickedId(c.id);
         setPicking(null);
+        window.dispatchEvent(new Event('nc:show-push-prompt'));
         setTimeout(() => router.refresh(), 1400);
         return;
       }
@@ -206,10 +231,12 @@ export default function RosterPicker({
       }
       // Conflict (taken / already matched) — show why + refresh the roster.
       setNotice(data.error || 'That didn’t work — refreshed your options.');
+      trackLoveEvent('pick_failed', { candidateId: c.id, metadata: { status: res.status } });
       setPicking(null);
       load();
     } catch {
       setNotice('Something went wrong. Try again.');
+      trackLoveEvent('pick_failed', { candidateId: c.id, metadata: { status: 'network' } });
       setPicking(null);
     }
   }
@@ -255,6 +282,17 @@ export default function RosterPicker({
         <div className={horizontal ? styles.loveRosterSkeleton : styles.loveRosterGrid}>
           {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} width={horizontal ? 210 : undefined} />)}
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={emptyWrap} role="alert">
+        <div style={{ fontSize: '2.2rem', marginBottom: '0.65rem' }}>↻</div>
+        <h2 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.65rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>your roster hit a connection snag.</h2>
+        <p style={{ color: 'var(--h-text-dim)', lineHeight: 1.5, marginBottom: '1rem' }}>Your picks are safe. Reconnect and try loading the same roster again.</p>
+        <button type="button" className="btn-primary" onClick={() => { setRoster(null); void load(); }}>retry roster</button>
       </div>
     );
   }
@@ -374,13 +412,13 @@ export default function RosterPicker({
             <div key={c.id} data-card data-roster-kind="option" className={horizontal ? styles.loveRosterCard : undefined} style={cardBase}>
               <button
                 type="button"
-                onClick={() => setPreviewCandidate(c)}
+                onClick={() => { setPreviewCandidate(c); trackLoveEvent('profile_open', { candidateId: c.id }); }}
                 aria-label={`View ${first}'s profile`}
                 style={{ aspectRatio: '4 / 5', width: '100%', padding: 0, border: 0, background: 'var(--h-surface-2)', position: 'relative', cursor: 'pointer', overflow: 'hidden' }}
               >
                 {c.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img className="ncCardImg" src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <img className="ncCardImg" src={c.photo_url} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
                   <Monogram first={first} />
                 )}
@@ -408,7 +446,7 @@ export default function RosterPicker({
                 {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
                 <button
                   type="button"
-                  onClick={() => setPreviewCandidate(c)}
+                  onClick={() => { setPreviewCandidate(c); trackLoveEvent('profile_open', { candidateId: c.id }); }}
                   className={styles.loveRosterPreviewAction}
                 >
                   view {first}&apos;s profile
@@ -448,6 +486,19 @@ export default function RosterPicker({
         })}
       </div>
 
+      {roster.length > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            trackLoveEvent('no_suitable_choice', { metadata: { candidate_count: roster.length } });
+            setNotice('Got it — no forced pick. Your roster will check for fresh compatible people at the next rotation.');
+          }}
+          style={{ display: 'block', margin: '0.4rem auto 0', minHeight: 44, padding: '0.55rem 0.9rem', border: '1px solid var(--h-border)', borderRadius: 999, background: 'var(--h-surface)', color: 'var(--h-text-dim)', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}
+        >
+          none of these feel right today
+        </button>
+      )}
+
       <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
         checks for fresh options every 24h · shown people cool down for 7 days
       </p>
@@ -473,7 +524,7 @@ export default function RosterPicker({
               <div className={styles.loveProfilePreviewPhoto}>
                 {candidate.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={candidate.photo_url} alt="" />
+                  <img src={candidate.photo_url} alt="" loading="lazy" decoding="async" />
                 ) : <Monogram first={first} />}
                 <span>{candidate.score}% match</span>
               </div>

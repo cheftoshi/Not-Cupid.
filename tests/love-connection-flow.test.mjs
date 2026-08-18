@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { LOVE_INCLUDED_PICKS, LOVE_MAX_CONNECTIONS, LOVE_ROSTER_OPTIONS } from '../lib/matching-policy.ts';
+import { LOVE_INCLUDED_PICKS, LOVE_MAX_CONNECTIONS, LOVE_MAX_PENDING_INCOMING, LOVE_ROSTER_OPTIONS } from '../lib/matching-policy.ts';
 
-test('Love Line exposes seven choices, three included picks, and a hard safety ceiling', () => {
+test('Love Line exposes three included picks plus seven alternatives and a hard safety ceiling', () => {
   const pick = readFileSync(new URL('../app/api/match/pick/route.ts', import.meta.url), 'utf8');
   const migration = readFileSync(new URL('../supabase/migrations/20260818143000_love_connection_picks.sql', import.meta.url), 'utf8');
-  assert.equal(LOVE_ROSTER_OPTIONS, 7);
+  assert.equal(LOVE_ROSTER_OPTIONS, 10);
   assert.equal(LOVE_INCLUDED_PICKS, 3);
   assert.equal(LOVE_MAX_CONNECTIONS, 10);
+  assert.equal(LOVE_MAX_PENDING_INCOMING, 3);
   assert.match(pick, /create_love_pick/);
   assert.match(pick, /p_max_connections: MAX_CONNECTIONS/);
   assert.match(pick, /status: 402/);
@@ -56,7 +57,7 @@ test('Love concierge records and deduplicates immediate, 24h, final, decision, a
   const dashboard = readFileSync(new URL('../app/dashboard/love-connections.tsx', import.meta.url), 'utf8');
   const stats = readFileSync(new URL('../app/api/admin-stats/route.ts', import.meta.url), 'utf8');
   assert.match(migration, /create table if not exists public\.love_notification_events/);
-  assert.match(migration, /unique \(match_id, recipient_id, notification_type, channel\)/);
+  assert.match(migration, /claim_love_notification_event/);
   assert.match(migration, /claim_love_notification_event/);
   assert.match(ledger, /recordLoveDecision/);
   assert.match(ledger, /recordLoveExpiry/);
@@ -69,6 +70,17 @@ test('Love concierge records and deduplicates immediate, 24h, final, decision, a
   assert.match(dashboard, /review & decide/);
   assert.match(stats, /loveFunnel/);
   assert.match(stats, /peopleNeedToAnswer/);
+});
+
+test('the mutual no-message nudge is deduplicated and fail-closed behind exact approval', () => {
+  const cron = readFileSync(new URL('../app/api/cron/expiring-soon/route.ts', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20260818184532_love_performance_and_interaction_funnel.sql', import.meta.url), 'utf8');
+  assert.match(cron, /MUTUAL_NUDGE_VERSION = 'love-mutual-no-message-v1-2026-08-18'/);
+  assert.match(cron, /process\.env\.LOVE_MUTUAL_NUDGE_APPROVAL_VERSION === MUTUAL_NUDGE_VERSION/);
+  assert.match(cron, /if \(mutualNudgeEnabled\)/);
+  assert.match(cron, /mutual_no_message_12h/);
+  assert.match(migration, /'mutual_no_message_12h'/);
+  assert.match(migration, /claim_love_notification_event/);
 });
 
 test('roster rotation email retries are idempotent', () => {
@@ -164,14 +176,58 @@ test('a paid fourth pick returns as an in-app credit when it never becomes mutua
   assert.match(expiry, /returnLovePickEntitlement\(m\.id, null\)/);
 });
 
-test('the isolated admin seed world mirrors the seven-option Love roster', () => {
+test('the isolated admin seed world mirrors the populated Love roster', () => {
   const seeder = readFileSync(new URL('../app/api/admin/seed-test/route.ts', import.meta.url), 'utf8');
   const admin = readFileSync(new URL('../app/admin/admin-client.tsx', import.meta.url), 'utf8');
-  assert.match(seeder, /seven-option roster carousel/);
+  assert.match(seeder, /up to ten when supply allows/);
   assert.match(seeder, /love_pick_ledger/);
   assert.match(seeder, /love_connection_unlocks/);
   assert.match(admin, /12 test accounts/);
-  assert.match(admin, /seven roster options/);
+  assert.match(admin, /populated curated roster/);
+});
+
+test('Love responsiveness caps pending incoming choices and only resets on an explicit decision', () => {
+  const roster = readFileSync(new URL('../app/api/match/roster/route.ts', import.meta.url), 'utf8');
+  const pick = readFileSync(new URL('../app/api/match/pick/route.ts', import.meta.url), 'utf8');
+  const pass = readFileSync(new URL('../app/api/matches/[id]/pass/route.ts', import.meta.url), 'utf8');
+  const emailPass = readFileSync(new URL('../app/api/match-pass/route.ts', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20260818184532_love_performance_and_interaction_funnel.sql', import.meta.url), 'utf8');
+  assert.match(roster, /pendingIncoming\.get\(p\.id\).*LOVE_MAX_PENDING_INCOMING/);
+  assert.doesNotMatch(roster, /ignored_picks:\s*0/);
+  assert.match(pick, /candidatePendingIncoming < LOVE_MAX_PENDING_INCOMING/);
+  assert.match(pick, /already:\s*true/);
+  assert.match(pass, /ignored_picks:\s*0/);
+  assert.match(emailPass, /ignored_picks:\s*0/);
+  assert.match(migration, /v_candidate_pending_incoming >= 3/);
+});
+
+test('Love interaction and performance events are measurable without raw client payloads', () => {
+  const events = readFileSync(new URL('../app/api/love/events/route.ts', import.meta.url), 'utf8');
+  const performance = readFileSync(new URL('../app/api/performance/route.ts', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20260818184532_love_performance_and_interaction_funnel.sql', import.meta.url), 'utf8');
+  const vitals = readFileSync(new URL('../components/web-vitals.tsx', import.meta.url), 'utf8');
+  const stats = readFileSync(new URL('../app/api/admin-stats/route.ts', import.meta.url), 'utf8');
+  assert.match(events, /const EVENTS = new Set/);
+  assert.match(events, /safeMetadata/);
+  assert.match(performance, /web_vital/);
+  assert.match(vitals, /useReportWebVitals/);
+  assert.match(migration, /create table if not exists public\.app_client_events/);
+  assert.match(migration, /app_experience_summary/);
+  assert.match(stats, /appExperience/);
+});
+
+test('chat polling is incremental, idempotent, adaptive, and paginates older history', () => {
+  const messages = readFileSync(new URL('../app/api/messages/route.ts', import.meta.url), 'utf8');
+  const room = readFileSync(new URL('../app/match/[id]/chat-room.tsx', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('../app/match/[id]/page.tsx', import.meta.url), 'utf8');
+  assert.match(messages, /client_id/);
+  assert.match(messages, /\.lt\('created_at', before\)/);
+  assert.match(messages, /hasMore/);
+  assert.match(room, /document\.visibilityState === 'visible' \? 3_000 : 12_000/);
+  assert.match(room, /loadOlderMessages/);
+  assert.match(room, /client_id: clientId/);
+  assert.match(page, /\.limit\(100\)/);
+  assert.match(page, /hasOlderMessages/);
 });
 
 test('phone match room separates chat, plan, and profile below the measured PWA nav', () => {

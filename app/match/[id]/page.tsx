@@ -57,14 +57,14 @@ export default async function MatchPage({
   const safeOtherUser = { ...otherWithVideo, intro_video_url: null };
   const visibleOtherUser = mutuallyConnected ? safeOtherUser : freeLoveProfileView(safeOtherUser);
 
-  // Last 500 messages (newest-first, then re-ordered) — enough for any real
-  // conversation without making long threads unbounded on first paint.
+  // Keep first paint bounded. Incremental polling fetches only newer rows; old
+  // conversations no longer ship hundreds of bubbles before the screen opens.
   const { data: messagesDesc } = await supabaseAdmin
     .from('messages')
     .select('*')
     .eq('match_id', id)
     .order('created_at', { ascending: false })
-    .limit(500);
+    .limit(100);
   const messages = (messagesDesc ?? []).reverse();
 
   return (
@@ -74,6 +74,7 @@ export default async function MatchPage({
       otherUser={visibleOtherUser}
       match={match}
       initialMessages={messages || []}
+      hasOlderMessages={(messagesDesc?.length ?? 0) === 100}
       readOnly={readOnly}
       profileUnlocked={mutuallyConnected}
     />

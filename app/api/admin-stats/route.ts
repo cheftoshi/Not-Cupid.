@@ -90,6 +90,40 @@ export async function GET(req: NextRequest) {
     const matches = rawMatches.filter((match: any) =>
       realUserIds.has(match.user_1_id) && realUserIds.has(match.user_2_id)
     )
+    let experienceRows: any[] = []
+    try {
+      const { data, error } = await supabaseAdmin.rpc('app_experience_summary', { p_since: oneDayAgo })
+      if (!error) experienceRows = data ?? []
+    } catch { /* additive migration may still be rolling out */ }
+    const experienceByKey = new Map(experienceRows.map((row: any) => [`${row.event_name}:${row.metric_name || ''}`, row]))
+    const interaction = (name: string) => Number(experienceByKey.get(`${name}:`)?.total ?? 0)
+    const vital = (name: string) => {
+      const row = experienceByKey.get(`web_vital:${name}`)
+      return row ? Number(Number(row.p75_metric_value ?? 0).toFixed(name === 'CLS' ? 3 : 0)) : null
+    }
+    const rosterTiming = experienceByKey.get('api_timing:roster_api')
+    const appExperience = {
+      measuredSince: oneDayAgo,
+      interactions: {
+        dashboardOpens: interaction('love_dashboard_open'),
+        rosterViews: interaction('roster_view'),
+        profileOpens: interaction('profile_open'),
+        pickAttempts: interaction('pick_attempt'),
+        pickSuccesses: interaction('pick_success'),
+        pickFailures: interaction('pick_failed'),
+        noSuitableChoice: interaction('no_suitable_choice'),
+        firstMessages: interaction('first_message'),
+        replies: interaction('reply'),
+        coachRequests: interaction('coach_requested'),
+      },
+      performance: {
+        rosterApiP75Ms: rosterTiming ? Math.round(Number(rosterTiming.p75_duration_ms ?? 0)) : null,
+        lcpP75Ms: vital('LCP'),
+        inpP75Ms: vital('INP'),
+        clsP75: vital('CLS'),
+        clientErrors: interaction('client_error'),
+      },
+    }
     // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):
     //   • match_unlocks.amount_cents = historical Love compatibility deep-dives
     //   • unlocks.amount = legacy standalone unlock ledger (cents)
@@ -772,6 +806,7 @@ export async function GET(req: NextRequest) {
         immediateSent: eventCount('interest_immediate', sentStatuses),
         reminder24hSent: eventCount('decision_24h', sentStatuses),
         finalSent: eventCount('decision_final', sentStatuses),
+        mutualNoMessage12hSent: eventCount('mutual_no_message_12h', sentStatuses),
         delivered: emailEvents.filter((event: any) => ['delivered', 'opened', 'clicked'].includes(event.status)).length,
         opened: emailEvents.filter((event: any) => ['opened', 'clicked'].includes(event.status)).length,
         clicked: emailEvents.filter((event: any) => event.status === 'clicked').length,
@@ -797,6 +832,7 @@ export async function GET(req: NextRequest) {
       onlyInBoston,
       loveUsage,
       loveFunnel,
+      appExperience,
       monetization,
       loveCampaign,
       eligibleReadyCampaign,

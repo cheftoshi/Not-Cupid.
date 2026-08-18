@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // matcher/roster/pulse only ever pair test↔test). Built so logging in as
 // **Test Alex** exercises EVERY surface at once:
 //   LOVE  → "your chats" with one live both-accepted chat (Bailey, w/ messages),
-//           plus a FULL browseable roster carousel of 7 more women.
+//           plus a browseable roster carousel of compatible test profiles.
 //   FRIEND→ a live 3-person crew + group chat (opened) AND a SEALED pack of 4
 //           waiting to be opened (the cinematic /friends/pack reveal).
 //   SCENE → events + posts on the board, with Alex RSVP'd / liked some so the
@@ -265,7 +265,7 @@ export async function POST(req: NextRequest) {
   }
   await supabaseAdmin.from('users').update({ status: 'matched', last_matched_at: now }).in('id', [alex, bailey]);
   // Harper, Dev, Iris, Jules, Maya, Noa and Priya stay unmatched → they fill
-  // Alex's seven-option roster carousel.
+  // Alex's roster carousel (production can show up to ten when supply allows).
 
   // ── FRIEND: a live opened crew (Cam, Eli, Owen) + a SEALED pack (Dev,Iris,Jules,Maya) ──
   const crew = [cam, eli, owen];

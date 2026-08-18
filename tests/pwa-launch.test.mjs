@@ -40,6 +40,20 @@ test('traffic tracking separates installed PWA use with privacy-minimal context'
   assert.match(stats, /pwaSessions/);
 });
 
+test('PWA performance is measured and push permission is requested in context', () => {
+  const layout = source('app/layout.tsx');
+  const shell = source('components/deferred-client-shell.tsx');
+  const vitals = source('components/web-vitals.tsx');
+  const prompt = source('components/pwa-prompt.tsx');
+  assert.match(layout, /<WebVitals/);
+  assert.match(layout, /<DeferredClientShell/);
+  assert.match(shell, /dynamic\(\(\) => import\('@\/components\/returning-user-welcome'\)/);
+  assert.match(vitals, /useReportWebVitals/);
+  assert.match(prompt, /nc:show-push-prompt/);
+  assert.match(prompt, /prompt_push/);
+  assert.doesNotMatch(prompt, /setTimeout\(.*Notification\.requestPermission/s);
+});
+
 test('service worker keeps pages and APIs network-first while supporting install and push', () => {
   const register = source('components/sw-register.tsx');
   const worker = source('public/sw.js');

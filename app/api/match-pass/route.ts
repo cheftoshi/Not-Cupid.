@@ -138,6 +138,7 @@ export async function POST(req: NextRequest) {
       .update({ status: 'passed', ended_at: new Date().toISOString(), ended_reason: 'passed' })
       .eq('id', matchId)
     await recordLoveDecision(matchId, userId, 'passed')
+    await supabaseAdmin.from('users').update({ ignored_picks: 0 }).eq('id', userId)
     if (!(match.user_1_accepted && match.user_2_accepted)) await returnLovePickEntitlement(matchId, userId)
 
     // Block the pair from re-matching — same as the in-app pass route. Without

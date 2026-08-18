@@ -29,6 +29,26 @@
   min-width: 0;
 }
 
+.loadOlder {
+  align-self: center;
+  min-height: 36px;
+  border: 1px solid var(--h-border);
+  border-radius: 999px;
+  background: var(--h-surface);
+  color: var(--h-text-dim);
+  cursor: pointer;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 0.8rem;
+  text-transform: uppercase;
+}
+
+.loadOlder:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 /* The date-vibes rail — the other side. Stacks under the chat on mobile,
    sits beside it on desktop. */
 .vibesCol {

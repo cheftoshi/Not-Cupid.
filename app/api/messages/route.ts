@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const { data: match } = await supabaseAdmin
     .from('matches')
-    .select('user_1_id, user_2_id, chat_expires_at, ended_at, ended_reason, status')
+    .select('user_1_id, user_2_id, chat_expires_at, ended_at, ended_reason, status, user_1_typing_at, user_2_typing_at, user_1_read_at, user_2_read_at')
     .eq('id', matchId)
     .single();
 
@@ -31,43 +31,33 @@ export async function GET(req: NextRequest) {
 
   // Incremental polling: the chat polls every few seconds — with `after` (an
   // ISO timestamp of the newest message the client has) we return only newer
-  // rows instead of re-shipping the whole conversation on every poll.
+  // rows instead of re-shipping the whole conversation on every poll. `before`
+  // pages backward in bounded chunks when someone explicitly asks for history.
   const after = req.nextUrl.searchParams.get('after');
+  const before = req.nextUrl.searchParams.get('before');
   let msgQuery = supabaseAdmin
     .from('messages')
     .select('*')
-    .eq('match_id', matchId)
-    .order('created_at', { ascending: true });
+    .eq('match_id', matchId);
   if (after && !Number.isNaN(Date.parse(after))) {
-    msgQuery = msgQuery.gt('created_at', after);
+    msgQuery = msgQuery.gt('created_at', after).order('created_at', { ascending: true }).limit(200);
+  } else if (before && !Number.isNaN(Date.parse(before))) {
+    msgQuery = msgQuery.lt('created_at', before).order('created_at', { ascending: false }).limit(100);
+  } else {
+    msgQuery = msgQuery.order('created_at', { ascending: false }).limit(100);
   }
-  const { data: messages } = await msgQuery;
+  const { data: messageRows } = await msgQuery;
+  const messages = after ? (messageRows ?? []) : [...(messageRows ?? [])].reverse();
 
-  // Typing + read receipts — separate selects so un-migrated columns can never
-  // break the chat's hot path (they just read as "not typing" / "not seen").
-  let otherTypingAt: string | null = null;
-  let otherReadAt: string | null = null;
   const isU1 = match.user_1_id === user.id;
-  {
-    const { data: t, error: tErr } = await supabaseAdmin
-      .from('matches').select('user_1_typing_at, user_2_typing_at').eq('id', matchId).maybeSingle();
-    if (!tErr && t) {
-      otherTypingAt = (isU1 ? (t as any).user_2_typing_at : (t as any).user_1_typing_at) ?? null;
-    }
-  }
-  {
-    const { data: rr, error: rErr } = await supabaseAdmin
-      .from('matches').select('user_1_read_at, user_2_read_at').eq('id', matchId).maybeSingle();
-    if (!rErr && rr) {
-      otherReadAt = (isU1 ? (rr as any).user_2_read_at : (rr as any).user_1_read_at) ?? null;
-      // Polling with the chat open = reading. Stamp my side when this is the
-      // initial load or fresh messages just arrived (keeps writes rare).
-      if (!after || (messages ?? []).length > 0) {
-        await supabaseAdmin.from('matches')
-          .update({ [isU1 ? 'user_1_read_at' : 'user_2_read_at']: new Date().toISOString() })
-          .eq('id', matchId);
-      }
-    }
+  const otherTypingAt = (isU1 ? match.user_2_typing_at : match.user_1_typing_at) ?? null;
+  const otherReadAt = (isU1 ? match.user_2_read_at : match.user_1_read_at) ?? null;
+  // Polling with the chat open = reading. Stamp my side only on initial load or
+  // when fresh messages arrive, avoiding a write on every three-second poll.
+  if (!after || (messages ?? []).length > 0) {
+    await supabaseAdmin.from('matches')
+      .update({ [isU1 ? 'user_1_read_at' : 'user_2_read_at']: new Date().toISOString() })
+      .eq('id', matchId);
   }
 
   // Return live match status alongside messages so the chat header can
@@ -75,6 +65,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     messages: messages || [],
     incremental: !!after,
+    older: !!before,
+    hasMore: !!before && (messageRows?.length ?? 0) === 100,
     otherTypingAt,
     otherReadAt,
     match: {
@@ -92,7 +84,7 @@ export async function POST(req: NextRequest) {
   const limit = await rateLimit({ key: `match-message:${user.id}`, windowSec: 3600, maxAttempts: 120, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many messages' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
-  const { match_id, body } = await req.json();
+  const { match_id, body, client_id } = await req.json();
   if (!match_id || !body || typeof body !== 'string') {
     return NextResponse.json({ error: 'match_id and body required' }, { status: 400 });
   }
@@ -101,6 +93,12 @@ export async function POST(req: NextRequest) {
   }
   if (body.length > 2000) {
     return NextResponse.json({ error: 'Message too long (max 2000)' }, { status: 400 });
+  }
+  const clientId = typeof client_id === 'string' && /^[a-zA-Z0-9_-]{8,80}$/.test(client_id) ? client_id : null;
+  if (clientId) {
+    const { data: existing } = await supabaseAdmin.from('messages')
+      .select('*').eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
+    if (existing) return NextResponse.json({ message: existing, already: true });
   }
 
   const { data: match } = await supabaseAdmin
@@ -137,11 +135,16 @@ export async function POST(req: NextRequest) {
 
   const { data: message, error } = await supabaseAdmin
     .from('messages')
-    .insert({ match_id, sender_id: user.id, body: body.trim() })
+    .insert({ match_id, sender_id: user.id, body: body.trim(), client_id: clientId })
     .select()
     .single();
 
   if (error) {
+    if (error.code === '23505' && clientId) {
+      const { data: existing } = await supabaseAdmin.from('messages')
+        .select('*').eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
+      if (existing) return NextResponse.json({ message: existing, already: true });
+    }
     console.error('Insert message error:', error);
     return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
   }

@@ -15,7 +15,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How does the matching actually work?',
-    a: 'A personality quiz — HEXACO traits, your attachment style, what you value, and a rapid-fire round — powers it. We score real compatibility on who you are and what you want, not photos or a swipe count, then hand you seven curated options. Each 24-hour roster includes three distinct connection picks.',
+    a: 'A personality quiz — HEXACO traits, your attachment style, what you value, and a rapid-fire round — powers it. We score real compatibility on who you are and what you want, not photos or a swipe count, then show up to ten curated options: three included connection picks plus seven browseable alternatives.',
   },
   {
     q: 'No swiping — really?',

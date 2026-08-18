@@ -5,6 +5,7 @@ import { claudeJSON, aiEnabled } from '@/lib/ai';
 import { compatibilityBreakdown } from '@/lib/matching';
 import { curatedLoveCoach, loveCoachStage, type LoveCoach, type LoveCoachStage } from '@/lib/love-coach';
 import { rateLimit } from '@/lib/rate-limit';
+import { recordAppEvent } from '@/lib/app-events';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .select('response, source, generated_at')
     .eq('match_id', id).eq('user_id', user.id).eq('stage', stage).maybeSingle();
   if (cached && Date.now() - new Date(cached.generated_at).getTime() < 7 * 86_400_000) {
+    await recordAppEvent({ userId: user.id, eventName: 'coach_generated', surface: 'love_chat', matchId: id, metadata: { source: cached.source, stage, cached: true } });
     return NextResponse.json({ coach: { ...cached.response, source: cached.source } });
   }
 
@@ -111,6 +113,9 @@ Rules:
         };
       }
     }
+    if (coach.source !== 'ai') {
+      await recordAppEvent({ userId: user.id, eventName: 'coach_ai_fallback', surface: 'love_chat', matchId: id, metadata: { stage } });
+    }
   }
 
   const { source: _source, ...cacheResponse } = coach;
@@ -123,6 +128,7 @@ Rules:
     generated_at: new Date().toISOString(),
   }, { onConflict: 'match_id,user_id,stage' });
   if (cacheError) console.error('love coach: cache write failed', cacheError);
+  await recordAppEvent({ userId: user.id, eventName: 'coach_generated', surface: 'love_chat', matchId: id, metadata: { source: coach.source, stage, cached: false } });
 
   return NextResponse.json({ coach });
 }

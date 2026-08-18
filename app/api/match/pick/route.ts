@@ -1,11 +1,10 @@
 // POST /api/match/pick   { candidateId }
 //
-// First-pick-wins: the caller chooses one person from their roster. We claim
-// both users ATOMICALLY (conditional status update) so if someone else grabbed
-// the candidate — or the cron auto-matched the caller — a split second earlier,
-// this fails cleanly instead of creating a duplicate match. On success we
+// The caller chooses a person from their roster. Postgres locks both people and
+// claims capacity/history atomically, so a simultaneous pick cannot create a
+// duplicate or overflow either person's live-connection ceiling. On success we
 // create a pending match with the PICKER pre-accepted and nudge the candidate
-// to accept back (reusing the shared accept-activation flow).
+// to answer Yes or Pass (reusing the shared accept-activation flow).
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
@@ -27,7 +26,7 @@ import {
   syncMatchRosters,
 } from '@/lib/match-actions';
 import { DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data';
-import { LOVE_CONNECTION_PRICE_CENTS, LOVE_INCLUDED_PICKS } from '@/lib/matching-policy';
+import { LOVE_CONNECTION_PRICE_CENTS, LOVE_INCLUDED_PICKS, LOVE_MAX_PENDING_INCOMING } from '@/lib/matching-policy';
 import { creditForCandidate, lovePickAccessFor } from '@/lib/love-pick-access';
 
 export const dynamic = 'force-dynamic';
@@ -81,8 +80,12 @@ export async function POST(req: NextRequest) {
     (m: any) => m.user_1_id === candidateId || m.user_2_id === candidateId
   );
   if (alreadyWith) {
-    await preservePaidCredit();
-    return NextResponse.json({ error: "You're already connected with them." }, { status: 409 });
+    const existing = myLive.find(
+      (m: any) => m.user_1_id === candidateId || m.user_2_id === candidateId
+    );
+    // A weak connection may lose the original success response. Treat the
+    // identical retry as success instead of making the user wonder if it worked.
+    return NextResponse.json({ ok: true, matchId: existing.id, already: true });
   }
 
   // Load + validate the candidate (prevents picking arbitrary / ineligible ids).
@@ -95,9 +98,16 @@ export async function POST(req: NextRequest) {
   // Candidate must have spare capacity too (they can be talking to others, just
   // not maxed out). Replaces the old single-match `status === 'waiting'` gate.
   const candLive = await liveMatchesFor(candidateId);
+  const candidatePendingIncoming = candLive.filter((match: any) =>
+    match.status === 'pending' && (
+      (match.user_1_id === candidateId && !match.user_1_accepted && match.user_2_accepted) ||
+      (match.user_2_id === candidateId && !match.user_2_accepted && match.user_1_accepted)
+    )
+  ).length;
   const nowMs = Date.now();
   const eligible =
     candLive.length < MAX_CONNECTIONS &&
+    candidatePendingIncoming < LOVE_MAX_PENDING_INCOMING &&
     // Responsiveness gate: a chronic no-show is benched (graceful if unmigrated).
     ((cand.ignored_picks ?? 0) <= MAX_IGNORED_PICKS) &&
     // Realm segregation: test ↔ test, real ↔ real only.
@@ -163,7 +173,7 @@ export async function POST(req: NextRequest) {
 
   // Final capacity/history claim happens inside Postgres while both user rows
   // are locked. Concurrent picks for either person serialize here, so nobody
-  // can exceed three live slots and the same pair cannot be created twice.
+  // can exceed the live safety ceiling and the same pair cannot be created twice.
   const breakdown = compatibilityBreakdown(user, cand);
   const score = breakdown.score;
   const { data: matchId, error: claimErr } = await supabaseAdmin.rpc('create_love_pick', {
@@ -197,8 +207,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Remove this pair from each other's own roster. Only a person whose third
-  // slot was just filled is removed from everyone else's saved roster.
+  // Remove this pair from each other's own roster. A person is removed from
+  // everyone else's saved roster only after the safety ceiling is filled.
   await syncMatchRosters([user.id, candidateId]);
 
   // Persist auditable decision metadata (aggregate scores/reason codes only,

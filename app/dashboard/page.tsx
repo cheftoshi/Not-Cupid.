@@ -73,7 +73,9 @@ export default async function DashboardPage({
 
   // Newest incoming message per match (first hit wins — rows are desc).
   const lastFromOtherByMatch = new Map<string, string>();
+  const messagedMatchIds = new Set<string>();
   (recentMsgs ?? []).forEach((r: any) => {
+    messagedMatchIds.add(r.match_id);
     if (r.sender_id !== user.id && !lastFromOtherByMatch.has(r.match_id)) {
       lastFromOtherByMatch.set(r.match_id, r.created_at);
     }
@@ -119,6 +121,7 @@ export default async function DashboardPage({
       age: o.age ?? null, archetype: o.archetype || null,
       score: m.compatibility_score ?? null,
       unread,
+      needsStarter: both && !messagedMatchIds.has(m.id),
       status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
     };
   });
@@ -251,6 +254,7 @@ export default async function DashboardPage({
                 archetype: card.archetype,
                 score: card.score,
                 unread: card.unread,
+                needsStarter: card.needsStarter,
                 status: card.status,
               }))}
             />

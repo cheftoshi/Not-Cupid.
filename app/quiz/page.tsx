@@ -33,7 +33,7 @@ const INTENT_OPTIONS = [
     eyebrow: 'love line',
     icon: '💘',
     title: 'I want to date.',
-    body: 'Seven curated options, three included picks per roster, and help turning a chat into a real plan.',
+    body: 'Up to ten curated options, three included picks per roster, and help turning a chat into a real plan.',
     next: 'baseline first · Love setup after',
   },
   {
@@ -1395,7 +1395,7 @@ function QuizInner() {
                   : intent === 'both'
                     ? 'Next we finish your Love setup, then your Friend setup. Each line stays separate, and you can pause between them.'
                     : intent === 'love'
-                      ? 'Next is a focused Love setup about what you want and how you connect. Then your seven curated options can open.'
+                      ? 'Next is a focused Love setup about what you want and how you connect. Then your curated Love options can open.'
                       : 'Your baseline is ready. Open the Hub whenever you want to choose a line.'}
               </p>
             </div>

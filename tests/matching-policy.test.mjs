@@ -4,6 +4,7 @@ import {
   ACTIVE_USER_DAYS,
   LOVE_INCLUDED_PICKS,
   LOVE_MAX_CONNECTIONS,
+  LOVE_MAX_PENDING_INCOMING,
   LOVE_ROSTER_OPTIONS,
   RECENT_USER_DAYS,
   ROSTER_EXPOSURE_COOLDOWN_DAYS,
@@ -29,7 +30,8 @@ test('matching activity and exposure cutoffs use 12 and 7 days', () => {
   assert.equal(ROSTER_RETURN_ROTATION_HOURS, 24);
   assert.equal(LOVE_INCLUDED_PICKS, 3);
   assert.equal(LOVE_MAX_CONNECTIONS, 10);
-  assert.equal(LOVE_ROSTER_OPTIONS, 7);
+  assert.equal(LOVE_ROSTER_OPTIONS, 10);
+  assert.equal(LOVE_MAX_PENDING_INCOMING, 3);
   assert.equal(activeUserCutoffIso(now), new Date(now - 12 * DAY_MS).toISOString());
   assert.equal(rosterExposureCutoffIso(now), new Date(now - 7 * DAY_MS).toISOString());
   assert.equal(rosterNotificationCutoffIso(now), new Date(now - 7 * DAY_MS).toISOString());

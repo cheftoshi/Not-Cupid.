@@ -5,6 +5,7 @@ export type LoveNotificationType =
   | 'decision_24h'
   | 'decision_final'
   | 'mutual'
+  | 'mutual_no_message_12h'
   | 'expired';
 
 export type LoveNotificationChannel = 'email' | 'push' | 'in_app';

@@ -34,6 +34,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   if (error) return NextResponse.json({ error: 'Could not pass on match' }, { status: 500 });
   await recordLoveDecision(id, user.id, 'passed');
+  // An explicit decision is responsive behavior. Only unanswered expiries
+  // should accumulate the no-show penalty.
+  await supabaseAdmin.from('users').update({ ignored_picks: 0 }).eq('id', user.id);
   if (!(match.user_1_accepted && match.user_2_accepted)) await returnLovePickEntitlement(id, user.id);
 
   // Record in history to prevent re-match

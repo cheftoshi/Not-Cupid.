@@ -426,6 +426,7 @@ export default function AdminClient() {
                       <span className={s.chip}>Immediate sent <b>{data.loveFunnel.notifications.immediateSent}</b></span>
                       <span className={s.chip}>24h sent <b>{data.loveFunnel.notifications.reminder24hSent}</b></span>
                       <span className={s.chip}>Final sent <b>{data.loveFunnel.notifications.finalSent}</b></span>
+                      <span className={s.chip}>12h mutual nudge <b>{data.loveFunnel.notifications.mutualNoMessage12hSent}</b></span>
                       <span className={s.chip}>Delivered <b>{data.loveFunnel.notifications.delivered}</b></span>
                       <span className={s.chip}>Opened <b>{data.loveFunnel.notifications.opened}</b></span>
                       <span className={`${s.chip} ${s.chipGold}`}>Clicked <b>{data.loveFunnel.notifications.clicked}</b></span>
@@ -433,6 +434,29 @@ export default function AdminClient() {
                       <span className={s.chip}>Accepted after notice <b>{data.loveFunnel.decisions.accepted}</b></span>
                       <span className={s.chip}>Passed after notice <b>{data.loveFunnel.decisions.passed}</b></span>
                       <span className={s.chip}>Expired unanswered <b>{data.loveFunnel.decisions.expired}</b></span>
+                    </div>
+                  </>
+                )}
+                {data.appExperience && (
+                  <>
+                    <div className={s.divider} />
+                    <p className={s.note} style={{ marginBottom: '0.55rem' }}>AUTHENTICATED INTERACTION + PWA PERFORMANCE · LAST 24H</p>
+                    <div className={s.chips}>
+                      <span className={s.chip}>Dashboard opens <b>{data.appExperience.interactions.dashboardOpens}</b></span>
+                      <span className={s.chip}>Roster views <b>{data.appExperience.interactions.rosterViews}</b></span>
+                      <span className={s.chip}>Profile opens <b>{data.appExperience.interactions.profileOpens}</b></span>
+                      <span className={s.chip}>Pick attempts <b>{data.appExperience.interactions.pickAttempts}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>Pick successes <b>{data.appExperience.interactions.pickSuccesses}</b></span>
+                      <span className={`${s.chip} ${s.chipRed}`}>Pick failures <b>{data.appExperience.interactions.pickFailures}</b></span>
+                      <span className={s.chip}>No fit today <b>{data.appExperience.interactions.noSuitableChoice}</b></span>
+                      <span className={s.chip}>First messages <b>{data.appExperience.interactions.firstMessages}</b></span>
+                      <span className={s.chip}>First replies <b>{data.appExperience.interactions.replies}</b></span>
+                      <span className={s.chip}>Coach requests <b>{data.appExperience.interactions.coachRequests}</b></span>
+                      <span className={s.chip}>Roster API p75 <b>{data.appExperience.performance.rosterApiP75Ms ?? '—'}ms</b></span>
+                      <span className={s.chip}>LCP p75 <b>{data.appExperience.performance.lcpP75Ms ?? '—'}ms</b></span>
+                      <span className={s.chip}>INP p75 <b>{data.appExperience.performance.inpP75Ms ?? '—'}ms</b></span>
+                      <span className={s.chip}>CLS p75 <b>{data.appExperience.performance.clsP75 ?? '—'}</b></span>
+                      <span className={`${s.chip} ${data.appExperience.performance.clientErrors ? s.chipRed : ''}`}>Client errors <b>{data.appExperience.performance.clientErrors}</b></span>
                     </div>
                   </>
                 )}
@@ -995,7 +1019,7 @@ export default function AdminClient() {
             </div>
             <div className={`${s.actionsGrid} ${s.actions2}`} style={{ marginBottom: '0.75rem' }}>
               <button className={`${s.btn} ${s.btnGhost}`} onClick={async () => {
-                if (!confirm('Build the full TEST WORLD? 12 test accounts (log in as Test Alex): one live Love chat + seven roster options, a friend crew + a sealed pack to open, and a populated Scene with RSVPs. Re-running resets this isolated fixture namespace and retires obsolete test accounts.')) return;
+                if (!confirm('Build the full TEST WORLD? 12 test accounts (log in as Test Alex): one live Love chat + a populated curated roster, a friend crew + a sealed pack to open, and a populated Scene with RSVPs. Re-running resets this isolated fixture namespace and retires obsolete test accounts.')) return;
                 const res = await fetch('/api/admin/seed-test', { method: 'POST' });
                 const d = await parseResponse<any>(res);
                 if (!d.ok) { alert('Failed: ' + (d.error || 'unknown')); return; }

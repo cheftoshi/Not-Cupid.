@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { parseResponse } from '@/lib/fetch-helpers';
+import { fetchWithTimeout, parseResponse } from '@/lib/fetch-helpers';
+import { trackLoveEvent } from '@/lib/love-events-client';
 import { toast } from '@/components/feedback';
 import ReportDialog from '@/components/report-dialog';
 import EndMatchDialog from '@/components/end-match-dialog';
@@ -24,6 +25,7 @@ interface Props {
   otherUser: any;
   match: any;
   initialMessages: any[];
+  hasOlderMessages?: boolean;
   readOnly?: boolean;
   profileUnlocked: boolean;
 }
@@ -91,10 +93,13 @@ export default function ChatRoom({
   otherUser,
   match,
   initialMessages,
+  hasOlderMessages = false,
   readOnly = false,
   profileUnlocked,
 }: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
+  const [hasOlder, setHasOlder] = useState(hasOlderMessages);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   // Newest message timestamp we hold — lets the poll ask for only newer rows.
   const lastMsgAtRef = useRef<string>(
     initialMessages.length ? initialMessages[initialMessages.length - 1].created_at : ''
@@ -114,6 +119,7 @@ export default function ChatRoom({
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'plan' | 'profile'>('chat');
   const [coach, setCoach] = useState<LoveCoach | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
+  const autoCoachRequested = useRef(false);
   // A new message changes the coach stage. Never leave stale guidance on the
   // screen after either person advances the conversation.
   useEffect(() => setCoach(null), [messages.length]);
@@ -205,7 +211,7 @@ export default function ChatRoom({
       const response = await fetch(`/api/matches/${matchId}/${answer === 'yes' ? 'accept' : 'pass'}`, { method: 'POST' });
       const result = await parseResponse<any>(response);
       if (!response.ok) throw new Error(result.error || 'Could not save your choice');
-      window.location.href = answer === 'yes' ? `/match/${matchId}` : '/dashboard#connections';
+      window.location.href = answer === 'yes' ? `/match/${matchId}?prompt_push=1` : '/dashboard#connections';
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Could not save your choice', 'error');
       setDecisionBusy(false);
@@ -218,6 +224,39 @@ export default function ChatRoom({
   function trackScroll() {
     const el = scrollRef.current;
     if (el) nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+  }
+
+  async function loadOlderMessages() {
+    const oldest = messages[0]?.created_at;
+    const el = scrollRef.current;
+    if (!oldest || !el || loadingOlder) return;
+    setLoadingOlder(true);
+    const previousHeight = el.scrollHeight;
+    try {
+      const response = await fetchWithTimeout(
+        `/api/messages?match_id=${matchId}&before=${encodeURIComponent(oldest)}`,
+        {},
+        10_000,
+      );
+      const data = await parseResponse<any>(response);
+      if (!response.ok) throw new Error(data.error || 'Could not load older messages');
+      const older: any[] = data.messages || [];
+      setHasOlder(!!data.hasMore);
+      if (older.length) {
+        setMessages((current) => {
+          const seen = new Set(current.map((message: any) => message.id));
+          return [...older.filter((message: any) => !seen.has(message.id)), ...current];
+        });
+        requestAnimationFrame(() => {
+          const current = scrollRef.current;
+          if (current) current.scrollTop += current.scrollHeight - previousHeight;
+        });
+      }
+    } catch {
+      toast('older messages could not load — try again', 'error');
+    } finally {
+      setLoadingOlder(false);
+    }
   }
   useEffect(() => {
     const el = scrollRef.current;
@@ -278,12 +317,14 @@ export default function ChatRoom({
 
   useEffect(() => {
     if (readOnly) return; // ended conversations don't change — no need to poll
-    const interval = setInterval(async () => {
+    let stopped = false;
+    let timer: number | undefined;
+    const poll = async () => {
       try {
         // Incremental poll: only fetch messages newer than the last one we
         // have (the server re-ships the whole thread without `after`).
         const after = lastMsgAtRef.current;
-        const res = await fetch(`/api/messages?match_id=${matchId}${after ? `&after=${encodeURIComponent(after)}` : ''}`);
+        const res = await fetchWithTimeout(`/api/messages?match_id=${matchId}${after ? `&after=${encodeURIComponent(after)}` : ''}`, {}, 8_000);
         if (res.ok) {
           const data = await parseResponse<any>(res);
           const fresh: any[] = data.messages || [];
@@ -303,8 +344,20 @@ export default function ChatRoom({
           if ('otherReadAt' in data) setOtherReadAt(data.otherReadAt || null);
         }
       } catch {}
-    }, 3000);
-    return () => clearInterval(interval);
+      if (!stopped) timer = window.setTimeout(poll, document.visibilityState === 'visible' ? 3_000 : 12_000);
+    };
+    timer = window.setTimeout(poll, 3_000);
+    const wake = () => {
+      if (document.visibilityState !== 'visible' || stopped) return;
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(poll, 250);
+    };
+    document.addEventListener('visibilitychange', wake);
+    return () => {
+      stopped = true;
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', wake);
+    };
   }, [matchId, readOnly]);
 
   // Re-render every 2s while a typing ping is live so the bubble expires cleanly.
@@ -325,6 +378,7 @@ export default function ChatRoom({
   async function loadCoach() {
     if (coachBusy) return;
     setCoachBusy(true);
+    trackLoveEvent('coach_requested', { matchId });
     try {
       const response = await fetch(`/api/matches/${matchId}/coach`, { method: 'POST' });
       const data = await parseResponse<{ coach?: LoveCoach; error?: string }>(response);
@@ -336,6 +390,13 @@ export default function ChatRoom({
       setCoachBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (readOnly || pendingAccept || messages.length > 0 || coach || coachBusy || autoCoachRequested.current) return;
+    autoCoachRequested.current = true;
+    trackLoveEvent('mutual_chat_open', { matchId });
+    void loadCoach();
+  }, [readOnly, pendingAccept, messages.length, coach, coachBusy, matchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -357,8 +418,11 @@ export default function ChatRoom({
     setNudge(null);
     setSending(true);
 
+    const clientId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const optimistic = {
-      id: 'temp-' + Date.now(),
+      id: `temp-${clientId}`,
       sender_id: currentUserId,
       body: text,
       created_at: new Date().toISOString(),
@@ -368,11 +432,11 @@ export default function ChatRoom({
     setInput('');
 
     try {
-      const res = await fetch('/api/messages', {
+      const res = await fetchWithTimeout('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ match_id: matchId, body: text }),
-      });
+        body: JSON.stringify({ match_id: matchId, body: text, client_id: clientId }),
+      }, 12_000);
       if (!res.ok) throw new Error('Send failed');
       const data = await parseResponse<any>(res);
       // Swap the optimistic bubble for the real row in place — no full refetch,
@@ -412,7 +476,7 @@ export default function ChatRoom({
           </div>
         </div>
         {otherUser?.photo_url ? (
-          <img src={otherUser.photo_url} alt="" className={styles.headerPhoto} />
+          <img src={otherUser.photo_url} alt="" className={styles.headerPhoto} decoding="async" />
         ) : (
           <div className={styles.headerPhotoEmpty} />
         )}
@@ -463,6 +527,11 @@ export default function ChatRoom({
       </div>
 
       <div className={styles.messages} ref={scrollRef} onScroll={trackScroll}>
+        {hasOlder && (
+          <button type="button" className={styles.loadOlder} onClick={loadOlderMessages} disabled={loadingOlder}>
+            {loadingOlder ? 'loading…' : 'load earlier messages'}
+          </button>
+        )}
         {/* algo narrator — frames every chat */}
         <div className={styles.narrator}>
           <span className={styles.narratorMark}>✦ NotCupid</span>
@@ -623,7 +692,7 @@ export default function ChatRoom({
         <section className={styles.matchProfile}>
           <div className={styles.matchPhotoWrap}>
             {otherUser?.photo_url ? (
-              <img src={otherUser.photo_url} alt="" className={styles.matchPhoto} />
+              <img src={otherUser.photo_url} alt="" className={styles.matchPhoto} loading="lazy" decoding="async" />
             ) : (
               <div className={styles.matchPhotoEmpty}>{firstName.charAt(0) || '?'}</div>
             )}
@@ -674,7 +743,7 @@ export default function ChatRoom({
                 {Array.isArray(otherUser?.gallery) && otherUser.gallery.length > 0 && (
                   <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
                     {otherUser.gallery.slice(0, 3).map((url: string) => (
-                      <img key={url} src={url} alt="" style={{ width: 70, height: 82, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+                      <img key={url} src={url} alt="" loading="lazy" decoding="async" style={{ width: 70, height: 82, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
                     ))}
                   </div>
                 )}

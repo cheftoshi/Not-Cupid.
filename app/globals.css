@@ -61,7 +61,9 @@
   --app-top-nav-height: 0px;
 }
 
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;max-width:100%;overflow-x:clip}
+
+img,video,canvas,svg{max-width:100%}
 
 html[data-native-shell]{
   overscroll-behavior-y:none;

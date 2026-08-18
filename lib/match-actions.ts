@@ -66,8 +66,8 @@ export async function liveMatchesFor(userId: string): Promise<any[]> {
 
 /**
  * Remove the newly-created pair from each other's saved roster. A user stays
- * visible to everyone else until all three slots are filled; at capacity the
- * database removes them from every saved roster in one operation.
+ * visible to everyone else until the live safety ceiling is filled; at
+ * capacity the database removes them from every saved roster in one operation.
  */
 export async function syncMatchRosters(userIds: string[]): Promise<void> {
   const ids = Array.from(new Set(userIds.filter(Boolean)));

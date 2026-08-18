@@ -49,7 +49,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
           <div style={{ margin: '0 0 1rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 14, background: 'rgba(255,255,255,0.04)' }}>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#9fbeff', marginBottom: '0.45rem' }}>always free</div>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.78)', fontSize: '0.86rem', lineHeight: 1.6 }}>
-              Complete roster profiles · seven curated Love options · three distinct picks per roster · accepting · replies · date planning · Friend conversations
+              Complete roster profiles · up to ten curated Love options · three distinct picks per roster · accepting · replies · date planning · Friend conversations
             </p>
           </div>
         )}

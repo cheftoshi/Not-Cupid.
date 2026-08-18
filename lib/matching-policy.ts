@@ -11,12 +11,13 @@ export const ROSTER_EXPOSURE_COOLDOWN_DAYS = 7;
 export const ROSTER_NOTIFICATION_COOLDOWN_DAYS = 7;
 export const ROSTER_RETURN_ROTATION_HOURS = 24;
 // Each daily roster includes three distinct connection picks. The roster keeps
-// seven additional people browseable; a fourth pick in the same cycle is an
+// seven additional people browseable (ten total); a fourth pick in the same cycle is an
 // optional $0.99 extra connection (or included with Pro). A separate hard cap
 // prevents notification/chat overload even when extras are purchased.
 export const LOVE_INCLUDED_PICKS = 3;
 export const LOVE_MAX_CONNECTIONS = 10;
-export const LOVE_ROSTER_OPTIONS = 7;
+export const LOVE_ROSTER_OPTIONS = 10;
+export const LOVE_MAX_PENDING_INCOMING = 3;
 export const LOVE_CONNECTION_PRICE_CENTS = 99;
 
 const DAY_MS = 86_400_000;

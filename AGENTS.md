@@ -1,6 +1,6 @@
 # NotCupid — current project memory
 
-Last reconciled with the deployed application on **August 17, 2026**.
+Last reconciled with the current application code on **August 18, 2026**.
 
 This file is a current-state handoff, not a chronological session log. Git history
 contains retired plans and earlier implementations. Do not reintroduce an older
@@ -117,14 +117,25 @@ supersede them.
   rather than send outside that window. Vercel attempts the job at 1:00, 1:05,
   and 1:10 PM; a database `(user_id, delivery_day)` claim prevents duplicates
   while allowing provider failures to retry inside the approved window.
+- A mutual-match/no-message 12-hour nudge is implemented as
+  `love-mutual-no-message-v1-2026-08-18`, but it is fail-closed unless
+  `LOVE_MUTUAL_NUDGE_APPROVAL_VERSION` exactly matches that version. Its copy
+  and delivery are not approved merely because the code exists; do not set the
+  activation variable or deliver it without the current-conversation approval
+  required above.
 
 ## Current product behavior
 
 ### Love Line
 
-- Roster-first matching: up to five curated candidates, no swiping or public
+- Roster-first matching: up to ten curated candidates (three included picks
+  plus seven browseable alternatives), no swiping or public
   browsing.
-- A user may have up to three pending-or-mutual Love connections at once.
+- A user has three included outgoing picks per 24-hour roster cycle. The live
+  connection safety ceiling remains ten; a fourth and later distinct outgoing
+  pick uses Pro or a one-time $0.99 extra-connection entitlement.
+- A recipient is hidden from new rosters while three incoming decisions are
+  unanswered; an explicit Yes or Pass restores responsiveness standing.
 - Picking creates a 72-hour pending invitation. Chat opens only after mutual
   acceptance.
 - Ending a pending or mutual connection closes the pair, records no-repeat
@@ -136,8 +147,8 @@ supersede them.
   seven-day notification cooldown.
 - Test/real realm segregation is mandatory on every people query and write.
 - The Love mobile/PWA connection inbox uses `all`, `your move`, `chatting`, and
-  `waiting` filters. Locked $0.99 compatibility profiles stay attached to the
-  individual person; never cluster multiple unlocks into one card.
+  `waiting` filters. Every roster profile is free to preview; never place basic
+  profile viewing, accepting, replying, blocking, or reporting behind payment.
 
 ### Friend Line
 
@@ -163,10 +174,13 @@ supersede them.
 
 ### Monetization
 
-- Optional Love compatibility-profile unlock: $0.99.
+- A fourth or later distinct outgoing Love connection in the current roster is
+  a one-time $0.99. If the other person declines or the request expires before
+  mutual connection, that entitlement returns as an in-app Love credit.
 - Additional Friend packs: $0.99; first pack free.
 - All-Access: $3.99/month.
-- Acceptance, chat, and Dating Experiment entry/selection are not paywalled.
+- Acceptance and replies are always free. Chat is included after mutual
+  connection; Dating Experiment entry/selection is not paywalled.
 
 ### PWA and native plan
 
@@ -190,7 +204,7 @@ supersede them.
 
 ## Stack, migrations, and deployment
 
-- Next.js 14 App Router, Supabase/Postgres, Vercel Pro, Resend, Stripe.
+- Next.js 16 App Router, Supabase/Postgres, Vercel Pro, Resend, Stripe.
 - GitHub: `cheftoshi/Not-Cupid.`; `main` auto-deploys through Vercel.
 - Local secrets live in gitignored `.env.local`; production secrets live in
   Vercel. Never commit or print secret values.

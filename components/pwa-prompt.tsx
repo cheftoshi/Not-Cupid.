@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { isNativeShell } from '@/lib/native-platform';
+import { trackLoveEvent } from '@/lib/love-events-client';
 
 // PWA niceties — a FLOATING prompt mounted ONCE in the root layout, so the
 // "install the app" tag shows on EVERY page (not just dashboard/friends):
@@ -14,15 +15,16 @@ import { isNativeShell } from '@/lib/native-platform';
 // A logged-out user who grants push gets silently subscribed on their next
 // logged-in load via the `granted` branch.
 
-const DISMISS_KEY = 'nc_pwa_prompt_dismissed';
+const INSTALL_DISMISS_KEY = 'nc_pwa_install_dismissed';
+const PUSH_DISMISS_KEY = 'nc_pwa_push_dismissed';
 const DISMISS_MS = 24 * 60 * 60 * 1000;
 
-function dismissedRecently() {
+function dismissedRecently(key: string) {
   try {
-    const raw = localStorage.getItem(DISMISS_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return false;
     if (raw === '1') {
-      localStorage.removeItem(DISMISS_KEY);
+      localStorage.removeItem(key);
       return false;
     }
     const at = Number(raw);
@@ -82,7 +84,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
     // Capacitor is already an installed app. Web Push only works reliably for
     // browser/Home Screen PWAs on iOS; the native build will use APNs instead.
     if (isNativeShell()) return;
-    const dismissed = dismissedRecently();
+    const installDismissed = dismissedRecently(INSTALL_DISMISS_KEY);
     const standalone =
       window.matchMedia?.('(display-mode: standalone)').matches ||
       (navigator as any).standalone === true;
@@ -94,13 +96,11 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
       if (Notification.permission === 'granted') {
         // Keep the subscription fresh silently — no UI.
         subscribeToPush().catch(() => {});
-      } else if (Notification.permission === 'default' && !dismissed) {
-        setShowPush(true);
       }
     }
 
     // ── install ──
-    if (!standalone && !dismissed) {
+    if (!standalone && !installDismissed) {
       const installMode = getInstallMode();
       if (installMode === 'ios' || installMode === 'fallback') setShowInstall(installMode);
       if (installMode !== 'ios') {
@@ -116,9 +116,23 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   }, []);
 
   useEffect(() => {
+    function showContextualPushPrompt() {
+      if (isNativeShell()) return;
+      const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      if (!supported || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || Notification.permission !== 'default') return;
+      if (dismissedRecently(PUSH_DISMISS_KEY)) return;
+      setShowPush(true);
+      trackLoveEvent('push_prompt_shown');
+    }
+    window.addEventListener('nc:show-push-prompt', showContextualPushPrompt);
+    if (new URLSearchParams(window.location.search).get('prompt_push') === '1') showContextualPushPrompt();
+    return () => window.removeEventListener('nc:show-push-prompt', showContextualPushPrompt);
+  }, []);
+
+  useEffect(() => {
     function forceInstallPrompt() {
       if (isNativeShell()) return;
-      try { localStorage.removeItem(DISMISS_KEY); } catch { /* ignore */ }
+      try { localStorage.removeItem(INSTALL_DISMISS_KEY); } catch { /* ignore */ }
       setShowInstall(installEvt ? 'native' : getInstallMode() || 'fallback');
     }
     window.addEventListener('nc:show-install-prompt', forceInstallPrompt);
@@ -131,7 +145,10 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
     setBusy(true);
     try {
       const perm = await Notification.requestPermission();
-      if (perm === 'granted') await subscribeToPush();
+      if (perm === 'granted') {
+        await subscribeToPush();
+        trackLoveEvent('push_enabled');
+      }
       setShowPush(false);
     } finally {
       setBusy(false);
@@ -146,7 +163,11 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   }
 
   function dismiss() {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    if (showPush) {
+      localStorage.setItem(PUSH_DISMISS_KEY, String(Date.now()));
+      trackLoveEvent('push_dismissed');
+    }
+    if (showInstall) localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
     setShowPush(false);
     setShowInstall(false);
   }
@@ -184,9 +205,14 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
           </div>
         )}
         {showPush && (
-          <button onClick={enablePush} disabled={busy} style={{ ...pill, background: accent, color: '#fff', width: '100%' }}>
-            {busy ? 'turning on…' : 'turn on real-time pings'}
-          </button>
+          <div style={{ display: 'grid', gap: '0.55rem' }}>
+            <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.9rem', lineHeight: 1.4, color: 'var(--h-text)', textAlign: 'center' }}>
+              Get a real-time ping when someone answers your Love Line choice or sends a message.
+            </div>
+            <button onClick={enablePush} disabled={busy} style={{ ...pill, background: accent, color: '#fff', width: '100%' }}>
+              {busy ? 'turning on…' : 'notify me about this connection'}
+            </button>
+          </div>
         )}
         {showInstall === 'native' && (
           <button onClick={install} style={{ ...pill, width: '100%' }}>install NotCupid</button>

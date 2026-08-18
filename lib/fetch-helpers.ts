@@ -21,6 +21,20 @@ export async function parseResponse<T = any>(res: Response): Promise<T> {
   }
 }
 
+export async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  timeoutMs = 12_000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: init.signal || controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function friendlyHttpError(status: number, text: string): string {
   if (status === 413) return 'request too large';
   if (status === 401) return 'not signed in';

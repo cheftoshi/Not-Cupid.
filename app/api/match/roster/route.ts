@@ -17,6 +17,7 @@ import { isHardLocked } from '@/lib/ghost';
 import {
   LOVE_ROSTER_OPTIONS,
   LOVE_INCLUDED_PICKS,
+  LOVE_MAX_PENDING_INCOMING,
   ROSTER_RETURN_ROTATION_HOURS,
   addedRosterCandidateIds,
   activeUserCutoffIso,
@@ -73,14 +74,6 @@ export async function composeLoveRosterForUser(
   const cooldownActive = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > now;
   if (user.matching_disabled_at || cooldownActive) {
     return { roster: [], ghosted: true, hardLocked: isHardLocked(user.ghost_strikes), rosterChanged: false };
-  }
-
-  // Opening the Love roster is a direct signal that this person is available
-  // again. Clear the ignored-pick penalty so a previously benched member can
-  // re-enter other active users' candidate pools without needing an incoming
-  // pick (which a benched member could never receive) to recover.
-  if (options.interactive !== false && (user.ignored_picks ?? 0) > 0) {
-    await supabaseAdmin.from('users').update({ ignored_picks: 0 }).eq('id', user.id);
   }
 
   // Fully free (no live matches) but status got stuck → normalize to 'waiting'
@@ -150,19 +143,46 @@ export async function composeLoveRosterForUser(
   }
   let freshPool = pool.filter((p: any) => !seen.has(p.id));
 
-  // Drop candidates who are already at the connection cap (no spare capacity).
-  // Batch-fetch every live match touching the pool, then count per candidate.
+  // Fetch operational ranking inputs together. These used to run in three
+  // sequential waves (live capacity, sessions/exposures, reciprocity), which
+  // made roster latency grow with database round trips even though the inputs
+  // are independent.
   const liveCount = new Map<string, number>();
   const pendingIncoming = new Map<string, number>();
+  const activityByCandidateId = new Map<string, ReturnType<typeof matchingActivitySegment>>();
+  const recentlyShownIds = new Set<string>();
+  const outcomeByCandidateId = new Map<string, ReciprocalOutcomeStats>();
   if (freshPool.length > 0) {
     const poolIds = freshPool.map((p: any) => p.id);
-    const [{ data: m1 }, { data: m2 }] = await Promise.all([
+    const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
+    const [
+      { data: m1 },
+      { data: m2 },
+      { data: activeSessions },
+      { data: recentExposures, error: exposureErr },
+      { data: outcomeRows, error: outcomeErr },
+    ] = await Promise.all([
       supabaseAdmin.from('matches')
         .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, status, ended_at')
         .in('user_1_id', poolIds).is('ended_at', null).neq('status', 'expired'),
       supabaseAdmin.from('matches')
         .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, status, ended_at')
         .in('user_2_id', poolIds).is('ended_at', null).neq('status', 'expired'),
+      supabaseAdmin
+        .from('sessions')
+        .select('user_id, last_used_at')
+        .in('user_id', poolIds)
+        .gte('last_used_at', activeUserCutoffIso())
+        .limit(5000),
+      supabaseAdmin
+        .from('roster_exposures')
+        .select('candidate_id')
+        .eq('user_id', user.id)
+        .gte('shown_at', rosterExposureCutoffIso()),
+      supabaseAdmin.rpc('candidate_reciprocity_stats', {
+        p_candidate_ids: poolIds,
+        p_since: since,
+      }),
     ]);
     const byId = new Map<string, any>();
     for (const m of [...(m1 ?? []), ...(m2 ?? [])]) byId.set(m.id, m);
@@ -181,29 +201,10 @@ export async function composeLoveRosterForUser(
         }
       }
     }
-    freshPool = freshPool.filter((p: any) => (liveCount.get(p.id) || 0) < MAX_CONNECTIONS);
-  }
-
-  // Availability is the strongest response signal in the live data. Treat a
-  // session used in the last 12 days as active. The orderer below puts those
-  // candidates first, while keeping dormant people as a thin-pool fallback.
-  const activityByCandidateId = new Map<string, ReturnType<typeof matchingActivitySegment>>();
-  const recentlyShownIds = new Set<string>();
-  if (freshPool.length > 0) {
-    const poolIds = freshPool.map((p: any) => p.id);
-    const [{ data: activeSessions }, { data: recentExposures, error: exposureErr }] = await Promise.all([
-      supabaseAdmin
-        .from('sessions')
-        .select('user_id, last_used_at')
-        .in('user_id', poolIds)
-        .gte('last_used_at', activeUserCutoffIso())
-        .limit(5000),
-      supabaseAdmin
-        .from('roster_exposures')
-        .select('candidate_id')
-        .eq('user_id', user.id)
-        .gte('shown_at', rosterExposureCutoffIso()),
-    ]);
+    freshPool = freshPool.filter((p: any) =>
+      (liveCount.get(p.id) || 0) < MAX_CONNECTIONS &&
+      (pendingIncoming.get(p.id) || 0) < LOVE_MAX_PENDING_INCOMING
+    );
     const latestSessionByUser = new Map<string, string>();
     for (const session of activeSessions ?? []) {
       const previous = latestSessionByUser.get(session.user_id);
@@ -217,23 +218,6 @@ export async function composeLoveRosterForUser(
     if (!exposureErr) {
       for (const exposure of recentExposures ?? []) recentlyShownIds.add(exposure.candidate_id);
     }
-  }
-
-  // Reciprocal recommendation: estimate whether each candidate tends to accept
-  // real invitations and participate once a match becomes mutual. This uses a
-  // 90-day, evidence-shrunk window and is capped to a tiny reranking nudge so a
-  // new or selective user is never buried by sparse historical behavior.
-  const outcomeByCandidateId = new Map<string, ReciprocalOutcomeStats>();
-  if (freshPool.length > 0) {
-    const poolIds = freshPool.map((p: any) => p.id);
-    const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
-    // One aggregate RPC avoids hauling historical match/message rows through
-    // this hot path. During a rolling migration, a missing function simply
-    // leaves everyone at the neutral cold-start adjustment.
-    const { data: outcomeRows, error: outcomeErr } = await supabaseAdmin.rpc('candidate_reciprocity_stats', {
-      p_candidate_ids: poolIds,
-      p_since: since,
-    });
     if (!outcomeErr) {
       for (const row of outcomeRows ?? []) {
         outcomeByCandidateId.set(row.candidate_id, {
@@ -279,7 +263,8 @@ export async function composeLoveRosterForUser(
 
   const { ranked } = rankCandidates(user, freshPool, { waitDays, candidateAdjustments });
   const rotationRanked = orderForRosterRotation(ranked, activityByCandidateId, recentlyShownIds);
-  // Scarcity stays legible: everyone sees at most seven additional choices.
+  // Three included picks plus seven browseable alternatives keeps choice useful
+  // without turning Love Line into an endless feed.
   const size = LOVE_ROSTER_OPTIONS;
 
   // Map of currently-eligible candidates by id (for snapshot validation +
