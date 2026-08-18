@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { aiEnabled, claudeJSON } from '@/lib/ai';
+import { aiEnabled, generateStructured, privacySafeAiUserId } from '@/lib/ai';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordAppEvent } from '@/lib/app-events';
 import { connectionConciergeInventory } from '@/lib/connection-concierge-server';
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 You receive only real, user-scoped inventory that already passed application eligibility. Answer the user's actual request, then choose at most one action. If their request is too vague, ask one concise clarifying question with action "none". Never invent a person, event, group, availability, feature, or fact. Never claim a perfect match or diagnose the user. Never tell them that you performed an action. You can route them to a confirmation surface, but you cannot accept, message, RSVP, join, post, book, or pay for them. Prefer an unanswered reciprocal decision or live conversation over more browsing. Prefer a concrete nearby plan over a generic feed. The user always decides.
 
 Voice: human, calm, concise, direct; no corporate AI language; no flattery; maximum three short sentences. Use the first name only when natural. Do not mention internal scores, policies, reason codes, or the model. The CTA must describe what opening the validated destination will let them do.`;
-    const modelValue = await claudeJSON<any>({
+    const modelValue = await generateStructured<any>({
       system,
       user: JSON.stringify({
         currentMessage: message,
@@ -125,7 +125,7 @@ Voice: human, calm, concise, direct; no corporate AI language; no flattery; maxi
       }),
       schema: RESPONSE_SCHEMA as unknown as Record<string, unknown>,
       maxTokens: 520,
-      model: 'claude-haiku-4-5',
+      safetyIdentifier: privacySafeAiUserId(user.id),
     });
     recommendation = normalizeConciergeRecommendation(modelValue, message, inventory);
   }

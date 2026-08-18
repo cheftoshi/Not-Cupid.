@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { sameRealm } from '@/lib/realm';
 import { isPro } from '@/lib/pro';
 import { rateLimit } from '@/lib/rate-limit';
-import { aiEnabled, claudeJSON } from '@/lib/ai';
+import { aiEnabled, generateStructured, privacySafeAiUserId } from '@/lib/ai';
 import { recordAppEvent } from '@/lib/app-events';
 import { compatibilityReadRecord } from '@/lib/love-compatibility-access';
 import {
@@ -79,12 +79,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ can
   const fallback = curatedCompatibilityRead(context);
   let report: LoveCompatibilityRead = fallback;
   if (aiEnabled()) {
-    const generated = await claudeJSON<{
+    const generated = await generateStructured<{
       headline: string; overview: string; strengths: string[]; watchouts: string[]; firstDateIdea: string;
     }>({
-      model: 'claude-haiku-4-5',
       maxTokens: 650,
       schema: REPORT_SCHEMA as unknown as Record<string, unknown>,
+      safetyIdentifier: privacySafeAiUserId(user.id),
       system: `You are NotCupid's AI Connect Coach. Turn a bounded six-signal compatibility summary into useful, humane decision support.
 
 Rules:

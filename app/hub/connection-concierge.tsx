@@ -203,7 +203,7 @@ export default function ConnectionConcierge({
         <div className={styles.conciergeConsent} role="dialog" aria-label="AI data permission">
           <div>
             <strong>Before I answer</strong>
-            <p>NotCupid will send the words you type, your first name, broad interests, city, and available in-app options to Anthropic. We do not send your email, exact ZIP, raw quiz answers, or private Love/Friend messages. Nothing is accepted, joined, posted, or sent without you.</p>
+            <p>NotCupid will send the words you type, your first name, broad interests, city, and available in-app options to OpenAI through its API. We do not send your email, exact ZIP, raw quiz answers, or private Love/Friend messages. Nothing is accepted, joined, posted, or sent without you.</p>
           </div>
           <div className={styles.conciergeConsentActions}>
             <button type="button" onClick={() => void ask(pendingConsentMessage, true)} disabled={busy}>agree &amp; ask</button>

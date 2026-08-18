@@ -1302,7 +1302,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // ── TODAY'S MOVE — the AI concierge ──
   // Open the app → get ONE decided move → do it → close. The client sends what's
   // actually on the board (joinable plans, connections, sealed pack) and the
-  // server + Claude decide. Cached per day (localStorage here + users.today_move
+  // server + the bounded AI model decide. Cached per day (localStorage here + users.today_move
   // server-side) so it's one AI call a day; null → the rule-based fallback renders.
   const [aiMove, setAiMove] = useState<AiMove | null>(null);
   const [aiMoveLoading, setAiMoveLoading] = useState(false);

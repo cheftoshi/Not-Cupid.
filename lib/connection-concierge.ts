@@ -1,6 +1,8 @@
-export const HUB_CONCIERGE_VERSION = 'hub-concierge-v1-2026-08-18';
+// Bumped when the disclosed AI processor changed so an earlier consent cannot
+// silently authorize a new data boundary.
+export const HUB_CONCIERGE_VERSION = 'hub-concierge-openai-v2-2026-08-18';
 export const HUB_CONCIERGE_RANKER_VERSION = 'hub-action-policy-v1';
-export const HUB_CONCIERGE_EXPLANATION_VERSION = 'hub-concierge-copy-v1';
+export const HUB_CONCIERGE_EXPLANATION_VERSION = 'hub-concierge-copy-openai-v2';
 
 export type ConciergeIntent =
   | 'love'

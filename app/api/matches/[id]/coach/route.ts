@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { claudeJSON, aiEnabled } from '@/lib/ai';
+import { generateStructured, aiEnabled, privacySafeAiUserId } from '@/lib/ai';
 import { compatibilityBreakdown } from '@/lib/matching';
 import { curatedLoveCoach, loveCoachStage, type LoveCoach, type LoveCoachStage } from '@/lib/love-coach';
 import { rateLimit } from '@/lib/rate-limit';
@@ -82,10 +82,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       profileContext: { interests: safeInterests, bio: clean(other.bio, 400) },
       conversationMetadata: { messageCount: messages?.length ?? 0, bothPeopleHaveMessaged: new Set((messages ?? []).map((m) => m.sender_id)).size > 1 },
     };
-    const generated = await claudeJSON<{ headline: string; openers: string[]; nextMove: string }>({
-      model: 'claude-haiku-4-5',
+    const generated = await generateStructured<{ headline: string; openers: string[]; nextMove: string }>({
       maxTokens: 450,
       schema: COACH_SCHEMA as unknown as Record<string, unknown>,
+      safetyIdentifier: privacySafeAiUserId(user.id),
       system: `You are NotCupid's lightweight Love coach. Help a real person begin or advance a conversation without impersonating them.
 
 Rules:

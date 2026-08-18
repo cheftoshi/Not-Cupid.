@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { claudeJSON, aiEnabled } from '@/lib/ai';
+import { generateStructured, aiEnabled, privacySafeAiUserId } from '@/lib/ai';
 import { METRO_CENTERS } from '@/lib/quiz-data';
 import { DROP, untilNextDrop } from '@/lib/weekly-drop';
 import { friendLocationContext } from '@/lib/friend-location';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30; // one Claude round-trip, comfortably
+export const maxDuration = 30; // one bounded model round-trip, comfortably
 
 // ── TODAY'S MOVE — the AI concierge behind the open→do→close loop ───────────
 // The client sends what's actually on the user's board (upcoming plans it can
 // render, connections it can DM, sealed-pack state); the server adds the
-// profile (interests, archetype, city) and asks Claude to DECIDE one move —
+// profile (interests, archetype, city) and asks the model to DECIDE one move —
 // not a feed to browse, one thing to do today. Cached per user per day on
 // users.today_move (graceful pre-migration: recompute per request).
 
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const refresh = body.refresh === true;
 
-  // Day cache — one Claude call per user per day, consistent across devices.
+  // Day cache — one model call per user per day, consistent across devices.
   // (Columns from 20260708_today_move.sql; pre-migration these are undefined
   // and we just recompute — the localStorage cache still bounds cost.)
   if (!refresh && (user as any).today_move && (user as any).today_move_at) {
@@ -57,6 +58,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ move: (user as any).today_move });
     }
   }
+
+  // One normal generation plus a small number of deliberate re-rolls keeps
+  // latency and provider spend bounded even if the endpoint is scripted.
+  const limit = await rateLimit({ key: `friend-today-move:${user.id}`, windowSec: 86_400, maxAttempts: 4, blockSec: 600 });
+  if (!limit.ok) return NextResponse.json({ move: null, error: 'Today\'s move is taking a breather.' }, { status: 429 });
 
   // Clamp the client-sent context hard — it only feeds a suggestion for this
   // same user, but nothing unbounded goes into a prompt.
@@ -113,11 +119,12 @@ Hard rules:
     localDay: new Date().toUTCString().slice(0, 3),
   };
 
-  let move = await claudeJSON<Move>({
+  let move = await generateStructured<Move>({
     system,
     user: `Here is today's data. Choose the one move.\n${JSON.stringify(context)}`,
     schema: MOVE_SCHEMA as unknown as Record<string, unknown>,
     maxTokens: 500,
+    safetyIdentifier: privacySafeAiUserId(user.id),
   });
 
   // Server-side sanity: the model must point at things that exist, or the

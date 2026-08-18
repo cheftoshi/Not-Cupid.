@@ -90,7 +90,7 @@ https://developer.apple.com/app-store/app-privacy-details/
 
 ### 6. Add explicit third-party AI consent
 
-Before the native app sends personal data to Anthropic, show a clear disclosure
+Before the native app sends personal data to OpenAI, show a clear disclosure
 that names the provider, describes the bounded data being shared, and obtains an
 explicit user choice. Store the consent version and provide a settings control
 to revoke it. A privacy-policy paragraph alone is not enough for the current

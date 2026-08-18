@@ -81,7 +81,8 @@ Built-in zip → coordinate lookup, validated against 50-mile radius from 02116 
 
 ```bash
 # Connect GitHub repo to Vercel
-# Set env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_KEY, TWILIO_*, STRIPE_*
+# Set env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_KEY, OPENAI_API_KEY, STRIPE_*
+# Optional model override: AI_CONCIERGE_MODEL (defaults to gpt-5.6-luna)
 vercel --prod
 Last updated: May 24 2026
 ```

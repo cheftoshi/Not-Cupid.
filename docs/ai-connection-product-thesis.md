@@ -103,7 +103,7 @@ Every surface should use the same loop:
   one server-validated in-app action, and records structured intent,
   recommendation, dismissal, and action events without persisting raw prompts.
 - Concierge conversation history is kept on the current device. The first AI
-  request discloses the Anthropic data boundary, and consent can be revoked from
+  request discloses the OpenAI data boundary, and consent can be revoked from
   the Hub without hiding direct access to Love or Friend Line.
 - Scene, clubs, community links, travel mode, plan chat, push, and the daily
   activity drop provide action surfaces after a recommendation.
