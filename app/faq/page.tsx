@@ -23,7 +23,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is it free?',
-    a: 'The quiz and every Love roster profile are free. Each 24-hour roster includes three distinct connection picks. After those three, each extra connection you choose is a one-time $0.99 and includes chat and planning if the interest becomes mutual. The recipient never pays to accept or reply. If a paid pick is declined or expires before becoming mutual, the $0.99 automatically returns as an in-app extra-connection credit. Removing the request yourself does not recycle it. Blocking and reporting are always free. On Friend, your first friendship pack is free and additional packs are $0.99. Pro is $3.99/mo and includes extra Love picks plus unlimited Friend packs.',
+    a: 'The quiz and every Love roster profile are free. Each 24-hour roster includes three distinct connection picks. A one-time $0.99 AI Compatibility Read explains all six HEXACO-inspired personality signals between you and one person and includes an extra connection to them—so you are never charged twice for the read and the pick. If that connection is declined or expires before becoming mutual, its value returns as an in-app extra-connection credit while the read stays open. The recipient never pays to accept or reply. Blocking and reporting are always free. On Friend, your first friendship pack is free and additional packs are $0.99. Pro is $3.99/mo and includes compatibility reads, extra Love picks, and unlimited Friend packs.',
+  },
+  {
+    q: 'What does the AI Compatibility Read show?',
+    a: 'It is private decision support for you: all six personality dimensions in broad bands, where your patterns may align or differ, two potential strengths, useful watch-outs, and a low-pressure first-date angle. It does not expose raw quiz answers or exact trait scores, read messages, diagnose anyone, or promise chemistry. NotCupid uses an abbreviated HEXACO-inspired screen—not the full research inventory—and shows a curated fallback if the AI service is unavailable.',
   },
   {
     q: 'Where is NotCupid available?',

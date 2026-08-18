@@ -4,6 +4,8 @@ export type LoveClientEvent =
   | 'love_dashboard_open'
   | 'roster_view'
   | 'profile_open'
+  | 'compatibility_read_requested'
+  | 'compatibility_read_paywall'
   | 'pick_attempt'
   | 'pick_failed'
   | 'no_suitable_choice'

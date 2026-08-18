@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { isPro } from '@/lib/pro';
 import { LOVE_CONNECTION_PRICE_CENTS, LOVE_INCLUDED_PICKS } from '@/lib/matching-policy';
 import { sendPushToUser } from '@/lib/push';
+import { ensureCompatibilityReadEntitlement } from '@/lib/love-compatibility-access';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -80,7 +81,18 @@ export async function recordLoveConnectionPurchase(session: any) {
     .select('id, user_id, intended_candidate_id, status')
     .eq('stripe_session_id', session.id)
     .maybeSingle();
-  if (existing) return existing;
+  const grantRead = async (unlock: { id: string }) => {
+    await ensureCompatibilityReadEntitlement({
+      userId,
+      candidateId,
+      connectionUnlockId: unlock.id,
+      rosterCycleAt: cycleAt,
+      stripeSessionId: session.id,
+      stripePaymentId: paymentId,
+    });
+    return unlock;
+  };
+  if (existing) return grantRead(existing);
   const { data, error } = await supabaseAdmin
     .from('love_connection_unlocks')
     .insert({
@@ -103,11 +115,11 @@ export async function recordLoveConnectionPurchase(session: any) {
         .select('id, user_id, intended_candidate_id, status')
         .eq('stripe_session_id', session.id)
         .single();
-      if (raced) return raced;
+      if (raced) return grantRead(raced);
     }
     throw new Error(error?.message || 'Could not record the extra connection.');
   }
-  return data;
+  return grantRead(data);
 }
 
 export type ReturnedLoveEntitlement = 'included' | 'paid' | null;

@@ -28,6 +28,7 @@ import {
 import { DEFAULT_MATCH_RADIUS } from '@/lib/quiz-data';
 import { LOVE_CONNECTION_PRICE_CENTS, LOVE_INCLUDED_PICKS, LOVE_MAX_PENDING_INCOMING } from '@/lib/matching-policy';
 import { creditForCandidate, lovePickAccessFor } from '@/lib/love-pick-access';
+import { ensureCompatibilityReadEntitlement } from '@/lib/love-compatibility-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -205,6 +206,15 @@ export async function POST(req: NextRequest) {
         : 'That person just filled their available slots. Your included pick was not used.' },
       { status: 409 },
     );
+  }
+
+  if (accessType === 'paid' && unlockId) {
+    await ensureCompatibilityReadEntitlement({
+      userId: user.id,
+      candidateId,
+      connectionUnlockId: unlockId,
+      rosterCycleAt: pickAccess.cycleAt,
+    }).catch((error) => console.error('pick: compatibility entitlement failed', error));
   }
 
   // Remove this pair from each other's own roster. A person is removed from

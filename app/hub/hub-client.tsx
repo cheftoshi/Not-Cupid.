@@ -228,11 +228,11 @@ export default function HubClient({
                 </div>
                 <p>
                   {membership.pro
-                    ? `Extra Love connection picks and fresh Friend packs are covered${membership.renewsOn ? ` through ${membership.renewsOn}` : ''}.`
-                    : 'Every Love profile is free and each roster includes three picks. Extra Love connections and additional Friend packs are $0.99, or included with Pro for $3.99/mo.'}
+                    ? `AI Compatibility Reads, extra Love connection picks, and fresh Friend packs are covered${membership.renewsOn ? ` through ${membership.renewsOn}` : ''}.`
+                    : 'Every Love profile is free and each roster includes three picks. An AI Compatibility Read plus its extra connection is $0.99; additional Friend packs are $0.99, or both are included with Pro for $3.99/mo.'}
                 </p>
                 <div className={styles.membershipPrices}>
-                  <span>Extra Love connection · $0.99</span>
+                  <span>AI read + Love connection · $0.99</span>
                   <span>Another Friend pack · $0.99</span>
                 </div>
                 <Link href="/pro">{membership.pro ? 'manage Pro →' : 'go Pro →'}</Link>

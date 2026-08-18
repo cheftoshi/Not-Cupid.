@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const EVENTS = new Set([
   'love_dashboard_open', 'roster_view', 'profile_open', 'pick_attempt',
+  'compatibility_read_requested', 'compatibility_read_paywall',
   'pick_failed', 'no_suitable_choice', 'mutual_chat_open', 'coach_requested',
   'push_prompt_shown', 'push_enabled', 'push_dismissed',
 ]);

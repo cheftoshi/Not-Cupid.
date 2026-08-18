@@ -10,6 +10,7 @@ import DateFeedbackDialog from '@/components/date-feedback-dialog';
 import styles from './chat.module.css';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 import { ATTACH_LABEL, VIBE_HEADS, vibeLabel, type AttachStyle, type VibeKey } from '@/lib/quiz-data';
+import CompatibilityReadPanel from './compatibility-read-panel';
 
 // Emoji labels for a partner's picked interests (mirrors INTEREST_OPTIONS).
 const INTEREST_LABELS: Record<string, string> = {
@@ -28,6 +29,7 @@ interface Props {
   hasOlderMessages?: boolean;
   readOnly?: boolean;
   profileUnlocked: boolean;
+  compatibilityReadAvailable?: boolean;
 }
 
 type LoveCoach = {
@@ -96,6 +98,7 @@ export default function ChatRoom({
   hasOlderMessages = false,
   readOnly = false,
   profileUnlocked,
+  compatibilityReadAvailable = false,
 }: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
   const [hasOlder, setHasOlder] = useState(hasOlderMessages);
@@ -768,6 +771,9 @@ export default function ChatRoom({
                 </div>
               </>
             ) : null}
+            {compatibilityReadAvailable && otherUser?.id && (
+              <CompatibilityReadPanel candidateId={otherUser.id} firstName={firstName} />
+            )}
           </div>
         </section>
         <div className={styles.vibesInner} id="date-plans">

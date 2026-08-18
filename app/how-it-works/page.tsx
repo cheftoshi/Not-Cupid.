@@ -22,9 +22,9 @@ const CORE_STEPS = [
 const LOVE_STEPS = [
   { emoji: '🧭', title: 'go deeper on love', body: 'a few more questions — what you’re looking for, how you connect (attachment style), and what matters most (values, kids, lifestyle, fitness). that’s what the matching actually weighs, not just vibes.' },
   { emoji: '🃏', title: 'your curated roster', body: 'the algo can hand you up to ten compatible people: three included connection picks plus seven browseable alternatives, ranked on values, attachment, personality and shared rapid-fire answers — no swiping, no endless feed.' },
-  { emoji: '👉', title: 'you pick', body: 'every 24-hour roster includes three distinct connection picks. all ten profiles stay free to browse when enough compatible people are available; after the included three, each extra person you choose is a one-time $0.99 (or included with Pro). if that paid request is declined or expires before becoming mutual, it automatically returns as an in-app credit.' },
+  { emoji: '👉', title: 'you pick', body: 'every 24-hour roster includes three distinct connection picks. all ten profiles stay free to browse when enough compatible people are available. a one-time $0.99 AI Compatibility Read adds a private six-signal fit summary and one extra connection to that exact person—one purchase, never two. if the request is declined or expires before becoming mutual, its connection value returns as an in-app credit while the read stays open.' },
   { emoji: '💞', title: 'it’s a match', body: 'when you both accept, the chat opens and we email you both. set your match radius (5–75 mi) so you only see people you’d actually meet.' },
-  { emoji: '🔓', title: 'profiles stay free', body: 'open any Love roster card to see their bio, interests and prompts before choosing. accepting, replying, blocking and reporting never cost anything. once you both connect, the full compatibility profile, chat and planning are included.' },
+  { emoji: '🔓', title: 'profiles stay free', body: 'open any Love roster card to see their bio, interests and prompts before choosing. accepting, replying, blocking and reporting never cost anything. the optional AI + HEXACO tab interprets broad six-signal bands between you; raw answers and exact scores stay private, and it is never presented as a diagnosis or guarantee.' },
   { emoji: '🍽️', title: 'plan the date', body: 'once you’re talking, Date Vibes makes choosing what to do a game — a deck of curated local spots and live events; a mutual yes reveals the plan.' },
 ];
 
@@ -115,7 +115,7 @@ export default function HowItWorks() {
             the quiz and every Love profile are <b>free</b>. each roster includes <b>three connection picks</b>; each additional distinct pick is a one-time <b>$0.99</b> and includes chat if mutual. on Friend, your first <b>friendship pack</b> is free — additional packs are <b>$0.99</b> each, and group chats are always free.
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-accent-2)', margin: '0.6rem 0 0', fontSize: '0.9rem' }}>
-            or go <b>Pro</b> — extra Love connection picks and unlimited friendship packs for <b>$3.99/mo</b>. accepting and replying are always free.
+            or go <b>Pro</b> — AI Compatibility Reads, extra Love connection picks, and unlimited friendship packs for <b>$3.99/mo</b>. accepting and replying are always free.
           </p>
         </div>
 

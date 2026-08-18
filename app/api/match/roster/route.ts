@@ -372,6 +372,14 @@ export async function composeLoveRosterForUser(
   }
 
   const rotationStart = snapshotFresh ? refreshedAt : Date.now();
+  const rosterIds = roster.map((candidate) => candidate.id);
+  const { data: readRows } = rosterIds.length > 0 && options.interactive !== false
+    ? await supabaseAdmin.from('love_compatibility_reads')
+        .select('candidate_id')
+        .eq('user_id', user.id)
+        .in('candidate_id', rosterIds)
+        .not('connection_unlock_id', 'is', null)
+    : { data: [] as Array<{ candidate_id: string }> };
   let connectionCredits = pickAccess?.credits ?? [];
   if (connectionCredits.length > 0) {
     const rosterIds = new Set(roster.map((candidate) => candidate.id));
@@ -396,6 +404,8 @@ export async function composeLoveRosterForUser(
     hasConnectionCredit: connectionCredits.length > 0,
     connectionCreditCount: connectionCredits.length,
     connectionCreditCandidateIds: connectionCredits.flatMap((credit) => credit.intendedCandidateId ? [credit.intendedCandidateId] : []),
+    compatibilityReadCandidateIds: (readRows ?? []).map((row) => row.candidate_id),
+    compatibilityReadIncluded: pickAccess?.pro === true || (user as any).is_test === true,
     flexibleConnectionCreditCount: connectionCredits.filter((credit) => credit.intendedCandidateId === null).length,
     hasFlexibleConnectionCredit: connectionCredits.some((credit) => credit.intendedCandidateId === null),
     pro: pickAccess?.pro ?? false,

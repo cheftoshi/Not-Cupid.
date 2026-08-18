@@ -7,6 +7,7 @@ import { sameRealm } from '@/lib/realm';
 import { withPrivateVideoPreview } from '@/lib/private-media';
 import { attachStyle } from '@/lib/quiz-data';
 import { markLoveNotificationOpened } from '@/lib/love-notification-ledger';
+import { isPro } from '@/lib/pro';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,13 @@ export default async function MatchPage({
   // once both people connect; no profile field has a checkout anymore.
   const safeOtherUser = { ...otherWithVideo, intro_video_url: null };
   const visibleOtherUser = mutuallyConnected ? safeOtherUser : freeLoveProfileView(safeOtherUser);
+  const { data: compatibilityRead } = await supabaseAdmin.from('love_compatibility_reads')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('candidate_id', otherId)
+    .not('connection_unlock_id', 'is', null)
+    .maybeSingle();
+  const compatibilityReadAvailable = !!compatibilityRead || isPro(user) || (user as any).is_test === true;
 
   // Keep first paint bounded. Incremental polling fetches only newer rows; old
   // conversations no longer ship hundreds of bubbles before the screen opens.
@@ -77,6 +85,7 @@ export default async function MatchPage({
       hasOlderMessages={(messagesDesc?.length ?? 0) === 100}
       readOnly={readOnly}
       profileUnlocked={mutuallyConnected}
+      compatibilityReadAvailable={compatibilityReadAvailable}
     />
   );
 }

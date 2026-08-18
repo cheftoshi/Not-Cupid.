@@ -109,7 +109,7 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(navExtras, /safe-area-inset-top/);
   assert.match(navExtras, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(navExtras, /scrollTo\(\{ top: 0 \}\)/);
-  assert.match(changelog, /2026-08-18-love-connection-picks/);
+  assert.match(changelog, /2026-08-18-ai-compatibility-read/);
   assert.match(changelog, /Boston Dating Experiment is live/);
 });
 

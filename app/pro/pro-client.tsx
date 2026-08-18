@@ -8,7 +8,8 @@ const BLUE = '#2563ff';
 const ORANGE = '#ff6a1f';
 
 const PERKS = [
-  { icon: '💘', t: 'Extra Love connections, included', d: 'Every roster profile is free and three picks are included. Pro removes the $0.99 checkout for additional distinct picks.' },
+  { icon: '🧠', t: 'AI Compatibility Reads, included', d: 'Open the private six-signal personality and fit read for any current Love roster profile without another checkout.' },
+  { icon: '💘', t: 'Extra Love connections, included', d: 'Every core roster profile is free and three picks are included. Pro removes the $0.99 checkout for additional distinct picks.' },
   { icon: '🎒', t: 'Unlimited additional friendship packs', d: 'Open fresh packs without another checkout. Each one can add up to 5 new people to connect with.' },
   { icon: '🌱', t: 'Support an independent experiment', d: 'Help keep the core experience lightweight, ad-free, and free to use for everyone.' },
   { icon: '✦', t: 'One price, no repeat checkout', d: 'Skip the per-extra-connection and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
@@ -59,7 +60,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
             <div style={{ fontSize: '2rem' }}>✦</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.02em' }}>you’re Pro</div>
             <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '0.3rem 0 0' }}>
-              {renewsOn ? `renews ${renewsOn}.` : 'active.'} extra Love connection picks and additional Friend packs are open.
+              {renewsOn ? `renews ${renewsOn}.` : 'active.'} AI Compatibility Reads, extra Love picks, and additional Friend packs are open.
             </p>
             <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '1rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.7rem 1.6rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.04em', textDecoration: 'none' }}>open a pack →</Link>
           </div>
@@ -84,7 +85,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
               cancel anytime · keeps access through the month you paid for
             </p>
             <p style={{ textAlign: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', margin: '0.55rem auto 0', maxWidth: 430 }}>
-              Prefer to stay flexible? One extra Love connection or one additional Friend pack remains $0.99.
+              Prefer to stay flexible? One AI Compatibility Read plus its person-specific extra connection, or one additional Friend pack, remains $0.99.
             </p>
             {err && <p style={{ textAlign: 'center', color: '#ffb3b3', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem' }}>{err}</p>}
           </>

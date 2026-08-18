@@ -248,6 +248,9 @@
 .loveProfilePreviewBody h3 { margin: -0.25rem 0 0; color: var(--h-text); font: italic 700 2rem 'Playfair Display', Georgia, serif; }
 .loveProfilePreviewFacts, .loveProfilePreviewTags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .loveProfilePreviewFacts span, .loveProfilePreviewTags span { padding: 0.32rem 0.55rem; border: 1px solid var(--h-border); border-radius: 999px; color: var(--h-text-dim); font: 0.54rem 'DM Mono', monospace; }
+.loveProfilePreviewTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; padding: 0.25rem; border: 1px solid var(--h-border); border-radius: 13px; background: var(--h-surface-2); }
+.loveProfilePreviewTabs button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: var(--h-text-dim); font: 700 0.54rem 'DM Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.loveProfilePreviewTabs button[aria-selected='true'] { background: var(--h-surface); color: var(--blue); box-shadow: var(--shadow-sm); }
 .loveProfilePreviewWhy { margin: 0; padding: 0.75rem; border-radius: 12px; background: color-mix(in srgb, var(--blue) 7%, var(--h-surface)); color: var(--h-text-dim); font: italic 0.84rem/1.5 Georgia, serif; }
 .loveProfilePreviewBio { margin: 0; color: var(--h-text); font: 0.92rem/1.65 system-ui, sans-serif; white-space: pre-wrap; }
 .loveProfilePreviewEmpty { margin: 0; color: var(--h-text-faint); font: italic 0.82rem/1.5 Georgia, serif; }
@@ -259,6 +262,28 @@
 .loveProfilePreviewBoundary strong { color: var(--h-text); }
 .loveProfilePreviewChoose { min-height: 48px; border: 0; border-radius: 12px; background: #0b0b0b; color: #fff; font: 700 0.64rem 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
 .loveProfilePreviewChoose:disabled { opacity: 0.5; cursor: wait; }
+.loveCompatibilityLocked { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid color-mix(in srgb, var(--blue) 32%, var(--h-border)); border-radius: 16px; background: linear-gradient(145deg, color-mix(in srgb, var(--blue) 9%, var(--h-surface)), color-mix(in srgb, var(--orange) 7%, var(--h-surface))); }
+.loveCompatibilityLocked > span, .loveCompatibilityHero > span, .loveCompatibilityColumns span, .loveCompatibilityDate span { color: var(--blue); font: 700 0.52rem 'DM Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.loveCompatibilityLocked h4, .loveCompatibilityHero h4 { margin: 0; color: var(--h-text); font: italic 700 1.35rem/1.1 'Playfair Display', Georgia, serif; }
+.loveCompatibilityLocked p, .loveCompatibilityHero p { margin: 0; color: var(--h-text-dim); font: 0.86rem/1.55 system-ui, sans-serif; }
+.loveCompatibilityLocked ul { display: grid; gap: 0.4rem; margin: 0; padding-left: 1.1rem; color: var(--h-text-dim); font-size: 0.78rem; line-height: 1.45; }
+.loveCompatibilityLocked button, .loveCompatibilityError button { min-height: 48px; border: 0; border-radius: 12px; background: #0b0b0b; color: #fff; font: 700 0.59rem 'DM Mono', monospace; letter-spacing: 0.09em; text-transform: uppercase; cursor: pointer; }
+.loveCompatibilityLocked button:disabled { opacity: 0.55; cursor: wait; }
+.loveCompatibilityLocked small, .loveCompatibilityRead > small { color: var(--h-text-faint); font: 0.65rem/1.5 system-ui, sans-serif; }
+.loveCompatibilityLoading, .loveCompatibilityError { padding: 1.2rem; border: 1px dashed var(--h-border); border-radius: 14px; color: var(--h-text-dim); text-align: center; font: italic 0.86rem/1.5 Georgia, serif; }
+.loveCompatibilityError { display: grid; gap: 0.65rem; }
+.loveCompatibilityError p { margin: 0; }
+.loveCompatibilityRead { display: grid; gap: 0.8rem; }
+.loveCompatibilityHero { display: grid; gap: 0.4rem; padding: 0.9rem; border-radius: 14px; background: color-mix(in srgb, var(--blue) 8%, var(--h-surface)); }
+.loveCompatibilityTraits { display: grid; gap: 0.5rem; }
+.loveCompatibilityTraits > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 0.6rem; padding: 0.72rem; border: 1px solid var(--h-border); border-radius: 12px; }
+.loveCompatibilityTraits span { color: var(--h-text); font: 700 0.76rem system-ui, sans-serif; }
+.loveCompatibilityTraits strong { color: var(--blue); font: 700 0.5rem 'DM Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase; text-align: right; }
+.loveCompatibilityTraits p { grid-column: 1 / -1; margin: 0; color: var(--h-text-dim); font: 0.76rem/1.45 system-ui, sans-serif; }
+.loveCompatibilityColumns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.loveCompatibilityColumns > div, .loveCompatibilityDate { padding: 0.75rem; border: 1px solid var(--h-border); border-radius: 12px; }
+.loveCompatibilityColumns p, .loveCompatibilityDate p { margin: 0.4rem 0 0; color: var(--h-text-dim); font: 0.75rem/1.45 system-ui, sans-serif; }
+.loveCompatibilityDate { background: color-mix(in srgb, var(--orange) 7%, var(--h-surface)); }
 
 .loveProfileCard,
 .loveCompletionCard,
@@ -854,4 +879,5 @@
   .loveProfilePreviewSheet { align-self: flex-end; width: 100%; max-height: calc(100dvh - var(--app-safe-top, 0px)); border-radius: 22px 22px 0 0; }
   .loveProfilePreviewPhoto { aspect-ratio: 4 / 3; }
   .loveProfilePreviewBody { padding: 1rem 1rem max(1rem, var(--app-safe-bottom, 0px)); }
+  .loveCompatibilityColumns { grid-template-columns: 1fr; }
 }

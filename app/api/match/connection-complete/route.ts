@@ -25,7 +25,9 @@ export async function GET(req: NextRequest) {
       await supabaseAdmin.from('users').update({ stripe_customer_id: session.customer }).eq('id', user.id);
     }
     const candidateId = encodeURIComponent(session.metadata.candidate_id);
-    return NextResponse.redirect(`${origin}/dashboard?extra_connection=ready&candidate=${candidateId}#roster`);
+    // The purchase is one bundled product: show the decision-support read
+    // before the user spends its person-specific connection entitlement.
+    return NextResponse.redirect(`${origin}/dashboard?compatibility_read=ready&candidate=${candidateId}#roster`);
   } catch (error) {
     console.error('Love connection completion failed:', error);
     return NextResponse.redirect(`${origin}/dashboard?extra_connection=error#roster`);

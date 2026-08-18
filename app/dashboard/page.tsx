@@ -19,6 +19,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{
     extra_connection?: string;
+    compatibility_read?: string;
     candidate?: string;
     focus?: string;
     love_event?: string;
@@ -26,6 +27,7 @@ export default async function DashboardPage({
 }) {
   const {
     extra_connection: extraConnection,
+    compatibility_read: compatibilityRead,
     candidate: paidCandidateId,
     focus: focusMatchId,
     love_event: loveEventId,
@@ -268,6 +270,7 @@ export default async function DashboardPage({
                 horizontal
                 hasActive={activeCards.length > 0}
                 paidCandidateId={extraConnection === 'ready' ? paidCandidateId : undefined}
+                compatibilityCandidateId={compatibilityRead === 'ready' ? paidCandidateId : undefined}
                 checkoutError={extraConnection === 'error'}
                 liveConnections={connections.map((c: any) => ({
                   matchId: c.match.id,

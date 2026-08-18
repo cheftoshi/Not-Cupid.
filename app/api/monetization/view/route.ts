@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const valid = (body.product === 'friend_pack' && ['friend_pack_revealed', 'friend_pack_empty'].includes(body.surface))
-    || (body.product === 'love_connection' && body.surface === 'love_roster_extra');
+    || (body.product === 'love_connection' && ['love_roster_extra', 'love_compatibility_read'].includes(body.surface));
   if (!valid) {
     return NextResponse.json({ error: 'Invalid event' }, { status: 400 });
   }

@@ -6,8 +6,8 @@ import { recordMonetizationEvent } from '@/lib/monetization';
 
 export const dynamic = 'force-dynamic';
 
-// NotCupid Pro — $3.99/mo recurring. Covers extra Love connection picks and
-// additional Friend packs. Grant lands via the stripe-webhook
+// NotCupid Pro — $3.99/mo recurring. Covers AI Compatibility Reads, extra Love
+// connection picks, and additional Friend packs. Grant lands via the stripe-webhook
 // (type=all_access → friend_pro_until), renewals + cancel already handled there.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   p.append('line_items[0][quantity]', '1');
   p.append('line_items[0][price_data][currency]', 'usd');
   p.append('line_items[0][price_data][product_data][name]', 'NotCupid Pro');
-  p.append('line_items[0][price_data][product_data][description]', 'Extra Love connection picks and unlimited additional Friend packs. Love profiles, accepting, replies, and plans remain free.');
+  p.append('line_items[0][price_data][product_data][description]', 'AI Compatibility Reads, extra Love connection picks, and unlimited additional Friend packs. Core profiles, accepting, replies, and plans remain free.');
   p.append('line_items[0][price_data][unit_amount]', String(PRO_PRICE_CENTS));
   p.append('line_items[0][price_data][recurring][interval]', 'month');
   // Stripe accepts an existing customer OR customer_email, not both. Existing

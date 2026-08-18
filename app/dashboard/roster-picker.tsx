@@ -28,6 +28,25 @@ type Candidate = {
   hasIntroVideo?: boolean;
 };
 
+type CompatibilityRead = {
+  version: string;
+  firstName: string;
+  headline: string;
+  overview: string;
+  traits: Array<{
+    key: string;
+    label: string;
+    focus: string;
+    candidateBand: 'leans lower' | 'middle range' | 'leans higher';
+    pairDynamic: string;
+  }>;
+  strengths: string[];
+  watchouts: string[];
+  firstDateIdea: string;
+  source: 'ai' | 'curated';
+  disclosure: string;
+};
+
 export default function RosterPicker({
   radius,
   maxRadius,
@@ -37,6 +56,7 @@ export default function RosterPicker({
   horizontal = false,
   hasActive = false,
   paidCandidateId,
+  compatibilityCandidateId,
   checkoutError = false,
 }: {
   radius: number;
@@ -47,6 +67,7 @@ export default function RosterPicker({
   horizontal?: boolean;
   hasActive?: boolean;
   paidCandidateId?: string;
+  compatibilityCandidateId?: string;
   checkoutError?: boolean;
 }) {
   const router = useRouter();
@@ -67,6 +88,12 @@ export default function RosterPicker({
   const [flexibleCreditCount, setFlexibleCreditCount] = useState(0);
   const [nextRotationAt, setNextRotationAt] = useState<string | null>(null);
   const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
+  const [previewTab, setPreviewTab] = useState<'profile' | 'compatibility'>('profile');
+  const [compatibilityReadCandidateIds, setCompatibilityReadCandidateIds] = useState<string[]>([]);
+  const [compatibilityReadIncluded, setCompatibilityReadIncluded] = useState(false);
+  const [compatibilityReads, setCompatibilityReads] = useState<Record<string, CompatibilityRead>>({});
+  const [compatibilityLoading, setCompatibilityLoading] = useState<string | null>(null);
+  const [compatibilityError, setCompatibilityError] = useState<string | null>(null);
   const [clock, setClock] = useState(() => Date.now());
   const [paywallCandidate, setPaywallCandidate] = useState<Candidate | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
@@ -125,6 +152,8 @@ export default function RosterPicker({
       setPro(!!data.pro);
       setCreditCandidateIds(Array.isArray(data.connectionCreditCandidateIds) ? data.connectionCreditCandidateIds : []);
       setConnectionCreditCount(typeof data.connectionCreditCount === 'number' ? data.connectionCreditCount : 0);
+      setCompatibilityReadCandidateIds(Array.isArray(data.compatibilityReadCandidateIds) ? data.compatibilityReadCandidateIds : []);
+      setCompatibilityReadIncluded(!!data.compatibilityReadIncluded);
       setFlexibleCreditCount(typeof data.flexibleConnectionCreditCount === 'number'
         ? data.flexibleConnectionCreditCount
         : data.hasFlexibleConnectionCredit ? 1 : 0);
@@ -155,6 +184,20 @@ export default function RosterPicker({
     if (candidate) void submitPick(candidate, true);
     else setNotice('Your $0.99 extra-connection credit is ready. Choose any available roster profile.');
   }, [paidCandidateId, roster]);
+
+  useEffect(() => {
+    if (!compatibilityCandidateId || !Array.isArray(roster)) return;
+    window.history.replaceState({}, '', '/dashboard#roster');
+    const candidate = roster.find((item) => item.id === compatibilityCandidateId);
+    if (!candidate) {
+      setNotice('Your AI Compatibility Read and person-specific Love credit are ready for that profile.');
+      return;
+    }
+    setCompatibilityReadCandidateIds((ids) => ids.includes(candidate.id) ? ids : [...ids, candidate.id]);
+    setPreviewCandidate(candidate);
+    setPreviewTab('compatibility');
+    void loadCompatibilityRead(candidate.id);
+  }, [compatibilityCandidateId, roster]);
 
   const hasFlexibleCredit = flexibleCreditCount > 0;
 
@@ -188,7 +231,13 @@ export default function RosterPicker({
       setPaywallCandidate(c);
       return;
     }
-    void submitPick(c, hasCredit && includedRemaining <= 0);
+    if (hasCredit && !compatibilityReadIncluded && !compatibilityReadCandidateIds.includes(c.id)) {
+      // A returned/pre-release connection credit also carries the new read.
+      // Bind it to this person and show the decision support before spending it.
+      void openExtraConnectionCheckout(c);
+      return;
+    }
+    void submitPick(c, hasCredit);
   }
 
   async function submitPick(c: Candidate, preferPaid = false) {
@@ -249,13 +298,16 @@ export default function RosterPicker({
       const res = await fetch('/api/match/connection-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidateId: candidate.id }),
+        body: JSON.stringify({ candidateId: candidate.id, mode: 'compatibility_read' }),
       });
       const data = await parseResponse<any>(res);
-      if (res.ok && data.creditReady) {
+      if (res.ok && (data.insightReady || data.creditReady)) {
+        setCompatibilityReadCandidateIds((ids) => ids.includes(candidate.id) ? ids : [...ids, candidate.id]);
         setPaywallCandidate(null);
         setCheckoutBusy(false);
-        void submitPick(candidate, true);
+        setPreviewCandidate(candidate);
+        setPreviewTab('compatibility');
+        void loadCompatibilityRead(candidate.id);
         return;
       }
       if (res.ok && typeof data.url === 'string') {
@@ -268,6 +320,30 @@ export default function RosterPicker({
     } finally {
       setCheckoutBusy(false);
     }
+  }
+
+  async function loadCompatibilityRead(candidateId: string) {
+    if (compatibilityReads[candidateId] || compatibilityLoading === candidateId) return;
+    setCompatibilityLoading(candidateId);
+    setCompatibilityError(null);
+    trackLoveEvent('compatibility_read_requested', { candidateId });
+    try {
+      const res = await fetchWithTimeout(`/api/love/compatibility-read/${encodeURIComponent(candidateId)}`, {}, 30_000);
+      const data = await parseResponse<any>(res);
+      if (!res.ok || !data.read) throw new Error(data.error || 'Compatibility read unavailable.');
+      setCompatibilityReads((reads) => ({ ...reads, [candidateId]: data.read as CompatibilityRead }));
+    } catch (error) {
+      setCompatibilityError(error instanceof Error ? error.message : 'Compatibility read unavailable.');
+    } finally {
+      setCompatibilityLoading(null);
+    }
+  }
+
+  function openProfile(candidate: Candidate) {
+    setPreviewCandidate(candidate);
+    setPreviewTab('profile');
+    setCompatibilityError(null);
+    trackLoveEvent('profile_open', { candidateId: candidate.id });
   }
 
   // Loading — card silhouettes in the real layout, so nothing shifts when the
@@ -412,7 +488,7 @@ export default function RosterPicker({
             <div key={c.id} data-card data-roster-kind="option" className={horizontal ? styles.loveRosterCard : undefined} style={cardBase}>
               <button
                 type="button"
-                onClick={() => { setPreviewCandidate(c); trackLoveEvent('profile_open', { candidateId: c.id }); }}
+                onClick={() => openProfile(c)}
                 aria-label={`View ${first}'s profile`}
                 style={{ aspectRatio: '4 / 5', width: '100%', padding: 0, border: 0, background: 'var(--h-surface-2)', position: 'relative', cursor: 'pointer', overflow: 'hidden' }}
               >
@@ -446,7 +522,7 @@ export default function RosterPicker({
                 {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
                 <button
                   type="button"
-                  onClick={() => { setPreviewCandidate(c); trackLoveEvent('profile_open', { candidateId: c.id }); }}
+                  onClick={() => openProfile(c)}
                   className={styles.loveRosterPreviewAction}
                 >
                   view {first}&apos;s profile
@@ -473,11 +549,13 @@ export default function RosterPicker({
                       ? 'safety limit reached'
                       : pro
                         ? `choose ${first} · Pro →`
-                        : includedRemaining > 0
-                          ? `choose ${first} · included →`
-                          : (hasFlexibleCredit || creditCandidateIds.includes(c.id))
-                            ? 'match + chat · use credit →'
-                            : 'match + chat if mutual · $0.99 →'}
+                        : (hasFlexibleCredit || creditCandidateIds.includes(c.id))
+                          ? (compatibilityReadIncluded || compatibilityReadCandidateIds.includes(c.id)
+                            ? 'match + chat · AI read unlocked →'
+                            : 'open AI read · use credit →')
+                          : includedRemaining > 0
+                            ? `choose ${first} · included →`
+                            : 'match + chat + AI read · $0.99 →'}
                 </button>
                 )}
               </div>
@@ -507,6 +585,8 @@ export default function RosterPicker({
         const candidate = previewCandidate;
         const first = (candidate.name || 'someone').split(' ')[0];
         const relationship = relationshipStyleLabel(candidate.relationship_style);
+        const readUnlocked = compatibilityReadIncluded || compatibilityReadCandidateIds.includes(candidate.id);
+        const compatibilityRead = compatibilityReads[candidate.id];
         return (
           <div
             className={styles.loveModalOverlay}
@@ -529,7 +609,7 @@ export default function RosterPicker({
                 <span>{candidate.score}% match</span>
               </div>
               <div className={styles.loveProfilePreviewBody}>
-                <div className={styles.loveProfilePreviewEyebrow}>free roster profile</div>
+                <div className={styles.loveProfilePreviewEyebrow}>{previewTab === 'profile' ? 'free roster profile' : 'AI Connect Coach'}</div>
                 <h3 id="love-roster-profile-title">{first}{candidate.age ? `, ${candidate.age}` : ''}</h3>
                 <div className={styles.loveProfilePreviewFacts}>
                   {candidate.archetype && <span>{candidate.archetype}</span>}
@@ -537,23 +617,95 @@ export default function RosterPicker({
                   {relationship && <span>{relationship}</span>}
                   {candidate.metro && <span>{candidate.metro}</span>}
                 </div>
-                {candidate.why && <p className={styles.loveProfilePreviewWhy}>✦ {(candidate.scoreConfidence ?? 0) < 0.5 ? 'early read: ' : ''}{candidate.why}.</p>}
-                {candidate.bio ? <p className={styles.loveProfilePreviewBio}>{candidate.bio}</p> : <p className={styles.loveProfilePreviewEmpty}>No bio added yet—the profile signals below are everything they have shared.</p>}
-                {Array.isArray(candidate.prompts) && candidate.prompts.length > 0 && (
-                  <div className={styles.loveProfilePreviewPrompts}>
-                    {candidate.prompts.map((prompt) => (
-                      <div key={prompt.question}><span>{prompt.question}</span><strong>{prompt.answer}</strong></div>
-                    ))}
-                  </div>
-                )}
-                {Array.isArray(candidate.interests) && candidate.interests.length > 0 && (
-                  <div className={styles.loveProfilePreviewTags}>
-                    {candidate.interests.map((interest) => <span key={interest}>{interest}</span>)}
-                  </div>
-                )}
-                <div className={styles.loveProfilePreviewBoundary}>
-                  <strong>this profile is free.</strong> opening, accepting, replying, blocking, and reporting are never charged. This roster includes {includedPicks} distinct picks; an extra pick after that is a one-time $0.99 and chat is included if mutual. A decline or unanswered expiry returns that paid pick as an in-app credit.
+                <div className={styles.loveProfilePreviewTabs} role="tablist" aria-label={`${first}'s profile views`}>
+                  <button type="button" role="tab" aria-selected={previewTab === 'profile'} onClick={() => setPreviewTab('profile')}>profile · free</button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={previewTab === 'compatibility'}
+                    onClick={() => {
+                      setPreviewTab('compatibility');
+                      setCompatibilityError(null);
+                      if (readUnlocked) void loadCompatibilityRead(candidate.id);
+                      else {
+                        trackLoveEvent('compatibility_read_paywall', { candidateId: candidate.id });
+                        void fetch('/api/monetization/view', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ product: 'love_connection', surface: 'love_compatibility_read' }),
+                        });
+                      }
+                    }}
+                  >AI + HEXACO {readUnlocked ? '· open' : '· $0.99'}</button>
                 </div>
+                {previewTab === 'profile' ? (
+                  <>
+                    {candidate.why && <p className={styles.loveProfilePreviewWhy}>✦ {(candidate.scoreConfidence ?? 0) < 0.5 ? 'early read: ' : ''}{candidate.why}.</p>}
+                    {candidate.bio ? <p className={styles.loveProfilePreviewBio}>{candidate.bio}</p> : <p className={styles.loveProfilePreviewEmpty}>No bio added yet—the profile signals below are everything they have shared.</p>}
+                    {Array.isArray(candidate.prompts) && candidate.prompts.length > 0 && (
+                      <div className={styles.loveProfilePreviewPrompts}>
+                        {candidate.prompts.map((prompt) => (
+                          <div key={prompt.question}><span>{prompt.question}</span><strong>{prompt.answer}</strong></div>
+                        ))}
+                      </div>
+                    )}
+                    {Array.isArray(candidate.interests) && candidate.interests.length > 0 && (
+                      <div className={styles.loveProfilePreviewTags}>
+                        {candidate.interests.map((interest) => <span key={interest}>{interest}</span>)}
+                      </div>
+                    )}
+                    <div className={styles.loveProfilePreviewBoundary}>
+                      <strong>this profile is free.</strong> opening, accepting, replying, blocking, and reporting are never charged. The optional $0.99 AI Compatibility Read explains the six personality signals between you and includes one extra connection to this person—never a second charge.
+                    </div>
+                  </>
+                ) : !readUnlocked ? (
+                  <div className={styles.loveCompatibilityLocked}>
+                    <span>private decision support · one-time $0.99</span>
+                    <h4>see the six-signal fit—not their private answers.</h4>
+                    <p>AI Connect Coach translates both abbreviated HEXACO-style profiles into a personality snapshot, likely strengths, useful watch-outs, and a first-date angle.</p>
+                    <ul>
+                      <li>all six personality dimensions in plain language</li>
+                      <li>where your patterns align or differ</li>
+                      <li>one extra Love connection to {first} included</li>
+                    </ul>
+                    <button
+                      type="button"
+                      disabled={checkoutBusy}
+                      onClick={() => void openExtraConnectionCheckout(candidate)}
+                    >{checkoutBusy ? 'opening secure checkout…' : `unlock read + connection · $0.99 →`}</button>
+                    <small>Not a diagnosis or promise of chemistry. Raw answers and exact scores stay private. No subscription.</small>
+                  </div>
+                ) : compatibilityLoading === candidate.id && !compatibilityRead ? (
+                  <div className={styles.loveCompatibilityLoading}>AI Connect Coach is reading the six signals…</div>
+                ) : compatibilityError && !compatibilityRead ? (
+                  <div className={styles.loveCompatibilityError} role="alert">
+                    <p>{compatibilityError}</p>
+                    <button type="button" onClick={() => void loadCompatibilityRead(candidate.id)}>try again</button>
+                  </div>
+                ) : compatibilityRead ? (
+                  <div className={styles.loveCompatibilityRead}>
+                    <div className={styles.loveCompatibilityHero}>
+                      <span>{compatibilityRead.source === 'ai' ? 'AI-personalized read' : 'curated fallback read'}</span>
+                      <h4>{compatibilityRead.headline}</h4>
+                      <p>{compatibilityRead.overview}</p>
+                    </div>
+                    <div className={styles.loveCompatibilityTraits}>
+                      {compatibilityRead.traits.map((trait) => (
+                        <div key={trait.key}>
+                          <span>{trait.label}</span>
+                          <strong>{first}: {trait.candidateBand}</strong>
+                          <p>{trait.pairDynamic}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className={styles.loveCompatibilityColumns}>
+                      <div><span>potential strengths</span>{compatibilityRead.strengths.map((item) => <p key={item}>✦ {item}</p>)}</div>
+                      <div><span>worth asking about</span>{compatibilityRead.watchouts.map((item) => <p key={item}>↗ {item}</p>)}</div>
+                    </div>
+                    <div className={styles.loveCompatibilityDate}><span>first-date angle</span><p>{compatibilityRead.firstDateIdea}</p></div>
+                    <small>{compatibilityRead.disclosure}</small>
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   className={styles.loveProfilePreviewChoose}
@@ -567,11 +719,13 @@ export default function RosterPicker({
                     ? 'connection safety limit reached'
                     : pro
                       ? `choose ${first} · included with Pro →`
-                      : includedRemaining > 0
-                        ? `choose ${first} · included →`
-                        : (hasFlexibleCredit || creditCandidateIds.includes(candidate.id))
-                          ? `match + chat with ${first} · use credit →`
-                          : `match + chat with ${first} · $0.99 →`}
+                      : (hasFlexibleCredit || creditCandidateIds.includes(candidate.id))
+                        ? (compatibilityReadIncluded || compatibilityReadCandidateIds.includes(candidate.id)
+                          ? `match + chat with ${first} · included with unlock →`
+                          : `open AI read for ${first} · use credit →`)
+                        : includedRemaining > 0
+                          ? `choose ${first} · included →`
+                          : `match + chat + AI read · $0.99 →`}
                 </button>
               </div>
             </section>
@@ -585,16 +739,16 @@ export default function RosterPicker({
           className={styles.loveModalOverlay}
         >
           <div onClick={(e) => e.stopPropagation()} className={styles.loveSwapSheet}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>extra Love connection · one-time $0.99</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>AI read + extra Love connection · one-time $0.99</div>
             <h3 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
-              match + chat with {(paywallCandidate.name || 'them').split(' ')[0]} for $0.99.
+              understand the fit—then choose {(paywallCandidate.name || 'them').split(' ')[0]}.
             </h3>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
-              You&apos;ve used the {includedPicks} picks included with this roster. Their full roster profile remains free. If they accept, chat and planning open at no extra charge. If they decline or the request expires before becoming mutual, the $0.99 automatically returns as an in-app credit.
+              You&apos;ve used the {includedPicks} picks included with this roster. Their full roster profile remains free. This one payment opens the private six-signal AI Compatibility Read and includes the extra connection to this person. If they accept, chat and planning open free. If they decline or the request expires, the connection value returns as an in-app credit and your read stays open.
             </p>
             <div style={{ background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
-              one person · one payment · no subscription<br />
-              no mutual match = one reusable in-app credit · ending the request yourself does not recycle it
+              one person · one payment · no subscription · no double charge<br />
+              no mutual match = one reusable in-app connection credit · ending the request yourself does not recycle it
             </div>
             <button
               type="button"
@@ -602,7 +756,7 @@ export default function RosterPicker({
               onClick={() => void openExtraConnectionCheckout(paywallCandidate)}
               style={{ width: '100%', marginTop: '0.85rem', background: '#0b0b0b', color: '#fff', border: 0, borderRadius: 12, padding: '0.85rem 1rem', cursor: checkoutBusy ? 'wait' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
             >
-              {checkoutBusy ? 'opening secure checkout…' : `match + chat with ${(paywallCandidate.name || 'them').split(' ')[0]} · $0.99 →`}
+              {checkoutBusy ? 'opening secure checkout…' : `unlock read + connection · $0.99 →`}
             </button>
             <button
               onClick={() => setPaywallCandidate(null)}

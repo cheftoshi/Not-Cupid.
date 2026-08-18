@@ -21,13 +21,18 @@ test('Love profiles, acceptance, replies, planning, and safety controls stay fre
   }
 });
 
-test('only an outgoing pick after the three included roster picks is paywalled', () => {
+test('core profiles stay free while optional AI decision support and extra picks can be paid', () => {
   const picker = read('../app/dashboard/roster-picker.tsx');
   const pick = read('../app/api/match/pick/route.ts');
+  const reportRoute = read('../app/api/love/compatibility-read/[candidateId]/route.ts');
   const migration = read('../supabase/migrations/20260818143000_love_connection_picks.sql');
   const creditMigration = read('../supabase/migrations/20260818152000_paid_love_credit_returns.sql');
   assert.match(picker, /includedRemaining <= 0/);
   assert.match(picker, /extra Love connection · one-time \$0\.99/);
+  assert.match(picker, /AI \+ HEXACO/);
+  assert.match(picker, /Raw answers and exact scores stay private/);
+  assert.match(reportRoute, /paywall: true/);
+  assert.match(reportRoute, /exact trait scores/);
   assert.match(pick, /pickAccess\.includedRemaining > 0/);
   assert.match(pick, /paywall: true/);
   assert.match(migration, /recipient never pays/);

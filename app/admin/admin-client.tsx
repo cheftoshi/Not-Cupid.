@@ -445,6 +445,9 @@ export default function AdminClient() {
                       <span className={s.chip}>Dashboard opens <b>{data.appExperience.interactions.dashboardOpens}</b></span>
                       <span className={s.chip}>Roster views <b>{data.appExperience.interactions.rosterViews}</b></span>
                       <span className={s.chip}>Profile opens <b>{data.appExperience.interactions.profileOpens}</b></span>
+                      <span className={s.chip}>AI read paywalls <b>{data.appExperience.interactions.compatibilityPaywalls}</b></span>
+                      <span className={s.chip}>AI read requests <b>{data.appExperience.interactions.compatibilityReadRequests}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>AI reads opened <b>{data.appExperience.interactions.compatibilityReadOpens}</b></span>
                       <span className={s.chip}>Pick attempts <b>{data.appExperience.interactions.pickAttempts}</b></span>
                       <span className={`${s.chip} ${s.chipGold}`}>Pick successes <b>{data.appExperience.interactions.pickSuccesses}</b></span>
                       <span className={`${s.chip} ${s.chipRed}`}>Pick failures <b>{data.appExperience.interactions.pickFailures}</b></span>
@@ -576,7 +579,7 @@ export default function AdminClient() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '0.7rem', marginTop: '0.8rem' }}>
                   {([
-                    ['love_connection', 'Extra Love connections'],
+                    ['love_connection', 'AI reads + Love connections'],
                     ['love_profile', 'Legacy profile unlocks'],
                     ['friend_pack', 'Friend packs'],
                     ['pro', 'Pro'],
