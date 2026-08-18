@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
-import ChipInput from './chip-input';
+import ChipInput, { type ChipInputHandle } from './chip-input';
 import RefreshProfileButton from '@/components/refresh-profile-button';
 import { ConnectionSigil, ProfileStrengthMeter } from '@/components/connection-ui';
 import { parseResponse } from '@/lib/fetch-helpers';
@@ -32,6 +32,11 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const dirtyFields = useRef(new Set<string>());
+  const musicInput = useRef<ChipInputHandle>(null);
+  const foodInput = useRef<ChipInputHandle>(null);
+  const hobbiesInput = useRef<ChipInputHandle>(null);
+  const sportsInput = useRef<ChipInputHandle>(null);
 
   const needsQuiz = !user.archetype || typeof user.score_honesty !== 'number';
   const gallery: string[] = Array.isArray(user.gallery) ? user.gallery : [];
@@ -40,6 +45,14 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
   const qualityPercent = Math.round((qualityItems.filter((item) => item.done).length / qualityItems.length) * 100);
   const nextQualityItem = qualityItems.find((item) => !item.done);
   const experimentReadiness = experimentProfileReadiness(user);
+
+  function updateUser(patch: Record<string, unknown>) {
+    Object.keys(patch).forEach((field) => dirtyFields.current.add(field));
+    // Functional updates preserve edits made in quick succession on mobile.
+    // Spreading the render-time `user` snapshot let a later control overwrite
+    // a field changed just before it.
+    setUser((current: any) => ({ ...current, ...patch }));
+  }
 
   useEffect(() => {
     if (!experimentMode) return;
@@ -67,9 +80,25 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         'relationship_style', 'love_availability', 'sun_sign',
         'intro_video_url', 'email_notifications',
       ];
+      const interestValues: Record<string, string[]> = {
+        music: musicInput.current?.valueWithDraft() ?? (user.music || []),
+        food: foodInput.current?.valueWithDraft() ?? (user.food || []),
+        hobbies: hobbiesInput.current?.valueWithDraft() ?? (user.hobbies || []),
+        sports: sportsInput.current?.valueWithDraft() ?? (user.sports || []),
+      };
+      for (const [field, value] of Object.entries(interestValues)) {
+        if (JSON.stringify(value) !== JSON.stringify(user[field] || [])) {
+          dirtyFields.current.add(field);
+        }
+      }
       const payload = Object.fromEntries(editableFields
-        .filter((field) => field in user)
-        .map((field) => [field, user[field]]));
+        .filter((field) => dirtyFields.current.has(field))
+        .map((field) => [field, field in interestValues ? interestValues[field] : user[field]]));
+      if (Object.keys(payload).length === 0) {
+        setMessage('nothing new to save');
+        if (onSaved) setTimeout(() => onSaved(user), 250);
+        return;
+      }
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
@@ -84,6 +113,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       }
       const data = await parseResponse<any>(res);
       setUser(data.user);
+      dirtyFields.current.clear();
       const savedExperimentReadiness = experimentProfileReadiness(data.user);
       setMessage(experimentMode
         ? savedExperimentReadiness.complete
@@ -128,7 +158,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       const res = await fetch('/api/profile/photo', { method: 'POST', body: formData });
       const data = await parseResponse<any>(res);
       if (!res.ok) throw new Error(data.error || 'upload failed');
-      setUser({ ...user, photo_url: data.url });
+      setUser((current: any) => ({ ...current, photo_url: data.url }));
       setMessage('✓ photo updated');
       setTimeout(() => setMessage(''), 3000);
     } catch (err: any) {
@@ -154,7 +184,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       const res = await fetch('/api/profile/gallery', { method: 'POST', body: formData });
       const data = await parseResponse<any>(res);
       if (!res.ok) throw new Error(data.error || 'upload failed');
-      setUser({ ...user, gallery: data.gallery });
+      setUser((current: any) => ({ ...current, gallery: data.gallery }));
       setMessage('✓ photo added');
       setTimeout(() => setMessage(''), 3000);
     } catch (err: any) {
@@ -175,7 +205,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       });
       const data = await parseResponse<any>(res);
       if (!res.ok) throw new Error(data.error || 'remove failed');
-      setUser({ ...user, gallery: data.gallery });
+      setUser((current: any) => ({ ...current, gallery: data.gallery }));
     } catch (err: any) {
       setMessage(err.message || 'remove failed');
     }
@@ -196,7 +226,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       if (!r.ok) throw new Error(d.error || 'upload not available — try again shortly');
       const put = await fetch(d.signedUrl, { method: 'PUT', body: file, headers: { 'content-type': d.contentType } });
       if (!put.ok) throw new Error('upload failed — try again');
-      setUser({ ...user, intro_video_url: d.publicUrl, intro_video_preview_url: URL.createObjectURL(file) });
+      updateUser({ intro_video_url: d.publicUrl, intro_video_preview_url: URL.createObjectURL(file) });
       setMessage('✓ video added — hit save to keep it');
       setTimeout(() => setMessage(''), 3500);
     } catch (err: any) {
@@ -208,23 +238,23 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
   }
 
   function handleVideoRemove() {
-    setUser({ ...user, intro_video_url: null, intro_video_preview_url: null });
+    updateUser({ intro_video_url: null, intro_video_preview_url: null });
   }
 
   function updatePrompt(index: number, patch: Partial<ProfilePrompt>) {
     const next = prompts.map((prompt, promptIndex) => promptIndex === index ? { ...prompt, ...patch } : prompt);
-    setUser({ ...user, prompts: next });
+    updateUser({ prompts: next });
   }
 
   function addPrompt() {
     if (prompts.length >= 3) return;
     const used = new Set(prompts.map((prompt) => prompt.question));
     const question = PROFILE_PROMPT_OPTIONS.find((option) => !used.has(option)) || PROFILE_PROMPT_OPTIONS[0];
-    setUser({ ...user, prompts: [...prompts, { question, answer: '' }] });
+    updateUser({ prompts: [...prompts, { question, answer: '' }] });
   }
 
   function removePrompt(index: number) {
-    setUser({ ...user, prompts: prompts.filter((_, promptIndex) => promptIndex !== index) });
+    updateUser({ prompts: prompts.filter((_, promptIndex) => promptIndex !== index) });
   }
 
   async function handleDelete() {
@@ -383,7 +413,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         <div className={styles.sectionLabel}>02 — The basics</div>
         <div className={styles.field}>
           <label className={styles.label}>Name</label>
-          <input className={styles.input} type="text" value={user.name || ''} onChange={e => setUser({ ...user, name: e.target.value })} placeholder="what to call you" />
+          <input className={styles.input} type="text" value={user.name || ''} onChange={e => updateUser({ name: e.target.value })} placeholder="what to call you" />
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Email</label>
@@ -392,7 +422,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         <div className={styles.row}>
           <div className={styles.field}>
             <label className={styles.label}>Age</label>
-            <input className={styles.input} type="number" min={18} max={100} value={user.age || ''} onChange={e => setUser({ ...user, age: parseInt(e.target.value) || null })} />
+            <input className={styles.input} type="number" min={18} max={100} value={user.age || ''} onChange={e => updateUser({ age: parseInt(e.target.value) || null })} />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Height</label>
@@ -408,7 +438,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
                   onChange={(e) => {
                     const ft = parseInt(e.target.value) || 0;
                     const inches = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : 0;
-                    setUser({ ...user, height_cm: ft || inches ? Math.round((ft * 12 + inches) * 2.54) : null });
+                    updateUser({ height_cm: ft || inches ? Math.round((ft * 12 + inches) * 2.54) : null });
                   }}
                 />
                 <span className={styles.heightUnit}>ft</span>
@@ -426,7 +456,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
                     if (inches > 11) inches = 11;
                     if (inches < 0) inches = 0;
                     const ft = user.height_cm ? Math.floor(user.height_cm / 30.48) : 0;
-                    setUser({ ...user, height_cm: ft || inches ? Math.round((ft * 12 + inches) * 2.54) : null });
+                    updateUser({ height_cm: ft || inches ? Math.round((ft * 12 + inches) * 2.54) : null });
                   }}
                 />
                 <span className={styles.heightUnit}>in</span>
@@ -437,7 +467,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         <div className={styles.row}>
           <div className={styles.field}>
             <label className={styles.label}>Gender</label>
-            <select className={styles.select} value={user.gender || ''} onChange={e => setUser({ ...user, gender: e.target.value })}>
+            <select className={styles.select} value={user.gender || ''} onChange={e => updateUser({ gender: e.target.value })}>
               <option value="">—</option>
               <option value="m">Man</option>
               <option value="f">Woman</option>
@@ -447,7 +477,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Seeking</label>
-            <select className={styles.select} value={user.seeking === 'both' ? 'b' : (user.seeking || '')} onChange={e => setUser({ ...user, seeking: e.target.value })}>
+            <select className={styles.select} value={user.seeking === 'both' ? 'b' : (user.seeking || '')} onChange={e => updateUser({ seeking: e.target.value })}>
               <option value="">—</option>
               <option value="m">Men</option>
               <option value="f">Women</option>
@@ -457,14 +487,14 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         </div>
         <div className={styles.field}>
           <label className={styles.label}>ZIP code</label>
-          <input className={styles.input} type="text" value={user.zip || ''} onChange={e => setUser({ ...user, zip: e.target.value })} />
+          <input className={styles.input} type="text" value={user.zip || ''} onChange={e => updateUser({ zip: e.target.value })} />
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Relationship style · <span className={styles.labelHint}>what you're looking for</span></label>
           <select
             className={styles.select}
             value={user.relationship_style || ''}
-            onChange={e => setUser({ ...user, relationship_style: e.target.value || null })}
+            onChange={e => updateUser({ relationship_style: e.target.value || null })}
           >
             <option value="">— pick one —</option>
             {RELATIONSHIP_STYLES.map(s => (
@@ -477,7 +507,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           <select
             className={styles.select}
             value={user.love_availability || 'open_to_meeting'}
-            onChange={e => setUser({ ...user, love_availability: e.target.value })}
+            onChange={e => updateUser({ love_availability: e.target.value })}
           >
             <option value="actively_looking">Actively looking</option>
             <option value="open_to_meeting">Open to meeting, no rush</option>
@@ -488,7 +518,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           <select
             className={styles.select}
             value={user.sun_sign || ''}
-            onChange={e => setUser({ ...user, sun_sign: e.target.value || null })}
+            onChange={e => updateUser({ sun_sign: e.target.value || null })}
           >
             <option value="">— pick one —</option>
             {SUN_SIGNS.map(s => (
@@ -506,7 +536,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           <textarea
             className={`${styles.textarea} ${styles.textareaArt}`}
             value={user.bio || ''}
-            onChange={e => setUser({ ...user, bio: e.target.value })}
+            onChange={e => updateUser({ bio: e.target.value })}
             rows={5}
             maxLength={500}
             placeholder="what's the most interesting thing about you that isn't obvious from a photo?"
@@ -546,28 +576,28 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         <div className={styles.row}>
           <div className={styles.field}>
             <label className={styles.label}>Career</label>
-            <input className={styles.input} type="text" value={user.occupation || ''} onChange={e => setUser({ ...user, occupation: e.target.value })} placeholder="what you do — e.g. nurse, engineer, teacher" />
+            <input className={styles.input} type="text" value={user.occupation || ''} onChange={e => updateUser({ occupation: e.target.value })} placeholder="what you do — e.g. nurse, engineer, teacher" />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Education</label>
-            <input className={styles.input} type="text" value={user.education || ''} onChange={e => setUser({ ...user, education: e.target.value })} placeholder="where you studied" />
+            <input className={styles.input} type="text" value={user.education || ''} onChange={e => updateUser({ education: e.target.value })} placeholder="where you studied" />
           </div>
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Music you love · <span className={styles.labelHint}>press enter or comma to add</span></label>
-          <ChipInput value={user.music || []} onChange={(arr) => setUser({ ...user, music: arr })} placeholder="indie rock, jazz, taylor swift" variant="lav" />
+          <ChipInput ref={musicInput} value={user.music || []} onChange={(arr) => updateUser({ music: arr })} placeholder="indie rock, jazz, taylor swift" variant="lav" />
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Food you crave · <span className={styles.labelHint}>press enter or comma to add</span></label>
-          <ChipInput value={user.food || []} onChange={(arr) => setUser({ ...user, food: arr })} placeholder="thai, pizza, sushi" variant="accent" />
+          <ChipInput ref={foodInput} value={user.food || []} onChange={(arr) => updateUser({ food: arr })} placeholder="thai, pizza, sushi" variant="accent" />
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Hobbies & obsessions · <span className={styles.labelHint}>press enter or comma to add</span></label>
-          <ChipInput value={user.hobbies || []} onChange={(arr) => setUser({ ...user, hobbies: arr })} placeholder="hiking, pottery, conspiracy theories" variant="mix" />
+          <ChipInput ref={hobbiesInput} value={user.hobbies || []} onChange={(arr) => updateUser({ hobbies: arr })} placeholder="hiking, pottery, conspiracy theories" variant="mix" />
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Sports & fitness · <span className={styles.labelHint}>what gets you moving</span></label>
-          <ChipInput value={user.sports || []} onChange={(arr) => setUser({ ...user, sports: arr })} placeholder="climbing, soccer, run club, yoga" variant="lav" />
+          <ChipInput ref={sportsInput} value={user.sports || []} onChange={(arr) => updateUser({ sports: arr })} placeholder="climbing, soccer, run club, yoga" variant="lav" />
         </div>
       </div>
 
@@ -585,18 +615,18 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         <div className={styles.row}>
           <div className={styles.field}>
             <label className={styles.label}>Min age</label>
-            <input className={styles.input} type="number" min={18} max={100} value={user.age_min || ''} onChange={e => setUser({ ...user, age_min: parseInt(e.target.value) || null })} />
+            <input className={styles.input} type="number" min={18} max={100} value={user.age_min || ''} onChange={e => updateUser({ age_min: parseInt(e.target.value) || null })} />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Max age</label>
-            <input className={styles.input} type="number" min={18} max={100} value={user.age_max || ''} onChange={e => setUser({ ...user, age_max: parseInt(e.target.value) || null })} />
+            <input className={styles.input} type="number" min={18} max={100} value={user.age_max || ''} onChange={e => updateUser({ age_max: parseInt(e.target.value) || null })} />
           </div>
         </div>
         <label className={styles.checkbox}>
           <input
             type="checkbox"
             checked={user.email_notifications !== false}
-            onChange={e => setUser({ ...user, email_notifications: e.target.checked })}
+            onChange={e => updateUser({ email_notifications: e.target.checked })}
           />
           <span>
             Email me about new matches and messages

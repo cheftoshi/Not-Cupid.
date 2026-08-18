@@ -1308,6 +1308,20 @@
   padding: 0.2rem 0;
 }
 .chipFieldInput::placeholder { color: var(--h-text-faint); }
+.chipAdd {
+  flex: 0 0 auto;
+  border: 1px solid rgba(37, 99, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(37, 99, 255, 0.1);
+  color: var(--h-accent);
+  padding: 0.35rem 0.65rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
 
 /* height ft/in inputs */
 .heightRow { display: flex; gap: 0.5rem; }

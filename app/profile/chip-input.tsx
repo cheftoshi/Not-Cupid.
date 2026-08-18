@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, KeyboardEvent } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState, KeyboardEvent } from 'react';
 import styles from './profile.module.css';
 
 type Props = {
@@ -11,21 +11,34 @@ type Props = {
   maxItems?: number;
 };
 
+export type ChipInputHandle = {
+  /** Include text still sitting in the input when the surrounding form saves. */
+  valueWithDraft: () => string[];
+};
+
 const variants = {
   lav:    { bg: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', border: 'rgba(37,99,255,0.35)' },
   accent: { bg: 'var(--h-surface-2)',     color: 'var(--h-text)', border: 'var(--h-border)' },
 };
 
-export default function ChipInput({ value, onChange, placeholder, variant = 'mix', maxItems = 12 }: Props) {
+const ChipInput = forwardRef<ChipInputHandle, Props>(function ChipInput(
+  { value, onChange, placeholder, variant = 'mix', maxItems = 12 },
+  ref,
+) {
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function commit(raw: string) {
+  function valueWithDraft(raw = draft) {
     const clean = raw.trim();
-    if (!clean) return;
-    if (value.includes(clean)) { setDraft(''); return; }
-    if (value.length >= maxItems) return;
-    onChange([...value, clean]);
+    if (!clean || value.includes(clean) || value.length >= maxItems) return value;
+    return [...value, clean];
+  }
+
+  useImperativeHandle(ref, () => ({ valueWithDraft }), [draft, value, maxItems]);
+
+  function commit(raw: string) {
+    const next = valueWithDraft(raw);
+    if (next !== value) onChange(next);
     setDraft('');
   }
 
@@ -68,6 +81,19 @@ export default function ChipInput({ value, onChange, placeholder, variant = 'mix
         onBlur={() => commit(draft)}
         placeholder={value.length === 0 ? placeholder : ''}
       />
+      {draft.trim() && value.length < maxItems ? (
+        <button
+          type="button"
+          className={styles.chipAdd}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => commit(draft)}
+          aria-label={`add ${draft.trim()}`}
+        >
+          + add
+        </button>
+      ) : null}
     </div>
   );
-}
+});
+
+export default ChipInput;
