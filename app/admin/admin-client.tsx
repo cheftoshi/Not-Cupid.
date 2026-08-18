@@ -316,6 +316,7 @@ export default function AdminClient() {
               <h1 className={s.title}>MISSION CONTROL</h1>
             </div>
             <nav className={s.nav}>
+              <a href="#bottlenecks" className={s.navLink}>Bottlenecks</a>
               <a href="#funnel" className={s.navLink}>Funnel</a>
               <a href="#monetization" className={s.navLink}>Revenue funnel</a>
               <a href="#love-usage" className={s.navLink}>Love usage</a>
@@ -362,6 +363,48 @@ export default function AdminClient() {
                 {sub && <div className={s.kpiSub}>{sub}</div>}
               </div>
             ))}
+          </div>
+
+          {/* ── PRODUCT BOTTLENECKS — deterministic diagnosis over every snapshot ── */}
+          <div className={s.card} id="bottlenecks">
+            <div className={s.cardHead}>
+              <div>
+                <p className={s.cardTitle}>Snapshot diagnosis — <b>where the product is leaking</b></p>
+                <p className={s.note} style={{ margin: '0.35rem 0 0' }}>Ranked from aggregate behavior. Nothing here automatically changes matching or contacts a user.</p>
+              </div>
+              {data?.bottlenecks?.summary && (
+                <div className={s.chips} style={{ margin: 0 }}>
+                  <span className={`${s.chip} ${s.chipRed}`}>Critical <b>{data.bottlenecks.summary.critical}</b></span>
+                  <span className={`${s.chip} ${s.chipGold}`}>High <b>{data.bottlenecks.summary.high}</b></span>
+                  <span className={s.chip}>Watch <b>{data.bottlenecks.summary.watch}</b></span>
+                </div>
+              )}
+            </div>
+            {!data?.bottlenecks ? (
+              <p className={s.note}>Bottleneck analysis is unavailable.</p>
+            ) : data.bottlenecks.items.length === 0 ? (
+              <div className={s.bottleneckHealthy}>No threshold-level product leaks detected in this snapshot. Keep watching cohort outcomes.</div>
+            ) : (
+              <div className={s.bottleneckGrid}>
+                {data.bottlenecks.items.map((item: any, index: number) => (
+                  <article
+                    key={item.id}
+                    className={`${s.bottleneckItem} ${item.severity === 'critical' ? s.bottleneckCritical : item.severity === 'high' ? s.bottleneckHigh : s.bottleneckWatch}`}
+                  >
+                    <div className={s.bottleneckMeta}>
+                      <span>#{index + 1} · {item.severity}</span>
+                      <span>{item.area}</span>
+                    </div>
+                    <h3>{item.title}</h3>
+                    <p><b>Evidence:</b> {item.evidence}</p>
+                    <p><b>Diagnosis:</b> {item.diagnosis}</p>
+                    <div className={s.bottleneckAction}><b>Next move:</b> {item.nextAction}</div>
+                    <div className={s.bottleneckTarget}>Current {item.metric.value}{item.metric.unit === 'percent' ? '%' : item.metric.unit === 'milliseconds' ? 'ms' : ''} · target {item.metric.target}</div>
+                  </article>
+                ))}
+              </div>
+            )}
+            {data?.bottlenecks?.method && <p className={s.note} style={{ margin: '0.9rem 0 0' }}>{data.bottlenecks.method}</p>}
           </div>
 
           {/* ── LOVE LINE PRODUCT USE — experiment participation is excluded ── */}

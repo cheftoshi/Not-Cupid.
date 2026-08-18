@@ -126,6 +126,22 @@ supersede them.
 
 ## Current product behavior
 
+### AI connection thesis
+
+- Canonical roadmap: `docs/ai-connection-product-thesis.md`.
+- Position NotCupid as an **AI connection concierge for love, friendship, and
+  real-life plans**, not as an autonomous matchmaker or AI companion.
+- The shared loop is understand intent → curate a small reciprocal set →
+  recommend one user-controlled action → record the human outcome → improve.
+- Hard eligibility, realm, preference, capacity, duplicate, and safety gates
+  remain deterministic. AI explains and coaches from bounded context; it never
+  accepts, sends, posts, joins, books, or invents people/plans for the user.
+- The north-star is weekly users completing a meaningful reciprocal connection
+  action, not page views, time in app, model calls, or matches created.
+- Every admin snapshot includes a deterministic ranked bottleneck diagnosis.
+  A flag recommends investigation; it never automatically changes matching or
+  sends a notification.
+
 ### Love Line
 
 - Roster-first matching: up to ten curated candidates (three included picks

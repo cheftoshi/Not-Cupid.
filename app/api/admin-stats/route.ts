@@ -7,6 +7,7 @@ import { experimentProfileReadiness } from '@/lib/experiment-profile'
 import { RAFFLE } from '@/lib/raffle'
 import { fetchAllSupabaseRows } from '@/lib/supabase-pagination'
 import { ONLY_IN_BOSTON_CAMPAIGN, ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN } from '@/lib/acquisition'
+import { detectProductBottlenecks } from '@/lib/product-bottlenecks'
 
 export const dynamic = 'force-dynamic'
 
@@ -615,6 +616,7 @@ export async function GET(req: NextRequest) {
       onlyInBoston = {
         launchStartedAt: campaign.launchStartedAt,
         launchLabel: campaign.launchLabel,
+        campaignActive: nowMs <= new Date(RAFFLE.entryClose).getTime(),
         measuredAt: new Date(nowMs).toISOString(),
         trackingReady: acquisitionTrackingReady,
         taggedUrl: `https://notcupid.com${campaign.shortPath}`,
@@ -827,6 +829,16 @@ export async function GET(req: NextRequest) {
       ],
     }
 
+    const bottlenecks = detectProductBottlenecks({
+      measuredAt: loveFunnel.measuredAt,
+      onlyInBoston,
+      loveUsage,
+      loveFunnel,
+      appExperience,
+      monetization,
+      friend,
+    })
+
     return NextResponse.json({
       stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), mrr: revenue.mrr, activeSubs, revenue, pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, other },
       signupsPerDay: days,
@@ -840,6 +852,7 @@ export async function GET(req: NextRequest) {
       loveCampaign,
       eligibleReadyCampaign,
       friend,
+      bottlenecks,
       recentUsers,
       recentMatches,
     })
