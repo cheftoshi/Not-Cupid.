@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { isPro } from '@/lib/pro';
 import { LOVE_CONNECTION_PRICE_CENTS, LOVE_INCLUDED_PICKS } from '@/lib/matching-policy';
+import { sendPushToUser } from '@/lib/push';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -109,10 +110,37 @@ export async function recordLoveConnectionPurchase(session: any) {
   return data;
 }
 
-export async function returnIncludedLovePick(matchId: string, declinerId: string | null): Promise<void> {
-  const { error } = await supabaseAdmin.rpc('return_included_love_pick', {
+export type ReturnedLoveEntitlement = 'included' | 'paid' | null;
+
+export async function returnLovePickEntitlement(
+  matchId: string,
+  declinerId: string | null,
+): Promise<ReturnedLoveEntitlement> {
+  const { data, error } = await supabaseAdmin.rpc('return_love_pick_entitlement', {
     p_match_id: matchId,
     p_decliner_id: declinerId,
   });
-  if (error) console.error('returnIncludedLovePick failed:', error.message);
+  if (error) {
+    console.error('returnLovePickEntitlement failed:', error.message);
+    return null;
+  }
+  const returned = data === 'included' || data === 'paid' ? data : null;
+  if (returned === 'paid') {
+    const { data: ledger } = await supabaseAdmin
+      .from('love_pick_ledger')
+      .select('user_id')
+      .eq('match_id', matchId)
+      .eq('access_type', 'paid')
+      .eq('status', 'returned')
+      .maybeSingle();
+    if (ledger?.user_id) {
+      await sendPushToUser(ledger.user_id, {
+        title: 'Your Love credit is back',
+        body: 'That connection did not become mutual. Your next extra Love pick is covered in the app.',
+        url: '/dashboard#roster',
+        tag: `love-credit-${matchId}`,
+      });
+    }
+  }
+  return returned;
 }

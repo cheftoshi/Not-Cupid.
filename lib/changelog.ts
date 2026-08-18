@@ -21,6 +21,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       '✈ Going somewhere? Add an upcoming trip and Friend Line will route local people, plans, clubs, and communities before you arrive.',
       '📱 Friend Line is smoother on phones — thumb-sized controls, compact navigation, safer modal scrolling, and better support for notched screens.',
       '✦ Extra Love connections — after the 3 included picks in a roster, choosing one more person is a one-time $0.99. If mutual, chat and the full compatibility profile are included.',
+      '↩️ Paid-pick protection — if an extra Love connection is declined or expires before becoming mutual, the purchase automatically comes back as an in-app credit.',
       '🎒 Pro stays $3.99/mo and now includes extra Love connection picks plus additional Friend packs.',
     ],
   },

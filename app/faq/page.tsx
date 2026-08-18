@@ -23,7 +23,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is it free?',
-    a: 'The quiz and every Love roster profile are free. Each 24-hour roster includes three distinct connection picks. After those three, each extra connection you choose is a one-time $0.99 and includes chat and planning if the interest becomes mutual. The recipient never pays to accept or reply. Removing someone yourself does not return that pick during the current roster; a decline, expiry, or unavailable profile does. Blocking and reporting are always free. On Friend, your first friendship pack is free and additional packs are $0.99. Pro is $3.99/mo and includes extra Love picks plus unlimited Friend packs.',
+    a: 'The quiz and every Love roster profile are free. Each 24-hour roster includes three distinct connection picks. After those three, each extra connection you choose is a one-time $0.99 and includes chat and planning if the interest becomes mutual. The recipient never pays to accept or reply. If a paid pick is declined or expires before becoming mutual, the $0.99 automatically returns as an in-app extra-connection credit. Removing the request yourself does not recycle it. Blocking and reporting are always free. On Friend, your first friendship pack is free and additional packs are $0.99. Pro is $3.99/mo and includes extra Love picks plus unlimited Friend packs.',
   },
   {
     q: 'Where is NotCupid available?',

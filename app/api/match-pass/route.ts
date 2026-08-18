@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { verifyMatchToken } from '@/lib/match-tokens'
 import { renderEmail, sendEmail } from '@/lib/email'
-import { returnIncludedLovePick } from '@/lib/love-pick-access'
+import { returnLovePickEntitlement } from '@/lib/love-pick-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
       .from('matches')
       .update({ status: 'passed', ended_at: new Date().toISOString(), ended_reason: 'passed' })
       .eq('id', matchId)
-    if (!(match.user_1_accepted && match.user_2_accepted)) await returnIncludedLovePick(matchId, userId)
+    if (!(match.user_1_accepted && match.user_2_accepted)) await returnLovePickEntitlement(matchId, userId)
 
     // Block the pair from re-matching — same as the in-app pass route. Without
     // this, passing via the email link let the same two people re-surface on

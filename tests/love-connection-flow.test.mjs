@@ -106,8 +106,8 @@ test('extra connection checkout is person-specific, transparent, and idempotent'
   const webhook = readFileSync(new URL('../app/api/stripe-webhook/route.ts', import.meta.url), 'utf8');
   const lintCleanup = readFileSync(new URL('../supabase/migrations/20260818144500_love_pick_lint_cleanup.sql', import.meta.url), 'utf8');
   assert.match(checkout, /Payments are disabled for test accounts/);
-  assert.match(checkout, /Their full roster profile stays free/);
-  assert.match(checkout, /A match or reply is not guaranteed/);
+  assert.match(checkout, /Their profile stays free/);
+  assert.match(checkout, /decline or the request expires first/);
   assert.match(checkout, /metadata\[candidate_id\]/);
   assert.match(complete, /recordLoveConnectionPurchase/);
   assert.match(access, /never reset an already-consumed credit/);
@@ -117,6 +117,24 @@ test('extra connection checkout is person-specific, transparent, and idempotent'
   assert.match(webhook, /product: 'love_connection'/);
   assert.match(lintCleanup, /perform u\.id from public\.love_connection_unlocks/);
   assert.doesNotMatch(lintCleanup, /v_unlock/);
+});
+
+test('a paid fourth pick returns as an in-app credit when it never becomes mutual', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260818152000_paid_love_credit_returns.sql', import.meta.url), 'utf8');
+  const access = readFileSync(new URL('../lib/love-pick-access.ts', import.meta.url), 'utf8');
+  const roster = readFileSync(new URL('../app/dashboard/roster-picker.tsx', import.meta.url), 'utf8');
+  const pass = readFileSync(new URL('../app/api/matches/[id]/pass/route.ts', import.meta.url), 'utf8');
+  const expiry = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
+  assert.match(migration, /drop constraint if exists love_pick_ledger_unlock_id_key/);
+  assert.match(migration, /p_decliner_id = v_ledger\.user_id[\s\S]*return null/);
+  assert.match(migration, /set status = 'credit', intended_candidate_id = null, match_id = null/);
+  assert.match(migration, /return 'paid'/);
+  assert.match(access, /Your Love credit is back/);
+  assert.match(access, /Your next extra Love pick is covered in the app/);
+  assert.match(roster, /in-app Love credit is ready/);
+  assert.match(roster, /match \+ chat with/);
+  assert.match(pass, /returnLovePickEntitlement\(id, user\.id\)/);
+  assert.match(expiry, /returnLovePickEntitlement\(m\.id, null\)/);
 });
 
 test('the isolated admin seed world mirrors the seven-option Love roster', () => {
@@ -154,5 +172,5 @@ test('ending remains free and safe but does not replenish a user-started roster 
   assert.match(route, /match_history/);
   assert.match(dialog, /does not replenish a pick you started/);
   assert.match(dialog, /end connection →/);
-  assert.match(route, /returnIncludedLovePick\(matchId, user\.id\)/);
+  assert.match(route, /returnLovePickEntitlement\(matchId, user\.id\)/);
 });

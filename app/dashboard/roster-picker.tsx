@@ -61,7 +61,8 @@ export default function RosterPicker({
   const [includedRemaining, setIncludedRemaining] = useState(includedPicks);
   const [pro, setPro] = useState(false);
   const [creditCandidateIds, setCreditCandidateIds] = useState<string[]>([]);
-  const [hasFlexibleCredit, setHasFlexibleCredit] = useState(false);
+  const [connectionCreditCount, setConnectionCreditCount] = useState(0);
+  const [flexibleCreditCount, setFlexibleCreditCount] = useState(0);
   const [nextRotationAt, setNextRotationAt] = useState<string | null>(null);
   const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
   const [clock, setClock] = useState(() => Date.now());
@@ -115,7 +116,10 @@ export default function RosterPicker({
       setIncludedRemaining(typeof data.includedPicksRemaining === 'number' ? data.includedPicksRemaining : includedPicks);
       setPro(!!data.pro);
       setCreditCandidateIds(Array.isArray(data.connectionCreditCandidateIds) ? data.connectionCreditCandidateIds : []);
-      setHasFlexibleCredit(!!data.hasFlexibleConnectionCredit);
+      setConnectionCreditCount(typeof data.connectionCreditCount === 'number' ? data.connectionCreditCount : 0);
+      setFlexibleCreditCount(typeof data.flexibleConnectionCreditCount === 'number'
+        ? data.flexibleConnectionCreditCount
+        : data.hasFlexibleConnectionCredit ? 1 : 0);
       setNextRotationAt(typeof data.nextRotationAt === 'string' ? data.nextRotationAt : null);
       setRoster(Array.isArray(data.roster) ? data.roster : []);
     } catch {
@@ -131,6 +135,8 @@ export default function RosterPicker({
     if (candidate) void submitPick(candidate, true);
     else setNotice('Your $0.99 extra-connection credit is ready. Choose any available roster profile.');
   }, [paidCandidateId, roster]);
+
+  const hasFlexibleCredit = flexibleCreditCount > 0;
 
   const rotationMs = nextRotationAt ? new Date(nextRotationAt).getTime() - clock : 0;
   const rotationLabel = (() => {
@@ -175,8 +181,15 @@ export default function RosterPicker({
       if (res.ok && data.ok) {
         if (data.accessType === 'included') setIncludedRemaining((remaining) => Math.max(0, remaining - 1));
         if (data.accessType === 'paid') {
-          setCreditCandidateIds((ids) => ids.filter((id) => id !== c.id));
-          setHasFlexibleCredit(false);
+          if (creditCandidateIds.includes(c.id)) {
+            setCreditCandidateIds((ids) => {
+              const index = ids.indexOf(c.id);
+              return index < 0 ? ids : [...ids.slice(0, index), ...ids.slice(index + 1)];
+            });
+          } else {
+            setFlexibleCreditCount((count) => Math.max(0, count - 1));
+          }
+          setConnectionCreditCount((count) => Math.max(0, count - 1));
         }
         // Match created — flip THIS card to the "it's on" moment in place, then
         // soft-refresh the server data so the new chat appears. No hard reload:
@@ -334,6 +347,12 @@ export default function RosterPicker({
         </div>
       )}
 
+      {!pro && connectionCreditCount > 0 && (
+        <div style={{ background: 'rgba(37,122,79,0.08)', border: '1px solid rgba(45,122,79,0.35)', color: '#2d7a4f', borderRadius: 12, padding: '0.8rem 0.95rem', marginBottom: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.5 }}>
+          ✓ {connectionCreditCount === 1 ? 'one in-app Love credit is ready' : `${connectionCreditCount} in-app Love credits are ready`} · your next {connectionCreditCount === 1 ? 'extra connection is' : 'extra connections are'} covered
+        </div>
+      )}
+
       {notice && (
         <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.7rem 0.9rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center' }}>
           {notice}
@@ -419,8 +438,8 @@ export default function RosterPicker({
                         : includedRemaining > 0
                           ? `choose ${first} · included →`
                           : (hasFlexibleCredit || creditCandidateIds.includes(c.id))
-                            ? 'use extra credit →'
-                            : `choose ${first} · $0.99 →`}
+                            ? 'match + chat · use credit →'
+                            : 'match + chat if mutual · $0.99 →'}
                 </button>
                 )}
               </div>
@@ -482,7 +501,7 @@ export default function RosterPicker({
                   </div>
                 )}
                 <div className={styles.loveProfilePreviewBoundary}>
-                  <strong>this profile is free.</strong> opening, accepting, replying, blocking, and reporting are never charged. This roster includes {includedPicks} distinct picks; an extra pick after that is a one-time $0.99 and chat is included if the interest becomes mutual.
+                  <strong>this profile is free.</strong> opening, accepting, replying, blocking, and reporting are never charged. This roster includes {includedPicks} distinct picks; an extra pick after that is a one-time $0.99 and chat is included if mutual. A decline or unanswered expiry returns that paid pick as an in-app credit.
                 </div>
                 <button
                   type="button"
@@ -500,8 +519,8 @@ export default function RosterPicker({
                       : includedRemaining > 0
                         ? `choose ${first} · included →`
                         : (hasFlexibleCredit || creditCandidateIds.includes(candidate.id))
-                          ? `use extra-connection credit →`
-                          : `choose ${first} · $0.99 →`}
+                          ? `match + chat with ${first} · use credit →`
+                          : `match + chat with ${first} · $0.99 →`}
                 </button>
               </div>
             </section>
@@ -517,14 +536,14 @@ export default function RosterPicker({
           <div onClick={(e) => e.stopPropagation()} className={styles.loveSwapSheet}>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>extra Love connection · one-time $0.99</div>
             <h3 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
-              choose {(paywallCandidate.name || 'them').split(' ')[0]} as an extra connection.
+              match + chat with {(paywallCandidate.name || 'them').split(' ')[0]} for $0.99.
             </h3>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
-              You&apos;ve used the {includedPicks} picks included with this roster. Their full roster profile remains free. If the interest is mutual, chat and planning are included. A match or reply isn&apos;t guaranteed.
+              You&apos;ve used the {includedPicks} picks included with this roster. Their full roster profile remains free. If they accept, chat and planning open at no extra charge. If they decline or the request expires before becoming mutual, the $0.99 automatically returns as an in-app credit.
             </p>
             <div style={{ background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
               one person · one payment · no subscription<br />
-              if they become unavailable before the pick is created, your payment stays as a credit for another roster profile
+              no mutual match = one reusable in-app credit · ending the request yourself does not recycle it
             </div>
             <button
               type="button"
@@ -532,7 +551,7 @@ export default function RosterPicker({
               onClick={() => void openExtraConnectionCheckout(paywallCandidate)}
               style={{ width: '100%', marginTop: '0.85rem', background: '#0b0b0b', color: '#fff', border: 0, borderRadius: 12, padding: '0.85rem 1rem', cursor: checkoutBusy ? 'wait' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
             >
-              {checkoutBusy ? 'opening secure checkout…' : `choose ${(paywallCandidate.name || 'them').split(' ')[0]} · $0.99 →`}
+              {checkoutBusy ? 'opening secure checkout…' : `match + chat with ${(paywallCandidate.name || 'them').split(' ')[0]} · $0.99 →`}
             </button>
             <button
               onClick={() => setPaywallCandidate(null)}

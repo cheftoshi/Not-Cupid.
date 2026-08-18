@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   body.append('line_items[0][quantity]', '1');
   body.append('line_items[0][price_data][currency]', 'usd');
   body.append('line_items[0][price_data][product_data][name]', `${first} — extra Love connection`);
-  body.append('line_items[0][price_data][product_data][description]', 'One-time extra connection pick. Their full roster profile stays free. If interest is mutual, chat is included. A match or reply is not guaranteed.');
+  body.append('line_items[0][price_data][product_data][description]', 'One-time extra connection pick. Their profile stays free. If mutual, chat is included. If they decline or the request expires first, the purchase returns as an in-app credit.');
   body.append('line_items[0][price_data][unit_amount]', String(LOVE_CONNECTION_PRICE_CENTS));
   body.append('client_reference_id', user.id);
   if (user.stripe_customer_id) body.append('customer', user.stripe_customer_id);

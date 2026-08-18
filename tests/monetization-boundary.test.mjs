@@ -25,12 +25,14 @@ test('only an outgoing pick after the three included roster picks is paywalled',
   const picker = read('../app/dashboard/roster-picker.tsx');
   const pick = read('../app/api/match/pick/route.ts');
   const migration = read('../supabase/migrations/20260818143000_love_connection_picks.sql');
+  const creditMigration = read('../supabase/migrations/20260818152000_paid_love_credit_returns.sql');
   assert.match(picker, /includedRemaining <= 0/);
   assert.match(picker, /extra Love connection · one-time \$0\.99/);
   assert.match(pick, /pickAccess\.includedRemaining > 0/);
   assert.match(pick, /paywall: true/);
   assert.match(migration, /recipient never pays/);
-  assert.match(migration, /return_included_love_pick/);
+  assert.match(creditMigration, /return_love_pick_entitlement/);
+  assert.match(creditMigration, /access_type in \('included', 'paid'\)/);
 });
 
 test('payment routes prevent test charges and duplicate subscriber purchases', () => {
@@ -55,6 +57,7 @@ test('an extra-connection purchase is pair-specific and never charges the recipi
   const webhook = read('../app/api/stripe-webhook/route.ts');
   const checkout = read('../app/api/match/connection-checkout/route.ts');
   assert.match(checkout, /metadata\[candidate_id\]/);
-  assert.match(checkout, /If interest is mutual, chat is included/);
+  assert.match(checkout, /If mutual, chat is included/);
+  assert.match(checkout, /returns as an in-app credit/);
   assert.doesNotMatch(webhook, /Someone unlocked your profile/);
 });
