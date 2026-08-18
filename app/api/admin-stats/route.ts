@@ -6,7 +6,7 @@ import { ELIGIBLE_READY_REMINDER_CAMPAIGN } from '@/lib/eligible-ready-reminder'
 import { experimentProfileReadiness } from '@/lib/experiment-profile'
 import { RAFFLE } from '@/lib/raffle'
 import { fetchAllSupabaseRows } from '@/lib/supabase-pagination'
-import { ONLY_IN_BOSTON_CAMPAIGN } from '@/lib/acquisition'
+import { ONLY_IN_BOSTON_CAMPAIGN, ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN } from '@/lib/acquisition'
 
 export const dynamic = 'force-dynamic'
 
@@ -535,6 +535,11 @@ export async function GET(req: NextRequest) {
           try { return view.referrer ? new URL(view.referrer).hostname : '' } catch { return '' }
         })())
       )
+      const facebookReferralViews = launchViews.filter((view) =>
+        view.acquisition_source === 'facebook' || /(^|\.)facebook\.com/i.test((() => {
+          try { return view.referrer ? new URL(view.referrer).hostname : '' } catch { return '' }
+        })())
+      )
       const experimentViews = launchViews.filter((view) => view.path === campaign.landingPath)
       const sessionsOf = (views: PageViewRow[]) => new Set(views.map((view) => view.anon_id).filter(Boolean)).size
       const campaignMatch = (row: any) => row.acquisition_campaign === campaign.campaign || row.acquisition_source === campaign.source
@@ -545,6 +550,24 @@ export async function GET(req: NextRequest) {
       const percent = (numerator: number, denominator: number) => denominator > 0
         ? Math.round((numerator / denominator) * 100)
         : null
+      const taggedChannel = (channel: typeof ONLY_IN_BOSTON_CAMPAIGN | typeof ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN) => {
+        const channelMatch = (row: any) => campaignMatch(row) && row.acquisition_medium === channel.medium
+        const views = attributedViews.filter(channelMatch)
+        const signups = directSignups.filter(channelMatch)
+        const entries = directEntries.filter(channelMatch)
+        const sessions = sessionsOf(views)
+        return {
+          medium: channel.medium,
+          taggedUrl: `https://notcupid.com${channel.shortPath}`,
+          sessions,
+          landingSessions: sessionsOf(views.filter((view) => view.path === channel.landingPath)),
+          pageViews: views.length,
+          signups: signups.length,
+          entries: entries.length,
+          visitToSignupPct: percent(signups.length, sessions),
+          visitToEntryPct: percent(entries.length, sessions),
+        }
+      }
       onlyInBoston = {
         launchStartedAt: campaign.launchStartedAt,
         launchLabel: campaign.launchLabel,
@@ -559,6 +582,11 @@ export async function GET(req: NextRequest) {
         attributedVisitToSignupPct: percent(directSignups.length, sessionsOf(attributedViews)),
         attributedVisitToEntryPct: percent(directEntries.length, sessionsOf(attributedViews)),
         instagramReferralSessions: sessionsOf(instagramReferralViews),
+        facebookReferralSessions: sessionsOf(facebookReferralViews),
+        channels: {
+          instagramStory: taggedChannel(ONLY_IN_BOSTON_CAMPAIGN),
+          facebookStory: taggedChannel(ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN),
+        },
         launchWindowSessions: sessionsOf(launchViews),
         experimentSessions: sessionsOf(experimentViews),
         launchWindowPageViews: launchViews.length,

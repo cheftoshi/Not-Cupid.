@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attributionFromTouch, ONLY_IN_BOSTON_CAMPAIGN, sanitizeAcquisition } from '../lib/acquisition.ts';
+import { attributionFromTouch, ONLY_IN_BOSTON_CAMPAIGN, ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN, sanitizeAcquisition } from '../lib/acquisition.ts';
 
 const source = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -14,6 +14,15 @@ test('Only in Boston has one stable tagged acquisition route and launch baseline
   assert.match(redirect, /utm_source/);
   assert.match(redirect, /utm_medium/);
   assert.match(redirect, /utm_campaign/);
+});
+
+test('Only in Boston Facebook story has a separate clean link and medium', () => {
+  assert.equal(ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN.shortPath, '/go/only-in-boston-facebook');
+  assert.equal(ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN.medium, 'facebook_story');
+  assert.equal(ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN.campaign, ONLY_IN_BOSTON_CAMPAIGN.campaign);
+  const redirect = source('app/go/only-in-boston-facebook/route.ts');
+  assert.match(redirect, /ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN/);
+  assert.match(redirect, /utm_medium/);
 });
 
 test('campaign tags are sanitized and social referrers remain non-specific', () => {
@@ -58,7 +67,10 @@ test('attribution is privacy-minimal and reaches visits, signup, entries, and ad
   assert.match(entry, /dating experiment attribution update failed/);
   assert.match(adminRoute, /attributedVisitToEntryPct/);
   assert.match(adminRoute, /instagramReferralSessions/);
+  assert.match(adminRoute, /facebookReferralSessions/);
+  assert.match(adminRoute, /facebookStory: taggedChannel/);
   assert.match(admin, /Tagged entries/);
+  assert.match(admin, /Facebook story — direct attribution/);
   assert.match(admin, /directional and may include other traffic/);
   assert.match(migration, /raw URLs, query strings, user agents and device identifiers are\n-- never stored/);
   assert.match(migration, /alter table public\.page_views/);

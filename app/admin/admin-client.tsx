@@ -578,7 +578,7 @@ export default function AdminClient() {
             ) : (
               <>
                 <p className={s.note} style={{ marginBottom: '0.65rem' }}>
-                  Live-window measurement starts {data.onlyInBoston.launchLabel}. Tagged numbers are direct attribution; launch-window and Instagram-referral numbers are directional and may include other traffic.
+                  Live-window measurement starts {data.onlyInBoston.launchLabel}. Tagged numbers are direct attribution; launch-window and social-referral numbers are directional and may include other traffic.
                 </p>
                 <div className={s.chips}>
                   <span className={`${s.chip} ${s.chipGold}`}>Tagged visits <b>{data.onlyInBoston.attributedSessions}</b></span>
@@ -588,14 +588,30 @@ export default function AdminClient() {
                   <span className={s.chip}>Visit → signup <b>{data.onlyInBoston.attributedVisitToSignupPct == null ? '—' : `${data.onlyInBoston.attributedVisitToSignupPct}%`}</b></span>
                   <span className={s.chip}>Visit → entry <b>{data.onlyInBoston.attributedVisitToEntryPct == null ? '—' : `${data.onlyInBoston.attributedVisitToEntryPct}%`}</b></span>
                   <span className={s.chip}>Instagram referrals <b>{data.onlyInBoston.instagramReferralSessions}</b></span>
+                  <span className={s.chip}>Facebook referrals <b>{data.onlyInBoston.facebookReferralSessions}</b></span>
                   <span className={s.chip}>All sessions since launch <b>{data.onlyInBoston.launchWindowSessions}</b></span>
                   <span className={s.chip}>Experiment sessions since launch <b>{data.onlyInBoston.experimentSessions}</b></span>
                   <span className={s.chip}>New signups since launch <b>{data.onlyInBoston.launchWindowSignups}</b></span>
                   <span className={s.chip}>New entries since launch <b>{data.onlyInBoston.launchWindowEntries}</b></span>
                 </div>
                 <div className={s.divider} />
+                {data.onlyInBoston.channels?.facebookStory && (
+                  <>
+                    <p className={s.note} style={{ marginBottom: '0.45rem' }}><b>Facebook story — direct attribution</b></p>
+                    <div className={s.chips}>
+                      <span className={`${s.chip} ${s.chipGold}`}>Visits <b>{data.onlyInBoston.channels.facebookStory.sessions}</b></span>
+                      <span className={s.chip}>Experiment visits <b>{data.onlyInBoston.channels.facebookStory.landingSessions}</b></span>
+                      <span className={s.chip}>Signups <b>{data.onlyInBoston.channels.facebookStory.signups}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>Entries <b>{data.onlyInBoston.channels.facebookStory.entries}</b></span>
+                    </div>
+                    <p className={s.note} style={{ marginTop: '0.45rem' }}>
+                      Facebook story link: <code>{data.onlyInBoston.channels.facebookStory.taggedUrl}</code>
+                    </p>
+                    <div className={s.divider} />
+                  </>
+                )}
                 <p className={s.note}>
-                  Campaign link: <code>{data.onlyInBoston.taggedUrl}</code>
+                  Instagram story link: <code>{data.onlyInBoston.taggedUrl}</code>
                 </p>
                 {!data.onlyInBoston.trackingReady && (
                   <p className={s.note} style={{ marginTop: '0.45rem' }}>Apply the acquisition migration to enable exact tagged conversion.</p>

@@ -25,6 +25,16 @@ export const ONLY_IN_BOSTON_CAMPAIGN = {
   shortPath: '/go/only-in-boston',
 } as const;
 
+// Keep the partner/campaign stable while separating the platform placement.
+// This lets the admin dashboard compare Instagram and Facebook without
+// collecting personal identifiers or relying on referrers that social apps
+// may strip.
+export const ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN = {
+  ...ONLY_IN_BOSTON_CAMPAIGN,
+  medium: 'facebook_story',
+  shortPath: '/go/only-in-boston-facebook',
+} as const;
+
 function cleanTag(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const clean = value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
