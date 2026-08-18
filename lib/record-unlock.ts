@@ -1,8 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Records a match unlock without clobbering a previously-bought tier.
-// 'profile' ($0.99) is a superset — it also flips hexaco_unlocked true so the
-// HEXACO bars show too. 'hexaco' only sets hexaco_unlocked. (Both $0.99 as of 6/21.)
+// Records a compatibility deep-dive without clobbering a historical purchase.
+// `profile` is the legacy database tier name for the current $0.99 deep-dive;
+// `hexaco` remains only for old entitlements and is no longer sold separately.
 export async function recordUnlock(opts: {
   userId: string;
   matchId: string;

@@ -8,6 +8,7 @@ import EndMatchDialog from '@/components/end-match-dialog';
 import DateFeedbackDialog from '@/components/date-feedback-dialog';
 import styles from './chat.module.css';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
+import { ATTACH_LABEL, VIBE_HEADS, vibeLabel, type AttachStyle, type VibeKey } from '@/lib/quiz-data';
 
 // Emoji labels for a partner's picked interests (mirrors INTEREST_OPTIONS).
 const INTEREST_LABELS: Record<string, string> = {
@@ -27,6 +28,7 @@ interface Props {
   profileUnlocked: boolean;
   unlockAvailable: boolean;
   unlockItems: string[];
+  unlockJustOpened?: boolean;
 }
 
 type LoveCoach = {
@@ -48,7 +50,8 @@ function timeLeft(iso: string, nowMs: number): string {
   return `${m}m left`;
 }
 
-// Cheeky rotating placeholders — picked once per mount so they don't flicker.
+// Cheeky rotating placeholders — chosen deterministically per match so the
+// server and browser render the same text during hydration.
 // (Keep these warm, never surveillance-y — "the algo's watching" read as creepy.)
 const PLACEHOLDERS = [
   "say something better than 'hey'…",
@@ -95,6 +98,7 @@ export default function ChatRoom({
   profileUnlocked,
   unlockAvailable,
   unlockItems,
+  unlockJustOpened = false,
 }: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
   // Newest message timestamp we hold — lets the poll ask for only newer rows.
@@ -114,6 +118,9 @@ export default function ChatRoom({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'plan' | 'profile'>('chat');
   const [unlocking, setUnlocking] = useState(false);
+  useEffect(() => {
+    if (unlockJustOpened) toast('compatibility deep-dive opened', 'success');
+  }, [unlockJustOpened]);
   const [coach, setCoach] = useState<LoveCoach | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
   // A new message changes the coach stage. Never leave stale guidance on the
@@ -143,7 +150,9 @@ export default function ChatRoom({
     fetch(`/api/matches/${matchId}/typing`, { method: 'POST' }).catch(() => {});
   }
 
-  const [placeholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
+  const placeholder = PLACEHOLDERS[
+    Array.from(matchId).reduce((sum, char) => sum + char.charCodeAt(0), 0) % PLACEHOLDERS.length
+  ];
   const [starters] = useState(() => buildStarters(otherUser));
 
   const firstName = (otherUser?.name || 'them').split(' ')[0];
@@ -154,6 +163,21 @@ export default function ChatRoom({
     ...(Array.isArray(otherUser?.hobbies) ? otherUser.hobbies : []),
   ].filter(Boolean).slice(0, 8);
   const profilePrompts = normalizeProfilePrompts(otherUser?.prompts);
+  const profileVibes = otherUser?.vibes && typeof otherUser.vibes === 'object'
+    ? (Object.keys(VIBE_HEADS) as VibeKey[]).map((key) => ({
+        key,
+        head: VIBE_HEADS[key],
+        label: vibeLabel(key, otherUser.vibes[key]),
+      })).filter((item) => item.label)
+    : [];
+  const profileValues = otherUser?.values_profile && typeof otherUser.values_profile === 'object'
+    ? Object.entries(otherUser.values_profile as Record<string, unknown>)
+        .filter(([key, value]) => key !== 'partner' && (typeof value === 'number' || typeof value === 'string'))
+        .slice(0, 7)
+    : [];
+  const connectionStyle = otherUser?.attach_style && otherUser.attach_style in ATTACH_LABEL
+    ? ATTACH_LABEL[otherUser.attach_style as AttachStyle]
+    : null;
 
   // Tick a clock so the countdown re-renders live (every 30s is plenty).
   useEffect(() => {
@@ -621,6 +645,22 @@ export default function ChatRoom({
               {otherUser?.relationship_style && <span>{otherUser.relationship_style}</span>}
               {otherUser?.sun_sign && <span>{otherUser.sun_sign}</span>}
             </div>
+            {otherUser?.bio && <p>{otherUser.bio}</p>}
+            {profilePrompts.length > 0 && (
+              <div className={styles.matchPrompts}>
+                {profilePrompts.map((prompt) => (
+                  <div key={prompt.question}>
+                    <span>{prompt.question}</span>
+                    <strong>{prompt.answer}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+            {profileTags.length > 0 && (
+              <div className={styles.matchTags}>
+                {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}
+              </div>
+            )}
             {profileUnlocked ? (
               <>
                 {Array.isArray(otherUser?.gallery) && otherUser.gallery.length > 0 && (
@@ -630,31 +670,31 @@ export default function ChatRoom({
                     ))}
                   </div>
                 )}
-                {otherUser?.bio && <p>{otherUser.bio}</p>}
-                {profilePrompts.length > 0 && (
-                  <div className={styles.matchPrompts}>
-                    {profilePrompts.map((prompt) => (
-                      <div key={prompt.question}>
-                        <span>{prompt.question}</span>
-                        <strong>{prompt.answer}</strong>
+                {(profileVibes.length > 0 || profileValues.length > 0 || connectionStyle) && (
+                  <div style={{ display: 'grid', gap: '0.55rem', padding: '0.75rem', border: '1px solid rgba(37,99,255,0.2)', borderRadius: 12, background: 'rgba(37,99,255,0.05)' }}>
+                    <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#2563ff' }}>compatibility deep-dive</div>
+                    {connectionStyle && <strong style={{ fontSize: '0.82rem' }}>connection style · {connectionStyle}</strong>}
+                    {profileVibes.length > 0 && (
+                      <div className={styles.matchTags}>
+                        {profileVibes.map((item) => <span key={item.key}>{item.head} · {item.label}</span>)}
                       </div>
-                    ))}
-                  </div>
-                )}
-                {profileTags.length > 0 && (
-                  <div className={styles.matchTags}>
-                    {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}
+                    )}
+                    {profileValues.length > 0 && (
+                      <div className={styles.matchTags}>
+                        {profileValues.map(([key, value]) => <span key={key}>{key.replaceAll('_', ' ')} · {String(value)}</span>)}
+                      </div>
+                    )}
                   </div>
                 )}
                 <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.48rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#2d7a4f' }}>
-                  ✓ full compatibility profile unlocked
+                  ✓ compatibility deep-dive opened
                 </div>
               </>
-            ) : unlockAvailable ? (
+            ) : !pendingAccept && unlockAvailable ? (
               <div id="full-profile" style={{ background: 'linear-gradient(135deg,rgba(37,99,255,0.09),rgba(255,106,31,0.08))', border: '1px solid rgba(37,99,255,0.3)', borderRadius: 14, padding: '0.9rem' }}>
-                <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>🔒 the full story</div>
+                <div style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '0.5rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.35rem' }}>🔒 compatibility deep-dive</div>
                 <strong style={{ display: 'block', fontFamily: 'Georgia, ui-serif, serif', fontSize: '1rem', color: 'var(--h-text)', marginBottom: '0.35rem' }}>
-                  see what makes you two click.
+                  the basics are open. go deeper if you want.
                 </strong>
                 <p style={{ margin: '0 0 0.7rem', fontSize: '0.76rem', lineHeight: 1.5, color: 'var(--h-text-dim)' }}>
                   {unlockItems.slice(0, 4).join(' · ')}{unlockItems.length > 4 ? ` · +${unlockItems.length - 4} more` : ''}

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // matcher/roster/pulse only ever pair test↔test). Built so logging in as
 // **Test Alex** exercises EVERY surface at once:
 //   LOVE  → "your chats" with one live both-accepted chat (Bailey, w/ messages +
-//           a locked profile so the $0.99 unlock wall shows), plus a FULL
+//           an available $0.99 compatibility deep-dive), plus a FULL
 //           browseable roster carousel of 5 more women.
 //   FRIEND→ a live 3-person crew + group chat (opened) AND a SEALED pack of 4
 //           waiting to be opened (the cinematic /friends/pack reveal).

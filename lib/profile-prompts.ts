@@ -22,7 +22,10 @@ export function profilePromptDrafts(value: unknown): ProfilePrompt[] {
     .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === 'object' && !Array.isArray(entry))
     .map((entry) => ({
       question: typeof entry.question === 'string' ? entry.question.trim() : '',
-      answer: typeof entry.answer === 'string' ? entry.answer.trim() : '',
+      // Do not trim an in-progress answer. React re-runs this helper after
+      // every keystroke; trimming here made a trailing space disappear as soon
+      // as it was typed (most visibly on Android keyboards).
+      answer: typeof entry.answer === 'string' ? entry.answer : '',
     }))
     .filter((entry) => {
       if (!allowed.has(entry.question) || entry.answer.length > 180 || seen.has(entry.question)) return false;
@@ -33,5 +36,7 @@ export function profilePromptDrafts(value: unknown): ProfilePrompt[] {
 }
 
 export function normalizeProfilePrompts(value: unknown): ProfilePrompt[] {
-  return profilePromptDrafts(value).filter((entry) => entry.answer.length > 0);
+  return profilePromptDrafts(value)
+    .map((entry) => ({ ...entry, answer: entry.answer.trim() }))
+    .filter((entry) => entry.answer.length > 0);
 }

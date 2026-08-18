@@ -18,6 +18,9 @@ type LiveConnection = { matchId: string; name: string };
 type Candidate = {
   id: string; name: string; age: number | null; photo_url: string | null;
   archetype: string | null; metro: string | null; relationship_style: string | null; occupation?: string | null; score: number;
+  bio?: string | null;
+  prompts?: Array<{ question: string; answer: string }>;
+  interests?: string[];
   loveAvailability?: 'actively_looking' | 'open_to_meeting';
   activityLabel?: 'active recently' | 'active lately' | null;
   why?: string | null;
@@ -51,6 +54,7 @@ export default function RosterPicker({
   const [hardLocked, setHardLocked] = useState(false);
   const [atCapacity, setAtCapacity] = useState(false);
   const [nextRotationAt, setNextRotationAt] = useState<string | null>(null);
+  const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
   const [clock, setClock] = useState(() => Date.now());
   // When at capacity, picking opens a "close one first" prompt for this person.
   const [closePromptFor, setClosePromptFor] = useState<Candidate | null>(null);
@@ -71,6 +75,19 @@ export default function RosterPicker({
     const timer = window.setTimeout(() => void load(), Math.max(1_000, remaining + 1_000));
     return () => window.clearTimeout(timer);
   }, [nextRotationAt]);
+  useEffect(() => {
+    if (!previewCandidate) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreviewCandidate(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [previewCandidate]);
 
   async function load() {
     try {
@@ -258,7 +275,12 @@ export default function RosterPicker({
           const style = relationshipStyleLabel(c.relationship_style);
           return (
             <div key={c.id} data-card data-roster-kind="option" className={horizontal ? styles.loveRosterCard : undefined} style={cardBase}>
-              <div style={{ aspectRatio: '4 / 5', background: 'var(--h-surface-2)', position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setPreviewCandidate(c)}
+                aria-label={`View ${first}'s profile`}
+                style={{ aspectRatio: '4 / 5', width: '100%', padding: 0, border: 0, background: 'var(--h-surface-2)', position: 'relative', cursor: 'pointer', overflow: 'hidden' }}
+              >
                 {c.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img className="ncCardImg" src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -273,7 +295,7 @@ export default function RosterPicker({
                     🎬 video hello
                   </div>
                 )}
-              </div>
+              </button>
               <div style={{ padding: '0.9rem 0.95rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <div style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>
                   {first}{c.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {c.age}</span> : null}
@@ -287,6 +309,13 @@ export default function RosterPicker({
                   ● {c.loveAvailability === 'actively_looking' ? 'actively looking' : 'open to meeting'}{c.activityLabel ? ` · ${c.activityLabel}` : ''}
                 </div>
                 {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
+                <button
+                  type="button"
+                  onClick={() => setPreviewCandidate(c)}
+                  className={styles.loveRosterPreviewAction}
+                >
+                  view {first}&apos;s profile
+                </button>
                 {pickedId === c.id ? (
                   <div style={{ marginTop: 'auto', textAlign: 'center', background: 'rgba(37,99,255,0.1)', border: '1.5px solid #2563ff', color: '#2563ff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, animation: 'ncPickedIn .4s var(--ease) both' }}>
                     ✦ it&apos;s on — opening your chat…
@@ -315,6 +344,74 @@ export default function RosterPicker({
       <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
         checks for fresh options every 24h · shown people cool down for 7 days
       </p>
+
+      {previewCandidate && (() => {
+        const candidate = previewCandidate;
+        const first = (candidate.name || 'someone').split(' ')[0];
+        const relationship = relationshipStyleLabel(candidate.relationship_style);
+        return (
+          <div
+            className={styles.loveModalOverlay}
+            onClick={() => setPreviewCandidate(null)}
+            role="presentation"
+          >
+            <section
+              className={styles.loveProfilePreviewSheet}
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="love-roster-profile-title"
+            >
+              <button type="button" className={styles.loveProfilePreviewClose} onClick={() => setPreviewCandidate(null)} aria-label="Close profile preview">×</button>
+              <div className={styles.loveProfilePreviewPhoto}>
+                {candidate.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={candidate.photo_url} alt="" />
+                ) : <Monogram first={first} />}
+                <span>{candidate.score}% match</span>
+              </div>
+              <div className={styles.loveProfilePreviewBody}>
+                <div className={styles.loveProfilePreviewEyebrow}>free roster profile</div>
+                <h3 id="love-roster-profile-title">{first}{candidate.age ? `, ${candidate.age}` : ''}</h3>
+                <div className={styles.loveProfilePreviewFacts}>
+                  {candidate.archetype && <span>{candidate.archetype}</span>}
+                  {candidate.occupation && <span>{candidate.occupation}</span>}
+                  {relationship && <span>{relationship}</span>}
+                  {candidate.metro && <span>{candidate.metro}</span>}
+                </div>
+                {candidate.why && <p className={styles.loveProfilePreviewWhy}>✦ {(candidate.scoreConfidence ?? 0) < 0.5 ? 'early read: ' : ''}{candidate.why}.</p>}
+                {candidate.bio ? <p className={styles.loveProfilePreviewBio}>{candidate.bio}</p> : <p className={styles.loveProfilePreviewEmpty}>No bio added yet—the profile signals below are everything they have shared.</p>}
+                {Array.isArray(candidate.prompts) && candidate.prompts.length > 0 && (
+                  <div className={styles.loveProfilePreviewPrompts}>
+                    {candidate.prompts.map((prompt) => (
+                      <div key={prompt.question}><span>{prompt.question}</span><strong>{prompt.answer}</strong></div>
+                    ))}
+                  </div>
+                )}
+                {Array.isArray(candidate.interests) && candidate.interests.length > 0 && (
+                  <div className={styles.loveProfilePreviewTags}>
+                    {candidate.interests.map((interest) => <span key={interest}>{interest}</span>)}
+                  </div>
+                )}
+                <div className={styles.loveProfilePreviewBoundary}>
+                  <strong>this profile is free.</strong> if you both connect, chat and planning stay free too. Only then can an optional $0.99 deep-dive open extra photos and deeper lifestyle, values, and connection-style context.
+                </div>
+                <button
+                  type="button"
+                  className={styles.loveProfilePreviewChoose}
+                  disabled={!!picking || !!pickedId}
+                  onClick={() => {
+                    setPreviewCandidate(null);
+                    pick(candidate);
+                  }}
+                >
+                  {atCapacity ? 'close a chat to choose →' : `choose ${first} →`}
+                </button>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
 
       {/* At-capacity: choosing prompts the user to close one existing chat. */}
       {closePromptFor && (

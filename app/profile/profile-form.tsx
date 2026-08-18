@@ -56,13 +56,27 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
     setSaving(true);
     setMessage('');
     try {
+      // Send only fields this editor owns. The full user row also contains
+      // server-managed and legacy values; echoing those back caused unrelated
+      // edits to fail when an older optional field (such as vibes) was null.
+      const editableFields = [
+        'name', 'age', 'gender', 'seeking', 'zip',
+        'bio', 'height_cm', 'occupation', 'education',
+        'music', 'food', 'hobbies', 'sports', 'prompts',
+        'age_min', 'age_max', 'auto_rematch',
+        'relationship_style', 'love_availability', 'sun_sign',
+        'intro_video_url', 'email_notifications',
+      ];
+      const payload = Object.fromEntries(editableFields
+        .filter((field) => field in user)
+        .map((field) => [field, user[field]]));
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(experimentMode ? { 'X-NotCupid-Funnel': 'dating-experiment-comeback' } : {}),
         },
-        body: JSON.stringify(user),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await parseResponse<any>(res);
@@ -321,10 +335,10 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           </label>
         </div>
 
-        {/* GALLERY — up to 3 extra photos, revealed with the $2.99 unlock */}
+        {/* GALLERY — up to 3 extra photos in the optional post-connection deep-dive */}
         <div className={styles.galleryBlock}>
           <div className={styles.galleryHead}>
-            <span className={styles.galleryTitle}>more photos · <span className={styles.galleryHint}>{gallery.length}/3 — unlocked by your match for $0.99</span></span>
+            <span className={styles.galleryTitle}>more photos · <span className={styles.galleryHint}>{gallery.length}/3 — shown in the optional $0.99 deep-dive after you both connect</span></span>
           </div>
           <div className={styles.galleryGrid}>
             {gallery.map((url) => (

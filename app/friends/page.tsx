@@ -7,7 +7,8 @@ import FriendHubClient from './friend-hub-client';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FriendsHubPage({ searchParams }: { searchParams: { more_matches?: string } }) {
+export default async function FriendsHubPage({ searchParams }: { searchParams: Promise<{ more_matches?: string }> }) {
+  const { more_matches: moreMatches } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/friends');
   if (!user.friend_opted_in_at || !hasFriendVibes(user.friend_vibes)) redirect('/friends/quiz');
@@ -15,9 +16,9 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: {
   // Returning from a $0.99 "another round of matches" checkout → grant it inline
   // so the new matches show instantly (the webhook is the durable path). Keyed on
   // the Stripe payment id, so this and the webhook can't double-grant.
-  if (searchParams.more_matches) {
+  if (moreMatches) {
     try {
-      const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${searchParams.more_matches}`, {
+      const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(moreMatches)}`, {
         headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, cache: 'no-store',
       });
       const s = await r.json();

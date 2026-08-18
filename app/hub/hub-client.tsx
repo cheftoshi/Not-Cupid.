@@ -224,16 +224,16 @@ export default function HubClient({
               <div className={`${styles.membershipCard} ${membership.pro ? styles.membershipPro : ''}`}>
                 <div className={styles.membershipTop}>
                   <span>{membership.pro ? 'pro member' : 'free member'}</span>
-                  <strong>{membership.pro ? 'All-Access is on.' : 'Your first moves are included.'}</strong>
+                  <strong>{membership.pro ? 'Pro is on.' : 'Your first moves are included.'}</strong>
                 </div>
                 <p>
                   {membership.pro
-                    ? `Love unlocks and friend packs are covered${membership.renewsOn ? ` through ${membership.renewsOn}` : ''}.`
-                    : 'First Love roster and first Friend pack are free. Pro opens the whole app for $3.99/mo.'}
+                    ? `Every compatibility deep-dive and fresh Friend pack is covered${membership.renewsOn ? ` through ${membership.renewsOn}` : ''}.`
+                    : 'Every Love profile is free. Your first Friend pack is free too; Pro covers all compatibility deep-dives and additional Friend packs for $3.99/mo.'}
                 </p>
                 <div className={styles.membershipPrices}>
-                  <span>Love profile unlocks · $0.99</span>
-                  <span>Weekly friend packs · $0.99</span>
+                  <span>Optional Love deep-dive · $0.99</span>
+                  <span>Another Friend pack · $0.99</span>
                 </div>
                 <Link href="/pro">{membership.pro ? 'manage Pro →' : 'go Pro →'}</Link>
               </div>

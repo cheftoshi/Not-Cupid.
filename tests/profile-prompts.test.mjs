@@ -13,6 +13,13 @@ test('profile prompt drafts retain a newly added blank answer', () => {
   assert.deepEqual(normalizeProfilePrompts(drafts), []);
 });
 
+test('profile prompt drafts preserve a trailing space while the user is typing', () => {
+  const value = `Coffee ${'and'} `;
+  const drafts = profilePromptDrafts([{ question: PROFILE_PROMPT_OPTIONS[0], answer: value }]);
+  assert.equal(drafts[0].answer, value);
+  assert.equal(normalizeProfilePrompts(drafts)[0].answer, 'Coffee and');
+});
+
 test('profile prompts trim completed answers and reject unknown or duplicate prompts', () => {
   const input = [
     { question: PROFILE_PROMPT_OPTIONS[0], answer: '  Sunday coffee walks.  ' },

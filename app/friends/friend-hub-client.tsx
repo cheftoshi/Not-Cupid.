@@ -506,7 +506,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
             ) : (
               <>
                 <h2>next drop in {untilNextDrop()}.</h2>
-                <p>every {DROP.label}, a fresh pack of people lands — curated by the algo, sealed until you open it. can&apos;t wait? open one now ($0.99, free with all-access).</p>
+                <p>every {DROP.label}, a fresh pack of people lands — curated by the algo, sealed until you open it. can&apos;t wait? open one now ($0.99, included with Pro).</p>
                 <a href="/friends/pack" className={s.friendTextCta} style={{ textDecoration: 'none' }}>open one early →</a>
               </>
             )}

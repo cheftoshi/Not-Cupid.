@@ -2,29 +2,27 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { rateLimit } from '@/lib/rate-limit';
-import { profileUnlockSummary } from '@/lib/profile-unlock';
+import { loveDeepDiveSummary } from '@/lib/love-deep-dive';
 import { isPro } from '@/lib/pro';
 import { recordMonetizationEvent } from '@/lib/monetization';
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if ((user as any).is_test === true) return NextResponse.json({ error: 'Payments are disabled for test accounts.' }, { status: 403 });
   const limit = await rateLimit({ key: `checkout-unlock:${user.id}`, windowSec: 600, maxAttempts: 10, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many checkout attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
   if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: 'Payments unavailable' }, { status: 503 });
-  if (isPro(user)) return NextResponse.json({ error: 'Your Pro membership already unlocks every Love profile.' }, { status: 409 });
+  if (isPro(user)) return NextResponse.json({ error: 'Your Pro membership already opens every compatibility deep-dive.' }, { status: 409 });
 
-  // Which tier: 'hexaco' (legacy) or 'profile' ($0.99, full profile).
-  let tier: 'hexaco' | 'profile' = 'profile';
-  try {
-    const b = await req.json();
-    if (b?.tier === 'hexaco') tier = 'hexaco';
-  } catch { /* default profile */ }
+  // `profile` is the legacy database tier name for the $0.99 deep-dive.
+  // The old standalone HEXACO product is no longer sold.
+  const tier = 'profile' as const;
 
   const { data: match } = await supabaseAdmin
     .from('matches')
-    .select('*')
+    .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at')
     .eq('id', id)
     .single();
 
@@ -33,6 +31,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const isUser1 = match.user_1_id === user.id;
   const isUser2 = match.user_2_id === user.id;
   if (!isUser1 && !isUser2) return NextResponse.json({ error: 'Not your match' }, { status: 403 });
+  if (match.ended_at || ['ended', 'passed', 'expired'].includes(match.status)) {
+    return NextResponse.json({ error: 'This connection has ended.' }, { status: 409 });
+  }
+  if (!match.user_1_accepted || !match.user_2_accepted) {
+    return NextResponse.json({ error: 'The compatibility deep-dive opens after you both connect.' }, { status: 409 });
+  }
 
   const otherUserId = isUser1 ? match.user_2_id : match.user_1_id;
   const [{ data: otherUser }, { data: existingUnlock }] = await Promise.all([
@@ -50,23 +54,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   ]);
 
   if (existingUnlock?.profile_unlocked) {
-    return NextResponse.json({ error: 'This compatibility profile is already unlocked.' }, { status: 409 });
+    return NextResponse.json({ error: 'This compatibility deep-dive is already open.' }, { status: 409 });
   }
 
-  // Sell only when there is real user-supplied profile or quiz value. This now
-  // includes interests, lifestyle, values, and connection style—not only a bio
-  // or gallery—so the wall matches the actual compatibility profile promised.
-  const summary = profileUnlockSummary(otherUser);
+  // Sell only a real deep-dive. Bio, interests and prompts are free once the
+  // users match; the purchase covers extra photos and deeper quiz context.
+  const summary = loveDeepDiveSummary(otherUser);
   if (!summary.available) {
     return NextResponse.json(
-      { error: `${otherUser?.name || 'They'} hasn't added enough profile detail to unlock yet.` },
+      { error: `${otherUser?.name || 'They'} hasn't shared enough deep-dive detail yet.` },
       { status: 422 }
     );
   }
-  tier = 'profile'; // never sell the standalone HEXACO tier
-
-  const amount = '99'; // $0.99 (dropped from $1.99 on 6/21 — a profile is light info)
-  const productName = `Unlock ${otherUser?.name || 'match'}'s compatibility profile`;
+  const amount = '99';
+  const productName = `${otherUser?.name || 'Match'} — compatibility deep-dive`;
 
   // Determine origin for redirect URLs
   const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
@@ -78,7 +79,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   body.append('line_items[0][quantity]', '1');
   body.append('line_items[0][price_data][currency]', 'usd');
   body.append('line_items[0][price_data][product_data][name]', productName);
-  body.append('line_items[0][price_data][product_data][description]', 'Bio, extra photos, interests, lifestyle, values, and compatibility details available on this match.');
+  body.append('line_items[0][price_data][product_data][description]', 'Extra photos, lifestyle rhythm, values, connection style, and compatibility details available on this match.');
   body.append('line_items[0][price_data][unit_amount]', amount);
   body.append('client_reference_id', user.id);
   if (user.stripe_customer_id) {
@@ -87,8 +88,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     body.append('customer_creation', 'always');
     if (user.email) body.append('customer_email', user.email);
   }
-  body.append('success_url', `${origin}/dashboard?unlock_session={CHECKOUT_SESSION_ID}`);
-  body.append('cancel_url', `${origin}/dashboard`);
+  body.append('success_url', `${origin}/match/${match.id}?unlock_session={CHECKOUT_SESSION_ID}`);
+  body.append('cancel_url', `${origin}/match/${match.id}#full-profile`);
   body.append('metadata[user_id]', user.id);
   body.append('metadata[match_id]', match.id);
   body.append('metadata[unlocked_user_id]', otherUserId);

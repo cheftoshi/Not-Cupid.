@@ -126,7 +126,9 @@ export async function PUT(req: NextRequest) {
     }
     updates.prompts = normalized;
   }
-  if ('vibes' in updates && !validJson(updates.vibes)) {
+  // `vibes` is optional on legacy profiles. A null value means "not answered"
+  // and must not make unrelated profile edits impossible to save.
+  if ('vibes' in updates && updates.vibes != null && !validJson(updates.vibes)) {
     return NextResponse.json({ error: 'Invalid vibes' }, { status: 400 });
   }
   if ('auto_rematch' in updates && typeof updates.auto_rematch !== 'boolean') {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from './profile.module.css';
-import { ARCHETYPES, VIBE_HEADS, vibeLabel, relationshipStyleLabel } from '@/lib/quiz-data';
+import { ARCHETYPES, VIBE_HEADS, attachStyle, vibeLabel, relationshipStyleLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import { signLabel } from '@/lib/astrology';
 import RaffleCard from '@/components/raffle-card';
@@ -34,6 +34,9 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
 
   const seekingLabel = user.seeking === 'm' ? 'men' : user.seeking === 'f' ? 'women' : (user.seeking === 'b' || user.seeking === 'both') ? 'anyone' : '—';
   const genderLabel = user.gender === 'm' ? 'man' : user.gender === 'f' ? 'woman' : user.gender === 'nb' ? 'non-binary' : user.gender === 'o' ? 'other' : '—';
+  const displayedAttachmentStyle = typeof user.attach_anxiety === 'number' && typeof user.attach_avoidance === 'number'
+    ? attachStyle(user.attach_anxiety, user.attach_avoidance)
+    : user.attach_style;
 
   // HEXACO dimension bars — raw scores are 0–16 (4 questions × 4pts). Show as
   // a percentage fill so users see their personality breakdown, not just the
@@ -210,13 +213,13 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
 
       {/* HOW YOU CONNECT — attachment + values (the parts of the deep quiz that
           actually drive matching; users never saw them before). */}
-      {(user.attach_style || (user.values_profile && typeof user.values_profile === 'object')) && (
+      {(displayedAttachmentStyle || (user.values_profile && typeof user.values_profile === 'object')) && (
         <div className={styles.dashVibes}>
           <div className={styles.dashSectionLabel}>how you connect</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginTop: '0.6rem' }}>
-            {user.attach_style && (
+            {displayedAttachmentStyle && (
               <span style={{ background: 'rgba(37,99,255,0.1)', color: 'var(--blue)', border: '1px solid rgba(37,99,255,0.3)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.05em', fontWeight: 700 }}>
-                {user.attach_style === 'secure' ? '🌿 secure attachment' : user.attach_style === 'anxious' ? '🌀 anxious attachment' : user.attach_style === 'avoidant' ? '🏝 avoidant attachment' : '🌗 fearful-avoidant'}
+                {displayedAttachmentStyle === 'secure' ? '🌿 secure attachment' : displayedAttachmentStyle === 'anxious' ? '🌀 anxious attachment' : displayedAttachmentStyle === 'avoidant' ? '🏝 avoidant attachment' : '🌗 fearful-avoidant'}
               </span>
             )}
             {typeof user.attach_anxiety === 'number' && (

@@ -185,6 +185,11 @@ export async function GET() {
     eligible,
     hasProfile,
     profileMissing: profileReadiness.missing.map((item) => item.label),
+    profileGate: {
+      age: typeof user.age === 'number' ? user.age : null,
+      interests: profileReadiness.interests,
+      requirements: profileReadiness.requirements,
+    },
     entered, entry, shortlist, shortlistRound, draw, other, outcome,
   });
 }

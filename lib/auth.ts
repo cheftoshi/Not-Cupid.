@@ -29,7 +29,10 @@ export async function createSession(userId: string) {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: true,
+    // Browsers reject Secure cookies on the plain-http local dev origin,
+    // which made the signed test-account login unusable for phone QA.
+    // Production remains HTTPS-only.
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     expires: expiresAt,
     path: '/',

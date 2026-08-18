@@ -518,7 +518,7 @@ export default function AdminClient() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '0.7rem', marginTop: '0.8rem' }}>
                   {([
-                    ['love_profile', 'Love profiles'],
+                    ['love_profile', 'Love deep-dives'],
                     ['friend_pack', 'Friend packs'],
                     ['pro', 'Pro'],
                   ] as const).map(([key, label]) => {

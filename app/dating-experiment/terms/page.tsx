@@ -32,7 +32,7 @@ export default async function DatingExperimentTermsPage() {
       )}
 
       <h2>1. Free entry</h2>
-      <p>Entry is free through the Dating Experiment screen. No purchase or payment is necessary to enter, receive a shortlist, or be selected. A purchase, subscription, donation, profile unlock, or NotCupid Pro membership does not add entries, change shortlist priority, or improve selection odds. Limit one entry per person.</p>
+      <p>Entry is free through the Dating Experiment screen. No purchase or payment is necessary to enter, receive a shortlist, or be selected. A purchase, subscription, donation, compatibility deep-dive, or NotCupid Pro membership does not add entries, change shortlist priority, or improve selection odds. Limit one entry per person.</p>
 
       <h2>2. Eligibility</h2>
       <p>You must be 21 or older, reside in Massachusetts within approximately {RAFFLE.radiusMiles} miles of ZIP {RAFFLE.centerZip}, hold one genuine NotCupid account, complete the required profile steps, and be able to attend the stated Boston dinner. An introduction video is optional. Employees, contractors, and members of their immediate households are not eligible. Test, duplicate, automated, and fraudulent accounts are excluded. The experiment includes explicit straight, bisexual, gay, lesbian, pansexual, queer, asexual / ace-spectrum, questioning, and prefer-not-to-label orientation choices. It supports reciprocal preferences involving men, women, and non-binary / another-identity participants, including different-gender and same-gender pairings; no pairing is guaranteed. Void where prohibited.</p>

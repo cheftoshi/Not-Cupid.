@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { recordUnlock } from '@/lib/record-unlock'
 import { verifyStripeSignature } from '@/lib/stripe-webhook'
-import { sendPushToUser } from '@/lib/push'
 import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
 import { defaultEmailReplyTo } from '@/lib/email-address'
 import { recordMonetizationEvent } from '@/lib/monetization'
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
       const userId = session.metadata?.userId
       const paymentIntent = session.payment_intent
 
-      // ============== Handle match unlock ($0.99 HEXACO / $1.99 profile) ==============
+      // ============== Handle $0.99 Love compatibility deep-dive ==============
       if (session.metadata?.type === 'match_unlock') {
         const tier = session.metadata?.unlock_tier === 'hexaco' ? 'hexaco' : 'profile'
         const error = await recordUnlock({
@@ -82,18 +81,8 @@ export async function POST(req: NextRequest) {
           amountCents: session.amount_total ?? 99,
           externalEventId: event.id,
         })
-        // Tell the person who got unlocked — a warm "someone's into you" signal,
-        // on ANY unlock tier (they're already matched, so no privacy leak).
-        if (session.metadata.unlocked_user_id) {
-          await sendPushToUser(session.metadata.unlocked_user_id, {
-            title: 'Someone unlocked your profile 👀',
-            body: tier === 'hexaco'
-              ? 'A match wanted to see what makes you tick.'
-              : 'A match liked what they saw and wanted the full picture.',
-            url: session.metadata.match_id ? `/match/${session.metadata.match_id}` : '/dashboard',
-            tag: `unlock-${session.metadata.match_id || session.metadata.unlocked_user_id}`,
-          }).catch(() => {})
-        }
+        // This purchase stays private. A user paying for decision support is
+        // not a new match signal and should not create pressure for the other person.
         await completeStripeEvent(event.id)
         return NextResponse.json({ received: true })
       }

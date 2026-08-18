@@ -23,7 +23,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Is it free?',
-    a: 'The quiz and your matches are free. On the Love Line, unlock a match’s compatibility profile — bio, extra photos, interests, values and connection style — for a one-time $0.99. On the Friend Line, your first friendship pack (up to 5 people to connect with) is free; more weekly packs are $0.99 each, and group chats are always free. Want everything? Pro is $3.99/mo — every Love profile, unlimited packs, and events.',
+    a: 'The quiz and matches are free, and you can open any Love roster card to read their bio, prompts and interests before choosing. Chat and planning stay free. Only after you both connect, extra photos and the optional lifestyle, values and connection-style deep-dive can open for a one-time $0.99. On the Friend Line, your first friendship pack (up to 5 people to connect with) is free; additional packs are $0.99 each, and group chats are always free. Pro is $3.99/mo — every Love deep-dive and unlimited Friend packs.',
   },
   {
     q: 'Where is NotCupid available?',

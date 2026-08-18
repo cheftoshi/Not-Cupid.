@@ -3,8 +3,8 @@
 // The curated roster: the caller's top compatible candidates to CHOOSE from
 // (vs. the algo assigning one). Computed live with the same scoring as the
 // auto-matcher, so it always agrees on eligibility. Returns only safe public
-// fields. Empty if the user already has an open match (the dashboard shows
-// the match card in that case).
+// fields. The profile preview intentionally includes the candidate's own bio,
+// prompts, and interests; private deep-quiz fields and extra photos stay out.
 
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
@@ -23,6 +23,7 @@ import {
   orderForRosterRotation,
   rosterExposureCutoffIso,
 } from '@/lib/matching-policy';
+import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 
 // ZIP → human metro label (e.g. "Boston, MA"), or "Boston area" fallback.
 // Never returns the raw ZIP — that's a location-privacy leak.
@@ -86,12 +87,11 @@ export async function composeLoveRosterForUser(
   // Candidate pool. We no longer filter by status='waiting' (that was the
   // single-match lock) — instead we surface anyone with spare capacity and
   // filter out those at the cap below.
-  // Select ONLY what ranking + the response need — `select('*')` was hauling
-  // every column (email, bio, gallery, roster_snapshot…) for the whole active
-  // pool on every roster load: a PII over-fetch that scales with user count.
+  // Select ONLY what ranking + the free roster preview need — `select('*')`
+  // would haul private/account fields and scale badly with user count.
   const POOL_COLS =
     'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, intro_video_url, archetype, occupation, ' +
-    'relationship_style, love_availability, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, music, food, hobbies, sports, ' +
+    'bio, prompts, relationship_style, love_availability, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, music, food, hobbies, sports, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
     'score_conscientiousness, score_openness, last_matched_at, ignored_picks, is_test';
   const nowIso = new Date().toISOString();
@@ -258,9 +258,13 @@ export async function composeLoveRosterForUser(
     breakdownByCandidateId.set(p.id, breakdown);
     reciprocalByCandidateId.set(p.id, reciprocal);
     const confidenceBonus = Math.max(0, (breakdown.confidence - 0.45) * 2.5);
+    // The cap stays at three, but near-equal candidates with more room to
+    // respond should surface first. This reduces invitation deadlocks without
+    // hiding someone merely because they already have one or two chats.
+    const openCapacityBonus = Math.max(0, MAX_CONNECTIONS - live - 1) * 2;
     const adj =
       (neverMatched ? 2 : 0) +
-      (live === 0 ? 2 : 0) -
+      openCapacityBonus -
       ignored * 3 -
       incoming * 3 +
       confidenceBonus +
@@ -313,6 +317,14 @@ export async function composeLoveRosterForUser(
       hasIntroVideo: !!c.user.intro_video_url,
       archetype: c.user.archetype,
       occupation: c.user.occupation || null,
+      bio: typeof c.user.bio === 'string' ? c.user.bio.trim().slice(0, 500) || null : null,
+      prompts: normalizeProfilePrompts(c.user.prompts).slice(0, 3),
+      interests: Array.from(new Set([
+        ...(Array.isArray(c.user.music) ? c.user.music : []),
+        ...(Array.isArray(c.user.food) ? c.user.food : []),
+        ...(Array.isArray(c.user.hobbies) ? c.user.hobbies : []),
+        ...(Array.isArray(c.user.sports) ? c.user.sports : []),
+      ].map((item) => String(item).trim()).filter(Boolean))).slice(0, 8),
       // Privacy: never expose the exact ZIP. Show the metro label only.
       metro: metroLabel(c.user.zip),
       relationship_style: c.user.relationship_style,

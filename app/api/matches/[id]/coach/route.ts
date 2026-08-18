@@ -5,7 +5,6 @@ import { claudeJSON, aiEnabled } from '@/lib/ai';
 import { compatibilityBreakdown } from '@/lib/matching';
 import { curatedLoveCoach, loveCoachStage, type LoveCoach, type LoveCoachStage } from '@/lib/love-coach';
 import { rateLimit } from '@/lib/rate-limit';
-import { isPro } from '@/lib/pro';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -46,12 +45,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (match.ended_at) return NextResponse.json({ error: 'This conversation has ended' }, { status: 409 });
 
   const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
-  const [{ data: other }, { data: messages }, { data: unlock }] = await Promise.all([
+  const [{ data: other }, { data: messages }] = await Promise.all([
     supabaseAdmin.from('users')
       .select('id, name, archetype, occupation, relationship_style, bio, music, food, hobbies, sports, vibes, values_profile, attach_anxiety, attach_avoidance, score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness')
       .eq('id', otherId).maybeSingle(),
     supabaseAdmin.from('messages').select('sender_id').eq('match_id', id).order('created_at', { ascending: true }).limit(100),
-    supabaseAdmin.from('match_unlocks').select('profile_unlocked').eq('match_id', id).eq('user_id', user.id).maybeSingle(),
   ]);
   if (!other) return NextResponse.json({ error: 'Match profile unavailable' }, { status: 404 });
 
@@ -68,10 +66,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const breakdown = compatibilityBreakdown(user, other);
   const firstName = (other.name || 'your match').split(' ')[0];
-  const profileUnlocked = isPro(user) || !!unlock?.profile_unlocked;
-  const safeInterests = profileUnlocked
-    ? [...list(other.music), ...list(other.food), ...list(other.hobbies), ...list(other.sports)].slice(0, 8)
-    : [];
+  // Bio and interests are part of the free profile, so the coach can use them
+  // for everyone. Paid deep-dive answers never enter the AI prompt.
+  const safeInterests = [...list(other.music), ...list(other.food), ...list(other.hobbies), ...list(other.sports)].slice(0, 8);
   const fallback = curatedLoveCoach({ stage, firstName, reasons: breakdown.reasons, interests: safeInterests });
 
   let coach: LoveCoach = fallback;
@@ -80,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       stage,
       match: { firstName, archetype: other.archetype, occupation: other.occupation, relationshipStyle: other.relationship_style },
       mutualReasons: breakdown.reasons,
-      unlockedProfileContext: profileUnlocked ? { interests: safeInterests, bio: clean(other.bio, 400) } : null,
+      profileContext: { interests: safeInterests, bio: clean(other.bio, 400) },
       conversationMetadata: { messageCount: messages?.length ?? 0, bothPeopleHaveMessaged: new Set((messages ?? []).map((m) => m.sender_id)).size > 1 },
     };
     const generated = await claudeJSON<{ headline: string; openers: string[]; nextMove: string }>({

@@ -4,12 +4,9 @@ import { supabaseAdmin } from '@/lib/supabase';
 import RosterPicker from './roster-picker';
 import LoveConnections from './love-connections';
 import LocationControls from '@/components/location-controls';
-import { zipDistanceMiles, DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
+import { DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { recordUnlock } from '@/lib/record-unlock';
-import { isPro } from '@/lib/pro';
 import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
-import { profileUnlockSummary } from '@/lib/profile-unlock';
-import { recordMonetizationEvent } from '@/lib/monetization';
 import styles from './dashboard.module.css';
 import { sameRealm } from '@/lib/realm';
 import { profileReadiness } from '@/lib/profile-readiness';
@@ -19,16 +16,17 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { unlock_session?: string };
+  searchParams: Promise<{ unlock_session?: string }>;
 }) {
+  const { unlock_session: unlockSession } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/dashboard');
   if (!user.archetype) redirect('/quiz');
 
-  if (searchParams.unlock_session) {
+  if (unlockSession) {
     try {
       const stripeRes = await fetch(
-        `https://api.stripe.com/v1/checkout/sessions/${searchParams.unlock_session}`,
+        `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(unlockSession)}`,
         { headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, cache: 'no-store' }
       );
       const session = await stripeRes.json();
@@ -70,18 +68,8 @@ export default async function DashboardPage({
   const historyOtherIds = Array.from(new Set(
     (historyMatches ?? []).map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
   ));
-  const CARD_COLS =
-    'id, name, age, photo_url, intro_video_url, archetype, occupation, zip, relationship_style, sun_sign, bio, gallery, music, food, hobbies, ' +
-    'sports, prompts, vibes, values_profile, attach_style, ' +
-    'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, is_test';
-  const [{ data: unlockRows }, { data: others }, { data: historyOthers }, { data: recentMsgs }] = await Promise.all([
-    liveIds.length
-      ? supabaseAdmin
-          .from('match_unlocks')
-          .select('match_id, hexaco_unlocked, profile_unlocked')
-          .eq('user_id', user.id)
-          .in('match_id', liveIds)
-      : Promise.resolve({ data: [] as any[] }),
+  const CARD_COLS = 'id, name, age, photo_url, archetype, is_test';
+  const [{ data: others }, { data: historyOthers }, { data: recentMsgs }] = await Promise.all([
     otherIds.length
       ? supabaseAdmin.from('users').select(CARD_COLS).in('id', otherIds)
       : Promise.resolve({ data: [] as any[] }),
@@ -103,30 +91,19 @@ export default async function DashboardPage({
     }
   });
 
-  const unlockByMatch = new Map<string, any>((unlockRows ?? []).map((u: any) => [u.match_id, u]));
   const otherById = new Map<string, any>((others ?? []).map((u: any) => [u.id, u]));
   const historyOtherById = new Map<string, any>((historyOthers ?? []).map((historyUser: any) => [historyUser.id, historyUser]));
 
   const isTestViewer = (user as any).is_test === true;
-  const viewerIsPro = isPro(user);
   const connections = liveMatches
     .map((m: any) => {
       const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
       const other = otherById.get(otherId);
       if (!other) return null;
       if (((other as any).is_test === true) !== isTestViewer) return null;
-      const u: any = unlockByMatch.get(m.id);
-      const profileUnlocked = !!u?.profile_unlocked || viewerIsPro;
-      const hexacoUnlocked = !!u?.hexaco_unlocked || profileUnlocked;
-      const d = zipDistanceMiles(user.zip, other.zip);
       return {
         match: m,
         otherUser: other,
-        profileUnlocked,
-        hexacoUnlocked,
-        isUnlocked: profileUnlocked,
-        distanceMi: d == null ? null : Math.round(d),
-        beyondRadius: d != null && d > (user.match_radius ?? DEFAULT_MATCH_RADIUS),
       };
     })
     .filter(Boolean) as any[];
@@ -137,10 +114,6 @@ export default async function DashboardPage({
 
   const dashMetro = metroOf(user.zip);
   const dashCity = dashMetro && METRO_CENTERS[dashMetro] ? `${METRO_CENTERS[dashMetro].city}, ${METRO_CENTERS[dashMetro].state}` : null;
-  const cityLabel = (zip: string | null | undefined): string | null => {
-    const mt = metroOf(zip);
-    return mt && METRO_CENTERS[mt] ? `${METRO_CENTERS[mt].city}, ${METRO_CENTERS[mt].state}` : null;
-  };
 
   const activeCards = connections.map((c: any) => {
     const m = c.match;
@@ -148,10 +121,6 @@ export default async function DashboardPage({
     const myAcc = isU1 ? m.user_1_accepted : m.user_2_accepted;
     const both = m.user_1_accepted && m.user_2_accepted;
     const o = c.otherUser;
-    const unlockSummary = profileUnlockSummary(o);
-    const interests = c.profileUnlocked
-      ? [...(o.music || []), ...(o.food || []), ...(o.hobbies || [])].filter(Boolean).slice(0, 5)
-      : [];
     // Unread: they messaged after my last read stamp. Pre-migration (no read
     // cols on the row) we stay quiet rather than false-badging everything.
     const myReadAt = isU1 ? m.user_1_read_at : m.user_2_read_at;
@@ -159,29 +128,12 @@ export default async function DashboardPage({
     const unread = !!lastIn && ('user_1_read_at' in m) && (!myReadAt || new Date(lastIn) > new Date(myReadAt));
     return {
       matchId: m.id, name: o.name || 'your match', photo_url: o.photo_url || null,
-      age: o.age ?? null, archetype: o.archetype || null, occupation: o.occupation || null,
-      city: cityLabel(o.zip), relationship_style: o.relationship_style || null, sun_sign: o.sun_sign || null,
+      age: o.age ?? null, archetype: o.archetype || null,
       score: m.compatibility_score ?? null,
-      hasIntroVideo: !!o.intro_video_url,
-      bio: c.profileUnlocked ? (o.bio || null) : null, interests, unread,
+      unread,
       status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
-      profileUnlocked: c.profileUnlocked,
-      unlockAvailable: unlockSummary.available,
-      unlockItems: unlockSummary.items,
     };
   });
-
-  const lockedOffers = activeCards.filter((card) => !card.profileUnlocked && card.unlockAvailable);
-  if (lockedOffers.length > 0 && !isTestViewer) {
-    await Promise.all(lockedOffers.map((card) => recordMonetizationEvent({
-      userId: user.id,
-      event: 'paywall_viewed',
-      product: 'love_profile',
-      surface: 'love_dashboard_connection',
-      matchId: card.matchId,
-      amountCents: 99,
-    })));
-  }
 
   const yourMoveCount = activeCards.filter((card) => card.status === 'your-move').length;
   const loveProfileTags = [
@@ -311,9 +263,6 @@ export default async function DashboardPage({
                 score: card.score,
                 unread: card.unread,
                 status: card.status,
-                profileUnlocked: card.profileUnlocked,
-                unlockAvailable: card.unlockAvailable,
-                unlockItems: card.unlockItems,
               }))}
             />
 

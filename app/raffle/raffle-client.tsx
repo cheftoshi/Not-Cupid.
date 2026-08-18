@@ -79,9 +79,26 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const [pushOn, setPushOn] = useState(true);
 
   useEffect(() => {
-    fetch('/api/raffle/status').then((r) => (r.ok ? r.json() : null)).then((d) => { setSt(d); setLoaded(true); }).catch(() => setLoaded(true));
+    let active = true;
+    const refreshStatus = () => fetch('/api/raffle/status', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active && d) setSt(d); })
+      .catch(() => null)
+      .finally(() => { if (active) setLoaded(true); });
+    refreshStatus();
+    // Mobile browsers commonly restore this page from their back/forward cache
+    // after a profile fix. Re-check the server so a completed profile does not
+    // remain visibly blocked by the old page snapshot.
+    const refreshVisible = () => { if (document.visibilityState === 'visible') refreshStatus(); };
+    window.addEventListener('pageshow', refreshStatus);
+    document.addEventListener('visibilitychange', refreshVisible);
     trackExperimentFunnel('experiment_viewed');
     if (typeof Notification !== 'undefined') setPushOn(Notification.permission === 'granted');
+    return () => {
+      active = false;
+      window.removeEventListener('pageshow', refreshStatus);
+      document.removeEventListener('visibilitychange', refreshVisible);
+    };
   }, []);
 
   const ev = { ...event, ...(st?.event || {}) } as any;
@@ -114,13 +131,25 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     trackExperimentFunnel('rules_continued');
   }
 
+  const serverRequirements = new Map<string, boolean>(
+    (Array.isArray(st?.profileGate?.requirements) ? st.profileGate.requirements : [])
+      .map((item: any) => [String(item.key), item.ready === true]),
+  );
+  const profileState = {
+    photo: serverRequirements.get('photo') ?? profile.photo,
+    quiz: serverRequirements.get('quiz') ?? profile.quiz,
+    bio: serverRequirements.get('bio') ?? profile.bio,
+    interests: typeof st?.profileGate?.interests === 'number' ? st.profileGate.interests : profile.interests,
+    age: typeof st?.profileGate?.age === 'number' ? st.profileGate.age : profile.age,
+  };
+
   // "Established cred" from the real profile — entry isn't one click.
   const cred = [
-    { key: 'photo', ok: profile.photo, label: 'a profile photo', fix: '/dating-experiment/profile?from=experiment' },
-    { key: 'quiz', ok: profile.quiz, label: 'the personality quiz', fix: '/quiz?next=experiment' },
-    { key: 'bio', ok: profile.bio, label: 'a bio (a few words about you)', fix: '/dating-experiment/profile?from=experiment' },
-    { key: 'interests', ok: profile.interests >= 3, label: '3+ interests (music, food, hobbies, sports)', fix: '/dating-experiment/profile?from=experiment' },
-    { key: 'age', ok: profile.age != null && profile.age >= 21, label: profile.age != null && profile.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profile.age == null ? '/dating-experiment/profile?from=experiment' : undefined },
+    { key: 'photo', ok: profileState.photo, label: 'a profile photo', fix: '/dating-experiment/profile?from=experiment' },
+    { key: 'quiz', ok: profileState.quiz, label: 'the personality quiz', fix: '/quiz?next=experiment' },
+    { key: 'bio', ok: profileState.bio, label: 'a bio (a few words about you)', fix: '/dating-experiment/profile?from=experiment' },
+    { key: 'interests', ok: profileState.interests >= 3, label: '3+ interests (music, food, hobbies, sports)', fix: '/dating-experiment/profile?from=experiment' },
+    { key: 'age', ok: profileState.age != null && profileState.age >= 21, label: profileState.age != null && profileState.age < 21 ? 'be 21+ — this dinner is 21 and over' : 'your age (21+ for this dinner)', fix: profileState.age == null ? '/dating-experiment/profile?from=experiment' : undefined },
   ];
   const preferencesOk = !!gender && !!orientation && seekingGenders.length > 0
     && Number.isInteger(ageMin) && Number.isInteger(ageMax)
@@ -129,11 +158,11 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   const questionsOk = !!intention && !!energy && !!planningStyle && conversationStarter.trim().length >= 3;
   const consentOk = attendanceConfirmed && termsAccepted && previewConsent && safetyAcknowledged;
   const gateIssues = datingExperimentGateIssues({
-    photo: profile.photo,
-    quiz: profile.quiz,
-    bio: profile.bio,
-    interests: profile.interests,
-    age: profile.age,
+    photo: profileState.photo,
+    quiz: profileState.quiz,
+    bio: profileState.bio,
+    interests: profileState.interests,
+    age: profileState.age,
     gender,
     orientation,
     seekingGenders,

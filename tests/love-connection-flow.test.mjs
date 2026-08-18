@@ -12,6 +12,23 @@ test('Love Line exposes five choices and reserves at most three pending or mutua
   assert.match(pick, /await acceptMatch\(matchId, user\.id\)/);
 });
 
+test('every Love roster option has a free, phone-safe profile preview before choosing', () => {
+  const route = readFileSync(new URL('../app/api/match/roster/route.ts', import.meta.url), 'utf8');
+  const picker = readFileSync(new URL('../app/dashboard/roster-picker.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../app/dashboard/dashboard.module.css', import.meta.url), 'utf8');
+  assert.match(route, /bio, prompts, relationship_style/);
+  assert.match(route, /prompts: normalizeProfilePrompts/);
+  assert.match(route, /interests: Array\.from\(new Set/);
+  assert.match(picker, /view \{first\}&apos;s profile/);
+  assert.match(picker, /role="dialog"/);
+  assert.match(picker, /free roster profile/);
+  assert.match(picker, /this profile is free/);
+  assert.match(picker, /document\.body\.style\.overflow = 'hidden'/);
+  assert.match(css, /\.loveProfilePreviewSheet \{/);
+  assert.match(css, /max-height: calc\(100dvh/);
+  assert.match(css, /app-safe-bottom/);
+});
+
 test('a pick notifies the other person and mutual acceptance notifies both', () => {
   const actions = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
   assert.match(actions, /chose you 👀/);
@@ -54,20 +71,31 @@ test('admin engagement metrics exclude test accounts and show notification reach
 test('Love dashboard keeps pending and mutual people in one filterable connection inbox', () => {
   const dashboard = readFileSync(new URL('../app/dashboard/page.tsx', import.meta.url), 'utf8');
   const inbox = readFileSync(new URL('../app/dashboard/love-connections.tsx', import.meta.url), 'utf8');
-  const offer = readFileSync(new URL('../app/dashboard/love-unlock-offer.tsx', import.meta.url), 'utf8');
   assert.match(dashboard, /<LoveConnections/);
   assert.doesNotMatch(dashboard, /className=\{styles\.loveChatPanel\}/);
-  assert.doesNotMatch(dashboard, /activeCards\.find\(\(card\) => !card\.profileUnlocked/);
-  assert.match(dashboard, /lockedOffers\.map/);
+  assert.doesNotMatch(dashboard, /lockedOffers|profileUnlocked|unlockItems|LoveUnlockOffer/);
   assert.match(inbox, /your-move/);
   assert.match(inbox, /chatting/);
   assert.match(inbox, /waiting/);
   assert.match(inbox, /free spot/);
   assert.match(inbox, /<EndMatchDialog/);
   assert.match(inbox, /visible\.map\(\(connection\)/);
-  assert.match(inbox, /<LoveUnlockOffer/);
-  assert.match(inbox, /unlockItems/);
-  assert.match(offer, /unlock \$\{first\} · \$0\.99/);
+  assert.doesNotMatch(inbox, /LoveUnlockOffer|unlockItems|\$0\.99|paywall/);
+});
+
+test('Love deep-dive is private, post-mutual, and returns to the exact match', () => {
+  const page = readFileSync(new URL('../app/match/[id]/page.tsx', import.meta.url), 'utf8');
+  const room = readFileSync(new URL('../app/match/[id]/chat-room.tsx', import.meta.url), 'utf8');
+  const checkout = readFileSync(new URL('../app/api/matches/[id]/unlock-checkout/route.ts', import.meta.url), 'utf8');
+  const webhook = readFileSync(new URL('../app/api/stripe-webhook/route.ts', import.meta.url), 'utf8');
+  assert.match(page, /mutuallyConnected && \(isPro\(user\)/);
+  assert.match(page, /deep_dive=opened/);
+  assert.match(room, /!pendingAccept && unlockAvailable/);
+  assert.match(room, /compatibility deep-dive opened/);
+  assert.match(checkout, /if \(!match\.user_1_accepted \|\| !match\.user_2_accepted\)/);
+  assert.match(checkout, /Payments are disabled for test accounts/);
+  assert.match(checkout, /success_url.*\/match\/\$\{match\.id\}/);
+  assert.doesNotMatch(webhook, /Someone unlocked your profile/);
 });
 
 test('phone match room separates chat, plan, and profile below the measured PWA nav', () => {
@@ -80,6 +108,7 @@ test('phone match room separates chat, plan, and profile below the measured PWA 
   assert.match(room, /mutual=\{!!\(liveMatch\?\.user_1_accepted/);
   assert.match(room, /plan together after the mutual yes/);
   assert.match(room, /if \(pendingAccept\)/);
+  assert.doesNotMatch(room, /Math\.random\(\).*PLACEHOLDERS|PLACEHOLDERS\[Math\.floor/);
   assert.match(roomCss, /var\(--app-top-nav-height/);
   assert.match(roomCss, /data-mobile-panel='plan'/);
   assert.match(roomCss, /data-mobile-panel='profile'/);

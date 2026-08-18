@@ -299,7 +299,10 @@ export function computeAttachment(answers: number[]): { anxiety: number; avoidan
 
 export type AttachStyle = 'secure' | 'anxious' | 'avoidant' | 'fearful'
 export function attachStyle(anxiety: number, avoidance: number): AttachStyle {
-  const hiAnx = anxiety >= 50, hiAvo = avoidance >= 50
+  // 50 is the neutral midpoint, not evidence of a high score. Treating it as
+  // high classified fully neutral answers as fearful-avoidant and overstated a
+  // second dimension for people sitting exactly on the boundary.
+  const hiAnx = anxiety > 50, hiAvo = avoidance > 50
   if (hiAnx && hiAvo) return 'fearful'
   if (hiAnx) return 'anxious'
   if (hiAvo) return 'avoidant'

@@ -8,10 +8,10 @@ const BLUE = '#2563ff';
 const ORANGE = '#ff6a1f';
 
 const PERKS = [
-  { icon: '💘', t: 'Every compatibility profile, unlocked', d: 'See every match’s bio, extra photos, interests, values, and connection style — no $0.99 per unlock.' },
-  { icon: '🎒', t: 'Unlimited weekly friendship packs', d: 'Open fresh packs whenever you want, free. Each one adds up to 5 new people to connect with.' },
-  { icon: '🎟️', t: 'The whole Scene', d: 'Events, crews, the city pulse — all of it, all the time.' },
-  { icon: '✦', t: 'One price, everything', d: 'Skip the per-unlock and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
+  { icon: '💘', t: 'Every compatibility deep-dive, unlocked', d: 'Bio, prompts and interests are already free. Pro opens every match’s extra photos, lifestyle, values, and connection style — no $0.99 per unlock.' },
+  { icon: '🎒', t: 'Unlimited additional friendship packs', d: 'Open fresh packs without another checkout. Each one can add up to 5 new people to connect with.' },
+  { icon: '🌱', t: 'Support an independent experiment', d: 'Help keep the core experience lightweight, ad-free, and free to use for everyone.' },
+  { icon: '✦', t: 'One price, no repeat checkout', d: 'Skip the per-deep-dive and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
 ];
 
 export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: string | null }) {
@@ -39,18 +39,27 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
 
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: '0.6rem' }}>notcupid pro</div>
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(3rem,12vw,4.5rem)', lineHeight: 0.92, margin: '0 0 0.5rem', background: `linear-gradient(90deg,${ORANGE},#ff2d8e,${BLUE})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-          everything. one price.
+          optional extras. one price.
         </h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.7)', fontSize: '1.05rem', margin: '0 0 2rem' }}>
-          both lines, fully open — for less than a coffee a month.
+          the app works free. Pro removes the repeat checkout for people who want these extras.
         </p>
+
+        {!pro && (
+          <div style={{ margin: '0 0 1rem', padding: '1rem', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 14, background: 'rgba(255,255,255,0.04)' }}>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#9fbeff', marginBottom: '0.45rem' }}>always free</div>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.78)', fontSize: '0.86rem', lineHeight: 1.6 }}>
+              Complete roster profiles · five curated Love options · up to three active connections · matching · chat · date planning · Friend conversations
+            </p>
+          </div>
+        )}
 
         {pro ? (
           <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 18, padding: '1.5rem', textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ fontSize: '2rem' }}>✦</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', letterSpacing: '0.02em' }}>you’re Pro</div>
             <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', fontSize: '0.92rem', margin: '0.3rem 0 0' }}>
-              {renewsOn ? `renews ${renewsOn}.` : 'active.'} everything’s unlocked — go enjoy it.
+              {renewsOn ? `renews ${renewsOn}.` : 'active.'} deep-dives and additional Friend packs are open.
             </p>
             <Link href="/friends/pack" style={{ display: 'inline-block', marginTop: '1rem', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.7rem 1.6rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', letterSpacing: '0.04em', textDecoration: 'none' }}>open a pack →</Link>
           </div>
@@ -75,7 +84,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
               cancel anytime · keeps access through the month you paid for
             </p>
             <p style={{ textAlign: 'center', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', margin: '0.55rem auto 0', maxWidth: 430 }}>
-              Prefer to stay flexible? One-time Love profile and Friend pack unlocks remain $0.99 each.
+              Prefer to stay flexible? One compatibility deep-dive or one additional Friend pack remains $0.99.
             </p>
             {err && <p style={{ textAlign: 'center', color: '#ffb3b3', fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem' }}>{err}</p>}
           </>

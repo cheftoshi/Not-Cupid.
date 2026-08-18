@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { FRIEND_PACK_CENTS } from '@/lib/friend-access';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordMonetizationEvent } from '@/lib/monetization';
+import { isPro } from '@/lib/pro';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if ((user as any).is_test === true) return NextResponse.json({ error: 'Payments are disabled for test accounts.' }, { status: 403 });
+  if (isPro(user)) return NextResponse.json({ error: 'Your Pro membership already includes additional Friend packs.' }, { status: 409 });
   const limit = await rateLimit({ key: `checkout-friend:${user.id}`, windowSec: 600, maxAttempts: 10, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many checkout attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
   if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: 'Payments unavailable' }, { status: 503 });

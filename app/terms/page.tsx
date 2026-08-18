@@ -29,7 +29,7 @@ export default function TermsPage() {
       <p>You own what you post. By posting, you grant us a limited license to host and display it as needed to run the service (e.g. showing your profile to your matches). Don&apos;t post anything you don&apos;t have the right to share.</p>
 
       <h2>Payments</h2>
-      <p>Some features are paid — for example, unlocking a full match profile, additional Friend Line packs, or All-Access Pro. Prices are shown before you pay and processed by Stripe. Because these are digital goods delivered immediately, payments are generally <strong>non-refundable</strong> except where required by law. We may change pricing going forward.</p>
+      <p>Core profiles, matching, messaging, and planning are free. Optional paid features currently include a mutual match&apos;s compatibility deep-dive, additional Friend Line packs, and NotCupid Pro. Prices and what is included are shown before you pay and processed by Stripe. Because these are digital goods delivered immediately, payments are generally <strong>non-refundable</strong> except where required by law. We may change pricing going forward.</p>
 
       <h2>Matching is not a guarantee</h2>
       <p>We curate compatible people using an algorithm, but we can&apos;t guarantee matches, replies, dates, chemistry, or outcomes. NotCupid is a tool for meeting people — what happens next is up to you and them.</p>

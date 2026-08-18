@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { PRO_PRICE_CENTS } from '@/lib/pro';
+import { PRO_PRICE_CENTS, isPro } from '@/lib/pro';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordMonetizationEvent } from '@/lib/monetization';
 
 export const dynamic = 'force-dynamic';
 
-// NotCupid All-Access — $3.99/mo recurring. Unlocks everything: free love-profile
-// unlocks, free friendship packs, events. Grant lands via the stripe-webhook
+// NotCupid Pro — $3.99/mo recurring. Covers every optional Love compatibility
+// deep-dive and additional Friend pack. Grant lands via the stripe-webhook
 // (type=all_access → friend_pro_until), renewals + cancel already handled there.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if ((user as any).is_test === true) return NextResponse.json({ error: 'Payments are disabled for test accounts.' }, { status: 403 });
+  if (isPro(user)) return NextResponse.json({ error: 'Your Pro membership is already active.' }, { status: 409 });
   const limit = await rateLimit({ key: `checkout-pro:${user.id}`, windowSec: 600, maxAttempts: 10, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many checkout attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
   if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: 'Payments unavailable' }, { status: 503 });
@@ -23,6 +25,7 @@ export async function POST(req: NextRequest) {
   p.append('line_items[0][quantity]', '1');
   p.append('line_items[0][price_data][currency]', 'usd');
   p.append('line_items[0][price_data][product_data][name]', 'NotCupid Pro');
+  p.append('line_items[0][price_data][product_data][description]', 'Every optional Love compatibility deep-dive and unlimited additional Friend packs. Core profiles, matching, chat, and plans remain free.');
   p.append('line_items[0][price_data][unit_amount]', String(PRO_PRICE_CENTS));
   p.append('line_items[0][price_data][recurring][interval]', 'month');
   // Stripe accepts an existing customer OR customer_email, not both. Existing

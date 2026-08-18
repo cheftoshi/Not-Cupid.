@@ -62,7 +62,7 @@ export default async function ProfilePreviewPage() {
             )}
           </div>
 
-          {/* GALLERY — the extra photos a match unlocks for $2.99 */}
+          {/* GALLERY — extra photos in the optional post-connection deep-dive */}
           {Array.isArray(user.gallery) && user.gallery.length > 0 && (
             <div className={styles.galleryGrid}>
               {user.gallery.map((url: string) => (

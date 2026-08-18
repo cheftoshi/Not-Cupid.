@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
       realUserIds.has(match.user_1_id) && realUserIds.has(match.user_2_id)
     )
     // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):
-    //   • match_unlocks.amount_cents = current love-profile unlocks ($0.99)
+    //   • match_unlocks.amount_cents = current Love compatibility deep-dives ($0.99)
     //   • unlocks.amount = legacy standalone unlock ledger (cents)
     const { data: unlocks } = await supabaseAdmin.from('unlocks').select('amount')
     let matchUnlocks: any[] = []

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import EndMatchDialog from '@/components/end-match-dialog';
-import LoveUnlockOffer from './love-unlock-offer';
 import styles from './dashboard.module.css';
 
 export type LoveConnectionCard = {
@@ -14,9 +13,6 @@ export type LoveConnectionCard = {
   score: number | null;
   unread: boolean;
   status: 'chatting' | 'waiting' | 'your-move';
-  profileUnlocked: boolean;
-  unlockAvailable: boolean;
-  unlockItems: string[];
 };
 
 type Filter = 'all' | LoveConnectionCard['status'];
@@ -45,7 +41,6 @@ export default function LoveConnections({
   const [ending, setEnding] = useState<LoveConnectionCard | null>(null);
   const visible = filter === 'all' ? connections : connections.filter((connection) => connection.status === filter);
   const countFor = (key: Filter) => key === 'all' ? connections.length : connections.filter((connection) => connection.status === key).length;
-  const hasLockedProfiles = connections.some((connection) => !connection.profileUnlocked && connection.unlockAvailable);
 
   return (
     <section className={styles.loveConnections} id="connections" aria-labelledby="love-connections-title">
@@ -103,24 +98,11 @@ export default function LoveConnections({
                   </a>
                   <button type="button" onClick={() => setEnding(connection)}>free spot</button>
                 </div>
-                {!connection.profileUnlocked && connection.unlockAvailable && (
-                  <LoveUnlockOffer
-                    matchId={connection.matchId}
-                    name={connection.name}
-                    items={connection.unlockItems}
-                  />
-                )}
               </article>
             )) : (
               <div className={styles.connectionFilterEmpty}>No connections in this segment.</div>
             )}
           </div>
-
-          {hasLockedProfiles && (
-            <a className={styles.connectionProLink} href="/pro">
-              want every private profile? unlock all with Pro →
-            </a>
-          )}
         </>
       ) : (
         <div className={styles.connectionEmpty}>

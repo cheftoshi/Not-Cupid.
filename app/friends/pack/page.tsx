@@ -6,16 +6,17 @@ import PackClient from './pack-client';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PackPage({ searchParams }: { searchParams: { bought?: string } }) {
+export default async function PackPage({ searchParams }: { searchParams: Promise<{ bought?: string }> }) {
+  const { bought } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/friends/pack');
   if (!user.friend_opted_in_at) redirect('/friends/quiz');
 
   // Returning from a $0.99 pack checkout → grant the round inline so the fresh
   // pack is ready (the webhook is the durable path). Idempotent on the payment id.
-  if (searchParams.bought) {
+  if (bought) {
     try {
-      const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${searchParams.bought}`, {
+      const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(bought)}`, {
         headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, cache: 'no-store',
       });
       const s = await r.json();
