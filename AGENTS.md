@@ -140,6 +140,11 @@ supersede them.
   recommendation → two honest reasons → one action or dismissal → a small
   outcome check-in. Keep Love/Friend direct access; the concierge is a front
   door, never a gate.
+- The Hub now contains the consent-gated `hub-concierge-v1-2026-08-18`
+  conversation shell. It can route a user to one validated Love, Friend, plan,
+  community, profile, or travel action drawn from live inventory; conversation
+  text stays on the current device and only structured intent/recommendation
+  metadata is persisted. Preserve that bounded contract as the feature grows.
 - Hard eligibility, realm, preference, capacity, duplicate, and safety gates
   remain deterministic. AI explains and coaches from bounded context; it never
   accepts, sends, posts, joins, books, or invents people/plans for the user.

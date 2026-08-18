@@ -109,7 +109,7 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(navExtras, /safe-area-inset-top/);
   assert.match(navExtras, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(navExtras, /scrollTo\(\{ top: 0 \}\)/);
-  assert.match(changelog, /2026-08-18-ai-compatibility-read/);
+  assert.match(changelog, /2026-08-18-hub-concierge-v1/);
   assert.match(changelog, /Boston Dating Experiment is live/);
 });
 
@@ -130,7 +130,7 @@ test('phone-critical chats and app roots stay viewport-safe in the installed PWA
   const friend = source('app/friends/friend-hub-client.tsx');
   const friendCss = source('app/friends/friend-hub.module.css');
   const loveChatCss = source('app/match/[id]/chat.module.css');
-  const hubCss = source('app/hub/hub.module.css');
+  const hubCss = source('app/hub/hub-shell.module.css');
   const dashboardCss = source('app/dashboard/dashboard.module.css');
   const profileCss = source('app/profile/profile.module.css');
   const experimentProfileCss = source('app/dating-experiment/profile/experiment-profile.module.css');

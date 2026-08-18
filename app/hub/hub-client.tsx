@@ -6,9 +6,10 @@ import RaffleCard from '@/components/raffle-card';
 import { compressImage } from '@/lib/compress-image';
 import { VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
-import styles from './hub.module.css';
+import styles from './hub-shell.module.css';
 import { SkeletonStyles, SkeletonRow } from '@/components/skeleton';
 import { profileReadiness } from '@/lib/profile-readiness';
+import ConnectionConcierge from './connection-concierge';
 
 type Profile = {
   name: string; photo_url: string | null; archetype: string | null; age: number | null;
@@ -55,10 +56,10 @@ function whenLabel(iso: string | null): string {
 }
 
 export default function HubClient({
-  firstName, hasArchetype, needsLoveDeep, profile, city, loveMatches = [], membership,
+  firstName, hasArchetype, needsLoveDeep, profile, city, loveMatches = [], membership, conciergeConsented,
 }: {
   firstName: string; onWaitlist: boolean; hasArchetype: boolean; needsLoveDeep?: boolean; profile: Profile;
-  city?: string | null; loveMatches?: LoveMatch[]; membership: Membership;
+  city?: string | null; loveMatches?: LoveMatch[]; membership: Membership; conciergeConsented: boolean;
 }) {
   const [coords, setCoords] = useState({ x: 50, y: 40 });
   const [photo, setPhoto] = useState<string | null>(profile.photo_url);
@@ -145,6 +146,8 @@ export default function HubClient({
       <div className={styles.grain} aria-hidden />
 
       <div className={styles.dashWrap}>
+        <ConnectionConcierge firstName={firstName} city={city} initialConsented={conciergeConsented} />
+
         <section className={styles.hubTop}>
           <Link href={readiness.complete ? '/profile' : '/profile?mode=edit&from=hub-completion'} className={styles.profileMini}>
             <div className={styles.profileMiniTop}>

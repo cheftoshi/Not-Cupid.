@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from '@/components/feedback';
 import { FRIEND_ACTIVITIES, FRIEND_TIME_WINDOWS, friendActivity, type FriendActivityKey, type FriendTimeWindow } from '@/lib/friend-taxonomy';
 import { METRO_CENTERS } from '@/lib/quiz-data';
@@ -53,6 +53,7 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
   const [destinationArea, setDestinationArea] = useState('');
   const [startsOn, setStartsOn] = useState(localYmd(7));
   const [endsOn, setEndsOn] = useState(localYmd(10));
+  const travelDeepLinkDone = useRef(false);
 
   const load = useCallback(async (activity?: FriendActivityKey | null) => {
     setLoading(true);
@@ -68,6 +69,13 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
   }, [selected]);
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!data || travelDeepLinkDone.current || typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('concierge') !== 'travel') return;
+    travelDeepLinkDone.current = true;
+    openTravel();
+    window.requestAnimationFrame(() => document.querySelector('[data-friend-travel]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function setIntent() {
     if (!selected || busy) return;
@@ -197,7 +205,7 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
         )}
       </div>
 
-      <div className={s.travelPanel}>
+      <div className={s.travelPanel} data-friend-travel>
         <div className={s.travelSummary}>
           <div style={{ flex: 1, minWidth: 210 }}>
             <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.52rem', letterSpacing: '0.11em', textTransform: 'uppercase', color: '#a74712' }}>

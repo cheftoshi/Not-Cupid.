@@ -8,12 +8,13 @@ export interface ChangelogEntry {
 
 // Bump this string whenever you add an entry. The dashboard compares it to
 // the version the user last saw (localStorage) to show a "new" indicator.
-export const CHANGELOG_VERSION = '2026-08-18-ai-compatibility-read';
+export const CHANGELOG_VERSION = '2026-08-18-hub-concierge-v1';
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: 'August 2026',
     items: [
+      '✦ Your NotCupid concierge now lives at the top of the Hub — tell it whether you want Love, friends, a plan, a community, or help in another city, and it will route you to one real next move. You approve every action.',
       '🍽️ The Boston Dating Experiment is live — opt in free, meet up to 2 private compatibility options, and mutually choose who you would actually meet. Up to 2 mutual pairs get dinner on us.',
       '🎥 Video is optional — add a private 5–15 second hello if you want to show more personality. Skipping it never affects eligibility or compatibility.',
       '💘 More people, still curated — every Love roster now shows up to 10 compatible options and includes 3 distinct connection picks.',

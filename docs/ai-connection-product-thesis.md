@@ -98,14 +98,21 @@ Every surface should use the same loop:
   reading chat contents or sending on the user's behalf.
 - Friend “today's move” selects one real plan, connection, pack, or creation
   action from inventory the app can actually render.
+- The main Hub now has a phone-first, consent-gated concierge conversation. It
+  reads limited profile context plus already-eligible live inventory, returns
+  one server-validated in-app action, and records structured intent,
+  recommendation, dismissal, and action events without persisting raw prompts.
+- Concierge conversation history is kept on the current device. The first AI
+  request discloses the Anthropic data boundary, and consent can be revoked from
+  the Hub without hiding direct access to Love or Friend Line.
 - Scene, clubs, community links, travel mode, plan chat, push, and the daily
   activity drop provide action surfaces after a recommendation.
 - Admin analytics measure Love actions, performance, acquisition, payments,
   and now rank active product bottlenecks on every snapshot.
 
-These are strong primitives, but today they appear as separate features. The
-next product phase makes them feel like one concierge with one memory, one
-decision language, and one measurable outcome loop.
+These are strong primitives. The Hub shell now makes them feel like one
+concierge; the next product phases improve its ranking, cross-mode outcome
+memory, and feedback loop without turning it into an autonomous agent.
 
 ## System architecture
 
@@ -340,6 +347,10 @@ stage, and sent notifications reach a delivered/failed terminal state.
 ### Phase 1 — One concierge shell
 
 Goal: make the three existing AI capabilities feel like one product.
+
+Status on August 18, 2026: the first bounded Hub shell, consent control,
+validated deep links, structured intent/recommendation records, and phone-first
+PWA presentation are implemented. Measuring the exit gate remains pending.
 
 - Put a single **Your move today** card on the main Hub. It selects across Love,
   Friend, a plan, a club/community, and travel—not one unrelated card per tab.

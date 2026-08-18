@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { liveMatchesFor } from '@/lib/match-actions';
 import { isPro } from '@/lib/pro';
+import { HUB_CONCIERGE_VERSION } from '@/lib/connection-concierge';
 import HubClient from './hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -78,5 +79,9 @@ export default async function HubPage() {
     })
     .filter(Boolean);
 
-  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} loveMatches={loveMatches as any} membership={{ pro, renewsOn }} />;
+  const conciergeConsented = (user as any).ai_concierge_consent_version === HUB_CONCIERGE_VERSION
+    && !!(user as any).ai_concierge_consent_at
+    && !(user as any).ai_concierge_consent_revoked_at;
+
+  return <HubClient firstName={firstName} onWaitlist={onWaitlist} hasArchetype={!!user.archetype} needsLoveDeep={needsLoveDeep} profile={profile} city={city} loveMatches={loveMatches as any} membership={{ pro, renewsOn }} conciergeConsented={conciergeConsented} />;
 }

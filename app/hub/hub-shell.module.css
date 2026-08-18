@@ -1,3 +1,4 @@
+/* Hub shell, PWA layout, and concierge presentation. */
 .hub {
   position: relative;
   min-height: 100vh;
@@ -211,6 +212,350 @@
 
 /* ── user home base: today · next actions · people · plans ── */
 .dashWrap { position: relative; z-index: 5; max-width: 1180px; margin: 0 auto; padding: 1rem calc(1.25rem + var(--app-safe-right,0px)) calc(3rem + var(--app-safe-bottom,0px)) calc(1.25rem + var(--app-safe-left,0px)); width: 100%; min-width: 0; overflow-x: clip; }
+
+/* The Hub concierge is the front door. It is deliberately a contained card,
+   not a full-screen chat takeover: the existing Love/Friend controls remain
+   visible below and every recommendation exits into a real app surface. */
+.conciergeShell {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  margin: 0 0 1rem;
+  padding: clamp(1rem, 3vw, 1.35rem);
+  border: 1px solid color-mix(in srgb, var(--h-accent) 26%, var(--h-border));
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 94% 4%, rgba(255,106,31,0.11), transparent 28%),
+    radial-gradient(circle at 8% 112%, rgba(37,99,255,0.13), transparent 34%),
+    color-mix(in srgb, var(--h-surface) 96%, var(--blue-pale));
+  box-shadow: 0 28px 80px -52px rgba(37,99,255,.72), var(--shadow-md);
+}
+
+.conciergeHead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.85rem;
+}
+
+.conciergeMark {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #0a0a0a, #28325a);
+  color: #fff;
+  box-shadow: 0 12px 25px -16px #0a0a0a;
+  font-size: 1.05rem;
+}
+
+.conciergeHead > div:nth-child(2) { min-width: 0; }
+.conciergeHead span,
+.conciergeBubble small,
+.conciergeStatus,
+.conciergeFoot,
+.conciergeControls a,
+.conciergeDismissed {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.conciergeHead span {
+  display: block;
+  color: var(--h-accent);
+  font-size: 0.52rem;
+}
+
+.conciergeHead h1 {
+  margin: 0.18rem 0 0;
+  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-size: clamp(1.55rem, 3.8vw, 2.45rem);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  color: var(--h-text);
+}
+
+.conciergeHead p {
+  max-width: 690px;
+  margin: 0.42rem 0 0;
+  color: var(--h-text-dim);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.conciergeStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  border: 1px solid color-mix(in srgb, #2d7a4f 28%, var(--h-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--h-surface) 84%, transparent);
+  color: #2d7a4f;
+  padding: 0.48rem 0.66rem;
+  font-size: 0.48rem;
+  white-space: nowrap;
+}
+
+.conciergeStatus i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2d7a4f;
+  box-shadow: 0 0 0 4px rgba(45,122,79,.09);
+}
+
+.conciergeBody {
+  max-height: 315px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 0.58rem;
+  padding: 0.25rem 0.08rem;
+}
+
+.conciergeBubble {
+  width: fit-content;
+  max-width: min(760px, 88%);
+  border: 1px solid var(--h-border);
+  border-radius: 18px 18px 18px 6px;
+  background: color-mix(in srgb, var(--h-surface) 92%, var(--blue-pale));
+  padding: 0.72rem 0.82rem;
+  color: var(--h-text);
+}
+
+.conciergeBubble small {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--h-accent);
+  font-size: 0.46rem;
+}
+
+.conciergeBubble p {
+  margin: 0;
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.94rem;
+  line-height: 1.48;
+}
+
+.conciergeUser {
+  align-self: flex-end;
+  border-color: rgba(37,99,255,.32);
+  border-radius: 18px 18px 6px 18px;
+  background: linear-gradient(145deg, #2563ff, #1b46c9);
+  color: #fff;
+}
+
+.conciergeUser small { color: rgba(255,255,255,.72); }
+.conciergeAssistant { align-self: flex-start; }
+
+.conciergeRecommendation {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+  margin-top: 0.65rem;
+  padding-top: 0.62rem;
+  border-top: 1px solid var(--h-border);
+}
+
+.conciergeRecommendation a,
+.conciergeRecommendation button,
+.conciergeConsentActions button,
+.conciergeControls button {
+  min-height: 40px;
+  border-radius: 999px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.conciergeRecommendation a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #0a0a0a;
+  background: #0a0a0a;
+  color: #fff;
+  padding: 0.56rem 0.82rem;
+  text-decoration: none;
+}
+
+.conciergeRecommendation a span { color: #ff9a64; }
+.conciergeRecommendation button {
+  border: 1px solid var(--h-border);
+  background: transparent;
+  color: var(--h-text-dim);
+  padding: 0.54rem 0.76rem;
+}
+
+.conciergeDismissed {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--h-text-faint);
+  font-size: 0.45rem;
+  font-style: normal;
+}
+
+.conciergeThinking p { display: flex; align-items: center; gap: 0.55rem; color: var(--h-text-dim); }
+.conciergeThinking p span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--h-accent);
+  animation: conciergePulse 1.1s ease-in-out infinite;
+}
+@keyframes conciergePulse { 50% { opacity: .3; transform: scale(.72); } }
+
+.conciergeStarts {
+  display: flex;
+  gap: 0.45rem;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.06rem;
+}
+.conciergeStarts::-webkit-scrollbar { display: none; }
+.conciergeStarts button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border: 1px solid color-mix(in srgb, var(--h-accent) 20%, var(--h-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--h-surface) 90%, transparent);
+  color: var(--h-text);
+  padding: 0.52rem 0.76rem;
+  font-family: Georgia, ui-serif, serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.conciergeConsent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  border: 1px solid rgba(255,106,31,.34);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--h-surface) 88%, #fff0e5);
+  padding: 0.82rem;
+}
+
+.conciergeConsent strong {
+  font-family: Georgia, ui-serif, serif;
+  font-style: italic;
+  color: var(--h-text);
+}
+.conciergeConsent p,
+.conciergeControls p {
+  margin: 0.28rem 0 0;
+  color: var(--h-text-dim);
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+.conciergeConsentActions { display: flex; gap: 0.4rem; }
+.conciergeConsentActions button { border: 1px solid #0a0a0a; padding: 0.55rem 0.74rem; }
+.conciergeConsentActions button:first-child { background: #0a0a0a; color: #fff; }
+.conciergeConsentActions button:last-child { background: transparent; color: var(--h-text); border-color: var(--h-border); }
+
+.conciergeComposer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--h-accent) 22%, var(--h-border));
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--h-surface) 94%, transparent);
+  padding: 0.38rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+.conciergeComposer textarea {
+  width: 100%;
+  min-height: 46px;
+  max-height: 120px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--h-text);
+  padding: 0.78rem 0.72rem;
+  font: 0.94rem/1.35 Georgia, ui-serif, serif;
+}
+.conciergeComposer textarea::placeholder { color: var(--h-text-faint); font-style: italic; }
+.conciergeComposer > button {
+  min-width: 74px;
+  min-height: 46px;
+  border: 0;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #0a0a0a, #25345e);
+  color: #fff;
+  padding: 0.65rem 0.8rem;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.conciergeComposer > button:disabled { opacity: .42; cursor: not-allowed; }
+
+.conciergeError {
+  margin: -0.25rem 0 0;
+  color: #a74712;
+  font-size: 0.72rem;
+}
+
+.conciergeFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  color: var(--h-text-faint);
+  font-size: 0.43rem;
+}
+.conciergeFoot button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--h-accent);
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.conciergeControls {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--h-border);
+  padding-top: 0.7rem;
+}
+.conciergeControls p { flex: 1 1 320px; margin: 0; }
+.conciergeControls button {
+  min-height: 34px;
+  border: 1px solid rgba(167,71,18,.28);
+  background: transparent;
+  color: #a74712;
+  padding: 0.42rem 0.62rem;
+}
+.conciergeControls a { color: var(--h-accent); font-size: 0.46rem; }
 .homeHero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
@@ -1444,8 +1789,24 @@
   .eventRow { align-items: flex-start; }
   .personRow b,
   .eventRow span { padding-top: 0.18rem; }
+  .conciergeStatus { display: none; }
+  .conciergeHead { grid-template-columns: auto minmax(0, 1fr); }
 }
 @media (max-width: 520px) {
+  .conciergeShell { border-radius: 22px; padding: 0.9rem; gap: 0.72rem; }
+  .conciergeMark { width: 40px; height: 40px; border-radius: 14px; }
+  .conciergeHead { gap: 0.65rem; }
+  .conciergeHead h1 { font-size: 1.52rem; }
+  .conciergeHead p { font-size: 0.78rem; }
+  .conciergeBody { max-height: 285px; }
+  .conciergeBubble { max-width: 94%; padding: 0.68rem 0.72rem; }
+  .conciergeBubble p { font-size: 0.9rem; }
+  .conciergeConsent { grid-template-columns: 1fr; }
+  .conciergeConsentActions { width: 100%; }
+  .conciergeConsentActions button { flex: 1; }
+  .conciergeComposer textarea { font-size: 16px; min-height: 48px; }
+  .conciergeComposer > button { min-width: 66px; }
+  .conciergeFoot { align-items: flex-start; }
   .todayHead { align-items: flex-start; }
   .todayCard { border-radius: 22px; padding: 0.9rem; }
   .todayInterests { padding: 0.75rem; }
