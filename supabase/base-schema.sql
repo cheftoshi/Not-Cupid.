@@ -200,9 +200,9 @@ CREATE TABLE public.users (
     attach_avoidance integer,
     attach_style text,
     values_profile jsonb,
-    CONSTRAINT users_gender_check CHECK ((gender = ANY (ARRAY['m'::text, 'f'::text]))),
+    CONSTRAINT users_gender_check CHECK ((gender = ANY (ARRAY['m'::text, 'f'::text, 'nb'::text, 'o'::text, 'b'::text]))),
     CONSTRAINT users_relationship_style_check CHECK (((relationship_style IS NULL) OR (relationship_style = ANY (ARRAY['marriage_track'::text, 'dink'::text, 'enm_poly'::text, 'casual'::text, 'open'::text])))),
-    CONSTRAINT users_seeking_check CHECK ((seeking = ANY (ARRAY['m'::text, 'f'::text]))),
+    CONSTRAINT users_seeking_check CHECK ((seeking = ANY (ARRAY['m'::text, 'f'::text, 'b'::text, 'both'::text]))),
     CONSTRAINT users_status_check CHECK ((status = ANY (ARRAY['waiting'::text, 'matched'::text, 'expired'::text])))
 );
 

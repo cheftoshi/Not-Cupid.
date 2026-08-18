@@ -98,6 +98,38 @@ export async function GET(req: NextRequest) {
     } catch { /* additive migration may still be rolling out */ }
     const experienceByKey = new Map(experienceRows.map((row: any) => [`${row.event_name}:${row.metric_name || ''}`, row]))
     const interaction = (name: string) => Number(experienceByKey.get(`${name}:`)?.total ?? 0)
+    let recentClientErrors: any[] = []
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('app_client_events')
+        .select('path, device_class, display_mode, session_id, metadata, created_at')
+        .eq('event_name', 'client_error')
+        .gte('created_at', oneDayAgo)
+        .order('created_at', { ascending: false })
+        .limit(250)
+      if (!error) recentClientErrors = data ?? []
+    } catch { /* diagnostics remain optional during a rolling migration */ }
+    const errorGroupMap = new Map<string, any>()
+    for (const row of recentClientErrors) {
+      const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {}
+      const fingerprint = typeof metadata.fingerprint === 'string' ? metadata.fingerprint : 'legacy'
+      const code = typeof metadata.errorCode === 'string' ? metadata.errorCode : 'unclassified'
+      const source = typeof metadata.errorSource === 'string' ? metadata.errorSource : 'unknown'
+      const path = row.path || 'unknown'
+      const key = `${fingerprint}:${code}:${source}:${path}`
+      const current = errorGroupMap.get(key) || {
+        fingerprint, code, source, path, count: 0, phone: 0, installedPwa: 0,
+        release: typeof metadata.release === 'string' ? metadata.release : 'unknown',
+        lastSeen: row.created_at,
+      }
+      current.count += 1
+      if (row.device_class === 'phone') current.phone += 1
+      if (row.display_mode === 'standalone') current.installedPwa += 1
+      errorGroupMap.set(key, current)
+    }
+    const recentErrorGroups = Array.from(errorGroupMap.values())
+      .sort((a, b) => b.count - a.count || String(b.lastSeen).localeCompare(String(a.lastSeen)))
+      .slice(0, 6)
     const vital = (name: string) => {
       const row = experienceByKey.get(`web_vital:${name}`)
       return row ? Number(Number(row.p75_metric_value ?? 0).toFixed(name === 'CLS' ? 3 : 0)) : null
@@ -126,6 +158,8 @@ export async function GET(req: NextRequest) {
         inpP75Ms: vital('INP'),
         clsP75: vital('CLS'),
         clientErrors: interaction('client_error'),
+        clientErrorSessions: new Set(recentClientErrors.map((row: any) => row.session_id).filter(Boolean)).size,
+        recentErrorGroups,
       },
     }
     // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):

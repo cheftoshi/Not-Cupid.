@@ -48,12 +48,12 @@ function trackReactivation(action: string) {
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
     } else {
-      fetch('/api/track', {
+      void fetch('/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
         keepalive: true,
-      });
+      }).catch(() => {});
     }
   } catch {
     // The return flow must never depend on analytics.

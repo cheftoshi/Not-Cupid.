@@ -294,11 +294,15 @@ export default function ChatRoom({
   async function pickVibe(activityId: string, selected: boolean) {
     setVibePending(activityId);
     try {
-      await fetch(`/api/match/${matchId}/date-vibes/swipe`, {
+      const response = await fetch(`/api/match/${matchId}/date-vibes/swipe`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activityId, decision: selected ? 'clear' : 'yes' }),
       });
+      if (!response.ok) throw new Error('date-vibe-save-failed');
       await loadVibes();
+    } catch {
+      setVibesError(true);
+      toast('could not save that date idea — try again', 'error');
     } finally {
       setVibePending(null);
     }

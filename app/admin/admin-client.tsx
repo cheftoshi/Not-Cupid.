@@ -503,7 +503,20 @@ export default function AdminClient() {
                       <span className={s.chip}>INP p75 <b>{data.appExperience.performance.inpP75Ms ?? '—'}ms</b></span>
                       <span className={s.chip}>CLS p75 <b>{data.appExperience.performance.clsP75 ?? '—'}</b></span>
                       <span className={`${s.chip} ${data.appExperience.performance.clientErrors ? s.chipRed : ''}`}>Client errors <b>{data.appExperience.performance.clientErrors}</b></span>
+                      <span className={`${s.chip} ${data.appExperience.performance.clientErrorSessions ? s.chipRed : ''}`}>Affected sessions <b>{data.appExperience.performance.clientErrorSessions ?? 0}</b></span>
                     </div>
+                    {data.appExperience.performance.recentErrorGroups?.length > 0 && (
+                      <div style={{ marginTop: '0.7rem' }}>
+                        <p className={s.note} style={{ marginBottom: '0.4rem' }}>PRIVACY-SAFE ERROR GROUPS · PATH + CATEGORY, NO RAW MESSAGE OR STACK</p>
+                        <div className={s.chips}>
+                          {data.appExperience.performance.recentErrorGroups.map((group: any) => (
+                            <span key={`${group.fingerprint}-${group.path}-${group.code}`} className={`${s.chip} ${s.chipRed}`}>
+                              {group.path} · {group.code} <b>{group.count}</b>{group.phone ? ` · ${group.phone} phone` : ''}{group.installedPwa ? ` · ${group.installedPwa} PWA` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
                 <p className={s.note} style={{ marginTop: '0.75rem', lineHeight: 1.6 }}>

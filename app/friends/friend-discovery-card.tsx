@@ -65,6 +65,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
         setData(next);
         if (!selected && next.selected) setSelected(next.selected);
       }
+    } catch {
+      // Keep the last good discovery board; a later visit/retry loads it again.
     } finally { setLoading(false); }
   }, [selected]);
 
@@ -90,7 +92,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       setNote('');
       toast(`you’re down for ${friendActivity(selected).label} — routing it now 🤝`, 'success');
       await load(selected);
-    } finally { setBusy(false); }
+    } catch { toast('could not post that signal — check your connection', 'error'); }
+    finally { setBusy(false); }
   }
 
   async function closeIntent() {
@@ -102,7 +105,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
         body: JSON.stringify({ action: 'close_intent', id: data.myIntent.id }),
       });
       await load(selected);
-    } finally { setBusy(false); }
+    } catch { toast('could not close that signal — check your connection', 'error'); }
+    finally { setBusy(false); }
   }
 
   function openTravel() {
@@ -127,7 +131,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       if (!response.ok) { toast(body.error || 'could not save travel mode', 'error'); return; }
       toast(`trip saved — ${body.label || 'your destination'} is on deck ✈️`, 'success');
       window.location.reload();
-    } finally { setTravelBusy(false); }
+    } catch { toast('could not save travel mode — check your connection', 'error'); }
+    finally { setTravelBusy(false); }
   }
 
   async function cancelTravel() {
@@ -143,7 +148,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       if (!response.ok) { toast(body.error || 'could not cancel that trip', 'error'); return; }
       toast('travel mode off — back to your home Friend Line', 'success');
       window.location.reload();
-    } finally { setTravelBusy(false); }
+    } catch { toast('could not cancel that trip — check your connection', 'error'); }
+    finally { setTravelBusy(false); }
   }
 
   async function joinIntent(route: any) {
@@ -158,7 +164,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       if (!response.ok) { toast(body.error || 'could not join that signal', 'error'); return; }
       toast(body.activityId ? 'you’re down too — a forming plan is live on the Scene' : `you’re down too — ${route.authorName} got the nudge`, 'success');
       await load(selected);
-    } finally { setBusy(false); }
+    } catch { toast('could not join that signal — check your connection', 'error'); }
+    finally { setBusy(false); }
   }
 
   async function joinClub(route: any) {
@@ -172,7 +179,8 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       if (!response.ok) { toast(body.error || 'could not join that club', 'error'); return; }
       toast(body.status === 'member' ? 'you’re in — the club chat is ready 🎉' : 'request sent to the organizer', 'success');
       await load(selected);
-    } finally { setBusy(false); }
+    } catch { toast('could not join that club — check your connection', 'error'); }
+    finally { setBusy(false); }
   }
 
   function openCommunity(route: any) {

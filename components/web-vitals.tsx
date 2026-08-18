@@ -30,8 +30,8 @@ export default function WebVitals() {
         dedupeKey: `web-vital:${metric.id}:${metric.name}`,
         ...context(),
       });
-      if (navigator.sendBeacon) navigator.sendBeacon('/api/performance', new Blob([payload], { type: 'application/json' }));
-      else void fetch('/api/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true });
+      const beaconed = navigator.sendBeacon?.('/api/performance', new Blob([payload], { type: 'application/json' })) === true;
+      if (!beaconed) void fetch('/api/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
     } catch { /* performance reporting is best-effort */ }
   });
   return null;

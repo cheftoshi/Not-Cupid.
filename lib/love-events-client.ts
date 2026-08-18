@@ -54,7 +54,7 @@ export function trackLoveEvent(
         headers: { 'Content-Type': 'application/json' },
         body: payload,
         keepalive: true,
-      });
+      }).catch(() => {});
     }
   } catch {
     // Measurement must never interrupt the interaction it describes.

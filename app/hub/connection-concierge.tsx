@@ -122,7 +122,7 @@ export default function ConnectionConcierge({
       keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recommendationId: recommendation.recommendationId, outcome }),
-    });
+    }).catch(() => {});
   }
 
   function dismiss(messageId: string, recommendation: ConciergeRecommendation) {

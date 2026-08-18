@@ -312,17 +312,33 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
 
   async function respond(accept: boolean) {
     setBusy(true); setErr('');
-    const r = await fetch('/api/raffle/respond', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accept }) });
-    if (r.ok) window.location.reload(); else { setBusy(false); setErr('try again'); }
+    try {
+      const r = await fetch('/api/raffle/respond', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accept }) });
+      if (r.ok) window.location.reload();
+      else {
+        const d = await r.json().catch(() => ({}));
+        setErr(d.error || 'could not save your choice — try again');
+      }
+    } catch { setErr('could not save your choice — check your connection'); }
+    finally { setBusy(false); }
   }
   async function withdraw() {
     if (!window.confirm('Withdraw from this Dating Experiment round? Any optional experiment video will also be deleted.')) return;
     setBusy(true); setErr('');
-    const r = await fetch('/api/raffle/withdraw', { method: 'POST' });
-    if (r.ok) window.location.reload();
-    else { const d = await r.json().catch(() => ({})); setErr(d.error || 'could not withdraw'); setBusy(false); }
+    try {
+      const r = await fetch('/api/raffle/withdraw', { method: 'POST' });
+      if (r.ok) window.location.reload();
+      else { const d = await r.json().catch(() => ({})); setErr(d.error || 'could not withdraw'); }
+    } catch { setErr('could not withdraw — check your connection'); }
+    finally { setBusy(false); }
   }
-  async function enablePush() { const ok = await subscribeToPush(); setPushOn(ok); if (!ok) setErr('couldn’t enable — on iPhone, install the app first'); }
+  async function enablePush() {
+    try {
+      const ok = await subscribeToPush();
+      setPushOn(ok);
+      if (!ok) setErr('couldn’t enable — on iPhone, install the app first');
+    } catch { setErr('couldn’t enable notifications — try again'); }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
@@ -701,17 +717,19 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
       accept: decisions[offer.id].accept === true,
       favorite: decisions[offer.id].favorite === true,
     }));
-    const response = await fetch('/api/raffle/respond', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decisions: payload }),
-    });
-    if (response.ok) window.location.reload();
-    else {
-      const data = await response.json().catch(() => ({}));
-      setErr(data.error || 'could not save your private choices');
-      setBusy(false);
-    }
+    try {
+      const response = await fetch('/api/raffle/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisions: payload }),
+      });
+      if (response.ok) window.location.reload();
+      else {
+        const data = await response.json().catch(() => ({}));
+        setErr(data.error || 'could not save your private choices');
+      }
+    } catch { setErr('could not save your private choices — check your connection'); }
+    finally { setBusy(false); }
   }
 
   if (locked) {

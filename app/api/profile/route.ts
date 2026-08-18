@@ -188,7 +188,13 @@ export async function PUT(req: NextRequest) {
     .single();
 
   if (error) {
-    console.error('Profile update failed:', error);
+    // PostgREST constraint details can contain the entire rejected row. Keep
+    // production logs actionable without copying profile text or other PII.
+    console.error('Profile update failed:', {
+      code: error.code,
+      message: error.message,
+      hint: error.hint,
+    });
     return NextResponse.json({ error: 'Profile update failed' }, { status: 500 });
   }
 

@@ -135,7 +135,7 @@ export default function RosterPicker({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ product: 'love_connection', surface: 'love_roster_extra' }),
-    });
+    }).catch(() => {});
   }, [paywallCandidate]);
 
   async function load() {
@@ -168,8 +168,8 @@ export default function RosterPicker({
         deviceClass: window.innerWidth < 600 ? 'phone' : window.innerWidth < 1024 ? 'tablet' : 'desktop',
         displayMode: (navigator as Navigator & { standalone?: boolean }).standalone === true || window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
       });
-      if (navigator.sendBeacon) navigator.sendBeacon('/api/performance', new Blob([timingPayload], { type: 'application/json' }));
-      else void fetch('/api/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: timingPayload, keepalive: true });
+      const beaconed = navigator.sendBeacon?.('/api/performance', new Blob([timingPayload], { type: 'application/json' })) === true;
+      if (!beaconed) void fetch('/api/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: timingPayload, keepalive: true }).catch(() => {});
     } catch {
       setRoster([]);
       setLoadError(true);
@@ -633,7 +633,7 @@ export default function RosterPicker({
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ product: 'love_connection', surface: 'love_compatibility_read' }),
-                        });
+                        }).catch(() => {});
                       }
                     }}
                   >AI + HEXACO {readUnlocked ? '· open' : '· $0.99'}</button>

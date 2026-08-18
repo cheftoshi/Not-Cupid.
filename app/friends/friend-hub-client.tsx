@@ -940,20 +940,26 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
   const [rosterLoaded, setRosterLoaded] = useState(false); // first roster fetch landed (gates the AI move)
   const loadMatches = useCallback(async () => {
-    const r = await fetch('/api/friend/roster');
-    if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); setCooledUntil(d.friendCooled ? (d.cooledUntil || '') : null); }
-    setRosterLoaded(true);
+    try {
+      const r = await fetch('/api/friend/roster');
+      if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); setCooledUntil(d.friendCooled ? (d.cooledUntil || '') : null); }
+    } catch { /* a transient refresh failure keeps the last good roster */ }
+    finally { setRosterLoaded(true); }
   }, []);
   const loadChat = useCallback(async (markRead = false) => {
-    const r = await fetch(`/api/friend/messages${markRead ? '?read=1' : ''}`); if (r.ok) setChat(await r.json());
+    try { const r = await fetch(`/api/friend/messages${markRead ? '?read=1' : ''}`); if (r.ok) setChat(await r.json()); }
+    catch { /* the next poll retries without breaking the page */ }
   }, []);
   const loadPulse = useCallback(async () => {
-    const r = await fetch('/api/friend/city-pulse'); if (r.ok) setPulse(await r.json());
+    try { const r = await fetch('/api/friend/city-pulse'); if (r.ok) setPulse(await r.json()); }
+    catch { /* preserve the last good city pulse */ }
   }, []);
   const loadActs = useCallback(async () => {
-    const r = await fetch('/api/friend/activities'); // fetch all; category filtering is client-side now (mains group several)
-    if (r.ok) setActs((await r.json()).activities || []);
-    setActsLoaded(true);
+    try {
+      const r = await fetch('/api/friend/activities'); // fetch all; category filtering is client-side now (mains group several)
+      if (r.ok) setActs((await r.json()).activities || []);
+    } catch { /* preserve the last good Scene */ }
+    finally { setActsLoaded(true); }
   }, []);
 
   // ── City Pulse communities: user-run clubs + submitted community links ──
@@ -1198,10 +1204,13 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   async function choosePack() {
     if (!termsOk) return;
     setBusy(true);
-    await fetch('/api/friend/accept', { method: 'POST' });
-    await loadMatches(); await loadChat();
-    setBusy(false);
-    setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    try {
+      const response = await fetch('/api/friend/accept', { method: 'POST' });
+      if (!response.ok) throw new Error('friend-pack-accept-failed');
+      await loadMatches(); await loadChat();
+      setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    } catch { toast('could not open this pack — check your connection and try again', 'error'); }
+    finally { setBusy(false); }
   }
   // Independent 1:1 connection with one person in the pack. First pick → they get
   // notified; if they'd already picked you, this accept connects you both.
@@ -1209,9 +1218,15 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     buzz();
     if (!termsOk) return;
     setBusy(true);
-    await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
-    await loadMatches(); await loadChat();
-    setBusy(false);
+    try {
+      const response = await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.error || 'friend-connect-failed');
+      }
+      await loadMatches(); await loadChat();
+    } catch (error) { toast(error instanceof Error && error.message !== 'friend-connect-failed' ? error.message : 'could not save that connection — try again', 'error'); }
+    finally { setBusy(false); }
   }
   // Vet who's behind a post/event — open their friend card. If they're already a
   // match/connection, show the real card; otherwise build it from the post's author data.
@@ -1249,10 +1264,13 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     });
     if (!ok) return;
     setBusy(true);
-    await fetch('/api/friend/leave', { method: 'POST' });
-    setChatOpen(false);
-    await loadMatches(); await loadChat();
-    setBusy(false);
+    try {
+      const response = await fetch('/api/friend/leave', { method: 'POST' });
+      if (!response.ok) throw new Error('friend-leave-failed');
+      setChatOpen(false);
+      await loadMatches(); await loadChat();
+    } catch { toast('could not leave this crew — try again', 'error'); }
+    finally { setBusy(false); }
   }
   async function resetFriendScene() {
     if (rewipesLeft <= 0) return;
@@ -1263,29 +1281,40 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     });
     if (!ok) return;
     setBusy(true);
-    const r = await fetch('/api/friend/reset', { method: 'POST' });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      toast(d.error || 'could not restart your friend scene — try again', 'error');
-      setBusy(false);
-      return;
-    }
-    setRewipesUsed(MAX_REWIPES - (typeof d.remaining === 'number' ? d.remaining : Math.max(0, rewipesLeft - 1)));
-    setChatOpen(false);
-    await loadMatches(); await loadChat(); await loadPulse(); await loadActs();
-    setBusy(false);
+    try {
+      const r = await fetch('/api/friend/reset', { method: 'POST' });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        toast(d.error || 'could not restart your friend scene — try again', 'error');
+        return;
+      }
+      setRewipesUsed(MAX_REWIPES - (typeof d.remaining === 'number' ? d.remaining : Math.max(0, rewipesLeft - 1)));
+      setChatOpen(false);
+      await loadMatches(); await loadChat(); await loadPulse(); await loadActs();
+    } catch { toast('could not restart your friend scene — check your connection', 'error'); }
+    finally { setBusy(false); }
   }
   // Drop a single 1:1 connection (leaves the shared chat if it was your last tie there).
   async function dropConnection(otherId: string) {
     setBusy(true);
-    await fetch('/api/friend/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId }) });
-    await loadMatches(); await loadChat();
-    setBusy(false); setCardMember(null); setConfirmDrop(false);
+    try {
+      const response = await fetch('/api/friend/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId }) });
+      if (!response.ok) throw new Error('friend-disconnect-failed');
+      await loadMatches(); await loadChat();
+      setCardMember(null); setConfirmDrop(false);
+    } catch { toast('could not close that connection — try again', 'error'); }
+    finally { setBusy(false); }
   }
   async function send() {
     const body = msg.trim(); if (!body) return; setMsg('');
-    await fetch('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
-    await loadChat();
+    try {
+      const response = await fetch('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
+      if (!response.ok) throw new Error('friend-message-failed');
+      await loadChat();
+    } catch {
+      setMsg(body);
+      toast('message not sent — check your connection and try again', 'error');
+    }
   }
   // ── Private 1:1 DM with a connection ──
   const loadDm = useCallback(async (otherId: string): Promise<boolean> => {
@@ -1419,40 +1448,48 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       capacity: newAct.kind === 'event' && newAct.capacity ? parseInt(newAct.capacity) : undefined,
       dating_friendly: newAct.kind === 'event' ? newAct.datingFriendly : undefined,
     };
-    const res = await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!res.ok) {
-      // Draft-safe: the wizard stays open with everything filled — nothing is lost.
-      const d = await res.json().catch(() => ({}));
-      toast(d?.error || 'couldn’t post that — your draft is safe, try again', 'error');
-      setBusy(false);
-      return;
-    }
-    setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
-    setComposerOpen(false); setComposerStep(1);
-    try { localStorage.removeItem('nc-composer-draft'); } catch { /* ignore */ }
-    buzz();
-    toast(newAct.kind === 'event' ? 'your plan is on the scene 🎟️' : 'posted to the scene ✨', 'success');
-    await loadActs(); await loadPulse(); setBusy(false);
+    try {
+      const res = await fetch('/api/friend/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) {
+        // Draft-safe: the wizard stays open with everything filled — nothing is lost.
+        const d = await res.json().catch(() => ({}));
+        toast(d?.error || 'couldn’t post that — your draft is safe, try again', 'error');
+        return;
+      }
+      setNewAct({ title: '', category: 'hang', happens_at: '', kind: newAct.kind, area: newAct.area, location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
+      setComposerOpen(false); setComposerStep(1);
+      try { localStorage.removeItem('nc-composer-draft'); } catch { /* ignore */ }
+      buzz();
+      toast(newAct.kind === 'event' ? 'your plan is on the scene 🎟️' : 'posted to the scene ✨', 'success');
+      await loadActs(); await loadPulse();
+    } catch { toast('couldn’t post that — your draft is safe, check your connection', 'error'); }
+    finally { setBusy(false); }
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
     buzz();
-    const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(response ? { response } : {}),
-    });
-    if (r.ok) {
-      const d = await r.json();
-      setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
-    } else {
-      const d = await r.json().catch(() => ({} as any));
-      if (d?.full) { toast('this plan is full — say “maybe” in case a spot opens', 'error'); await loadActs(); }
-    }
+    try {
+      const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(response ? { response } : {}),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
+      } else {
+        const d = await r.json().catch(() => ({} as any));
+        if (d?.full) { toast('this plan is full — say “maybe” in case a spot opens', 'error'); await loadActs(); }
+        else toast(d?.error || 'could not update that plan — try again', 'error');
+      }
+    } catch { toast('could not update that plan — check your connection', 'error'); }
   }
   async function deleteAct(id: string) {
     const ok = await confirmDialog({ title: 'delete this post?', body: 'It disappears for everyone — RSVPs and comments go with it.', confirmLabel: 'delete', danger: true });
     if (!ok) return;
-    const r = await fetch(`/api/friend/activities/${id}`, { method: 'DELETE' });
-    if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); toast('post deleted', 'success'); }
+    try {
+      const r = await fetch(`/api/friend/activities/${id}`, { method: 'DELETE' });
+      if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); toast('post deleted', 'success'); }
+      else toast('could not delete that post — try again', 'error');
+    } catch { toast('could not delete that post — check your connection', 'error'); }
   }
 
   const clubUnreadTotal = clubs.reduce((sum, club) => sum + Number(club.unreadCount || 0), 0);

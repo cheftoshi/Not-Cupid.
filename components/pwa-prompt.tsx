@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { isNativeShell } from '@/lib/native-platform';
 import { trackLoveEvent } from '@/lib/love-events-client';
+import { subscribeToPush } from '@/lib/push-client';
 
 // PWA niceties — a FLOATING prompt mounted ONCE in the root layout, so the
 // "install the app" tag shows on EVERY page (not just dashboard/friends):
@@ -45,32 +46,6 @@ function getInstallMode(): false | 'native' | 'ios' | 'fallback' {
   if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
   if (/android|mobile/i.test(ua)) return 'fallback';
   return false;
-}
-
-function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(b64);
-  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
-}
-
-async function subscribeToPush(): Promise<boolean> {
-  const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  if (!vapid) return false;
-  const reg = await navigator.serviceWorker.ready;
-  let sub = await reg.pushManager.getSubscription();
-  if (!sub) {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapid) as BufferSource,
-    });
-  }
-  const res = await fetch('/api/push/subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(sub.toJSON()),
-  });
-  return res.ok;
 }
 
 export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
@@ -144,11 +119,12 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   async function enablePush() {
     setBusy(true);
     try {
-      const perm = await Notification.requestPermission();
-      if (perm === 'granted') {
-        await subscribeToPush();
-        trackLoveEvent('push_enabled');
-      }
+      const enabled = await subscribeToPush();
+      if (enabled) trackLoveEvent('push_enabled');
+      setShowPush(false);
+    } catch {
+      // The shared helper already fails closed; keep this guard so a browser
+      // permission implementation can never surface an unhandled rejection.
       setShowPush(false);
     } finally {
       setBusy(false);
@@ -157,9 +133,11 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
 
   async function install() {
     if (!installEvt) return;
-    installEvt.prompt();
-    await installEvt.userChoice.catch(() => {});
-    setShowInstall(false);
+    try {
+      await installEvt.prompt();
+      await installEvt.userChoice.catch(() => {});
+    } catch { /* browser dismissed or invalidated the install event */ }
+    finally { setShowInstall(false); }
   }
 
   function dismiss() {

@@ -123,8 +123,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       if (relaunchMode) {
         const payload = JSON.stringify({ path: '/reactivation/profile_saved', ref: null, anonId: '' });
         try {
-          if (navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
-          else fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true });
+          const beaconed = navigator.sendBeacon?.('/api/track', new Blob([payload], { type: 'application/json' })) === true;
+          if (!beaconed) void fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
         } catch { /* saving the profile matters more than analytics */ }
       }
       if (onSaved) {
