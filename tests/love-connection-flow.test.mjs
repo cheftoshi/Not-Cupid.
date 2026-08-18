@@ -39,13 +39,36 @@ test('every Love roster option has a free, phone-safe profile preview before cho
 test('a pick notifies the other person and mutual acceptance notifies both', () => {
   const actions = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
   assert.match(actions, /chose you 👀/);
-  assert.match(actions, /Say yes back to make it mutual and open the chat/);
+  assert.match(actions, /Review their profile, then choose Yes or Pass/);
   assert.match(actions, /sendInterestNudge/);
   assert.match(actions, /sendItsAMatchEmails/);
   assert.match(actions, /idempotencyKey: `match-interest-/);
   assert.match(actions, /idempotencyKey: `mutual-match-/);
-  assert.match(actions, /Promise\.all\(\[\s*sendPushToUser\(match\.user_1_id/);
-  assert.match(actions, /sendPushToUser\(match\.user_2_id/);
+  assert.match(actions, /\[match\.user_1_id, match\.user_2_id\]\.map/);
+  assert.match(actions, /claimLoveNotificationEvent/);
+  assert.match(actions, /love_event_id/);
+});
+
+test('Love concierge records and deduplicates immediate, 24h, final, decision, and expiry events', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260818174000_love_concierge_event_ledger.sql', import.meta.url), 'utf8');
+  const ledger = readFileSync(new URL('../lib/love-notification-ledger.ts', import.meta.url), 'utf8');
+  const cron = readFileSync(new URL('../app/api/cron/expiring-soon/route.ts', import.meta.url), 'utf8');
+  const dashboard = readFileSync(new URL('../app/dashboard/love-connections.tsx', import.meta.url), 'utf8');
+  const stats = readFileSync(new URL('../app/api/admin-stats/route.ts', import.meta.url), 'utf8');
+  assert.match(migration, /create table if not exists public\.love_notification_events/);
+  assert.match(migration, /unique \(match_id, recipient_id, notification_type, channel\)/);
+  assert.match(migration, /claim_love_notification_event/);
+  assert.match(ledger, /recordLoveDecision/);
+  assert.match(ledger, /recordLoveExpiry/);
+  assert.match(cron, /decision_24h/);
+  assert.match(cron, /decision_final/);
+  assert.match(cron, /You have a Love Line choice waiting/);
+  assert.match(cron, /Your Love Line choice closes soon/);
+  assert.match(cron, /loveDashboardUrl/);
+  assert.match(dashboard, /they chose you · decide yes or pass/);
+  assert.match(dashboard, /review & decide/);
+  assert.match(stats, /loveFunnel/);
+  assert.match(stats, /peopleNeedToAnswer/);
 });
 
 test('roster rotation email retries are idempotent', () => {
@@ -88,6 +111,10 @@ test('Love dashboard keeps pending and mutual people in one filterable connectio
   assert.match(inbox, /<EndMatchDialog/);
   assert.match(inbox, /visible\.map\(\(connection\)/);
   assert.doesNotMatch(inbox, /LoveUnlockOffer|unlockItems|paywall/);
+  const room = readFileSync(new URL('../app/match/[id]/chat-room.tsx', import.meta.url), 'utf8');
+  assert.match(room, /Do you want to connect with/);
+  assert.match(room, /answerIncomingChoice\('yes'\)/);
+  assert.match(room, /answerIncomingChoice\('pass'\)/);
 });
 
 test('the full compatibility profile is included after mutual connection', () => {

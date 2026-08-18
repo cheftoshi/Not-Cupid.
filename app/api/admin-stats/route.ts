@@ -35,11 +35,12 @@ export async function GET(req: NextRequest) {
     const nowMs = Date.now()
     const oneDayAgo = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString()
     const sevenDaysAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const twelveDaysAgo = new Date(nowMs - 12 * 24 * 60 * 60 * 1000).toISOString()
     const thirtyDaysAgo = new Date(nowMs - 30 * 24 * 60 * 60 * 1000).toISOString()
 
     // These datasets all exceed (or can soon exceed) Supabase's 1,000-row Data
     // API ceiling. Stable range pagination keeps every admin total exact.
-    const [users, rawMatches, msgRows, feedbackRows, rosterExposures, recentSessions] = await Promise.all([
+    const [users, rawMatches, msgRows, feedbackRows, rosterExposures, recentSessions, loveNotificationEvents] = await Promise.all([
       fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('users')
         .select('*')
@@ -74,9 +75,15 @@ export async function GET(req: NextRequest) {
       fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('sessions')
         .select('user_id,last_used_at')
-        .gte('last_used_at', sevenDaysAgo)
+        .gte('last_used_at', twelveDaysAgo)
         .order('last_used_at', { ascending: true })
         .order('user_id', { ascending: true })
+        .range(from, to)),
+      fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('love_notification_events')
+        .select('id,match_id,recipient_id,notification_type,channel,status,claimed_at,sent_at,delivered_at,opened_at,clicked_at,responded_at,response')
+        .order('claimed_at', { ascending: true })
+        .order('id', { ascending: true })
         .range(from, to)),
     ])
     const realUserIds = new Set(users.map((user: any) => user.id))
@@ -683,6 +690,105 @@ export async function GET(req: NextRequest) {
       ],
     }
 
+    // ───────────── Love concierge decision funnel ─────────────
+    // This is the operational view: inventory, unanswered choices, reminder
+    // reach, and the point where a notification turned into a decision.
+    const closedStatuses = new Set(['ended', 'passed', 'expired'])
+    const liveLoveMatches = matches.filter((match: any) =>
+      !match.ended_at
+      && !closedStatuses.has(match.status)
+      && ((match.user_1_accepted && match.user_2_accepted)
+        || !match.expires_at
+        || new Date(match.expires_at).getTime() >= nowMs)
+    )
+    const oneSidedMatches = liveLoveMatches.filter((match: any) =>
+      Boolean(match.user_1_accepted) !== Boolean(match.user_2_accepted)
+    )
+    const needsAnswerIds = new Set<string>()
+    const awaitingAnswerIds = new Set<string>()
+    const unanswered24hIds = new Set<string>()
+    const unanswered48hIds = new Set<string>()
+    for (const match of oneSidedMatches) {
+      const recipientId = match.user_1_accepted ? match.user_2_id : match.user_1_id
+      const chooserId = match.user_1_accepted ? match.user_1_id : match.user_2_id
+      needsAnswerIds.add(recipientId)
+      awaitingAnswerIds.add(chooserId)
+      const ageMs = nowMs - new Date(match.created_at).getTime()
+      if (ageMs >= 24 * 60 * 60 * 1000) unanswered24hIds.add(recipientId)
+      if (ageMs >= 48 * 60 * 60 * 1000) unanswered48hIds.add(recipientId)
+    }
+    const active12dIds = new Set(recentSessions
+      .filter((session: any) => session.last_used_at >= twelveDaysAgo && realUserIds.has(session.user_id))
+      .map((session: any) => session.user_id))
+    const activePoolIds = new Set(users
+      .filter((user: any) => active12dIds.has(user.id)
+        && user.pool_active === true
+        && !user.deleted_at
+        && !user.is_blocked
+        && !user.matching_disabled_at
+        && !!user.archetype)
+      .map((user: any) => user.id))
+    const liveParticipantIds = new Set<string>()
+    liveLoveMatches.forEach((match: any) => {
+      liveParticipantIds.add(match.user_1_id)
+      liveParticipantIds.add(match.user_2_id)
+    })
+    const waitingWithoutConnection = Array.from(activePoolIds).filter((id) => !liveParticipantIds.has(id)).length
+    const freshRosterIds = new Set(rosterExposures
+      .filter((exposure: any) => exposure.shown_at >= oneDayAgo && activePoolIds.has(exposure.user_id))
+      .map((exposure: any) => exposure.user_id))
+    const recentPickerIds = new Set(rosterExposures
+      .filter((exposure: any) => exposure.picked_at && exposure.picked_at >= sevenDaysAgo && activePoolIds.has(exposure.user_id))
+      .map((exposure: any) => exposure.user_id))
+    const mutualMatches = liveLoveMatches.filter((match: any) => match.user_1_accepted && match.user_2_accepted)
+    const messagedMatchIds = new Set(msgRows
+      .filter((message: any) => realUserIds.has(message.sender_id))
+      .map((message: any) => message.match_id))
+    const sentStatuses = new Set(['sent', 'delivered', 'opened', 'clicked'])
+    const emailEvents = loveNotificationEvents.filter((event: any) => event.channel === 'email')
+    const eventCount = (type: string, statuses?: Set<string>) => emailEvents.filter((event: any) =>
+      event.notification_type === type && (!statuses || statuses.has(event.status))
+    ).length
+    const responsePairs = new Set(loveNotificationEvents
+      .filter((event: any) => event.responded_at && event.response)
+      .map((event: any) => `${event.match_id}:${event.recipient_id}:${event.response}`))
+    const responseCount = (response: string) => Array.from(responsePairs).filter((key) => key.endsWith(`:${response}`)).length
+    const loveFunnel = {
+      measuredAt: new Date(nowMs).toISOString(),
+      active12d: active12dIds.size,
+      activePool: activePoolIds.size,
+      freshRosters24h: freshRosterIds.size,
+      activePoolWithoutLiveConnection: waitingWithoutConnection,
+      activePoolWithoutPick7d: Array.from(activePoolIds).filter((id) => !recentPickerIds.has(id)).length,
+      liveConnections: liveLoveMatches.length,
+      oneSidedConnections: oneSidedMatches.length,
+      mutualConnections: mutualMatches.length,
+      mutualWithoutMessage: mutualMatches.filter((match: any) => !messagedMatchIds.has(match.id)).length,
+      peopleNeedToAnswer: needsAnswerIds.size,
+      peopleAwaitingAnswer: awaitingAnswerIds.size,
+      unanswered24h: unanswered24hIds.size,
+      unanswered48h: unanswered48hIds.size,
+      notifications: {
+        immediateSent: eventCount('interest_immediate', sentStatuses),
+        reminder24hSent: eventCount('decision_24h', sentStatuses),
+        finalSent: eventCount('decision_final', sentStatuses),
+        delivered: emailEvents.filter((event: any) => ['delivered', 'opened', 'clicked'].includes(event.status)).length,
+        opened: emailEvents.filter((event: any) => ['opened', 'clicked'].includes(event.status)).length,
+        clicked: emailEvents.filter((event: any) => event.status === 'clicked').length,
+        failed: emailEvents.filter((event: any) => event.status === 'failed').length,
+      },
+      decisions: {
+        accepted: responseCount('accepted'),
+        passed: responseCount('passed'),
+        expired: responseCount('expired'),
+      },
+      notes: [
+        'A live connection is pending inside its 72-hour decision window or mutually accepted.',
+        'Need to answer means someone else already chose them; awaiting means they made the first choice.',
+        '24-hour and near-expiry deliveries are deduplicated by match, recipient, and channel.',
+      ],
+    }
+
     return NextResponse.json({
       stats: { totalUsers, totalMatches, totalRevenue: totalRevenue.toFixed(2), mrr: revenue.mrr, activeSubs, revenue, pendingMatches, bothAccepted, passed, passRate, waiting, matched, men, women, other },
       signupsPerDay: days,
@@ -690,6 +796,7 @@ export async function GET(req: NextRequest) {
       traffic,
       onlyInBoston,
       loveUsage,
+      loveFunnel,
       monetization,
       loveCampaign,
       eligibleReadyCampaign,

@@ -10,18 +10,31 @@ import styles from './dashboard.module.css';
 import { sameRealm } from '@/lib/realm';
 import { profileReadiness } from '@/lib/profile-readiness';
 import { LOVE_INCLUDED_PICKS, LOVE_ROSTER_OPTIONS } from '@/lib/matching-policy';
+import { markLoveNotificationOpened } from '@/lib/love-notification-ledger';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ extra_connection?: string; candidate?: string }>;
+  searchParams: Promise<{
+    extra_connection?: string;
+    candidate?: string;
+    focus?: string;
+    love_event?: string;
+  }>;
 }) {
-  const { extra_connection: extraConnection, candidate: paidCandidateId } = await searchParams;
+  const {
+    extra_connection: extraConnection,
+    candidate: paidCandidateId,
+    focus: focusMatchId,
+    love_event: loveEventId,
+  } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/dashboard');
   if (!user.archetype) redirect('/quiz');
+
+  if (loveEventId) await markLoveNotificationOpened(loveEventId, user.id);
 
   await releaseTimedOutMatches(user.id);
   const [liveMatches, { data: historyMatches }] = await Promise.all([
@@ -229,6 +242,7 @@ export default async function DashboardPage({
           <main className={styles.loveMain}>
             <LoveConnections
               includedPicks={LOVE_INCLUDED_PICKS}
+              focusMatchId={focusMatchId}
               connections={activeCards.map((card) => ({
                 matchId: card.matchId,
                 name: card.name,

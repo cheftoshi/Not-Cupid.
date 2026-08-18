@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { verifyMatchToken } from '@/lib/match-tokens'
 import { renderEmail, sendEmail } from '@/lib/email'
 import { returnLovePickEntitlement } from '@/lib/love-pick-access'
+import { recordLoveDecision } from '@/lib/love-notification-ledger'
 
 export const dynamic = 'force-dynamic'
 
@@ -136,6 +137,7 @@ export async function POST(req: NextRequest) {
       .from('matches')
       .update({ status: 'passed', ended_at: new Date().toISOString(), ended_reason: 'passed' })
       .eq('id', matchId)
+    await recordLoveDecision(matchId, userId, 'passed')
     if (!(match.user_1_accepted && match.user_2_accepted)) await returnLovePickEntitlement(matchId, userId)
 
     // Block the pair from re-matching — same as the in-app pass route. Without

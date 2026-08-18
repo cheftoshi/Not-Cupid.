@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { returnLovePickEntitlement } from '@/lib/love-pick-access';
+import { recordLoveDecision } from '@/lib/love-notification-ledger';
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,12 +26,14 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const { error } = await supabaseAdmin
     .from('matches')
     .update({
+      status: 'passed',
       ended_at: new Date().toISOString(),
       ended_reason: 'one_passed',
     })
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: 'Could not pass on match' }, { status: 500 });
+  await recordLoveDecision(id, user.id, 'passed');
   if (!(match.user_1_accepted && match.user_2_accepted)) await returnLovePickEntitlement(id, user.id);
 
   // Record in history to prevent re-match

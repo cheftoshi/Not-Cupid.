@@ -2,23 +2,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getCurrentAdmin } from '@/lib/admin';
 import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email';
-import { signMatchToken } from '@/lib/match-tokens';
 import { sendPushToUser } from '@/lib/push';
 import { isAuthorizedCronRequest } from '@/lib/request-security';
+import {
+  claimLoveNotificationEvent,
+  loveDashboardUrl,
+  markLoveNotificationResult,
+  markLoveNotificationSkipped,
+  type LoveNotificationType,
+} from '@/lib/love-notification-ledger';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
-// Window: a match enters this cron's range when its expires_at is between
-// WINDOW_MIN_HOURS and WINDOW_MAX_HOURS from now. We send a single
-// "X hours left" reminder to whichever side hasn't accepted, and
-// `expiring_reminder_sent_at` prevents double-sends.
-//
-// Cadence: on Vercel Pro this runs HOURLY (vercel.json: "0 * * * *"), so a
-// tight 3-6h window gives an accurate "~4 hours left" nudge — a match
-// passes through the band over a few hourly ticks and gets exactly one
-// reminder. (On Hobby this had to widen to ~26h with a daily run.)
-const WINDOW_MIN_HOURS = 3;
-const WINDOW_MAX_HOURS = 6;
+const HOUR = 60 * 60 * 1000;
+const FINAL_MIN_HOURS = 3;
+const FINAL_MAX_HOURS = 6;
+
+type PendingMatch = {
+  id: string;
+  user_1_id: string;
+  user_2_id: string;
+  user_1_accepted: boolean;
+  user_2_accepted: boolean;
+  expires_at: string;
+  compatibility_score: number | null;
+};
+
+type ReminderKind = 'decision_24h' | 'decision_final';
+type ReminderItem = { match: PendingMatch; recipientId: string; otherId: string };
+
+function unansweredSide(match: PendingMatch): string | null {
+  if (match.user_1_accepted && !match.user_2_accepted) return match.user_2_id;
+  if (match.user_2_accepted && !match.user_1_accepted) return match.user_1_id;
+  return null;
+}
+
+function groupItems(kind: ReminderKind, matches: PendingMatch[]): Map<string, ReminderItem[]> {
+  const grouped = new Map<string, ReminderItem[]>();
+  for (const match of matches) {
+    const recipientId = unansweredSide(match);
+    if (!recipientId) continue;
+    const otherId = recipientId === match.user_1_id ? match.user_2_id : match.user_1_id;
+    const key = `${kind}:${recipientId}`;
+    grouped.set(key, [...(grouped.get(key) || []), { match, recipientId, otherId }]);
+  }
+  return grouped;
+}
+
+function namesLine(names: string[]): string {
+  if (names.length === 1) return `<strong style="color:${C.ink};">${escapeHtml(names[0])}</strong> chose you.`;
+  return `<strong style="color:${C.ink};">${names.length} people</strong> chose you: ${names.map(escapeHtml).join(', ')}.`;
+}
 
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCronRequest(req)) {
@@ -31,113 +66,170 @@ export async function GET(req: NextRequest) {
 
   try {
     const now = Date.now();
-    const lowerIso = new Date(now + WINDOW_MIN_HOURS * 3600_000).toISOString();
-    const upperIso = new Date(now + WINDOW_MAX_HOURS * 3600_000).toISOString();
+    const nowIso = new Date(now).toISOString();
+    const twentyFourHoursAgo = new Date(now - 24 * HOUR).toISOString();
+    const finalLowerIso = new Date(now + FINAL_MIN_HOURS * HOUR).toISOString();
+    const finalUpperIso = new Date(now + FINAL_MAX_HOURS * HOUR).toISOString();
 
-    // Find pending matches with expires_at in the window and no reminder sent.
-    const { data: matches, error } = await supabaseAdmin
-      .from('matches')
-      .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, compatibility_score')
-      .eq('status', 'pending')
-      .is('expiring_reminder_sent_at', null)
-      .gte('expires_at', lowerIso)
-      .lte('expires_at', upperIso);
+    const commonCols = 'id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, compatibility_score';
+    const [{ data: dayMatches, error: dayError }, { data: finalMatches, error: finalError }] = await Promise.all([
+      supabaseAdmin
+        .from('matches')
+        .select(commonCols)
+        .eq('status', 'pending')
+        .is('ended_at', null)
+        .is('decision_reminder_sent_at', null)
+        .lte('created_at', twentyFourHoursAgo)
+        .gt('expires_at', finalUpperIso)
+        .order('created_at', { ascending: true })
+        .limit(250),
+      supabaseAdmin
+        .from('matches')
+        .select(commonCols)
+        .eq('status', 'pending')
+        .is('ended_at', null)
+        .is('expiring_reminder_sent_at', null)
+        .gte('expires_at', finalLowerIso)
+        .lte('expires_at', finalUpperIso)
+        .order('expires_at', { ascending: true })
+        .limit(250),
+    ]);
+    if (dayError) throw dayError;
+    if (finalError) throw finalError;
 
-    if (error) throw error;
+    const groups = new Map<string, ReminderItem[]>([
+      ...groupItems('decision_24h', (dayMatches || []) as PendingMatch[]),
+      ...groupItems('decision_final', (finalMatches || []) as PendingMatch[]),
+    ]);
+    const userIds = Array.from(new Set(Array.from(groups.values()).flatMap((items) =>
+      items.flatMap((item) => [item.recipientId, item.otherId])
+    )));
+    const { data: users, error: usersError } = userIds.length
+      ? await supabaseAdmin
+          .from('users')
+          .select('id, name, email, email_notifications, notifications_paused_at')
+          .in('id', userIds)
+      : { data: [], error: null };
+    if (usersError) throw usersError;
+    const byId = new Map((users || []).map((user: any) => [user.id, user]));
 
-    let sent = 0;
+    const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
+    let emailed = 0;
+    let pushed = 0;
     let skipped = 0;
     const failures: string[] = [];
 
-    for (const m of matches || []) {
-      // Determine which side(s) still need to accept.
-      const needsUser1 = !m.user_1_accepted;
-      const needsUser2 = !m.user_2_accepted;
-      const recipientIds: string[] = [];
-      if (needsUser1) recipientIds.push(m.user_1_id);
-      if (needsUser2) recipientIds.push(m.user_2_id);
-      if (recipientIds.length === 0) {
-        skipped++;
-        continue;
+    for (const [key, items] of groups) {
+      const kind = key.startsWith('decision_24h:') ? 'decision_24h' : 'decision_final';
+      const type = kind as LoveNotificationType;
+      const recipient = byId.get(items[0].recipientId);
+      const names = items.map((item) => (byId.get(item.otherId)?.name || 'your match').split(' ')[0]);
+
+      const emailEventIds = (await Promise.all(items.map((item) =>
+        claimLoveNotificationEvent({
+          matchId: item.match.id,
+          recipientId: item.recipientId,
+          type,
+          channel: 'email',
+        })
+      ))).filter((id): id is string => !!id);
+
+      const pushEventIds = (await Promise.all(items.map((item) =>
+        claimLoveNotificationEvent({
+          matchId: item.match.id,
+          recipientId: item.recipientId,
+          type,
+          channel: 'push',
+        })
+      ))).filter((id): id is string => !!id);
+
+      const firstMatchId = items[0].match.id;
+      const dashboardPath = loveDashboardUrl(firstMatchId);
+      const isFinal = kind === 'decision_final';
+      let handled = false;
+      if (emailEventIds.length > 0) {
+        if (!recipient?.email || recipient.email_notifications === false || recipient.notifications_paused_at) {
+          await markLoveNotificationSkipped(emailEventIds, 'email_unavailable_or_disabled');
+          skipped += emailEventIds.length;
+          handled = true;
+        } else {
+          const html = renderEmail({
+            preheader: isFinal
+              ? `Your Love Line choice closes soon. Choose Yes or Pass.`
+              : `You have a Love Line choice waiting. Choose Yes or Pass.`,
+            eyebrow: isFinal ? 'your choice closes soon' : 'your move',
+            headline: isFinal
+              ? `${names.length === 1 ? names[0] : 'Your choices'} won’t wait forever.`
+              : `${names.length === 1 ? names[0] : 'Your Love Line choices'} ${names.length === 1 ? 'is' : 'are'} waiting.`,
+            bodyHtml: `
+              <p style="margin:0 0 12px 0;">${namesLine(names)}</p>
+              <p style="margin:0 0 20px 0;">${isFinal
+                ? 'Review the profile and choose Yes or Pass before the window closes. Either answer is okay.'
+                : 'Review the profile and tap Yes or Pass. There’s no pressure either way; making a choice keeps the Love Line moving.'}</p>
+              ${button({ href: `${base}${dashboardPath}`, label: 'Review my Love Line →' })}
+            `,
+            recipientId: recipient.id,
+            footerNote: 'clear choices keep the Love Line moving.',
+          });
+          const result = await sendEmail({
+            to: recipient.email,
+            subject: isFinal ? 'Your Love Line choice closes soon' : 'You have a Love Line choice waiting',
+            html,
+            idempotencyKey: `love-${kind}-${recipient.id}-${items.map((item) => item.match.id).sort().join('-')}`,
+            tags: [
+              { name: 'category', value: kind },
+              { name: 'love_event_id', value: emailEventIds[0] },
+            ],
+          });
+          await markLoveNotificationResult(emailEventIds, result);
+          if (result.ok) {
+            emailed++;
+            handled = true;
+          }
+          else failures.push(`${kind}:email:${recipient.id}`);
+        }
       }
 
-      // Bulk-fetch the two users.
-      const ids = Array.from(new Set([m.user_1_id, m.user_2_id]));
-      const { data: users } = await supabaseAdmin
-        .from('users')
-        .select('id, name, email, email_notifications')
-        .in('id', ids);
-      const byId = new Map((users ?? []).map((u: any) => [u.id, u]));
-
-      const hoursLeft = Math.max(1, Math.round((new Date(m.expires_at).getTime() - now) / 3600_000));
-
-      for (const recipientId of recipientIds) {
-        const recipient = byId.get(recipientId);
-        const otherId = recipientId === m.user_1_id ? m.user_2_id : m.user_1_id;
-        const other = byId.get(otherId);
-        if (!recipient?.email) continue;
-        if (recipient.email_notifications === false) continue;
-
-        const acceptToken = signMatchToken({ matchId: m.id, userId: recipient.id, action: 'accept' });
-        const passToken = signMatchToken({ matchId: m.id, userId: recipient.id, action: 'pass' });
-        const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
-        const acceptUrl = `${base}/api/match-accept?matchId=${m.id}&userId=${recipient.id}&token=${acceptToken}`;
-        const passUrl = `${base}/api/match-pass?matchId=${m.id}&userId=${recipient.id}&token=${passToken}`;
-
-        const otherFirst = (other?.name || 'your match').split(' ')[0];
-
-        const html = renderEmail({
-          preheader: `Only ${hoursLeft} hours left to decide on ${otherFirst}. After that they go back in the pool.`,
-          eyebrow: `${hoursLeft} hours left`,
-          headline: `Don't ghost ${otherFirst}.`,
-          bodyHtml: `
-            <p style="margin:0 0 12px 0;">
-              Your ${m.compatibility_score ?? '—'}% match with <strong style="color:${C.ink};">${escapeHtml(otherFirst)}</strong> expires in about <strong style="color:${C.ink};">${hoursLeft} hours</strong>. If you don't say yes or no, the match drops and you both go back in the pool.
-            </p>
-            <p style="margin:0 0 22px 0;">
-              No pressure to commit to coffee — just commit to a decision.
-            </p>
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-              <td style="padding-right:10px;">${button({ href: acceptUrl, label: "Yes, I'm in →" })}</td>
-              <td>${button({ href: passUrl, label: 'Pass', variant: 'secondary' })}</td>
-            </tr></table>
-          `,
-          recipientId: recipient.id,
-          footerNote: `match windows close so the pool stays fresh.`,
+      if (pushEventIds.length > 0) {
+        const didPush = await sendPushToUser(items[0].recipientId, {
+          title: isFinal ? 'Your Love Line choice closes soon' : 'You have a Love Line choice waiting',
+          body: names.length === 1
+            ? `${names[0]} chose you. Review their profile and choose Yes or Pass.`
+            : `${names.length} people chose you. Review each profile and choose Yes or Pass.`,
+          url: loveDashboardUrl(firstMatchId, pushEventIds[0]),
+          tag: 'love-decisions',
         });
-
-        const result = await sendEmail({
-          to: recipient.email,
-          subject: `${hoursLeft}h left to decide on ${otherFirst} — NotCupid`,
-          html,
-        });
-
-        if (result.ok) sent++;
-        else failures.push(`${recipient.id}: ${result.error}`);
-
-        // Push alongside the email — people miss the email, and a decision
-        // before expiry is exactly what the responsiveness gate rewards.
-        await sendPushToUser(recipient.id, {
-          title: `${hoursLeft}h left with ${otherFirst}`,
-          body: 'Say yes or pass before the match drops back into the pool.',
-          url: '/dashboard',
-          tag: `match-${m.id}`,
-        }).catch(() => {});
+        if (didPush) {
+          await markLoveNotificationResult(pushEventIds, { ok: true });
+          pushed++;
+          handled = true;
+        } else {
+          await markLoveNotificationSkipped(pushEventIds, 'push_unavailable');
+          skipped += pushEventIds.length;
+        }
       }
 
-      // Mark the match as reminded so the next cron tick doesn't re-send.
-      await supabaseAdmin
-        .from('matches')
-        .update({ expiring_reminder_sent_at: new Date().toISOString() })
-        .eq('id', m.id);
+      // Provider email failures remain retryable after the ledger claim cools
+      // down; we only close the match-level reminder gate once some channel
+      // succeeded or the user explicitly has no reachable channel.
+      if (handled) {
+        const marker = isFinal ? 'expiring_reminder_sent_at' : 'decision_reminder_sent_at';
+        await supabaseAdmin
+          .from('matches')
+          .update({ [marker]: nowIso })
+          .in('id', items.map((item) => item.match.id));
+      }
     }
 
     return NextResponse.json({
       ok: true,
-      candidates: matches?.length ?? 0,
-      sent,
+      due24h: dayMatches?.length || 0,
+      dueFinal: finalMatches?.length || 0,
+      recipients: groups.size,
+      emailed,
+      pushed,
       skipped,
-      failures: failures.slice(0, 5),
+      failures: failures.slice(0, 8),
     });
   } catch (err: any) {
     console.error('cron/expiring-soon error:', err);

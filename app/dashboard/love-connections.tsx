@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import EndMatchDialog from '@/components/end-match-dialog';
 import styles from './dashboard.module.css';
 
@@ -25,22 +25,38 @@ const FILTERS: Array<{ key: Filter; label: string }> = [
 ];
 
 function statusCopy(status: LoveConnectionCard['status']): string {
-  if (status === 'your-move') return 'waiting for your hello';
+  if (status === 'your-move') return 'they chose you · decide yes or pass';
   if (status === 'chatting') return 'chat open';
-  return 'waiting on them';
+  return 'you chose them · waiting on their answer';
 }
 
 export default function LoveConnections({
   connections,
   includedPicks,
+  focusMatchId,
 }: {
   connections: LoveConnectionCard[];
   includedPicks: number;
+  focusMatchId?: string;
 }) {
-  const [filter, setFilter] = useState<Filter>('all');
+  const focused = useMemo(
+    () => connections.find((connection) => connection.matchId === focusMatchId),
+    [connections, focusMatchId],
+  );
+  const [filter, setFilter] = useState<Filter>(focused?.status === 'your-move' ? 'your-move' : 'all');
   const [ending, setEnding] = useState<LoveConnectionCard | null>(null);
   const visible = filter === 'all' ? connections : connections.filter((connection) => connection.status === filter);
   const countFor = (key: Filter) => key === 'all' ? connections.length : connections.filter((connection) => connection.status === key).length;
+  const yourMoveCount = countFor('your-move');
+
+  useEffect(() => {
+    if (!focusMatchId || !focused) return;
+    if (focused.status === 'your-move') setFilter('your-move');
+    const timer = window.setTimeout(() => {
+      document.getElementById(`love-connection-${focusMatchId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [focusMatchId, focused]);
 
   return (
     <section className={styles.loveConnections} id="connections" aria-labelledby="love-connections-title">
@@ -59,6 +75,12 @@ export default function LoveConnections({
 
       {connections.length > 0 ? (
         <>
+          {yourMoveCount > 0 && (
+            <div className={styles.connectionDecisionCallout} role="status">
+              <strong>{yourMoveCount} {yourMoveCount === 1 ? 'person chose' : 'people chose'} you.</strong>
+              <span>Review each profile and choose Yes or Pass. Either answer keeps the Love Line moving.</span>
+            </div>
+          )}
           <div className={styles.connectionFilters} role="tablist" aria-label="Filter Love Line connections">
             {FILTERS.map((item) => (
               <button
@@ -75,7 +97,13 @@ export default function LoveConnections({
 
           <div className={styles.connectionList} aria-live="polite">
             {visible.length > 0 ? visible.map((connection) => (
-              <article key={connection.matchId} className={styles.connectionRow} data-status={connection.status}>
+              <article
+                key={connection.matchId}
+                id={`love-connection-${connection.matchId}`}
+                className={styles.connectionRow}
+                data-status={connection.status}
+                data-focused={connection.matchId === focusMatchId ? 'true' : undefined}
+              >
                 <a href={`/match/${connection.matchId}`} className={styles.connectionPerson}>
                   <span className={styles.connectionAvatar}>
                     {connection.photo_url ? (
@@ -94,7 +122,7 @@ export default function LoveConnections({
                 </a>
                 <div className={styles.connectionActions}>
                   <a href={`/match/${connection.matchId}`}>
-                    {connection.status === 'your-move' ? 'say hi' : connection.status === 'chatting' ? 'open chat' : 'view'}
+                    {connection.status === 'your-move' ? 'review & decide' : connection.status === 'chatting' ? 'open chat' : 'view profile'}
                   </a>
                   <button type="button" onClick={() => setEnding(connection)}>end</button>
                 </div>

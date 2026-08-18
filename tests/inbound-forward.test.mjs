@@ -53,7 +53,6 @@ test('inbound forwarding archives first and is retry-idempotent', () => {
 test('legacy direct Resend senders use the configured operator reply address', () => {
   const routes = [
     'app/api/admin/send-friend-blast/route.ts',
-    'app/api/admin/send-pending-matches/route.ts',
     'app/api/admin/send-press-invite/route.ts',
     'app/api/admin/send-quiz-blast/route.ts',
     'app/api/stripe-webhook/route.ts',
@@ -61,4 +60,7 @@ test('legacy direct Resend senders use the configured operator reply address', (
   for (const route of routes) {
     assert.match(source(route), /reply_to: defaultEmailReplyTo\(\)/, `${route} must route replies to the operator inbox`);
   }
+  const retiredPendingSender = source('app/api/admin/send-pending-matches/route.ts');
+  assert.match(retiredPendingSender, /previewOnly: true/);
+  assert.doesNotMatch(retiredPendingSender, /api\.resend\.com|sendEmail\(|resend\.emails\.send/);
 });

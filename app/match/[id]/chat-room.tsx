@@ -104,6 +104,7 @@ export default function ChatRoom({
   }, [messages]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [decisionBusy, setDecisionBusy] = useState(false);
   const [heyWarned, setHeyWarned] = useState(false);
   const [nudge, setNudge] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -181,13 +182,35 @@ export default function ChatRoom({
   // Pending = matched but not yet mutually accepted. Sending a message here
   // auto-accepts (server-side), which opens the chat — so we prompt for it.
   const pendingAccept = !chatExpired && liveMatch?.status !== 'both_accepted' && !liveMatch?.chat_expires_at;
+  const isUser1 = liveMatch?.user_1_id === currentUserId;
+  const myAccepted = isUser1 ? !!liveMatch?.user_1_accepted : !!liveMatch?.user_2_accepted;
+  const otherAccepted = isUser1 ? !!liveMatch?.user_2_accepted : !!liveMatch?.user_1_accepted;
+  const needsDecision = pendingAccept && !myAccepted && otherAccepted;
   const status = chatExpired
     ? 'chat ended'
+    : needsDecision
+    ? 'your move · yes or pass'
+    : pendingAccept && myAccepted
+    ? 'waiting on their answer'
     : pendingAccept
-    ? 'say hi to connect'
+    ? 'choose to connect'
     : liveMatch?.chat_expires_at
     ? timeLeft(liveMatch.chat_expires_at, now)
     : 'active';
+
+  async function answerIncomingChoice(answer: 'yes' | 'pass') {
+    if (decisionBusy) return;
+    setDecisionBusy(true);
+    try {
+      const response = await fetch(`/api/matches/${matchId}/${answer === 'yes' ? 'accept' : 'pass'}`, { method: 'POST' });
+      const result = await parseResponse<any>(response);
+      if (!response.ok) throw new Error(result.error || 'Could not save your choice');
+      window.location.href = answer === 'yes' ? `/match/${matchId}` : '/dashboard#connections';
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not save your choice', 'error');
+      setDecisionBusy(false);
+    }
+  }
 
   // Smart scroll: autoscroll on new messages only when the user is already near
   // the bottom (or it's their own send) — never yank someone who's reading up.
@@ -450,6 +473,14 @@ export default function ChatRoom({
           )}
         </div>
 
+        {needsDecision && (
+          <div className={styles.decisionCard} role="region" aria-label={`Choose whether to connect with ${firstName}`}>
+            <span>they chose you</span>
+            <strong>Do you want to connect with {firstName}?</strong>
+            <p>Review the profile, then choose Yes or Pass. Either answer is okay.</p>
+          </div>
+        )}
+
         {!readOnly && messages.length > 0 && !coach && (
           <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
             {coachBusy ? 'thinking…' : '✦ make the next move easier'}
@@ -474,14 +505,14 @@ export default function ChatRoom({
 
         {messages.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>{readOnly ? 'this one is closed.' : 'your move.'}</div>
-            <div className={styles.emptySub}>{readOnly ? 'no messages were sent before it ended.' : 'blank page energy? steal one of these:'}</div>
-            {!readOnly && !coach && (
+            <div className={styles.emptyTitle}>{readOnly ? 'this one is closed.' : needsDecision ? `${firstName} chose you.` : 'your move.'}</div>
+            <div className={styles.emptySub}>{readOnly ? 'no messages were sent before it ended.' : needsDecision ? 'review their profile · choose below' : 'blank page energy? steal one of these:'}</div>
+            {!readOnly && !needsDecision && !coach && (
               <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
                 {coachBusy ? 'curating your angle…' : '✦ ask the AI match coach'}
               </button>
             )}
-            {!readOnly && (
+            {!readOnly && !needsDecision && (
               coach ? (
                 <div className={styles.coachCard}>
                   <div className={styles.coachKicker}>{coach.source === 'ai' ? '✦ AI match coach' : '✦ match coach'}</div>
@@ -548,6 +579,15 @@ export default function ChatRoom({
       {readOnly ? (
         <div style={{ padding: '0.9rem 1rem', textAlign: 'center', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', borderTop: '1px solid var(--h-border)' }}>
           this conversation has ended — you can still read it, but messages are closed.
+        </div>
+      ) : needsDecision ? (
+        <div className={styles.decisionBar}>
+          <button type="button" disabled={decisionBusy} onClick={() => answerIncomingChoice('yes')}>
+            {decisionBusy ? 'saving…' : `yes, connect with ${firstName}`}
+          </button>
+          <button type="button" disabled={decisionBusy} onClick={() => answerIncomingChoice('pass')}>
+            pass
+          </button>
         </div>
       ) : (
         <form onSubmit={handleSend} className={styles.inputForm}>

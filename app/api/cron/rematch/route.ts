@@ -8,6 +8,7 @@ import { sendPushToUser } from '@/lib/push'
 import { button, renderEmail, sendEmail } from '@/lib/email'
 import { composeLoveRosterForUser } from '@/app/api/match/roster/route'
 import { returnLovePickEntitlement } from '@/lib/love-pick-access'
+import { recordLoveExpiry } from '@/lib/love-notification-ledger'
 import {
   activeUserCutoffIso,
   rosterNotificationCutoffIso,
@@ -250,7 +251,14 @@ export async function GET(req: NextRequest) {
 
     if (expiredPending && expiredPending.length > 0) {
       const ids = expiredPending.map((m: any) => m.id)
-      await supabaseAdmin.from('matches').update({ status: 'expired' }).in('id', ids)
+      await supabaseAdmin
+        .from('matches')
+        .update({ status: 'expired', ended_at: nowIso, ended_reason: 'expired' })
+        .in('id', ids)
+      await Promise.all(expiredPending.map((match: any) => recordLoveExpiry(match.id, [
+        ...(!match.user_1_accepted ? [match.user_1_id] : []),
+        ...(!match.user_2_accepted ? [match.user_2_id] : []),
+      ])))
       await Promise.all(expiredPending.map((match: any) => returnLovePickEntitlement(match.id, null)))
       // Each pending that died without a yes = an "ignored pick" for the picked
       // side. Past MAX_IGNORED_PICKS they get benched from rosters (see roster/pick).

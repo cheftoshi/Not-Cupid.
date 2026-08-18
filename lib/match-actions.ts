@@ -9,11 +9,18 @@
 //     contact card. Idempotent — re-calling after mutual accept is a no-op.
 
 import { supabaseAdmin } from '@/lib/supabase';
-import { signMatchToken } from '@/lib/match-tokens';
 import { renderEmail, sendEmail, infoCard, button, C, escapeHtml } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
 import { LOVE_MAX_CONNECTIONS } from '@/lib/matching-policy';
 import { returnLovePickEntitlement } from '@/lib/love-pick-access';
+import {
+  claimLoveNotificationEvent,
+  loveDashboardUrl,
+  markLoveNotificationResult,
+  markLoveNotificationSkipped,
+  recordLoveDecision,
+  recordLoveExpiry,
+} from '@/lib/love-notification-ledger';
 
 // Ten is a hard safety ceiling, not the free allowance. Each daily roster has
 // three included outgoing picks; extras are paid individually or included with
@@ -93,6 +100,10 @@ export async function releaseTimedOutMatches(userId: string): Promise<void> {
       .from('matches')
       .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
       .eq('id', m.id);
+    await recordLoveExpiry(m.id, [
+      ...(!m.user_1_accepted ? [m.user_1_id] : []),
+      ...(!m.user_2_accepted ? [m.user_2_id] : []),
+    ]);
     await returnLovePickEntitlement(m.id, null);
     await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [m.user_1_id, m.user_2_id]);
     // Whoever got picked here and never accepted accrues an "ignored pick".
@@ -130,6 +141,10 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
       .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
       .eq('id', matchId)
       .eq('status', 'pending');
+    await recordLoveExpiry(matchId, [
+      ...(!match.user_1_accepted ? [match.user_1_id] : []),
+      ...(!match.user_2_accepted ? [match.user_2_id] : []),
+    ]);
     await returnLovePickEntitlement(matchId, null);
     return { ok: false, reason: 'ended' };
   }
@@ -151,10 +166,15 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
   }
 
   const field = isUser1 ? 'user_1_accepted' : 'user_2_accepted';
+  const acceptedAtField = isUser1 ? 'user_1_accepted_at' : 'user_2_accepted_at';
   const otherAccepted = isUser1 ? match.user_2_accepted : match.user_1_accepted;
 
   // Record this user's acceptance.
-  await supabaseAdmin.from('matches').update({ [field]: true }).eq('id', matchId);
+  await supabaseAdmin
+    .from('matches')
+    .update({ [field]: true, [acceptedAtField]: new Date().toISOString() })
+    .eq('id', matchId);
+  await recordLoveDecision(matchId, userId, 'accepted');
 
   // Re-engaged → clear any "ignored picks" bench (covers both accepting an
   // incoming pick and pre-accepting your own pick). No-op if column unmigrated.
@@ -175,11 +195,27 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
     await sendItsAMatchEmails(matchId, match.user_1_id, match.user_2_id).catch((e) =>
       console.error('acceptMatch: its-a-match email failed', e)
     );
-    // Push to both — lands on the lock screen instead of the Promotions tab.
-    await Promise.all([
-      sendPushToUser(match.user_1_id, { title: "It's a match ✦", body: 'Both of you said yes — the chat is open.', url: `/match/${matchId}`, tag: `match-${matchId}` }),
-      sendPushToUser(match.user_2_id, { title: "It's a match ✦", body: 'Both of you said yes — the chat is open.', url: `/match/${matchId}`, tag: `match-${matchId}` }),
-    ]);
+    // Push to both — every provider attempt is claimed before it leaves so a
+    // retry can never produce duplicate lock-screen alerts.
+    await Promise.all([match.user_1_id, match.user_2_id].map(async (recipientId) => {
+      const eventId = await claimLoveNotificationEvent({
+        matchId,
+        recipientId,
+        type: 'mutual',
+        channel: 'push',
+      });
+      if (!eventId) return;
+      const pushed = await sendPushToUser(recipientId, {
+        title: "It's a match ✦",
+        body: 'Both of you said yes — the chat is open.',
+        url: `/match/${matchId}?love_event=${eventId}`,
+        tag: `match-${matchId}`,
+      });
+      await markLoveNotificationResult([eventId], {
+        ok: pushed,
+        error: pushed ? undefined : 'push_unavailable',
+      });
+    }));
     return { ok: true, mutual: true };
   }
 
@@ -191,12 +227,24 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
   } catch (e) {
     console.error('acceptMatch: interest nudge failed', e);
   }
-  await sendPushToUser(otherId, {
-    title: `${accepterFirst} chose you 👀`,
-    body: 'Say yes back to make it mutual and open the chat.',
-    url: '/dashboard',
-    tag: `match-${matchId}`,
+  const pushEventId = await claimLoveNotificationEvent({
+    matchId,
+    recipientId: otherId,
+    type: 'interest_immediate',
+    channel: 'push',
   });
+  const pushed = pushEventId ? await sendPushToUser(otherId, {
+    title: `${accepterFirst} chose you 👀`,
+    body: 'Review their profile, then choose Yes or Pass.',
+    url: loveDashboardUrl(matchId, pushEventId),
+    tag: `match-${matchId}`,
+  }) : false;
+  if (pushEventId) {
+    await markLoveNotificationResult([pushEventId], {
+      ok: pushed,
+      error: pushed ? undefined : 'push_unavailable',
+    });
+  }
   return { ok: true, mutual: false };
 }
 
@@ -231,21 +279,32 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
     });
 
   await Promise.all([
-    sendEmail({
-      to: user1.email,
-      subject: `${user2.name.split(' ')[0]} said yes — here's their email`,
-      html: html(user2.name, user2.email, user1.id),
-      idempotencyKey: `mutual-match-${matchId}-${user1.id}`,
-      tags: [{ name: 'category', value: 'mutual_match' }],
-    }),
-    sendEmail({
-      to: user2.email,
-      subject: `${user1.name.split(' ')[0]} said yes — here's their email`,
-      html: html(user1.name, user1.email, user2.id),
-      idempotencyKey: `mutual-match-${matchId}-${user2.id}`,
-      tags: [{ name: 'category', value: 'mutual_match' }],
-    }),
-  ]);
+    [user1, user2],
+    [user2, user1],
+  ].map(async ([recipient, other]) => {
+    const eventId = await claimLoveNotificationEvent({
+      matchId,
+      recipientId: recipient.id,
+      type: 'mutual',
+      channel: 'email',
+    });
+    if (!eventId) return;
+    if (!recipient.email) {
+      await markLoveNotificationSkipped([eventId], 'email_unavailable');
+      return;
+    }
+    const result = await sendEmail({
+      to: recipient.email,
+      subject: `${other.name.split(' ')[0]} said yes — here's their email`,
+      html: html(other.name, other.email, recipient.id),
+      idempotencyKey: `mutual-match-${matchId}-${recipient.id}`,
+      tags: [
+        { name: 'category', value: 'mutual_match' },
+        { name: 'love_event_id', value: eventId },
+      ],
+    });
+    await markLoveNotificationResult([eventId], result);
+  }));
 }
 
 async function sendInterestNudge(matchId: string, otherId: string, accepterId: string): Promise<string> {
@@ -262,33 +321,44 @@ async function sendInterestNudge(matchId: string, otherId: string, accepterId: s
       .single(),
   ]);
   const accepterFirst = (accepter?.name || 'your match').split(' ')[0];
+  const eventId = await claimLoveNotificationEvent({
+    matchId,
+    recipientId: otherId,
+    type: 'interest_immediate',
+    channel: 'email',
+  });
+  if (!eventId) return accepterFirst;
   // Email can be disabled independently; the caller still uses the resolved
   // first name for web push on subscribed devices.
-  if (!other?.email || other.email_notifications === false) return accepterFirst;
+  if (!other?.email || other.email_notifications === false) {
+    await markLoveNotificationSkipped([eventId], 'email_unavailable_or_disabled');
+    return accepterFirst;
+  }
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
-  const acceptToken = signMatchToken({ matchId, userId: otherId, action: 'accept' });
-  const acceptUrl = `${base}/api/match-accept?matchId=${matchId}&userId=${otherId}&token=${acceptToken}`;
 
   const html = renderEmail({
-    preheader: `${accepterFirst} is interested. Say yes back and you're connected.`,
+    preheader: `${accepterFirst} chose you. Review their profile and choose Yes or Pass.`,
     eyebrow: 'someone said yes',
     headline: `${accepterFirst} is interested in you.`,
     bodyHtml: `
-      <p style="margin:0 0 18px 0;">They tapped yes on your match. Say yes back and the chat opens instantly — you'll both get each other's email too.</p>
-      ${button({ href: acceptUrl, label: "Yes, I'm interested →" })}
-      <p style="margin:16px 0 0 0;font-size:13px;color:${C.muted};">Not feeling it? No action needed — the match expires on its own.</p>
+      <p style="margin:0 0 18px 0;">They chose you on NotCupid. Review their profile and choose Yes or Pass — either answer keeps the Love Line moving.</p>
+      ${button({ href: `${base}${loveDashboardUrl(matchId)}`, label: 'Review my Love Line →' })}
     `,
     recipientId: otherId,
     footerNote: 'one yes away.',
   });
 
-  await sendEmail({
+  const result = await sendEmail({
     to: other.email,
     subject: `${accepterFirst} is interested — your move`,
     html,
     idempotencyKey: `match-interest-${matchId}-${other.id}`,
-    tags: [{ name: 'category', value: 'match_interest' }],
+    tags: [
+      { name: 'category', value: 'match_interest' },
+      { name: 'love_event_id', value: eventId },
+    ],
   });
+  await markLoveNotificationResult([eventId], result);
   return accepterFirst;
 }

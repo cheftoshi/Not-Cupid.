@@ -35,6 +35,85 @@ const CAMPAIGN_STATUS_RANK: Record<string, number> = {
   complained: 5,
 };
 
+const LOVE_EVENT_MAP: Record<string, { status: string; timestamp?: string }> = {
+  'email.sent': { status: 'sent', timestamp: 'sent_at' },
+  'email.delivered': { status: 'delivered', timestamp: 'delivered_at' },
+  'email.opened': { status: 'opened', timestamp: 'opened_at' },
+  'email.clicked': { status: 'clicked', timestamp: 'clicked_at' },
+  'email.delivery_delayed': { status: 'sent' },
+  'email.suppressed': { status: 'failed', timestamp: 'failed_at' },
+  'email.failed': { status: 'failed', timestamp: 'failed_at' },
+  'email.bounced': { status: 'failed', timestamp: 'failed_at' },
+  'email.complained': { status: 'failed', timestamp: 'failed_at' },
+};
+
+const LOVE_STATUS_RANK: Record<string, number> = {
+  claimed: 0,
+  recorded: 0,
+  sent: 1,
+  delivered: 2,
+  opened: 3,
+  clicked: 4,
+  failed: 5,
+  skipped: 5,
+};
+
+async function recordLoveNotificationEvent(event: any) {
+  const mapped = LOVE_EVENT_MAP[event.type];
+  const data = event?.data || {};
+  const tags = data.tags && typeof data.tags === 'object' ? data.tags : {};
+  const taggedId = typeof tags.love_event_id === 'string' ? tags.love_event_id : '';
+  const emailId = typeof data.email_id === 'string' ? data.email_id : '';
+  if (!mapped || (!taggedId && !emailId)) return false;
+
+  const ids = new Set<string>();
+  if (/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(taggedId)) ids.add(taggedId);
+  if (emailId) {
+    const { data: siblings } = await supabaseAdmin
+      .from('love_notification_events')
+      .select('id')
+      .eq('provider_id', emailId);
+    for (const row of siblings || []) ids.add(row.id);
+  }
+  if (ids.size === 0) return false;
+
+  const { data: rows, error: readError } = await supabaseAdmin
+    .from('love_notification_events')
+    .select('id, recipient_id, status, sent_at, delivered_at, opened_at, clicked_at, failed_at')
+    .in('id', Array.from(ids));
+  if (readError) throw readError;
+  const at = typeof event.created_at === 'string' ? event.created_at : new Date().toISOString();
+  const affectedRecipients = new Set<string>();
+
+  for (const row of rows || []) {
+    const terminal = ['failed', 'skipped'].includes(row.status);
+    const nextStatus = terminal || LOVE_STATUS_RANK[row.status] > LOVE_STATUS_RANK[mapped.status]
+      ? row.status
+      : mapped.status;
+    const update: Record<string, any> = {
+      status: nextStatus,
+      provider_id: emailId || null,
+      last_event_at: at,
+    };
+    if (mapped.timestamp && !(row as any)[mapped.timestamp]) update[mapped.timestamp] = at;
+    const { error } = await supabaseAdmin
+      .from('love_notification_events')
+      .update(update)
+      .eq('id', row.id);
+    if (error) throw error;
+    affectedRecipients.add(row.recipient_id);
+  }
+
+  if (['email.complained', 'email.bounced', 'email.suppressed'].includes(event.type)
+    && affectedRecipients.size > 0) {
+    await supabaseAdmin
+      .from('users')
+      .update({ email_notifications: false, pool_active: false, notifications_paused_at: at })
+      .in('id', Array.from(affectedRecipients));
+  }
+  return true;
+}
+
 async function recordCampaignEvent(event: any) {
   const mapped = CAMPAIGN_EVENT_MAP[event.type];
   const data = event?.data || {};
@@ -134,10 +213,13 @@ export async function POST(req: NextRequest) {
 
   if (event.type !== 'email.received') {
     try {
-      const tracked = await recordCampaignEvent(event);
-      return NextResponse.json({ ok: true, tracked });
+      const [campaignTracked, loveTracked] = await Promise.all([
+        recordCampaignEvent(event),
+        recordLoveNotificationEvent(event),
+      ]);
+      return NextResponse.json({ ok: true, tracked: campaignTracked || loveTracked, campaignTracked, loveTracked });
     } catch {
-      return NextResponse.json({ error: 'Could not store campaign event' }, { status: 500 });
+      return NextResponse.json({ error: 'Could not store email lifecycle event' }, { status: 500 });
     }
   }
 

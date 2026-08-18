@@ -448,6 +448,28 @@
   gap: 0.55rem;
 }
 
+.decisionCard {
+  display: grid;
+  gap: 0.35rem;
+  width: min(100%, 430px);
+  align-self: center;
+  padding: 1rem;
+  border: 1px solid rgba(255, 106, 31, 0.3);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255,106,31,0.08), rgba(37,99,255,0.06));
+}
+
+.decisionCard span {
+  color: #d55314;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.decisionCard strong { color: var(--h-text); font-size: 1rem; }
+.decisionCard p { margin: 0; color: var(--h-text-dim); font-size: 0.8rem; line-height: 1.45; }
+
 .empty {
   text-align: center;
   padding: 1.5rem 1rem 0;
@@ -678,6 +700,32 @@
 .send:active:not(:disabled) { transform: scale(0.94); }
 .send:disabled { opacity: 0.28; cursor: not-allowed; }
 
+.decisionBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  padding: 0.7rem max(1rem,env(safe-area-inset-right,0px)) calc(0.7rem + env(safe-area-inset-bottom,0px)) max(1rem,env(safe-area-inset-left,0px));
+  border-top: 1px solid var(--h-border);
+  background: var(--h-surface);
+}
+
+.decisionBar button {
+  min-height: 46px;
+  border: 1px solid #0b0b0b;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: #0b0b0b;
+  color: #fff;
+  cursor: pointer;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.decisionBar button:last-child { border-color: var(--h-border); background: transparent; color: #a4382d; }
+.decisionBar button:disabled { cursor: wait; opacity: 0.55; }
+
 /* ============= MOBILE ============= */
 @media (max-width: 500px) {
   .header { padding: 0.75rem 0.9rem; }
@@ -687,6 +735,7 @@
   .bubble { max-width: 82%; padding: 0.65rem 0.9rem 0.5rem; font-size: 0.9rem; }
   .bubbleBody { font-size: 0.9rem; }
   .inputForm { padding: 0.6rem max(0.85rem,env(safe-area-inset-right,0px)) calc(0.6rem + env(safe-area-inset-bottom,0px)) max(0.85rem,env(safe-area-inset-left,0px)); }
+  .decisionBar { padding: 0.6rem max(0.85rem,env(safe-area-inset-right,0px)) calc(0.6rem + env(safe-area-inset-bottom,0px)) max(0.85rem,env(safe-area-inset-left,0px)); }
   .input { padding: 0.7rem 1rem; }
 }
 
@@ -741,9 +790,11 @@
 
   .page[data-mobile-panel='plan'] .messages,
   .page[data-mobile-panel='plan'] .inputForm,
+  .page[data-mobile-panel='plan'] .decisionBar,
   .page[data-mobile-panel='plan'] .nudge,
   .page[data-mobile-panel='profile'] .messages,
   .page[data-mobile-panel='profile'] .inputForm,
+  .page[data-mobile-panel='profile'] .decisionBar,
   .page[data-mobile-panel='profile'] .nudge {
     display: none;
   }

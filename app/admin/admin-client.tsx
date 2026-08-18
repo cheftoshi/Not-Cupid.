@@ -403,6 +403,39 @@ export default function AdminClient() {
                   <span className={s.chip}>Ever mutual <b>{data.loveUsage.lifetime.everMutualAccounts}</b></span>
                   <span className={s.chip}>Ever sent a message <b>{data.loveUsage.lifetime.everMessageSenders}</b></span>
                 </div>
+                {data.loveFunnel && (
+                  <>
+                    <div className={s.divider} />
+                    <p className={s.note} style={{ marginBottom: '0.55rem' }}>LIVE DECISION FUNNEL</p>
+                    <div className={s.chips}>
+                      <span className={s.chip}>12d active pool <b>{data.loveFunnel.activePool}</b></span>
+                      <span className={s.chip}>Fresh rosters 24h <b>{data.loveFunnel.freshRosters24h}</b></span>
+                      <span className={`${s.chip} ${s.chipRed}`}>Waiting, no connection <b>{data.loveFunnel.activePoolWithoutLiveConnection}</b></span>
+                      <span className={s.chip}>No pick in 7d <b>{data.loveFunnel.activePoolWithoutPick7d}</b></span>
+                      <span className={s.chip}>Live connections <b>{data.loveFunnel.liveConnections}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>One-sided <b>{data.loveFunnel.oneSidedConnections}</b></span>
+                      <span className={`${s.chip} ${s.chipRed}`}>People need to answer <b>{data.loveFunnel.peopleNeedToAnswer}</b></span>
+                      <span className={s.chip}>Awaiting an answer <b>{data.loveFunnel.peopleAwaitingAnswer}</b></span>
+                      <span className={s.chip}>Unanswered 24h+ <b>{data.loveFunnel.unanswered24h}</b></span>
+                      <span className={s.chip}>Unanswered 48h+ <b>{data.loveFunnel.unanswered48h}</b></span>
+                      <span className={s.chip}>Mutual <b>{data.loveFunnel.mutualConnections}</b></span>
+                      <span className={s.chip}>Mutual, no message <b>{data.loveFunnel.mutualWithoutMessage}</b></span>
+                    </div>
+                    <p className={s.note} style={{ margin: '0.8rem 0 0.5rem' }}>CONCIERGE EMAIL LEDGER</p>
+                    <div className={s.chips}>
+                      <span className={s.chip}>Immediate sent <b>{data.loveFunnel.notifications.immediateSent}</b></span>
+                      <span className={s.chip}>24h sent <b>{data.loveFunnel.notifications.reminder24hSent}</b></span>
+                      <span className={s.chip}>Final sent <b>{data.loveFunnel.notifications.finalSent}</b></span>
+                      <span className={s.chip}>Delivered <b>{data.loveFunnel.notifications.delivered}</b></span>
+                      <span className={s.chip}>Opened <b>{data.loveFunnel.notifications.opened}</b></span>
+                      <span className={`${s.chip} ${s.chipGold}`}>Clicked <b>{data.loveFunnel.notifications.clicked}</b></span>
+                      <span className={`${s.chip} ${s.chipRed}`}>Failed <b>{data.loveFunnel.notifications.failed}</b></span>
+                      <span className={s.chip}>Accepted after notice <b>{data.loveFunnel.decisions.accepted}</b></span>
+                      <span className={s.chip}>Passed after notice <b>{data.loveFunnel.decisions.passed}</b></span>
+                      <span className={s.chip}>Expired unanswered <b>{data.loveFunnel.decisions.expired}</b></span>
+                    </div>
+                  </>
+                )}
                 <p className={s.note} style={{ marginTop: '0.75rem', lineHeight: 1.6 }}>
                   Picks, mutual participants and message senders are signed-in, real-user actions. Roster composition includes scheduled rotation, so it is context rather than meaningful use. Love visits are anonymous browser/PWA sessions and stay separate. Dating Experiment entries and test accounts never count here.
                 </p>
@@ -957,7 +990,7 @@ export default function AdminClient() {
           {/* ── OPS ── */}
           <div id="ops">
             <div className={`${s.actionsGrid} ${s.actions2}`} style={{ marginBottom: '0.75rem' }}>
-              <a href="/api/admin/send-pending-matches" target="_blank" className={`${s.btn} ${s.btnInk}`}>📨 Send pending match emails</a>
+              <a href="/api/admin/send-pending-matches" target="_blank" className={`${s.btn} ${s.btnInk}`}>📨 Preview pending Love decisions</a>
               <a href="/api/cron/rematch" target="_blank" className={`${s.btn} ${s.btnDeep}`}>🔄 Run rematch cron (raw)</a>
             </div>
             <div className={`${s.actionsGrid} ${s.actions2}`} style={{ marginBottom: '0.75rem' }}>

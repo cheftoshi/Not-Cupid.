@@ -6,17 +6,22 @@ import { freeLoveProfileView } from '@/lib/love-deep-dive';
 import { sameRealm } from '@/lib/realm';
 import { withPrivateVideoPreview } from '@/lib/private-media';
 import { attachStyle } from '@/lib/quiz-data';
+import { markLoveNotificationOpened } from '@/lib/love-notification-ledger';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MatchPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ love_event?: string }>;
 }) {
   const { id } = await params;
+  const { love_event: loveEventId } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/');
+  if (loveEventId) await markLoveNotificationOpened(loveEventId, user.id);
 
   const { data: match } = await supabaseAdmin
     .from('matches')
