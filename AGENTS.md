@@ -133,9 +133,19 @@ supersede them.
   real-life plans**, not as an autonomous matchmaker or AI companion.
 - The shared loop is understand intent → curate a small reciprocal set →
   recommend one user-controlled action → record the human outcome → improve.
+- The base layer is a versioned recommendation system, not one open-ended AI
+  agent: connection profile + real inventory/graph + deterministic policy and
+  ranking + structured reason codes + outcome ledger + bounded generation.
+- The user-facing simplicity rule is current intent → one `Your move`
+  recommendation → two honest reasons → one action or dismissal → a small
+  outcome check-in. Keep Love/Friend direct access; the concierge is a front
+  door, never a gate.
 - Hard eligibility, realm, preference, capacity, duplicate, and safety gates
   remain deterministic. AI explains and coaches from bounded context; it never
   accepts, sends, posts, joins, books, or invents people/plans for the user.
+- Do not create hidden psychological dossiers, infer sensitive traits, or claim
+  perfect compatibility. Optimize for reciprocal human outcomes, not clicks,
+  page views, session length, or model calls.
 - The north-star is weekly users completing a meaningful reciprocal connection
   action, not page views, time in app, model calls, or matches created.
 - Every admin snapshot includes a deterministic ranked bottleneck diagnosis.
