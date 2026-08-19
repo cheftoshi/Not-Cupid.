@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/cron/raffle-draw",
-      "schedule": "0 * * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/cron/dating-experiment-retention",

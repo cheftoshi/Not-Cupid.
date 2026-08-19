@@ -324,6 +324,9 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(draw, /usedTimes/);
   assert.match(draw, /remaining-slot-unfilled/);
   assert.match(draw, /partial-mutual-pair-selected/);
+  assert.match(draw, /resolution\.state === 'no-mutual-pair'/);
+  assert.match(draw, /resolution\.state === 'partial-mutual-pair-selected'/);
+  assert.match(draw, /return drawRaffle\(\{ force, chainDepth: chainDepth \+ 1 \}\)/);
   assert.match(draw, /event\.status === 'entry_open' && Date\.now\(\) >= new Date\(event\.entry_closes_at\)\.getTime\(\)/);
   assert.match(draw, /if \(priorRoundsError\) throw priorRoundsError/);
   assert.match(draw, /if \(totalEntriesError\) throw totalEntriesError/);

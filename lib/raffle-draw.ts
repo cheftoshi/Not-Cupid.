@@ -602,8 +602,9 @@ async function resolveCollectingRound(
 // Creates a sealed reciprocal shortlist round, or resolves the active round.
 // Every participant receives at most the same two-option capacity. Payments and
 // subscriptions are never read by this path.
-export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawResult> {
+export async function drawRaffle(opts: { force?: boolean; chainDepth?: number } = {}): Promise<DrawResult> {
   const force = opts.force === true;
+  const chainDepth = Math.max(0, opts.chainDepth ?? 0);
   const event = await getDatingExperimentEvent();
   if (!event) return { ok: true, entrants: 0, drawn: 0, state: 'paused' };
   if (event.status === 'entry_open' && Date.now() >= new Date(event.entry_closes_at).getTime()) {
@@ -648,7 +649,18 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       .eq('round_id', activeRound.id);
     if (error) throw error;
     await ensureRoundEmails(event, activeRound as RoundRow, (activePairs ?? []) as PairRow[]);
-    return (await resolveCollectingRound(event, activeRound as RoundRow, (activePairs ?? []) as PairRow[]))!;
+    const resolution = (await resolveCollectingRound(event, activeRound as RoundRow, (activePairs ?? []) as PairRow[]))!;
+    const shouldStartNextRound = (
+      resolution.state === 'no-mutual-pair'
+      || resolution.state === 'partial-mutual-pair-selected'
+    ) && activeRound.round_number < event.max_attempts;
+    // Do not burn an hour between sealed rounds. Once a round has resolved,
+    // immediately compose and notify the next round in the same invocation.
+    // The depth bound prevents an unexpected state regression from recursing.
+    if (shouldStartNextRound && chainDepth < event.max_attempts) {
+      return drawRaffle({ force, chainDepth: chainDepth + 1 });
+    }
+    return resolution;
   }
 
   if (existingWinners.length >= event.winner_pair_limit) {
