@@ -55,7 +55,7 @@ type WinnerDelivery = {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
 
 function emailsApproved(): boolean {
-  return process.env.DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION;
+  return process.env.DATING_EXPERIMENT_SELECTION_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION;
 }
 
 function firstName(name: string | null | undefined): string {

@@ -287,7 +287,7 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(experimentSource, /secondRoundDeadline:\s*'2026-08-19T22:00:00\.000Z'/);
   assert.match(migration, /response_hours = 6/i);
   assert.match(email, /DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION/);
-  assert.match(email, /process\.env\.DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION/);
+  assert.match(email, /process\.env\.DATING_EXPERIMENT_SELECTION_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION/);
   assert.match(email, /Your Dating Experiment shortlist is ready/);
   assert.match(email, /Your shortlist closes in one hour/);
   assert.match(email, /Your Dating Experiment dinner is confirmed/);
