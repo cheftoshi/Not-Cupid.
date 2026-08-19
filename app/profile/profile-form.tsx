@@ -260,13 +260,25 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
   async function handleDelete() {
     if (!(await confirmDialog({ title: 'delete your account?', body: 'Active matches will end and your profile disappears. This cannot be undone.', confirmLabel: 'continue', danger: true }))) return;
     if (!(await confirmDialog({ title: 'really sure?', body: 'This removes you from NotCupid permanently — matches, chats, everything.', confirmLabel: 'delete forever', cancelLabel: 'keep my account', danger: true }))) return;
-    await fetch('/api/profile/delete', { method: 'POST' });
-    router.push('/');
+    setSaving(true); setMessage('');
+    try {
+      const response = await fetch('/api/profile/delete', { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'could not delete your account');
+      router.push('/');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'could not delete your account — try again');
+    } finally { setSaving(false); }
   }
 
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
+    setSaving(true); setMessage('');
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('could not log out');
+      router.push('/');
+    } catch { setMessage('could not log out — check your connection and try again'); }
+    finally { setSaving(false); }
   }
 
   return (
@@ -653,17 +665,18 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       {/* ACCOUNT */}
       <div className={styles.accountSection}>
         <div className={styles.accountTitle}>Account</div>
-        <button type="button" onClick={handleLogout} className={styles.linkButton}>Log out</button>
+        <button type="button" onClick={handleLogout} className={styles.linkButton} disabled={saving}>Log out</button>
         <RefreshProfileButton usedCount={user.profile_refresh_count} />
         {/* Delete is now a clear full-width danger button — users couldn't find the old text link. */}
         <button
           type="button"
           onClick={handleDelete}
+          disabled={saving}
           style={{
             marginTop: '1rem', display: 'block', width: '100%', padding: '0.9rem',
             background: 'transparent', border: '1.5px solid #c0392b', color: '#c0392b',
             borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: '0.7rem',
-            letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
+            letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.6 : 1,
           }}
         >
           Delete my account

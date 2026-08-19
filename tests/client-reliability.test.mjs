@@ -14,6 +14,7 @@ test('client errors are grouped without collecting raw messages, stacks, or quer
   assert.equal(classifyClientError('TypeError', 'Failed to fetch'), 'network');
   assert.equal(classifyClientError('ChunkLoadError', 'Loading chunk 81 failed'), 'chunk_load');
   assert.equal(classifyClientError('NotAllowedError', 'Permission denied'), 'permission');
+  assert.equal(classifyClientError(null, 'Script error.'), 'script_error');
   assert.equal(safeClientErrorName('CustomError'), 'Error');
   assert.equal(
     safeClientErrorSource('https://notcupid.com/_next/static/chunks/app.js?token=private', 'https://notcupid.com'),
@@ -57,4 +58,16 @@ test('Love chat, Friend Line and Dating Experiment actions handle network failur
   assert.match(friend, /friend-message-failed[\s\S]*setMsg\(body\)/);
   assert.match(discovery, /could not post that signal — check your connection/);
   assert.match(experiment, /could not save your private choices — check your connection/);
+});
+
+test('Friend profile and account actions recover instead of leaving rejected promises', () => {
+  const friendProfile = source('app/friends/profile/friend-profile-client.tsx');
+  const profileForm = source('app/profile/profile-form.tsx');
+  const profileShell = source('app/profile/profile-shell.tsx');
+  assert.match(friendProfile, /upload failed — check your connection and try again/);
+  assert.match(friendProfile, /could not remove that photo — check your connection/);
+  assert.match(friendProfile, /couldn\\'t save — check your connection and try again/);
+  assert.match(profileForm, /could not delete your account — try again/);
+  assert.match(profileForm, /could not log out — check your connection and try again/);
+  assert.match(profileShell, /catch \{ toast\('could not log out/);
 });

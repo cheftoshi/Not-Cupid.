@@ -54,9 +54,10 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
       if (file.size > 4 * 1024 * 1024) { setMsg('that photo is too large even after shrinking — try another'); return; }
       const fd = new FormData(); fd.append('file', file);
       const r = await fetch('/api/profile/photo', { method: 'POST', body: fd });
-      const d = await r.json();
+      const d = await r.json().catch(() => ({}));
       if (r.ok && d.url) setPhoto(d.url); else setMsg(d.error || 'upload failed');
-    } finally { setBusy(false); e.target.value = ''; }
+    } catch { setMsg('upload failed — check your connection and try again'); }
+    finally { setBusy(false); e.target.value = ''; }
   }
   async function uploadGallery(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0]; if (!picked) return;
@@ -66,27 +67,35 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
       if (file.size > 4 * 1024 * 1024) { setMsg('that photo is too large even after shrinking — try another'); return; }
       const fd = new FormData(); fd.append('file', file);
       const r = await fetch('/api/profile/gallery', { method: 'POST', body: fd });
-      const d = await r.json();
+      const d = await r.json().catch(() => ({}));
       if (r.ok && d.gallery) setGallery(d.gallery); else setMsg(d.error || 'upload failed');
-    } finally { setBusy(false); e.target.value = ''; }
+    } catch { setMsg('upload failed — check your connection and try again'); }
+    finally { setBusy(false); e.target.value = ''; }
   }
   async function removeGallery(url: string) {
-    const r = await fetch('/api/profile/gallery', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
-    const d = await r.json(); if (r.ok) setGallery(d.gallery || gallery.filter((g) => g !== url));
+    if (busy) return;
+    setBusy(true); setMsg('');
+    try {
+      const r = await fetch('/api/profile/gallery', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) setGallery(d.gallery || gallery.filter((g) => g !== url));
+      else setMsg(d.error || 'could not remove that photo');
+    } catch { setMsg('could not remove that photo — check your connection'); }
+    finally { setBusy(false); }
   }
   async function save() {
     setBusy(true); setMsg('');
-    const r = await fetch('/api/profile', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bio, occupation, music, food, hobbies }),
-    });
-    if (r.ok) {
+    try {
+      const r = await fetch('/api/profile', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio, occupation, music, food, hobbies }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setMsg(d.error || 'couldn\'t save'); return; }
       setMsg('✓ saved — taking you to your crew…');
       router.push('/friends'); router.refresh();
-    } else {
-      setMsg('couldn\'t save'); setBusy(false);
-      setTimeout(() => setMsg(''), 2500);
-    }
+    } catch { setMsg('couldn\'t save — check your connection and try again'); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -125,7 +134,7 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
             {gallery.map((g) => (
               <div key={g} style={{ position: 'relative' }}>
                 <img src={g} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', border: `2px solid ${INK}` }} />
-                <button onClick={() => removeGallery(g)} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface)', border: `2px solid ${INK}`, cursor: 'pointer', fontWeight: 800 }}>×</button>
+                <button onClick={() => removeGallery(g)} disabled={busy} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface)', border: `2px solid ${INK}`, cursor: busy ? 'wait' : 'pointer', fontWeight: 800 }}>×</button>
               </div>
             ))}
             {gallery.length < 3 && (

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 const EVENTS = new Set(['web_vital', 'client_error', 'route_transition', 'api_timing']);
 const METRICS = new Set(['TTFB', 'FCP', 'LCP', 'FID', 'INP', 'CLS', 'roster_api']);
 const ERROR_KINDS = new Set(['runtime', 'promise', 'resource']);
-const ERROR_CODES = new Set(['abort', 'chunk_load', 'hydration', 'network', 'permission', 'resize_observer', 'syntax', 'type', 'unknown']);
+const ERROR_CODES = new Set(['abort', 'chunk_load', 'hydration', 'network', 'permission', 'resize_observer', 'script_error', 'syntax', 'type', 'unknown']);
 const ERROR_NAMES = new Set(['AbortError', 'ChunkLoadError', 'Error', 'NetworkError', 'NotAllowedError', 'SecurityError', 'SyntaxError', 'TypeError']);
 
 function boundedInteger(value: unknown): number | null {

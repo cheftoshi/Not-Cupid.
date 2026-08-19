@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ProfileDashboard from './profile-dashboard';
 import ProfileForm from './profile-form';
 import { experimentProfileReadiness } from '@/lib/experiment-profile';
+import { toast } from '@/components/feedback';
 
 export default function ProfileShell({
   initialUser,
@@ -28,8 +29,11 @@ export default function ProfileShell({
   }, [experimentMode, initialUser, router]);
 
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('logout-failed');
+      router.push('/');
+    } catch { toast('could not log out — check your connection and try again', 'error'); }
   }
 
   if (mode === 'edit') {

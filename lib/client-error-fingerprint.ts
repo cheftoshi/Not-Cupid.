@@ -5,6 +5,7 @@ export type ClientErrorCode =
   | 'network'
   | 'permission'
   | 'resize_observer'
+  | 'script_error'
   | 'syntax'
   | 'type'
   | 'unknown';
@@ -34,6 +35,7 @@ export function classifyClientError(name: unknown, message: unknown): ClientErro
   if (/chunkload|loading chunk|dynamically imported module|failed to fetch.*module/.test(combined)) return 'chunk_load';
   if (/hydration|hydrating/.test(combined)) return 'hydration';
   if (/resizeobserver/.test(combined)) return 'resize_observer';
+  if (/script error/.test(combined)) return 'script_error';
   if (/notallowed|permission|securityerror|pushmanager|serviceworker/.test(combined)) return 'permission';
   if (/network|failed to fetch|load failed|fetch failed|offline/.test(combined)) return 'network';
   if (normalizedName === 'syntaxerror') return 'syntax';
