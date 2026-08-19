@@ -302,6 +302,10 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(email, /Your Dating Experiment dinner is confirmed/);
   assert.match(email, /email_campaign_deliveries/);
   assert.match(email, /idempotencyKey: `\$\{args\.campaignKey\}-\$\{user\.id\}`/);
+  assert.match(email, /DELIVERY_CAMPAIGN_KEY_RE = \/\^\[a-z0-9_\]\{1,80\}\$\//);
+  assert.match(email, /replace\(\/\[\^a-z0-9\]\+\/g, '_'/);
+  assert.match(email, /80 - prefix\.length - cleanSuffix\.length - 1/);
+  assert.match(email, /Invalid Dating Experiment delivery campaign key/);
   assert.match(draw, /unansweredParticipantIds\(pairs\)/);
   assert.match(draw, /existingWinners\.length >= event\.winner_pair_limit/);
   assert.match(draw, /existingWinnerIds\.has\(entry\.user_id\)/);

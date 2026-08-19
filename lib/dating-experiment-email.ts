@@ -135,9 +135,25 @@ async function claimDelivery(campaignKey: string, userId: string): Promise<boole
   return !!stale;
 }
 
-function eventCampaignKey(eventKey: string, suffix: string): string {
-  const event = eventKey.toLowerCase().replace(/[^a-z0-9_-]+/g, '_').slice(0, 80);
-  return `dating_experiment_${event}_${suffix}`;
+const DELIVERY_CAMPAIGN_KEY_RE = /^[a-z0-9_]{1,80}$/;
+
+export function eventCampaignKey(eventKey: string, suffix: string): string {
+  const prefix = 'dating_experiment_';
+  const cleanSuffix = suffix.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  const eventBudget = Math.max(1, 80 - prefix.length - cleanSuffix.length - 1);
+  const cleanEvent = eventKey.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, eventBudget);
+  const campaignKey = `${prefix}${cleanEvent}_${cleanSuffix}`;
+  // Mirror email_campaign_deliveries_campaign_key_check at the code boundary
+  // so an invalid live event key can never silently suppress a scheduled send.
+  if (!DELIVERY_CAMPAIGN_KEY_RE.test(campaignKey)) {
+    throw new Error('Invalid Dating Experiment delivery campaign key');
+  }
+  return campaignKey;
 }
 
 async function finishDelivery(
