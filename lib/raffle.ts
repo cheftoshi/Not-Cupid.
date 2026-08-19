@@ -85,12 +85,14 @@ export function raffleLaunchBlockers(): string[] {
   return blockers;
 }
 
-export function raffleEntriesOpen(): boolean {
-  return RAFFLE.entriesOpen && raffleLaunchBlockers().length === 0;
+export function raffleEntriesOpen(now = Date.now()): boolean {
+  return RAFFLE.entriesOpen
+    && raffleLaunchBlockers().length === 0
+    && now < new Date(RAFFLE.entryClose).getTime();
 }
 
 export function raffleClosed(): boolean {
-  return !raffleEntriesOpen() || Date.now() > new Date(RAFFLE.entryClose).getTime();
+  return !raffleEntriesOpen();
 }
 
 // Keep the first experiment in one jurisdiction and within a practical trip of

@@ -38,6 +38,7 @@ test('Dating Experiment public launch stays free, local, limited, and payment-ne
   assert.match(experimentSource, /radiusMiles:\s*20/);
   assert.doesNotMatch(experimentSource, /proEntries/);
   assert.match(experimentSource, /distance\s*<=\s*location\.radiusMiles/);
+  assert.match(experimentSource, /now < new Date\(RAFFLE\.entryClose\)\.getTime\(\)/);
 });
 
 test('selection weight is bounded and compatibility score remains normalized', () => {
