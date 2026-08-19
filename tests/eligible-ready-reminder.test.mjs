@@ -46,3 +46,19 @@ test('reminder CTA and provider events are tracked under the dedicated campaign 
   assert.match(inbound, /trackedCampaigns = new Set\(\[LOVE_RELAUNCH_CAMPAIGN, ELIGIBLE_READY_REMINDER_CAMPAIGN\]\)/);
   assert.match(funnel, /\.in\('campaign_key', \[LOVE_RELAUNCH_CAMPAIGN, ELIGIBLE_READY_REMINDER_CAMPAIGN\]\)/);
 });
+
+test('last-chance send uses the approved exact copy and fails closed outside the three-person cohort', () => {
+  const copy = source('lib/eligible-ready-reminder.ts');
+  const route = source('app/api/admin/send-experiment-last-chance/route.ts');
+  const admin = source('app/admin/admin-client.tsx');
+  assert.match(copy, /EXPERIMENT_LAST_CHANCE_SUBJECT = 'Your profile is ready — entries close tonight'/);
+  assert.match(copy, /Entries for the Boston Dating Experiment close tonight at 11:59 PM ET\./);
+  assert.match(copy, /JOIN BEFORE 11:59 PM →/);
+  assert.match(copy, /EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS = 3/);
+  assert.match(route, /audience\.candidates\.length !== EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS/);
+  assert.match(route, /body\.approvalVersion === EXPERIMENT_LAST_CHANCE_APPROVAL_VERSION/);
+  assert.match(route, /body\.recipientCount === EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS/);
+  assert.match(route, /activity_digest_deliveries/);
+  assert.match(route, /dating-experiment-last-chance-v1-2026-08-18-/);
+  assert.match(admin, /Send approved last-chance 3/);
+});

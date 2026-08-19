@@ -6,6 +6,10 @@ export const ELIGIBLE_READY_REMINDER_APPROVAL_VERSION = 'dating-experiment-ready
 export const ELIGIBLE_READY_REMINDER_SUBJECT = 'Your profile is ready';
 export const ELIGIBLE_READY_REMINDER_PREHEADER = 'Want to join our Boston Dating Experiment?';
 export const ELIGIBLE_READY_REMINDER_DESTINATION = '/dating-experiment?from=eligible-ready-reminder-aug17';
+export const EXPERIMENT_LAST_CHANCE_APPROVAL_VERSION = 'dating-experiment-last-chance-v1-2026-08-18';
+export const EXPERIMENT_LAST_CHANCE_SUBJECT = 'Your profile is ready — entries close tonight';
+export const EXPERIMENT_LAST_CHANCE_PREHEADER = 'Entries close tonight at 11:59 PM ET.';
+export const EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS = 3;
 
 function secret(): string {
   const value = process.env.MATCH_LINK_SECRET;
@@ -67,6 +71,45 @@ export function eligibleReadyReminderHtml(input: {
           <p style="margin:0 0 15px;color:${C.ink};font-size:20px;font-family:Georgia,'Times New Roman',serif;">Your NotCupid profile is ready.</p>
           <p style="margin:0 0 19px;">We’re running a small Boston Dating Experiment and wanted to invite you to participate—if you choose.</p>
           <div style="margin:0 0 18px;">${button({ href: ctaUrl, label: 'JOIN THE EXPERIMENT →' })}</div>
+          <p style="margin:0;font-size:11px;line-height:1.5;color:${C.muted};">No purchase necessary. Entry, matching, and dinner selection aren’t guaranteed.</p>
+        </td></tr>
+      </table>
+      <div style="max-width:560px;margin-top:12px;font-family:'DM Mono','SF Mono',monospace;font-size:9px;line-height:1.55;color:${C.mutedSoft};text-align:center;">
+        NotCupid · operated by Lemon Labs · ${escapeHtml(input.mailingAddress)} · <a href="${escapeHtml(unsubscribeUrl)}" style="color:${C.muted};text-decoration:underline;">Unsubscribe</a>
+      </div>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+// Exact one-time copy approved by the operator on August 18. It intentionally
+// reuses the signed reminder CTA so clicks, entries, and unsubscribes remain in
+// the existing audited campaign ledger instead of creating an untracked blast.
+export function experimentLastChanceHtml(input: {
+  userId: string;
+  firstName: string;
+  baseUrl: string;
+  mailingAddress: string;
+}): string {
+  const first = escapeHtml(input.firstName || 'there');
+  const ctaUrl = eligibleReadyReminderUrl(input.baseUrl, input.userId);
+  const unsubscribeUrl = `${input.baseUrl}/unsubscribe?u=${encodeURIComponent(input.userId)}&t=${signUnsubToken(input.userId)}`;
+
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${escapeHtml(EXPERIMENT_LAST_CHANCE_SUBJECT)}</title></head>
+<body style="margin:0;padding:0;background:${C.paper};-webkit-text-size-adjust:100%;">
+  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${C.paper};opacity:0;">${escapeHtml(EXPERIMENT_LAST_CHANCE_PREHEADER)}${'‌ '.repeat(50)}</div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.paper};">
+    <tr><td align="center" style="padding:28px 14px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;background:#fff;border:1px solid ${C.border};border-radius:14px;">
+        <tr><td style="padding:30px 32px 8px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:25px;font-weight:700;"><span style="color:#2563ff;">Not</span><span style="color:#ff6a1f;">Cupid</span></td></tr>
+        <tr><td style="padding:18px 32px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${C.muted};">
+          <p style="margin:0 0 15px;">Hi ${first},</p>
+          <p style="margin:0 0 15px;color:${C.ink};font-size:20px;font-family:Georgia,'Times New Roman',serif;">Your NotCupid profile is ready.</p>
+          <p style="margin:0 0 19px;">Entries for the Boston Dating Experiment close tonight at 11:59 PM ET. If you want to participate, finish your entry before the deadline.</p>
+          <div style="margin:0 0 18px;">${button({ href: ctaUrl, label: 'JOIN BEFORE 11:59 PM →' })}</div>
           <p style="margin:0;font-size:11px;line-height:1.5;color:${C.muted};">No purchase necessary. Entry, matching, and dinner selection aren’t guaranteed.</p>
         </td></tr>
       </table>
