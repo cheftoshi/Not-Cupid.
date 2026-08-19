@@ -44,6 +44,10 @@ export const RAFFLE = {
   // so nobody reads "midnight August 18" as the start of Tuesday.
   entryClose: '2026-08-19T04:00:00.000Z',
   entryCloseLabel: 'Tuesday, August 18 at 11:59 PM ET',
+  // Freeze the final pool at midnight, then compose and deliver the private
+  // shortlist during the morning response window. The hourly cron must not
+  // expose options overnight before the operator can audit the closed pool.
+  shortlistAt: '2026-08-19T12:00:00.000Z',
   // This is the later 8:30 PM ET dinner slot. Its UTC timestamp falls on
   // August 21 because Boston is four hours behind UTC in August.
   happensAt: '2026-08-21T00:30:00.000Z',
@@ -52,7 +56,7 @@ export const RAFFLE = {
     { key: 'aug20-1830', label: 'Thursday, August 20 · 6:30 PM ET', eventDate: '2026-08-20', dateLabel: 'Thursday, August 20, 2026', timeLabel: '6:30 PM ET' },
     { key: 'aug20-2030', label: 'Thursday, August 20 · 8:30 PM ET', eventDate: '2026-08-20', dateLabel: 'Thursday, August 20, 2026', timeLabel: '8:30 PM ET' },
   ],
-  drawLabel: 'Wednesday, August 19 after entries close',
+  drawLabel: 'Wednesday, August 19 at 8:00 AM ET',
   budget: 200,
   // The operator confirmed the $400 maximum prize funding, both prepaid
   // reservations, NotCupid as the public Sponsor, and its Quincy mailing

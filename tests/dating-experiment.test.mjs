@@ -268,6 +268,15 @@ test('the Boston experiment owns two August 20 time slots while venue remains fa
   assert.match(terms, /8:30 PM Eastern Time/);
 });
 
+test('the Dating Experiment freezes at midnight but waits until 8 AM ET to shortlist', () => {
+  assert.match(experimentSource, /entryClose:\s*'2026-08-19T04:00:00\.000Z'/);
+  assert.match(experimentSource, /shortlistAt:\s*'2026-08-19T12:00:00\.000Z'/);
+  assert.match(experimentSource, /drawLabel:\s*'Wednesday, August 19 at 8:00 AM ET'/);
+  const draw = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  assert.match(draw, /waiting-for-morning-shortlist/);
+  assert.match(draw, /Date\.now\(\) < new Date\(RAFFLE\.shortlistAt\)\.getTime\(\)/);
+});
+
 test('public launch approvals are dated, attributable, and required in code and database', () => {
   const legacyMigration = readFileSync(new URL('../supabase/migrations/20260815223000_dating_experiment_launch_signoffs.sql', import.meta.url), 'utf8');
   const migration = readFileSync(new URL('../supabase/migrations/20260816004500_dating_experiment_operator_rehearsal.sql', import.meta.url), 'utf8');

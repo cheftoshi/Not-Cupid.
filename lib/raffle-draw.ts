@@ -361,6 +361,14 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     return { ok: true, entrants: 0, drawn: 0, state: 'winner-locked' };
   }
 
+  // Closing entries freezes the pool; it does not authorize an overnight
+  // shortlist. The public morning window gives participants a real chance to
+  // see and answer their private options during waking hours. Admin force is
+  // still available for an explicitly supervised recovery.
+  if (!force && Date.now() < new Date(RAFFLE.shortlistAt).getTime()) {
+    return { ok: true, entrants: 0, drawn: 0, state: 'waiting-for-morning-shortlist' };
+  }
+
   // `force` may start an already launch-ready experiment before its normal
   // cap/deadline trigger, but it must never bypass the code, database, or
   // operational launch gates. Active rounds are still recoverable above.
