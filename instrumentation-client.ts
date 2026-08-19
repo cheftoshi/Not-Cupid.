@@ -57,6 +57,14 @@ function sendClientSignal(
   } catch { /* never let instrumentation affect hydration */ }
 }
 
+function isBrowserExtensionRejection(reason: unknown): boolean {
+  if (!(reason instanceof Error) || typeof reason.stack !== 'string') return false;
+  // Password managers, wallets, and other injected extensions can reject their
+  // own background connection promises inside the page. Those failures do not
+  // belong to NotCupid and must not turn the production health card red.
+  return /(?:chrome|moz|safari-web)-extension:\/\//i.test(reason.stack);
+}
+
 window.addEventListener('error', (event) => {
   const error = event.error instanceof Error ? event.error : null;
   const errorName = safeClientErrorName(error?.name);
@@ -77,6 +85,7 @@ window.addEventListener('error', (event) => {
 });
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason;
+  if (isBrowserExtensionRejection(reason)) return;
   const errorName = safeClientErrorName(reason instanceof Error ? reason.name : null);
   const errorCode = classifyClientError(reason instanceof Error ? reason.name : null, reason instanceof Error ? reason.message : reason);
   const errorKind = 'promise';

@@ -29,6 +29,8 @@ test('client errors are grouped without collecting raw messages, stacks, or quer
   assert.match(instrumentation, /\.catch\(\(\) => \{\}\)/);
   assert.doesNotMatch(instrumentation, /stack:/);
   assert.doesNotMatch(instrumentation, /message:/);
+  assert.match(instrumentation, /isBrowserExtensionRejection/);
+  assert.match(instrumentation, /chrome\|moz\|safari-web/);
   assert.match(endpoint, /metadata\.fingerprint/);
   assert.match(endpoint, /ERROR_CODES/);
 });
