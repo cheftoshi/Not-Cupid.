@@ -9,6 +9,7 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
+    "audit:experiment-model": "node scripts/audit-experiment-model.mjs",
     "security:check": "npm audit --audit-level=low && npm run typecheck && npm test",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",

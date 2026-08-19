@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   buildCoverageFirstShortlist,
+  buildReciprocalQualityShortlist,
   assignDinnerSlots,
   mutualSelectionWeight,
   selectMutualDinnerPair,
@@ -18,6 +19,11 @@ import {
   reciprocalExperimentGenderMatch,
   resolveExperimentPreferences,
 } from '../lib/experiment-preferences.ts';
+import {
+  EXPERIMENT_RECIPROCAL_ALGORITHM_VERSION,
+  EXPERIMENT_RECIPROCAL_WEIGHTS,
+  experimentReciprocalScore,
+} from '../lib/experiment-reciprocal-scoring.ts';
 
 const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.url), 'utf8');
 const launchChecklist = readFileSync(new URL('../docs/dating-experiment-public-launch-checklist-2026-08-15.md', import.meta.url), 'utf8');
@@ -119,6 +125,80 @@ test('V2 shortlist prioritizes coverage and never gives anyone more than two opt
   }
   assert.deepEqual([...counts.keys()].sort(), ['a', 'b', 'c', 'd', 'e', 'f']);
   assert.ok([...counts.values()].every((count) => count <= 2));
+});
+
+test('V5 shortlist preserves strongest first options before using second slots for coverage', () => {
+  const candidates = [
+    { a: 'a', b: 'b', score: 94 },
+    { a: 'a', b: 'scarce', score: 56 },
+    { a: 'c', b: 'd', score: 91 },
+    { a: 'b', b: 'c', score: 89 },
+  ];
+  const shortlist = buildReciprocalQualityShortlist(candidates, 2);
+  assert.deepEqual(shortlist.slice(0, 2).map((edge) => edge.score), [94, 91]);
+  assert.ok(shortlist.some((edge) => edge.a === 'scarce' || edge.b === 'scarce'));
+  const counts = new Map();
+  shortlist.forEach((edge) => {
+    counts.set(edge.a, (counts.get(edge.a) ?? 0) + 1);
+    counts.set(edge.b, (counts.get(edge.b) ?? 0) + 1);
+  });
+  assert.ok([...counts.values()].every((count) => count <= 2));
+});
+
+test('V5 reciprocal experiment scoring is auditable, bilateral, and learns only from explicit positive choices', () => {
+  const profile = (id, overrides = {}) => ({
+    id,
+    score_honesty: 6,
+    score_emotionality: 5,
+    score_extraversion: 5,
+    score_agreeableness: 6,
+    score_conscientiousness: 6,
+    score_openness: 5,
+    hobbies: ['hiking'],
+    music: ['jazz'],
+    food: ['sushi'],
+    sports: [],
+    experiment_answers: {
+      intention: 'relationship',
+      energy: 'conversation',
+      planningStyle: 'planned',
+    },
+    ...overrides,
+  });
+  const a = profile('a');
+  const b = profile('b', { hobbies: ['running'], music: ['rock'], food: ['italian'] });
+  const positiveForA = profile('liked', { hobbies: ['running'], music: ['rock'], food: ['italian'] });
+  const withoutFeedback = experimentReciprocalScore(a, b);
+  const underMinimum = experimentReciprocalScore(a, b, { positiveChoicesForA: [positiveForA] });
+  const personalized = experimentReciprocalScore(a, b, {
+    positiveChoicesForA: [positiveForA, { ...positiveForA, id: 'liked-2' }, { ...positiveForA, id: 'liked-3' }],
+  });
+  assert.equal(EXPERIMENT_RECIPROCAL_ALGORITHM_VERSION, 'dating-experiment-reciprocal-choice-v5');
+  assert.equal(Object.values(EXPERIMENT_RECIPROCAL_WEIGHTS).reduce((sum, weight) => sum + weight, 0), 1);
+  assert.equal(withoutFeedback.components.choiceAffinityA, null);
+  assert.equal(underMinimum.components.choiceAffinityA, null);
+  assert.ok(personalized.components.choiceAffinityA > 50);
+  assert.ok(personalized.directedA > personalized.directedB);
+  assert.ok(personalized.score >= 0 && personalized.score <= 100);
+});
+
+test('V5 reciprocal experiment scoring rejects known hard dealbreakers before ranking', () => {
+  const base = {
+    score_honesty: 6,
+    score_emotionality: 5,
+    score_extraversion: 5,
+    score_agreeableness: 6,
+    score_conscientiousness: 6,
+    score_openness: 5,
+    experiment_answers: { intention: 'relationship', energy: 'conversation', planningStyle: 'flexible' },
+  };
+  const result = experimentReciprocalScore(
+    { ...base, values_profile: { kids: 'yes' } },
+    { ...base, values_profile: { kids: 'no' } },
+  );
+  assert.equal(result.eligible, false);
+  assert.equal(result.score, 0);
+  assert.deepEqual(result.hardConflicts, ['kids']);
 });
 
 test('V2 dinner selection uses only mutual yes pairs and bounded favorite boosts', () => {
@@ -291,7 +371,7 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   const closeMigration = readFileSync(new URL('../supabase/migrations/20260819042500_close_dating_experiment_entry_window.sql', import.meta.url), 'utf8');
   assert.match(experimentSource, /respondHours:\s*6/);
   assert.match(experimentSource, /firstRoundDeadline:\s*'2026-08-19T18:00:00\.000Z'/);
-  assert.match(experimentSource, /secondRoundDeadline:\s*'2026-08-19T22:00:00\.000Z'/);
+  assert.match(experimentSource, /secondRoundDeadline:\s*'2026-08-19T23:00:00\.000Z'/);
   assert.match(migration, /response_hours = 6/i);
   assert.match(closeMigration, /status = 'entry_closed'/i);
   assert.match(closeMigration, /entry_closes_at <= now\(\)/i);

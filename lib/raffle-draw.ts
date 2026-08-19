@@ -20,18 +20,63 @@ import {
 } from '@/lib/experiment-preferences';
 import {
   buildCoverageFirstShortlist,
+  buildReciprocalQualityShortlist,
   assignDinnerSlots,
   mutualSelectionWeight,
   mutualWinnerSelectionPool,
   selectMutualDinnerPairsForSlots,
   type SlotAwareDecisionEdge,
 } from '@/lib/experiment-shortlist';
+import {
+  EXPERIMENT_RECIPROCAL_ALGORITHM_VERSION,
+  experimentReciprocalScore,
+} from '@/lib/experiment-reciprocal-scoring';
 
 const COLS = 'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, hobbies, music, food, sports, ' +
   'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, ' +
   'vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, email, is_test, is_blocked, deleted_at';
 
 const pairKey = (a: string, b: string) => [a, b].sort().join('|');
+
+type PriorPairChoice = {
+  user_a_id: string;
+  user_b_id: string;
+  a_accepted: boolean | null;
+  b_accepted: boolean | null;
+};
+
+async function loadPositiveChoiceProfiles(
+  eventKey: string,
+  priorPairs: PriorPairChoice[],
+): Promise<Map<string, any[]>> {
+  const positivePairs = priorPairs.filter((pair) => pair.a_accepted === true || pair.b_accepted === true);
+  const participantIds = [...new Set(positivePairs.flatMap((pair) => [pair.user_a_id, pair.user_b_id]))];
+  const byUser = new Map<string, any[]>();
+  if (!participantIds.length) return byUser;
+  const [{ data: profiles, error: profileError }, { data: entries, error: entryError }] = await Promise.all([
+    supabaseAdmin.from('users').select(COLS).in('id', participantIds),
+    supabaseAdmin.from('raffle_entries').select('user_id, questionnaire').eq('event_key', eventKey).in('user_id', participantIds),
+  ]);
+  if (profileError) throw profileError;
+  if (entryError) throw entryError;
+  const questionnaireByUser = new Map((entries ?? []).map((entry: any) => [entry.user_id, entry.questionnaire ?? null]));
+  const profileByUser = new Map(((profiles as any[]) ?? []).map((profile) => [profile.id, {
+    ...profile,
+    experiment_answers: questionnaireByUser.get(profile.id) ?? null,
+  }]));
+  const add = (userId: string, chosenId: string) => {
+    const chosen = profileByUser.get(chosenId);
+    if (!chosen) return;
+    const current = byUser.get(userId) ?? [];
+    if (!current.some((profile) => profile.id === chosen.id)) current.push(chosen);
+    byUser.set(userId, current);
+  };
+  for (const pair of positivePairs) {
+    if (pair.a_accepted === true) add(pair.user_a_id, pair.user_b_id);
+    if (pair.b_accepted === true) add(pair.user_b_id, pair.user_a_id);
+  }
+  return byUser;
+}
 
 type DrawResult = {
   ok: true;
@@ -80,7 +125,8 @@ const HOUR_MS = 60 * 60 * 1000;
 function roundResponseDeadline(roundNumber: number, now = Date.now()): string {
   const configured = new Date(roundNumber === 1 ? RAFFLE.firstRoundDeadline : RAFFLE.secondRoundDeadline).getTime();
   const normal = now + RAFFLE.respondHours * HOUR_MS;
-  // The public schedule closes round one at 2 PM and round two at 6 PM ET.
+  // The public schedule closes round one at 2 PM; the operator may extend a
+  // later round through its configured cutoff without shortening real choice time.
   // If an operational delay starts later, always preserve at least one hour
   // for a real participant decision instead of opening an already-dead form.
   return new Date(Math.max(now + HOUR_MS, Math.min(normal, configured))).toISOString();
@@ -805,7 +851,9 @@ export async function drawRaffle(opts: { force?: boolean; chainDepth?: number } 
     { data: priorPairs, error: priorPairsError },
   ] = await Promise.all([
     supabaseAdmin.from('users').select(COLS).in('id', eligibleIds),
-    supabaseAdmin.from('dating_experiment_shortlist_pairs').select('user_a_id, user_b_id').eq('event_key', event.event_key),
+    supabaseAdmin.from('dating_experiment_shortlist_pairs')
+      .select('user_a_id, user_b_id, a_accepted, b_accepted')
+      .eq('event_key', event.event_key),
   ]);
   if (usersError) throw usersError;
   if (priorPairsError) throw priorPairsError;
@@ -838,6 +886,14 @@ export async function drawRaffle(opts: { force?: boolean; chainDepth?: number } 
     })
     .filter((user) => user.gender && user.orientation && user.seeking_genders.length && user.age_min != null && user.age_max != null);
 
+  // V5 is opt-in at the event/version level. The first live experiment stays
+  // on its accepted V4 rules until an explicitly consented rescue or a future
+  // event switches the database algorithm_version. That keeps active sealed
+  // decisions historically accurate while the new model is production-ready.
+  const positiveChoicesByUser = event.algorithm_version === EXPERIMENT_RECIPROCAL_ALGORITHM_VERSION
+    ? await loadPositiveChoiceProfiles(event.event_key, (priorPairs ?? []) as PriorPairChoice[])
+    : new Map<string, any[]>();
+
   const candidates: { a: any; b: any; score: number }[] = [];
   const usedTimes = new Set(existingWinners.flatMap((winner) => winner.happens_at ? [new Date(winner.happens_at).toISOString()] : []));
   const activeSlotKeys = new Set(event.dinner_dates
@@ -855,11 +911,23 @@ export async function drawRaffle(opts: { force?: boolean; chainDepth?: number } 
         ? b.experiment_answers.availableSlotKeys.map(String).filter((key: string) => activeSlotKeys.has(key))
         : []);
       if (!aSlots.some((key: string) => bSlots.has(key))) continue;
-      const score = raffleScore(a, b);
-      if (score >= event.minimum_pair_score) candidates.push({ a, b, score });
+      if (event.algorithm_version === EXPERIMENT_RECIPROCAL_ALGORITHM_VERSION) {
+        const reciprocal = experimentReciprocalScore(a, b, {
+          positiveChoicesForA: positiveChoicesByUser.get(a.id) ?? [],
+          positiveChoicesForB: positiveChoicesByUser.get(b.id) ?? [],
+        });
+        if (reciprocal.eligible && reciprocal.score >= event.minimum_pair_score) {
+          candidates.push({ a, b, score: reciprocal.score });
+        }
+      } else {
+        const score = raffleScore(a, b);
+        if (score >= event.minimum_pair_score) candidates.push({ a, b, score });
+      }
     }
   }
-  const shortlist = buildCoverageFirstShortlist(candidates, event.shortlist_max_options);
+  const shortlist = event.algorithm_version === EXPERIMENT_RECIPROCAL_ALGORITHM_VERSION
+    ? buildReciprocalQualityShortlist(candidates, event.shortlist_max_options)
+    : buildCoverageFirstShortlist(candidates, event.shortlist_max_options);
   if (!shortlist.length) {
     return naturallyTriggered
       ? closeExperimentWithoutWinner(event, pool.length, 'no-eligible-pair', existingWinners)

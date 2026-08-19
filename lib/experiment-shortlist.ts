@@ -92,6 +92,62 @@ export function buildCoverageFirstShortlist<T>(
   return selected;
 }
 
+/**
+ * V5 shortlist ranking. Start with the strongest disjoint reciprocal edges,
+ * then use each person's second slot to rescue uncovered participants before
+ * filling any remaining capacity by quality. With a two-option cap this keeps
+ * broad access without allowing a weak scarcity edge to displace a person's
+ * strongest available first option.
+ */
+export function buildReciprocalQualityShortlist<T>(
+  candidates: ShortlistCandidateEdge<T>[],
+  maxOptions = 2,
+): ShortlistCandidateEdge<T>[] {
+  if (maxOptions < 1) return [];
+  const ordered = [...candidates].sort((left, right) => {
+    const scoreOrder = right.score - left.score;
+    if (scoreOrder) return scoreOrder;
+    const leftKey = [keyOf(left.a), keyOf(left.b)].sort().join('|');
+    const rightKey = [keyOf(right.a), keyOf(right.b)].sort().join('|');
+    return leftKey.localeCompare(rightKey);
+  });
+  const selected: ShortlistCandidateEdge<T>[] = [];
+  const selectedKeys = new Set<string>();
+  const assigned = new Map<string, number>();
+  const count = (user: T) => assigned.get(keyOf(user)) ?? 0;
+  const add = (edge: ShortlistCandidateEdge<T>) => {
+    const a = keyOf(edge.a), b = keyOf(edge.b);
+    selected.push(edge);
+    selectedKeys.add([a, b].sort().join('|'));
+    assigned.set(a, (assigned.get(a) ?? 0) + 1);
+    assigned.set(b, (assigned.get(b) ?? 0) + 1);
+  };
+
+  // Quality pass: every first option comes from the highest-scoring remaining
+  // disjoint edge, rather than a low-scoring scarcity edge.
+  for (const edge of ordered) {
+    if (count(edge.a) === 0 && count(edge.b) === 0) add(edge);
+  }
+
+  // Coverage repair: an uncovered participant may use the second slot of a
+  // covered person, but never pushes that person's strongest option away.
+  for (const edge of ordered) {
+    const edgeKey = [keyOf(edge.a), keyOf(edge.b)].sort().join('|');
+    if (selectedKeys.has(edgeKey)) continue;
+    if (count(edge.a) >= maxOptions || count(edge.b) >= maxOptions) continue;
+    if (count(edge.a) === 0 || count(edge.b) === 0) add(edge);
+  }
+
+  // Optional second choices are then filled strictly by reciprocal quality.
+  for (const edge of ordered) {
+    const edgeKey = [keyOf(edge.a), keyOf(edge.b)].sort().join('|');
+    if (selectedKeys.has(edgeKey)) continue;
+    if (count(edge.a) >= maxOptions || count(edge.b) >= maxOptions) continue;
+    add(edge);
+  }
+  return selected;
+}
+
 export function mutualSelectionWeight<T>(
   edge: ShortlistDecisionEdge<T>,
   compatibilityWeight: (score: number) => number,
