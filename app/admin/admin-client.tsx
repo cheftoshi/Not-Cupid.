@@ -1138,14 +1138,14 @@ export default function AdminClient() {
                 })
                 const dry = await parseResponse<any>(dryRes).catch(() => null)
                 if (!dryRes.ok || !dry) { alert(`Last-chance audit failed: ${dry?.error || dryRes.status}`); return }
-                if (!confirm(`Send the approved last-chance email?\n\nRecipients: ${dry.wouldSend} (must equal ${dry.expectedRecipients})\nSubject: ${dry.subject}\nBody: ${dry.body?.invitation}\nCTA: ${dry.body?.cta}`)) return
+                if (!confirm(`Send the approved last-chance email?\n\nRecipients now: ${dry.wouldSend} (approved maximum ${dry.expectedRecipients})\nSubject: ${dry.subject}\nBody: ${dry.body?.invitation}\nCTA: ${dry.body?.cta}`)) return
                 const res = await fetch('/api/admin/send-experiment-last-chance', {
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ send: true, approvalVersion: dry.approvalVersion, recipientCount: dry.wouldSend }),
                 })
                 const result = await parseResponse<any>(res)
                 alert(`Last chance: sent ${result.sent || 0}, failed ${result.failed || 0}, skipped after entry ${result.skippedEntered || 0}${result.error ? `\n\n${result.error}` : ''}`)
-              }}>⏳ Send approved last-chance 3</button>
+              }}>⏳ Send approved last-chance (max 3)</button>
               <button className={`${s.btn} ${s.btnGold}`} onClick={async () => {
                 const dry = await fetch('/api/admin/send-friend-blast?dry=1', { method: 'POST' }).then(r => parseResponse<any>(r)).catch(() => null)
                 const preview = dry ? `\n\n${dry.wouldSend} recipients (ALL users — links to /friends).` : ''

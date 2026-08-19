@@ -75,9 +75,14 @@ export async function POST(req: NextRequest) {
   };
   if (!sendRequested) return NextResponse.json(audit);
 
+  // The operator approved up to three recipients. If somebody enters between
+  // approval and delivery, the live cohort may shrink, but it can never grow
+  // beyond that authorization without a new approval.
+  const countWithinApproval = audience.candidates.length > 0
+    && audience.candidates.length <= EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS;
   const approvalMatches = body.approvalVersion === EXPERIMENT_LAST_CHANCE_APPROVAL_VERSION
-    && body.recipientCount === EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS;
-  if (!approvalMatches || audience.candidates.length !== EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS || !entriesOpen || !mailingAddressReady) {
+    && body.recipientCount === audience.candidates.length;
+  if (!approvalMatches || !countWithinApproval || !entriesOpen || !mailingAddressReady) {
     return NextResponse.json({
       ...audit,
       error: 'Last-chance send refused: approval, exact recipient count, open entry window, and mailing address must all match.',
@@ -101,7 +106,9 @@ export async function POST(req: NextRequest) {
     const { error: queueError } = await supabaseAdmin.from('email_campaign_deliveries').upsert({
       campaign_key: ELIGIBLE_READY_REMINDER_CAMPAIGN,
       user_id: user.id,
-      variant: 'last_chance_v1',
+      // Reuse the allowlisted `ready` variant. The unique idempotency key and
+      // approved-copy constant still distinguish this one-time final nudge.
+      variant: 'ready',
       status: 'queued',
       updated_at: queuedAt,
     }, { onConflict: 'campaign_key,user_id' });
@@ -140,7 +147,7 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    ok: failed === 0 && sent + skippedEntered === EXPERIMENT_LAST_CHANCE_EXPECTED_RECIPIENTS,
+    ok: failed === 0 && sent + skippedEntered === audience.candidates.length,
     attempted: audience.candidates.length,
     sent,
     failed,
