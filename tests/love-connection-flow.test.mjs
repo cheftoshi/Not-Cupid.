@@ -22,6 +22,7 @@ test('Love Line exposes three included picks plus seven alternatives and a hard 
 
 test('every Love roster option has a free, phone-safe profile preview before choosing', () => {
   const route = readFileSync(new URL('../app/api/match/roster/route.ts', import.meta.url), 'utf8');
+  const pick = readFileSync(new URL('../app/api/match/pick/route.ts', import.meta.url), 'utf8');
   const picker = readFileSync(new URL('../app/dashboard/roster-picker.tsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../app/dashboard/dashboard.module.css', import.meta.url), 'utf8');
   assert.match(route, /bio, prompts, relationship_style/);
@@ -30,11 +31,16 @@ test('every Love roster option has a free, phone-safe profile preview before cho
   assert.match(picker, /view \{first\}&apos;s profile/);
   assert.match(picker, /role="dialog"/);
   assert.match(picker, /free roster profile/);
+  assert.doesNotMatch(picker, /disabled=\{!!picking \|\| !!pickedId\}/);
+  assert.match(picker, /reason: typeof data\.code === 'string'/);
+  assert.match(pick, /wasRecentlyExposed/);
   assert.match(picker, /this profile is free/);
   assert.match(picker, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(css, /\.loveProfilePreviewSheet \{/);
   assert.match(css, /max-height: calc\(100dvh/);
   assert.match(css, /app-safe-bottom/);
+  assert.match(css, /\.loveProfilePreviewToolbar \{/);
+  assert.match(css, /\.loveProfilePreviewScroll \{/);
 });
 
 test('a pick notifies the other person and mutual acceptance notifies both', () => {

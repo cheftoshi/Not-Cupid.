@@ -116,13 +116,16 @@ export default function RosterPicker({
   useEffect(() => {
     if (!previewCandidate && !paywallCandidate) return;
     const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { setPreviewCandidate(null); setPaywallCandidate(null); }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [previewCandidate, paywallCandidate]);
@@ -269,8 +272,19 @@ export default function RosterPicker({
         // scroll stays put and the reveal cinematic still fires for the fresh match.
         setPickedId(c.id);
         setPicking(null);
+        setPreviewCandidate(null);
         window.dispatchEvent(new Event('nc:show-push-prompt'));
-        setTimeout(() => router.refresh(), 1400);
+        // router.refresh() intentionally preserves client component state. The
+        // old global `pickedId` disable therefore made every remaining card
+        // look locked after the first choice—especially obvious in the PWA.
+        // Keep the success moment briefly, then remove only this card and load
+        // the authoritative roster without blocking the other included picks.
+        window.setTimeout(() => {
+          setRoster((current) => current?.filter((item) => item.id !== c.id) ?? current);
+          setPickedId((current) => current === c.id ? null : current);
+          void load();
+          router.refresh();
+        }, 900);
         return;
       }
       if (res.status === 402 && data.paywall) {
@@ -280,7 +294,21 @@ export default function RosterPicker({
       }
       // Conflict (taken / already matched) — show why + refresh the roster.
       setNotice(data.error || 'That didn’t work — refreshed your options.');
-      trackLoveEvent('pick_failed', { candidateId: c.id, metadata: { status: res.status } });
+      trackLoveEvent('pick_failed', {
+        candidateId: c.id,
+        metadata: {
+          status: res.status,
+          reason: typeof data.code === 'string'
+            ? data.code
+            : res.status === 403
+              ? 'stale_roster'
+              : res.status === 409
+                ? 'candidate_unavailable'
+                : res.status >= 500
+                  ? 'server_error'
+                  : 'request_rejected',
+        },
+      });
       setPicking(null);
       load();
     } catch {
@@ -535,12 +563,12 @@ export default function RosterPicker({
                 <button
                   className={styles.loveRosterAction}
                   onClick={() => pick(c)}
-                  disabled={!!picking || !!pickedId}
+                  disabled={!!picking || pickedId === c.id}
                   style={{
                     marginTop: 'auto', background: picking === c.id ? '#1b46c9' : '#0b0b0b', color: '#fff', border: 'none',
                     borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem',
                     letterSpacing: '0.1em', textTransform: 'uppercase', cursor: picking ? 'wait' : 'pointer',
-                    opacity: (picking && picking !== c.id) || pickedId ? 0.4 : 1,
+                    opacity: (picking && picking !== c.id) || pickedId === c.id ? 0.4 : 1,
                   }}
                 >
                   {picking === c.id
@@ -600,7 +628,11 @@ export default function RosterPicker({
               aria-modal="true"
               aria-labelledby="love-roster-profile-title"
             >
-              <button type="button" className={styles.loveProfilePreviewClose} onClick={() => setPreviewCandidate(null)} aria-label="Close profile preview">×</button>
+              <div className={styles.loveProfilePreviewToolbar}>
+                <span>Love roster profile</span>
+                <button type="button" className={styles.loveProfilePreviewClose} onClick={() => setPreviewCandidate(null)} aria-label="Close profile preview">×</button>
+              </div>
+              <div className={styles.loveProfilePreviewScroll}>
               <div className={styles.loveProfilePreviewPhoto}>
                 {candidate.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -709,7 +741,7 @@ export default function RosterPicker({
                 <button
                   type="button"
                   className={styles.loveProfilePreviewChoose}
-                  disabled={!!picking || !!pickedId}
+                  disabled={!!picking || pickedId === candidate.id}
                   onClick={() => {
                     setPreviewCandidate(null);
                     pick(candidate);
@@ -727,6 +759,7 @@ export default function RosterPicker({
                           ? `choose ${first} · included →`
                           : `match + chat + AI read · $0.99 →`}
                 </button>
+              </div>
               </div>
             </section>
           </div>

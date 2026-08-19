@@ -49,9 +49,25 @@ export async function POST(req: NextRequest) {
     }).eq('user_id', user.id).eq('intended_candidate_id', candidateId).in('status', ['purchased', 'credit']);
   };
   const rosterSnapshot: string[] = Array.isArray(user.roster_snapshot) ? user.roster_snapshot : [];
+  // A background roster verification can rotate the saved snapshot while an
+  // installed PWA is still displaying the prior, genuinely-issued roster.
+  // Accept a candidate we actually exposed to this user during the current
+  // return window; the full eligibility checks below still prevent arbitrary
+  // ids, duplicates, stale profiles, or cross-realm picks.
+  let wasRecentlyExposed = false;
   if (!rosterSnapshot.includes(candidateId)) {
+    const { data: exposure } = await supabaseAdmin
+      .from('roster_exposures')
+      .select('shown_at')
+      .eq('user_id', user.id)
+      .eq('candidate_id', candidateId)
+      .gte('shown_at', new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString())
+      .maybeSingle();
+    wasRecentlyExposed = !!exposure;
+  }
+  if (!rosterSnapshot.includes(candidateId) && !wasRecentlyExposed) {
     await preservePaidCredit();
-    return NextResponse.json({ error: 'That person is not on your current roster.' }, { status: 403 });
+    return NextResponse.json({ error: 'That roster changed. We refreshed your current options.', code: 'stale_roster' }, { status: 403 });
   }
 
   // Ghosted/paused callers can't pick — locked out of both lines until they

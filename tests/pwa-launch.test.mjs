@@ -149,6 +149,10 @@ test('phone-critical chats and app roots stay viewport-safe in the installed PWA
   assert.match(loveChatCss, /\.input \{[^}]*width: 0;[^}]*min-width: 0/);
   assert.match(hubCss, /\.dashWrap \{[^}]*app-safe-right[^}]*app-safe-bottom[^}]*app-safe-left[^}]*overflow-x: clip/);
   assert.match(dashboardCss, /\.page \{[\s\S]*app-safe-right[\s\S]*app-safe-left[\s\S]*overflow-x: clip/);
+  assert.match(dashboardCss, /\.loveModalOverlay \{[^}]*height: 100dvh;[^}]*overflow: hidden/);
+  assert.match(dashboardCss, /\.loveProfilePreviewSheet \{[^}]*display: flex;[^}]*overflow: hidden/);
+  assert.match(dashboardCss, /\.loveProfilePreviewScroll \{[^}]*overflow-y: auto/);
+  assert.match(dashboardCss, /\.loveProfilePreviewToolbar \{[^}]*flex: 0 0 auto/);
   assert.match(profileCss, /\.page \{[\s\S]*min-height: 100dvh[\s\S]*app-safe-right[\s\S]*app-safe-bottom[\s\S]*app-safe-left[\s\S]*overflow-x: clip/);
   assert.match(experimentProfileCss, /min-height: 100dvh/);
   assert.match(experimentProfileCss, /safe-area-inset-right/);

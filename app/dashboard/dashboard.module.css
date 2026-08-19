@@ -196,7 +196,11 @@
 .loveModalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 190;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,19 +222,45 @@
 .loveSwapChoice { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; min-height: 48px; }
 .loveProfilePreviewSheet {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   width: min(100%, 520px);
   max-height: calc(100dvh - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
   background: var(--h-surface);
   border-radius: 22px;
   box-shadow: var(--shadow-lg);
 }
+.loveProfilePreviewToolbar {
+  z-index: 5;
+  flex: 0 0 auto;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.55rem 0.45rem 1rem;
+  border-bottom: 1px solid var(--h-border);
+  background: color-mix(in srgb, var(--h-surface) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--h-text-dim);
+  font: 700 0.54rem 'DM Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.loveProfilePreviewScroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
 .loveProfilePreviewClose {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 2;
+  position: static;
+  flex: 0 0 auto;
   width: 40px;
   height: 40px;
   border: 0;
@@ -875,9 +905,11 @@
   .loveLinks a, .historyDetails summary { min-height: 44px; }
   .loveRosterCard { width: min(76vw, 270px); flex-basis: min(76vw, 270px); }
   .loveRosterRail { margin-inline: -0.15rem; padding-bottom: 0.85rem; }
+  .loveModalOverlay { align-items: flex-end; padding: max(0.5rem, var(--app-safe-top, 0px)) 0 0; }
   .loveSwapSheet { align-self: flex-end; border-radius: 20px 20px 0 0; padding: 1.2rem; padding-bottom: max(1.2rem, var(--app-safe-bottom, 0px)); }
-  .loveProfilePreviewSheet { align-self: flex-end; width: 100%; max-height: calc(100dvh - var(--app-safe-top, 0px)); border-radius: 22px 22px 0 0; }
-  .loveProfilePreviewPhoto { aspect-ratio: 4 / 3; }
+  .loveProfilePreviewSheet { align-self: flex-end; width: 100%; height: calc(100dvh - max(0.5rem, var(--app-safe-top, 0px))); max-height: calc(100dvh - max(0.5rem, var(--app-safe-top, 0px))); border-radius: 22px 22px 0 0; border-bottom: 0; }
+  .loveProfilePreviewPhoto { height: min(30dvh, 240px); aspect-ratio: auto; }
   .loveProfilePreviewBody { padding: 1rem 1rem max(1rem, var(--app-safe-bottom, 0px)); }
+  .loveProfilePreviewChoose { position: sticky; bottom: max(0.35rem, var(--app-safe-bottom, 0px)); z-index: 4; box-shadow: 0 10px 28px -12px rgba(11,11,11,0.55); }
   .loveCompatibilityColumns { grid-template-columns: 1fr; }
 }

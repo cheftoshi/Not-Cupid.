@@ -138,12 +138,15 @@ export function detectProductBottlenecks(input: SnapshotInput) {
     });
   }
 
-  if (revenue?.paywallViewers >= 20 && revenue.checkoutStarters === 0) add({
+  // The retired profile gate must not keep the redesigned Love capacity
+  // experiment permanently red. Judge the live connection surface separately.
+  const currentLoveRevenue = revenue?.products?.love_connection ?? revenue;
+  if (currentLoveRevenue?.paywallViewers >= 20 && currentLoveRevenue.checkoutStarters === 0) add({
     id: 'paywall-to-checkout',
     area: 'revenue',
     severity: 'critical',
     title: 'Paywall exposure is producing no checkout intent',
-    evidence: `${revenue.paywallViewers} unique paywall viewers and zero checkout starters in ${revenue.periodDays ?? 30} days.`,
+    evidence: `${currentLoveRevenue.paywallViewers} unique Love connection paywall viewers and zero checkout starters in ${revenue.periodDays ?? 30} days.`,
     diagnosis: 'The value proposition, timing, price framing, checkout handoff, or telemetry is failing before payment begins.',
     nextAction: 'Separate each product surface, verify checkout instrumentation end to end, and test value after users experience the free core—not before trust exists.',
     metric: { value: 0, unit: 'percent', target: 'first reach 5% view-to-checkout' },
@@ -173,7 +176,7 @@ export function detectProductBottlenecks(input: SnapshotInput) {
       area: 'reliability',
       severity: errors >= 10 || Number(perf.rosterApiP75Ms ?? 0) > 3000 ? 'critical' : 'high',
       title: 'PWA responsiveness is adding interaction friction',
-      evidence: `Roster API p75 ${perf.rosterApiP75Ms ?? '—'}ms · INP p75 ${perf.inpP75Ms ?? '—'}ms · ${errors} client errors in 24 hours.`,
+      evidence: `Roster API p75 ${perf.rosterApiP75Ms ?? '—'}ms · INP p75 ${perf.inpP75Ms ?? '—'}ms · ${errors} client errors on release ${perf.release ?? 'current'}.`,
       diagnosis: 'Slow or failing mobile interactions can look like low intent even when the underlying match is relevant.',
       nextAction: 'Trace the slowest roster query and top client-error signature, then verify the fix on an installed iPhone PWA.',
       metric: { value: Math.max(Number(perf.rosterApiP75Ms ?? 0), Number(perf.inpP75Ms ?? 0)), unit: 'milliseconds', target: 'roster below 1.5s and INP below 500ms' },

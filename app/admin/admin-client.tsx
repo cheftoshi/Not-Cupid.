@@ -370,7 +370,7 @@ export default function AdminClient() {
             <div className={s.cardHead}>
               <div>
                 <p className={s.cardTitle}>Snapshot diagnosis — <b>where the product is leaking</b></p>
-                <p className={s.note} style={{ margin: '0.35rem 0 0' }}>Ranked from aggregate behavior. Nothing here automatically changes matching or contacts a user.</p>
+                <p className={s.note} style={{ margin: '0.35rem 0 0' }}>These are ranked funnel signals, not an outage count. “Critical” means a metric is far from its target; only reliability cards indicate a technical failure. Nothing here automatically changes matching or contacts a user.</p>
               </div>
               {data?.bottlenecks?.summary && (
                 <div className={s.chips} style={{ margin: 0 }}>
@@ -493,7 +493,7 @@ export default function AdminClient() {
                       <span className={`${s.chip} ${s.chipGold}`}>AI reads opened <b>{data.appExperience.interactions.compatibilityReadOpens}</b></span>
                       <span className={s.chip}>Pick attempts <b>{data.appExperience.interactions.pickAttempts}</b></span>
                       <span className={`${s.chip} ${s.chipGold}`}>Pick successes <b>{data.appExperience.interactions.pickSuccesses}</b></span>
-                      <span className={`${s.chip} ${s.chipRed}`}>Pick failures <b>{data.appExperience.interactions.pickFailures}</b></span>
+                      <span className={`${s.chip} ${data.appExperience.interactions.pickFailures ? s.chipRed : ''}`}>Pick failures <b>{data.appExperience.interactions.pickFailures}</b>{data.appExperience.interactions.pickFailureUsers ? ` · ${data.appExperience.interactions.pickFailureUsers} people` : ''}</span>
                       <span className={s.chip}>No fit today <b>{data.appExperience.interactions.noSuitableChoice}</b></span>
                       <span className={s.chip}>First messages <b>{data.appExperience.interactions.firstMessages}</b></span>
                       <span className={s.chip}>First replies <b>{data.appExperience.interactions.replies}</b></span>
@@ -502,8 +502,9 @@ export default function AdminClient() {
                       <span className={s.chip}>LCP p75 <b>{data.appExperience.performance.lcpP75Ms ?? '—'}ms</b></span>
                       <span className={s.chip}>INP p75 <b>{data.appExperience.performance.inpP75Ms ?? '—'}ms</b></span>
                       <span className={s.chip}>CLS p75 <b>{data.appExperience.performance.clsP75 ?? '—'}</b></span>
-                      <span className={`${s.chip} ${data.appExperience.performance.clientErrors ? s.chipRed : ''}`}>Client errors <b>{data.appExperience.performance.clientErrors}</b></span>
-                      <span className={`${s.chip} ${data.appExperience.performance.clientErrorSessions ? s.chipRed : ''}`}>Affected sessions <b>{data.appExperience.performance.clientErrorSessions ?? 0}</b></span>
+                      <span className={`${s.chip} ${data.appExperience.performance.clientErrors ? s.chipRed : ''}`}>Current release errors <b>{data.appExperience.performance.clientErrors}</b></span>
+                      <span className={`${s.chip} ${data.appExperience.performance.clientErrorSessions ? s.chipRed : ''}`}>Current affected sessions <b>{data.appExperience.performance.clientErrorSessions ?? 0}</b></span>
+                      <span className={s.chip}>Prior-release errors in 24h <b>{data.appExperience.performance.clientErrors24h ?? 0}</b></span>
                     </div>
                     {data.appExperience.performance.recentErrorGroups?.length > 0 && (
                       <div style={{ marginTop: '0.7rem' }}>

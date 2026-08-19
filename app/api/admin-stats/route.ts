@@ -98,6 +98,7 @@ export async function GET(req: NextRequest) {
     } catch { /* additive migration may still be rolling out */ }
     const experienceByKey = new Map(experienceRows.map((row: any) => [`${row.event_name}:${row.metric_name || ''}`, row]))
     const interaction = (name: string) => Number(experienceByKey.get(`${name}:`)?.total ?? 0)
+    const interactionUsers = (name: string) => Number(experienceByKey.get(`${name}:`)?.unique_users ?? 0)
     let recentClientErrors: any[] = []
     try {
       const { data, error } = await supabaseAdmin
@@ -109,8 +110,13 @@ export async function GET(req: NextRequest) {
         .limit(250)
       if (!error) recentClientErrors = data ?? []
     } catch { /* diagnostics remain optional during a rolling migration */ }
+    const currentRelease = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) || 'local'
+    const currentReleaseErrors = recentClientErrors.filter((row: any) => {
+      const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {}
+      return metadata.release === currentRelease
+    })
     const errorGroupMap = new Map<string, any>()
-    for (const row of recentClientErrors) {
+    for (const row of currentReleaseErrors) {
       const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {}
       const fingerprint = typeof metadata.fingerprint === 'string' ? metadata.fingerprint : 'legacy'
       const code = typeof metadata.errorCode === 'string' ? metadata.errorCode : 'unclassified'
@@ -147,6 +153,7 @@ export async function GET(req: NextRequest) {
         pickAttempts: interaction('pick_attempt'),
         pickSuccesses: interaction('pick_success'),
         pickFailures: interaction('pick_failed'),
+        pickFailureUsers: interactionUsers('pick_failed'),
         noSuitableChoice: interaction('no_suitable_choice'),
         firstMessages: interaction('first_message'),
         replies: interaction('reply'),
@@ -157,8 +164,12 @@ export async function GET(req: NextRequest) {
         lcpP75Ms: vital('LCP'),
         inpP75Ms: vital('INP'),
         clsP75: vital('CLS'),
-        clientErrors: interaction('client_error'),
-        clientErrorSessions: new Set(recentClientErrors.map((row: any) => row.session_id).filter(Boolean)).size,
+        // Current-release errors drive the alarm. Fixed errors from an older
+        // bundle remain visible in the rolling 24-hour context count.
+        release: currentRelease,
+        clientErrors: currentReleaseErrors.length,
+        clientErrors24h: recentClientErrors.length,
+        clientErrorSessions: new Set(currentReleaseErrors.map((row: any) => row.session_id).filter(Boolean)).size,
         recentErrorGroups,
       },
     }

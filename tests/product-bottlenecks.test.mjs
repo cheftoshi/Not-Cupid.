@@ -30,7 +30,7 @@ test('snapshot diagnosis flags the current Love, attribution, notification, and 
         failed: 0,
       },
     },
-    monetization: { periodDays: 30, paywallViewers: 40, checkoutStarters: 0 },
+    monetization: { periodDays: 30, paywallViewers: 40, checkoutStarters: 0, products: { love_connection: { paywallViewers: 40, checkoutStarters: 0 } } },
   });
 
   const ids = new Set(result.items.map((item) => item.id));
@@ -63,7 +63,7 @@ test('healthy cohorts do not manufacture bottlenecks', () => {
       mutualWithoutMessage: 2,
       notifications: { immediateSent: 10, reminder24hSent: 2, finalSent: 0, mutualNoMessage12hSent: 0, delivered: 11, failed: 1 },
     },
-    monetization: { periodDays: 30, paywallViewers: 40, checkoutStarters: 5 },
+    monetization: { periodDays: 30, paywallViewers: 40, checkoutStarters: 5, products: { love_connection: { paywallViewers: 40, checkoutStarters: 5 } } },
     appExperience: { performance: { rosterApiP75Ms: 800, inpP75Ms: 180, clientErrors: 0 }, interactions: { profileOpens: 30, compatibilityReadRequests: 3 } },
     friend: { optedIn: 100, connectionActionUsers30d: 25 },
   });
@@ -76,6 +76,18 @@ test('closed campaigns remain historical context instead of permanent live bottl
     onlyInBoston: { campaignActive: false, launchWindowSessions: 500, launchWindowEntries: 0, attributedSessions: 0 },
   });
   assert.equal(result.items.some((item) => item.area === 'acquisition'), false);
+});
+
+test('retired Love profile paywalls do not flag the new connection funnel', () => {
+  const result = detectProductBottlenecks({
+    monetization: {
+      periodDays: 30,
+      paywallViewers: 59,
+      checkoutStarters: 0,
+      products: { love_connection: { paywallViewers: 4, checkoutStarters: 0 } },
+    },
+  });
+  assert.equal(result.items.some((item) => item.id === 'paywall-to-checkout'), false);
 });
 
 test('admin snapshots expose and render the ranked diagnosis', () => {
