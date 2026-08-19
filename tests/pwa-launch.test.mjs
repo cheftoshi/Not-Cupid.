@@ -110,7 +110,7 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(navExtras, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(navExtras, /scrollTo\(\{ top: 0 \}\)/);
   assert.match(changelog, /2026-08-18-hub-concierge-v1/);
-  assert.match(changelog, /Boston Dating Experiment is live/);
+  assert.match(changelog, /Boston Dating Experiment is underway — entries are now closed/);
 });
 
 test('Friend Scene stays inside the phone viewport and keeps every response visible', () => {

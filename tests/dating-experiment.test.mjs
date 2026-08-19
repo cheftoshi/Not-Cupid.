@@ -41,6 +41,12 @@ test('Dating Experiment public launch stays free, local, limited, and payment-ne
   assert.match(experimentSource, /now < new Date\(RAFFLE\.entryClose\)\.getTime\(\)/);
 });
 
+test('post-close product copy never invites a new Dating Experiment entry', () => {
+  const changelog = readFileSync(new URL('../lib/changelog.ts', import.meta.url), 'utf8');
+  assert.match(changelog, /entries are now closed/);
+  assert.doesNotMatch(changelog, /Dating Experiment is live — opt in free/);
+});
+
 test('selection weight is bounded and compatibility score remains normalized', () => {
   assert.match(experimentSource, /minimumPairScore:\s*55/);
   assert.match(experimentSource, /Math\.min\(3,/);

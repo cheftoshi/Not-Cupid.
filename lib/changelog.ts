@@ -15,7 +15,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: 'August 2026',
     items: [
       '✦ Your NotCupid concierge now lives at the top of the Hub — tell it whether you want Love, friends, a plan, a community, or help in another city, and it will route you to one real next move. You approve every action.',
-      '🍽️ The Boston Dating Experiment is live — opt in free, meet up to 2 private compatibility options, and mutually choose who you would actually meet. Up to 2 mutual pairs get dinner on us.',
+      '🍽️ The Boston Dating Experiment is underway — entries are now closed. Entrants can follow their private compatibility options and mutually choose who they would actually meet. Up to 2 mutual pairs get dinner on us.',
       '🎥 Video is optional — add a private 5–15 second hello if you want to show more personality. Skipping it never affects eligibility or compatibility.',
       '💘 More people, still curated — every Love roster now shows up to 10 compatible options and includes 3 distinct connection picks.',
       '🪪 Love profiles are open — tap any roster card to read the bio, prompts and interests before choosing. Accepting and replying are always free.',
