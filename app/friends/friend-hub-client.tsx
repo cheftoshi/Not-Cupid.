@@ -652,7 +652,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
     setComments((prev) => [...prev, { id: tmpId, body, isMe: true, name: 'you', pending: true }]);
     setCCount((n) => n + 1);
     try {
-      const res = await fetch(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
+      const res = await fetch(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: tmpId }) });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setComments((prev) => prev.filter((c) => c.id !== tmpId)); setCCount((n) => Math.max(0, n - 1));
@@ -939,13 +939,18 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const seenBootstrapped = useRef(false);
 
   const [rosterLoaded, setRosterLoaded] = useState(false); // first roster fetch landed (gates the AI move)
+  const [loadErrors, setLoadErrors] = useState<Record<string, boolean>>({});
+  const setSourceError = useCallback((source: string, failed: boolean) => {
+    setLoadErrors((current) => ({ ...current, [source]: failed }));
+  }, []);
   const loadMatches = useCallback(async () => {
     try {
       const r = await fetch('/api/friend/roster');
-      if (r.ok) { const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); setCooledUntil(d.friendCooled ? (d.cooledUntil || '') : null); }
-    } catch { /* a transient refresh failure keeps the last good roster */ }
+      if (!r.ok) throw new Error(`roster ${r.status}`);
+      const d = await r.json(); setMatches(d.matches || []); setSealedCount(d.sealedCount || 0); setGhosted(!!d.ghosted); setHardLocked(!!d.hardLocked); setCooledUntil(d.friendCooled ? (d.cooledUntil || '') : null); setSourceError('roster', false);
+    } catch { setSourceError('roster', true); }
     finally { setRosterLoaded(true); }
-  }, []);
+  }, [setSourceError]);
   const loadChat = useCallback(async (markRead = false) => {
     try { const r = await fetch(`/api/friend/messages${markRead ? '?read=1' : ''}`); if (r.ok) setChat(await r.json()); }
     catch { /* the next poll retries without breaking the page */ }
@@ -957,10 +962,11 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const loadActs = useCallback(async () => {
     try {
       const r = await fetch('/api/friend/activities'); // fetch all; category filtering is client-side now (mains group several)
-      if (r.ok) setActs((await r.json()).activities || []);
-    } catch { /* preserve the last good Scene */ }
+      if (!r.ok) throw new Error(`activities ${r.status}`);
+      setActs((await r.json()).activities || []); setSourceError('scene', false);
+    } catch { setSourceError('scene', true); }
     finally { setActsLoaded(true); }
-  }, []);
+  }, [setSourceError]);
 
   // ── City Pulse communities: user-run clubs + submitted community links ──
   const [clubs, setClubs] = useState<any[]>([]);
@@ -1015,7 +1021,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     setClubMsgs((prev) => [...prev, { id: tmpId, body, isMe: true, pending: true }]);
     setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 40);
     try {
-      const response = await fetch(`/api/friend/clubs/${clubChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
+      const response = await fetch(`/api/friend/clubs/${clubChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, clientId: tmpId }) });
       if (!response.ok) {
         const detail = await response.json().catch(() => ({}));
         setClubMsgs((prev) => prev.map((message) => message.id === tmpId ? { ...message, pending: false, failed: true } : message));
@@ -1080,7 +1086,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // while waiting for the first 4s poll tick.
   useEffect(() => { loadChat(view === 'crew' && chatOpen); }, [view, chatOpen, loadChat]);
   // poll the Scene so new posts/events surface live (and can notify)
-  useEffect(() => { const t = setInterval(loadActs, 45000); return () => clearInterval(t); }, [loadActs]);
+  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'scene') loadActs(); }, 45000); return () => clearInterval(t); }, [loadActs, view]);
 
   // In-app "new event" notification: when an eligible event you didn't post
   // appears, pop a toast + bump the Scene badge. First load seeds the baseline
@@ -1307,8 +1313,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   }
   async function send() {
     const body = msg.trim(); if (!body) return; setMsg('');
+    const clientId = `crew-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     try {
-      const response = await fetch('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body }) });
+      const response = await fetch('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: clientId }) });
       if (!response.ok) throw new Error('friend-message-failed');
       await loadChat();
     } catch {
@@ -1409,7 +1416,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     setDmMsgs((prev) => [...prev, { id: tmpId, body, isMe: true, pending: true }]);
     setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 40);
     try {
-      const res = await fetch('/api/friend/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId: dmWith.otherId, body }) });
+      const res = await fetch('/api/friend/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId: dmWith.otherId, body, clientId: tmpId }) });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setDmMsgs((prev) => prev.map((mm) => (mm.id === tmpId ? { ...mm, pending: false, failed: true } : mm)));
@@ -1804,6 +1811,12 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       )}
 
       <div className={s.friendPageContent} style={{ maxWidth: 1180, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        {Object.values(loadErrors).some(Boolean) && (
+          <div role="alert" style={{ marginBottom: '1rem', padding: '0.8rem 0.9rem', borderRadius: 14, border: '1px solid rgba(180,35,24,0.3)', background: 'rgba(180,35,24,0.06)', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.5 }}>
+            <b style={{ color: 'var(--h-text)' }}>Some Friend Line updates did not load.</b> We kept your last good view so an outage never looks like an empty roster.{' '}
+            <button type="button" onClick={() => { loadMatches(); loadActs(); loadPulse(); loadClubs(); }} style={{ border: 0, background: 'transparent', color: LINE_DEEP, font: 'inherit', fontWeight: 700, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>retry</button>
+          </div>
+        )}
         {/* Transit header bar — the Friend Line */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>

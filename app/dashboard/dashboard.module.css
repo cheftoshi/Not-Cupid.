@@ -138,7 +138,7 @@
 
 .loveSide {
   position: sticky;
-  top: 76px;
+  top: calc(var(--app-top-nav-height, 0px) + 0.75rem);
   display: grid;
   gap: 1rem;
   min-width: 0;

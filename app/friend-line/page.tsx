@@ -45,7 +45,7 @@ export default function FriendLinePreviewPage() {
             <small>best move today</small>
             <h2>join a plan that already has momentum.</h2>
             <p>Tonight · coffee walk · 3 interested</p>
-            <button>ask to join</button>
+            <Link href="/login?next=/friends">ask to join</Link>
           </div>
           <div className="miniGrid">
             <div><b>open plans</b><strong>12</strong></div>
@@ -128,7 +128,7 @@ export default function FriendLinePreviewPage() {
         .friendPreview small, .moveCard small { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: #d2530f; font-weight: 700; }
         .moveCard small { color: rgba(255,255,255,0.68); }
         .friendPreview h2 { font-family: Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: 0; font-size: 1.55rem; line-height: 1.05; margin: 0.45rem 0 0.65rem; }
-        .moveCard button { border: 0; border-radius: 999px; background: #ff6a1f; color: #fff; padding: 0.62rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.05em; }
+        .moveCard > a { display: inline-block; text-decoration: none; border: 0; border-radius: 999px; background: #ff6a1f; color: #fff; padding: 0.62rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.05em; }
         .miniGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.55rem; }
         .miniGrid div { border: 1px solid rgba(255,255,255,0.11); border-radius: 16px; padding: 0.8rem; background: rgba(255,255,255,0.05); }
         .miniGrid b { display: block; font-family: 'DM Mono', monospace; font-size: 0.52rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.66); }

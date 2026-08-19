@@ -6,7 +6,7 @@ import { sameRealm } from '@/lib/realm';
 import { LOVE_CONNECTION_PRICE_CENTS } from '@/lib/matching-policy';
 import { creditForCandidate, lovePickAccessFor } from '@/lib/love-pick-access';
 import { recordMonetizationEvent } from '@/lib/monetization';
-import { bindLoveCreditToCompatibilityRead, compatibilityReadRecord } from '@/lib/love-compatibility-access';
+import { compatibilityReadRecord } from '@/lib/love-compatibility-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,16 +53,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `You still have ${access.includedRemaining} included ${access.includedRemaining === 1 ? 'pick' : 'picks'} in this roster.` }, { status: 409 });
   }
   const credit = creditForCandidate(access.credits, candidateId);
-  if (credit) {
-    if (checkoutMode === 'compatibility_read') {
-      await bindLoveCreditToCompatibilityRead({
-        userId: user.id,
-        candidateId,
-        connectionUnlockId: credit.id,
-        rosterCycleAt: access.cycleAt,
-      });
-      return NextResponse.json({ insightReady: true, creditReady: true });
-    }
+  // A returned credit replaces the connection value only. The original AI read
+  // stays attached to the person it describes and can never be rebound to a
+  // different profile. A new optional read remains a separate purchase.
+  if (credit && checkoutMode === 'extra_connection') {
     return NextResponse.json({ creditReady: true });
   }
 

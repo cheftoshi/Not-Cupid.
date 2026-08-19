@@ -58,36 +58,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  let myResponse: Response | null;
-  if (existing && existing.response === desired) {
-    // Same answer tapped again → clear it.
-    await supabaseAdmin.from('friend_activity_rsvps').delete().eq('activity_id', activityId).eq('user_id', user.id);
-    myResponse = null;
-  } else {
-    // Capacity cap (events): once the plan is full you can't RSVP 'yes' (but you
-    // can still say maybe/no, and anyone already 'yes' keeps their spot).
-    const cap = (activity as any).capacity;
-    if (desired === 'yes' && cap && (!existing || existing.response !== 'yes')) {
-      const { count: yesCount } = await supabaseAdmin
-        .from('friend_activity_rsvps').select('*', { count: 'exact', head: true })
-        .eq('activity_id', activityId).eq('response', 'yes');
-      if ((yesCount ?? 0) >= cap) {
-        return NextResponse.json({ error: 'This plan is full.', full: true }, { status: 409 });
-      }
+  const { data: rsvpRows, error: rsvpError } = await supabaseAdmin.rpc('set_friend_activity_rsvp', {
+    p_activity_id: activityId,
+    p_user_id: user.id,
+    p_response: desired,
+  });
+  if (rsvpError) {
+    if ((rsvpError.message || '').includes('capacity reached')) {
+      return NextResponse.json({ error: 'This plan is full.', full: true }, { status: 409 });
     }
-    await supabaseAdmin.from('friend_activity_rsvps').upsert(
-      { activity_id: activityId, user_id: user.id, response: desired },
-      { onConflict: 'activity_id,user_id' }
-    );
-    myResponse = desired;
+    console.error('[friend-rsvp]', { activityId, code: rsvpError.code });
+    return NextResponse.json({ error: 'Could not update that plan.' }, { status: 500 });
   }
-
-  // Fresh per-response tally.
-  const { data: all } = await supabaseAdmin
-    .from('friend_activity_rsvps').select('response').eq('activity_id', activityId);
-  const responses = { yes: 0, maybe: 0, no: 0 };
-  (all ?? []).forEach((r: any) => { const k = (r.response || 'yes') as Response; if (k in responses) responses[k]++; });
-  const count = (all ?? []).length;
+  const rsvp = Array.isArray(rsvpRows) ? rsvpRows[0] : rsvpRows;
+  const myResponse = (rsvp?.my_response || null) as Response | null;
+  const responses = {
+    yes: Number(rsvp?.yes_count || 0),
+    maybe: Number(rsvp?.maybe_count || 0),
+    no: Number(rsvp?.no_count || 0),
+  };
+  const count = Number(rsvp?.total_count || 0);
 
   // A newly interested participant starts from "read now" so the daily drop
   // never resurfaces plan-chat history from before they joined.

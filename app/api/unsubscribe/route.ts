@@ -8,9 +8,8 @@ export const dynamic = 'force-dynamic';
 // the link in our email is the only way to trigger this — random people
 // can't unsubscribe other users by guessing IDs.
 //
-// Effect: stops all activity emails AND removes the user from the matching
-// pool (pool_active=false). Per product call: if you can't get notified
-// about a match, you shouldn't be in the pool.
+// Effect: stops email. Matching participation and push/in-app alerts remain a
+// separate user choice.
 export async function POST(req: NextRequest) {
   try {
     const { u, t } = await req.json();
@@ -25,8 +24,6 @@ export async function POST(req: NextRequest) {
       .from('users')
       .update({
         email_notifications: false,
-        pool_active: false,
-        notifications_paused_at: new Date().toISOString(),
       })
       .eq('id', u);
 

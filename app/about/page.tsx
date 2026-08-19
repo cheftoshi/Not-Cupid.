@@ -11,11 +11,11 @@ export default function AboutPage() {
     <LegalPage title="About NotCupid" subtitle="Meet people. Not profiles.">
       <p>NotCupid is a Boston-born connection experiment with a simple bet: people are better than their profiles. So we built the anti-dating-app — no endless swiping, no browsing a catalog of strangers, no gamified attention economy.</p>
 
-      <p>Instead, an algorithm reads compatibility from a real personality quiz and quietly shows you a small, curated roster of people you&apos;d actually get along with. You pick <strong>one</strong>. One match at a time, on purpose — the way it works when a friend introduces you to someone, not the way it works when you&apos;re doom-scrolling at midnight.</p>
+      <p>Instead, an algorithm reads compatibility from a real personality quiz and quietly shows you a small, curated roster of people you&apos;d actually get along with. Each Love roster includes three connection picks and seven browseable alternatives when the local pool supports it—the way introductions feel when a friend has done the filtering, not the way it feels to doom-scroll a catalog.</p>
 
       <h2>Two lines, one region</h2>
       <ul>
-        <li><strong>The Love Line</strong> — for dating. Compatible people, one choice at a time, then a real conversation.</li>
+        <li><strong>The Love Line</strong> — for dating. Compatible people, a limited set of intentional choices, then a real conversation when the interest is mutual.</li>
         <li><strong>The Friend Line</strong> — for making actual friends as an adult, which is somehow harder than dating. Crews, group chats, and a feed of what&apos;s happening around town.</li>
       </ul>
 

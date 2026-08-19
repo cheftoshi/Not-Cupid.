@@ -32,17 +32,3 @@ export async function ensureCompatibilityReadEntitlement(input: {
   if (error || !data) throw new Error(error?.message || 'Could not grant the compatibility read.');
   return data;
 }
-
-export async function bindLoveCreditToCompatibilityRead(input: {
-  userId: string;
-  candidateId: string;
-  connectionUnlockId: string;
-  rosterCycleAt?: string | null;
-}) {
-  const { error } = await supabaseAdmin.from('love_connection_unlocks').update({
-    intended_candidate_id: input.candidateId,
-  }).eq('id', input.connectionUnlockId).eq('user_id', input.userId).in('status', ['purchased', 'credit']);
-  if (error) throw new Error(error.message);
-  return ensureCompatibilityReadEntitlement(input);
-}
-

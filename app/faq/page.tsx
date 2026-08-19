@@ -55,7 +55,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What is the NotCupid Dating Experiment?',
-    a: 'A Boston-first experiment that is now open for eligible people to join free with a complete profile and four short prompts. A private intro video is optional and never changes eligibility or selection. A coverage-first system gives each person up to two reciprocal options. People privately say yes to either, both, or neither; only mutual yes pairs enter the final compatibility-weighted selection for up to two dinner pairs, each covered up to $200. Nobody can win twice, and paid membership never improves offers or odds.',
+    a: 'A Boston-first experiment whose August 20 dinner round is now closed to new entries. A private intro video was optional and never changed eligibility or selection. A coverage-first system gives qualified entrants up to two reciprocal options. People privately say yes to either, both, or neither; only mutual yes pairs enter the final compatibility-weighted selection for up to two dinner pairs, each covered up to $200. Nobody can win twice, and paid membership never improves offers or odds.',
   },
   {
     q: 'How do I install the app — and turn on notifications?',

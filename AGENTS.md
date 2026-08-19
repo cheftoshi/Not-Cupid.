@@ -1,6 +1,6 @@
 # NotCupid — current project memory
 
-Last reconciled with the current application code on **August 18, 2026**.
+Last reconciled with the current application code on **August 19, 2026**.
 
 This file is a current-state handoff, not a chronological session log. Git history
 contains retired plans and earlier implementations. Do not reintroduce an older
@@ -33,13 +33,14 @@ copying entry, traffic, or delivery counts from a handoff document.
   `raffle_*` tables, and `raffle-videos` bucket retain legacy names so the
   shipped system does not need a risky data/API migration.
 - Event key: `boston-dating-experiment-v1`.
-- Status: public entry is open in code and the production event is
-  `entry_open`.
+- Status: the production event is `entry_closed`. Public entry ended at the
+  documented server boundary. Do not reopen it or accept late entries.
 - Entry deadline: **Tuesday, August 18, 2026 at 11:59 PM ET**, or 400 eligible
   entries, whichever comes first. The exact server boundary is
   `2026-08-19T04:00:00Z`, midnight starting Wednesday in Boston.
-- Shortlists are scheduled to start **Wednesday, August 19 after entries
-  close**.
+- Private shortlists are scheduled to start **Wednesday, August 19 at 8:00 AM
+  ET**. Selection emails remain separately approval-gated; do not enable or
+  send them without the operator's exact copy/send authorization.
 - Dinner: **Thursday, August 20, 2026**, with one pair at **6:30 PM ET** and one
   pair at **8:30 PM ET**.
 - Venue: The Berkeley, 154 Berkeley Street, Boston, MA 02116. The venue is
@@ -59,8 +60,8 @@ copying entry, traffic, or delivery counts from a handoff document.
 - Every gender/orientation receives the same coverage-first cap of up to two
   private options. Choices are sealed. Only mutual yes pairs enter the final
   slot-aware, payment-neutral weighted selection without replacement.
-- Test accounts are ineligible and must not count toward capacity or public
-  metrics.
+- Test, blocked, deleted, and operator/admin accounts are ineligible and must
+  not count toward capacity, shortlists, winners, or public metrics.
 
 The current operating record is
 `docs/dating-experiment-public-launch-checklist-2026-08-15.md`. The deadline
@@ -117,12 +118,11 @@ supersede them.
   rather than send outside that window. Vercel attempts the job at 1:00, 1:05,
   and 1:10 PM; a database `(user_id, delivery_day)` claim prevents duplicates
   while allowing provider failures to retry inside the approved window.
-- A mutual-match/no-message 12-hour nudge is implemented as
-  `love-mutual-no-message-v1-2026-08-18`, but it is fail-closed unless
-  `LOVE_MUTUAL_NUDGE_APPROVAL_VERSION` exactly matches that version. Its copy
-  and delivery are not approved merely because the code exists; do not set the
-  activation variable or deliver it without the current-conversation approval
-  required above.
+- The exact mutual-match/no-message 12-hour nudge
+  `love-mutual-no-message-v1-2026-08-18` was approved on August 18 and remains
+  fail-closed unless `LOVE_MUTUAL_NUDGE_APPROVAL_VERSION` matches that version.
+  Any copy, cadence, CTA, or audience change requires new content and send
+  approval.
 
 ## Current product behavior
 
@@ -213,6 +213,9 @@ supersede them.
 - A fourth or later distinct outgoing Love connection in the current roster is
   a one-time $0.99. If the other person declines or the request expires before
   mutual connection, that entitlement returns as an in-app Love credit.
+- Reusing that returned connection credit never reuses or rebinds the original
+  optional AI/HEXACO profile-read entitlement; those are separate durable
+  products.
 - Additional Friend packs: $0.99; first pack free.
 - All-Access: $3.99/month.
 - Acceptance and replies are always free. Chat is included after mutual

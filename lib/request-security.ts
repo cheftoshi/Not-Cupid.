@@ -48,6 +48,32 @@ export function isManagedStorageUrl(value: string, bucket: string, requiredPathP
   return managedStoragePath(value, bucket, requiredPathPrefix) !== null;
 }
 
+const WEB_PUSH_HOSTS = new Set([
+  'fcm.googleapis.com',
+  'android.googleapis.com',
+  'updates.push.services.mozilla.com',
+  'push.services.mozilla.com',
+  'web.push.apple.com',
+]);
+
+export function isAllowedWebPushEndpoint(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length < 12 || value.length > 2048) return false;
+  try {
+    const endpoint = new URL(value);
+    const hostname = endpoint.hostname.toLowerCase();
+    const allowedHost = WEB_PUSH_HOSTS.has(hostname)
+      || hostname.endsWith('.push.apple.com')
+      || hostname.endsWith('.notify.windows.com');
+    return endpoint.protocol === 'https:'
+      && !endpoint.username
+      && !endpoint.password
+      && (!endpoint.port || endpoint.port === '443')
+      && allowedHost;
+  } catch {
+    return false;
+  }
+}
+
 export type SafeImageType = { mime: 'image/jpeg' | 'image/png' | 'image/webp'; ext: 'jpg' | 'png' | 'webp' };
 
 export function detectSafeImageType(buffer: Buffer): SafeImageType | null {

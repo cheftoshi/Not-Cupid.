@@ -78,14 +78,18 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
   // Live experiment state (entered / selected / accepted / it's-a-date).
   const [st, setSt] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
+  const [statusError, setStatusError] = useState(false);
   const [pushOn, setPushOn] = useState(true);
 
   useEffect(() => {
     let active = true;
     const refreshStatus = () => fetch('/api/raffle/status', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (active && d) setSt(d); })
-      .catch(() => null)
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`status ${r.status}`);
+        return r.json();
+      })
+      .then((d) => { if (active) { setSt(d); setStatusError(false); } })
+      .catch(() => { if (active) setStatusError(true); })
       .finally(() => { if (active) setLoaded(true); });
     refreshStatus();
     // Mobile browsers commonly restore this page from their back/forward cache
@@ -396,7 +400,15 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your optional experiment video, four quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
         </div>
 
-        {!ev.entriesOpen && !(st?.entered || st?.draw || st?.outcome) ? (
+        {!loaded ? (
+          <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>
+        ) : statusError ? (
+          <div role="alert" style={card}>
+            <h2 style={cardH}>we couldn’t load your experiment status.</h2>
+            <p style={cardP}>Your entry and private choices have not been changed. Check your connection and try again.</p>
+            <button type="button" style={backLink} onClick={() => window.location.reload()}>retry →</button>
+          </div>
+        ) : !ev.entriesOpen && !(st?.entered || st?.draw || st?.outcome) ? (
           <div style={card}>
             <h2 style={cardH}>entries aren’t open right now.</h2>
             <p style={cardP}>the live experiment status can pause entry at the deadline, at capacity, or if an operating check needs attention.</p>
@@ -410,8 +422,6 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <h2 style={cardH}>this one’s local to Boston.</h2>
             <p style={cardP}>you need to be a Massachusetts resident within {ev.radiusMiles} miles of {ev.centerZip} and able to attend the stated dinner. update your location on the <Link href="/dashboard" style={{ color: ORANGE_DEEP }}>Love Line</Link> if that’s you.</p>
           </div>
-        ) : !loaded ? (
-          <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>
         ) : st?.draw?.bothAccepted ? (
           // ── it's a date ──
           <div style={{ ...card, border: `2px solid ${GREEN}`, textAlign: 'center' }}>
@@ -756,7 +766,7 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
         {offers.length === 1 && (
           <p style={{ ...cardP, marginTop: '0.55rem', fontSize: '0.78rem' }}><b>Why one option?</b> This was the only new person who cleared both people’s age and gender preferences, shared dinner availability, and the minimum fit score. We don’t force a weaker or one-way second choice.</p>
         )}
-        {round?.responseDeadline && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: 'var(--h-text-faint)', letterSpacing: '0.05em' }}>respond by {new Date(round.responseDeadline).toLocaleString()}</p>}
+        {round?.responseDeadline && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: 'var(--h-text-faint)', letterSpacing: '0.05em' }}>respond by {new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' }).format(new Date(round.responseDeadline))}</p>}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: '0.8rem' }}>
         {offers.map((offer) => {

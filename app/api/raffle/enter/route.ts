@@ -13,6 +13,7 @@ import {
 import { experimentProfileReadiness } from '@/lib/experiment-profile';
 import { recordDatingExperimentFunnelEvent } from '@/lib/dating-experiment-funnel';
 import { acquisitionColumns, sanitizeAcquisition } from '@/lib/acquisition';
+import { getAdminEmails } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,10 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.is_test === true) return NextResponse.json({ error: 'Test accounts cannot enter the live Dating Experiment.' }, { status: 403 });
+  const adminEmails = new Set(getAdminEmails());
+  if (user.is_blocked === true || user.deleted_at || adminEmails.has(String(user.email || '').trim().toLowerCase())) {
+    return NextResponse.json({ error: 'This account is not eligible for the live Dating Experiment.' }, { status: 403 });
+  }
   const event = await getDatingExperimentEvent();
   const entriesOpen = datingExperimentEntriesOpen(event) || datingExperimentAdminRehearsalOpen(event, user);
   if (!entriesOpen) return NextResponse.json({ error: 'Dating Experiment entries are not currently open.' }, { status: 403 });

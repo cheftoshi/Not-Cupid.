@@ -45,15 +45,21 @@ test('every Love roster option has a free, phone-safe profile preview before cho
 
 test('a pick notifies the other person and mutual acceptance notifies both', () => {
   const actions = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
+  const acceptMigration = readFileSync(new URL('../supabase/migrations/20260819043011_atomic_love_match_acceptance.sql', import.meta.url), 'utf8');
   assert.match(actions, /chose you 👀/);
   assert.match(actions, /Review their profile, then choose Yes or Pass/);
   assert.match(actions, /sendInterestNudge/);
   assert.match(actions, /sendItsAMatchEmails/);
   assert.match(actions, /idempotencyKey: `match-interest-/);
   assert.match(actions, /idempotencyKey: `mutual-match-/);
-  assert.match(actions, /\[match\.user_1_id, match\.user_2_id\]\.map/);
+  assert.match(actions, /participantIds\.map/);
   assert.match(actions, /claimLoveNotificationEvent/);
   assert.match(actions, /love_event_id/);
+  assert.match(actions, /rpc\('accept_love_match'/);
+  assert.doesNotMatch(actions, /infoCard\(\{ eyebrow: `\$\{otherName\}'s email`/);
+  assert.match(acceptMigration, /for update/i);
+  assert.match(acceptMigration, /'accepted_mutual'/);
+  assert.match(acceptMigration, /grant execute on function public\.accept_love_match[\s\S]*to service_role/i);
 });
 
 test('Love concierge records and deduplicates immediate, 24h, final, decision, and expiry events', () => {
@@ -167,6 +173,7 @@ test('extra connection checkout is person-specific, transparent, and idempotent'
 test('a paid fourth pick returns as an in-app credit when it never becomes mutual', () => {
   const migration = readFileSync(new URL('../supabase/migrations/20260818152000_paid_love_credit_returns.sql', import.meta.url), 'utf8');
   const access = readFileSync(new URL('../lib/love-pick-access.ts', import.meta.url), 'utf8');
+  const checkout = readFileSync(new URL('../app/api/match/connection-checkout/route.ts', import.meta.url), 'utf8');
   const roster = readFileSync(new URL('../app/dashboard/roster-picker.tsx', import.meta.url), 'utf8');
   const pass = readFileSync(new URL('../app/api/matches/[id]/pass/route.ts', import.meta.url), 'utf8');
   const expiry = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
@@ -176,10 +183,14 @@ test('a paid fourth pick returns as an in-app credit when it never becomes mutua
   assert.match(migration, /return 'paid'/);
   assert.match(access, /Your Love credit is back/);
   assert.match(access, /Your next extra Love pick is covered in the app/);
+  assert.match(checkout, /credit && checkoutMode === 'extra_connection'/);
+  assert.doesNotMatch(checkout, /bindLoveCreditToCompatibilityRead/);
+  assert.doesNotMatch(readFileSync(new URL('../lib/love-compatibility-access.ts', import.meta.url), 'utf8'), /bindLoveCreditToCompatibilityRead/);
   assert.match(roster, /in-app Love credit is ready/);
   assert.match(roster, /match \+ chat with/);
   assert.match(pass, /returnLovePickEntitlement\(id, user\.id\)/);
-  assert.match(expiry, /returnLovePickEntitlement\(m\.id, null\)/);
+  assert.match(expiry, /returnLovePickEntitlement\(claimed\.id, null\)/);
+  assert.match(expiry, /\.is\('ended_at', null\)/);
 });
 
 test('one paid Love entitlement opens a private AI compatibility read and the same person-specific connection', () => {
@@ -199,7 +210,7 @@ test('one paid Love entitlement opens a private AI compatibility read and the sa
   assert.match(checkout, /Idempotency-Key/);
   assert.match(checkout, /metadata\[checkout_mode\]/);
   assert.match(complete, /compatibility_read=ready/);
-  assert.match(access, /bindLoveCreditToCompatibilityRead/);
+  assert.match(access, /ensureCompatibilityReadEntitlement/);
   assert.match(report, /sixSignalBands/);
   assert.match(report, /Exact scores and raw answers are intentionally absent/);
   assert.match(report, /not the full research inventory/);

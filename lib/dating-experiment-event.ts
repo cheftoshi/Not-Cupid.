@@ -33,9 +33,6 @@ export type DatingExperimentEvent = {
   sponsor_details_confirmed_at: string | null;
   sponsor_legal_name: string | null;
   sponsor_public_mailing_address: string | null;
-  operator_compliance_approved: boolean;
-  operator_compliance_approved_at: string | null;
-  operator_compliance_reference: string | null;
   dinner_dates: DatingExperimentDinnerDate[];
 };
 
@@ -64,7 +61,6 @@ export async function getDatingExperimentEvent(
       'prize_fulfillment_method',
       'sponsor_details_confirmed', 'sponsor_details_confirmed_at',
       'sponsor_legal_name', 'sponsor_public_mailing_address',
-      'operator_compliance_approved', 'operator_compliance_approved_at', 'operator_compliance_reference',
     ].join(', '))
     .eq('event_key', eventKey)
     .maybeSingle();
@@ -98,9 +94,6 @@ export function hasDatabaseLaunchApproval(event: DatingExperimentEvent): boolean
     && event.sponsor_details_confirmed_at != null
     && !!event.sponsor_legal_name?.trim()
     && !!event.sponsor_public_mailing_address?.trim()
-    && event.operator_compliance_approved
-    && event.operator_compliance_approved_at != null
-    && !!event.operator_compliance_reference?.trim()
     && event.terms_version === RAFFLE.termsVersion
     && event.algorithm_version === RAFFLE.algorithmVersion
     && event.dinner_dates.length >= event.winner_pair_limit
@@ -127,7 +120,7 @@ export function datingExperimentAdminRehearsalOpen(
   now = Date.now(),
 ): boolean {
   const email = user?.email?.trim().toLowerCase();
-  return !RAFFLE.entriesOpen
+  return !RAFFLE.featureEnabled
     && user?.is_test !== true
     && !!email
     && isAdminEmail(email)
@@ -150,7 +143,7 @@ export function datingExperimentEntriesOpen(
   event: DatingExperimentEvent | null,
   now = Date.now(),
 ): boolean {
-  return RAFFLE.entriesOpen
+  return RAFFLE.featureEnabled
     && raffleLaunchBlockers().length === 0
     && event != null
     && event.status === 'entry_open'
@@ -160,7 +153,7 @@ export function datingExperimentEntriesOpen(
 }
 
 export function datingExperimentCanShortlist(event: DatingExperimentEvent | null): boolean {
-  return RAFFLE.entriesOpen
+  return RAFFLE.featureEnabled
     && raffleLaunchBlockers().length === 0
     && event != null
     && ['entry_open', 'entry_closed', 'shortlisting'].includes(event.status)

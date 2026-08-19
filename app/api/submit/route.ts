@@ -7,8 +7,11 @@ import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email'
 import { sendPushToUser } from '@/lib/push'
 import { acquisitionColumns, sanitizeAcquisition } from '@/lib/acquisition'
 
+const PROFILE_COMPLETION_EMAIL_APPROVAL_VERSION = 'profile-completion-v1-2026-08-19'
+
 async function sendCoreCompletionEmail(user: { id: string; email: string; name?: string | null; archetype?: string | null }, held: boolean) {
   if (!user.email) return
+  if (process.env.PROFILE_COMPLETION_EMAIL_APPROVAL_VERSION !== PROFILE_COMPLETION_EMAIL_APPROVAL_VERSION) return
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com'
   const first = (user.name || 'there').split(' ')[0]
   const html = renderEmail({
@@ -114,22 +117,20 @@ export async function POST(req: NextRequest) {
     }
     if (boundedObject(values_profile)) insertRow.values_profile = values_profile
 
-    // Consume a still-valid verified OTP in the same database operation used
-    // to prove ownership. A verified row can no longer be replayed days later
-    // or reused by parallel signup requests.
-    const { data: consumedOtp, error: consumeError } = await supabaseAdmin
+    // Verify first, then consume only after the unique user insert succeeds.
+    // A transient insert failure must not burn the code and force a restart.
+    const { data: verifiedOtp, error: verifyError } = await supabaseAdmin
       .from('otp_codes')
-      .delete()
+      .select('email')
       .eq('email', normalizedEmail)
       .eq('verified', true)
       .gt('expires_at', new Date().toISOString())
-      .select('email')
       .maybeSingle()
-    if (consumeError) {
-      console.error('Submit: OTP consumption failed:', consumeError)
+    if (verifyError) {
+      console.error('Submit: OTP verification read failed:', verifyError)
       return NextResponse.json({ error: 'Could not verify email ownership' }, { status: 500 })
     }
-    if (!consumedOtp) {
+    if (!verifiedOtp) {
       return NextResponse.json({ error: 'Please verify your email again.' }, { status: 403 })
     }
 
@@ -167,6 +168,12 @@ if (error) {
   console.error('Submit: supabase error:', error)
   return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
 }
+    const { error: consumeError } = await supabaseAdmin
+      .from('otp_codes')
+      .delete()
+      .eq('email', normalizedEmail)
+      .eq('verified', true)
+    if (consumeError) console.error('Submit: verified OTP cleanup failed:', consumeError)
     // Referral reward — BOTH sides get a free friend pack when an invite lands
     // (a free match round each; idempotent per referred signup via the unique
     // synthetic payment ids). Best-effort: never blocks signup.
@@ -216,8 +223,10 @@ if (error) {
     // null → bounced to "/" — i.e. "I registered but it didn't work." Now
     // they land on the dashboard authenticated. (verify-otp doesn't create a
     // session for not-yet-existing users, so this is the only place to do it.)
+    let sessionCreated = false
     try {
       await createSession(data.id)
+      sessionCreated = true
     } catch (e) {
       console.error('Submit: createSession failed (user saved, not logged in):', e)
     }
@@ -232,7 +241,7 @@ if (error) {
       archetype: data.archetype,
     }, held).catch((e) => console.error('Submit: completion email failed', e))
 
-    return NextResponse.json({ success: true, userId: data.id, held })
+    return NextResponse.json({ success: true, userId: data.id, held, sessionCreated })
   } catch (err) {
     console.error('Submit error:', err)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

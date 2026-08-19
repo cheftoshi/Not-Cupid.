@@ -43,12 +43,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'RSVP interested to join this plan chat.' }, { status: 403 });
   }
 
-  const { data: comments } = await supabaseAdmin
+  const { data: newestComments, error: commentsError } = await supabaseAdmin
     .from('friend_activity_comments')
     .select('id, user_id, body, created_at')
     .eq('activity_id', id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(200);
+  if (commentsError) return NextResponse.json({ error: 'Could not load this conversation.' }, { status: 503 });
+  const comments = (newestComments ?? []).slice().reverse();
 
   const ids = Array.from(new Set((comments ?? []).map((c) => c.user_id)));
   const { data: users } = await supabaseAdmin
@@ -79,9 +81,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const limit = await rateLimit({ key: `friend-comment:${user.id}`, windowSec: 3600, maxAttempts: 30, blockSec: 1800 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many comments' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
-  const { body } = await req.json().catch(() => ({}));
+  const { body, client_id } = await req.json().catch(() => ({}));
   const text = String(body ?? '').trim().slice(0, 1000);
   if (!text) return NextResponse.json({ error: 'Empty comment' }, { status: 400 });
+  const clientId = typeof client_id === 'string' && /^[a-zA-Z0-9_-]{8,80}$/.test(client_id) ? client_id : null;
+  if (clientId) {
+    const { data: existing } = await supabaseAdmin.from('friend_activity_comments')
+      .select('id, body, created_at').eq('user_id', user.id).eq('client_id', clientId).maybeSingle();
+    if (existing) return NextResponse.json({ ok: true, comment: { ...existing, name: user.name, photo_url: (user as any).photo_url, isMe: true }, already: true });
+  }
 
   const { data: act } = await supabaseAdmin
     .from('friend_activities').select('id, author_id, title, kind, metro, is_test').eq('id', id).maybeSingle();
@@ -97,10 +105,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: row, error } = await supabaseAdmin
     .from('friend_activity_comments')
-    .insert({ activity_id: id, user_id: user.id, body: text })
+    .insert({ activity_id: id, user_id: user.id, body: text, client_id: clientId })
     .select('id, body, created_at')
     .single();
-  if (error) return NextResponse.json({ error: 'Could not add comment' }, { status: 500 });
+  if (error) {
+    if (error.code === '23505' && clientId) {
+      const { data: existing } = await supabaseAdmin.from('friend_activity_comments')
+        .select('id, body, created_at').eq('user_id', user.id).eq('client_id', clientId).maybeSingle();
+      if (existing) return NextResponse.json({ ok: true, comment: { ...existing, name: user.name, photo_url: (user as any).photo_url, isMe: true }, already: true });
+    }
+    return NextResponse.json({ error: 'Could not add comment' }, { status: 500 });
+  }
 
   const first = (user.name || 'someone').split(' ')[0];
   const preview = text.length > 80 ? text.slice(0, 80) + '…' : text;

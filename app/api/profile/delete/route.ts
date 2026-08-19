@@ -6,22 +6,13 @@ export async function POST() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  await supabaseAdmin
-    .from('users')
-    .update({
-      deleted_at: new Date().toISOString(),
-      status: 'deleted',
-    })
-    .eq('id', user.id);
-
-  await supabaseAdmin
-    .from('matches')
-    .update({
-      ended_at: new Date().toISOString(),
-      ended_reason: 'user_deleted',
-    })
-    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-    .is('ended_at', null);
+  const { data: deactivated, error } = await supabaseAdmin.rpc('deactivate_notcupid_account', {
+    p_user_id: user.id,
+  });
+  if (error || deactivated !== true) {
+    console.error('[profile-delete] deactivation failed', { code: error?.code });
+    return NextResponse.json({ error: 'Could not delete your account. Please try again.' }, { status: 500 });
+  }
 
   await destroySession();
 

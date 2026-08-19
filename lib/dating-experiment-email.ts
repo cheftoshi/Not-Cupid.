@@ -117,7 +117,27 @@ async function claimDelivery(campaignKey: string, userId: string): Promise<boole
     .select('id')
     .maybeSingle();
   if (retryError) console.error('[dating-experiment-email-retry]', { campaignKey, code: retryError.code });
-  return !!retry;
+  if (retry) return true;
+
+  // A process can stop after claiming but before recording the provider
+  // result. Reclaim only a stale lease; a fresh queued claim remains owned by
+  // the active worker. Resend's idempotency key protects the provider edge.
+  const staleBefore = new Date(Date.now() - 15 * 60_000).toISOString();
+  const { data: stale, error: staleError } = await supabaseAdmin.from('email_campaign_deliveries')
+    .update({ updated_at: now })
+    .eq('campaign_key', campaignKey)
+    .eq('user_id', userId)
+    .eq('status', 'queued')
+    .lt('updated_at', staleBefore)
+    .select('id')
+    .maybeSingle();
+  if (staleError) console.error('[dating-experiment-email-stale-claim]', { campaignKey, code: staleError.code });
+  return !!stale;
+}
+
+function eventCampaignKey(eventKey: string, suffix: string): string {
+  const event = eventKey.toLowerCase().replace(/[^a-z0-9_-]+/g, '_').slice(0, 80);
+  return `dating_experiment_${event}_${suffix}`;
 }
 
 async function finishDelivery(
@@ -200,8 +220,8 @@ export async function sendDatingExperimentShortlistEmails(args: {
   const deadline = deadlineTime(args.responseDeadline);
   const template = args.reminder ? DATING_EXPERIMENT_EMAIL_COPY.reminder : DATING_EXPERIMENT_EMAIL_COPY.shortlist;
   const campaignKey = args.reminder
-    ? `dating_experiment_shortlist_reminder_r${args.roundNumber}`
-    : `dating_experiment_shortlist_r${args.roundNumber}`;
+    ? eventCampaignKey(args.eventKey, `shortlist_reminder_r${args.roundNumber}`)
+    : eventCampaignKey(args.eventKey, `shortlist_r${args.roundNumber}`);
   const destination = `${SITE_URL}/dating-experiment?from=${args.reminder ? 'shortlist-reminder-email' : 'shortlist-email'}`;
   return deliver({
     campaignKey,
@@ -239,7 +259,7 @@ export async function sendDatingExperimentWinnerEmails(args: {
   for (const draw of args.draws) {
     if (!draw.happens_at || !draw.restaurant || draw.winner_slot == null) continue;
     const result = await deliver({
-      campaignKey: `dating_experiment_winner_slot_${draw.winner_slot}`,
+      campaignKey: eventCampaignKey(args.eventKey, `winner_slot_${draw.winner_slot}`),
       eventKey: args.eventKey,
       recipientIds: [draw.user_a_id, draw.user_b_id],
       content: (user) => {

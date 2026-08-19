@@ -68,7 +68,8 @@ export async function recordLoveConnectionPurchase(session: any) {
   // A connection credit is money-backed only after Stripe marks it paid.
   const paid = session?.payment_status === 'paid';
   if (
-    !paid || session?.metadata?.type !== 'love_connection' ||
+    !paid || session?.status !== 'complete' || session?.mode !== 'payment' ||
+    session?.metadata?.type !== 'love_connection' ||
     !UUID_RE.test(String(userId || '')) || !UUID_RE.test(String(candidateId || '')) ||
     typeof session?.id !== 'string' || typeof paymentId !== 'string' ||
     session?.currency !== 'usd' || Number(session?.amount_total) !== LOVE_CONNECTION_PRICE_CENTS ||

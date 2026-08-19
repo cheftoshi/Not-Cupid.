@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     // Look up user
     const { data: user } = await supabaseAdmin
       .from('users')
-      .select('id, archetype')
+      .select('id, archetype, is_blocked')
       .ilike('email', email)         // case-insensitive
       .is('deleted_at', null)
       .limit(1)
@@ -107,6 +107,10 @@ export async function POST(req: NextRequest) {
         needsQuiz: true,
         redirect: '/quiz',
       })
+    }
+
+    if (user.is_blocked) {
+      return NextResponse.json({ error: 'This account is unavailable.' }, { status: 403 })
     }
 
     await createSession(user.id)

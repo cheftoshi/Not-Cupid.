@@ -7,10 +7,10 @@ older Dating Experiment migration may still contain retired event dates,
 deadlines, limits, or terms versions. Do not edit an applied migration to remove
 those historical values.
 
-As of August 16, 2026, current code is `lib/raffle.ts`, current mutable state is
+As of August 19, 2026, current code is `lib/raffle.ts`, current mutable state is
 the linked production event row, and the latest deadline override is
-`20260816160000_dating_experiment_extend_entry_deadline.sql`. The live Boston
-event closes Tuesday, August 18 at 11:59 PM ET and has two dinner slots on
+`20260819042500_close_dating_experiment_entry_window.sql`. The live Boston
+event closed Tuesday, August 18 at 11:59 PM ET and has two dinner slots on
 Thursday, August 20 at 6:30 PM and 8:30 PM ET.
 
 Production was originally maintained by running the dated SQL files manually.

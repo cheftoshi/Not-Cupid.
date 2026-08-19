@@ -76,3 +76,9 @@ test('Hub concierge is consented, bounded, measurable, and phone-first', () => {
   assert.doesNotMatch(migration, /raw_prompt\s+text/i);
   assert.match(privacy, /stores the structured intent category, recommendation, reason codes/);
 });
+
+test('Hub concierge never recommends a plan that has already reached capacity', () => {
+  const inventory = readFileSync(new URL('../lib/connection-concierge-server.ts', import.meta.url), 'utf8');
+  assert.match(inventory, /activity\.capacity == null \|\| \(goingByPlan\.get\(activity\.id\) \|\| 0\) < activity\.capacity/);
+  assert.match(inventory, /plans: joinableActivities\.map/);
+});

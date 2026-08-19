@@ -34,48 +34,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid report target' }, { status: 400 });
   }
 
-  const { data: match } = await supabaseAdmin
-    .from('matches')
-    .select('user_1_id, user_2_id')
-    .eq('id', matchId)
-    .maybeSingle();
-  let otherId: string | null = null;
-  if (match) {
-    if (match.user_1_id === user.id) otherId = match.user_2_id;
-    else if (match.user_2_id === user.id) otherId = match.user_1_id;
-  }
-  if (!otherId || otherId !== reportedId) {
-    return NextResponse.json({ error: 'You can only report your own match.' }, { status: 403 });
-  }
-
-  // Record the report.
-  const { error: repErr } = await supabaseAdmin.from('user_reports').insert({
-    reporter_id: user.id,
-    reported_id: reportedId,
-    match_id: matchId,
-    reason,
-    detail,
+  const { data: saved, error: reportError } = await supabaseAdmin.rpc('report_love_match', {
+    p_reporter_id: user.id,
+    p_reported_id: reportedId,
+    p_match_id: matchId,
+    p_reason: reason,
+    p_detail: detail,
   });
-  if (repErr) {
-    console.error('report insert failed', repErr);
+  if (reportError) {
+    console.error('report transaction failed', reportError);
     return NextResponse.json({ error: 'Could not save report' }, { status: 500 });
   }
-
-  await supabaseAdmin
-    .from('matches')
-    .update({ status: 'ended', ended_at: new Date().toISOString(), ended_reason: 'reported' })
-    .eq('id', matchId);
-
-  // Block effect: write the pair to match_history so the matcher never pairs
-  // them again (same no-repeat path used by end/pass).
-  const [a, b] = [user.id, reportedId].sort();
-  await supabaseAdmin.from('match_history').upsert(
-    { user_a_id: a, user_b_id: b, match_id: matchId, outcome: 'reported' },
-    { onConflict: 'user_a_id,user_b_id' }
-  );
-
-  // Return the reporter to the pool (they didn't do anything wrong).
-  await supabaseAdmin.from('users').update({ status: 'waiting' }).eq('id', user.id);
+  if (saved !== true) return NextResponse.json({ error: 'You can only report your own match.' }, { status: 403 });
 
   return NextResponse.json({ ok: true });
 }

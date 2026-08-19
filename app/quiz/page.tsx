@@ -460,6 +460,10 @@ function QuizInner() {
       }
       if (!res.ok) throw new Error(data.error || 'Could not save your baseline')
       if (data.userId) {
+        if (data.sessionCreated === false) {
+          window.location.href = '/login?next=' + encodeURIComponent(afterCorePath)
+          return
+        }
         userIdRef.current = data.userId
         // Session exists server-side. Do NOT redirect — let the loading screen
         // finish into the RESULT screen (the archetype reveal is the quiz's

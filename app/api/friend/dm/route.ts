@@ -90,8 +90,9 @@ export async function POST(req: NextRequest) {
   const limit = await rateLimit({ key: `friend-dm:${user.id}`, windowSec: 3600, maxAttempts: 120, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many messages' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
-  const { otherId, body } = await req.json().catch(() => ({}));
+  const { otherId, body, clientId } = await req.json().catch(() => ({}));
   const text = String(body ?? '').trim().slice(0, 2000);
+  const safeClientId = typeof clientId === 'string' && clientId.length >= 8 && clientId.length <= 100 ? clientId : null;
   if (!otherId || otherId === user.id || !text) return NextResponse.json({ error: 'Invalid' }, { status: 400 });
   const { data: other } = await supabaseAdmin
     .from('users').select('id, is_test').eq('id', otherId).is('deleted_at', null).maybeSingle();
@@ -105,10 +106,16 @@ export async function POST(req: NextRequest) {
   const [aId, bId] = [user.id, otherId].sort();
   const { data: row, error } = await supabaseAdmin
     .from('friend_dms')
-    .insert({ user_a_id: aId, user_b_id: bId, sender_id: user.id, body: text })
+    .insert({ user_a_id: aId, user_b_id: bId, sender_id: user.id, body: text, client_id: safeClientId })
     .select('id, sender_id, body, created_at')
     .single();
   if (error) {
+    if (error.code === '23505' && safeClientId) {
+      const { data: existing } = await supabaseAdmin.from('friend_dms')
+        .select('id, sender_id, body, created_at')
+        .eq('sender_id', user.id).eq('client_id', safeClientId).maybeSingle();
+      if (existing) return NextResponse.json({ ok: true, duplicate: true, message: { ...existing, isMe: true } });
+    }
     console.error('friend dm insert failed', error);
     return NextResponse.json({ error: 'Could not send' }, { status: 500 });
   }

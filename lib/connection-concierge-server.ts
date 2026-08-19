@@ -38,6 +38,8 @@ export async function connectionConciergeInventory(user: any): Promise<Concierge
       .neq('status', 'declined')
       .limit(80),
   ]);
+  if (activitiesResult.error) throw activitiesResult.error;
+  if (friendConnectionsResult.error) throw friendConnectionsResult.error;
 
   const activityRows = (activitiesResult.data || []).filter((activity: any) => {
     if (activity.author_id === user.id) return false;
@@ -53,13 +55,16 @@ export async function connectionConciergeInventory(user: any): Promise<Concierge
     ? await supabaseAdmin.from('friend_activity_rsvps').select('activity_id, response').eq('user_id', user.id).in('activity_id', activityIds)
     : { data: [] as any[] };
   const alreadyIn = new Set((myRsvps || []).filter((row: any) => row.response === 'yes').map((row: any) => row.activity_id));
-  const joinableActivities = activityRows.filter((activity: any) => !alreadyIn.has(activity.id)).slice(0, 8);
-  const joinableIds = joinableActivities.map((activity: any) => activity.id);
+  const candidateActivities = activityRows.filter((activity: any) => !alreadyIn.has(activity.id));
+  const joinableIds = candidateActivities.map((activity: any) => activity.id);
   const { data: rsvpRows } = joinableIds.length
     ? await supabaseAdmin.from('friend_activity_rsvps').select('activity_id, response').in('activity_id', joinableIds).eq('response', 'yes').limit(1000)
     : { data: [] as any[] };
   const goingByPlan = new Map<string, number>();
   for (const row of rsvpRows || []) goingByPlan.set(row.activity_id, (goingByPlan.get(row.activity_id) || 0) + 1);
+  const joinableActivities = candidateActivities
+    .filter((activity: any) => activity.capacity == null || (goingByPlan.get(activity.id) || 0) < activity.capacity)
+    .slice(0, 8);
 
   const friendConnections = friendConnectionsResult.data || [];
   const connected = friendConnections.filter((connection: any) => connection.status === 'connected');

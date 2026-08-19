@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { isAllowedWebPushEndpoint } from '@/lib/request-security';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +18,9 @@ export async function POST(req: NextRequest) {
   const endpoint = body?.endpoint;
   const p256dh = body?.keys?.p256dh;
   const auth = body?.keys?.auth;
-  let validEndpoint = false;
-  try {
-    const parsed = new URL(endpoint);
-    validEndpoint = parsed.protocol === 'https:' && !parsed.username && !parsed.password;
-  } catch { /* invalid URL */ }
-  if (typeof endpoint !== 'string' || endpoint.length > 2048 || !validEndpoint ||
+  const limit = await rateLimit({ key: `push-subscribe:${user.id}`, windowSec: 600, maxAttempts: 20, blockSec: 600 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many subscription attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
+  if (!isAllowedWebPushEndpoint(endpoint) ||
       typeof p256dh !== 'string' || p256dh.length > 512 ||
       typeof auth !== 'string' || auth.length > 512) {
     return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 });

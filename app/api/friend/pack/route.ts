@@ -92,17 +92,16 @@ export async function POST(req: NextRequest) {
   if (action === 'open') {
     // Reveal only the current location segment. A Boston travel pack must not
     // silently open the member's still-sealed New York pack.
-    try {
-      const location = await friendLocationContext(user);
-      let query = supabaseAdmin
-        .from('friend_connections')
-        .update({ opened_at: new Date().toISOString() })
-        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
-        .is('opened_at', null);
-      if (location.isTraveling && location.metro) query = query.eq('match_metro', location.metro);
-      else if (location.metro) query = query.or(`match_metro.is.null,match_metro.eq.${location.metro}`);
-      await query;
-    } catch { /* column not migrated yet — nothing to open */ }
+    const location = await friendLocationContext(user);
+    let query = supabaseAdmin
+      .from('friend_connections')
+      .update({ opened_at: new Date().toISOString() })
+      .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+      .is('opened_at', null);
+    if (location.isTraveling && location.metro) query = query.eq('match_metro', location.metro);
+    else if (location.metro) query = query.or(`match_metro.is.null,match_metro.eq.${location.metro}`);
+    const { error } = await query;
+    if (error) return NextResponse.json({ error: 'Could not open this pack. Please retry.' }, { status: 503 });
     return NextResponse.json({ ok: true });
   }
 

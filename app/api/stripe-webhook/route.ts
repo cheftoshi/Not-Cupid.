@@ -6,8 +6,23 @@ import { escapeHtml, sanitizeEmailSubject } from '@/lib/email'
 import { defaultEmailReplyTo } from '@/lib/email-address'
 import { recordMonetizationEvent } from '@/lib/monetization'
 import { recordLoveConnectionPurchase } from '@/lib/love-pick-access'
+import { FRIEND_PACK_CENTS } from '@/lib/friend-access'
+import { PRO_PRICE_CENTS } from '@/lib/pro'
 
 export const dynamic = 'force-dynamic'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function validPaidCheckout(session: any, args: { type: string; amountCents: number; mode: 'payment' | 'subscription' }) {
+  return session?.metadata?.type === args.type
+    && session?.payment_status === 'paid'
+    && session?.status === 'complete'
+    && session?.mode === args.mode
+    && session?.currency === 'usd'
+    && Number(session?.amount_total) === args.amountCents
+    && UUID_RE.test(String(session?.metadata?.user_id || ''))
+    && typeof session?.id === 'string'
+}
 
 async function completeStripeEvent(eventId: string) {
   const { error } = await supabaseAdmin
@@ -79,6 +94,14 @@ export async function POST(req: NextRequest) {
 
       // ============== Handle $0.99 Love compatibility deep-dive ==============
       if (session.metadata?.type === 'match_unlock') {
+        if (!validPaidCheckout(session, { type: 'match_unlock', amountCents: 99, mode: 'payment' })
+          || !UUID_RE.test(String(session.metadata?.match_id || ''))
+          || !UUID_RE.test(String(session.metadata?.unlocked_user_id || ''))
+          || typeof paymentIntent !== 'string') {
+          console.error('Ignoring invalid match unlock checkout', { eventId: event.id })
+          await completeStripeEvent(event.id)
+          return NextResponse.json({ received: true, ignored: true })
+        }
         const tier = session.metadata?.unlock_tier === 'hexaco' ? 'hexaco' : 'profile'
         const error = await recordUnlock({
           userId: session.metadata.user_id,
@@ -110,6 +133,12 @@ export async function POST(req: NextRequest) {
 
       // ============== Friend Maxxin — $0.99 another round of matches ==============
       if (session.metadata?.type === 'friend_more_matches' && session.metadata?.user_id) {
+        if (!validPaidCheckout(session, { type: 'friend_more_matches', amountCents: FRIEND_PACK_CENTS, mode: 'payment' })
+          || typeof session.payment_intent !== 'string') {
+          console.error('Ignoring invalid Friend pack checkout', { eventId: event.id })
+          await completeStripeEvent(event.id)
+          return NextResponse.json({ received: true, ignored: true })
+        }
         const { error } = await supabaseAdmin.from('friend_match_rounds').upsert(
           { user_id: session.metadata.user_id, stripe_payment_id: session.payment_intent },
           { onConflict: 'stripe_payment_id' }
@@ -136,6 +165,13 @@ export async function POST(req: NextRequest) {
       // via invoice.payment_succeeded; cancel lapses at period end. Both this and
       // the legacy friend_pro type land here.
       if ((session.metadata?.type === 'all_access' || session.metadata?.type === 'friend_pro') && session.metadata?.user_id) {
+        const expectedType = session.metadata.type === 'friend_pro' ? 'friend_pro' : 'all_access'
+        if (!validPaidCheckout(session, { type: expectedType, amountCents: PRO_PRICE_CENTS, mode: 'subscription' })
+          || typeof session.subscription !== 'string') {
+          console.error('Ignoring invalid Pro checkout', { eventId: event.id })
+          await completeStripeEvent(event.id)
+          return NextResponse.json({ received: true, ignored: true })
+        }
         // Grant a month immediately; renewals extend it via invoice.payment_succeeded.
         const until = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
         const { error } = await supabaseAdmin.from('users').update({
@@ -159,7 +195,14 @@ export async function POST(req: NextRequest) {
 
       console.log('Payment completed for userId:', userId)
 
-      if (userId) {
+      if (userId
+        && UUID_RE.test(String(userId))
+        && session.payment_status === 'paid'
+        && session.status === 'complete'
+        && session.mode === 'payment'
+        && session.currency === 'usd'
+        && Number(session.amount_total) === 99
+        && typeof paymentIntent === 'string') {
         const { error: userError } = await supabaseAdmin
           .from('users')
           .update({ hexaco_unlocked: true })

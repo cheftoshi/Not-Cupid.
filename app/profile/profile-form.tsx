@@ -643,7 +643,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           <span>
             Email me about new matches and messages
             <span style={{display:'block',fontSize:'.7rem',color:'var(--h-text-dim)',marginTop:'.25rem',fontStyle:'italic'}}>
-              Turning this off also pauses you from the matching pool — NotCupid has no in-app notifications.
+              Turning this off stops email only. Your matching status and in-app alerts stay active.
             </span>
           </span>
         </label>

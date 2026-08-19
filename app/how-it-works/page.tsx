@@ -121,10 +121,10 @@ export default function HowItWorks() {
 
         {/* featured: the Boston Dating Experiment */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.13), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.4rem 1.4rem 1.5rem', margin: '0 0 1.75rem', boxShadow: '0 18px 50px -30px rgba(255,106,31,0.55)' }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🎟️ entries open · {RAFFLE.statusLabel}</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>🎟️ entries closed · {RAFFLE.statusLabel}</div>
           <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0.3rem 0 0.2rem' }}>{RAFFLE.series}</div>
           <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1rem', lineHeight: 1.5, margin: '0 0 1rem' }}>
-            {RAFFLE.tagline} Qualified participants receive up to two reciprocal options and choose privately. Up to {RAFFLE.winnerPairCount} disjoint mutual pairs each receive dinner up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant. Entry is free and open for this round.
+            {RAFFLE.tagline} Qualified entrants receive up to two reciprocal options and choose privately. Up to {RAFFLE.winnerPairCount} disjoint mutual pairs each receive dinner up to <b>${RAFFLE.budget}</b> at a {RAFFLE.city} restaurant. Entries for this round are closed.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {RAFFLE_POINTS.map((p) => (

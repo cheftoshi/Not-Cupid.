@@ -28,8 +28,8 @@
 .nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4rem;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
   padding-bottom: 1.25rem;
   gap: 1.5rem;
   flex-wrap: wrap;
@@ -567,7 +567,7 @@
   position: sticky;
   bottom: 0;
   background: linear-gradient(to top, var(--h-bg) 80%, transparent);
-  padding: 1.5rem 0 1rem;
+  padding: 1.5rem 0 calc(1rem + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
   gap: 1rem;

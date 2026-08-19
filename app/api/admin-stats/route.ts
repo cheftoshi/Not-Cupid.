@@ -101,14 +101,14 @@ export async function GET(req: NextRequest) {
     const interactionUsers = (name: string) => Number(experienceByKey.get(`${name}:`)?.unique_users ?? 0)
     let recentClientErrors: any[] = []
     try {
-      const { data, error } = await supabaseAdmin
+      recentClientErrors = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('app_client_events')
-        .select('path, device_class, display_mode, session_id, metadata, created_at')
+        .select('id, path, device_class, display_mode, session_id, metadata, created_at')
         .eq('event_name', 'client_error')
         .gte('created_at', oneDayAgo)
-        .order('created_at', { ascending: false })
-        .limit(250)
-      if (!error) recentClientErrors = data ?? []
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to))
     } catch { /* diagnostics remain optional during a rolling migration */ }
     const currentRelease = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) || 'local'
     const currentReleaseErrors = recentClientErrors.filter((row: any) => {
@@ -176,16 +176,29 @@ export async function GET(req: NextRequest) {
     // Revenue ledgers — count EVERY stream, by real amount (not a flat proxy):
     //   • match_unlocks.amount_cents = historical Love compatibility deep-dives
     //   • unlocks.amount = legacy standalone unlock ledger (cents)
-    const { data: unlocks } = await supabaseAdmin.from('unlocks').select('amount')
+    const unlocks = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+      .from('unlocks')
+      .select('id, amount')
+      .order('id', { ascending: true })
+      .range(from, to))
     let matchUnlocks: any[] = []
-    try { matchUnlocks = (await supabaseAdmin.from('match_unlocks').select('amount_cents')).data ?? [] }
+    try {
+      matchUnlocks = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+        .from('match_unlocks')
+        .select('user_id, match_id, amount_cents')
+        .order('user_id', { ascending: true })
+        .order('match_id', { ascending: true })
+        .range(from, to))
+    }
     catch { /* table missing — fall back to legacy unlocks only */ }
     let loveConnectionUnlocks: any[] = []
     try {
-      loveConnectionUnlocks = (await supabaseAdmin
+      loveConnectionUnlocks = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('love_connection_unlocks')
-        .select('amount_cents, status')
-        .neq('status', 'refunded')).data ?? []
+        .select('id, amount_cents, status')
+        .neq('status', 'refunded')
+        .order('id', { ascending: true })
+        .range(from, to))
     } catch { /* connection paywall migration not applied yet */ }
     // ── Friend Maxxin metrics (wrapped so missing tables don't break the dashboard) ──
     // Hoisted so the top-level revenue total can fold in friend-side income.
@@ -195,30 +208,43 @@ export async function GET(req: NextRequest) {
     try {
       const liveUsers = (users ?? []).filter((u: any) => !u.deleted_at)
       const optedIn = liveUsers.filter((u: any) => u.friend_opted_in_at)
-      const { data: conns } = await supabaseAdmin.from('friend_connections').select('status, match_metro, match_context, match_expires_at')
-      const { data: circleMembers } = await supabaseAdmin.from('friend_circle_members').select('circle_id').is('left_at', null)
+      const [conns, circleMembers, acts, intentRows, actionRows, tripRows] = await Promise.all([
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_connections')
+          .select('id, status, match_metro, match_context, match_expires_at')
+          .order('id', { ascending: true }).range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_circle_members')
+          .select('circle_id, user_id').is('left_at', null)
+          .order('user_id', { ascending: true }).order('circle_id', { ascending: true }).range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_activities')
+          .select('id, kind').order('id', { ascending: true }).range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_intents')
+          .select('id, user_id, status, expires_at').order('id', { ascending: true }).range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_action_events')
+          .select('id, user_id, event').gte('created_at', thirtyDaysAgo)
+          .order('id', { ascending: true }).range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_trips')
+          .select('id, user_id, destination_metro, starts_on, ends_on, status')
+          .order('id', { ascending: true }).range(from, to)),
+      ])
       const { count: fMsgCount } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
       const { count: unlockCount } = await supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true })
-      const { data: acts } = await supabaseAdmin.from('friend_activities').select('kind')
-      const { data: intentRows } = await supabaseAdmin.from('friend_intents').select('user_id, status, expires_at')
-      const { data: actionRows } = await supabaseAdmin.from('friend_action_events').select('user_id, event').gte('created_at', thirtyDaysAgo)
-      const { data: tripRows } = await supabaseAdmin.from('friend_trips').select('user_id, destination_metro, starts_on, ends_on, status')
       const { count: clubCount } = await supabaseAdmin.from('friend_clubs').select('id', { count: 'exact', head: true }).eq('is_test', false).is('hidden_at', null)
       const { count: communityCount } = await supabaseAdmin.from('friend_community_links').select('id', { count: 'exact', head: true }).eq('is_test', false).eq('approved', true)
-      const connList = conns ?? []
+      const connList = conns
       friendChatUnlocks = unlockCount ?? 0
       try {
         // PAID packs only — synthetic ids (pro- grants, drop- weekly drops,
         // ref-/refwelcome- referral rewards) are free, never revenue.
-        const { data: roundRows } = await supabaseAdmin.from('friend_match_rounds').select('stripe_payment_id')
-        friendPaidPacks = (roundRows ?? []).filter((r: any) => !/^(pro-|drop-|ref-|refwelcome-)/.test(String(r.stripe_payment_id ?? ''))).length
+        const roundRows = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_match_rounds')
+          .select('id, stripe_payment_id').order('id', { ascending: true }).range(from, to))
+        friendPaidPacks = roundRows.filter((r: any) => !/^(pro-|drop-|ref-|refwelcome-)/.test(String(r.stripe_payment_id ?? ''))).length
       } catch { /* friend_match_rounds not migrated yet */ }
       const realUserIds = new Set(liveUsers.map((u: any) => u.id))
-      const realActions = (actionRows ?? []).filter((event: any) => realUserIds.has(event.user_id))
+      const realActions = actionRows.filter((event: any) => realUserIds.has(event.user_id))
       const uniqueActionUsers = (event: string) => new Set(realActions.filter((row: any) => row.event === event).map((row: any) => row.user_id)).size
       const connectionActionUsers = new Set(realActions.filter((row: any) => ['intent_joined', 'community_opened', 'club_joined', 'plan_rsvp'].includes(row.event)).map((row: any) => row.user_id)).size
       const today = new Date().toISOString().slice(0, 10)
-      const realTrips = (tripRows ?? []).filter((trip: any) => realUserIds.has(trip.user_id) && trip.status === 'active' && trip.ends_on >= today)
+      const realTrips = tripRows.filter((trip: any) => realUserIds.has(trip.user_id) && trip.status === 'active' && trip.ends_on >= today)
       const activeTravelers = realTrips.filter((trip: any) => trip.starts_on <= today).length
       const travelMatches = connList.filter((connection: any) =>
         connection.status !== 'declined' && Array.isArray(connection.match_context?.travelers) && connection.match_context.travelers.length > 0
@@ -231,11 +257,11 @@ export async function GET(req: NextRequest) {
         unlockRevenue: ((friendPaidPacks * 99 + friendChatUnlocks * 99) / 100).toFixed(2),
         connectionsPending: connList.filter((c: any) => c.status === 'pending').length,
         connectionsMade: connList.filter((c: any) => c.status === 'connected').length,
-        activeCircles: new Set((circleMembers ?? []).map((m: any) => m.circle_id)).size,
+        activeCircles: new Set(circleMembers.map((m: any) => m.circle_id)).size,
         messages: fMsgCount ?? 0,
-        posts: (acts ?? []).filter((a: any) => a.kind === 'post').length,
-        events: (acts ?? []).filter((a: any) => a.kind !== 'post').length,
-        openIntents: (intentRows ?? []).filter((intent: any) => realUserIds.has(intent.user_id) && intent.status === 'open' && new Date(intent.expires_at).getTime() > Date.now()).length,
+        posts: acts.filter((a: any) => a.kind === 'post').length,
+        events: acts.filter((a: any) => a.kind !== 'post').length,
+        openIntents: intentRows.filter((intent: any) => realUserIds.has(intent.user_id) && intent.status === 'open' && new Date(intent.expires_at).getTime() > Date.now()).length,
         clubs: clubCount ?? 0,
         communities: communityCount ?? 0,
         discoveryUsers30d: uniqueActionUsers('discovery_viewed'),
@@ -281,35 +307,39 @@ export async function GET(req: NextRequest) {
 
     let acquisitionEntries: any[] = []
     try {
-      const result = await supabaseAdmin
+      acquisitionEntries = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('raffle_entries')
         .select('user_id, created_at, acquisition_source, acquisition_medium, acquisition_campaign, acquisition_kind, acquisition_landing_path')
         .eq('event_key', RAFFLE.key)
         .eq('terms_version', RAFFLE.termsVersion)
         .neq('status', 'withdrawn')
-      if (result.error) throw result.error
-      acquisitionEntries = result.data ?? []
+        .order('created_at', { ascending: true })
+        .order('user_id', { ascending: true })
+        .range(from, to))
     } catch {
       acquisitionTrackingReady = false
-      const fallback = await supabaseAdmin
+      acquisitionEntries = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('raffle_entries')
         .select('user_id, created_at')
         .eq('event_key', RAFFLE.key)
         .eq('terms_version', RAFFLE.termsVersion)
         .neq('status', 'withdrawn')
-      acquisitionEntries = fallback.data ?? []
+        .order('created_at', { ascending: true })
+        .order('user_id', { ascending: true })
+        .range(from, to))
     }
 
     // First-party payment funnel, last 30 days. This is intentionally derived
     // from aggregate events and never exposes checkout/customer details.
     let monetization: any = null
     try {
-      const result = await supabaseAdmin
+      const rows = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('monetization_events')
-        .select('user_id, event, product, amount_cents')
+        .select('id, user_id, event, product, amount_cents')
         .gte('created_at', thirtyDaysAgo)
-      if (!result.error) {
-        const rows = result.data ?? []
+        .order('id', { ascending: true })
+        .range(from, to))
+      {
         const productNames = ['love_connection', 'love_profile', 'friend_pack', 'pro']
         const summarize = (product?: string) => {
           const subset = product ? rows.filter((row: any) => row.product === product) : rows
@@ -340,12 +370,13 @@ export async function GET(req: NextRequest) {
     // proxies can prefetch pixels; first-party CTA clicks are the stronger KPI.
     let loveCampaign: any = null
     try {
-      const result = await supabaseAdmin
+      const rows = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('email_campaign_deliveries')
-        .select('user_id, variant, status, sent_at, delivered_at, opened_at, clicked_at, bounced_at, complained_at')
+        .select('id, user_id, variant, status, sent_at, delivered_at, opened_at, clicked_at, bounced_at, complained_at')
         .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN)
-      if (!result.error) {
-        const rows = result.data ?? []
+        .order('id', { ascending: true })
+        .range(from, to))
+      {
         const sent = rows.filter((row: any) => row.sent_at).length
         const delivered = rows.filter((row: any) => row.delivered_at).length
         const opened = rows.filter((row: any) => row.opened_at).length
@@ -360,11 +391,13 @@ export async function GET(req: NextRequest) {
         const profileNowEligible = (users ?? []).filter((user: any) =>
           profileClickerIds.has(user.id) && experimentProfileReadiness(user).complete
         ).length
-        const [funnelResult, entriesResult] = await Promise.all([
-          supabaseAdmin
+        const [funnelRows, entriesResult] = await Promise.all([
+          fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
             .from('campaign_funnel_events')
-            .select('user_id, event')
-            .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN),
+            .select('id, user_id, event')
+            .eq('campaign_key', LOVE_RELAUNCH_CAMPAIGN)
+            .order('id', { ascending: true })
+            .range(from, to)),
           supabaseAdmin
             .from('raffle_entries')
             .select('user_id', { count: 'exact', head: true })
@@ -372,7 +405,6 @@ export async function GET(req: NextRequest) {
             .eq('terms_version', RAFFLE.termsVersion)
             .neq('status', 'withdrawn'),
         ])
-        const funnelRows = funnelResult.data ?? []
         const uniqueAt = (event: string) => new Set(
           funnelRows.filter((row: any) => row.event === event).map((row: any) => row.user_id)
         ).size
@@ -405,7 +437,7 @@ export async function GET(req: NextRequest) {
           clickRatePct: delivered > 0 ? Math.round((clicked / delivered) * 100) : null,
           variants,
           funnel: {
-            trackingReady: !funnelResult.error,
+            trackingReady: true,
             emailClicked: clicked,
             profileCtaClicked: profileClickerIds.size,
             profileStarted,
@@ -432,19 +464,21 @@ export async function GET(req: NextRequest) {
 
     let eligibleReadyCampaign: any = null
     try {
-      const [deliveryResult, funnelResult] = await Promise.all([
-        supabaseAdmin
+      const [rows, funnelRows] = await Promise.all([
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
           .from('email_campaign_deliveries')
-          .select('status,sent_at,delivered_at,opened_at,clicked_at,bounced_at,complained_at')
-          .eq('campaign_key', ELIGIBLE_READY_REMINDER_CAMPAIGN),
-        supabaseAdmin
+          .select('id,status,sent_at,delivered_at,opened_at,clicked_at,bounced_at,complained_at')
+          .eq('campaign_key', ELIGIBLE_READY_REMINDER_CAMPAIGN)
+          .order('id', { ascending: true })
+          .range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
           .from('campaign_funnel_events')
-          .select('user_id,event')
-          .eq('campaign_key', ELIGIBLE_READY_REMINDER_CAMPAIGN),
+          .select('id,user_id,event')
+          .eq('campaign_key', ELIGIBLE_READY_REMINDER_CAMPAIGN)
+          .order('id', { ascending: true })
+          .range(from, to)),
       ])
-      if (!deliveryResult.error) {
-        const rows = deliveryResult.data ?? []
-        const funnelRows = funnelResult.data ?? []
+      {
         const uniqueAt = (event: string) => new Set(funnelRows.filter((row: any) => row.event === event).map((row: any) => row.user_id)).size
         const sent = rows.filter((row: any) => row.sent_at).length
         const delivered = rows.filter((row: any) => row.delivered_at).length

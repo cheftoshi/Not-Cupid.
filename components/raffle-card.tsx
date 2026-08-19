@@ -28,13 +28,13 @@ export default function RaffleCard() {
     border = accent = '#2563ff'; head = `you’re in — waiting on ${other}.`; sub = `as soon as ${other} accepts, it’s locked for ${ev.dateLabel}.`; label = 'view your entry →';
   } else if (s.entered) {
     head = 'you’re in the dating experiment. ✓'; sub = `shortlists form ${ev.drawLabel}; we’ll ping you if you receive one or two private options.`; label = 'view your entry →';
+  } else if (ev.closed) {
+    head = 'experiment entries are closed.'; sub = 'watch here for the next dinner round.'; label = '';
   } else if (!ev.entriesOpen) {
     head = `${ev.series} is on pause.`;
     sub = `The dinner round is being tuned quietly. Date: ${ev.dateLabel || 'TBD'}.`;
     label = 'see details →';
     fine = false;
-  } else if (ev.closed) {
-    head = 'experiment entries are closed.'; sub = 'watch here for the next dinner round.'; label = '';
   } else if (!s.hasProfile) {
     const missing = Array.isArray(s.profileMissing) ? s.profileMissing.join(', ') : 'a few profile basics';
     head = 'your experiment profile needs a quick finish.';

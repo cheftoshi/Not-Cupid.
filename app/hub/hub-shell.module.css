@@ -1315,9 +1315,9 @@
   grid-template-areas: "rail main aside";
   gap: 1.25rem; align-items: start;
 }
-.dashRail { grid-area: rail; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.dashRail { grid-area: rail; position: sticky; top: calc(var(--app-top-nav-height, 0px) + 1rem); display: flex; flex-direction: column; gap: 0.9rem; }
 .dashMain { grid-area: main; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
-.dashAside { grid-area: aside; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
+.dashAside { grid-area: aside; position: sticky; top: calc(var(--app-top-nav-height, 0px) + 1rem); display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
 .dCard { background: color-mix(in srgb, var(--h-surface) 96%, transparent); border: 1px solid var(--h-border); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 1.1rem 1.2rem; }
 .dLabel { font-family: 'DM Mono', ui-monospace, monospace; font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--h-text-dim); margin-bottom: 0.7rem; display: block; }
 .identityCard { text-align: center; }

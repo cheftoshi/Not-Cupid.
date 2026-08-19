@@ -563,7 +563,7 @@
 
 /* ============================== mobile ============================== */
 @media (max-width: 768px) {
-  .screen { padding: 4rem 1rem 2rem; }
+  .screen { padding: calc(4.5rem + env(safe-area-inset-top, 0px)) calc(1rem + env(safe-area-inset-right, 0px)) calc(2rem + env(safe-area-inset-bottom, 0px)) calc(1rem + env(safe-area-inset-left, 0px)); }
 
   .introHero { margin-bottom: 1.75rem; }
   .stickerRow { gap: .45rem; margin-bottom: 1rem; flex-wrap: wrap; }

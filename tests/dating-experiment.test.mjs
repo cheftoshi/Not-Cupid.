@@ -24,7 +24,7 @@ const launchChecklist = readFileSync(new URL('../docs/dating-experiment-public-l
 
 test('Dating Experiment public launch stays free, local, limited, and payment-neutral', () => {
   assert.match(experimentSource, /series:\s*'The NotCupid Dating Experiment'/);
-  assert.match(experimentSource, /entriesOpen:\s*true/);
+  assert.match(experimentSource, /featureEnabled:\s*true/);
   assert.match(experimentSource, /cap:\s*400/);
   assert.match(experimentSource, /winnerPairCount:\s*2/);
   assert.match(experimentSource, /termsVersion:\s*'boston-v13-2026-08-15'/);
@@ -303,12 +303,16 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(draw, /remaining-slot-unfilled/);
   assert.match(draw, /partial-mutual-pair-selected/);
   assert.match(draw, /event\.status === 'entry_open' && Date\.now\(\) >= new Date\(event\.entry_closes_at\)\.getTime\(\)/);
+  assert.match(draw, /if \(priorRoundsError\) throw priorRoundsError/);
+  assert.match(draw, /if \(totalEntriesError\) throw totalEntriesError/);
+  assert.match(draw, /if \(entriesError\) throw entriesError/);
+  assert.match(draw, /if \(usersError\) throw usersError/);
+  assert.match(draw, /if \(priorPairsError\) throw priorPairsError/);
   assert.doesNotMatch(draw, /if \(won\?\.length\)/);
 });
 
-test('public launch approvals are dated, attributable, and required in code and database', () => {
+test('public launch requires funded, attributable fulfillment without a separate legal-review gate', () => {
   const legacyMigration = readFileSync(new URL('../supabase/migrations/20260815223000_dating_experiment_launch_signoffs.sql', import.meta.url), 'utf8');
-  const migration = readFileSync(new URL('../supabase/migrations/20260816004500_dating_experiment_operator_rehearsal.sql', import.meta.url), 'utf8');
   const eventSource = readFileSync(new URL('../lib/dating-experiment-event.ts', import.meta.url), 'utf8');
   for (const field of [
     'prize_funding_confirmed_at', 'venue_confirmed_at', 'venue_confirmation_reference',
@@ -318,19 +322,8 @@ test('public launch approvals are dated, attributable, and required in code and 
     assert.match(legacyMigration, new RegExp(field));
     assert.match(eventSource, new RegExp(field));
   }
-  for (const field of [
-    'operator_compliance_approved', 'operator_compliance_approved_at',
-    'operator_compliance_reference',
-  ]) {
-    assert.match(migration, new RegExp(field));
-    assert.match(eventSource, new RegExp(field));
-  }
-  assert.match(migration, /rename column legal_review_approved to operator_compliance_approved/i);
-  assert.match(migration, /status <> 'entry_open'/i);
-  assert.match(migration, /terms_version = 'boston-v11-2026-08-15'/i);
-  assert.match(migration, /status = 'entry_open'/i);
-  assert.match(eventSource, /event\.operator_compliance_approved_at != null/);
   assert.match(eventSource, /event\.sponsor_public_mailing_address\?\.trim\(\)/);
+  assert.doesNotMatch(eventSource, /operator_compliance/);
   assert.doesNotMatch(eventSource, /legal_review/);
 });
 
@@ -354,7 +347,9 @@ test('V9 adds a transparent event questionnaire, private Berkeley reveal, and op
   assert.match(draw, /notify === false/);
   assert.match(draw, /notificationsEnabled\.has\(id\)/);
   assert.match(reminders, /\.eq\('status', 'both_accepted'\)/);
-  assert.match(reminders, /\.is\(field, null\)/);
+  assert.match(reminders, /dating_experiment_notification_deliveries/);
+  assert.match(reminders, /status: 'failed'/);
+  assert.match(reminders, /\.eq\('status', 'failed'\)/);
   assert.match(reminders, /entry\.notify !== false/);
   assert.match(cron, /\/api\/cron\/dating-experiment-reminders/);
 });
@@ -414,16 +409,16 @@ test('public entry is open only while every launch prerequisite remains approved
   assert.match(experimentSource, /prizeFundingConfirmed: true/);
   assert.match(experimentSource, /venueConfirmed: true/);
   assert.match(experimentSource, /sponsorDetailsConfirmed: true/);
-  assert.match(experimentSource, /operatorComplianceApproved: true/);
-  assert.match(experimentSource, /entriesOpen:\s*true/);
+  assert.doesNotMatch(experimentSource, /operatorComplianceApproved/);
+  assert.match(experimentSource, /featureEnabled:\s*true/);
   assert.match(experimentSource, /raffleLaunchBlockers\(\)\.length === 0/);
-  assert.match(eventSource, /RAFFLE\.entriesOpen[\s\S]*raffleLaunchBlockers\(\)\.length === 0/);
+  assert.match(eventSource, /RAFFLE\.featureEnabled[\s\S]*raffleLaunchBlockers\(\)\.length === 0/);
   assert.match(eventSource, /event\.status === 'entry_open'/);
   assert.match(eventSource, /hasDatabaseLaunchApproval\(event\)/);
   assert.match(eventSource, /DATING_EXPERIMENT_REHEARSAL_EMAILS/);
   assert.match(eventSource, /isAdminEmail\(email\)/);
   assert.match(eventSource, /user\?\.is_test !== true/);
-  assert.match(eventSource, /!RAFFLE\.entriesOpen/);
+  assert.match(eventSource, /!RAFFLE\.featureEnabled/);
   for (const routeSource of [pageSource, statusSource, entrySource, uploadSource]) {
     assert.match(routeSource, /datingExperimentAdminRehearsalOpen/);
   }

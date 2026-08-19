@@ -7,17 +7,28 @@ export default function OutOfRange() {
   const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
   async function submit() {
-    if (!email) return
+    if (!email || busy) return
+    setBusy(true)
+    setError('')
     // Server-side: the team gets the signup via the server RESEND key. (Never
     // call Resend from the browser — that would expose the secret.)
-    await fetch('/api/waitlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, city }),
-    }).catch(() => {})
-    setSubmitted(true)
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, city }),
+      })
+      if (!response.ok) throw new Error('waitlist request failed')
+      setSubmitted(true)
+    } catch {
+      setError('We could not save that right now. Check your connection and try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -49,7 +60,7 @@ export default function OutOfRange() {
                 style={{
                   background:'var(--h-surface)',border:'1px solid var(--h-border)',
                   color:'var(--h-text)',padding:'.85rem 1rem',
-                  fontFamily:'Inter,sans-serif',fontSize:'.88rem',outline:'none',
+                  fontFamily:'Inter,sans-serif',fontSize:'1rem',outline:'none',
                   borderRadius:'12px'
                 }}
               />
@@ -61,21 +72,22 @@ export default function OutOfRange() {
                 style={{
                   background:'var(--h-surface)',border:'1px solid var(--h-border)',
                   color:'var(--h-text)',padding:'.85rem 1rem',
-                  fontFamily:'Inter,sans-serif',fontSize:'.88rem',outline:'none',
+                  fontFamily:'Inter,sans-serif',fontSize:'1rem',outline:'none',
                   borderRadius:'12px'
                 }}
               />
               <button
                 onClick={submit}
-                disabled={!email}
+                disabled={!email || busy}
                 style={{
                   background:'var(--h-text)',color:'var(--h-bg)',border:'none',
                   padding:'.9rem',fontFamily:'DM Mono,monospace',
                   fontSize:'.65rem',letterSpacing:'.14em',textTransform:'uppercase',
-                  cursor:'pointer',opacity:email?1:.3
+                  cursor:'pointer',opacity:email && !busy?1:.3
                 }}>
-                Notify me →
+                {busy ? 'Saving…' : 'Notify me →'}
               </button>
+              {error && <p role="alert" style={{margin:0,color:'#b42318',fontSize:'.82rem',lineHeight:1.5}}>{error}</p>}
             </div>
             <a href="/" style={{
               marginTop:'2rem',fontFamily:'DM Mono,monospace',fontSize:'.62rem',

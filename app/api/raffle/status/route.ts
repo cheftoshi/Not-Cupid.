@@ -6,6 +6,7 @@ import { signPrivateVideoReference } from '@/lib/private-media';
 import { experimentOrientationLabel } from '@/lib/experiment-preferences';
 import { datingExperimentAdminRehearsalOpen, datingExperimentDateLabel, datingExperimentEntriesOpen, getDatingExperimentEvent } from '@/lib/dating-experiment-event';
 import { experimentProfileReadiness } from '@/lib/experiment-profile';
+import { getAdminEmails } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +19,13 @@ const normalizedInterests = (profile: any): string[] => [
 ].map((value) => String(value).trim()).filter(Boolean);
 
 async function privateCandidate(candidateId: string, viewer: any) {
-  const [{ data: profile }, { data: entry }] = await Promise.all([
-    supabaseAdmin.from('users').select('name, age, photo_url, gallery, archetype, bio, hobbies, music, food, sports').eq('id', candidateId).single(),
+  const [{ data: profile, error: profileError }, { data: entry, error: entryError }] = await Promise.all([
+    supabaseAdmin.from('users').select('name, age, photo_url, gallery, archetype, bio, hobbies, music, food, sports, is_test, is_blocked, deleted_at').eq('id', candidateId).single(),
     supabaseAdmin.from('raffle_entries').select('video_url, questionnaire').eq('event_key', RAFFLE.key).eq('user_id', candidateId).maybeSingle(),
   ]);
-  if (!profile) return null;
+  if (profileError) throw profileError;
+  if (entryError) throw entryError;
+  if (!profile || profile.is_test || profile.is_blocked || profile.deleted_at) return null;
   const viewerInterests = new Set(normalizedInterests(viewer).map((value) => value.toLowerCase()));
   const sharedInterests = normalizedInterests(profile)
     .filter((value) => viewerInterests.has(value.toLowerCase()))
@@ -60,38 +63,46 @@ export async function GET() {
     : RAFFLE;
   const rehearsal = datingExperimentAdminRehearsalOpen(event, user);
   const entriesOpen = datingExperimentEntriesOpen(event) || rehearsal;
-  const eligible = user.is_test !== true && raffleEligible(user, eventLocation);
+  const adminEmails = new Set(getAdminEmails());
+  const eligible = user.is_test !== true
+    && user.is_blocked !== true
+    && !user.deleted_at
+    && !adminEmails.has(String(user.email || '').trim().toLowerCase())
+    && raffleEligible(user, eventLocation);
   const profileReadiness = experimentProfileReadiness(user);
   const hasProfile = profileReadiness.complete;
   let entered = false, entry: any = null, draw: any = null, other: any = null;
   let shortlist: any[] = [], shortlistRound: any = null;
 
   try {
-    const { data: ownEntry } = await supabaseAdmin.from('raffle_entries')
+    const { data: ownEntry, error: ownEntryError } = await supabaseAdmin.from('raffle_entries')
       .select('status, terms_version')
       .eq('user_id', user.id)
       .eq('event_key', RAFFLE.key)
       .maybeSingle();
+    if (ownEntryError) throw ownEntryError;
     if (ownEntry) {
       const currentEntry = ownEntry.terms_version === RAFFLE.termsVersion;
       entered = currentEntry && (ownEntry.status === 'entered' || ownEntry.status === 'picked');
       entry = currentEntry ? ownEntry : { status: 'needs-preference-refresh' };
     }
 
-    const { data: offerRows } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
+    const { data: offerRows, error: offerRowsError } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
       .select('id, round_id, user_a_id, user_b_id, compatibility_score, a_accepted, b_accepted, a_favorite, b_favorite, created_at')
       .eq('event_key', RAFFLE.key)
       .eq('status', 'pending')
       .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
       .order('created_at', { ascending: false });
+    if (offerRowsError) throw offerRowsError;
     const activeRoundId = offerRows?.[0]?.round_id;
     const activeOffers = activeRoundId ? (offerRows ?? []).filter((row) => row.round_id === activeRoundId) : [];
     if (activeRoundId) {
-      const { data: round } = await supabaseAdmin.from('dating_experiment_rounds')
+      const { data: round, error: roundError } = await supabaseAdmin.from('dating_experiment_rounds')
         .select('id, round_number, status, response_deadline')
         .eq('id', activeRoundId)
         .in('status', ['collecting', 'resolving'])
         .maybeSingle();
+      if (roundError) throw roundError;
       if (round) {
         shortlist = (await Promise.all(activeOffers.map(async (offer) => {
           const isA = offer.user_a_id === user.id;
@@ -114,12 +125,13 @@ export async function GET() {
       }
     }
 
-    const { data: draws } = await supabaseAdmin.from('raffle_draws').select('*')
+    const { data: draws, error: drawsError } = await supabaseAdmin.from('raffle_draws').select('*')
       .eq('event_key', RAFFLE.key)
       .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
       .in('status', ['pending', 'both_accepted'])
       .order('created_at', { ascending: false })
       .limit(1);
+    if (drawsError) throw drawsError;
     const latestDraw = draws?.[0];
     if (latestDraw) {
       const isA = latestDraw.user_a_id === user.id;
@@ -139,18 +151,29 @@ export async function GET() {
     }
   } catch (error) {
     console.error('[dating-experiment-status]', error);
+    return NextResponse.json({ error: 'Dating Experiment status is temporarily unavailable. Please retry.' }, {
+      status: 503,
+      headers: { 'Retry-After': '15' },
+    });
   }
 
   const eventCap = event?.entry_cap ?? RAFFLE.cap;
   let spotsLeft = eventCap;
   try {
-    const { count } = await supabaseAdmin.from('raffle_entries')
+    const { count, error: countError } = await supabaseAdmin.from('raffle_entries')
       .select('user_id', { count: 'exact', head: true })
       .eq('event_key', RAFFLE.key)
       .eq('terms_version', event?.terms_version ?? RAFFLE.termsVersion)
       .neq('status', 'withdrawn');
+    if (countError) throw countError;
     spotsLeft = Math.max(0, eventCap - (count ?? 0));
-  } catch { /* migration not ready */ }
+  } catch (error) {
+    console.error('[dating-experiment-capacity]', error);
+    return NextResponse.json({ error: 'Dating Experiment status is temporarily unavailable. Please retry.' }, {
+      status: 503,
+      headers: { 'Retry-After': '15' },
+    });
+  }
 
   const outcome = draw?.bothAccepted
     ? { state: 'selected' }

@@ -190,3 +190,11 @@ html[data-theme="dark"] body { background: #0c0a12; color: var(--h-text); }
   --h-text:#16110d; --h-text-dim:#76695f; --h-text-faint:#a99b91;
   --h-border:rgba(58,39,24,0.13); --h-accent:#d2530f; --h-accent-2:#1b46c9; --h-human:#e0457f;
 }
+
+/* iOS zooms the entire installed PWA when a form control is focused below
+   16px, which made sheets and chat composers appear misaligned. */
+@media (max-width: 768px) {
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select { font-size: 16px !important; }
+}

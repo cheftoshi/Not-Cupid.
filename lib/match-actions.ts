@@ -5,11 +5,11 @@
 //   - records the accepting user's `user_X_accepted`
 //   - FIRST accept → email the other person an "interested, accept to connect" nudge
 //   - BOTH accepted → full activation: status='both_accepted', open the chat with
-//     a 24h inactivity window (chat_expires_at), and email both the "it's a match"
-//     contact card. Idempotent — re-calling after mutual accept is a no-op.
+//     a 36h inactivity window (chat_expires_at), and notify both without exposing
+//     either login email. Idempotent — re-calling after mutual accept is a no-op.
 
 import { supabaseAdmin } from '@/lib/supabase';
-import { renderEmail, sendEmail, infoCard, button, C, escapeHtml } from '@/lib/email';
+import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push';
 import { LOVE_MAX_CONNECTIONS } from '@/lib/matching-policy';
 import { returnLovePickEntitlement } from '@/lib/love-pick-access';
@@ -85,29 +85,40 @@ export async function syncMatchRosters(userIds: string[]): Promise<void> {
 // where their status is still 'matched'). Idempotent.
 export async function releaseTimedOutMatches(userId: string): Promise<void> {
   const nowMs = Date.now();
-  const { data: matches } = await supabaseAdmin
+  const nowIso = new Date(nowMs).toISOString();
+  const { data: matches, error: matchReadError } = await supabaseAdmin
     .from('matches')
     .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, status')
     .or(`user_1_id.eq.${userId},user_2_id.eq.${userId}`)
     .is('ended_at', null)
     .neq('status', 'expired');
+  if (matchReadError) throw matchReadError;
   for (const m of matches ?? []) {
     const both = m.user_1_accepted && m.user_2_accepted;
     if (both) continue;
     if (!m.expires_at || new Date(m.expires_at).getTime() >= nowMs) continue;
     // Timed out without a mutual accept → expire it and free both parties.
-    await supabaseAdmin
+    // Compare-and-set is the claim. Concurrent cron/roster requests may read
+    // the same due row, but only one can transition it and run side effects.
+    const { data: claimed, error: claimError } = await supabaseAdmin
       .from('matches')
       .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
-      .eq('id', m.id);
-    await recordLoveExpiry(m.id, [
-      ...(!m.user_1_accepted ? [m.user_1_id] : []),
-      ...(!m.user_2_accepted ? [m.user_2_id] : []),
+      .eq('id', m.id)
+      .is('ended_at', null)
+      .lt('expires_at', nowIso)
+      .or('user_1_accepted.eq.false,user_2_accepted.eq.false')
+      .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted')
+      .maybeSingle();
+    if (claimError) throw claimError;
+    if (!claimed) continue;
+    await recordLoveExpiry(claimed.id, [
+      ...(!claimed.user_1_accepted ? [claimed.user_1_id] : []),
+      ...(!claimed.user_2_accepted ? [claimed.user_2_id] : []),
     ]);
-    await returnLovePickEntitlement(m.id, null);
-    await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [m.user_1_id, m.user_2_id]);
+    await returnLovePickEntitlement(claimed.id, null);
+    await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [claimed.user_1_id, claimed.user_2_id]);
     // Whoever got picked here and never accepted accrues an "ignored pick".
-    const ignorer = ignoringParty(m);
+    const ignorer = ignoringParty(claimed);
     if (ignorer) await supabaseAdmin.rpc('bump_ignored_picks', { p_id: ignorer }).then(undefined, () => {});
   }
 }
@@ -121,83 +132,55 @@ export type AcceptResult =
   | { ok: true; mutual: boolean; already?: boolean };
 
 export async function acceptMatch(matchId: string, userId: string): Promise<AcceptResult> {
-  const { data: match } = await supabaseAdmin
-    .from('matches')
-    .select('*')
-    .eq('id', matchId)
-    .single();
+  const { data, error } = await supabaseAdmin.rpc('accept_love_match', {
+    p_match_id: matchId,
+    p_user_id: userId,
+    p_max_connections: MAX_CONNECTIONS,
+    p_chat_expires_at: new Date(Date.now() + CHAT_INACTIVITY_MS).toISOString(),
+  });
+  if (error) throw error;
+  const transition = (Array.isArray(data) ? data[0] : data) as {
+    outcome: 'not_found' | 'not_party' | 'ended' | 'expired' | 'at_capacity'
+      | 'already_mutual' | 'already_first' | 'accepted_first' | 'accepted_mutual';
+    participant_1_id: string | null;
+    participant_2_id: string | null;
+    participant_1_accepted: boolean;
+    participant_2_accepted: boolean;
+  } | null;
+  if (!transition) throw new Error('Love acceptance did not return a transition.');
 
-  if (!match) return { ok: false, reason: 'not_found' };
-
-  const isUser1 = match.user_1_id === userId;
-  const isUser2 = match.user_2_id === userId;
-  if (!isUser1 && !isUser2) return { ok: false, reason: 'not_party' };
-  if (match.ended_at || ['ended', 'passed', 'expired'].includes(match.status)) {
-    return { ok: false, reason: 'ended' };
-  }
-  if (match.expires_at && new Date(match.expires_at) <= new Date()) {
-    await supabaseAdmin
-      .from('matches')
-      .update({ status: 'expired', ended_at: new Date().toISOString(), ended_reason: 'expired' })
-      .eq('id', matchId)
-      .eq('status', 'pending');
+  if (transition.outcome === 'not_found') return { ok: false, reason: 'not_found' };
+  if (transition.outcome === 'not_party') return { ok: false, reason: 'not_party' };
+  if (transition.outcome === 'at_capacity') return { ok: false, reason: 'at_capacity' };
+  const participantIds = [transition.participant_1_id, transition.participant_2_id]
+    .filter((id): id is string => !!id);
+  if (transition.outcome === 'expired') {
     await recordLoveExpiry(matchId, [
-      ...(!match.user_1_accepted ? [match.user_1_id] : []),
-      ...(!match.user_2_accepted ? [match.user_2_id] : []),
+      ...(!transition.participant_1_accepted && transition.participant_1_id ? [transition.participant_1_id] : []),
+      ...(!transition.participant_2_accepted && transition.participant_2_id ? [transition.participant_2_id] : []),
     ]);
     await returnLovePickEntitlement(matchId, null);
     return { ok: false, reason: 'ended' };
   }
+  if (transition.outcome === 'ended') return { ok: false, reason: 'ended' };
 
   // Already mutually accepted → idempotent success (don't re-send emails).
-  if (match.user_1_accepted && match.user_2_accepted) {
-    await syncMatchRosters([match.user_1_id, match.user_2_id]);
+  if (transition.outcome === 'already_mutual') {
+    await syncMatchRosters(participantIds);
     return { ok: true, mutual: true, already: true };
   }
-
-  // Capacity guard: pick gates the PICKER, but a candidate can accrue extra
-  // pendings via the double-pick race ("extra suitor"). Accepting must not push
-  // anyone past MAX_CONNECTIONS — count their OTHER live matches (this pending
-  // already counts as live, so exclude it) and block at the cap.
-  const live = await liveMatchesFor(userId);
-  const othersLive = live.filter((m: any) => m.id !== matchId);
-  if (othersLive.length >= MAX_CONNECTIONS) {
-    return { ok: false, reason: 'at_capacity' };
-  }
-
-  const field = isUser1 ? 'user_1_accepted' : 'user_2_accepted';
-  const acceptedAtField = isUser1 ? 'user_1_accepted_at' : 'user_2_accepted_at';
-  const otherAccepted = isUser1 ? match.user_2_accepted : match.user_1_accepted;
-
-  // Record this user's acceptance.
-  await supabaseAdmin
-    .from('matches')
-    .update({ [field]: true, [acceptedAtField]: new Date().toISOString() })
-    .eq('id', matchId);
+  if (transition.outcome === 'already_first') return { ok: true, mutual: false, already: true };
   await recordLoveDecision(matchId, userId, 'accepted');
 
-  // Re-engaged → clear any "ignored picks" bench (covers both accepting an
-  // incoming pick and pre-accepting your own pick). No-op if column unmigrated.
-  await supabaseAdmin.from('users').update({ ignored_picks: 0 }).eq('id', userId).then(undefined, () => {});
+  if (transition.outcome === 'accepted_mutual') {
+    await syncMatchRosters(participantIds);
 
-  if (otherAccepted) {
-    // Mutual → full activation.
-    await supabaseAdmin
-      .from('matches')
-      .update({
-        status: 'both_accepted',
-        chat_expires_at: new Date(Date.now() + CHAT_INACTIVITY_MS).toISOString(),
-      })
-      .eq('id', matchId);
-
-    await syncMatchRosters([match.user_1_id, match.user_2_id]);
-
-    await sendItsAMatchEmails(matchId, match.user_1_id, match.user_2_id).catch((e) =>
+    await sendItsAMatchEmails(matchId, participantIds[0], participantIds[1]).catch((e) =>
       console.error('acceptMatch: its-a-match email failed', e)
     );
     // Push to both — every provider attempt is claimed before it leaves so a
     // retry can never produce duplicate lock-screen alerts.
-    await Promise.all([match.user_1_id, match.user_2_id].map(async (recipientId) => {
+    await Promise.all(participantIds.map(async (recipientId) => {
       const eventId = await claimLoveNotificationEvent({
         matchId,
         recipientId,
@@ -220,7 +203,10 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
   }
 
   // First to accept → nudge the other person.
-  const otherId = isUser1 ? match.user_2_id : match.user_1_id;
+  const otherId = transition.participant_1_id === userId
+    ? transition.participant_2_id
+    : transition.participant_1_id;
+  if (!otherId) throw new Error('Love acceptance is missing the other participant.');
   let accepterFirst = 'Someone';
   try {
     accepterFirst = await sendInterestNudge(matchId, otherId, userId);
@@ -254,14 +240,13 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
   if (!user1 || !user2) return;
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
-  const html = (otherName: string, otherEmail: string, recipientId: string) =>
+  const html = (otherName: string, recipientId: string) =>
     renderEmail({
       preheader: `Both of you said yes. Your chat with ${otherName.split(' ')[0]} is open.`,
       eyebrow: "it's a match ✦",
       headline: `${otherName.split(' ')[0]} said yes too.`,
       bodyHtml: `
-        <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you. Chat's open in the app, and here's their email so you can take it wherever feels right.</p>
-        ${infoCard({ eyebrow: `${otherName}'s email`, big: otherEmail })}
+        <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you. Your private chat is open in the app.</p>
         <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
         <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
           <li>Message soon — the chat closes after 36 quiet hours (every message resets the clock).</li>
@@ -295,8 +280,8 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
     }
     const result = await sendEmail({
       to: recipient.email,
-      subject: `${other.name.split(' ')[0]} said yes — here's their email`,
-      html: html(other.name, other.email, recipient.id),
+      subject: `${other.name.split(' ')[0]} said yes — your chat is open`,
+      html: html(other.name, recipient.id),
       idempotencyKey: `mutual-match-${matchId}-${recipient.id}`,
       tags: [
         { name: 'category', value: 'mutual_match' },

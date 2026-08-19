@@ -1,6 +1,6 @@
 # Dating Experiment public launch checklist
 
-This is the operating record for the August 20, 2026 Boston event. It is not legal advice. All launch gates below were completed, and public entry is open in the deployed code and production event record.
+This is the operating record for the August 20, 2026 Boston event. It is not legal advice. Entries closed at 11:59 PM ET on August 18; the private shortlist process follows the published schedule.
 
 ## Public offer
 
@@ -22,8 +22,8 @@ This is the operating record for the August 20, 2026 Boston event. It is not leg
 - [x] Operator confirmed both Berkeley reservations are booked and prepaid for August 20 at 6:30 PM and 8:30 PM ET on August 15.
 - [x] Reservation confirmation recorded as an operator attestation for both slots. External booking identifiers were not supplied and remain private if added later.
 - [x] Fulfillment method: NotCupid prepaid The Berkeley directly; participants do not pay or seek reimbursement for the included dinner. The $200-per-pair cap includes ordinary tax and gratuity. Alcohol, parking, valet costs/tips, transportation, and items outside the prepaid arrangement are excluded.
-- [x] Operator compliance approval recorded for exact published terms version `boston-v13-2026-08-15` on August 15, 2026, including the optional-video rule and 400-entry cap.
-- [x] Production database sign-off fields populated; event status is `entry_open`, and the public code gate was approved after the device rehearsal.
+- [x] The exact published terms version `boston-v13-2026-08-15`, optional-video rule, and 400-entry cap were frozen before opening.
+- [x] Production funding, venue, Sponsor, and fulfillment fields were populated before entry; the event is now closed to new entries.
 - [x] Final iPhone/PWA rehearsal passed on August 15, 2026. The operator confirmed the quiz, mobile layout, UI, and UX were seamless and approved opening the public code gate.
 
 ## Restaurant operating plan

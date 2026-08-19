@@ -6,6 +6,7 @@ import {
   sendDatingExperimentWinnerEmails,
 } from '@/lib/dating-experiment-email';
 import { randomInt } from 'crypto';
+import { getAdminEmails } from '@/lib/admin';
 import {
   datingExperimentCanShortlist,
   getDatingExperimentEvent,
@@ -27,7 +28,7 @@ import {
 
 const COLS = 'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, archetype, hobbies, music, food, sports, ' +
   'score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness, ' +
-  'vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, is_test';
+  'vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, email, is_test, is_blocked, deleted_at';
 
 const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
@@ -162,6 +163,43 @@ async function resolveCollectingRound(
   round: RoundRow,
   pairs: PairRow[],
 ): Promise<DrawResult | null> {
+  // Eligibility is re-checked at resolution time, not only when the shortlist
+  // was created. A safety block or account deletion during the response window
+  // must make that pair impossible to select.
+  const offeredParticipantIds = participantIdsForPairs(pairs);
+  const { data: currentParticipants, error: participantError } = offeredParticipantIds.length
+    ? await supabaseAdmin.from('users')
+      .select('id, email, is_test, is_blocked, deleted_at')
+      .in('id', offeredParticipantIds)
+    : { data: [] as any[], error: null };
+  if (participantError) throw participantError;
+  const adminEmails = new Set(getAdminEmails());
+  const eligibleParticipantIds = new Set((currentParticipants ?? [])
+    .filter((user: any) => user.is_test !== true
+      && user.is_blocked !== true
+      && !user.deleted_at
+      && !adminEmails.has(String(user.email || '').trim().toLowerCase()))
+    .map((user: any) => user.id));
+  const ineligibleParticipantIds = new Set(offeredParticipantIds.filter((id) => !eligibleParticipantIds.has(id)));
+  if (ineligibleParticipantIds.size) {
+    const now = new Date().toISOString();
+    for (const pair of pairs) {
+      if (!ineligibleParticipantIds.has(pair.user_a_id) && !ineligibleParticipantIds.has(pair.user_b_id)) continue;
+      const { error } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
+        .update({ status: 'expired', a_accepted: false, b_accepted: false })
+        .eq('id', pair.id)
+        .eq('status', 'pending');
+      if (error) throw error;
+      pair.status = 'expired';
+      pair.a_accepted = false;
+      pair.b_accepted = false;
+    }
+    const { error: withdrawalError } = await supabaseAdmin.from('raffle_entries')
+      .update({ status: 'withdrawn', withdrawn_at: now })
+      .eq('event_key', event.event_key)
+      .in('user_id', [...ineligibleParticipantIds]);
+    if (withdrawalError) throw withdrawalError;
+  }
   const allResponded = pairs.length > 0 && pairs.every((pair) => pair.a_accepted !== null && pair.b_accepted !== null);
   const deadlinePassed = Date.now() >= new Date(round.response_deadline).getTime();
   if (!allResponded && !deadlinePassed) {
@@ -300,9 +338,11 @@ async function resolveCollectingRound(
         .in('user_id', participantIds);
       if (entriesError) throw entriesError;
       for (const entry of entries ?? []) {
-        const nextStatus = (entry.attempts ?? 0) < event.max_attempts ? 'entered' : 'passed';
+        const nextStatus = ineligibleParticipantIds.has(entry.user_id)
+          ? 'withdrawn'
+          : (entry.attempts ?? 0) < event.max_attempts ? 'entered' : 'passed';
         const { error: entryStatusError } = await supabaseAdmin.from('raffle_entries')
-          .update({ status: nextStatus })
+          .update(nextStatus === 'withdrawn' ? { status: nextStatus, withdrawn_at: now } : { status: nextStatus })
           .eq('event_key', event.event_key)
           .eq('user_id', entry.user_id);
         if (entryStatusError) throw entryStatusError;
@@ -382,9 +422,11 @@ async function resolveCollectingRound(
   for (const entry of participantEntries ?? []) {
     const status = allWinnerIds.has(entry.user_id)
       ? 'picked'
-      : (entry.attempts ?? 0) < event.max_attempts ? 'entered' : 'passed';
+      : ineligibleParticipantIds.has(entry.user_id)
+        ? 'withdrawn'
+        : (entry.attempts ?? 0) < event.max_attempts ? 'entered' : 'passed';
     const { error: entryStatusError } = await supabaseAdmin.from('raffle_entries')
-      .update({ status })
+      .update(status === 'withdrawn' ? { status, withdrawn_at: now } : { status })
       .eq('event_key', event.event_key)
       .eq('user_id', entry.user_id);
     if (entryStatusError) throw entryStatusError;
@@ -528,7 +570,11 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
   // operational launch gates. Active rounds are still recoverable above.
   if (!datingExperimentCanShortlist(event)) return { ok: true, entrants: 0, drawn: 0, state: 'paused' };
 
-  const [{ data: priorRounds }, { count: totalEntries }, { data: entries }] = await Promise.all([
+  const [
+    { data: priorRounds, error: priorRoundsError },
+    { count: totalEntries, error: totalEntriesError },
+    { data: entries, error: entriesError },
+  ] = await Promise.all([
     supabaseAdmin.from('dating_experiment_rounds').select('round_number').eq('event_key', event.event_key).order('round_number', { ascending: false }),
     supabaseAdmin.from('raffle_entries').select('user_id', { count: 'exact', head: true })
       .eq('event_key', event.event_key)
@@ -539,6 +585,12 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       .eq('event_key', event.event_key)
       .eq('status', 'entered'),
   ]);
+  // The selection snapshot must be complete before any irreversible status
+  // change. A transient read failure is not an empty pool: fail closed and let
+  // the next idempotent cron retry with a coherent snapshot.
+  if (priorRoundsError) throw priorRoundsError;
+  if (totalEntriesError) throw totalEntriesError;
+  if (entriesError) throw entriesError;
   const existingWinnerIds = new Set(existingWinners.flatMap((winner) => [winner.user_a_id, winner.user_b_id]));
   const eligibleEntries = (entries ?? []).filter((entry: any) =>
     (entry.attempts ?? 0) < event.max_attempts
@@ -559,14 +611,26 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       : { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
   }
 
-  const [{ data: usersData }, { data: priorPairs }] = await Promise.all([
+  const [
+    { data: usersData, error: usersError },
+    { data: priorPairs, error: priorPairsError },
+  ] = await Promise.all([
     supabaseAdmin.from('users').select(COLS).in('id', eligibleIds),
     supabaseAdmin.from('dating_experiment_shortlist_pairs').select('user_a_id, user_b_id').eq('event_key', event.event_key),
   ]);
+  if (usersError) throw usersError;
+  if (priorPairsError) throw priorPairsError;
   const entryByUser = new Map(eligibleEntries.map((entry: any) => [entry.user_id, entry]));
+  const adminEmails = new Set(getAdminEmails());
   const seenPairs = new Set<string>((priorPairs ?? []).map((pair: any) => pairKey(pair.user_a_id, pair.user_b_id)));
   const pool: any[] = ((usersData as any[]) ?? [])
-    .filter((user) => user.is_test !== true && user.photo_url && user.archetype && raffleEligible(user, {
+    .filter((user) => user.is_test !== true
+      && user.is_blocked !== true
+      && !user.deleted_at
+      && !adminEmails.has(String(user.email || '').trim().toLowerCase())
+      && user.photo_url
+      && user.archetype
+      && raffleEligible(user, {
       centerZip: event.center_zip,
       radiusMiles: Number(event.radius_miles),
     }))
@@ -615,50 +679,33 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
 
   const roundNumber = ((priorRounds ?? [])[0]?.round_number ?? 0) + 1;
   const responseDeadline = roundResponseDeadline(roundNumber);
-  const { data: round, error: roundError } = await supabaseAdmin.from('dating_experiment_rounds').insert({
-    event_key: event.event_key,
-    round_number: roundNumber,
-    status: 'collecting',
-    response_deadline: responseDeadline,
-    algorithm_version: event.algorithm_version,
-    eligible_user_count: pool.length,
-    offered_pair_count: shortlist.length,
-  }).select('id').single();
-  if (roundError) {
-    if (roundError.code === '23505') return { ok: true, entrants: pool.length, drawn: 0, state: 'awaiting-shortlist-response' };
-    throw roundError;
-  }
-  const { error: eventStatusError } = await supabaseAdmin.from('dating_experiment_events')
-    .update({ status: 'shortlisting', updated_at: new Date().toISOString() })
-    .eq('event_key', event.event_key)
-    .in('status', ['entry_open', 'entry_closed', 'shortlisting']);
-  if (eventStatusError) throw eventStatusError;
-
   const rows = shortlist.map((edge) => ({
-    round_id: round.id,
-    event_key: event.event_key,
     user_a_id: edge.a.id,
     user_b_id: edge.b.id,
     compatibility_score: edge.score,
   }));
-  const { data: insertedPairs, error: pairError } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
-    .insert(rows)
-    .select('id, user_a_id, user_b_id, compatibility_score, a_accepted, b_accepted, a_favorite, b_favorite, status, winner_slot');
-  if (pairError) {
-    await supabaseAdmin.from('dating_experiment_rounds').update({ status: 'cancelled', resolved_at: new Date().toISOString() }).eq('id', round.id);
-    throw pairError;
+  const { data: roundId, error: roundError } = await supabaseAdmin.rpc(
+    'create_dating_experiment_shortlist_round',
+    {
+      p_event_key: event.event_key,
+      p_round_number: roundNumber,
+      p_response_deadline: responseDeadline,
+      p_algorithm_version: event.algorithm_version,
+      p_eligible_user_count: pool.length,
+      p_pairs: rows,
+    },
+  );
+  if (roundError) {
+    if (roundError.code === '23505') return { ok: true, entrants: pool.length, drawn: 0, state: 'awaiting-shortlist-response' };
+    throw roundError;
   }
+  if (typeof roundId !== 'string') throw new Error('Dating Experiment shortlist did not return a round ID.');
+  const { data: insertedPairs, error: pairError } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
+    .select('id, user_a_id, user_b_id, compatibility_score, a_accepted, b_accepted, a_favorite, b_favorite, status, winner_slot')
+    .eq('round_id', roundId);
+  if (pairError) throw pairError;
 
   const participants = [...new Set(shortlist.flatMap((edge) => [edge.a.id, edge.b.id]))];
-  for (const id of participants) {
-    const currentAttempts = (entryByUser.get(id) as any)?.attempts ?? 0;
-    const { error: entryPickError } = await supabaseAdmin.from('raffle_entries')
-      .update({ attempts: currentAttempts + 1, status: 'picked' })
-      .eq('event_key', event.event_key)
-      .eq('user_id', id)
-      .eq('status', 'entered');
-    if (entryPickError) throw entryPickError;
-  }
   const optionCount = new Map<string, number>();
   shortlist.forEach((edge) => {
     optionCount.set(edge.a.id, (optionCount.get(edge.a.id) ?? 0) + 1);
@@ -671,11 +718,11 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       title: `Your private shortlist is ready ✦`,
       body: `Meet ${count === 1 ? 'your strongest option' : 'your two strongest options'} and privately choose yes or pass before the response window closes.`,
       url: '/dating-experiment',
-      tag: `dating-experiment-shortlist-${round.id}`,
+      tag: `dating-experiment-shortlist-${roundId}`,
     });
   }));
   await ensureRoundEmails(event, {
-    id: round.id,
+    id: roundId,
     round_number: roundNumber,
     response_deadline: responseDeadline,
     status: 'collecting',

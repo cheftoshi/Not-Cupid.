@@ -26,7 +26,7 @@ export const RAFFLE = {
   metro: 'boston',
   centerZip: '02116',
   radiusMiles: 20,
-  entriesOpen: true, // public launch approved after the August 15 iPhone/PWA walkthrough
+  featureEnabled: true, // availability still requires the live event status + exact deadline
   statusLabel: 'Thursday, August 20',
   cap: 400, // one shared, gender-neutral entrant cap; the deadline can trigger first
   maxAttempts: 2, // at most two sealed shortlist rounds per entrant
@@ -68,7 +68,6 @@ export const RAFFLE = {
   prizeFundingConfirmed: true,
   venueConfirmed: true,
   sponsorDetailsConfirmed: true,
-  operatorComplianceApproved: true,
   // Times are public. The venue is revealed privately only after selection.
   restaurant: 'The Berkeley · 154 Berkeley Street, Boston, MA 02116',
   tagline: 'Two compatible Boston pairs. Dinner is on us.',
@@ -79,14 +78,13 @@ export function raffleLaunchBlockers(): string[] {
   if (!RAFFLE.prizeFundingConfirmed) blockers.push(`confirm funding for up to $${RAFFLE.budget * RAFFLE.winnerPairCount} in dinner prizes`);
   if (!RAFFLE.venueConfirmed) blockers.push('confirm the restaurant and fulfillment plan');
   if (!RAFFLE.sponsorDetailsConfirmed) blockers.push('confirm the Sponsor legal identity and public mailing address');
-  if (!RAFFLE.operatorComplianceApproved) blockers.push('record the operator compliance approval for the current Official Rules');
   if ([RAFFLE.entryCloseLabel, RAFFLE.drawLabel].some((label) => !label || label === 'TBD')) blockers.push('set the public entry and shortlist deadlines');
   if (new Date(RAFFLE.entryClose).getUTCFullYear() >= 2099 || new Date(RAFFLE.happensAt).getUTCFullYear() >= 2099) blockers.push('set the exact entry deadline and dinner time');
   return blockers;
 }
 
 export function raffleEntriesOpen(now = Date.now()): boolean {
-  return RAFFLE.entriesOpen
+  return RAFFLE.featureEnabled
     && raffleLaunchBlockers().length === 0
     && now < new Date(RAFFLE.entryClose).getTime();
 }

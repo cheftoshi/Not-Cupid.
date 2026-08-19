@@ -16,7 +16,7 @@ const APP_ROUTE = (p: string) =>
   p.startsWith('/dashboard') ||
   p.startsWith('/profile') ||
   p.startsWith('/match') ||
-  (p.startsWith('/friends') && !p.startsWith('/friends/pack') && !p.startsWith('/friends/quiz'));
+  (p.startsWith('/friends') && !p.startsWith('/friends/pack') && !p.startsWith('/friends/quiz') && p !== '/friends/how-it-works');
 
 export default function TopNav() {
   const p = usePathname() || '';

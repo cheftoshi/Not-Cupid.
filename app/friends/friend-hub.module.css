@@ -19,7 +19,7 @@
   .fbShell { grid-template-columns: minmax(0,1fr) 290px; align-items: start; }
   .fbShellHome { grid-template-columns: 1fr; }
   .fbShellHome .fbRail { display: none; }
-  .fbRail { position: sticky; top: 1rem; }
+  .fbRail { position: sticky; top: calc(var(--app-top-nav-height, 0px) + 1rem); }
 }
 
 /* ── TODAY (hero / daily move / loop / layout / panels) ── */
@@ -56,7 +56,7 @@
 .friendLoopStep.done { background: color-mix(in srgb, var(--h-surface) 90%, #effaf3); border-color: color-mix(in srgb, #3f7d57 30%, var(--h-border)); }
 .friendLoopStep.done > span { background: #3f7d57; border-color: #3f7d57; color: #fff; }
 .friendTodayLayout { display: grid; grid-template-columns: minmax(0,1fr) minmax(250px, 310px); gap: 1rem; align-items: start; }
-.friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: 1rem; }
+.friendTodaySide { display: grid; gap: 0.85rem; position: sticky; top: calc(var(--app-top-nav-height, 0px) + 1rem); }
 .friendTodayMain { min-width: 0; }
 .friendTodayPeople { grid-column: 2; grid-row: 1; }
 .friendTodayActions { grid-column: 2; grid-row: 2; }
@@ -101,11 +101,11 @@
 @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } }
 @media (max-width: 760px) { .friendTodayLayout, .friendLoopSteps { grid-template-columns: 1fr; } .friendTodayPeople, .friendTodayActions, .friendTodayMain { grid-column: auto; grid-row: auto; } .friendTodaySide { position: static; } .friendLoopHead { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 560px) {
-  .fbTopNav { position: sticky; top: 0.45rem; z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
+  .fbTopNav { position: sticky; top: calc(var(--app-top-nav-height, 0px) + 0.45rem); z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
   .fbTopNav::-webkit-scrollbar { display: none; }
   .fbTopNav button { white-space: nowrap; }
   .fbShell { gap: 0.95rem; margin-top: 0.9rem; }
-  .sceneFilterDock { position: sticky; top: 3.7rem; z-index: 24; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; margin: 0 -0.2rem 0.9rem; padding: 0.45rem 0.2rem; background: color-mix(in srgb, var(--h-bg) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
+  .sceneFilterDock { position: sticky; top: calc(var(--app-top-nav-height, 0px) + 3.7rem); z-index: 24; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; margin: 0 -0.2rem 0.9rem; padding: 0.45rem 0.2rem; background: color-mix(in srgb, var(--h-bg) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
   .sceneFilterDock::-webkit-scrollbar { display: none; }
   .sceneFilterDock button, .sceneFilterDock span { flex: 0 0 auto; white-space: nowrap; }
   .sceneFilterDock > div { margin-left: 0 !important; flex: 0 0 auto; }
@@ -119,7 +119,7 @@
 .fmGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
 @media (min-width: 880px) {
   .fmGrid { grid-template-columns: minmax(0,1fr) 320px; align-items: start; }
-  .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
+  .fmRail { grid-column: 2; grid-row: 1; position: sticky; top: calc(var(--app-top-nav-height, 0px) + 1rem); }
   .fmMain { grid-column: 1; grid-row: 1; }
 }
 /* SCENE — filters/categories on the LEFT, the feed in the MIDDLE (pack + around live in the shared right rail). */

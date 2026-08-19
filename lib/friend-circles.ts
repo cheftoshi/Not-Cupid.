@@ -1,9 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { ensureFriendChatRead } from '@/lib/friend-chat-read';
 
-// The friend group chat = the connected component of the mutual-match graph.
-// When two people mutually match, they end up in ONE shared circle; matching
-// across circles merges them so a friend-cluster shares a single thread.
+// One active crew per user. Joining/merging is atomic in Postgres, and history
+// from an archived source room is never copied into a newly merged crew.
 
 export async function activeCircleOf(userId: string): Promise<string | null> {
   const { data } = await supabaseAdmin
@@ -18,41 +17,13 @@ export async function activeCircleOf(userId: string): Promise<string | null> {
 
 // Ensure A and B share a circle. Returns the circle id.
 export async function joinCircle(aId: string, bId: string): Promise<string> {
-  const ca = await activeCircleOf(aId);
-  const cb = await activeCircleOf(bId);
-
-  if (ca && cb) {
-    if (ca === cb) return ca;
-    // Merge cb → ca: repoint members, messages, and connection circle refs.
-    await supabaseAdmin.from('friend_circle_members').update({ circle_id: ca }).eq('circle_id', cb).is('left_at', null);
-    await supabaseAdmin.from('friend_messages').update({ circle_id: ca }).eq('circle_id', cb);
-    await supabaseAdmin.from('friend_connections').update({ circle_id: ca }).eq('circle_id', cb);
-    await Promise.all([ensureFriendChatRead(aId, 'circle', ca), ensureFriendChatRead(bId, 'circle', ca)]);
-    return ca;
-  }
-
-  if (ca || cb) {
-    const circle = (ca || cb) as string;
-    const missing = ca ? bId : aId;
-    await supabaseAdmin
-      .from('friend_circle_members')
-      .upsert({ circle_id: circle, user_id: missing, left_at: null }, { onConflict: 'circle_id,user_id' });
-    await ensureFriendChatRead(missing, 'circle', circle);
-    return circle;
-  }
-
-  // Neither in a circle → create a fresh one with both.
-  const { data: circle } = await supabaseAdmin.from('friend_circles').insert({}).select('id').single();
-  const cid = circle!.id;
-  await supabaseAdmin.from('friend_circle_members').upsert(
-    [
-      { circle_id: cid, user_id: aId, left_at: null },
-      { circle_id: cid, user_id: bId, left_at: null },
-    ],
-    { onConflict: 'circle_id,user_id' }
-  );
-  await Promise.all([ensureFriendChatRead(aId, 'circle', cid), ensureFriendChatRead(bId, 'circle', cid)]);
-  return cid;
+  const { data: circleId, error } = await supabaseAdmin.rpc('join_friend_circle', {
+    p_user_a_id: aId,
+    p_user_b_id: bId,
+  });
+  if (error || typeof circleId !== 'string') throw new Error(error?.message || 'Could not open the Friend crew.');
+  await Promise.all([ensureFriendChatRead(aId, 'circle', circleId), ensureFriendChatRead(bId, 'circle', circleId)]);
+  return circleId;
 }
 
 // Count a user's CONNECTED (mutual) friends — for the 5-max cap.

@@ -108,7 +108,7 @@ async function recordLoveNotificationEvent(event: any) {
     && affectedRecipients.size > 0) {
     await supabaseAdmin
       .from('users')
-      .update({ email_notifications: false, pool_active: false, notifications_paused_at: at })
+      .update({ email_notifications: false })
       .in('id', Array.from(affectedRecipients));
   }
   return true;
@@ -120,7 +120,8 @@ async function recordCampaignEvent(event: any) {
   const tags = data.tags && typeof data.tags === 'object' ? data.tags : {};
   const campaignKey = typeof tags.campaign === 'string' ? tags.campaign : '';
   const trackedCampaigns = new Set([LOVE_RELAUNCH_CAMPAIGN, ELIGIBLE_READY_REMINDER_CAMPAIGN]);
-  if (!mapped || !trackedCampaigns.has(campaignKey) || typeof tags.user_id !== 'string') return false;
+  const tracked = trackedCampaigns.has(campaignKey) || campaignKey.startsWith('dating_experiment_');
+  if (!mapped || !tracked || typeof tags.user_id !== 'string') return false;
 
   const userId = tags.user_id;
   if (!/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(userId)) return true;
@@ -158,16 +159,13 @@ async function recordCampaignEvent(event: any) {
     throw new Error('Campaign event storage failed');
   }
 
-  // A complaint or permanent delivery failure must remove the address from
-  // future campaigns. Matching currently depends on email availability, so the
-  // pool flag follows the notification preference just like profile settings.
+  // A complaint or permanent delivery failure removes the address from future
+  // email only. Matching participation is a separate user choice.
   if (['email.complained', 'email.bounced', 'email.suppressed'].includes(event.type)) {
     await supabaseAdmin
       .from('users')
       .update({
         email_notifications: false,
-        pool_active: false,
-        notifications_paused_at: at,
       })
       .eq('id', userId);
   }

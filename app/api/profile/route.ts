@@ -158,16 +158,10 @@ export async function PUT(req: NextRequest) {
     }
   }
 
-  // email_notifications and pool_active are coupled: turning emails off
-  // pulls you from the matching pool (you can't be notified of matches);
-  // turning them back on puts you back in.
+  // Communication preference is independent from matching participation.
+  // Turning email off must never silently remove someone from Love/Friend.
   if (typeof updates.email_notifications === 'boolean') {
-    updates.pool_active = updates.email_notifications;
-    if (updates.email_notifications === false) {
-      updates.notifications_paused_at = new Date().toISOString();
-    } else {
-      updates.notifications_paused_at = null;
-    }
+    updates.notifications_paused_at = null;
   }
 
   const MATCHING_INPUTS = new Set([

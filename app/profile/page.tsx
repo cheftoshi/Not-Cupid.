@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import ProfileShell from './profile-shell';
-import Wordmark from '@/components/wordmark';
 import styles from './profile.module.css';
 import { withPrivateVideoPreview } from '@/lib/private-media';
 
@@ -22,7 +21,6 @@ export default async function ProfilePage({
     <div className={styles.page}>
       <div className={styles.container}>
         <nav className={styles.nav}>
-          <Wordmark size={1.15} href="/hub" />
           <div className={styles.navLinks}>
             <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
             <a href="/profile/preview" className={styles.navLink}>Preview</a>

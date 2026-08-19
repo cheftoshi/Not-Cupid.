@@ -29,10 +29,11 @@ export async function GET(req: NextRequest) {
 
   const { data: memberRows } = await supabaseAdmin
     .from('friend_circle_members')
-    .select('user_id')
+    .select('user_id, joined_at')
     .eq('circle_id', circleId)
     .is('left_at', null);
   const ids = (memberRows ?? []).map((m) => m.user_id);
+  const visibleFrom = (memberRows ?? []).find((member) => member.user_id === user.id)?.joined_at;
 
   const { data: memberData } = await supabaseAdmin
     .from('users').select('id, name, photo_url, is_test').in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest) {
         .from('friend_messages')
         .select('id, sender_id, body, created_at')
         .eq('circle_id', circleId)
+        .gte('created_at', visibleFrom || '1970-01-01T00:00:00.000Z')
         .order('created_at', { ascending: false })
         .limit(200)
     : { data: [] };
@@ -77,7 +79,9 @@ export async function GET(req: NextRequest) {
       await markFriendChatRead(user.id, 'circle', circleId);
     } else {
       const { count } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
-        .eq('circle_id', circleId).neq('sender_id', user.id).gt('created_at', cursor.read_at);
+        .eq('circle_id', circleId).neq('sender_id', user.id)
+        .gte('created_at', visibleFrom || '1970-01-01T00:00:00.000Z')
+        .gt('created_at', cursor.read_at);
       unread = count ?? 0;
     }
   }
@@ -99,11 +103,17 @@ export async function POST(req: NextRequest) {
   const limit = await rateLimit({ key: `friend-message:${user.id}`, windowSec: 3600, maxAttempts: 120, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many messages' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
-  const { body } = await req.json().catch(() => ({}));
+  const { body, client_id } = await req.json().catch(() => ({}));
   if (!body || typeof body !== 'string' || !body.trim()) {
     return NextResponse.json({ error: 'Empty message' }, { status: 400 });
   }
   if (body.length > 2000) return NextResponse.json({ error: 'Too long (max 2000)' }, { status: 400 });
+  const clientId = typeof client_id === 'string' && /^[a-zA-Z0-9_-]{8,80}$/.test(client_id) ? client_id : null;
+  if (clientId) {
+    const { data: existing } = await supabaseAdmin.from('friend_messages')
+      .select('id, sender_id, body, created_at').eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
+    if (existing) return NextResponse.json({ message: existing, already: true });
+  }
 
   const circleId = await activeCircleOf(user.id);
   if (!circleId) return NextResponse.json({ error: 'You have no friend circle yet — match with someone first.' }, { status: 400 });
@@ -141,11 +151,18 @@ export async function POST(req: NextRequest) {
 
   const { data: message, error } = await supabaseAdmin
     .from('friend_messages')
-    .insert({ circle_id: circleId, sender_id: user.id, body: body.trim() })
+    .insert({ circle_id: circleId, sender_id: user.id, body: body.trim(), client_id: clientId })
     .select('id, sender_id, body, created_at')
     .single();
 
-  if (error) return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
+  if (error) {
+    if (error.code === '23505' && clientId) {
+      const { data: existing } = await supabaseAdmin.from('friend_messages')
+        .select('id, sender_id, body, created_at').eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
+      if (existing) return NextResponse.json({ message: existing, already: true });
+    }
+    return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
+  }
 
   // Notify the rest of the crew (awaited — Vercel can kill un-awaited work, and
   // this is the crew chat's only notification channel). Never blocks the send.

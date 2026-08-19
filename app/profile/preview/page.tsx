@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { ARCHETYPES, VIBE_HEADS, vibeLabel } from '@/lib/quiz-data';
+import { ARCHETYPES, METRO_CENTERS, VIBE_HEADS, metroOf, vibeLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import Link from 'next/link';
 import styles from './preview.module.css';
@@ -19,6 +19,8 @@ export default async function ProfilePreviewPage() {
   const heightIn = user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : null;
   const arche = ARCHETYPES.find((a) => a.name === user.archetype);
   const prompts = normalizeProfilePrompts(user.prompts);
+  const metroKey = metroOf(user.zip);
+  const metroLabel = metroKey ? `${METRO_CENTERS[metroKey].label} · ${METRO_CENTERS[metroKey].state}` : 'your metro';
 
   const tagRows: Array<{ label: string; items: string[]; variant: 'lav' | 'accent' }> = [
     { label: 'sounds like', items: user.music || [], variant: 'lav' },
@@ -39,15 +41,15 @@ export default async function ProfilePreviewPage() {
           <header className={styles.cover}>
             <div className={styles.coverEyebrow}>
               <span>notcupid · issue {String(user.id || '').slice(0, 4).toUpperCase() || '0001'}</span>
-              <span>boston · ma</span>
+              <span>{metroLabel}</span>
             </div>
             <h1 className={styles.coverName}>
               {user.name || 'No name yet'}
               {user.age && <span className={styles.coverAge}>, {user.age}</span>}
             </h1>
-            {(user.zip || user.height_cm) && (
+            {(metroKey || user.height_cm) && (
               <div className={styles.coverMeta}>
-                {user.zip && <span>📍 {user.zip}</span>}
+                {metroKey && <span>📍 {metroLabel}</span>}
                 {user.height_cm && <span>{heightFt}'{heightIn}"</span>}
               </div>
             )}

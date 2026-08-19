@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { hasFriendVibes } from '@/lib/friend-quiz';
 import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
 import FriendHubClient from './friend-hub-client';
+import { FRIEND_PACK_CENTS } from '@/lib/friend-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +23,16 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: P
         headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, cache: 'no-store',
       });
       const s = await r.json();
-      const paid = s.payment_status === 'paid' || s.status === 'complete';
+      const paid = r.ok && s.payment_status === 'paid' && s.status === 'complete'
+        && s.mode === 'payment' && s.currency === 'usd'
+        && Number(s.amount_total) === FRIEND_PACK_CENTS
+        && typeof s.payment_intent === 'string' && !!s.payment_intent;
       if (paid && s.metadata?.user_id === user.id && s.metadata?.type === 'friend_more_matches') {
-        await supabaseAdmin.from('friend_match_rounds').upsert(
+        const { error } = await supabaseAdmin.from('friend_match_rounds').upsert(
           { user_id: user.id, stripe_payment_id: s.payment_intent },
           { onConflict: 'stripe_payment_id' }
         );
+        if (error) throw error;
       }
     } catch (e) { console.error('Friend more-matches verify failed', e); }
   }

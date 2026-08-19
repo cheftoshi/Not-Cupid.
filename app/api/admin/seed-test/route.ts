@@ -180,7 +180,20 @@ export async function POST(req: NextRequest) {
   const { data: matchSideOne } = await supabaseAdmin.from('matches').select('id').in('user_1_id', fixtureIds);
   const { data: matchSideTwo } = await supabaseAdmin.from('matches').select('id').in('user_2_id', fixtureIds);
   const oldMatchIds = Array.from(new Set([...(matchSideOne ?? []), ...(matchSideTwo ?? [])].map((match: any) => match.id)));
-  if (oldMatchIds.length) await supabaseAdmin.from('messages').delete().in('match_id', oldMatchIds);
+  if (oldMatchIds.length) {
+    await supabaseAdmin.from('love_notification_events').delete().in('match_id', oldMatchIds);
+    await supabaseAdmin.from('messages').delete().in('match_id', oldMatchIds);
+  }
+
+  const [{ data: shortlistSideA }, { data: shortlistSideB }] = await Promise.all([
+    supabaseAdmin.from('dating_experiment_shortlist_pairs').select('round_id').in('user_a_id', fixtureIds),
+    supabaseAdmin.from('dating_experiment_shortlist_pairs').select('round_id').in('user_b_id', fixtureIds),
+  ]);
+  const fixtureRoundIds = Array.from(new Set([...(shortlistSideA ?? []), ...(shortlistSideB ?? [])].map((pair: any) => pair.round_id)));
+  if (fixtureRoundIds.length) {
+    await supabaseAdmin.from('dating_experiment_shortlist_pairs').delete().in('round_id', fixtureRoundIds);
+    await supabaseAdmin.from('dating_experiment_rounds').delete().in('id', fixtureRoundIds);
+  }
 
   const { data: oldMemberships } = await supabaseAdmin
     .from('friend_circle_members').select('circle_id').in('user_id', fixtureIds);
@@ -190,6 +203,7 @@ export async function POST(req: NextRequest) {
   // Pick ledgers reference matches, and paid credits can reference a match.
   // Clear these first so a re-seed is deterministic on the new Love model.
   await del('love_pick_ledger', ['user_id', 'candidate_id']);
+  await del('love_compatibility_reads', ['user_id', 'candidate_id']);
   await del('love_connection_unlocks', ['user_id', 'intended_candidate_id']);
   await del('matches', ['user_1_id', 'user_2_id']);
   await del('match_history', ['user_a_id', 'user_b_id']);
@@ -201,6 +215,12 @@ export async function POST(req: NextRequest) {
   await del('feedback', ['user_id']);
   await del('monetization_events', ['user_id']);
   await del('love_ai_coach_cache', ['user_id']);
+  await del('connection_intents', ['user_id']);
+  await del('concierge_recommendations', ['user_id']);
+  await del('app_client_events', ['user_id', 'candidate_id']);
+  await del('activity_digest_deliveries', ['user_id']);
+  await del('email_campaign_deliveries', ['user_id']);
+  await del('campaign_funnel_events', ['user_id']);
   await del('roster_exposures', ['user_id', 'candidate_id']);
   await del('sessions', ['user_id']);
   await del('push_subscriptions', ['user_id']);
@@ -217,6 +237,7 @@ export async function POST(req: NextRequest) {
   await del('friend_intent_members', ['user_id']);
   await del('friend_intents', ['user_id']);
   await del('friend_action_events', ['user_id']);
+  await del('friend_plan_chat_reads', ['user_id']);
   await del('friend_club_members', ['user_id']);
   await del('friend_club_messages', ['sender_id']);
   await del('friend_club_reports', ['user_id']);

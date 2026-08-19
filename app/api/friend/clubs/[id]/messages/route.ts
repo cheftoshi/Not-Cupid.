@@ -51,13 +51,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const m = await memberOf(id, user);
   if (!m.ok) return NextResponse.json({ error: 'Members only' }, { status: 403 });
 
-  const { body } = await req.json().catch(() => ({}));
+  const { body, clientId } = await req.json().catch(() => ({}));
   const text = String(body ?? '').trim().slice(0, 2000);
-  if (!text) return NextResponse.json({ error: 'Empty' }, { status: 400 });
+  const safeClientId = typeof clientId === 'string' && clientId.length >= 8 && clientId.length <= 100 ? clientId : null;
+  if (!text) return NextResponse.json({ error: 'Empty message' }, { status: 400 });
 
   const { data: row, error } = await supabaseAdmin.from('friend_club_messages')
-    .insert({ club_id: id, sender_id: user.id, body: text }).select('id, body, created_at').single();
-  if (error) return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
+    .insert({ club_id: id, sender_id: user.id, body: text, client_id: safeClientId }).select('id, body, created_at').single();
+  if (error) {
+    if (error.code === '23505' && safeClientId) {
+      const { data: existing } = await supabaseAdmin.from('friend_club_messages')
+        .select('id, body, created_at').eq('sender_id', user.id).eq('client_id', safeClientId).maybeSingle();
+      if (existing) return NextResponse.json({ ok: true, duplicate: true, message: { ...existing, name: user.name, photo_url: (user as any).photo_url, isMe: true } });
+    }
+    return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
+  }
   await supabaseAdmin.from('friend_clubs').update({ last_active_at: new Date().toISOString() }).eq('id', id);
 
   // notify the other approved members + owner.

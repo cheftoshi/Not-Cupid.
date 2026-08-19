@@ -58,11 +58,10 @@ export async function POST(req: NextRequest) {
   }
 
   const blocked = action === 'block';
-  const updates: Record<string, any> = { is_blocked: blocked };
-  // Blocking also pulls them from the pool immediately.
-  if (blocked) { updates.pool_active = false; updates.status = 'inactive'; }
-
-  const { error } = await supabaseAdmin.from('users').update(updates).eq('id', userId);
-  if (error) return NextResponse.json({ error: 'Could not update report' }, { status: 500 });
+  const { data: updated, error } = await supabaseAdmin.rpc('set_notcupid_account_blocked', {
+    p_user_id: userId,
+    p_blocked: blocked,
+  });
+  if (error || updated !== true) return NextResponse.json({ error: 'Could not update report' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

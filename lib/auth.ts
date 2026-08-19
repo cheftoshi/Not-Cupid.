@@ -10,6 +10,14 @@ function hashSessionToken(token: string) {
 }
 
 export async function createSession(userId: string) {
+  const { data: eligibleUser, error: userError } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('id', userId)
+    .is('deleted_at', null)
+    .neq('is_blocked', true)
+    .maybeSingle();
+  if (userError || !eligibleUser) throw new Error('Session user is unavailable');
   const token = randomBytes(32).toString('hex');
   const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
@@ -78,6 +86,7 @@ export async function getCurrentUser() {
     .select('*')
     .eq('id', session.user_id)
     .is('deleted_at', null)
+    .neq('is_blocked', true)
     .single();
 
   return user;

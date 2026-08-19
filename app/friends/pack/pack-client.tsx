@@ -39,8 +39,17 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
     if (!termsOk) return;
     setRequested((prev) => new Set(prev).add(otherId));
     try {
-      await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
-    } catch { /* optimistic — leave the ✓ even if the ping retries */ }
+      const response = await fetch('/api/friend/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ candidateId: otherId }) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'could not send that connection');
+    } catch (error) {
+      setRequested((prev) => {
+        const next = new Set(prev);
+        next.delete(otherId);
+        return next;
+      });
+      setErr(error instanceof Error ? error.message : 'could not send that connection');
+    }
   }
 
   const sparks = useMemo(
@@ -79,9 +88,18 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
     if (phase !== 'ready') return;
     setPhase('opening');
     setFlash(true);
-    fetch('/api/friend/pack', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'open' }) }).catch(() => {});
-    setTimeout(() => setFlash(false), 700);
-    setTimeout(() => setPhase('revealed'), 760);
+    setErr('');
+    try {
+      const response = await fetch('/api/friend/pack', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'open' }) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'could not open this pack');
+      setTimeout(() => setFlash(false), 700);
+      setTimeout(() => setPhase('revealed'), 760);
+    } catch (error) {
+      setFlash(false);
+      setPhase('ready');
+      setErr(error instanceof Error ? error.message : 'could not open this pack');
+    }
   }
 
   // "Open another pack": free for All-Access (grant + reload), else $0.99 checkout.
@@ -127,7 +145,16 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
           <h1 className={styles.headline}>open it, {firstName.toLowerCase()}</h1>
           <div
             className={`${styles.pack} ${phase === 'opening' ? styles.packBurst : ''}`}
-            onClick={openPack} role="button" aria-label="Open your friendship pack"
+            onClick={openPack}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                void openPack();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Open your friendship pack"
           >
             <div className={styles.packEmoji}>🎒</div>
             <div className={styles.packLogo}>not<span style={{ opacity: 0.85 }}>cupid</span></div>

@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
     <html><body style="font-family:monospace;max-width:520px;margin:4rem auto;padding:2rem;background:#f6f6f6;text-align:center;">
       <div style="font-family:Georgia,serif;font-style:italic;font-size:1.5rem;font-weight:700;margin-bottom:2rem"><span style="color:#2563ff">Not</span><span style="color:#ff6a1f">Cupid</span></div>
       <h1 style="font-size:1.8rem;color:#0e0c1a;margin-bottom:1rem">Confirm: yes, I'm interested</h1>
-      <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Click below to confirm. If your match also says yes, you'll both get each other's email immediately.</p>
+      <p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Click below to confirm. If your match also says yes, your private chat will open in NotCupid.</p>
       <form method="POST" action="/api/match-accept" style="display:inline-block">
         <input type="hidden" name="matchId" value="${mId}" />
         <input type="hidden" name="userId" value="${uId}" />
@@ -150,14 +150,14 @@ export async function POST(req: NextRequest) {
     if (result.mutual) {
       return htmlPage(
         "It's a match. ✦",
-        `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Both of you said yes. Check your email — we just sent their contact info, and the chat's open in the app.</p>
+        `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">Both of you said yes. Your private chat is open in the app.</p>
          <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f6f6f6;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
       )
     }
 
     return htmlPage(
       "You're in. ✓",
-      `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">We've noted your interest and let them know. If they say yes too, you'll both get each other's email immediately.</p>
+      `<p style="color:#7a7590;line-height:1.65;margin-bottom:2rem">We've noted your interest and let them know. If they say yes too, your private chat will open in NotCupid.</p>
        <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="background:#0e0c1a;color:#f6f6f6;padding:.85rem 1.75rem;font-family:monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;">Back to NotCupid →</a>`
     )
   } catch (err) {

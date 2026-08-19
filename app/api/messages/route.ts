@@ -124,7 +124,13 @@ export async function POST(req: NextRequest) {
   let mutualNow = bothBefore;
   if (!bothBefore) {
     const acc = await acceptMatch(match_id, user.id);
-    if (acc.ok && acc.mutual) mutualNow = true;
+    if (!acc.ok) {
+      const status = acc.reason === 'at_capacity' ? 409 : acc.reason === 'not_party' ? 403 : 400;
+      return NextResponse.json({ error: acc.reason === 'at_capacity'
+        ? 'Close an existing Love connection before starting this one.'
+        : 'This Love connection is no longer available.' }, { status });
+    }
+    if (acc.mutual) mutualNow = true;
   }
 
   // Only an already-active chat can be stale-closed; a pending opener has no

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { VIDEO_UPLOAD_TYPES } from '@/lib/request-security';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limit = await rateLimit({ key: `profile-video:${user.id}`, windowSec: 3600, maxAttempts: 10, blockSec: 3600 });
+  if (!limit.ok) return NextResponse.json({ error: 'Too many upload attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
   const { ext } = await req.json().catch(() => ({ ext: 'mp4' }));
   const clean = String(ext || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '');
