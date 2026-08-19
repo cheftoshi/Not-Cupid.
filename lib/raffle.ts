@@ -51,8 +51,8 @@ export const RAFFLE = {
   firstRoundDeadline: '2026-08-19T18:00:00.000Z', // 2:00 PM ET
   // The operator extended the live second-round response window on August 19
   // after seeing healthy late engagement. Keep the existing sealed choices
-  // open through 7 PM; any post-round rescue remains a separate opt-in flow.
-  secondRoundDeadline: '2026-08-19T23:00:00.000Z', // 7:00 PM ET
+  // open through 8:30 PM; any post-round rescue remains a separate opt-in flow.
+  secondRoundDeadline: '2026-08-20T00:30:00.000Z', // 8:30 PM ET
   // This is the later 8:30 PM ET dinner slot. Its UTC timestamp falls on
   // August 21 because Boston is four hours behind UTC in August.
   happensAt: '2026-08-21T00:30:00.000Z',

@@ -41,6 +41,9 @@ copying entry, traffic, or delivery counts from a handoff document.
 - Private shortlists are scheduled to start **Wednesday, August 19 at 8:00 AM
   ET**. Selection emails remain separately approval-gated; do not enable or
   send them without the operator's exact copy/send authorization.
+- The active second-round private-choice deadline is **Wednesday, August 19 at
+  8:30 PM ET** (`2026-08-20T00:30:00Z`). Public entries remain closed; this
+  extension does not reopen entry or alter any sealed decision.
 - Dinner: **Thursday, August 20, 2026**, with one pair at **6:30 PM ET** and one
   pair at **8:30 PM ET**.
 - Venue: The Berkeley, 154 Berkeley Street, Boston, MA 02116. The venue is

@@ -417,7 +417,7 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   const closeMigration = readFileSync(new URL('../supabase/migrations/20260819042500_close_dating_experiment_entry_window.sql', import.meta.url), 'utf8');
   assert.match(experimentSource, /respondHours:\s*6/);
   assert.match(experimentSource, /firstRoundDeadline:\s*'2026-08-19T18:00:00\.000Z'/);
-  assert.match(experimentSource, /secondRoundDeadline:\s*'2026-08-19T23:00:00\.000Z'/);
+  assert.match(experimentSource, /secondRoundDeadline:\s*'2026-08-20T00:30:00\.000Z'/);
   assert.match(migration, /response_hours = 6/i);
   assert.match(closeMigration, /status = 'entry_closed'/i);
   assert.match(closeMigration, /entry_closes_at <= now\(\)/i);
