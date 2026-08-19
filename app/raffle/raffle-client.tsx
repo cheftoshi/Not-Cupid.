@@ -14,6 +14,7 @@ type Event = {
   budget: number;
   tagline: string;
   drawLabel: string;
+  shortlistAt?: string;
   radiusMiles: number;
   centerZip: string;
   termsVersion: string;
@@ -93,16 +94,19 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
     const refreshVisible = () => { if (document.visibilityState === 'visible') refreshStatus(); };
     window.addEventListener('pageshow', refreshStatus);
     document.addEventListener('visibilitychange', refreshVisible);
+    const refreshTimer = window.setInterval(refreshStatus, 60_000);
     trackExperimentFunnel('experiment_viewed');
     if (typeof Notification !== 'undefined') setPushOn(Notification.permission === 'granted');
     return () => {
       active = false;
+      window.clearInterval(refreshTimer);
       window.removeEventListener('pageshow', refreshStatus);
       document.removeEventListener('visibilitychange', refreshVisible);
     };
   }, []);
 
   const ev = { ...event, ...(st?.event || {}) } as any;
+  const shortlistUnderway = !!ev.shortlistAt && Date.now() >= new Date(ev.shortlistAt).getTime();
   const other = st?.other?.name ? st.other.name.split(' ')[0] : 'your match';
   const assignedDinner = st?.draw?.happensAt
     ? new Intl.DateTimeFormat('en-US', {
@@ -483,7 +487,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.12), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2.2rem' }}>🎉</div>
             <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', margin: '0.3rem 0' }}>you’re in{done ? `, ${firstName.toLowerCase()}` : ''}.</h2>
-            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>shortlists form <b>{ev.drawLabel}</b>. We’ll ping you if you receive one or two private options. good luck ✦</p>
+            <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>{shortlistUnderway ? <>private shortlist selection is underway. We’ll ping you if you receive one or two options.</> : <>shortlists form <b>{ev.drawLabel}</b>. We’ll ping you if you receive one or two private options.</>} good luck ✦</p>
             {!pushOn && <button onClick={enablePush} style={{ display: 'block', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: ORANGE_DEEP, borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on experiment notifications</button>}
             <Link href="/hub" style={{ display: 'inline-block', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', textDecoration: 'none' }}>back to hub →</Link>
             <button onClick={withdraw} disabled={busy} style={{ display: 'block', margin: '0.9rem auto 0', border: 'none', background: 'none', color: 'var(--h-text-faint)', textDecoration: 'underline', cursor: busy ? 'wait' : 'pointer', fontSize: '0.72rem' }}>withdraw my entry</button>

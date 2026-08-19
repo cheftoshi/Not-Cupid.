@@ -1,6 +1,10 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { RAFFLE, raffleScore, pairSelectionWeight, raffleEligible } from '@/lib/raffle';
 import { sendPushToUser } from '@/lib/push';
+import {
+  sendDatingExperimentShortlistEmails,
+  sendDatingExperimentWinnerEmails,
+} from '@/lib/dating-experiment-email';
 import { randomInt } from 'crypto';
 import {
   datingExperimentCanShortlist,
@@ -60,17 +64,89 @@ type PairRow = {
   winner_slot: number | null;
 };
 
+type WinnerRow = {
+  id: string;
+  user_a_id: string;
+  user_b_id: string;
+  winner_slot: number | null;
+  restaurant: string | null;
+  happens_at: string | null;
+};
+
+const HOUR_MS = 60 * 60 * 1000;
+
+function roundResponseDeadline(roundNumber: number, now = Date.now()): string {
+  const configured = new Date(roundNumber === 1 ? RAFFLE.firstRoundDeadline : RAFFLE.secondRoundDeadline).getTime();
+  const normal = now + RAFFLE.respondHours * HOUR_MS;
+  // The public schedule closes round one at 2 PM and round two at 6 PM ET.
+  // If an operational delay starts later, always preserve at least one hour
+  // for a real participant decision instead of opening an already-dead form.
+  return new Date(Math.max(now + HOUR_MS, Math.min(normal, configured))).toISOString();
+}
+
+function participantIdsForPairs(pairs: PairRow[]): string[] {
+  return [...new Set(pairs.flatMap((pair) => [pair.user_a_id, pair.user_b_id]))];
+}
+
+function unansweredParticipantIds(pairs: PairRow[]): string[] {
+  const unanswered = new Set<string>();
+  pairs.forEach((pair) => {
+    if (pair.a_accepted === null) unanswered.add(pair.user_a_id);
+    if (pair.b_accepted === null) unanswered.add(pair.user_b_id);
+  });
+  return [...unanswered];
+}
+
+async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, pairs: PairRow[]): Promise<void> {
+  const deadline = new Date(round.response_deadline).getTime();
+  if (!Number.isFinite(deadline) || Date.now() >= deadline) return;
+  const participants = participantIdsForPairs(pairs);
+  await sendDatingExperimentShortlistEmails({
+    eventKey: event.event_key,
+    roundNumber: round.round_number,
+    responseDeadline: round.response_deadline,
+    recipientIds: participants,
+  });
+  if (deadline - Date.now() <= HOUR_MS) {
+    await sendDatingExperimentShortlistEmails({
+      eventKey: event.event_key,
+      roundNumber: round.round_number,
+      responseDeadline: round.response_deadline,
+      recipientIds: unansweredParticipantIds(pairs),
+      reminder: true,
+    });
+  }
+}
+
+async function ensureWinnerEmails(event: DatingExperimentEvent, winners: WinnerRow[]): Promise<void> {
+  await sendDatingExperimentWinnerEmails({
+    eventKey: event.event_key,
+    prizePerPairCents: event.prize_per_pair_cents,
+    draws: winners,
+  });
+}
+
 async function closeExperimentWithoutWinner(
   event: DatingExperimentEvent,
   entrants: number,
   state: 'not-enough' | 'no-eligible-pair',
+  winners: WinnerRow[] = [],
 ): Promise<DrawResult> {
   const now = new Date().toISOString();
   const { error: passEntriesError } = await supabaseAdmin.from('raffle_entries')
     .update({ status: 'passed' })
     .eq('event_key', event.event_key)
-    .in('status', ['entered', 'picked']);
+    .eq('status', 'entered');
   if (passEntriesError) throw passEntriesError;
+  const winnerIds = winners.flatMap((winner) => [winner.user_a_id, winner.user_b_id]);
+  if (winnerIds.length) {
+    const { error: pickWinnerError } = await supabaseAdmin.from('raffle_entries')
+      .update({ status: 'picked' })
+      .eq('event_key', event.event_key)
+      .in('user_id', winnerIds);
+    if (pickWinnerError) throw pickWinnerError;
+    await ensureWinnerEmails(event, winners);
+  }
 
   const { error: eventStatusError } = await supabaseAdmin.from('dating_experiment_events')
     .update({ status: 'resolved', updated_at: now })
@@ -78,7 +154,7 @@ async function closeExperimentWithoutWinner(
     .in('status', ['entry_open', 'entry_closed', 'shortlisting']);
   if (eventStatusError) throw eventStatusError;
 
-  return { ok: true, entrants, drawn: 0, state };
+  return { ok: true, entrants, drawn: winners.length, state: winners.length ? 'remaining-slot-unfilled' : state };
 }
 
 async function resolveCollectingRound(
@@ -103,14 +179,26 @@ async function resolveCollectingRound(
     return { ok: true, entrants: 0, drawn: 0, state: 'resolving-shortlist', roundNumber: round.round_number };
   }
 
-  const participantIds = [...new Set(pairs.flatMap((pair) => [pair.user_a_id, pair.user_b_id]))];
-  const { data: availabilityEntries, error: availabilityError } = await supabaseAdmin.from('raffle_entries')
-    .select('user_id, questionnaire, notify')
-    .eq('event_key', event.event_key)
-    .in('user_id', participantIds);
+  const participantIds = participantIdsForPairs(pairs);
+  const [{ data: availabilityEntries, error: availabilityError }, { data: winnerRows, error: winnerError }] = await Promise.all([
+    supabaseAdmin.from('raffle_entries')
+      .select('user_id, questionnaire, notify')
+      .eq('event_key', event.event_key)
+      .in('user_id', participantIds),
+    supabaseAdmin.from('raffle_draws')
+      .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at')
+      .eq('event_key', event.event_key)
+      .eq('status', 'both_accepted')
+      .order('winner_slot', { ascending: true }),
+  ]);
   if (availabilityError) throw availabilityError;
+  if (winnerError) throw winnerError;
+  const existingWinners = (winnerRows ?? []) as WinnerRow[];
   const eventSlotKeys = event.dinner_dates.map((slot) => slot.slot_key);
   const eventSlotSet = new Set(eventSlotKeys);
+  const slotKeyForTime = new Map(event.dinner_dates
+    .filter((slot) => slot.starts_at)
+    .map((slot) => [new Date(slot.starts_at!).toISOString(), slot.slot_key]));
   const availabilityByUser = new Map((availabilityEntries ?? []).map((entry: any) => [
     entry.user_id,
     Array.isArray(entry.questionnaire?.availableSlotKeys)
@@ -143,7 +231,18 @@ async function resolveCollectingRound(
   let selected: SlotAwareDecisionEdge<string>[] = recordedPairIds
     .map((pairId) => decisionEdges.find((edge) => edge.id === pairId))
     .filter((pair): pair is SlotAwareDecisionEdge<string> => pair != null);
-  let slotAssignments = recordedPairIds.length ? assignDinnerSlots(selected, eventSlotKeys) : null;
+  const existingWinnerByPair = new Map(existingWinners.map((winner) => [pairKey(winner.user_a_id, winner.user_b_id), winner]));
+  const committedSelectionIds = new Set(selected
+    .filter((edge) => existingWinnerByPair.has(pairKey(edge.a, edge.b)))
+    .map((edge) => edge.id));
+  const priorWinners = existingWinners.filter((winner) => !selected.some((edge) => pairKey(edge.a, edge.b) === pairKey(winner.user_a_id, winner.user_b_id)));
+  const priorSlotKeys = new Set(priorWinners.flatMap((winner) => {
+    if (!winner.happens_at) return [];
+    const key = slotKeyForTime.get(new Date(winner.happens_at).toISOString());
+    return key ? [key] : [];
+  }));
+  const availableSlotKeys = eventSlotKeys.filter((key) => !priorSlotKeys.has(key));
+  let slotAssignments = recordedPairIds.length ? assignDinnerSlots(selected, availableSlotKeys) : null;
   if (recordedPairIds.length && selected.length !== recordedPairIds.length) {
     throw new Error('Recorded Dating Experiment winners do not match the active shortlist.');
   }
@@ -151,20 +250,21 @@ async function resolveCollectingRound(
     throw new Error('Recorded Dating Experiment winners cannot be assigned to their shared dinner times.');
   }
   if (!recordedPairIds.length) {
+    const remainingWinnerCapacity = Math.max(0, event.winner_pair_limit - existingWinners.length);
     const randomValues = Array.from(
-      { length: event.winner_pair_limit },
+      { length: remainingWinnerCapacity },
       () => randomInt(0, 1_000_000_000) / 1_000_000_000,
     );
     let randomIndex = 0;
     slotAssignments = selectMutualDinnerPairsForSlots(
       decisionEdges,
-      event.winner_pair_limit,
-      eventSlotKeys,
+      remainingWinnerCapacity,
+      availableSlotKeys,
       eventSelectionWeight,
       () => randomValues[randomIndex++] ?? randomValues[randomValues.length - 1],
     );
     selected = slotAssignments.map((assignment) => assignment.edge);
-    const firstSelectionPool = mutualWinnerSelectionPool(mutual, event.winner_pair_limit);
+    const firstSelectionPool = mutualWinnerSelectionPool(mutual, remainingWinnerCapacity);
     const totalSelectionWeight = firstSelectionPool.reduce((sum, pair) => sum + mutualSelectionWeight(pair, eventSelectionWeight), 0);
     const { error: auditError } = await supabaseAdmin.from('dating_experiment_rounds').update({
       selection_random_value: randomValues[0],
@@ -208,13 +308,20 @@ async function resolveCollectingRound(
         if (entryStatusError) throw entryStatusError;
       }
     }
+    if (round.round_number >= event.max_attempts) {
+      return closeExperimentWithoutWinner(event, participantIds.length, 'no-eligible-pair', existingWinners);
+    }
     return { ok: true, entrants: participantIds.length, drawn: 0, state: 'no-mutual-pair', roundNumber: round.round_number };
   }
 
-  const selectedIndexById = new Map(selected.map((pair, index) => [pair.id, index]));
+  const selectedSlotById = new Map(selected.map((pair) => {
+    const slotKey = slotKeyByPairId.get(pair.id);
+    const eventSlotIndex = event.dinner_dates.findIndex((slot) => slot.slot_key === slotKey);
+    return [pair.id, eventSlotIndex >= 0 ? eventSlotIndex + 1 : null];
+  }));
   for (const pair of pairs) {
-    const selectedIndex = selectedIndexById.get(pair.id);
-    const status = selectedIndex != null
+    const selectedSlot = selectedSlotById.get(pair.id);
+    const status = selectedSlot != null
       ? 'selected'
       : pair.a_accepted === true && pair.b_accepted === true
         ? 'not_selected'
@@ -222,15 +329,17 @@ async function resolveCollectingRound(
           ? 'expired'
           : 'declined';
     const { error: pairStatusError } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
-      .update({ status, winner_slot: selectedIndex != null ? selectedIndex + 1 : null })
+      .update({ status, winner_slot: selectedSlot ?? null })
       .eq('id', pair.id)
       .eq('status', 'pending');
     if (pairStatusError) throw pairStatusError;
   }
 
-  for (const [index, winner] of selected.entries()) {
+  for (const winner of selected) {
     const dinnerDate = event.dinner_dates.find((slot) => slot.slot_key === slotKeyByPairId.get(winner.id));
     if (!dinnerDate) throw new Error('Selected Dating Experiment pair has no shared dinner slot.');
+    const winnerSlot = event.dinner_dates.findIndex((slot) => slot.slot_key === dinnerDate.slot_key) + 1;
+    if (winnerSlot < 1) throw new Error('Selected Dating Experiment pair has an invalid winner slot.');
     const { error: drawError } = await supabaseAdmin.from('raffle_draws').upsert({
       event_key: event.event_key,
       user_a_id: winner.a,
@@ -239,7 +348,7 @@ async function resolveCollectingRound(
       a_accepted: true,
       b_accepted: true,
       status: 'both_accepted',
-      winner_slot: index + 1,
+      winner_slot: winnerSlot,
       restaurant: dinnerDate?.venue_details ?? event.winner_fulfillment_details ?? RAFFLE.restaurant,
       happens_at: dinnerDate?.starts_at ?? event.happens_at,
       algorithm_version: event.algorithm_version,
@@ -257,16 +366,29 @@ async function resolveCollectingRound(
   }).eq('id', round.id).eq('status', 'resolving');
   if (resolveRoundError) throw resolveRoundError;
 
-  const { error: passEntriesError } = await supabaseAdmin.from('raffle_entries')
-    .update({ status: 'passed' })
+  const { data: allWinnerRows, error: allWinnerError } = await supabaseAdmin.from('raffle_draws')
+    .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at')
     .eq('event_key', event.event_key)
-    .in('status', ['entered', 'picked']);
-  if (passEntriesError) throw passEntriesError;
-  const { error: pickWinnerError } = await supabaseAdmin.from('raffle_entries')
-    .update({ status: 'picked' })
+    .eq('status', 'both_accepted')
+    .order('winner_slot', { ascending: true });
+  if (allWinnerError) throw allWinnerError;
+  const allWinners = (allWinnerRows ?? []) as WinnerRow[];
+  const allWinnerIds = new Set(allWinners.flatMap((winner) => [winner.user_a_id, winner.user_b_id]));
+  const { data: participantEntries, error: participantEntriesError } = await supabaseAdmin.from('raffle_entries')
+    .select('user_id, attempts')
     .eq('event_key', event.event_key)
-    .in('user_id', selected.flatMap((pair) => [pair.a, pair.b]));
-  if (pickWinnerError) throw pickWinnerError;
+    .in('user_id', participantIds);
+  if (participantEntriesError) throw participantEntriesError;
+  for (const entry of participantEntries ?? []) {
+    const status = allWinnerIds.has(entry.user_id)
+      ? 'picked'
+      : (entry.attempts ?? 0) < event.max_attempts ? 'entered' : 'passed';
+    const { error: entryStatusError } = await supabaseAdmin.from('raffle_entries')
+      .update({ status })
+      .eq('event_key', event.event_key)
+      .eq('user_id', entry.user_id);
+    if (entryStatusError) throw entryStatusError;
+  }
 
   const winnerIds = selected.flatMap((pair) => [pair.a, pair.b]);
   const { data: winnerUsers, error: winnerUsersError } = await supabaseAdmin.from('users')
@@ -281,23 +403,38 @@ async function resolveCollectingRound(
     tag: `dating-experiment-winner-${round.id}`,
   };
   await Promise.allSettled(winnerIds
+    .filter((id) => !selected.some((edge) => committedSelectionIds.has(edge.id) && (edge.a === id || edge.b === id)))
     .filter((id) => notificationsEnabled.has(id))
     .map((id) => sendPushToUser(id, message)));
+  await ensureWinnerEmails(event, allWinners);
   const selectedSummaries = selected.map((pair) => ({
     a: nameById.get(pair.a) ?? 'Participant A',
     b: nameById.get(pair.b) ?? 'Participant B',
     score: pair.score,
   }));
-  const { error: eventStatusError } = await supabaseAdmin.from('dating_experiment_events')
-    .update({ status: 'resolved', updated_at: now })
-    .eq('event_key', event.event_key)
-    .eq('status', 'shortlisting');
-  if (eventStatusError) throw eventStatusError;
+  const winnerCapacityFilled = allWinners.length >= event.winner_pair_limit;
+  const eventComplete = winnerCapacityFilled || round.round_number >= event.max_attempts;
+  if (eventComplete) {
+    const { error: passEntriesError } = await supabaseAdmin.from('raffle_entries')
+      .update({ status: 'passed' })
+      .eq('event_key', event.event_key)
+      .eq('status', 'entered');
+    if (passEntriesError) throw passEntriesError;
+    const { error: eventStatusError } = await supabaseAdmin.from('dating_experiment_events')
+      .update({ status: 'resolved', updated_at: now })
+      .eq('event_key', event.event_key)
+      .eq('status', 'shortlisting');
+    if (eventStatusError) throw eventStatusError;
+  }
   return {
     ok: true,
     entrants: participantIds.length,
     drawn: selected.length,
-    state: selected.length === 1 ? 'mutual-pair-selected' : 'mutual-pairs-selected',
+    state: eventComplete
+      ? winnerCapacityFilled
+        ? selected.length === 1 ? 'mutual-pair-selected' : 'mutual-pairs-selected'
+        : 'remaining-slot-unfilled'
+      : 'partial-mutual-pair-selected',
     roundNumber: round.round_number,
     pair: selectedSummaries[0],
     pairs: selectedSummaries,
@@ -311,6 +448,15 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
   const force = opts.force === true;
   const event = await getDatingExperimentEvent();
   if (!event) return { ok: true, entrants: 0, drawn: 0, state: 'paused' };
+
+  const { data: won, error: wonError } = await supabaseAdmin.from('raffle_draws')
+    .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at')
+    .eq('event_key', event.event_key)
+    .eq('status', 'both_accepted')
+    .order('winner_slot', { ascending: true });
+  if (wonError) throw wonError;
+  const existingWinners = (won ?? []) as WinnerRow[];
+  if (existingWinners.length) await ensureWinnerEmails(event, existingWinners);
 
   const { data: activeRound, error: activeRoundError } = await supabaseAdmin.from('dating_experiment_rounds')
     .select('id, round_number, response_deadline, status, resolution_started_at, selected_pair_ids')
@@ -335,16 +481,11 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       .select('id, user_a_id, user_b_id, compatibility_score, a_accepted, b_accepted, a_favorite, b_favorite, status, winner_slot')
       .eq('round_id', activeRound.id);
     if (error) throw error;
+    await ensureRoundEmails(event, activeRound as RoundRow, (activePairs ?? []) as PairRow[]);
     return (await resolveCollectingRound(event, activeRound as RoundRow, (activePairs ?? []) as PairRow[]))!;
   }
 
-  const { data: won, error: wonError } = await supabaseAdmin.from('raffle_draws')
-    .select('id, user_a_id, user_b_id, winner_slot')
-    .eq('event_key', event.event_key)
-    .eq('status', 'both_accepted')
-    .order('winner_slot', { ascending: true });
-  if (wonError) throw wonError;
-  if (won?.length) {
+  if (existingWinners.length >= event.winner_pair_limit) {
     // Idempotently converge entry bookkeeping if a prior run committed the
     // winner rows immediately before a process interruption.
     const { error: passEntriesError } = await supabaseAdmin.from('raffle_entries')
@@ -352,13 +493,18 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       .eq('event_key', event.event_key)
       .in('status', ['entered', 'picked']);
     if (passEntriesError) throw passEntriesError;
-    const winnerIds = won.flatMap((winner) => [winner.user_a_id, winner.user_b_id]);
+    const winnerIds = existingWinners.flatMap((winner) => [winner.user_a_id, winner.user_b_id]);
     const { error: pickWinnerError } = await supabaseAdmin.from('raffle_entries')
       .update({ status: 'picked' })
       .eq('event_key', event.event_key)
       .in('user_id', winnerIds);
     if (pickWinnerError) throw pickWinnerError;
-    return { ok: true, entrants: 0, drawn: 0, state: 'winner-locked' };
+    const { error: eventStatusError } = await supabaseAdmin.from('dating_experiment_events')
+      .update({ status: 'resolved', updated_at: new Date().toISOString() })
+      .eq('event_key', event.event_key)
+      .eq('status', 'shortlisting');
+    if (eventStatusError) throw eventStatusError;
+    return { ok: true, entrants: 0, drawn: existingWinners.length, state: 'winner-locked' };
   }
 
   // Closing entries freezes the pool; it does not authorize an overnight
@@ -385,8 +531,11 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
       .eq('event_key', event.event_key)
       .eq('status', 'entered'),
   ]);
+  const existingWinnerIds = new Set(existingWinners.flatMap((winner) => [winner.user_a_id, winner.user_b_id]));
   const eligibleEntries = (entries ?? []).filter((entry: any) =>
-    (entry.attempts ?? 0) < event.max_attempts && entry.terms_version === event.terms_version,
+    (entry.attempts ?? 0) < event.max_attempts
+    && entry.terms_version === event.terms_version
+    && !existingWinnerIds.has(entry.user_id),
   );
   const eligibleIds = eligibleEntries.map((entry: any) => entry.user_id);
   const naturallyTriggered = Date.now() >= new Date(event.entry_closes_at).getTime()
@@ -398,7 +547,7 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
   if (!canStart) return { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'waiting-for-trigger' };
   if (eligibleIds.length < 2) {
     return naturallyTriggered
-      ? closeExperimentWithoutWinner(event, eligibleIds.length, 'not-enough')
+      ? closeExperimentWithoutWinner(event, eligibleIds.length, 'not-enough', existingWinners)
       : { ok: true, entrants: eligibleIds.length, drawn: 0, state: 'not-enough' };
   }
 
@@ -429,7 +578,10 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     .filter((user) => user.gender && user.orientation && user.seeking_genders.length && user.age_min != null && user.age_max != null);
 
   const candidates: { a: any; b: any; score: number }[] = [];
-  const activeSlotKeys = new Set(event.dinner_dates.map((slot) => slot.slot_key));
+  const usedTimes = new Set(existingWinners.flatMap((winner) => winner.happens_at ? [new Date(winner.happens_at).toISOString()] : []));
+  const activeSlotKeys = new Set(event.dinner_dates
+    .filter((slot) => !slot.starts_at || !usedTimes.has(new Date(slot.starts_at).toISOString()))
+    .map((slot) => slot.slot_key));
   for (let i = 0; i < pool.length; i++) {
     for (let j = i + 1; j < pool.length; j++) {
       const a = pool[i], b = pool[j];
@@ -449,12 +601,12 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
   const shortlist = buildCoverageFirstShortlist(candidates, event.shortlist_max_options);
   if (!shortlist.length) {
     return naturallyTriggered
-      ? closeExperimentWithoutWinner(event, pool.length, 'no-eligible-pair')
+      ? closeExperimentWithoutWinner(event, pool.length, 'no-eligible-pair', existingWinners)
       : { ok: true, entrants: pool.length, drawn: 0, state: 'no-eligible-pair' };
   }
 
   const roundNumber = ((priorRounds ?? [])[0]?.round_number ?? 0) + 1;
-  const responseDeadline = new Date(Date.now() + event.response_hours * 3_600_000).toISOString();
+  const responseDeadline = roundResponseDeadline(roundNumber);
   const { data: round, error: roundError } = await supabaseAdmin.from('dating_experiment_rounds').insert({
     event_key: event.event_key,
     round_number: roundNumber,
@@ -481,7 +633,9 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     user_b_id: edge.b.id,
     compatibility_score: edge.score,
   }));
-  const { error: pairError } = await supabaseAdmin.from('dating_experiment_shortlist_pairs').insert(rows);
+  const { data: insertedPairs, error: pairError } = await supabaseAdmin.from('dating_experiment_shortlist_pairs')
+    .insert(rows)
+    .select('id, user_a_id, user_b_id, compatibility_score, a_accepted, b_accepted, a_favorite, b_favorite, status, winner_slot');
   if (pairError) {
     await supabaseAdmin.from('dating_experiment_rounds').update({ status: 'cancelled', resolved_at: new Date().toISOString() }).eq('id', round.id);
     throw pairError;
@@ -507,11 +661,17 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
     const count = optionCount.get(id) ?? 1;
     return sendPushToUser(id, {
       title: `Your private shortlist is ready ✦`,
-      body: `Meet ${count === 1 ? 'your strongest option' : 'your two strongest options'} and privately say yes or pass within ${event.response_hours} hours.`,
+      body: `Meet ${count === 1 ? 'your strongest option' : 'your two strongest options'} and privately choose yes or pass before the response window closes.`,
       url: '/dating-experiment',
       tag: `dating-experiment-shortlist-${round.id}`,
     });
   }));
+  await ensureRoundEmails(event, {
+    id: round.id,
+    round_number: roundNumber,
+    response_deadline: responseDeadline,
+    status: 'collecting',
+  }, (insertedPairs ?? []) as PairRow[]);
 
   return {
     ok: true,

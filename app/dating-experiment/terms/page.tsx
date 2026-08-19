@@ -21,7 +21,7 @@ export default async function DatingExperimentTermsPage() {
 
   return (
     <LegalPage title="Dating Experiment Official Rules & Terms" subtitle="No purchase necessary. The complete rules for Dinner on Us: Boston." updated="August 15, 2026">
-      {!entriesOpen && <p><strong>Quiet mode:</strong> entries are not currently open. These rules are published for transparency and may be updated before the entry period begins.</p>}
+      {!entriesOpen && <p><strong>Entries are closed.</strong> The private shortlist and mutual dinner selection process is underway. These are the rules accepted by entrants.</p>}
 
       <p><strong>NO PURCHASE OR PAYMENT IS NECESSARY TO ENTER OR WIN. A PURCHASE WILL NOT IMPROVE THE CHANCE OF RECEIVING A SHORTLIST OR PRIZE. VOID WHERE PROHIBITED.</strong></p>
       <p>These Official Rules and Terms apply to the <strong>{RAFFLE.series}</strong>. By entering, you agree to the version shown at entry: <strong>{RAFFLE.termsVersion}</strong>. For the plain-language plan, read the <a href="/dating-experiment/faq">Dating Experiment FAQ</a>. Questions may be sent to <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.</p>
@@ -50,7 +50,7 @@ export default async function DatingExperimentTermsPage() {
       <p>Exact odds cannot be calculated in advance. They depend on the number and preferences of eligible entrants, compatibility scores, the reciprocal shortlist graph, private yes/pass decisions, favorite choices, and whether disjoint mutual pairs remain after the first selection.</p>
 
       <h2>6. Private preview and mutual acceptance</h2>
-      <p>A participant privately sees each person on their shortlist&apos;s first name, age, disclosed orientation label (unless they prefer not to label), photos, profile context, short experiment answer, and an introduction video when that person chose to add one. Each participant has {RAFFLE.respondHours} hours to submit all choices independently. Choices are sealed: another participant cannot see whether they were accepted, passed, or favorited. A missing response is treated as no mutual choice. If no mutual pair forms, eligible participants may enter another shortlist round; no participant receives shortlists in more than {RAFFLE.maxAttempts} rounds for this experiment.</p>
+      <p>A participant privately sees each person on their shortlist&apos;s first name, age, disclosed orientation label (unless they prefer not to label), photos, profile context, short experiment answer, and an introduction video when that person chose to add one. Each participant has until the deadline shown in the app, with up to {RAFFLE.respondHours} hours, to submit all choices independently. Choices are sealed: another participant cannot see whether they were accepted, passed, or favorited. A missing response is treated as no mutual choice. If a dinner slot remains unfilled, eligible participants may enter another shortlist round; no participant receives shortlists in more than {RAFFLE.maxAttempts} rounds for this experiment.</p>
 
       <h2>7. Dinner</h2>
       <p>Up to {RAFFLE.winnerPairCount} dinner prizes are available, one for each selected pair: one reservation on Thursday, August 20, 2026, at 6:30 PM Eastern Time and one at 8:30 PM Eastern Time. The restaurant and final slot assignment will be shared privately after selection. Each prize is one prepaid dinner at a selected Boston restaurant with a maximum approximate retail value of ${RAFFLE.budget} per pair, including ordinary tax and gratuity within that cap. Selected participants do not pay or request reimbursement for the included dinner. The maximum aggregate value of all prizes is ${RAFFLE.budget * RAFFLE.winnerPairCount}. Alcohol, parking, valet charges or tips, transportation, charges above the prepaid arrangement, and other expenses are not covered. A prize has no cash alternative, is not transferable, and may be rescheduled or substituted only with an equal-or-greater-value experience if the venue becomes unavailable or circumstances make fulfillment impracticable.</p>
@@ -85,7 +85,7 @@ export default async function DatingExperimentTermsPage() {
 
       <h2>17. Platform disclosure</h2>
       <p>Apple Inc., Google LLC, and Reddit do not sponsor, endorse, administer, or have any association with this promotion. Entrants release those platforms from responsibility to the extent permitted by law. Sponsor, not Apple or another platform, is solely responsible for operating the experiment and fulfilling any dinner prize.</p>
-      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>{entriesOpen ? 'These are the rules version accepted at entry.' : sponsorConfirmed ? 'These Official Rules are final. Public entries remain paused for final product verification.' : 'Public entries remain paused until the Sponsor details and final product verification are complete.'} Contact <a href={`mailto:${CONTACT}`}>{CONTACT}</a> for a copy or question.</p>
+      <p style={{ marginTop: '1.5rem', color: 'var(--h-text-dim)', fontSize: '0.85rem' }}>{entriesOpen ? 'These are the rules version accepted at entry.' : sponsorConfirmed ? 'These are the final Official Rules accepted by entrants. Entries are closed.' : 'Entries are closed.'} Contact <a href={`mailto:${CONTACT}`}>{CONTACT}</a> for a copy or question.</p>
     </LegalPage>
   );
 }

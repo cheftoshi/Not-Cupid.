@@ -32,7 +32,7 @@ export const RAFFLE = {
   maxAttempts: 2, // at most two sealed shortlist rounds per entrant
   shortlistMaxOptions: 2,
   winnerPairCount: 2,
-  respondHours: 12,
+  respondHours: 6,
   termsVersion: 'boston-v13-2026-08-15',
   algorithmVersion: 'dating-experiment-two-pair-v4',
   minimumPairScore: 55,
@@ -48,6 +48,8 @@ export const RAFFLE = {
   // shortlist during the morning response window. The hourly cron must not
   // expose options overnight before the operator can audit the closed pool.
   shortlistAt: '2026-08-19T12:00:00.000Z',
+  firstRoundDeadline: '2026-08-19T18:00:00.000Z', // 2:00 PM ET
+  secondRoundDeadline: '2026-08-19T22:00:00.000Z', // 6:00 PM ET
   // This is the later 8:30 PM ET dinner slot. Its UTC timestamp falls on
   // August 21 because Boston is four hours behind UTC in August.
   happensAt: '2026-08-21T00:30:00.000Z',

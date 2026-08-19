@@ -277,6 +277,30 @@ test('the Dating Experiment freezes at midnight but waits until 8 AM ET to short
   assert.match(draw, /Date\.now\(\) < new Date\(RAFFLE\.shortlistAt\)\.getTime\(\)/);
 });
 
+test('morning selection uses approved idempotent email, a six-hour first round, and a remaining-slot second round', () => {
+  const draw = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  const email = readFileSync(new URL('../lib/dating-experiment-email.ts', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20260819041000_dating_experiment_morning_selection_window.sql', import.meta.url), 'utf8');
+  assert.match(experimentSource, /respondHours:\s*6/);
+  assert.match(experimentSource, /firstRoundDeadline:\s*'2026-08-19T18:00:00\.000Z'/);
+  assert.match(experimentSource, /secondRoundDeadline:\s*'2026-08-19T22:00:00\.000Z'/);
+  assert.match(migration, /response_hours = 6/i);
+  assert.match(email, /DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION/);
+  assert.match(email, /process\.env\.DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION/);
+  assert.match(email, /Your Dating Experiment shortlist is ready/);
+  assert.match(email, /Your shortlist closes in one hour/);
+  assert.match(email, /Your Dating Experiment dinner is confirmed/);
+  assert.match(email, /email_campaign_deliveries/);
+  assert.match(email, /idempotencyKey: `\$\{args\.campaignKey\}-\$\{user\.id\}`/);
+  assert.match(draw, /unansweredParticipantIds\(pairs\)/);
+  assert.match(draw, /existingWinners\.length >= event\.winner_pair_limit/);
+  assert.match(draw, /existingWinnerIds\.has\(entry\.user_id\)/);
+  assert.match(draw, /usedTimes/);
+  assert.match(draw, /remaining-slot-unfilled/);
+  assert.match(draw, /partial-mutual-pair-selected/);
+  assert.doesNotMatch(draw, /if \(won\?\.length\)/);
+});
+
 test('public launch approvals are dated, attributable, and required in code and database', () => {
   const legacyMigration = readFileSync(new URL('../supabase/migrations/20260815223000_dating_experiment_launch_signoffs.sql', import.meta.url), 'utf8');
   const migration = readFileSync(new URL('../supabase/migrations/20260816004500_dating_experiment_operator_rehearsal.sql', import.meta.url), 'utf8');

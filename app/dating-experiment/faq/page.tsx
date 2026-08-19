@@ -16,7 +16,7 @@ const BLUE = '#2563ff';
 const STEPS = [
   ['1', 'Join for free', `Complete your profile and answer four quick experiment prompts. A private ${RAFFLE.videoMinSeconds}–${RAFFLE.videoMaxSeconds}-second hello video is optional.`],
   ['2', 'Meet up to two', 'The system prioritizes broad coverage, then gives each qualified participant up to two strong reciprocal options.'],
-  ['3', 'Choose privately', `You have ${RAFFLE.respondHours} hours to say yes to either, both, or neither—and optionally favorite one. Every choice stays sealed.`],
+  ['3', 'Choose privately', `You have up to ${RAFFLE.respondHours} hours to say yes to either, both, or neither—and optionally favorite one. Every choice stays sealed.`],
   ['4', 'Mutual wins', `Only mutual yes pairs qualify. Up to ${RAFFLE.winnerPairCount} disjoint pairs are selected, with each dinner covered up to $${RAFFLE.budget}.`],
 ];
 
@@ -71,7 +71,7 @@ const FAQS = [
   },
   {
     q: 'What do we see before deciding?',
-    a: `You privately see each shortlist option’s first name, age, photos, bio, archetype, disclosed orientation, shared interests, experiment answers, conversation prompt, fit score, and an intro video when they chose to add one. You decide independently within ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the winning mutual pairs are selected.`,
+    a: `You privately see each shortlist option’s first name, age, photos, bio, archetype, disclosed orientation, shared interests, experiment answers, conversation prompt, fit score, and an intro video when they chose to add one. You decide independently within the deadline shown in the app, with up to ${RAFFLE.respondHours} hours. You cannot see anyone else’s decisions, and restaurant details stay private until the winning mutual pairs are selected.`,
   },
   {
     q: 'What if one person passes or does not respond?',
@@ -87,7 +87,7 @@ const FAQS = [
   },
   {
     q: 'How will I know if I am selected?',
-    a: 'If you opt in, the app can send a push when your shortlist is ready, when a winning mutual pair is selected, and once during the final 24 hours plus once during the final three hours before the dinner. The app remains the source of truth. No promotional email campaign is part of joining.',
+    a: 'If you opt in, the app can send a transactional email and push when your shortlist is ready, one reminder near its deadline, a confirmation when a winning mutual pair is selected, and final dinner reminders. The app remains the source of truth. No promotional email campaign is part of joining.',
   },
 ];
 
@@ -115,6 +115,11 @@ export default function DatingExperimentFaqPage() {
         {raffleEntriesOpen() && (
           <div style={{ marginTop: '1.25rem', padding: '0.85rem 1rem', border: '1px solid rgba(255,106,31,0.35)', borderRadius: 12, background: 'rgba(255,106,31,0.08)', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.5 }}>
             <b style={{ color: 'var(--h-text)' }}>Entries are open:</b> join free before {RAFFLE.entryCloseLabel} or before the {RAFFLE.cap}-person cap is reached. The two dinner slots are Thursday, August 20 at 6:30 PM and 8:30 PM ET; the restaurant is revealed privately to selected pairs.
+          </div>
+        )}
+        {!raffleEntriesOpen() && (
+          <div style={{ marginTop: '1.25rem', padding: '0.85rem 1rem', border: '1px solid var(--h-border)', borderRadius: 12, background: 'var(--h-surface)', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.5 }}>
+            <b style={{ color: 'var(--h-text)' }}>Entries are closed.</b> Private shortlists and mutual dinner selection now continue inside the Dating Experiment screen.
           </div>
         )}
 

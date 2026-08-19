@@ -167,7 +167,7 @@ export async function GET() {
   return NextResponse.json({
     event: {
       series: event?.public_name ?? RAFFLE.series, city: event?.city ?? RAFFLE.city, dateLabel: datingExperimentDateLabel(event), budget: (event?.prize_per_pair_cents ?? RAFFLE.budget * 100) / 100,
-      tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, cap: eventCap, entryCloseLabel: RAFFLE.entryCloseLabel,
+      tagline: RAFFLE.tagline, drawLabel: RAFFLE.drawLabel, shortlistAt: RAFFLE.shortlistAt, cap: eventCap, entryCloseLabel: RAFFLE.entryCloseLabel,
       statusLabel: RAFFLE.statusLabel, entriesOpen, rehearsal,
       radiusMiles: Number(event?.radius_miles ?? RAFFLE.radiusMiles), centerZip: event?.center_zip ?? RAFFLE.centerZip, termsVersion: event?.terms_version ?? RAFFLE.termsVersion,
       videoMinSeconds: RAFFLE.videoMinSeconds, videoMaxSeconds: RAFFLE.videoMaxSeconds, videoMaxBytes: RAFFLE.videoMaxBytes,
