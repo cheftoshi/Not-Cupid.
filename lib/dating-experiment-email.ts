@@ -104,7 +104,10 @@ async function claimDelivery(campaignKey: string, userId: string): Promise<boole
   if (!error) return true;
   if (error.code !== '23505') {
     console.error('[dating-experiment-email-claim]', { campaignKey, code: error.code });
-    return false;
+    // A malformed key, schema drift, or database outage must fail the cron
+    // visibly. Treating it like an idempotent duplicate produced a false 200
+    // while every approved shortlist email was suppressed.
+    throw error;
   }
 
   // A provider failure remains retryable, while sent/queued rows are left

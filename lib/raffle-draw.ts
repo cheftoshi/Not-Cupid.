@@ -102,20 +102,32 @@ async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, 
   const deadline = new Date(round.response_deadline).getTime();
   if (!Number.isFinite(deadline) || Date.now() >= deadline) return;
   const participants = participantIdsForPairs(pairs);
-  await sendDatingExperimentShortlistEmails({
+  const initialDelivery = await sendDatingExperimentShortlistEmails({
     eventKey: event.event_key,
     roundNumber: round.round_number,
     responseDeadline: round.response_deadline,
     recipientIds: participants,
   });
+  if (!initialDelivery.approved) {
+    throw new Error('Dating Experiment selection email approval is missing');
+  }
+  if (initialDelivery.failed > 0) {
+    throw new Error(`Dating Experiment shortlist email failed for ${initialDelivery.failed} recipient(s)`);
+  }
   if (deadline - Date.now() <= HOUR_MS) {
-    await sendDatingExperimentShortlistEmails({
+    const reminderDelivery = await sendDatingExperimentShortlistEmails({
       eventKey: event.event_key,
       roundNumber: round.round_number,
       responseDeadline: round.response_deadline,
       recipientIds: unansweredParticipantIds(pairs),
       reminder: true,
     });
+    if (!reminderDelivery.approved) {
+      throw new Error('Dating Experiment selection email approval is missing');
+    }
+    if (reminderDelivery.failed > 0) {
+      throw new Error(`Dating Experiment shortlist reminder failed for ${reminderDelivery.failed} recipient(s)`);
+    }
   }
 }
 
