@@ -115,12 +115,12 @@ async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, 
   if (initialDelivery.failed > 0) {
     throw new Error(`Dating Experiment shortlist email failed for ${initialDelivery.failed} recipient(s)`);
   }
-  const waitingRecipientIds = await eligibleWaitingEntryIds(event);
-  if (waitingRecipientIds.length) {
+  const waitingRecipients = await eligibleWaitingEntries(event);
+  if (waitingRecipients.all.length) {
     const waitingDelivery = await sendDatingExperimentWaitingEmails({
       eventKey: event.event_key,
       roundNumber: round.round_number,
-      recipientIds: waitingRecipientIds,
+      recipientIds: waitingRecipients.all,
     });
     // This is a separately approved message. Until its copy is approved, the
     // round continues and the PWA remains the source of truth. Once approved,
@@ -128,6 +128,7 @@ async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, 
     if (waitingDelivery.approved && waitingDelivery.failed > 0) {
       throw new Error(`Dating Experiment waiting-status email failed for ${waitingDelivery.failed} recipient(s)`);
     }
+    await ensureWaitingPushNotifications(event, round, waitingRecipients.optedIn);
   }
   if (deadline - Date.now() <= HOUR_MS) {
     const reminderDelivery = await sendDatingExperimentShortlistEmails({
@@ -146,22 +147,22 @@ async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, 
   }
 }
 
-async function eligibleWaitingEntryIds(event: DatingExperimentEvent): Promise<string[]> {
+async function eligibleWaitingEntries(event: DatingExperimentEvent): Promise<{ all: string[]; optedIn: string[] }> {
   const { data: entries, error: entriesError } = await supabaseAdmin.from('raffle_entries')
-    .select('user_id, attempts, questionnaire, terms_version')
+    .select('user_id, attempts, questionnaire, terms_version, notify')
     .eq('event_key', event.event_key)
     .eq('status', 'entered')
     .eq('terms_version', event.terms_version);
   if (entriesError) throw entriesError;
   const eligibleEntries = (entries ?? []).filter((entry: any) => (entry.attempts ?? 0) < event.max_attempts);
-  if (!eligibleEntries.length) return [];
+  if (!eligibleEntries.length) return { all: [], optedIn: [] };
   const entryByUser = new Map(eligibleEntries.map((entry: any) => [entry.user_id, entry]));
   const { data: users, error: usersError } = await supabaseAdmin.from('users')
     .select(COLS)
     .in('id', eligibleEntries.map((entry: any) => entry.user_id));
   if (usersError) throw usersError;
   const adminEmails = new Set(getAdminEmails());
-  return ((users as any[]) ?? [])
+  const all = ((users as any[]) ?? [])
     .filter((user) => user.is_test !== true
       && user.is_blocked !== true
       && !user.deleted_at
@@ -179,6 +180,59 @@ async function eligibleWaitingEntryIds(event: DatingExperimentEvent): Promise<st
       && preferences.ageMin != null
       && preferences.ageMax != null)
     .map(({ user }) => user.id);
+  const optedIn = all.filter((id) => (entryByUser.get(id) as any)?.notify !== false);
+  return { all, optedIn };
+}
+
+async function ensureWaitingPushNotifications(
+  event: DatingExperimentEvent,
+  round: RoundRow,
+  recipientIds: string[],
+): Promise<void> {
+  if (!recipientIds.length) return;
+  const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin.from('push_subscriptions')
+    .select('user_id')
+    .in('user_id', recipientIds);
+  if (subscriptionsError) throw subscriptionsError;
+  const subscribedIds = [...new Set((subscriptions ?? []).map((row) => row.user_id))];
+  let delivered = 0;
+  for (const userId of subscribedIds) {
+    const dedupeKey = `dating-experiment-waiting-push:${event.event_key}:r${round.round_number}:${userId}`;
+    const { error: claimError } = await supabaseAdmin.from('app_client_events').insert({
+      user_id: userId,
+      event_name: 'experiment_waiting_push_claimed',
+      surface: 'dating_experiment',
+      path: '/dating-experiment',
+      dedupe_key: dedupeKey,
+      metadata: { event_key: event.event_key, round_number: round.round_number, channel: 'push' },
+    });
+    if (claimError?.code === '23505') continue;
+    if (claimError) throw claimError;
+    const pushed = await sendPushToUser(userId, {
+      title: 'Your Dating Experiment entry is active ✦',
+      body: 'Entries are closed and matching is underway. We’ll let you know if you have someone to review.',
+      url: '/dating-experiment',
+      tag: `dating-experiment-waiting-r${round.round_number}`,
+    });
+    if (pushed) delivered += 1;
+    const { error: finishError } = await supabaseAdmin.from('app_client_events').update({
+      event_name: pushed ? 'experiment_waiting_push_delivered' : 'experiment_waiting_push_failed',
+      metadata: {
+        event_key: event.event_key,
+        round_number: round.round_number,
+        channel: 'push',
+        delivered: pushed,
+      },
+    }).eq('dedupe_key', dedupeKey);
+    if (finishError) throw finishError;
+  }
+  console.info('[dating-experiment-waiting-push]', {
+    eventKey: event.event_key,
+    roundNumber: round.round_number,
+    eligible: recipientIds.length,
+    subscribed: subscribedIds.length,
+    delivered,
+  });
 }
 
 async function ensureWinnerEmails(event: DatingExperimentEvent, winners: WinnerRow[]): Promise<void> {

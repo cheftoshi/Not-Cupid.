@@ -312,9 +312,12 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(draw, /if \(!initialDelivery\.approved\)[\s\S]*selection email approval is missing/);
   assert.match(draw, /initialDelivery\.failed > 0/);
   assert.match(draw, /reminderDelivery\.failed > 0/);
-  assert.match(draw, /eligibleWaitingEntryIds\(event\)/);
+  assert.match(draw, /eligibleWaitingEntries\(event\)/);
   assert.match(draw, /sendDatingExperimentWaitingEmails/);
   assert.match(draw, /waitingDelivery\.approved && waitingDelivery\.failed > 0/);
+  assert.match(draw, /ensureWaitingPushNotifications\(event, round, waitingRecipients\.optedIn\)/);
+  assert.match(draw, /dating-experiment-waiting-push:/);
+  assert.match(draw, /experiment_waiting_push_delivered/);
   assert.match(draw, /unansweredParticipantIds\(pairs\)/);
   assert.match(draw, /existingWinners\.length >= event\.winner_pair_limit/);
   assert.match(draw, /existingWinnerIds\.has\(entry\.user_id\)/);
