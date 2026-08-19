@@ -167,6 +167,19 @@ supersede them.
 - Roster-first matching: up to ten curated candidates (three included picks
   plus seven browseable alternatives), no swiping or public
   browsing.
+- Canonical Love Line engagement baseline, measured **August 19, 2026 from
+  12:00 AM through 4:58 PM ET**, excluding test accounts and Dating Experiment
+  participation: 43 real users opened the Love dashboard/roster, 32 opened a
+  profile, 11 attempted a connection, 10 successfully picked someone, 18
+  successful picks were created, 20 accept decisions were recorded, two mutual
+  matches formed, and seven messages were sent by four people across five
+  chats. There were 21 unique real users performing a meaningful Love action
+  and 51 Love interactions from installed PWAs. Preserve this as a historical
+  benchmark; live snapshots must still be queried from production.
+- Evaluate major Love changes against the same outcome funnel: roster user →
+  profile opener → successful picker → mutual match → first message/reply.
+  Passive views are context, not success. The primary near-term constraint is
+  conversion from pick to mutual connection to reciprocal conversation.
 - A user has three included outgoing picks per 24-hour roster cycle. The live
   connection safety ceiling remains ten; a fourth and later distinct outgoing
   pick uses Pro or a one-time $0.99 extra-connection entitlement.
