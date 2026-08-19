@@ -106,7 +106,7 @@ export function infoCard(opts: { eyebrow?: string; big: string; sub?: string }):
 interface RenderArgs {
   preheader: string;          // inbox preview text — first ~100 chars
   eyebrow?: string;           // small uppercase label above headline
-  headline: string;           // serif display headline
+  headline?: string;          // optional serif display headline
   bodyHtml: string;           // pre-built HTML for the body (paragraphs, cards, buttons)
   recipientId?: string;       // if provided, footer includes unsub link
   footerNote?: string;        // short line above the boilerplate footer
@@ -124,6 +124,15 @@ export function renderEmail(args: RenderArgs): string {
 
   const eyebrowBlock = args.eyebrow
     ? `<div style="font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.lav};letter-spacing:0.2em;text-transform:uppercase;margin-bottom:14px;">${escapeHtml(args.eyebrow)}</div>`
+    : '';
+
+  const introBlock = args.eyebrow || args.headline
+    ? `<tr>
+          <td style="padding:24px 36px 8px 36px;">
+            ${eyebrowBlock}
+            ${args.headline ? `<h1 style="margin:0 0 18px 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:${C.ink};font-weight:400;letter-spacing:-0.01em;">${escapeHtml(args.headline)}</h1>` : ''}
+          </td>
+        </tr>`
     : '';
 
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -157,14 +166,7 @@ export function renderEmail(args: RenderArgs): string {
             </div>
           </td>
         </tr>
-        <tr>
-          <td style="padding:24px 36px 8px 36px;">
-            ${eyebrowBlock}
-            <h1 style="margin:0 0 18px 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:${C.ink};font-weight:400;letter-spacing:-0.01em;">
-              ${escapeHtml(args.headline)}
-            </h1>
-          </td>
-        </tr>
+        ${introBlock}
         <tr>
           <td style="padding:0 36px 24px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:${C.muted};">
             ${args.bodyHtml}

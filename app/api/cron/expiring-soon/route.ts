@@ -288,14 +288,11 @@ export async function GET(req: NextRequest) {
             } else {
               const result = await sendEmail({
                 to: recipient.email,
-                subject: `Your match with ${first} is ready`,
+                subject: `You matched with ${first}`,
                 html: renderEmail({
-                  preheader: `You and ${first} matched. Start the conversation when you’re ready.`,
-                  eyebrow: 'your chat is open',
-                  headline: `You and ${first} matched.`,
-                  bodyHtml: `<p style="margin:0 0 18px 0;">The chat is open and neither of you has started it yet. Send something simple, specific, and easy to answer—the match coach can help.</p>${button({ href: `${base}/match/${match.id}`, label: `Open chat with ${escapeHtml(first)} →` })}`,
+                  preheader: `You both said yes. Send a simple first message when you’re ready.`,
+                  bodyHtml: `<p style="margin:0 0 18px 0;">Start with something simple from their profile. If you need a little inspiration, the AI Connect Coach can help.</p>${button({ href: `${base}/match/${match.id}`, label: `Say hello to ${escapeHtml(first)} →` })}`,
                   recipientId,
-                  footerNote: 'one good question is enough to start.',
                 }),
                 idempotencyKey: `love-mutual-no-message-12h-${match.id}-${recipientId}`,
                 tags: [
