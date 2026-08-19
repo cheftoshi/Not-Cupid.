@@ -282,10 +282,13 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   const draw = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
   const email = readFileSync(new URL('../lib/dating-experiment-email.ts', import.meta.url), 'utf8');
   const migration = readFileSync(new URL('../supabase/migrations/20260819041000_dating_experiment_morning_selection_window.sql', import.meta.url), 'utf8');
+  const closeMigration = readFileSync(new URL('../supabase/migrations/20260819042500_close_dating_experiment_entry_window.sql', import.meta.url), 'utf8');
   assert.match(experimentSource, /respondHours:\s*6/);
   assert.match(experimentSource, /firstRoundDeadline:\s*'2026-08-19T18:00:00\.000Z'/);
   assert.match(experimentSource, /secondRoundDeadline:\s*'2026-08-19T22:00:00\.000Z'/);
   assert.match(migration, /response_hours = 6/i);
+  assert.match(closeMigration, /status = 'entry_closed'/i);
+  assert.match(closeMigration, /entry_closes_at <= now\(\)/i);
   assert.match(email, /DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION/);
   assert.match(email, /process\.env\.DATING_EXPERIMENT_SELECTION_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION/);
   assert.match(email, /Your Dating Experiment shortlist is ready/);
@@ -299,6 +302,7 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(draw, /usedTimes/);
   assert.match(draw, /remaining-slot-unfilled/);
   assert.match(draw, /partial-mutual-pair-selected/);
+  assert.match(draw, /event\.status === 'entry_open' && Date\.now\(\) >= new Date\(event\.entry_closes_at\)\.getTime\(\)/);
   assert.doesNotMatch(draw, /if \(won\?\.length\)/);
 });
 

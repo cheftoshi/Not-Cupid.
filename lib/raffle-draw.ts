@@ -448,6 +448,14 @@ export async function drawRaffle(opts: { force?: boolean } = {}): Promise<DrawRe
   const force = opts.force === true;
   const event = await getDatingExperimentEvent();
   if (!event) return { ok: true, entrants: 0, drawn: 0, state: 'paused' };
+  if (event.status === 'entry_open' && Date.now() >= new Date(event.entry_closes_at).getTime()) {
+    const { error: closeError } = await supabaseAdmin.from('dating_experiment_events')
+      .update({ status: 'entry_closed', updated_at: new Date().toISOString() })
+      .eq('event_key', event.event_key)
+      .eq('status', 'entry_open');
+    if (closeError) throw closeError;
+    event.status = 'entry_closed';
+  }
 
   const { data: won, error: wonError } = await supabaseAdmin.from('raffle_draws')
     .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at')
