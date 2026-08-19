@@ -144,6 +144,11 @@ async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, 
     if (reminderDelivery.failed > 0) {
       throw new Error(`Dating Experiment shortlist reminder failed for ${reminderDelivery.failed} recipient(s)`);
     }
+    await ensureShortlistReminderPushNotifications(
+      event,
+      round,
+      unansweredParticipantIds(pairs),
+    );
   }
 }
 
@@ -189,50 +194,106 @@ async function ensureWaitingPushNotifications(
   round: RoundRow,
   recipientIds: string[],
 ): Promise<void> {
+  await deliverRoundPushNotifications({
+    event,
+    round,
+    recipientIds,
+    notificationKey: 'waiting',
+    eventName: 'experiment_waiting_push',
+    title: 'Your Dating Experiment entry is active ✦',
+    body: 'Entries are closed and matching is underway. We’ll let you know if you have someone to review.',
+    tag: `dating-experiment-waiting-r${round.round_number}`,
+  });
+}
+
+async function ensureShortlistReminderPushNotifications(
+  event: DatingExperimentEvent,
+  round: RoundRow,
+  recipientIds: string[],
+): Promise<void> {
   if (!recipientIds.length) return;
+  const { data: entries, error: entriesError } = await supabaseAdmin.from('raffle_entries')
+    .select('user_id, notify')
+    .eq('event_key', event.event_key)
+    .in('user_id', recipientIds);
+  if (entriesError) throw entriesError;
+  const optedInIds = (entries ?? []).filter((entry) => entry.notify !== false).map((entry) => entry.user_id);
+  await deliverRoundPushNotifications({
+    event,
+    round,
+    recipientIds: optedInIds,
+    notificationKey: 'shortlist-reminder',
+    eventName: 'experiment_shortlist_reminder_push',
+    title: 'Your shortlist closes in one hour',
+    body: `Review your private options and choose Yes or Pass by ${deadlineTime(round.response_deadline)}.`,
+    tag: `dating-experiment-shortlist-reminder-r${round.round_number}`,
+  });
+}
+
+async function deliverRoundPushNotifications(args: {
+  event: DatingExperimentEvent;
+  round: RoundRow;
+  recipientIds: string[];
+  notificationKey: string;
+  eventName: string;
+  title: string;
+  body: string;
+  tag: string;
+}): Promise<void> {
+  if (!args.recipientIds.length) return;
   const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin.from('push_subscriptions')
     .select('user_id')
-    .in('user_id', recipientIds);
+    .in('user_id', args.recipientIds);
   if (subscriptionsError) throw subscriptionsError;
   const subscribedIds = [...new Set((subscriptions ?? []).map((row) => row.user_id))];
   let delivered = 0;
   for (const userId of subscribedIds) {
-    const dedupeKey = `dating-experiment-waiting-push:${event.event_key}:r${round.round_number}:${userId}`;
+    const dedupeKey = `dating-experiment-${args.notificationKey}-push:${args.event.event_key}:r${args.round.round_number}:${userId}`;
     const { error: claimError } = await supabaseAdmin.from('app_client_events').insert({
       user_id: userId,
-      event_name: 'experiment_waiting_push_claimed',
+      event_name: `${args.eventName}_claimed`,
       surface: 'dating_experiment',
       path: '/dating-experiment',
       dedupe_key: dedupeKey,
-      metadata: { event_key: event.event_key, round_number: round.round_number, channel: 'push' },
+      metadata: { event_key: args.event.event_key, round_number: args.round.round_number, channel: 'push' },
     });
     if (claimError?.code === '23505') continue;
     if (claimError) throw claimError;
     const pushed = await sendPushToUser(userId, {
-      title: 'Your Dating Experiment entry is active ✦',
-      body: 'Entries are closed and matching is underway. We’ll let you know if you have someone to review.',
+      title: args.title,
+      body: args.body,
       url: '/dating-experiment',
-      tag: `dating-experiment-waiting-r${round.round_number}`,
+      tag: args.tag,
     });
     if (pushed) delivered += 1;
     const { error: finishError } = await supabaseAdmin.from('app_client_events').update({
-      event_name: pushed ? 'experiment_waiting_push_delivered' : 'experiment_waiting_push_failed',
+      event_name: pushed ? `${args.eventName}_delivered` : `${args.eventName}_failed`,
       metadata: {
-        event_key: event.event_key,
-        round_number: round.round_number,
+        event_key: args.event.event_key,
+        round_number: args.round.round_number,
         channel: 'push',
         delivered: pushed,
       },
     }).eq('dedupe_key', dedupeKey);
     if (finishError) throw finishError;
   }
-  console.info('[dating-experiment-waiting-push]', {
-    eventKey: event.event_key,
-    roundNumber: round.round_number,
-    eligible: recipientIds.length,
+  console.info('[dating-experiment-round-push]', {
+    eventKey: args.event.event_key,
+    roundNumber: args.round.round_number,
+    notificationKey: args.notificationKey,
+    eligible: args.recipientIds.length,
     subscribed: subscribedIds.length,
     delivered,
   });
+}
+
+function deadlineTime(value: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/New_York',
+    timeZoneName: 'short',
+  }).format(new Date(value));
 }
 
 async function ensureWinnerEmails(event: DatingExperimentEvent, winners: WinnerRow[]): Promise<void> {
