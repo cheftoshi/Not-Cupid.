@@ -318,6 +318,7 @@ export default function AdminClient() {
               <a href="#funnel" className={s.navLink}>Funnel</a>
               <a href="#monetization" className={s.navLink}>Revenue funnel</a>
               <a href="#love-usage" className={s.navLink}>Love usage</a>
+              <a href="#experiment-behavior" className={s.navLink}>Experiment behavior</a>
               <a href="#love-campaign" className={s.navLink}>Love campaign</a>
               <a href="#acquisition" className={s.navLink}>Acquisition</a>
               <a href="#traffic" className={s.navLink}>Traffic</a>
@@ -403,6 +404,69 @@ export default function AdminClient() {
               </div>
             )}
             {data?.bottlenecks?.method && <p className={s.note} style={{ margin: '0.9rem 0 0' }}>{data.bottlenecks.method}</p>}
+          </div>
+
+          {/* ── DATING EXPERIMENT HUMAN-CHOICE FUNNEL ── */}
+          <div className={s.card} id="experiment-behavior">
+            <div className={s.cardHead}>
+              <div>
+                <p className={s.cardTitle}>Dating Experiment — <b>human-choice funnel</b></p>
+                <p className={s.note} style={{ margin: '0.35rem 0 0' }}>Reach, response, interest and reciprocity are measured separately. Optional reasons are private and shown only as aggregate counts.</p>
+              </div>
+            </div>
+            {!data?.experimentBehavior ? (
+              <p className={s.note}>Behavior measurement is rolling out. Existing sealed decisions remain intact.</p>
+            ) : (() => {
+              const behavior = data.experimentBehavior
+              const latest = behavior.latestRound
+              return (
+                <>
+                  <p className={s.note} style={{ marginBottom: '0.55rem' }}>ALL SHORTLIST ROUNDS</p>
+                  <div className={s.chips}>
+                    <span className={s.chip}>Offered people <b>{behavior.offeredUsers}</b></span>
+                    <span className={s.chip}>Viewed after tracking <b>{behavior.viewedUsers}</b></span>
+                    <span className={`${s.chip} ${s.chipGold}`}>Responded <b>{behavior.respondedUsers}</b> · {behavior.responseRatePct ?? '—'}%</span>
+                    <span className={s.chip}>Said yes to anyone <b>{behavior.anyYesUsers}</b></span>
+                    <span className={`${s.chip} ${s.chipRed}`}>Passed on all <b>{behavior.allPassUsers}</b></span>
+                    <span className={`${s.chip} ${behavior.nonresponders ? s.chipRed : ''}`}>No response <b>{behavior.nonresponders}</b></span>
+                    <span className={`${s.chip} ${s.chipGold}`}>Mutual pairs <b>{behavior.pairs.mutualYes}</b></span>
+                    <span className={s.chip}>One-way yes pairs <b>{behavior.pairs.oneSidedYes}</b></span>
+                    <span className={s.chip}>Both passed <b>{behavior.pairs.bothPass}</b></span>
+                    <span className={s.chip}>Unresolved pairs <b>{behavior.pairs.unresolved}</b></span>
+                    <span className={s.chip}>Median response <b>{behavior.medianResponseMinutes == null ? '—' : `${behavior.medianResponseMinutes}m`}</b></span>
+                    <span className={s.chip}>Avg score · yes <b>{behavior.scoreSignals.averageYes ?? '—'}</b></span>
+                    <span className={s.chip}>Avg score · pass <b>{behavior.scoreSignals.averagePass ?? '—'}</b></span>
+                  </div>
+                  <div className={s.bottleneckAction} style={{ marginTop: '0.85rem' }}><b>Current read:</b> {behavior.diagnosis}</div>
+                  {latest && (
+                    <>
+                      <div className={s.divider} />
+                      <p className={s.note} style={{ marginBottom: '0.55rem' }}>LATEST ROUND {latest.roundNumber} · {String(latest.status).toUpperCase()} · {latest.algorithmVersion}</p>
+                      <div className={s.chips}>
+                        <span className={s.chip}>Offered <b>{latest.offeredUsers}</b></span>
+                        <span className={s.chip}>Responded <b>{latest.respondedUsers}</b></span>
+                        <span className={s.chip}>Any yes <b>{latest.anyYesUsers}</b></span>
+                        <span className={`${s.chip} ${s.chipGold}`}>Mutual <b>{latest.pairs.mutualYes}</b></span>
+                        <span className={s.chip}>One-way yes <b>{latest.pairs.oneSidedYes}</b></span>
+                        <span className={s.chip}>Unresolved <b>{latest.pairs.unresolved}</b></span>
+                      </div>
+                    </>
+                  )}
+                  {behavior.feedback.reasons?.length > 0 && (
+                    <>
+                      <div className={s.divider} />
+                      <p className={s.note} style={{ marginBottom: '0.55rem' }}>OPTIONAL PRIVATE REASONS · AGGREGATE ONLY</p>
+                      <div className={s.chips}>
+                        {behavior.feedback.reasons.map((reason: any) => (
+                          <span key={reason.code} className={s.chip}>{reason.decision === 'yes' ? 'Yes' : 'Pass'} · {reason.label} <b>{reason.count}</b></span>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  <p className={s.note} style={{ marginTop: '0.75rem' }}>View tracking starts with this release; historical views are not guessed. Small cohorts are directional, not causal.</p>
+                </>
+              )
+            })()}
           </div>
 
           {/* ── LOVE LINE PRODUCT USE — experiment participation is excluded ── */}

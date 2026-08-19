@@ -60,6 +60,12 @@ copying entry, traffic, or delivery counts from a handoff document.
 - Every gender/orientation receives the same coverage-first cap of up to two
   private options. Choices are sealed. Only mutual yes pairs enter the final
   slot-aware, payment-neutral weighted selection without replacement.
+- The experiment behavior ledger measures shortlist reach, sealed response,
+  yes/pass, one-way interest, mutual interest, response time, and optional
+  structured reasons as separate signals. Reason feedback appears only after
+  sealing, is private and optional, contains no free text, never changes the
+  choice or odds, and is reported only in aggregate. Never infer appearance,
+  attraction, or a private reason from a pass or non-response.
 - Test, blocked, deleted, and operator/admin accounts are ineligible and must
   not count toward capacity, shortlists, winners, or public metrics.
 

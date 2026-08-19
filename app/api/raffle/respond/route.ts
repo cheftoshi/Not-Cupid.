@@ -79,6 +79,12 @@ export async function POST(req: NextRequest) {
         { status: conflict ? 409 : 500 },
       );
     }
+    const { error: behaviorError } = await supabaseAdmin.rpc('record_dating_experiment_participant_event', {
+      p_round_id: roundId,
+      p_user_id: user.id,
+      p_event_type: 'choices_submitted',
+    });
+    if (behaviorError) console.error('[dating-experiment-choice-event]', behaviorError);
     const resolution = await drawRaffle().catch((error) => {
       console.error('[dating-experiment-resolve]', error);
       return null;

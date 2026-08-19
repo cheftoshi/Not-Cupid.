@@ -35,4 +35,6 @@ This sample is too small to claim a production-grade learned model. The audit is
 
 ## Next measurement loop
 
-Track exposure, option position, score version/components, sealed yes/pass, favorite, mutual yes, attendance, and post-date feedback. Add an optional structured pass reason in a future consented flow (`not my type`, `different intent`, `distance`, `profile too thin`, `timing`, `other`) rather than guessing why a participant passed. Evaluate ranking by round and hold out future rounds; do not tune and grade on the same tiny sample.
+The first behavior loop is now implemented. It records shortlist reach, sealed response, yes/pass, one-way interest, mutual yes, response time, score separation and optional structured reasons. After choices are sealed, participants can privately explain a yes (`values and intent`, `shared interests`, `profile curiosity`, `open to chemistry`) or pass (`fit`, `different intent`, `age or distance`, `profile detail`, `timing`, `other`). The step is optional, contains no free text, never changes the sealed choice or selection odds, and is shown to admins only in aggregate. No participant sees another person's decision or feedback.
+
+The admin funnel diagnoses reach, decision UX, candidate/profile fit, reciprocal ranking and fulfillment as separate failure modes. Shortlist-view measurement begins with the instrumentation release; historical views are not inferred. Continue tracking attendance and post-date feedback, evaluate by future held-out rounds, and do not tune and grade the model on the same tiny sample.

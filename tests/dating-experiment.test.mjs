@@ -24,6 +24,11 @@ import {
   EXPERIMENT_RECIPROCAL_WEIGHTS,
   experimentReciprocalScore,
 } from '../lib/experiment-reciprocal-scoring.ts';
+import {
+  experimentReasonsFor,
+  isExperimentDecisionReason,
+  summarizeDatingExperimentBehavior,
+} from '../lib/dating-experiment-behavior.ts';
 
 const experimentSource = readFileSync(new URL('../lib/raffle.ts', import.meta.url), 'utf8');
 const launchChecklist = readFileSync(new URL('../docs/dating-experiment-public-launch-checklist-2026-08-15.md', import.meta.url), 'utf8');
@@ -199,6 +204,47 @@ test('V5 reciprocal experiment scoring rejects known hard dealbreakers before ra
   assert.equal(result.eligible, false);
   assert.equal(result.score, 0);
   assert.deepEqual(result.hardConflicts, ['kids']);
+});
+
+test('experiment behavior reasons are decision-specific and never accept arbitrary text', () => {
+  assert.equal(isExperimentDecisionReason('values_intent', true), true);
+  assert.equal(isExperimentDecisionReason('values_intent', false), false);
+  assert.equal(isExperimentDecisionReason('chemistry_fit', false), true);
+  assert.equal(isExperimentDecisionReason('chemistry_fit', true), false);
+  assert.equal(isExperimentDecisionReason('a free-text explanation', false), false);
+  assert.ok(experimentReasonsFor(true).every((reason) => reason.decision === 'yes'));
+  assert.ok(experimentReasonsFor(false).every((reason) => reason.decision === 'pass'));
+});
+
+test('experiment behavior funnel separates nonresponse, pass, one-way yes and mutual yes', () => {
+  const pairs = [
+    { id: 'p1', round_id: 'r1', compatibility_score: 70, user_a_id: 'a', user_b_id: 'b', a_accepted: true, b_accepted: false, a_responded_at: '2026-08-19T13:10:00Z', b_responded_at: '2026-08-19T13:20:00Z', created_at: '2026-08-19T13:00:00Z' },
+    { id: 'p2', round_id: 'r1', compatibility_score: 80, user_a_id: 'a', user_b_id: 'c', a_accepted: true, b_accepted: true, a_responded_at: '2026-08-19T13:10:00Z', b_responded_at: '2026-08-19T13:30:00Z', created_at: '2026-08-19T13:00:00Z' },
+    { id: 'p3', round_id: 'r1', compatibility_score: 60, user_a_id: 'd', user_b_id: 'e', a_accepted: null, b_accepted: false, a_responded_at: null, b_responded_at: '2026-08-19T13:40:00Z', created_at: '2026-08-19T13:00:00Z' },
+  ];
+  const summary = summarizeDatingExperimentBehavior(
+    pairs,
+    [{ round_id: 'r1', user_id: 'a', event_type: 'shortlist_viewed' }],
+    [{ decision: false, reason_code: 'profile_detail' }],
+  );
+  assert.equal(summary.offeredUsers, 5);
+  assert.equal(summary.respondedUsers, 4);
+  assert.equal(summary.anyYesUsers, 2);
+  assert.equal(summary.allPassUsers, 2);
+  assert.equal(summary.nonresponders, 1);
+  assert.deepEqual(summary.pairs, { total: 3, mutualYes: 1, oneSidedYes: 1, bothPass: 0, unresolved: 1, reciprocalRatePct: 50 });
+  assert.equal(summary.feedback.reasons.profile_detail, 1);
+});
+
+test('experiment behavior storage is private, structured and derives the sealed choice server-side', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260819211418_dating_experiment_behavior_feedback.sql', import.meta.url), 'utf8');
+  const route = readFileSync(new URL('../app/api/raffle/behavior/route.ts', import.meta.url), 'utf8');
+  assert.match(migration, /enable row level security/i);
+  assert.match(migration, /revoke all on table public\.dating_experiment_decision_feedback from anon, authenticated/i);
+  assert.match(migration, /v_decision := case[\s\S]*v_pair\.a_accepted[\s\S]*v_pair\.b_accepted/i);
+  assert.doesNotMatch(migration, /free_text|freeform|comment text/i);
+  assert.match(route, /getCurrentUser\(\)/);
+  assert.doesNotMatch(route, /supabaseKey|serviceRoleKey/);
 });
 
 test('V2 dinner selection uses only mutual yes pairs and bounded favorite boosts', () => {

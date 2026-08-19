@@ -105,6 +105,25 @@ export async function GET() {
     const activeRoundId = currentRound?.id;
     const activeOffers = activeRoundId ? (offerRows ?? []).filter((row) => row.round_id === activeRoundId) : [];
     if (currentRound) {
+        let feedbackByPair = new Map<string, string>();
+        let behaviorComplete = false;
+        if (activeOffers.length) {
+          const [feedbackResult, behaviorResult] = await Promise.all([
+            supabaseAdmin.from('dating_experiment_decision_feedback')
+              .select('pair_id, reason_code')
+              .eq('round_id', currentRound.id)
+              .eq('user_id', user.id),
+            supabaseAdmin.from('dating_experiment_participant_events')
+              .select('event_type')
+              .eq('round_id', currentRound.id)
+              .eq('user_id', user.id)
+              .in('event_type', ['feedback_submitted', 'feedback_skipped']),
+          ]);
+          if (feedbackResult.error) console.error('[dating-experiment-feedback-status]', feedbackResult.error);
+          if (behaviorResult.error) console.error('[dating-experiment-behavior-status]', behaviorResult.error);
+          feedbackByPair = new Map((feedbackResult.data ?? []).map((row) => [row.pair_id, row.reason_code]));
+          behaviorComplete = (behaviorResult.data ?? []).length > 0;
+        }
         shortlist = (await Promise.all(activeOffers.map(async (offer) => {
           const isA = offer.user_a_id === user.id;
           const candidateId = isA ? offer.user_b_id : offer.user_a_id;
@@ -113,6 +132,7 @@ export async function GET() {
             score: offer.compatibility_score,
             myAccepted: isA ? offer.a_accepted : offer.b_accepted,
             myFavorite: isA ? offer.a_favorite : offer.b_favorite,
+            myFeedbackReason: feedbackByPair.get(offer.id) ?? null,
             candidate: await privateCandidate(candidateId, user),
           };
         }))).filter((offer) => offer.candidate != null);
@@ -123,6 +143,7 @@ export async function GET() {
           responseDeadline: currentRound.response_deadline,
           hasOptions: shortlist.length > 0,
           allResponded: shortlist.length > 0 && shortlist.every((offer) => offer.myAccepted !== null),
+          behaviorComplete,
         };
     }
 

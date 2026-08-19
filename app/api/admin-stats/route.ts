@@ -8,6 +8,7 @@ import { RAFFLE } from '@/lib/raffle'
 import { fetchAllSupabaseRows } from '@/lib/supabase-pagination'
 import { ONLY_IN_BOSTON_CAMPAIGN, ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN } from '@/lib/acquisition'
 import { detectProductBottlenecks } from '@/lib/product-bottlenecks'
+import { EXPERIMENT_DECISION_REASONS, summarizeDatingExperimentBehavior } from '@/lib/dating-experiment-behavior'
 
 export const dynamic = 'force-dynamic'
 
@@ -500,6 +501,82 @@ export async function GET(req: NextRequest) {
       }
     } catch { eligibleReadyCampaign = null }
 
+    // Human-choice funnel for the Dating Experiment. This deliberately keeps
+    // reach, response, yes/pass and reciprocity separate so a non-response is
+    // never misdiagnosed as poor compatibility. Optional reasons are aggregate
+    // only; no participant identity or free text reaches the dashboard.
+    let experimentBehavior: any = null
+    try {
+      const [rounds, pairs, participantEvents, decisionFeedback] = await Promise.all([
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+          .from('dating_experiment_rounds')
+          .select('id,round_number,status,response_deadline,algorithm_version,created_at')
+          .eq('event_key', RAFFLE.key)
+          .order('round_number', { ascending: true })
+          .range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+          .from('dating_experiment_shortlist_pairs')
+          .select('id,round_id,compatibility_score,user_a_id,user_b_id,a_accepted,b_accepted,a_responded_at,b_responded_at,created_at')
+          .eq('event_key', RAFFLE.key)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+          .from('dating_experiment_participant_events')
+          .select('id,round_id,user_id,event_type,created_at')
+          .eq('event_key', RAFFLE.key)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
+          .from('dating_experiment_decision_feedback')
+          .select('pair_id,round_id,user_id,decision,reason_code,created_at')
+          .eq('event_key', RAFFLE.key)
+          .order('created_at', { ascending: true })
+          .order('pair_id', { ascending: true })
+          .range(from, to)),
+      ])
+      const realPairs = pairs.filter((pair: any) => realUserIds.has(pair.user_a_id) && realUserIds.has(pair.user_b_id))
+      const experimentParticipantIds = new Set(realPairs.flatMap((pair: any) => [pair.user_a_id, pair.user_b_id]))
+      const experimentPairIds = new Set(realPairs.map((pair: any) => pair.id))
+      const realEvents = participantEvents.filter((event: any) => experimentParticipantIds.has(event.user_id))
+      const realFeedback = decisionFeedback.filter((row: any) =>
+        experimentParticipantIds.has(row.user_id) && experimentPairIds.has(row.pair_id)
+      )
+      const enrich = (summary: any) => ({
+        ...summary,
+        feedback: {
+          ...summary.feedback,
+          reasons: Object.entries(summary.feedback.reasons)
+            .map(([code, count]) => {
+              const reason = EXPERIMENT_DECISION_REASONS.find((item) => item.code === code)
+              return { code, count, label: reason?.label ?? code, decision: reason?.decision ?? 'unknown' }
+            })
+            .sort((a: any, b: any) => Number(b.count) - Number(a.count)),
+        },
+      })
+      const latestRound = rounds.at(-1) ?? null
+      const latestPairs = latestRound ? realPairs.filter((pair: any) => pair.round_id === latestRound.id) : []
+      experimentBehavior = {
+        measuredAt: new Date(nowMs).toISOString(),
+        ...enrich(summarizeDatingExperimentBehavior(realPairs, realEvents, realFeedback)),
+        latestRound: latestRound ? {
+          roundNumber: latestRound.round_number,
+          status: latestRound.status,
+          responseDeadline: latestRound.response_deadline,
+          algorithmVersion: latestRound.algorithm_version,
+          ...enrich(summarizeDatingExperimentBehavior(
+            latestPairs,
+            realEvents.filter((event: any) => event.round_id === latestRound.id),
+            realFeedback.filter((row: any) => row.round_id === latestRound.id),
+          )),
+        } : null,
+      }
+    } catch (error) {
+      console.error('[experiment-behavior-stats]', error)
+      experimentBehavior = null
+    }
+
     const totalUsers = users.length
     const totalMatches = matches.length
 
@@ -926,6 +1003,7 @@ export async function GET(req: NextRequest) {
       onlyInBoston,
       loveUsage,
       loveFunnel,
+      experimentBehavior,
       appExperience,
       monetization,
       loveCampaign,

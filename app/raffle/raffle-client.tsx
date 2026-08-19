@@ -6,6 +6,7 @@ import { subscribeToPush } from '@/lib/push-client';
 import { datingExperimentGateIssues } from '@/lib/dating-experiment-gate';
 import { EXPERIMENT_ORIENTATION_OPTIONS } from '@/lib/experiment-preferences';
 import { readStoredAcquisition } from '@/lib/acquisition';
+import { experimentReasonsFor } from '@/lib/dating-experiment-behavior';
 
 type Event = {
   series: string;
@@ -708,8 +709,24 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
   const [decisions, setDecisions] = useState<Record<string, { accept: boolean | null; favorite: boolean }>>(() =>
     Object.fromEntries(offers.map((offer) => [offer.id, { accept: offer.myAccepted, favorite: offer.myFavorite === true }])),
   );
+  const [submitted, setSubmitted] = useState(false);
+  const [feedback, setFeedback] = useState<Record<string, string>>(() => Object.fromEntries(
+    offers.filter((offer) => offer.myFeedbackReason).map((offer) => [offer.id, offer.myFeedbackReason]),
+  ));
+  const [feedbackError, setFeedbackError] = useState('');
+  const [savingFeedback, setSavingFeedback] = useState(false);
   const locked = round?.allResponded || round?.status === 'resolving';
   const complete = offers.every((offer) => decisions[offer.id]?.accept !== null);
+
+  useEffect(() => {
+    if (!round?.id || !offers.length) return;
+    fetch('/api/raffle/behavior', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'shortlist_viewed', roundId: round.id }),
+      keepalive: true,
+    }).catch(() => null);
+  }, [round?.id, offers.length]);
 
   function decide(id: string, accept: boolean) {
     setDecisions((current) => ({
@@ -737,13 +754,74 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decisions: payload }),
       });
-      if (response.ok) window.location.reload();
+      if (response.ok) setSubmitted(true);
       else {
         const data = await response.json().catch(() => ({}));
         setErr(data.error || 'could not save your private choices');
       }
     } catch { setErr('could not save your private choices — check your connection'); }
     finally { setBusy(false); }
+  }
+
+  async function finishFeedback(skip = false) {
+    if (savingFeedback) return;
+    setSavingFeedback(true); setFeedbackError('');
+    const selected = offers.flatMap((offer) => feedback[offer.id]
+      ? [{ pairId: offer.id, reasonCode: feedback[offer.id], decision: decisions[offer.id]?.accept === true }]
+      : []);
+    try {
+      const response = await fetch('/api/raffle/behavior', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(skip || !selected.length
+          ? { event: 'feedback_skipped', roundId: round.id }
+          : { event: 'decision_feedback', roundId: round.id, feedback: selected }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'could not save optional feedback');
+      }
+      window.location.reload();
+    } catch (error) {
+      setFeedbackError(error instanceof Error ? error.message : 'could not save optional feedback');
+    } finally { setSavingFeedback(false); }
+  }
+
+  if (submitted || (locked && !round?.behaviorComplete)) {
+    return (
+      <div style={{ ...card, border: `2px solid ${BLUE}` }}>
+        <div style={cardLabel}>choices sealed · optional</div>
+        <h2 style={{ ...cardH, marginTop: '0.35rem' }}>help us tune the next shortlist.</h2>
+        <p style={cardP}>Pick one private reason for any choice you want to explain. This never changes your decision or selection odds, and it is only reviewed in aggregate.</p>
+        <div style={{ display: 'grid', gap: '0.8rem', marginTop: '0.9rem' }}>
+          {offers.map((offer) => {
+            const first = (offer.candidate?.name || 'this person').split(' ')[0];
+            const accepted = decisions[offer.id]?.accept === true;
+            return (
+              <div key={offer.id} style={{ padding: '0.75rem', border: '1px solid var(--h-border)', borderRadius: 12 }}>
+                <p style={{ margin: '0 0 0.55rem', fontSize: '0.78rem', color: 'var(--h-text)' }}><b>{first}</b> · {accepted ? 'yes' : 'pass'}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {experimentReasonsFor(accepted).map((reason) => (
+                    <button
+                      key={reason.code}
+                      type="button"
+                      onClick={() => setFeedback((current) => ({ ...current, [offer.id]: reason.code }))}
+                      aria-pressed={feedback[offer.id] === reason.code}
+                      style={{ ...reasonBtn, background: feedback[offer.id] === reason.code ? BLUE : 'var(--h-surface-2)', color: feedback[offer.id] === reason.code ? '#fff' : 'var(--h-text-dim)' }}
+                    >{reason.label}</button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {feedbackError && <p role="alert" style={{ ...cardP, color: ORANGE_DEEP, marginTop: '0.7rem' }}>{feedbackError}</p>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '0.5rem', marginTop: '0.9rem' }}>
+          <button type="button" onClick={() => finishFeedback(false)} disabled={savingFeedback || !Object.keys(feedback).length} style={{ ...choiceBtn, background: Object.keys(feedback).length ? ORANGE : 'var(--h-surface-2)', color: Object.keys(feedback).length ? '#fff' : 'var(--h-text-faint)' }}>{savingFeedback ? 'saving…' : 'save private feedback'}</button>
+          <button type="button" onClick={() => finishFeedback(true)} disabled={savingFeedback} style={{ ...choiceBtn, background: 'var(--h-surface-2)', color: 'var(--h-text-dim)' }}>skip for now</button>
+        </div>
+      </div>
+    );
   }
 
   if (locked) {
@@ -833,6 +911,7 @@ const numIn: React.CSSProperties = { width: 64, minHeight: 44, background: 'var(
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const infoLink: React.CSSProperties = { display: 'inline-block', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.42rem 0.7rem', background: 'var(--h-surface)', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const choiceBtn: React.CSSProperties = { minHeight: 44, border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.55rem 0.35rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' };
+const reasonBtn: React.CSSProperties = { minHeight: 44, maxWidth: '100%', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.55rem 0.7rem', fontSize: '0.7rem', lineHeight: 1.3, textAlign: 'left', cursor: 'pointer' };
 const profileFact: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', color: BLUE, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0.2rem 0.35rem', borderRadius: 999, background: 'rgba(37,99,255,0.08)' };
 const rulesBackdrop: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 'max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))', background: 'rgba(10,8,14,0.72)', backdropFilter: 'blur(8px)', overflowY: 'auto' };
 const rulesModal: React.CSSProperties = { width: 'min(100%, 520px)', maxHeight: 'calc(100dvh - 2rem)', overflowY: 'auto', boxSizing: 'border-box', background: 'var(--h-surface)', border: '1px solid rgba(255,106,31,0.34)', borderRadius: 22, padding: 'clamp(1rem,4vw,1.45rem)', boxShadow: '0 26px 80px rgba(0,0,0,0.35)' };
