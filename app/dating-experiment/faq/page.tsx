@@ -87,7 +87,7 @@ const FAQS = [
   },
   {
     q: 'How will I know if I am selected?',
-    a: 'If you opt in, the app can send a transactional email and push when your shortlist is ready, one reminder near its deadline, a confirmation when a winning mutual pair is selected, and final dinner reminders. The app remains the source of truth. No promotional email campaign is part of joining.',
+    a: 'If you opt in, the app can send a transactional status update when a round does not produce an option for you, an email and push when your shortlist is ready, one reminder near its deadline, a confirmation when a winning mutual pair is selected, and final dinner reminders. The app remains the source of truth. No promotional email campaign is part of joining.',
   },
 ];
 

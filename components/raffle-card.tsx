@@ -27,7 +27,11 @@ export default function RaffleCard() {
   } else if (s.draw?.myAccepted && !s.draw.bothAccepted) {
     border = accent = '#2563ff'; head = `you’re in — waiting on ${other}.`; sub = `as soon as ${other} accepts, it’s locked for ${ev.dateLabel}.`; label = 'view your entry →';
   } else if (s.entered) {
-    head = 'you’re in the dating experiment. ✓'; sub = `shortlists form ${ev.drawLabel}; we’ll ping you if you receive one or two private options.`; label = 'view your entry →';
+    head = s.outcome?.state === 'round-waiting' ? 'your entry is still active. ✓' : 'you’re in the dating experiment. ✓';
+    sub = s.outcome?.state === 'round-waiting'
+      ? `Round ${s.shortlistRound?.roundNumber || 1} is underway. There was no reciprocal option for you in this shortlist, and we’ll keep checking if another round is needed.`
+      : `shortlists form ${ev.drawLabel}; we’ll update you when your round status changes.`;
+    label = 'view your entry →';
   } else if (ev.closed) {
     head = 'experiment entries are closed.'; sub = 'watch here for the next dinner round.'; label = '';
   } else if (!ev.entriesOpen) {

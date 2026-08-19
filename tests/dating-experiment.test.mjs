@@ -300,6 +300,8 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(email, /Your Dating Experiment shortlist is ready/);
   assert.match(email, /Your shortlist closes in one hour/);
   assert.match(email, /Your Dating Experiment dinner is confirmed/);
+  assert.match(email, /Your Dating Experiment entry is still active/);
+  assert.match(email, /DATING_EXPERIMENT_WAITING_EMAIL_APPROVAL_VERSION/);
   assert.match(email, /email_campaign_deliveries/);
   assert.match(email, /idempotencyKey: `\$\{args\.campaignKey\}-\$\{user\.id\}`/);
   assert.match(email, /DELIVERY_CAMPAIGN_KEY_RE = \/\^\[a-z0-9_\]\{1,80\}\$\//);
@@ -310,6 +312,9 @@ test('morning selection uses approved idempotent email, a six-hour first round, 
   assert.match(draw, /if \(!initialDelivery\.approved\)[\s\S]*selection email approval is missing/);
   assert.match(draw, /initialDelivery\.failed > 0/);
   assert.match(draw, /reminderDelivery\.failed > 0/);
+  assert.match(draw, /eligibleWaitingEntryIds\(event\)/);
+  assert.match(draw, /sendDatingExperimentWaitingEmails/);
+  assert.match(draw, /waitingDelivery\.approved && waitingDelivery\.failed > 0/);
   assert.match(draw, /unansweredParticipantIds\(pairs\)/);
   assert.match(draw, /existingWinners\.length >= event\.winner_pair_limit/);
   assert.match(draw, /existingWinnerIds\.has\(entry\.user_id\)/);

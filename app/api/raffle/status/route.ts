@@ -94,16 +94,17 @@ export async function GET() {
       .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
       .order('created_at', { ascending: false });
     if (offerRowsError) throw offerRowsError;
-    const activeRoundId = offerRows?.[0]?.round_id;
+    const { data: currentRound, error: currentRoundError } = await supabaseAdmin.from('dating_experiment_rounds')
+      .select('id, round_number, status, response_deadline')
+      .eq('event_key', RAFFLE.key)
+      .in('status', ['collecting', 'resolving'])
+      .order('round_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (currentRoundError) throw currentRoundError;
+    const activeRoundId = currentRound?.id;
     const activeOffers = activeRoundId ? (offerRows ?? []).filter((row) => row.round_id === activeRoundId) : [];
-    if (activeRoundId) {
-      const { data: round, error: roundError } = await supabaseAdmin.from('dating_experiment_rounds')
-        .select('id, round_number, status, response_deadline')
-        .eq('id', activeRoundId)
-        .in('status', ['collecting', 'resolving'])
-        .maybeSingle();
-      if (roundError) throw roundError;
-      if (round) {
+    if (currentRound) {
         shortlist = (await Promise.all(activeOffers.map(async (offer) => {
           const isA = offer.user_a_id === user.id;
           const candidateId = isA ? offer.user_b_id : offer.user_a_id;
@@ -116,13 +117,13 @@ export async function GET() {
           };
         }))).filter((offer) => offer.candidate != null);
         shortlistRound = {
-          id: round.id,
-          roundNumber: round.round_number,
-          status: round.status,
-          responseDeadline: round.response_deadline,
+          id: currentRound.id,
+          roundNumber: currentRound.round_number,
+          status: currentRound.status,
+          responseDeadline: currentRound.response_deadline,
+          hasOptions: shortlist.length > 0,
           allResponded: shortlist.length > 0 && shortlist.every((offer) => offer.myAccepted !== null),
         };
-      }
     }
 
     const { data: draws, error: drawsError } = await supabaseAdmin.from('raffle_draws').select('*')
@@ -184,7 +185,7 @@ export async function GET() {
         : entry?.status === 'withdrawn'
           ? { state: 'withdrawn' }
           : entered
-            ? { state: 'waiting' }
+            ? { state: shortlistRound && !shortlist.length ? 'round-waiting' : 'waiting' }
             : null;
 
   return NextResponse.json({

@@ -2,6 +2,7 @@ import { button, escapeHtml, renderEmail, sendEmail } from '@/lib/email';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export const DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION = 'dating-experiment-selection-v1-2026-08-19';
+export const DATING_EXPERIMENT_WAITING_EMAIL_APPROVAL_VERSION = 'dating-experiment-waiting-v1-2026-08-19';
 
 export const DATING_EXPERIMENT_EMAIL_COPY = {
   shortlist: {
@@ -15,6 +16,12 @@ export const DATING_EXPERIMENT_EMAIL_COPY = {
     preheader: 'Choose Yes or Pass by {{deadline}}.',
     body: 'You still have time to review your private shortlist. Choose Yes or Pass before the window closes.',
     cta: 'REVIEW MY SHORTLIST →',
+  },
+  waiting: {
+    subject: 'Your Dating Experiment entry is still active',
+    preheader: 'No action needed. We’re keeping you in consideration.',
+    body: 'Your entry is still active. We didn’t find a reciprocal option that fit your preferences in this round, so we’ll keep checking if another round is needed. You don’t need to do anything right now.',
+    cta: 'CHECK MY ENTRY →',
   },
   winner: {
     subject: 'Your Dating Experiment dinner is confirmed',
@@ -56,6 +63,10 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
 
 function emailsApproved(): boolean {
   return process.env.DATING_EXPERIMENT_SELECTION_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION;
+}
+
+function waitingEmailsApproved(): boolean {
+  return process.env.DATING_EXPERIMENT_WAITING_EMAIL_APPROVAL_VERSION === DATING_EXPERIMENT_WAITING_EMAIL_APPROVAL_VERSION;
 }
 
 function firstName(name: string | null | undefined): string {
@@ -199,9 +210,10 @@ async function deliver(args: {
   campaignKey: string;
   eventKey: string;
   recipientIds: string[];
+  approved: boolean;
   content: (user: UserRow & { email: string }) => { subject: string; html: string };
 }): Promise<DeliveryResult> {
-  if (!emailsApproved()) return { approved: false, eligible: 0, claimed: 0, sent: 0, failed: 0 };
+  if (!args.approved) return { approved: false, eligible: 0, claimed: 0, sent: 0, failed: 0 };
   const recipients = await loadRecipients([...new Set(args.recipientIds)], args.eventKey);
   const eligible = [...recipients.values()].filter(activeEmailUser);
   let claimed = 0;
@@ -246,12 +258,36 @@ export async function sendDatingExperimentShortlistEmails(args: {
     campaignKey,
     eventKey: args.eventKey,
     recipientIds: args.recipientIds,
+    approved: emailsApproved(),
     content: (user) => ({
       subject: template.subject,
       html: renderEmail({
         preheader: template.preheader.replace('{{deadline}}', deadline),
         recipientId: user.id,
         bodyHtml: `<p style="margin:0 0 20px 0;">${escapeHtml(template.body.replaceAll('{{deadline}}', deadline))}</p>${button({ href: destination, label: template.cta })}`,
+      }),
+    }),
+  });
+}
+
+export async function sendDatingExperimentWaitingEmails(args: {
+  eventKey: string;
+  roundNumber: number;
+  recipientIds: string[];
+}): Promise<DeliveryResult> {
+  const template = DATING_EXPERIMENT_EMAIL_COPY.waiting;
+  const destination = `${SITE_URL}/dating-experiment?from=round-status-email`;
+  return deliver({
+    campaignKey: eventCampaignKey(args.eventKey, `waiting_r${args.roundNumber}`),
+    eventKey: args.eventKey,
+    recipientIds: args.recipientIds,
+    approved: waitingEmailsApproved(),
+    content: (user) => ({
+      subject: template.subject,
+      html: renderEmail({
+        preheader: template.preheader,
+        recipientId: user.id,
+        bodyHtml: `<p style="margin:0 0 20px 0;">${escapeHtml(template.body)}</p>${button({ href: destination, label: template.cta })}`,
       }),
     }),
   });
@@ -281,6 +317,7 @@ export async function sendDatingExperimentWinnerEmails(args: {
       campaignKey: eventCampaignKey(args.eventKey, `winner_slot_${draw.winner_slot}`),
       eventKey: args.eventKey,
       recipientIds: [draw.user_a_id, draw.user_b_id],
+      approved: emailsApproved(),
       content: (user) => {
         const ownDraw = drawsByUser.get(user.id)!;
         const partnerId = ownDraw.user_a_id === user.id ? ownDraw.user_b_id : ownDraw.user_a_id;

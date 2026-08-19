@@ -3,6 +3,7 @@ import { RAFFLE, raffleScore, pairSelectionWeight, raffleEligible } from '@/lib/
 import { sendPushToUser } from '@/lib/push';
 import {
   sendDatingExperimentShortlistEmails,
+  sendDatingExperimentWaitingEmails,
   sendDatingExperimentWinnerEmails,
 } from '@/lib/dating-experiment-email';
 import { randomInt } from 'crypto';
@@ -114,6 +115,20 @@ async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, 
   if (initialDelivery.failed > 0) {
     throw new Error(`Dating Experiment shortlist email failed for ${initialDelivery.failed} recipient(s)`);
   }
+  const waitingRecipientIds = await eligibleWaitingEntryIds(event);
+  if (waitingRecipientIds.length) {
+    const waitingDelivery = await sendDatingExperimentWaitingEmails({
+      eventKey: event.event_key,
+      roundNumber: round.round_number,
+      recipientIds: waitingRecipientIds,
+    });
+    // This is a separately approved message. Until its copy is approved, the
+    // round continues and the PWA remains the source of truth. Once approved,
+    // the hourly idempotent recovery sends it exactly once per entrant/round.
+    if (waitingDelivery.approved && waitingDelivery.failed > 0) {
+      throw new Error(`Dating Experiment waiting-status email failed for ${waitingDelivery.failed} recipient(s)`);
+    }
+  }
   if (deadline - Date.now() <= HOUR_MS) {
     const reminderDelivery = await sendDatingExperimentShortlistEmails({
       eventKey: event.event_key,
@@ -129,6 +144,41 @@ async function ensureRoundEmails(event: DatingExperimentEvent, round: RoundRow, 
       throw new Error(`Dating Experiment shortlist reminder failed for ${reminderDelivery.failed} recipient(s)`);
     }
   }
+}
+
+async function eligibleWaitingEntryIds(event: DatingExperimentEvent): Promise<string[]> {
+  const { data: entries, error: entriesError } = await supabaseAdmin.from('raffle_entries')
+    .select('user_id, attempts, questionnaire, terms_version')
+    .eq('event_key', event.event_key)
+    .eq('status', 'entered')
+    .eq('terms_version', event.terms_version);
+  if (entriesError) throw entriesError;
+  const eligibleEntries = (entries ?? []).filter((entry: any) => (entry.attempts ?? 0) < event.max_attempts);
+  if (!eligibleEntries.length) return [];
+  const entryByUser = new Map(eligibleEntries.map((entry: any) => [entry.user_id, entry]));
+  const { data: users, error: usersError } = await supabaseAdmin.from('users')
+    .select(COLS)
+    .in('id', eligibleEntries.map((entry: any) => entry.user_id));
+  if (usersError) throw usersError;
+  const adminEmails = new Set(getAdminEmails());
+  return ((users as any[]) ?? [])
+    .filter((user) => user.is_test !== true
+      && user.is_blocked !== true
+      && !user.deleted_at
+      && !adminEmails.has(String(user.email || '').trim().toLowerCase())
+      && user.photo_url
+      && user.archetype
+      && raffleEligible(user, { centerZip: event.center_zip, radiusMiles: Number(event.radius_miles) }))
+    .map((user) => {
+      const preferences = resolveExperimentPreferences(user, (entryByUser.get(user.id) as any)?.questionnaire ?? null);
+      return { user, preferences };
+    })
+    .filter(({ preferences }) => preferences.gender
+      && preferences.orientation
+      && preferences.seekingGenders.length
+      && preferences.ageMin != null
+      && preferences.ageMax != null)
+    .map(({ user }) => user.id);
 }
 
 async function ensureWinnerEmails(event: DatingExperimentEvent, winners: WinnerRow[]): Promise<void> {
