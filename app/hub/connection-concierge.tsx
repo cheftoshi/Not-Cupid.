@@ -1,7 +1,12 @@
 'use client';
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
-import type { ConciergeRecommendation } from '@/lib/connection-concierge';
+import type {
+  ConciergeBrief,
+  ConciergeRecommendation,
+  ConnectionMemory,
+  ConnectionMemorySuggestion,
+} from '@/lib/connection-concierge';
 import { HUB_CONCIERGE_VERSION } from '@/lib/connection-concierge';
 import styles from './hub-shell.module.css';
 
@@ -11,18 +16,37 @@ type LocalMessage = {
   body: string;
   recommendation?: ConciergeRecommendation | null;
   dismissed?: boolean;
+  memoryHandled?: boolean;
 };
 
 const STORAGE_KEY = `nc-hub-concierge-${HUB_CONCIERGE_VERSION}`;
 const QUICK_STARTS = [
-  { label: 'find me a date', prompt: 'What is my best next move in Love right now?' },
-  { label: 'do something nearby', prompt: 'Find me one real thing to do around me.' },
-  { label: 'meet new friends', prompt: 'Help me make a friend or start a small social plan.' },
-  { label: 'find a community', prompt: 'Help me find a club or community I could actually join.' },
+  { label: 'find my next Love move', prompt: 'What is my best next move in Love right now?' },
+  { label: 'make a plan nearby', prompt: 'Find me one real thing I could do nearby.' },
+  { label: 'meet new people', prompt: 'Help me meet a new friend or find a community.' },
 ];
+const CORRECTIONS = [
+  { key: 'too_far', label: 'too far', prompt: 'That suggestion is too far away. Give me a closer option.' },
+  { key: 'wrong_vibe', label: 'wrong vibe', prompt: 'That suggestion is not the vibe I want. Try a different direction.' },
+  { key: 'not_tonight', label: 'not tonight', prompt: 'Not tonight. Give me a better move for another day.' },
+  { key: 'smaller_group', label: 'smaller group', prompt: 'I would rather do something one-on-one or with a smaller group.' },
+] as const;
+
+const FALLBACK_BRIEF: ConciergeBrief = {
+  headline: 'I’m looking across your options.',
+  message: 'Tell me who you want to meet or what you want to do. I’ll give you one useful next move.',
+  signals: [],
+};
 
 function localMessage(role: LocalMessage['role'], body: string, recommendation?: ConciergeRecommendation | null): LocalMessage {
   return { id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, role, body, recommendation };
+}
+
+function memoryLabel(category: ConnectionMemory['category']): string {
+  return ({
+    goal: 'goal', preference: 'preference', boundary: 'boundary', availability: 'availability',
+    location: 'location', coaching_style: 'how to coach me', current_context: 'right now',
+  })[category];
 }
 
 export default function ConnectionConcierge({
@@ -35,6 +59,9 @@ export default function ConnectionConcierge({
   initialConsented: boolean;
 }) {
   const [messages, setMessages] = useState<LocalMessage[]>([]);
+  const [brief, setBrief] = useState<ConciergeBrief>(FALLBACK_BRIEF);
+  const [briefLoading, setBriefLoading] = useState(true);
+  const [memories, setMemories] = useState<ConnectionMemory[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [consented, setConsented] = useState(initialConsented);
@@ -42,22 +69,35 @@ export default function ConnectionConcierge({
   const [error, setError] = useState('');
   const [showControls, setShowControls] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw);
-      if (Array.isArray(saved)) {
-        setMessages(saved.filter((message: any) =>
-          message && ['user', 'assistant'].includes(message.role) && typeof message.body === 'string'
-        ).slice(-8));
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (Array.isArray(saved)) {
+          setMessages(saved.filter((message: any) =>
+            message && ['user', 'assistant'].includes(message.role) && typeof message.body === 'string'
+          ).slice(-12));
+        }
       }
     } catch { /* a broken local draft should never block the Hub */ }
+
+    fetch('/api/concierge', { cache: 'no-store' })
+      .then(async (response) => ({ ok: response.ok, body: await response.json().catch(() => ({})) }))
+      .then(({ ok, body }) => {
+        if (!ok) return;
+        if (body.brief?.headline && body.brief?.message) setBrief(body.brief);
+        if (Array.isArray(body.memories)) setMemories(body.memories);
+        setConsented(body.consented === true);
+      })
+      .catch(() => {})
+      .finally(() => setBriefLoading(false));
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-8))); } catch { /* private mode */ }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-12))); } catch { /* private mode */ }
     endRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [messages, busy]);
 
@@ -72,7 +112,7 @@ export default function ConnectionConcierge({
 
     const previous = messages.slice(-6).map((entry) => ({ role: entry.role, body: entry.body }));
     const userMessage = localMessage('user', message);
-    setMessages((current) => [...current, userMessage].slice(-8));
+    setMessages((current) => [...current, userMessage].slice(-12));
     setInput('');
     setPendingConsentMessage('');
     setBusy(true);
@@ -91,15 +131,19 @@ export default function ConnectionConcierge({
         return;
       }
       if (!response.ok || !body.recommendation) {
-        setError(body.error || 'The concierge could not answer. Your app is still available below.');
+        setError(body.error || 'I could not answer that. Try again in a moment.');
         return;
       }
       setConsented(true);
-      setMessages((current) => [...current, localMessage('assistant', body.recommendation.message, body.recommendation)].slice(-8));
+      setMessages((current) => [
+        ...current,
+        localMessage('assistant', body.recommendation.message, body.recommendation),
+      ].slice(-12));
     } catch {
-      setError('The concierge could not connect. Your Love and Friend lines are still available below.');
+      setError('I could not connect. Your Love and Friend tabs are still available above.');
     } finally {
       setBusy(false);
+      window.setTimeout(() => inputRef.current?.focus(), 50);
     }
   }
 
@@ -125,12 +169,56 @@ export default function ConnectionConcierge({
     }).catch(() => {});
   }
 
-  function dismiss(messageId: string, recommendation: ConciergeRecommendation) {
+  function correct(messageId: string, recommendation: ConciergeRecommendation, correction: typeof CORRECTIONS[number]) {
     recordOutcome(recommendation, 'dismissed');
-    setMessages((current) => [
-      ...current.map((message) => message.id === messageId ? { ...message, dismissed: true } : message),
-      localMessage('assistant', 'Got it. Tell me what was off—timing, distance, the kind of person, or the kind of plan—and I’ll take a different route.'),
-    ].slice(-8));
+    setMessages((current) => current.map((message) => message.id === messageId ? { ...message, dismissed: true } : message));
+    void fetch('/api/concierge', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'correction',
+        correction: correction.key,
+        recommendationId: recommendation.recommendationId,
+      }),
+    }).catch(() => {});
+    void ask(correction.prompt);
+  }
+
+  async function remember(messageId: string, suggestion: ConnectionMemorySuggestion) {
+    setError('');
+    try {
+      const response = await fetch('/api/concierge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'remember', memory: suggestion }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.memory) throw new Error('failed');
+      setMemories((current) => [body.memory, ...current.filter((memory) => memory.id !== body.memory.id)]);
+      setMessages((current) => current.map((message) => message.id === messageId ? { ...message, memoryHandled: true } : message));
+    } catch {
+      setError('I could not save that memory. Try again.');
+    }
+  }
+
+  function skipMemory(messageId: string) {
+    setMessages((current) => current.map((message) => message.id === messageId ? { ...message, memoryHandled: true } : message));
+  }
+
+  async function forget(memoryId: string) {
+    const response = await fetch('/api/concierge', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'forget', memoryId }),
+    }).catch(() => null);
+    if (response?.ok) setMemories((current) => current.filter((memory) => memory.id !== memoryId));
+    else setError('I could not forget that yet. Try again.');
+  }
+
+  function clearChat() {
+    setMessages([]);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    setShowControls(false);
   }
 
   async function revokeConsent() {
@@ -141,28 +229,62 @@ export default function ConnectionConcierge({
       });
       if (!response.ok) throw new Error('failed');
       setConsented(false);
-      setMessages([]);
-      setShowControls(false);
-      try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+      clearChat();
     } catch { setError('AI controls could not be updated. Try again.'); }
   }
 
   return (
     <section className={styles.conciergeShell} aria-labelledby="concierge-title">
-      <div className={styles.conciergeHead}>
+      <header className={styles.conciergeHead}>
         <div className={styles.conciergeMark} aria-hidden>✦</div>
-        <div>
-          <span>notcupid concierge · first look</span>
-          <h1 id="concierge-title">what do you want to do, {firstName}?</h1>
-          <p>One conversation for Love, friends, plans, communities, and wherever you&apos;re going next.</p>
+        <div className={styles.conciergeIdentity}>
+          <span>notcupid concierge</span>
+          <h1 id="concierge-title">I’m your AI connection concierge.</h1>
+          <p>{city ? `Live context for ${city.split(',')[0]}.` : 'Live context from your NotCupid account.'} You choose every action.</p>
         </div>
-        <div className={styles.conciergeStatus}><i /> {city ? `live in ${city.split(',')[0]}` : 'live'}</div>
-      </div>
+        <button className={styles.conciergeControlButton} type="button" onClick={() => setShowControls((current) => !current)} aria-expanded={showControls}>
+          {memories.length ? `memory · ${memories.length}` : 'AI controls'}
+        </button>
+      </header>
+
+      {showControls && (
+        <aside className={styles.conciergeControls} aria-label="AI and memory controls">
+          <div className={styles.conciergeControlsHead}>
+            <div>
+              <strong>What I remember</strong>
+              <p>Only facts you explicitly approve appear here. Raw chat stays on this device.</p>
+            </div>
+            <button type="button" onClick={() => setShowControls(false)} aria-label="Close AI controls">close</button>
+          </div>
+          {memories.length ? (
+            <div className={styles.conciergeMemoryList}>
+              {memories.map((memory) => (
+                <div key={memory.id}>
+                  <span>{memoryLabel(memory.category)}</span>
+                  <p>{memory.value}</p>
+                  <button type="button" onClick={() => void forget(memory.id)}>forget</button>
+                </div>
+              ))}
+            </div>
+          ) : <p className={styles.conciergeMemoryEmpty}>Nothing saved yet.</p>}
+          <div className={styles.conciergeControlActions}>
+            {messages.length > 0 && <button type="button" onClick={clearChat}>clear this chat</button>}
+            {consented && <button type="button" onClick={() => void revokeConsent()}>turn off AI</button>}
+            <a href="/privacy#ai-features">privacy details</a>
+          </div>
+        </aside>
+      )}
 
       <div className={styles.conciergeBody} aria-live="polite">
-        <div className={`${styles.conciergeBubble} ${styles.conciergeAssistant}`}>
-          <small>concierge</small>
-          <p>I&apos;ll use what is actually available in your app and give you one next move. What outcome are you looking for right now?</p>
+        <div className={`${styles.conciergeBubble} ${styles.conciergeAssistant} ${styles.conciergeBrief}`}>
+          <small>{briefLoading ? 'checking what is live' : 'your connection brief'}</small>
+          <strong>{brief.headline}</strong>
+          <p>{brief.message}</p>
+          {brief.signals.length > 0 && (
+            <div className={styles.conciergeSignals}>
+              {brief.signals.map((signal) => <span key={signal}>{signal}</span>)}
+            </div>
+          )}
         </div>
 
         {messages.map((message) => (
@@ -170,16 +292,37 @@ export default function ConnectionConcierge({
             <small>{message.role === 'user' ? 'you' : 'concierge'}</small>
             <p>{message.body}</p>
             {message.recommendation && !message.dismissed && (
-              <div className={styles.conciergeRecommendation}>
+              <>
                 {message.recommendation.href && (
-                  <a href={message.recommendation.href} onClick={() => recordOutcome(message.recommendation!, 'acted')}>
-                    {message.recommendation.cta || 'open it'} <span>→</span>
-                  </a>
+                  <div className={styles.conciergeRecommendation}>
+                    <a href={message.recommendation.href} onClick={() => recordOutcome(message.recommendation!, 'acted')}>
+                      {message.recommendation.cta || 'open it'} <span>→</span>
+                    </a>
+                  </div>
                 )}
-                <button type="button" onClick={() => dismiss(message.id, message.recommendation!)}>not for me</button>
+                <div className={styles.conciergeCorrections} aria-label="Correct this suggestion">
+                  <span>not quite?</span>
+                  {CORRECTIONS.map((correction) => (
+                    <button key={correction.key} type="button" onClick={() => correct(message.id, message.recommendation!, correction)}>
+                      {correction.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {message.recommendation?.memorySuggestion && !message.memoryHandled && (
+              <div className={styles.conciergeRemember}>
+                <span>Remember this for next time?</span>
+                <p>{message.recommendation.memorySuggestion.value}</p>
+                <div>
+                  <button type="button" onClick={() => void remember(message.id, message.recommendation!.memorySuggestion!)}>remember this</button>
+                  <button type="button" onClick={() => skipMemory(message.id)}>not now</button>
+                </div>
               </div>
             )}
-            {message.dismissed && <em className={styles.conciergeDismissed}>dismissed · tell me what was off</em>}
+            {message.memoryHandled && message.recommendation?.memorySuggestion && (
+              <em className={styles.conciergeSaved}>memory choice recorded</em>
+            )}
           </div>
         ))}
 
@@ -203,7 +346,7 @@ export default function ConnectionConcierge({
         <div className={styles.conciergeConsent} role="dialog" aria-label="AI data permission">
           <div>
             <strong>Before I answer</strong>
-            <p>NotCupid will send the words you type, your first name, broad interests, city, and available in-app options to OpenAI through its API. We do not send your email, exact ZIP, raw quiz answers, or private Love/Friend messages. Nothing is accepted, joined, posted, or sent without you.</p>
+            <p>I’ll send what you type plus limited profile and live in-app context to OpenAI. I won’t send your email, exact ZIP, raw quiz answers, or private messages. Saved memory requires a separate tap and stays visible in AI controls.</p>
           </div>
           <div className={styles.conciergeConsentActions}>
             <button type="button" onClick={() => void ask(pendingConsentMessage, true)} disabled={busy}>agree &amp; ask</button>
@@ -214,12 +357,13 @@ export default function ConnectionConcierge({
 
       <form className={styles.conciergeComposer} onSubmit={submit}>
         <textarea
+          ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onInputKeyDown}
           maxLength={400}
           rows={1}
-          placeholder="Ask for a date, a friend, a plan, a club, or a new city…"
+          placeholder="What do you want to do?"
           aria-label="Message your NotCupid concierge"
           disabled={busy}
         />
@@ -227,17 +371,10 @@ export default function ConnectionConcierge({
       </form>
 
       {error && <p className={styles.conciergeError}>{error}</p>}
-      <div className={styles.conciergeFoot}>
-        <span>conversation stays on this device · AI can be wrong · you choose every action</span>
-        <button type="button" onClick={() => setShowControls((current) => !current)}>AI controls</button>
-      </div>
-      {showControls && (
-        <div className={styles.conciergeControls}>
-          <p>{consented ? 'The Hub concierge is allowed to use the limited context described above.' : 'The Hub concierge is off until you agree before an ask.'}</p>
-          {consented && <button type="button" onClick={() => void revokeConsent()}>turn off &amp; clear this conversation</button>}
-          <a href="/privacy#ai-features">privacy details →</a>
-        </div>
-      )}
+      <footer className={styles.conciergeFoot}>
+        <span>AI can be wrong. Nothing is sent, joined, or booked for you.</span>
+        <button type="button" onClick={() => setShowControls(true)}>your memory</button>
+      </footer>
     </section>
   );
 }

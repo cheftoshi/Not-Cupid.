@@ -6,7 +6,7 @@ import CorpFooter from './corp-footer';
 // One permanent footer for the whole app — mounted once in the root layout.
 // Hidden on the few intentionally-dark/immersive surfaces that carry their own
 // footer (the cinematic friend-pack page + the dark /pro sales page).
-const HIDE = ['/friends/pack', '/pro', '/match'];
+const HIDE = ['/hub', '/friends/pack', '/pro', '/match'];
 
 export default function SiteFooter() {
   const pathname = usePathname() || '';

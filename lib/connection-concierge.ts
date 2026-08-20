@@ -1,8 +1,8 @@
 // Bumped when the disclosed AI processor changed so an earlier consent cannot
 // silently authorize a new data boundary.
-export const HUB_CONCIERGE_VERSION = 'hub-concierge-openai-v2-2026-08-18';
-export const HUB_CONCIERGE_RANKER_VERSION = 'hub-action-policy-v1';
-export const HUB_CONCIERGE_EXPLANATION_VERSION = 'hub-concierge-copy-openai-v2';
+export const HUB_CONCIERGE_VERSION = 'hub-concierge-openai-v3-2026-08-19';
+export const HUB_CONCIERGE_RANKER_VERSION = 'hub-action-policy-v2';
+export const HUB_CONCIERGE_EXPLANATION_VERSION = 'hub-concierge-copy-openai-v3';
 
 export type ConciergeIntent =
   | 'love'
@@ -61,6 +61,31 @@ export type ConciergeInventory = {
   plans: ConciergePlanOption[];
 };
 
+export const CONNECTION_MEMORY_CATEGORIES = [
+  'goal', 'preference', 'boundary', 'availability', 'location',
+  'coaching_style', 'current_context',
+] as const;
+export type ConnectionMemoryCategory = typeof CONNECTION_MEMORY_CATEGORIES[number];
+export type ConnectionMemorySuggestion = {
+  shouldRemember: boolean;
+  category: ConnectionMemoryCategory;
+  key: string;
+  value: string;
+  expiresInDays: number;
+};
+export type ConnectionMemory = {
+  id: string;
+  category: ConnectionMemoryCategory;
+  key: string;
+  value: string;
+  expiresAt: string | null;
+};
+export type ConciergeBrief = {
+  headline: string;
+  message: string;
+  signals: string[];
+};
+
 export type ConciergeRecommendation = {
   intent: ConciergeIntent;
   message: string;
@@ -72,6 +97,7 @@ export type ConciergeRecommendation = {
   source: 'ai' | 'curated';
   href: string | null;
   recommendationId?: string | null;
+  memorySuggestion?: ConnectionMemorySuggestion | null;
 };
 
 const INTENTS = new Set<ConciergeIntent>(['love', 'friendship', 'plan', 'community', 'travel', 'profile', 'general']);
@@ -80,6 +106,7 @@ const ACTIONS = new Set<ConciergeAction>([
   'join_friend_line', 'open_friend_home', 'open_friend_pack', 'open_friend_chat',
   'open_friend_plan', 'open_friend_scene', 'open_communities', 'open_travel', 'none',
 ]);
+const MEMORY_CATEGORIES = new Set<ConnectionMemoryCategory>(CONNECTION_MEMORY_CATEGORIES);
 
 export function cleanConciergeText(value: unknown, max = 360): string {
   if (typeof value !== 'string') return '';
@@ -94,6 +121,91 @@ export function conciergeIntentFromText(value: string): ConciergeIntent {
   if (/friend|friendship|crew|buddy|people to meet/.test(text)) return 'friendship';
   if (/tonight|weekend|plan|event|activity|things to do|something to do|go out|near me|around me/.test(text)) return 'plan';
   return 'general';
+}
+
+export function connectionBrief(inventory: ConciergeInventory): ConciergeBrief {
+  const needsAnswer = inventory.love.filter((option) => option.state === 'needs_answer');
+  const openChats = inventory.love.filter((option) => option.state === 'chat_open');
+  const waiting = inventory.love.filter((option) => option.state === 'waiting');
+  const signals: string[] = [];
+  if (needsAnswer.length) signals.push(`${needsAnswer.length} ${needsAnswer.length === 1 ? 'choice' : 'choices'} waiting`);
+  if (openChats.length) signals.push(`${openChats.length} open ${openChats.length === 1 ? 'chat' : 'chats'}`);
+  if (inventory.plans.length) signals.push(`${inventory.plans.length} nearby ${inventory.plans.length === 1 ? 'plan' : 'plans'}`);
+  if (inventory.sealedFriendCount) signals.push(`${inventory.sealedFriendCount} new Friend ${inventory.sealedFriendCount === 1 ? 'connection' : 'connections'}`);
+  if (!signals.length && waiting.length) signals.push(`${waiting.length} Love ${waiting.length === 1 ? 'choice' : 'choices'} pending`);
+
+  if (needsAnswer[0]) return {
+    headline: 'There is a real choice waiting.',
+    message: `${needsAnswer[0].name} has already chosen you. You can answer that first, or tell me what kind of connection you want today.`,
+    signals: signals.slice(0, 3),
+  };
+  if (openChats[0]) return {
+    headline: 'You already have somewhere to start.',
+    message: `Your conversation with ${openChats[0].name} is open${inventory.plans[0] ? `, and ${inventory.plans[0].title} is happening nearby` : ''}. Tell me what kind of next move would feel useful.`,
+    signals: signals.slice(0, 3),
+  };
+  if (inventory.plans[0]) return {
+    headline: `Here is what is moving around ${inventory.city}.`,
+    message: `${inventory.plans[0].title} is one live option. Tell me who you want to meet or what you feel like doing, and I’ll narrow it down.`,
+    signals: signals.slice(0, 3),
+  };
+  if (!inventory.profileReady) return {
+    headline: 'Your next useful move is getting clearer.',
+    message: 'Your profile still needs a few basics. I can help you finish it, or you can tell me what kind of connection you want first.',
+    signals: ['profile needs attention'],
+  };
+  return {
+    headline: `I’m looking across ${inventory.city} with you.`,
+    message: 'Tell me what you want right now: someone to date, a new friend, a plan, or a community. I’ll give you one useful next move.',
+    signals: signals.slice(0, 3),
+  };
+}
+
+function memoryKey(value: string): string {
+  const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 54);
+  return `memory-${slug || 'preference'}`;
+}
+
+function containsDirectIdentifier(value: string): boolean {
+  const digits = value.replace(/\D/g, '');
+  return /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(value)
+    || /\bhttps?:\/\/|\bwww\./i.test(value)
+    || /\b\d{3}-\d{2}-\d{4}\b/.test(value)
+    || /\b\d{5}(?:-\d{4})?\b/.test(value)
+    || digits.length >= 7
+    || /\b(?:password|passcode|api[_ -]?key|secret|token)\b\s*[:=]/i.test(value);
+}
+
+export function explicitMemorySuggestion(message: string): ConnectionMemorySuggestion | null {
+  const match = cleanConciergeText(message, 400).match(/^remember(?:\s+that)?\s+(.{3,240})$/i);
+  if (!match) return null;
+  const value = cleanConciergeText(match[1], 240);
+  if (!value) return null;
+  return normalizeConnectionMemorySuggestion({
+    shouldRemember: true,
+    category: 'preference',
+    key: memoryKey(value),
+    value,
+    expiresInDays: 0,
+  });
+}
+
+export function normalizeConnectionMemorySuggestion(value: any): ConnectionMemorySuggestion | null {
+  if (!value || value.shouldRemember !== true || !MEMORY_CATEGORIES.has(value.category)) return null;
+  const memoryValue = cleanConciergeText(value.value, 240);
+  if (!memoryValue || containsDirectIdentifier(memoryValue)) return null;
+  const rawKey = cleanConciergeText(value.key, 80).toLowerCase()
+    .replace(/[^a-z0-9_-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  const expires = Number.isFinite(value.expiresInDays) ? Math.round(value.expiresInDays) : 0;
+  return {
+    shouldRemember: true,
+    category: value.category,
+    key: rawKey || memoryKey(memoryValue),
+    value: memoryValue,
+    expiresInDays: Math.max(0, Math.min(3650, expires)),
+  };
 }
 
 function recommendation(
@@ -246,5 +358,6 @@ export function normalizeConciergeRecommendation(
     confidence: ['low', 'medium', 'high'].includes(value.confidence) ? value.confidence : 'medium',
     source: 'ai',
     href,
+    memorySuggestion: normalizeConnectionMemorySuggestion(value.memorySuggestion),
   };
 }

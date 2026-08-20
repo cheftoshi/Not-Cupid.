@@ -46,13 +46,14 @@ test('AI safety identifier is stable, opaque, and never the raw account id', () 
   assert.match(first, /^[a-f0-9]{64}$/);
 });
 
-test('the provider change requires fresh Hub consent and is disclosed', () => {
+test('the current AI data boundary requires fresh Hub consent and is disclosed', () => {
   const policy = read('../app/privacy/page.tsx');
   const client = read('../app/hub/connection-concierge.tsx');
   const contract = read('../lib/connection-concierge.ts');
 
-  assert.match(contract, /hub-concierge-openai-v2-2026-08-18/);
-  assert.match(client, /to OpenAI through its API/);
+  assert.match(contract, /hub-concierge-openai-v3-2026-08-19/);
+  assert.match(client, /to OpenAI/);
+  assert.match(client, /Saved memory requires a separate tap/);
   assert.match(policy, /Responses API application-state storage/);
   assert.match(policy, /abuse-monitoring logs for up to 30 days/);
   assert.doesNotMatch(`${policy}\n${client}`, /Anthropic/);

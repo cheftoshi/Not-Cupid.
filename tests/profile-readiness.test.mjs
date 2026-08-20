@@ -30,9 +30,10 @@ test('missing profile card items are exact and actionable', () => {
 });
 
 test('completion cards open the profile directly in edit mode', () => {
-  const hub = readFileSync(new URL('../app/hub/hub-client.tsx', import.meta.url), 'utf8');
+  const concierge = readFileSync(new URL('../lib/connection-concierge.ts', import.meta.url), 'utf8');
   const dashboard = readFileSync(new URL('../app/dashboard/page.tsx', import.meta.url), 'utf8');
-  assert.match(hub, /\/profile\?mode=edit&from=hub-completion/);
+  assert.match(concierge, /\/profile\?mode=edit&from=hub-concierge/);
   assert.match(dashboard, /\/profile\?mode=edit&from=love-completion/);
-  assert.match(hub, /Still missing:/);
+  assert.match(concierge, /if \(!inventory\.profileReady\)/);
+  assert.match(concierge, /finish my profile/);
 });

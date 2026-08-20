@@ -153,11 +153,18 @@ supersede them.
   recommendation → two honest reasons → one action or dismissal → a small
   outcome check-in. Keep Love/Friend direct access; the concierge is a front
   door, never a gate.
-- The Hub now contains the consent-gated `hub-concierge-openai-v2-2026-08-18`
-  conversation shell. It can route a user to one validated Love, Friend, plan,
-  community, profile, or travel action drawn from live inventory; conversation
-  text stays on the current device and only structured intent/recommendation
-  metadata is persisted. Preserve that bounded contract as the feature grows.
+- The Hub is the focused, text-only AI front door through the consent-gated
+  `hub-concierge-openai-v3-2026-08-19` contract. It opens with a deterministic
+  live Connection Brief and can route a user to one validated Love, Friend,
+  plan, community, profile, or travel action drawn from live inventory. Do not
+  rebuild the old profile/activity/membership dashboard inside the Hub; those
+  surfaces remain directly available from the persistent navigation.
+- Hub conversation text stays on the current device. Only structured intent,
+  recommendation, correction, and outcome metadata is persisted. Small
+  connection memories may be stored only after a separate explicit user tap;
+  every memory must be visible and individually removable in Hub AI controls.
+  Confirmed memory may inform Hub, Love coach, and Friend recommendations but
+  remains data, never prompt instructions, and never a hidden dossier.
 - Generative features use the OpenAI Responses API through `lib/ai.ts`, default
   to `gpt-5.6-luna`, require the server-only `OPENAI_API_KEY`, request strict
   structured output with `store:false`, and pass only a hashed user safety

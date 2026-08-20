@@ -5,18 +5,18 @@ import { readFileSync } from 'node:fs';
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
 test('Love profiles, acceptance, replies, planning, and safety controls stay free', () => {
-  const hub = read('../app/hub/hub-client.tsx');
+  const roster = read('../app/dashboard/roster-picker.tsx');
   const faq = read('../app/faq/page.tsx');
   const how = read('../app/how-it-works/page.tsx');
   const privacy = read('../app/privacy/page.tsx');
   const terms = read('../app/terms/page.tsx');
 
-  assert.match(hub, /Every Love profile is free/);
+  assert.match(roster, /this profile is free/);
   assert.match(faq, /The recipient never pays to accept or reply/);
   assert.match(how, /accepting, replying, blocking and reporting never cost anything/);
   assert.match(privacy, /before choosing/);
   assert.match(terms, /Core profiles, accepting, replying, blocking, reporting, and planning are free/);
-  for (const source of [hub, faq, how, privacy, terms]) {
+  for (const source of [roster, faq, how, privacy, terms]) {
     assert.doesNotMatch(source, /unlocking a full match profile|Love profile unlocks|every private profile/i);
   }
 });

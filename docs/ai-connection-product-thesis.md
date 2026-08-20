@@ -1,6 +1,6 @@
 # NotCupid — AI connection product thesis
 
-Updated August 18, 2026.
+Updated August 20, 2026.
 
 ## The thesis
 
@@ -98,13 +98,21 @@ Every surface should use the same loop:
   reading chat contents or sending on the user's behalf.
 - Friend “today's move” selects one real plan, connection, pack, or creation
   action from inventory the app can actually render.
-- The main Hub now has a phone-first, consent-gated concierge conversation. It
+- The main Hub is now a focused, phone-first concierge conversation rather than
+  a second dashboard. It opens with a deterministic live Connection Brief,
   reads limited profile context plus already-eligible live inventory, returns
   one server-validated in-app action, and records structured intent,
-  recommendation, dismissal, and action events without persisting raw prompts.
+  recommendation, correction, dismissal, and action events without persisting
+  raw prompts.
 - Concierge conversation history is kept on the current device. The first AI
   request discloses the OpenAI data boundary, and consent can be revoked from
   the Hub without hiding direct access to Love or Friend Line.
+- The concierge may propose a small structured memory only when the user
+  explicitly states a reusable goal, preference, boundary, availability,
+  location, current context, or coaching style. The user must separately tap
+  to save it, can inspect or delete each item, and the same confirmed context
+  can inform Hub, Love coach, and Friend recommendations. It never becomes a
+  hidden transcript or inferred psychological dossier.
 - Scene, clubs, community links, travel mode, plan chat, push, and the daily
   activity drop provide action surfaces after a recommendation.
 - Admin analytics measure Love actions, performance, acquisition, payments,
@@ -283,15 +291,16 @@ front door, not a gate. The product should reveal depth progressively:
   support;
 - never paywall acceptance, replies, blocks, reports, or basic safety.
 
-## First product test
+## Current product test
 
-Build Phase 1 as a narrow experiment before adding conversational memory:
+Evaluate the focused Hub and explicitly confirmed memory as one narrow Phase 1
+experiment before adding autonomous tools or more AI surfaces:
 
 - Ask for a current intent on the Hub.
 - Select one existing, renderable action from Love, Friend, Scene, clubs, or
   travel using deterministic inventory and a versioned policy.
-- Display a single `Your move` card with two reason codes, one CTA, and `not for
-  me` feedback.
+- Display one recommendation with one CTA and fast corrections such as too far,
+  wrong vibe, not tonight, or smaller group.
 - Log the complete recommendation contract and downstream outcome.
 - Assign control/treatment by user so the experience remains stable across
   sessions.
@@ -348,9 +357,10 @@ stage, and sent notifications reach a delivered/failed terminal state.
 
 Goal: make the three existing AI capabilities feel like one product.
 
-Status on August 18, 2026: the first bounded Hub shell, consent control,
-validated deep links, structured intent/recommendation records, and phone-first
-PWA presentation are implemented. Measuring the exit gate remains pending.
+Status on August 20, 2026: the bounded Hub shell has been replaced with a
+focused full-height conversation, a live account briefing, versioned consent,
+validated deep links, structured intent/recommendation/correction records, and
+user-confirmed cross-surface memory. Measuring the exit gate remains pending.
 
 - Put a single **Your move today** card on the main Hub. It selects across Love,
   Friend, a plan, a club/community, and travel—not one unrelated card per tab.
