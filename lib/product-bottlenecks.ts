@@ -40,14 +40,23 @@ export function detectProductBottlenecks(input: SnapshotInput) {
 
   if (love?.activePool >= 20) {
     const uncoveredPct = pct(love.activePoolWithoutLiveConnection, love.activePool);
+    const reasons = love.uncoveredBreakdown?.reasons;
+    const noPick = Number(reasons?.rosterAvailableNoPick7d ?? 0);
+    const noRoster = Number(reasons?.noRosterInventory ?? 0);
+    const pickedNoLive = Number(reasons?.pickedButNoLiveConnection7d ?? 0);
+    const largestReason = [
+      { count: noPick, diagnosis: 'Most uncovered people have profiles to consider but have not made a recent choice.', next: 'Test one concise concierge recommendation with two honest fit reasons and one direct profile action.' },
+      { count: pickedNoLive, diagnosis: 'Most uncovered people made a choice, but it did not become a live reciprocal connection.', next: 'Improve recipient decision speed and replacement quality while preserving the 72-hour safety window.' },
+      { count: noRoster, diagnosis: 'Most uncovered people do not have usable current roster inventory.', next: 'Inspect hard-gate eligibility and candidate supply by reciprocal preference, metro and age band.' },
+    ].sort((a, b) => b.count - a.count)[0];
     if (uncoveredPct >= 35) add({
       id: 'love-connection-coverage',
       area: 'love',
       severity: uncoveredPct >= 60 ? 'critical' : 'high',
       title: 'Active daters are leaving without a live connection',
       evidence: `${love.activePoolWithoutLiveConnection} of ${love.activePool} active-pool users (${uncoveredPct}%) have no live connection.`,
-      diagnosis: 'The pool has attention, but reciprocal inventory, eligibility, capacity, or roster-to-pick activation is not converting enough people into a live choice.',
-      nextAction: 'Segment the uncovered pool by gender, seeking preference, age band and metro; distinguish no eligible candidates from candidates shown but not chosen.',
+      diagnosis: largestReason?.count > 0 ? largestReason.diagnosis : 'The pool has attention, but reciprocal inventory, eligibility, capacity, or roster-to-pick activation is not converting enough people into a live choice.',
+      nextAction: largestReason?.count > 0 ? largestReason.next : 'Use the uncovered segmentation to distinguish inventory, activation, and reciprocity before changing matching policy.',
       metric: { value: uncoveredPct, unit: 'percent', target: 'below 35%' },
     });
   }
@@ -141,15 +150,26 @@ export function detectProductBottlenecks(input: SnapshotInput) {
   // The retired profile gate must not keep the redesigned Love capacity
   // experiment permanently red. Judge the live connection surface separately.
   const currentLoveRevenue = revenue?.products?.love_connection ?? revenue;
-  if (currentLoveRevenue?.paywallViewers >= 20 && currentLoveRevenue.checkoutStarters === 0) add({
+  if (currentLoveRevenue?.paywallViewers >= 10 && (currentLoveRevenue.checkoutClickers ?? 0) === 0) add({
     id: 'paywall-to-checkout',
     area: 'revenue',
     severity: 'critical',
     title: 'Paywall exposure is producing no checkout intent',
-    evidence: `${currentLoveRevenue.paywallViewers} unique Love connection paywall viewers and zero checkout starters in ${revenue.periodDays ?? 30} days.`,
+    evidence: `${currentLoveRevenue.paywallViewers} unique Love connection paywall viewers and zero checkout clicks in ${revenue.periodDays ?? 30} days.`,
     diagnosis: 'The value proposition, timing, price framing, checkout handoff, or telemetry is failing before payment begins.',
     nextAction: 'Separate each product surface, verify checkout instrumentation end to end, and test value after users experience the free core—not before trust exists.',
     metric: { value: 0, unit: 'percent', target: 'first reach 5% view-to-checkout' },
+  });
+
+  if ((currentLoveRevenue?.checkoutClickers ?? 0) > 0 && (currentLoveRevenue?.stripeSessionCreators ?? 0) === 0) add({
+    id: 'checkout-provider-handoff',
+    area: 'reliability',
+    severity: 'critical',
+    title: 'Checkout intent is failing before the payment form',
+    evidence: `${currentLoveRevenue.checkoutClickers} unique people clicked checkout, but Stripe created zero sessions; ${currentLoveRevenue.checkoutFailureAttempts ?? 0} failed attempts affected ${currentLoveRevenue.checkoutFailureUsers ?? 0} people.`,
+    diagnosis: 'This is a provider or account handoff failure, not evidence that users rejected the price at the card form.',
+    nextAction: 'Restore provider charge capability, verify one real Checkout session, then monitor click → session → purchase as separate stages.',
+    metric: { value: 0, unit: 'percent', target: 'at least 95% click-to-session when provider is healthy' },
   });
 
   if (friend?.optedIn >= 20 && friend.connectionActionUsers30d != null) {

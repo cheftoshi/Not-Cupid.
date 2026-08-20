@@ -52,6 +52,17 @@ test('payment routes prevent test charges and duplicate subscriber purchases', (
   assert.match(pro, /Your Pro membership is already active/);
 });
 
+test('checkout analytics distinguish intent from an actual Stripe handoff', () => {
+  const stats = read('../app/api/admin-stats/route.ts');
+  const admin = read('../app/admin/admin-client.tsx');
+  assert.match(stats, /checkout_clicked/);
+  assert.match(stats, /stripe_session_created/);
+  assert.match(stats, /row\.product !== 'love_profile'/);
+  assert.match(admin, /Checkout clicks/);
+  assert.match(admin, /Stripe sessions/);
+  assert.match(admin, /Current totals exclude the retired profile-view paywall/);
+});
+
 test('Love coach uses free profile context without leaking paid deep answers', () => {
   const coach = read('../app/api/matches/[id]/coach/route.ts');
   assert.match(coach, /profileContext: \{ interests: safeInterests, bio:/);
@@ -65,4 +76,11 @@ test('an extra-connection purchase is pair-specific and never charges the recipi
   assert.match(checkout, /If mutual, chat is included/);
   assert.match(checkout, /returns as an in-app credit/);
   assert.doesNotMatch(webhook, /Someone unlocked your profile/);
+});
+
+test('a returned connection credit is reusable without forcing another AI-read checkout', () => {
+  const picker = read('../app/dashboard/roster-picker.tsx');
+  assert.match(picker, /submitPick\(c, hasCredit\)/);
+  assert.match(picker, /use returned credit/);
+  assert.doesNotMatch(picker, /A returned\/pre-release connection credit also carries the new read/);
 });

@@ -2,6 +2,8 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export type MonetizationEvent =
   | 'paywall_viewed'
+  | 'checkout_clicked'
+  | 'stripe_session_created'
   | 'checkout_started'
   | 'checkout_failed'
   | 'purchase_completed';

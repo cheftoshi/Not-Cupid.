@@ -526,6 +526,27 @@ export default function AdminClient() {
                       <span className={s.chip}>Mutual <b>{data.loveFunnel.mutualConnections}</b></span>
                       <span className={s.chip}>Mutual, no message <b>{data.loveFunnel.mutualWithoutMessage}</b></span>
                     </div>
+                    {data.loveFunnel.uncoveredBreakdown && (
+                      <>
+                        <p className={s.note} style={{ margin: '0.8rem 0 0.5rem' }}>WHY ACTIVE PEOPLE HAVE NO LIVE CONNECTION</p>
+                        <div className={s.chips}>
+                          <span className={`${s.chip} ${s.chipRed}`}>Roster available, no pick 7d <b>{data.loveFunnel.uncoveredBreakdown.reasons.rosterAvailableNoPick7d}</b></span>
+                          <span className={`${s.chip} ${s.chipGold}`}>Picked, no live connection <b>{data.loveFunnel.uncoveredBreakdown.reasons.pickedButNoLiveConnection7d}</b></span>
+                          <span className={s.chip}>No roster inventory <b>{data.loveFunnel.uncoveredBreakdown.reasons.noRosterInventory}</b></span>
+                          <span className={s.chip}>Shown in 24h <b>{data.loveFunnel.uncoveredBreakdown.shown24h}</b></span>
+                          <span className={s.chip}>Picked in 7d <b>{data.loveFunnel.uncoveredBreakdown.picked7d}</b></span>
+                          {Object.entries(data.loveFunnel.uncoveredBreakdown.gender || {}).map(([key, value]) => (
+                            <span className={s.chip} key={`gender-${key}`}>{key.replaceAll('_', ' ')} <b>{String(value)}</b></span>
+                          ))}
+                          {Object.entries(data.loveFunnel.uncoveredBreakdown.seeking || {}).map(([key, value]) => (
+                            <span className={s.chip} key={`seeking-${key}`}>seeking {key.replaceAll('_', ' ')} <b>{String(value)}</b></span>
+                          ))}
+                          {Object.entries(data.loveFunnel.uncoveredBreakdown.rosterSizes || {}).map(([key, value]) => (
+                            <span className={s.chip} key={`roster-${key}`}>roster {key} <b>{String(value)}</b></span>
+                          ))}
+                        </div>
+                      </>
+                    )}
                     <p className={s.note} style={{ margin: '0.8rem 0 0.5rem' }}>CONCIERGE EMAIL LEDGER</p>
                     <div className={s.chips}>
                       <span className={s.chip}>Immediate sent <b>{data.loveFunnel.notifications.immediateSent}</b></span>
@@ -690,12 +711,20 @@ export default function AdminClient() {
               <>
                 <div className={s.chips}>
                   <span className={s.chip}>Paywall viewers <b>{data.monetization.paywallViewers}</b></span>
-                  <span className={s.chip}>Checkout starters <b>{data.monetization.checkoutStarters}</b></span>
-                  <span className={s.chip}>Checkout failures <b>{data.monetization.checkoutFailures}</b></span>
+                  <span className={s.chip}>Checkout clicks <b>{data.monetization.checkoutClickers}</b></span>
+                  <span className={s.chip}>Stripe sessions <b>{data.monetization.stripeSessionCreators}</b></span>
+                  <span className={`${s.chip} ${data.monetization.checkoutFailureUsers ? s.chipRed : ''}`}>Provider failures <b>{data.monetization.checkoutFailureUsers}</b> people · {data.monetization.checkoutFailureAttempts} attempts</span>
                   <span className={`${s.chip} ${s.chipGold}`}>Purchases <b>{data.monetization.purchases}</b></span>
                   <span className={`${s.chip} ${s.chipGold}`}>Tracked revenue <b>${data.monetization.trackedRevenue}</b></span>
-                  <span className={s.chip}>View → checkout <b>{data.monetization.viewToCheckoutPct == null ? '—' : `${data.monetization.viewToCheckoutPct}%`}</b></span>
+                  <span className={s.chip}>View → click <b>{data.monetization.viewToCheckoutPct == null ? '—' : `${data.monetization.viewToCheckoutPct}%`}</b></span>
+                  <span className={s.chip}>Click → Stripe <b>{data.monetization.clickToSessionPct == null ? '—' : `${data.monetization.clickToSessionPct}%`}</b></span>
+                  {data.monetization.providerState && (
+                    <span className={`${s.chip} ${data.monetization.providerState.status === 'unavailable' ? s.chipRed : data.monetization.providerState.status === 'healthy' ? s.chipGold : ''}`}>
+                      Stripe <b>{data.monetization.providerState.status}</b>{data.monetization.providerState.failure_code ? ` · ${data.monetization.providerState.failure_code}` : ''}
+                    </span>
+                  )}
                 </div>
+                <p className={s.note} style={{ marginTop: '0.65rem' }}>Current totals exclude the retired profile-view paywall. A checkout click is user intent; a Stripe session means the payment form actually opened.</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '0.7rem', marginTop: '0.8rem' }}>
                   {([
                     ['love_connection', 'AI reads + Love connections'],
@@ -708,7 +737,8 @@ export default function AdminClient() {
                       <div key={key} style={{ border: '1px solid #e6e6ea', borderRadius: 10, padding: '0.75rem' }}>
                         <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700 }}>{label}</div>
                         <div style={{ marginTop: '0.35rem', fontFamily: 'DM Mono, monospace', fontSize: '0.58rem', lineHeight: 1.65, color: '#6b6b76' }}>
-                          {product?.paywallViewers ?? 0} viewers · {product?.checkoutStarters ?? 0} started<br />
+                          {product?.paywallViewers ?? 0} viewers · {product?.checkoutClickers ?? 0} clicked<br />
+                          {product?.stripeSessionCreators ?? 0} Stripe sessions · {product?.checkoutFailureUsers ?? 0} failed users<br />
                           {product?.purchases ?? 0} bought · ${product?.trackedRevenue ?? '0.00'}
                         </div>
                       </div>

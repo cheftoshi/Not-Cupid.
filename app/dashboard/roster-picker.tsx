@@ -234,12 +234,9 @@ export default function RosterPicker({
       setPaywallCandidate(c);
       return;
     }
-    if (hasCredit && !compatibilityReadIncluded && !compatibilityReadCandidateIds.includes(c.id)) {
-      // A returned/pre-release connection credit also carries the new read.
-      // Bind it to this person and show the decision support before spending it.
-      void openExtraConnectionCheckout(c);
-      return;
-    }
+    // A returned paid credit covers the next connection. Its original AI read
+    // stays with the person it described; reusing the credit must never trigger
+    // a second charge or pretend a new read is included.
     void submitPick(c, hasCredit);
   }
 
@@ -342,7 +339,9 @@ export default function RosterPicker({
         window.location.href = data.url;
         return;
       }
-      setNotice(data.error || 'Checkout could not open. Nothing was charged.');
+      setNotice(res.status === 503
+        ? 'Payments are temporarily unavailable. Nothing was charged. Please try again later.'
+        : data.error || 'Checkout could not open. Nothing was charged.');
     } catch {
       setNotice('Checkout could not open. Nothing was charged.');
     } finally {
@@ -752,9 +751,7 @@ export default function RosterPicker({
                     : pro
                       ? `choose ${first} · included with Pro →`
                       : (hasFlexibleCredit || creditCandidateIds.includes(candidate.id))
-                        ? (compatibilityReadIncluded || compatibilityReadCandidateIds.includes(candidate.id)
-                          ? `match + chat with ${first} · included with unlock →`
-                          : `open AI read for ${first} · use credit →`)
+                        ? `match + chat with ${first} · use returned credit →`
                         : includedRemaining > 0
                           ? `choose ${first} · included →`
                           : `match + chat + AI read · $0.99 →`}

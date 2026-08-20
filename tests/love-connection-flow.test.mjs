@@ -196,6 +196,7 @@ test('a paid fourth pick returns as an in-app credit when it never becomes mutua
 test('one paid Love entitlement opens a private AI compatibility read and the same person-specific connection', () => {
   const migration = readFileSync(new URL('../supabase/migrations/20260818203000_love_ai_compatibility_reads.sql', import.meta.url), 'utf8');
   const checkout = readFileSync(new URL('../app/api/match/connection-checkout/route.ts', import.meta.url), 'utf8');
+  const paymentProvider = readFileSync(new URL('../lib/payment-provider.ts', import.meta.url), 'utf8');
   const complete = readFileSync(new URL('../app/api/match/connection-complete/route.ts', import.meta.url), 'utf8');
   const access = readFileSync(new URL('../lib/love-compatibility-access.ts', import.meta.url), 'utf8');
   const report = readFileSync(new URL('../app/api/love/compatibility-read/[candidateId]/route.ts', import.meta.url), 'utf8');
@@ -207,7 +208,8 @@ test('one paid Love entitlement opens a private AI compatibility read and the sa
   assert.match(migration, /unique \(user_id, candidate_id\)/);
   assert.match(migration, /connection_unlock_id uuid unique/);
   assert.match(checkout, /AI Compatibility Read \+ Love connection/);
-  assert.match(checkout, /Idempotency-Key/);
+  assert.match(checkout, /idempotencyKey/);
+  assert.match(paymentProvider, /Idempotency-Key/);
   assert.match(checkout, /metadata\[checkout_mode\]/);
   assert.match(complete, /compatibility_read=ready/);
   assert.match(access, /ensureCompatibilityReadEntitlement/);

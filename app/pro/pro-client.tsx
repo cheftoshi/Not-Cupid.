@@ -25,7 +25,9 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
       const r = await fetch('/api/pro/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       const d = await r.json();
       if (d.url) window.location.href = d.url;
-      else setErr(d.error || 'checkout unavailable');
+      else setErr(r.status === 503
+        ? 'Payments are temporarily unavailable. Nothing was charged. Please try again later.'
+        : d.error || 'checkout unavailable');
     } catch { setErr('something glitched — try again'); }
     finally { setBusy(false); }
   }

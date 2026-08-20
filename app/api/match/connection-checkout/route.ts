@@ -7,6 +7,7 @@ import { LOVE_CONNECTION_PRICE_CENTS } from '@/lib/matching-policy';
 import { creditForCandidate, lovePickAccessFor } from '@/lib/love-pick-access';
 import { recordMonetizationEvent } from '@/lib/monetization';
 import { compatibilityReadRecord } from '@/lib/love-compatibility-access';
+import { createStripeCheckoutSession, PAYMENT_TEMPORARILY_UNAVAILABLE_MESSAGE } from '@/lib/payment-provider';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,6 @@ export async function POST(req: NextRequest) {
   if ((user as any).is_test === true) {
     return NextResponse.json({ error: 'Payments are disabled for test accounts.' }, { status: 403 });
   }
-  if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: 'Payments unavailable' }, { status: 503 });
   const limit = await rateLimit({ key: `checkout-love-connection:${user.id}`, windowSec: 600, maxAttempts: 10, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many checkout attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
@@ -84,34 +84,45 @@ export async function POST(req: NextRequest) {
   body.append('metadata[roster_cycle_at]', access.cycleAt);
   body.append('metadata[checkout_mode]', checkoutMode);
 
-  const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Idempotency-Key': `love-pair-v2-${user.id}-${candidateId}-${access.cycleAt}`,
-    },
-    body: body.toString(),
+  const surface = checkoutMode === 'compatibility_read' ? 'love_compatibility_checkout' : 'love_connection_checkout';
+  await recordMonetizationEvent({
+    userId: user.id,
+    event: 'checkout_clicked',
+    product: 'love_connection',
+    surface,
+    amountCents: LOVE_CONNECTION_PRICE_CENTS,
+    metadata: { checkout_mode: checkoutMode },
   });
-  const session = await stripeRes.json();
-  if (!stripeRes.ok || typeof session?.url !== 'string') {
-    console.error('Love connection checkout error:', session);
+  const checkout = await createStripeCheckoutSession({
+    params: body,
+    idempotencyKey: `love-pair-v3-${user.id}-${candidateId}-${access.cycleAt}`,
+  });
+  if (!checkout.ok) {
     await recordMonetizationEvent({
       userId: user.id,
       event: 'checkout_failed',
       product: 'love_connection',
-      surface: checkoutMode === 'compatibility_read' ? 'love_compatibility_checkout' : 'love_connection_checkout',
+      surface,
       amountCents: LOVE_CONNECTION_PRICE_CENTS,
-      metadata: { provider_status: stripeRes.status },
+      metadata: {
+        provider_status: checkout.providerStatus,
+        failure_code: checkout.code,
+        checkout_mode: checkoutMode,
+      },
     });
-    return NextResponse.json({ error: 'Could not open checkout.' }, { status: 502 });
+    return NextResponse.json({
+      error: PAYMENT_TEMPORARILY_UNAVAILABLE_MESSAGE,
+      code: 'payments_temporarily_unavailable',
+      retryAfterSec: checkout.retryAfterSec,
+    }, { status: 503, headers: { 'Retry-After': String(checkout.retryAfterSec) } });
   }
   await recordMonetizationEvent({
     userId: user.id,
-    event: 'checkout_started',
+    event: 'stripe_session_created',
     product: 'love_connection',
-    surface: checkoutMode === 'compatibility_read' ? 'love_compatibility_checkout' : 'love_connection_checkout',
+    surface,
     amountCents: LOVE_CONNECTION_PRICE_CENTS,
+    metadata: { checkout_mode: checkoutMode },
   });
-  return NextResponse.json({ url: session.url });
+  return NextResponse.json({ url: checkout.url });
 }

@@ -9,6 +9,8 @@ import { fetchAllSupabaseRows } from '@/lib/supabase-pagination'
 import { ONLY_IN_BOSTON_CAMPAIGN, ONLY_IN_BOSTON_FACEBOOK_CAMPAIGN } from '@/lib/acquisition'
 import { detectProductBottlenecks } from '@/lib/product-bottlenecks'
 import { EXPERIMENT_DECISION_REASONS, summarizeDatingExperimentBehavior } from '@/lib/dating-experiment-behavior'
+import { summarizeLoveBottlenecks } from '@/lib/love-bottleneck-classifier'
+import { metroOf } from '@/lib/quiz-data'
 
 export const dynamic = 'force-dynamic'
 
@@ -336,32 +338,62 @@ export async function GET(req: NextRequest) {
     try {
       const rows = await fetchAllSupabaseRows<any>((from, to) => supabaseAdmin
         .from('monetization_events')
-        .select('id, user_id, event, product, amount_cents')
+        .select('id, user_id, event, product, surface, amount_cents, metadata, created_at')
         .gte('created_at', thirtyDaysAgo)
         .order('id', { ascending: true })
         .range(from, to))
       {
         const productNames = ['love_connection', 'love_profile', 'friend_pack', 'pro']
-        const summarize = (product?: string) => {
-          const subset = product ? rows.filter((row: any) => row.product === product) : rows
+        const summarize = (product?: string, includeLegacy = false) => {
+          const subset = product
+            ? rows.filter((row: any) => row.product === product)
+            : includeLegacy ? rows : rows.filter((row: any) => row.product !== 'love_profile')
           const unique = (event: string) => new Set(
             subset.filter((row: any) => row.event === event).map((row: any) => row.user_id)
           ).size
           const views = unique('paywall_viewed')
-          const starts = unique('checkout_started')
+          const clickRows = subset.filter((row: any) => row.event === 'checkout_clicked')
+          const clickers = new Set(clickRows.map((row: any) => row.user_id)).size
+          // checkout_started is retained only as historical session-created data.
+          const sessions = new Set(subset
+            .filter((row: any) => row.event === 'stripe_session_created' || row.event === 'checkout_started')
+            .map((row: any) => row.user_id)).size
+          const failureRows = subset.filter((row: any) => row.event === 'checkout_failed')
           const purchases = subset.filter((row: any) => row.event === 'purchase_completed')
+          const failureCodes = failureRows.reduce((counts: Record<string, number>, row: any) => {
+            const code = typeof row.metadata?.failure_code === 'string' ? row.metadata.failure_code : 'legacy_or_unknown'
+            counts[code] = (counts[code] ?? 0) + 1
+            return counts
+          }, {})
           return {
             paywallViewers: views,
-            checkoutStarters: starts,
-            checkoutFailures: subset.filter((row: any) => row.event === 'checkout_failed').length,
+            checkoutClickers: clickers,
+            stripeSessionCreators: sessions,
+            checkoutStarters: sessions,
+            checkoutFailureAttempts: failureRows.length,
+            checkoutFailureUsers: new Set(failureRows.map((row: any) => row.user_id)).size,
+            checkoutFailures: failureRows.length,
+            failureCodes,
             purchases: purchases.length,
             trackedRevenue: (purchases.reduce((sum: number, row: any) => sum + (row.amount_cents ?? 0), 0) / 100).toFixed(2),
-            viewToCheckoutPct: views > 0 ? Math.round((starts / views) * 100) : null,
+            viewToCheckoutPct: views > 0 ? Math.round((clickers / views) * 100) : null,
+            clickToSessionPct: clickers > 0 ? Math.round((sessions / clickers) * 100) : null,
           }
         }
+        let providerState: any = null
+        try {
+          const { data } = await supabaseAdmin
+            .from('payment_provider_state')
+            .select('provider,status,failure_code,unavailable_until,last_checked_at,last_success_at,last_failure_at,updated_at')
+            .eq('provider', 'stripe')
+            .maybeSingle()
+          providerState = data ?? null
+        } catch { /* additive payment-state migration may still be rolling out */ }
         monetization = {
           periodDays: 30,
           ...summarize(),
+          legacyIncludedTotals: summarize(undefined, true),
+          providerState,
           products: Object.fromEntries(productNames.map((product) => [product, summarize(product)])),
         }
       }
@@ -935,6 +967,21 @@ export async function GET(req: NextRequest) {
     const recentPickerIds = new Set(rosterExposures
       .filter((exposure: any) => exposure.picked_at && exposure.picked_at >= sevenDaysAgo && activePoolIds.has(exposure.user_id))
       .map((exposure: any) => exposure.user_id))
+    const uncoveredBreakdown = summarizeLoveBottlenecks({
+      users: users
+        .filter((user: any) => activePoolIds.has(user.id))
+        .map((user: any) => ({
+          id: user.id,
+          gender: user.gender,
+          seeking: user.seeking,
+          age: user.age,
+          metro: metroOf(user.zip),
+          rosterSnapshot: user.roster_snapshot,
+        })),
+      liveParticipantIds,
+      shown24hIds: freshRosterIds,
+      picked7dIds: recentPickerIds,
+    })
     const mutualMatches = liveLoveMatches.filter((match: any) => match.user_1_accepted && match.user_2_accepted)
     const messagedMatchIds = new Set(msgRows
       .filter((message: any) => realUserIds.has(message.sender_id))
@@ -955,6 +1002,7 @@ export async function GET(req: NextRequest) {
       freshRosters24h: freshRosterIds.size,
       activePoolWithoutLiveConnection: waitingWithoutConnection,
       activePoolWithoutPick7d: Array.from(activePoolIds).filter((id) => !recentPickerIds.has(id)).length,
+      uncoveredBreakdown,
       liveConnections: liveLoveMatches.length,
       oneSidedConnections: oneSidedMatches.length,
       mutualConnections: mutualMatches.length,

@@ -1,6 +1,6 @@
 # NotCupid — current project memory
 
-Last reconciled with the current application code on **August 19, 2026**.
+Last reconciled with the current application code on **August 20, 2026**.
 
 This file is a current-state handoff, not a chronological session log. Git history
 contains retired plans and earlier implementations. Do not reintroduce an older
@@ -244,15 +244,27 @@ supersede them.
 ### Monetization
 
 - A fourth or later distinct outgoing Love connection in the current roster is
-  a one-time $0.99. If the other person declines or the request expires before
-  mutual connection, that entitlement returns as an in-app Love credit.
+  a one-time $0.99 bundled with that person's optional private AI/HEXACO
+  compatibility read. If the other person declines or the request expires
+  before mutual connection, the connection value returns as an in-app Love
+  credit while the original compatibility read stays with its original person.
 - Reusing that returned connection credit never reuses or rebinds the original
-  optional AI/HEXACO profile-read entitlement; those are separate durable
-  products.
+  optional AI/HEXACO profile-read entitlement and never triggers another charge.
 - Additional Friend packs: $0.99; first pack free.
 - All-Access: $3.99/month.
 - Acceptance and replies are always free. Chat is included after mutual
   connection; Dating Experiment entry/selection is not paywalled.
+- Payment analytics distinguish paywall view, checkout click, Stripe Checkout
+  session creation, and completed purchase. Current aggregate funnel totals
+  exclude the retired Love profile-view paywall; it remains visible separately
+  as historical data.
+- Stripe session creation goes through a service-only availability circuit. A
+  safe account/provider failure code temporarily pauses repeated external
+  attempts, tells the user nothing was charged, and automatically permits a new
+  probe after the retry window. Raw provider errors and secrets are never stored.
+- Admin Love bottlenecks classify active users without a live connection into
+  no roster inventory, roster available but no recent pick, or recent pick with
+  no live connection, then aggregate only non-identifying cohort dimensions.
 
 ### PWA and native plan
 
