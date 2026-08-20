@@ -3,8 +3,8 @@ import { createHmac, timingSafeEqual } from 'crypto';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function secret(): string {
-  const value = process.env.MATCH_LINK_SECRET;
-  if (!value || value.length < 16) throw new Error('MATCH_LINK_SECRET is not set or too short');
+  const value = process.env.WINNER_CONFIRMATION_SECRET || process.env.MATCH_LINK_SECRET;
+  if (!value || value.length < 16) throw new Error('Winner confirmation signing secret is not set or too short');
   return value;
 }
 
