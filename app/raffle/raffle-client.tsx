@@ -432,7 +432,15 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <p style={{ fontSize: '0.76rem', color: 'var(--h-text-faint)', lineHeight: 1.5, margin: '0.85rem 0 0' }}>
               💛 meet in public, tell a friend where you’ll be, and arrange your own ride home. Parking, valet costs or tips, and transportation are not included. trust your gut.
             </p>
-            <Link href="/hub" style={backLink}>back to hub →</Link>
+            {st.draw.matchId && (
+              <Link
+                href={`/match/${st.draw.matchId}`}
+                style={{ ...btnGhost, display: 'block', marginTop: '1rem', background: BLUE, borderColor: BLUE, color: '#fff', textAlign: 'center' }}
+              >
+                open your private chat →
+              </Link>
+            )}
+            <Link href="/hub" style={{ ...backLink, display: 'inline-block', marginTop: '0.9rem' }}>back to hub →</Link>
           </div>
         ) : st?.outcome?.state === 'not-selected' ? (
           <div style={{ ...card, border: '1px solid rgba(37,99,255,0.28)', textAlign: 'center' }}>

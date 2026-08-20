@@ -168,6 +168,7 @@ export async function GET() {
         winnerSlot: latestDraw.winner_slot,
         restaurant: latestDraw.restaurant,
         happensAt: latestDraw.happens_at,
+        matchId: latestDraw.love_match_id || null,
       };
       other = await privateCandidate(otherId, user);
     }

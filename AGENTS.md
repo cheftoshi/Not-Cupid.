@@ -63,6 +63,10 @@ copying entry, traffic, or delivery counts from a handoff document.
 - Every gender/orientation receives the same coverage-first cap of up to two
   private options. Choices are sealed. Only mutual yes pairs enter the final
   slot-aware, payment-neutral weighted selection without replacement.
+- A confirmed winner pair is linked idempotently to one mutual Love connection.
+  An existing live conversation is preserved; otherwise the bridge creates one
+  within the Love safety ceiling. The selected-state PWA card opens that private
+  chat directly, and a prior safety-reported connection is never revived.
 - The experiment behavior ledger measures shortlist reach, sealed response,
   yes/pass, one-way interest, mutual interest, response time, and optional
   structured reasons as separate signals. Reason feedback appears only after

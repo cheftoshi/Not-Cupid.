@@ -8,6 +8,7 @@ import {
 } from '@/lib/dating-experiment-email';
 import { randomInt } from 'crypto';
 import { getAdminEmails } from '@/lib/admin';
+import { ensureDatingExperimentWinnerChats } from '@/lib/dating-experiment-chat';
 import {
   datingExperimentCanShortlist,
   getDatingExperimentEvent,
@@ -118,6 +119,7 @@ type WinnerRow = {
   winner_slot: number | null;
   restaurant: string | null;
   happens_at: string | null;
+  love_match_id: string | null;
 };
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -447,7 +449,7 @@ async function resolveCollectingRound(
       .eq('event_key', event.event_key)
       .in('user_id', participantIds),
     supabaseAdmin.from('raffle_draws')
-      .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at')
+      .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at, love_match_id')
       .eq('event_key', event.event_key)
       .eq('status', 'both_accepted')
       .order('winner_slot', { ascending: true }),
@@ -630,12 +632,13 @@ async function resolveCollectingRound(
   if (resolveRoundError) throw resolveRoundError;
 
   const { data: allWinnerRows, error: allWinnerError } = await supabaseAdmin.from('raffle_draws')
-    .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at')
+    .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at, love_match_id')
     .eq('event_key', event.event_key)
     .eq('status', 'both_accepted')
     .order('winner_slot', { ascending: true });
   if (allWinnerError) throw allWinnerError;
   const allWinners = (allWinnerRows ?? []) as WinnerRow[];
+  await ensureDatingExperimentWinnerChats(allWinners);
   const allWinnerIds = new Set(allWinners.flatMap((winner) => [winner.user_a_id, winner.user_b_id]));
   const { data: participantEntries, error: participantEntriesError } = await supabaseAdmin.from('raffle_entries')
     .select('user_id, attempts')
@@ -724,13 +727,16 @@ export async function drawRaffle(opts: { force?: boolean; chainDepth?: number } 
   }
 
   const { data: won, error: wonError } = await supabaseAdmin.from('raffle_draws')
-    .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at')
+    .select('id, user_a_id, user_b_id, winner_slot, restaurant, happens_at, love_match_id')
     .eq('event_key', event.event_key)
     .eq('status', 'both_accepted')
     .order('winner_slot', { ascending: true });
   if (wonError) throw wonError;
   const existingWinners = (won ?? []) as WinnerRow[];
-  if (existingWinners.length) await ensureWinnerEmails(event, existingWinners);
+  if (existingWinners.length) {
+    await ensureDatingExperimentWinnerChats(existingWinners);
+    await ensureWinnerEmails(event, existingWinners);
+  }
 
   const { data: activeRound, error: activeRoundError } = await supabaseAdmin.from('dating_experiment_rounds')
     .select('id, round_number, response_deadline, status, resolution_started_at, selected_pair_ids')

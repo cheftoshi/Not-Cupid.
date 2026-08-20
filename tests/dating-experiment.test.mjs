@@ -639,6 +639,23 @@ test('resolved dinner coverage includes drinks inside the same fixed pair cap', 
   assert.match(migration, /where event_key = 'boston-dating-experiment-v1'/i);
 });
 
+test('a mutual experiment winner receives one idempotent private Love chat', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260820024354_activate_dating_experiment_winner_chat.sql', import.meta.url), 'utf8');
+  const bridge = readFileSync(new URL('../lib/dating-experiment-chat.ts', import.meta.url), 'utf8');
+  const draw = readFileSync(new URL('../lib/raffle-draw.ts', import.meta.url), 'utf8');
+  const status = readFileSync(new URL('../app/api/raffle/status/route.ts', import.meta.url), 'utf8');
+  const client = readFileSync(new URL('../app/raffle/raffle-client.tsx', import.meta.url), 'utf8');
+
+  assert.match(migration, /activate_dating_experiment_winner_chat/i);
+  assert.match(migration, /status = 'both_accepted'/i);
+  assert.match(migration, /ended_reason = 'reported'/i);
+  assert.match(migration, /love_match_id/i);
+  assert.match(bridge, /ensureDatingExperimentWinnerChats/);
+  assert.match(draw, /ensureDatingExperimentWinnerChats\(allWinners\)/);
+  assert.match(status, /matchId: latestDraw\.love_match_id \|\| null/);
+  assert.match(client, /open your private chat/);
+});
+
 test('paid Only in Boston promotion stays off product pages and in the private launch record', () => {
   const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
   const faq = readFileSync(new URL('../app/dating-experiment/faq/page.tsx', import.meta.url), 'utf8');
