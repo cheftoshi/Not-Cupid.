@@ -97,7 +97,8 @@ test('mobile experiment and onboarding flows respect safe areas and camera video
   assert.match(experiment, /Skip this if it is not your thing/);
   assert.match(faq, /The [^`]*second hello is completely optional/);
   assert.doesNotMatch(experiment, /until restaurant fulfillment/);
-  assert.match(faq, /parking, valet charges or tips, transportation/);
+  assert.match(faq, /Food, alcoholic or non-alcoholic drinks, ordinary tax, and gratuity/);
+  assert.match(faq, /amount above \$\$\{RAFFLE\.budget\}, plus transportation, parking, or valet charges/);
   assert.match(login, /min-height:\s*100dvh/);
   assert.match(login, /safe-area-inset-bottom/);
   assert.match(quiz, /min-height:\s*100dvh/);

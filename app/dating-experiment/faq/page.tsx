@@ -79,7 +79,7 @@ const FAQS = [
   },
   {
     q: `What do the $${RAFFLE.budget} dinner prizes cover?`,
-    a: `Up to ${RAFFLE.winnerPairCount} winning pairs can each receive one prepaid dinner valued up to $${RAFFLE.budget}, for a maximum aggregate prize value of $${RAFFLE.budget * RAFFLE.winnerPairCount}. Ordinary tax and gratuity count toward each limit. Alcohol, parking, valet charges or tips, transportation, and spending outside the prepaid arrangement are not included. There is no cash alternative.`,
+    a: `Up to ${RAFFLE.winnerPairCount} winning pairs can each receive one prepaid dinner valued up to $${RAFFLE.budget}, for a maximum aggregate prize value of $${RAFFLE.budget * RAFFLE.winnerPairCount}. Food, alcoholic or non-alcoholic drinks, ordinary tax, and gratuity may all count toward the same per-pair limit. The pair is responsible for any amount above $${RAFFLE.budget}, plus transportation, parking, or valet charges. There is no cash alternative.`,
   },
   {
     q: 'Does NotCupid background-check participants?',

@@ -626,6 +626,19 @@ test('Berkeley reservations and direct prepayment are confirmed without opening 
   assert.doesNotMatch(migration, /legal_review_approved = true/i);
 });
 
+test('resolved dinner coverage includes drinks inside the same fixed pair cap', () => {
+  const migration = readFileSync(new URL('../supabase/migrations/20260820005000_expand_experiment_dinner_coverage.sql', import.meta.url), 'utf8');
+  const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
+  const faq = readFileSync(new URL('../app/dating-experiment/faq/page.tsx', import.meta.url), 'utf8');
+  const email = readFileSync(new URL('../lib/dating-experiment-email.ts', import.meta.url), 'utf8');
+  for (const sourceText of [migration, terms, faq, email]) {
+    assert.match(sourceText, /alcoholic or non-alcoholic drinks/i);
+    assert.match(sourceText, /above .*200|above .*budget/i);
+  }
+  assert.match(migration, /transportation, parking, or valet charges/i);
+  assert.match(migration, /where event_key = 'boston-dating-experiment-v1'/i);
+});
+
 test('paid Only in Boston promotion stays off product pages and in the private launch record', () => {
   const terms = readFileSync(new URL('../app/dating-experiment/terms/page.tsx', import.meta.url), 'utf8');
   const faq = readFileSync(new URL('../app/dating-experiment/faq/page.tsx', import.meta.url), 'utf8');

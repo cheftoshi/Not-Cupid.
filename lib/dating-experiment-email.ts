@@ -26,7 +26,7 @@ export const DATING_EXPERIMENT_EMAIL_COPY = {
   winner: {
     subject: 'Your Dating Experiment dinner is confirmed',
     preheader: 'You chose each other. Here are your Thursday dinner details.',
-    body: 'You and {{first_name}} both said Yes. Your reservation is {{date_time}} at {{restaurant}}. NotCupid will cover up to ${{budget}} for dinner. Please arrange your own transportation or parking.',
+    body: 'You and {{first_name}} both said Yes. Your reservation is {{date_time}} at {{restaurant}}. NotCupid prepaid up to ${{budget}} for the pair. Food, alcoholic or non-alcoholic drinks, ordinary tax, and gratuity can all count toward that total. You are responsible only for any amount above ${{budget}}, plus your own transportation, parking, or valet.',
     cta: 'VIEW MY DATE DETAILS →',
   },
 } as const;
