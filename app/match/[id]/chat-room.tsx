@@ -51,6 +51,17 @@ function timeLeft(iso: string, nowMs: number): string {
   return `${m}m left`;
 }
 
+function messageTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    // Vercel renders in UTC while participants render in their device zone.
+    // Pinning the event chat to Boston keeps the initial HTML identical and
+    // avoids a full-screen hydration recovery before the composer appears.
+    timeZone: 'America/New_York',
+  });
+}
+
 // Cheeky rotating placeholders — chosen deterministically per match so the
 // server and browser render the same text during hydration.
 // (Keep these warm, never surveillance-y — "the algo's watching" read as creepy.)
@@ -133,7 +144,12 @@ export default function ChatRoom({
   // Live match status — seeded from the server, refreshed by the poll, so the
   // header stays accurate (countdown ticking, or "ended" if they bailed).
   const [liveMatch, setLiveMatch] = useState<any>(match);
-  const [now, setNow] = useState(() => Date.now());
+  // Keep the server render and the browser's first render identical. Calling
+  // Date.now() in the state initializer made the countdown differ by a few
+  // milliseconds during hydration, which caused React to discard and rebuild
+  // the entire chat screen on mobile. Start without a clock value, then enable
+  // the live countdown immediately after hydration.
+  const [now, setNow] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // "typing…" — the poll carries the other side's last typing ping; we show the
@@ -181,12 +197,15 @@ export default function ChatRoom({
 
   // Tick a clock so the countdown re-renders live (every 30s is plenty).
   useEffect(() => {
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
 
   const ended = !!liveMatch?.ended_at;
-  const expiredByTimer = !!(liveMatch?.chat_expires_at && new Date(liveMatch.chat_expires_at).getTime() < now);
+  const expiredByTimer = now !== null
+    && !!liveMatch?.chat_expires_at
+    && new Date(liveMatch.chat_expires_at).getTime() < now;
   const chatExpired = ended || expiredByTimer;
   // Pending = matched but not yet mutually accepted. Sending a message here
   // auto-accepts (server-side), which opens the chat — so we prompt for it.
@@ -203,7 +222,7 @@ export default function ChatRoom({
     ? 'waiting on their answer'
     : pendingAccept
     ? 'choose to connect'
-    : liveMatch?.chat_expires_at
+    : liveMatch?.chat_expires_at && now !== null
     ? timeLeft(liveMatch.chat_expires_at, now)
     : 'active';
 
@@ -628,10 +647,7 @@ export default function ChatRoom({
               <div className={styles.bubbleTime}>
                 {msg.pending
                   ? 'sending…'
-                  : new Date(msg.created_at).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
+                  : messageTime(msg.created_at)}
                 {seen && msg.id === lastMine.id ? ' · seen ✓' : ''}
               </div>
             </div>

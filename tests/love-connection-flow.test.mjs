@@ -292,6 +292,8 @@ test('phone match room separates chat, plan, and profile below the measured PWA 
   assert.match(room, /plan together after the mutual yes/);
   assert.match(room, /if \(pendingAccept\)/);
   assert.doesNotMatch(room, /Math\.random\(\).*PLACEHOLDERS|PLACEHOLDERS\[Math\.floor/);
+  assert.doesNotMatch(room, /useState\(\(\) => Date\.now\(\)\)/);
+  assert.match(room, /timeZone: 'America\/New_York'/);
   assert.match(roomCss, /var\(--app-top-nav-height/);
   assert.match(roomCss, /data-mobile-panel='plan'/);
   assert.match(roomCss, /data-mobile-panel='profile'/);
