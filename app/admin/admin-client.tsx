@@ -123,6 +123,81 @@ function DailyActivityEmailPreviewAdmin() {
   )
 }
 
+function ConnectionIntelligenceAdmin() {
+  const [snapshot, setSnapshot] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function load() {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/admin/connection-intelligence?days=30', { cache: 'no-store' })
+      const body = await parseResponse<any>(response).catch(() => ({}))
+      setSnapshot(response.ok ? body : { errors: [{ message: body?.error || `HTTP ${response.status}` }] })
+    } catch (error: any) {
+      setSnapshot({ errors: [{ message: error?.message || 'network error' }] })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+  if (!snapshot) return null
+
+  const gate = snapshot.readiness || {}
+  const coverage = snapshot.embeddingCoverage || {}
+  const blockers: string[] = Array.isArray(gate.blockers) ? gate.blockers : []
+  const healthy = Array.isArray(snapshot.errors) && snapshot.errors.length === 0
+  const reviewReady = gate.ready_for_human_review === true
+
+  return (
+    <section id="connection-intelligence" style={{ background: '#fff', border: `2px solid ${healthy ? reviewReady ? '#2d7a4f' : '#2f66ff' : '#c0392b'}`, borderRadius: 14, padding: '1.1rem 1.25rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
+        <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '1.2rem' }}>✦ Connection intelligence</div>
+        <span className={s.chip}>{gate.phase || snapshot.configuration?.phase || 'shadow'}</span>
+        <span className={`${s.chip} ${gate.live_test_enabled ? s.chipRed : s.chipGold}`}>
+          {gate.live_test_enabled ? `LIVE TEST · ${gate.live_allocation_percent}%` : 'LIVE ORDER UNCHANGED'}
+        </span>
+        <button onClick={load} disabled={loading} className={s.btn} style={{ marginLeft: 'auto' }}>{loading ? 'refreshing…' : 'refresh'}</button>
+      </div>
+
+      <p className={s.note} style={{ marginTop: '0.55rem' }}>
+        Shadow evaluation compares the current matcher with the candidate AI ranker. It cannot widen eligibility or reorder a roster. A human-reviewed, separately deployed treatment is still required before any live test.
+      </p>
+
+      <div className={s.chips} style={{ marginTop: '0.8rem' }}>
+        <span className={s.chip}>Consented users <b>{coverage.consentingRealUsers ?? 0}</b></span>
+        <span className={s.chip}>Ready users <b>{coverage.readyRealUsers ?? 0}</b></span>
+        <span className={s.chip}>Ready vectors <b>{coverage.readyIntentEmbeddings ?? 0}</b></span>
+        <span className={`${s.chip} ${(coverage.failedIntentEmbeddings || 0) > 0 ? s.chipRed : ''}`}>Failed vectors <b>{coverage.failedIntentEmbeddings ?? 0}</b></span>
+        <span className={s.chip}>Evaluations <b>{gate.shadow_evaluations ?? 0}/{gate.minimum_shadow_evaluations ?? 100}</b></span>
+        <span className={s.chip}>Connection actions <b>{gate.action_events ?? 0}/{gate.minimum_action_events ?? 30}</b></span>
+        <span className={s.chip}>Errors <b>{gate.shadow_error_rate ?? 0}</b></span>
+        <span className={s.chip}>p95 <b>{gate.p95_latency_ms ?? 0}ms</b></span>
+      </div>
+
+      <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: reviewReady ? '#edf8f1' : '#f6f7ff', borderRadius: 10, fontSize: '0.8rem', lineHeight: 1.55 }}>
+        <div><b>Candidate:</b> {gate.candidate_algorithm_version || snapshot.configuration?.candidate_algorithm_version || 'connection-hybrid-v1'}</div>
+        <div><b>Measurement began:</b> {gate.measurement_started_at ? new Date(gate.measurement_started_at).toLocaleString() : 'waiting for configuration'}</div>
+        <div><b>Review gate:</b> {reviewReady ? 'ready for human review' : blockers.length ? blockers.join(' · ').replaceAll('_', ' ') : 'collecting evidence'}</div>
+        <div><b>Kill switch:</b> {gate.kill_switch === false ? 'off' : 'on'} · <b>configured allocation:</b> {gate.live_allocation_percent ?? 0}%</div>
+      </div>
+
+      {(snapshot.shadow || []).length > 0 && (
+        <div style={{ marginTop: '0.8rem', display: 'grid', gap: '0.45rem', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+          {snapshot.shadow.map((row: any) => (
+            <div key={`${row.intent_scope}-${row.metro}`} style={{ padding: '0.7rem', border: '1px solid #e6e6ea', borderRadius: 10, fontSize: '0.78rem' }}>
+              <b>{row.intent_scope} · {row.metro || 'unknown metro'}</b><br />
+              {row.evaluations} evaluations · overlap {row.avg_overlap_rate ?? '—'} · rank {row.avg_rank_correlation ?? '—'} · error {row.error_rate ?? 0}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!healthy && <p className={s.noteErr} style={{ marginTop: '0.7rem' }}>Metrics error: {snapshot.errors.map((error: any) => error.message).join(' · ')}</p>}
+    </section>
+  )
+}
+
 export default function AdminClient() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -315,6 +390,7 @@ export default function AdminClient() {
             </div>
             <nav className={s.nav}>
               <a href="#bottlenecks" className={s.navLink}>Bottlenecks</a>
+              <a href="#connection-intelligence" className={s.navLink}>AI matching</a>
               <a href="#funnel" className={s.navLink}>Funnel</a>
               <a href="#monetization" className={s.navLink}>Revenue funnel</a>
               <a href="#love-usage" className={s.navLink}>Love usage</a>
@@ -341,6 +417,7 @@ export default function AdminClient() {
           <CommunityLinksAdmin />
           <SceneModerationAdmin />
           <DailyActivityEmailPreviewAdmin />
+          <ConnectionIntelligenceAdmin />
 
           {/* KPI row */}
           <div className={s.kpis}>

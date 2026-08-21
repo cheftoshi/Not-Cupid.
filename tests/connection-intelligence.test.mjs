@@ -106,3 +106,24 @@ test('Hub exposes a separate informed control and revocation deletes stored embe
   assert.match(privacy, /AI match evaluation has its own optional control/);
   assert.match(privacy, /cannot change your live roster order/);
 });
+
+test('evidence gates keep the candidate ranker at zero live allocation until human review', () => {
+  const migration = read('../supabase/migrations/20260821034500_connection_intelligence_evidence_gates.sql');
+  const adminApi = read('../app/api/admin/connection-intelligence/route.ts');
+  const adminUi = read('../app/admin/admin-client.tsx');
+  const shadow = read('../lib/embedding-shadow.ts');
+
+  assert.match(migration, /phase text not null default 'shadow'/i);
+  assert.match(migration, /live_allocation_percent integer not null default 0/i);
+  assert.match(migration, /live_allocation_percent between 0 and 20/i);
+  assert.match(migration, /kill_switch boolean not null default true/i);
+  assert.match(migration, /human_approved_at is not null/i);
+  assert.match(migration, /connection_intelligence_promotion_readiness/i);
+  assert.match(migration, /not_enough_shadow_evaluations/i);
+  assert.match(migration, /live_order_changed/i);
+  assert.match(migration, /u\.created_at >= greatest/i);
+  assert.match(adminApi, /connection_intelligence_promotion_readiness/);
+  assert.match(adminUi, /LIVE ORDER UNCHANGED/);
+  assert.match(shadow, /metro: input\.metro/);
+  assert.match(shadow, /acquisition_source: input\.acquisitionSource/);
+});

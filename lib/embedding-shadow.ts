@@ -26,6 +26,8 @@ export async function evaluateEmbeddingShadow(input: {
   liveAlgorithmVersion: string;
   liveTopIds: string[];
   eligibleCandidateIds: string[];
+  metro?: string | null;
+  acquisitionSource?: string | null;
   force?: boolean;
 }): Promise<ShadowEvaluationResult> {
   if (!input.force && !embeddingShadowEnabled()) return { status: 'disabled' };
@@ -64,6 +66,8 @@ export async function evaluateEmbeddingShadow(input: {
     latency_ms: latencyMs,
     live_order_changed: false,
     error_code: errorCode,
+    metro: input.metro?.slice(0, 80) || null,
+    acquisition_source: input.acquisitionSource?.slice(0, 80) || null,
   });
   if (writeError) {
     console.error('[embedding-shadow] evaluation write failed:', writeError.message);

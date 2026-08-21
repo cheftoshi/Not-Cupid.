@@ -411,6 +411,8 @@ export async function composeLoveRosterForUser(
       liveAlgorithmVersion: MATCHING_ALGORITHM_VERSION,
       liveTopIds: roster.map((candidate) => candidate.id),
       eligibleCandidateIds: ranked.map((candidate) => candidate.user.id),
+      metro: metroOf(user.zip),
+      acquisitionSource: user.acquisition_source,
     }).catch((error) => {
       console.error('[love-roster] embedding shadow evaluation failed:', error instanceof Error ? error.message : 'unknown');
     });

@@ -49,6 +49,18 @@ Do not use vector results in live ordering until a human reviews at least:
 
 Any future live experiment must be separately versioned, reversible, capacity-safe, reciprocal, realm-isolated, and launched as a bounded treatment rather than replacing `love-v3.1` globally.
 
+The service-only `connection_intelligence_config` row makes that gate explicit. Its safe defaults are:
+
+- phase `shadow`;
+- live allocation `0%`;
+- kill switch on;
+- at least 100 shadow evaluations, 30 connection actions and 10 consenting users;
+- no live-order changes, at most 1% shadow errors and p95 shadow latency at or below 500ms.
+
+`connection_intelligence_promotion_readiness()` returns the current blockers. Even a clear score card does not activate a live treatment: the application has no code path that reads vector order into the roster, and a future live test requires a human approval timestamp, the kill switch off, and a separately deployed bounded treatment.
+
+The admin Mission Control surface shows coverage, failures, evaluation volume, latency, current blockers and metro-level shadow summaries. Historical cohorts that pre-date the canonical ledger are excluded instead of being reported as false zero-retention cohorts.
+
 ## Deployment order
 
 1. Apply `20260820170000_connection_intelligence_foundation.sql`.
@@ -56,3 +68,4 @@ Any future live experiment must be separately versioned, reversible, capacity-sa
 3. Confirm `/api/admin/connection-intelligence` has no schema errors.
 4. Test consent on an isolated test account and confirm two vectors at most (Love/Friend as applicable).
 5. Enable `EMBEDDING_SHADOW_ENABLED=true` only when shadow collection should begin.
+6. Keep live allocation at zero until the admin score card reaches its evidence minimums and a human reviews the segment-level outcomes.
