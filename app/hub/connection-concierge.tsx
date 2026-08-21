@@ -53,10 +53,12 @@ export default function ConnectionConcierge({
   firstName,
   city,
   initialConsented,
+  initialMatchingPersonalization,
 }: {
   firstName: string;
   city?: string | null;
   initialConsented: boolean;
+  initialMatchingPersonalization: boolean;
 }) {
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [brief, setBrief] = useState<ConciergeBrief>(FALLBACK_BRIEF);
@@ -65,6 +67,8 @@ export default function ConnectionConcierge({
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [consented, setConsented] = useState(initialConsented);
+  const [matchingPersonalization, setMatchingPersonalization] = useState(initialMatchingPersonalization);
+  const [matchingBusy, setMatchingBusy] = useState(false);
   const [pendingConsentMessage, setPendingConsentMessage] = useState('');
   const [error, setError] = useState('');
   const [showControls, setShowControls] = useState(false);
@@ -130,6 +134,7 @@ export default function ConnectionConcierge({
         if (body.brief?.headline && body.brief?.message) setBrief(body.brief);
         if (Array.isArray(body.memories)) setMemories(body.memories);
         setConsented(body.consented === true);
+        setMatchingPersonalization(body.matchingPersonalization === true);
       })
       .catch(() => {})
       .finally(() => setBriefLoading(false));
@@ -268,8 +273,32 @@ export default function ConnectionConcierge({
       });
       if (!response.ok) throw new Error('failed');
       setConsented(false);
+      setMatchingPersonalization(false);
       clearChat();
     } catch { setError('AI controls could not be updated. Try again.'); }
+  }
+
+  async function toggleMatchingPersonalization() {
+    if (matchingBusy) return;
+    setMatchingBusy(true);
+    setError('');
+    const next = !matchingPersonalization;
+    try {
+      const response = await fetch('/api/concierge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'matching_personalization', enabled: next }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'failed');
+      setMatchingPersonalization(body.enabled === true);
+    } catch (caught) {
+      setError(caught instanceof Error && caught.message !== 'failed'
+        ? caught.message
+        : 'Match personalization could not be updated. Try again.');
+    } finally {
+      setMatchingBusy(false);
+    }
   }
 
   return (
@@ -306,6 +335,15 @@ export default function ConnectionConcierge({
               ))}
             </div>
           ) : <p className={styles.conciergeMemoryEmpty}>Nothing saved yet.</p>}
+          <div className={styles.conciergePersonalization}>
+            <div>
+              <strong>AI match evaluation</strong>
+              <p>Optional. OpenAI turns selected quiz scores, values, rhythms and interests into a private vector. Names, contact details, ZIP, photos, bios and messages are excluded. For now it only evaluates the current matcher and cannot reorder your roster.</p>
+            </div>
+            <button type="button" onClick={() => void toggleMatchingPersonalization()} disabled={matchingBusy || !consented}>
+              {matchingBusy ? 'updating…' : matchingPersonalization ? 'turn off' : 'enable'}
+            </button>
+          </div>
           <div className={styles.conciergeControlActions}>
             {messages.length > 0 && <button type="button" onClick={clearChat}>clear this chat</button>}
             {consented && <button type="button" onClick={() => void revokeConsent()}>turn off AI</button>}

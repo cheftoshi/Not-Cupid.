@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { HUB_CONCIERGE_VERSION } from '@/lib/connection-concierge';
+import { hasMatchingEmbeddingConsent } from '@/lib/connection-embeddings';
 import HubClient from './hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,7 @@ export default async function HubPage() {
       firstName={firstName}
       city={city}
       conciergeConsented={conciergeConsented}
+      matchingPersonalizationEnabled={hasMatchingEmbeddingConsent(user)}
     />
   );
 }

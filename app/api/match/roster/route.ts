@@ -7,6 +7,7 @@
 // prompts, and interests; private deep-quiz fields and extra photos stay out.
 
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { MATCHING_ALGORITHM_VERSION, compatibilityBreakdown, rankCandidates } from '@/lib/matching';
@@ -27,6 +28,8 @@ import {
 } from '@/lib/matching-policy';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 import { lovePickAccessFor } from '@/lib/love-pick-access';
+import { evaluateEmbeddingShadow } from '@/lib/embedding-shadow';
+import { hasMatchingEmbeddingConsent } from '@/lib/connection-embeddings';
 
 // ZIP → human metro label (e.g. "Boston, MA"), or "Boston area" fallback.
 // Never returns the raw ZIP — that's a location-privacy leak.
@@ -352,6 +355,7 @@ export async function composeLoveRosterForUser(
     // one latest exposure per pair, which is all the seven-day cooldown needs.
     if (roster.length > 0) {
       const shownAt = new Date().toISOString();
+      const treatmentId = randomUUID();
       await supabaseAdmin
         .from('roster_exposures')
         .upsert(
@@ -364,6 +368,7 @@ export async function composeLoveRosterForUser(
             algorithm_version: MATCHING_ALGORITHM_VERSION,
             reason_codes: candidate.reasonCodes,
             reciprocal_adjustment: reciprocalByCandidateId.get(candidate.id) ?? 0,
+            treatment_id: treatmentId,
           })),
           { onConflict: 'user_id,candidate_id' },
         )
@@ -394,6 +399,21 @@ export async function composeLoveRosterForUser(
         ? { ...credit, intendedCandidateId: null }
         : credit);
     }
+  }
+
+  // Shadow evaluation receives only ids from the existing reciprocal,
+  // capacity-safe eligible pool. It records overlap and rank stability, and
+  // its database schema forbids it from claiming that live order changed.
+  if (options.interactive !== false && hasMatchingEmbeddingConsent(user)) {
+    await evaluateEmbeddingShadow({
+      userId: user.id,
+      intent: 'love',
+      liveAlgorithmVersion: MATCHING_ALGORITHM_VERSION,
+      liveTopIds: roster.map((candidate) => candidate.id),
+      eligibleCandidateIds: ranked.map((candidate) => candidate.user.id),
+    }).catch((error) => {
+      console.error('[love-roster] embedding shadow evaluation failed:', error instanceof Error ? error.message : 'unknown');
+    });
   }
 
   return {

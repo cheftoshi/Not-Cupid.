@@ -7,6 +7,8 @@ import { createHash } from 'node:crypto';
 import OpenAI from 'openai';
 
 export const AI_DEFAULT_MODEL = process.env.AI_CONCIERGE_MODEL || 'gpt-5.6-luna';
+export const AI_EMBEDDING_MODEL = process.env.AI_EMBEDDING_MODEL || 'text-embedding-3-small';
+export const AI_EMBEDDING_DIMENSIONS = 384;
 
 let client: OpenAI | null = null;
 
@@ -29,6 +31,55 @@ function getClient(): OpenAI {
 // prevention. Hashing the internal UUID keeps names and emails out of it.
 export function privacySafeAiUserId(userId: string): string {
   return createHash('sha256').update(`notcupid-ai:${userId}`).digest('hex');
+}
+
+export type GeneratedEmbedding = {
+  embedding: number[];
+  model: string;
+  dimensions: number;
+  promptTokens: number;
+};
+
+// Embeddings use the same server-only client, bounded retry policy and
+// privacy-safe user identifier as the concierge. Keeping dimensions fixed is
+// important because PostgreSQL vector columns have a declared dimension.
+export async function generateEmbedding(opts: {
+  input: string;
+  model?: string;
+  dimensions?: number;
+  safetyIdentifier?: string;
+}): Promise<GeneratedEmbedding | null> {
+  if (!aiEnabled()) return null;
+  const input = opts.input.trim();
+  const model = opts.model ?? AI_EMBEDDING_MODEL;
+  const dimensions = opts.dimensions ?? AI_EMBEDDING_DIMENSIONS;
+  if (!input || input.length > 12_000) return null;
+  if (!model.startsWith('text-embedding-3-') || dimensions !== AI_EMBEDDING_DIMENSIONS) {
+    console.error('[ai] rejected incompatible embedding configuration');
+    return null;
+  }
+  try {
+    const response = await getClient().embeddings.create({
+      model,
+      input,
+      dimensions,
+      encoding_format: 'float',
+      user: opts.safetyIdentifier,
+    });
+    const embedding = response.data[0]?.embedding;
+    if (!Array.isArray(embedding)
+      || embedding.length !== dimensions
+      || embedding.some((value) => !Number.isFinite(value))) return null;
+    return {
+      embedding,
+      model: response.model || model,
+      dimensions,
+      promptTokens: response.usage?.prompt_tokens ?? 0,
+    };
+  } catch (error) {
+    console.error('[ai] embedding request failed:', error instanceof Error ? error.message : 'unknown');
+    return null;
+  }
 }
 
 // Generate a JSON object that strictly matches `schema`. The request is

@@ -5,10 +5,12 @@ export default function HubClient({
   firstName,
   city,
   conciergeConsented,
+  matchingPersonalizationEnabled,
 }: {
   firstName: string;
   city?: string | null;
   conciergeConsented: boolean;
+  matchingPersonalizationEnabled: boolean;
 }) {
   return (
     <main className={styles.hub}>
@@ -18,6 +20,7 @@ export default function HubClient({
           firstName={firstName}
           city={city}
           initialConsented={conciergeConsented}
+          initialMatchingPersonalization={matchingPersonalizationEnabled}
         />
       </div>
     </main>

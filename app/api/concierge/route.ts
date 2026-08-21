@@ -22,6 +22,15 @@ import {
   normalizeConnectionMemorySuggestion,
   normalizeConciergeRecommendation,
 } from '@/lib/connection-concierge';
+import {
+  hasMatchingEmbeddingConsent,
+  MATCHING_EMBEDDING_CONSENT_VERSION,
+} from '@/lib/connection-embeddings';
+import {
+  deleteConnectionEmbeddings,
+  generateConnectionEmbeddingsForUser,
+  loadConnectionEmbeddingUser,
+} from '@/lib/connection-embeddings-server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -103,6 +112,7 @@ export async function GET() {
       brief: connectionBrief(inventory),
       memories,
       consented: hasConsent(user),
+      matchingPersonalization: hasMatchingEmbeddingConsent(user),
       version: HUB_CONCIERGE_VERSION,
     });
   } catch (error) {
@@ -115,6 +125,7 @@ export async function GET() {
       },
       memories: [],
       consented: hasConsent(user),
+      matchingPersonalization: hasMatchingEmbeddingConsent(user),
       version: HUB_CONCIERGE_VERSION,
     });
   }
@@ -255,10 +266,46 @@ export async function PATCH(req: NextRequest) {
   if (body.type === 'revoke_consent') {
     const { error } = await supabaseAdmin.from('users').update({
       ai_concierge_consent_revoked_at: new Date().toISOString(),
+      ai_matching_consent_revoked_at: new Date().toISOString(),
     }).eq('id', user.id);
     if (error) return NextResponse.json({ error: 'Could not update AI controls.' }, { status: 500 });
+    await deleteConnectionEmbeddings(user.id);
     await recordAppEvent({ userId: user.id, eventName: 'concierge_consent_revoked', surface: 'hub_concierge', metadata: { version: HUB_CONCIERGE_VERSION } });
     return NextResponse.json({ ok: true });
+  }
+
+  if (body.type === 'matching_personalization') {
+    const enabled = body.enabled === true;
+    if (enabled && !hasConsent(user)) {
+      return NextResponse.json({ error: 'Turn on the AI concierge before enabling AI match evaluation.' }, { status: 412 });
+    }
+    const now = new Date().toISOString();
+    const { error } = await supabaseAdmin.from('users').update(enabled ? {
+      ai_matching_consent_version: MATCHING_EMBEDDING_CONSENT_VERSION,
+      ai_matching_consent_at: now,
+      ai_matching_consent_revoked_at: null,
+    } : {
+      ai_matching_consent_revoked_at: now,
+    }).eq('id', user.id);
+    if (error) return NextResponse.json({ error: 'Could not update match personalization.' }, { status: 500 });
+
+    let embeddingResults: Awaited<ReturnType<typeof generateConnectionEmbeddingsForUser>> = [];
+    if (enabled) {
+      const updatedUser = await loadConnectionEmbeddingUser(user.id);
+      if (updatedUser) embeddingResults = await generateConnectionEmbeddingsForUser(updatedUser);
+    } else {
+      await deleteConnectionEmbeddings(user.id);
+    }
+    await recordAppEvent({
+      userId: user.id,
+      eventName: enabled ? 'matching_embedding_consent_granted' : 'matching_embedding_consent_revoked',
+      surface: 'hub_concierge',
+      metadata: {
+        version: MATCHING_EMBEDDING_CONSENT_VERSION,
+        generated: embeddingResults.filter((result) => result.status === 'created').length,
+      },
+    });
+    return NextResponse.json({ ok: true, enabled, embeddingResults });
   }
 
   if (body.type === 'remember') {

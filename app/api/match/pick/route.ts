@@ -239,9 +239,15 @@ export async function POST(req: NextRequest) {
 
   // Persist auditable decision metadata (aggregate scores/reason codes only,
   // never raw quiz answers) and close the roster exposure → pick loop.
+  const { data: exposureTreatment } = await supabaseAdmin.from('roster_exposures')
+    .select('treatment_id')
+    .eq('user_id', user.id)
+    .eq('candidate_id', candidateId)
+    .maybeSingle();
   const metadataResults = await Promise.all([
     supabaseAdmin.from('matches').update({
       algorithm_version: MATCHING_ALGORITHM_VERSION,
+      treatment_id: exposureTreatment?.treatment_id || null,
       match_score_details: {
         confidence: breakdown.confidence,
         reason_codes: breakdown.reasonCodes,
