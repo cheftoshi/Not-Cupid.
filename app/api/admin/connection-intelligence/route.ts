@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/admin';
+import { embeddingShadowEnabled } from '@/lib/embedding-shadow';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,13 @@ export async function GET(req: NextRequest) {
       readyRealUsers: coverageRow?.ready_real_users ?? 0,
       readyIntentEmbeddings: coverageRow?.ready_intent_embeddings ?? 0,
       failedIntentEmbeddings: coverageRow?.failed_intent_embeddings ?? 0,
+    },
+    operatingState: {
+      shadowEnabled: embeddingShadowEnabled(),
+      liveOrderingEnabled: false,
+      maintenanceLimitPerRun: 25,
+      scheduledBatchSize: 10,
+      scheduleUtc: '35 8 * * *',
     },
     readiness: readinessRow,
     configuration: configuration.data,

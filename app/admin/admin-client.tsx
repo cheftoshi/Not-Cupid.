@@ -145,6 +145,7 @@ function ConnectionIntelligenceAdmin() {
 
   const gate = snapshot.readiness || {}
   const coverage = snapshot.embeddingCoverage || {}
+  const operating = snapshot.operatingState || {}
   const blockers: string[] = Array.isArray(gate.blockers) ? gate.blockers : []
   const healthy = Array.isArray(snapshot.errors) && snapshot.errors.length === 0
   const reviewReady = gate.ready_for_human_review === true
@@ -156,6 +157,9 @@ function ConnectionIntelligenceAdmin() {
         <span className={s.chip}>{gate.phase || snapshot.configuration?.phase || 'shadow'}</span>
         <span className={`${s.chip} ${gate.live_test_enabled ? s.chipRed : s.chipGold}`}>
           {gate.live_test_enabled ? `LIVE TEST · ${gate.live_allocation_percent}%` : 'LIVE ORDER UNCHANGED'}
+        </span>
+        <span className={`${s.chip} ${operating.shadowEnabled ? s.chipGold : s.chipRed}`}>
+          SHADOW {operating.shadowEnabled ? 'ON' : 'OFF'}
         </span>
         <button onClick={load} disabled={loading} className={s.btn} style={{ marginLeft: 'auto' }}>{loading ? 'refreshing…' : 'refresh'}</button>
       </div>
@@ -180,6 +184,7 @@ function ConnectionIntelligenceAdmin() {
         <div><b>Measurement began:</b> {gate.measurement_started_at ? new Date(gate.measurement_started_at).toLocaleString() : 'waiting for configuration'}</div>
         <div><b>Review gate:</b> {reviewReady ? 'ready for human review' : blockers.length ? blockers.join(' · ').replaceAll('_', ' ') : 'collecting evidence'}</div>
         <div><b>Kill switch:</b> {gate.kill_switch === false ? 'off' : 'on'} · <b>configured allocation:</b> {gate.live_allocation_percent ?? 0}%</div>
+        <div><b>Maintenance:</b> {operating.scheduledBatchSize ?? 10} consented users/day · maximum {operating.maintenanceLimitPerRun ?? 25}/run</div>
       </div>
 
       {(snapshot.shadow || []).length > 0 && (

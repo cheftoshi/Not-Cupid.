@@ -123,7 +123,10 @@ test('evidence gates keep the candidate ranker at zero live allocation until hum
   assert.match(migration, /live_order_changed/i);
   assert.match(migration, /u\.created_at >= greatest/i);
   assert.match(adminApi, /connection_intelligence_promotion_readiness/);
+  assert.match(adminApi, /shadowEnabled: embeddingShadowEnabled\(\)/);
+  assert.match(adminApi, /liveOrderingEnabled: false/);
   assert.match(adminUi, /LIVE ORDER UNCHANGED/);
+  assert.match(adminUi, /SHADOW/);
   assert.match(shadow, /metro: input\.metro/);
   assert.match(shadow, /acquisition_source: input\.acquisitionSource/);
 });
