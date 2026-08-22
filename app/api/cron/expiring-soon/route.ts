@@ -31,7 +31,7 @@ type PendingMatch = {
   compatibility_score: number | null;
 };
 
-type ReminderKind = 'decision_24h' | 'decision_final';
+type ReminderKind = 'decision_24h' | 'decision_48h' | 'decision_final';
 type ReminderItem = { match: PendingMatch; recipientId: string; otherId: string };
 type MutualNoMessageMatch = PendingMatch & {
   created_at: string;
@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
     const twentyFourHoursAgo = new Date(now - 24 * HOUR).toISOString();
+    const fortyEightHoursAgo = new Date(now - 48 * HOUR).toISOString();
     const finalLowerIso = new Date(now + FINAL_MIN_HOURS * HOUR).toISOString();
     const finalUpperIso = new Date(now + FINAL_MAX_HOURS * HOUR).toISOString();
     const sevenDaysAgo = new Date(now - 7 * 24 * HOUR).toISOString();
@@ -83,7 +84,12 @@ export async function GET(req: NextRequest) {
     const mutualNudgeEnabled = process.env.LOVE_MUTUAL_NUDGE_APPROVAL_VERSION === MUTUAL_NUDGE_VERSION;
 
     const commonCols = 'id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, compatibility_score';
-    const [{ data: dayMatches, error: dayError }, { data: finalMatches, error: finalError }, mutualRows] = await Promise.all([
+    const [
+      { data: dayMatches, error: dayError },
+      { data: fortyEightHourMatches, error: fortyEightHourError },
+      { data: finalMatches, error: finalError },
+      mutualRows,
+    ] = await Promise.all([
       supabaseAdmin
         .from('matches')
         .select(commonCols)
@@ -91,6 +97,19 @@ export async function GET(req: NextRequest) {
         .is('ended_at', null)
         .is('decision_reminder_sent_at', null)
         .lte('created_at', twentyFourHoursAgo)
+        .gt('expires_at', finalUpperIso)
+        .order('created_at', { ascending: true })
+        .limit(250),
+      // One push-only midpoint reminder. The 24-hour and final notices already
+      // use email + push; keeping 48 hours push-only helps installed PWA users
+      // without adding a third email.
+      supabaseAdmin
+        .from('matches')
+        .select(commonCols)
+        .eq('status', 'pending')
+        .is('ended_at', null)
+        .not('decision_reminder_sent_at', 'is', null)
+        .lte('created_at', fortyEightHoursAgo)
         .gt('expires_at', finalUpperIso)
         .order('created_at', { ascending: true })
         .limit(250),
@@ -117,6 +136,7 @@ export async function GET(req: NextRequest) {
       ),
     ]);
     if (dayError) throw dayError;
+    if (fortyEightHourError) throw fortyEightHourError;
     if (finalError) throw finalError;
 
     const mutualAgeEligible = mutualRows.filter((match) => {
@@ -141,8 +161,9 @@ export async function GET(req: NextRequest) {
     const mutualNoMessage = mutualAgeEligible.filter((match) => !messagedIds.has(match.id));
 
     const groups = new Map<string, ReminderItem[]>([
-      ...groupItems('decision_24h', (dayMatches || []) as PendingMatch[]),
       ...groupItems('decision_final', (finalMatches || []) as PendingMatch[]),
+      ...groupItems('decision_24h', (dayMatches || []) as PendingMatch[]),
+      ...groupItems('decision_48h', (fortyEightHourMatches || []) as PendingMatch[]),
     ]);
     const userIds = Array.from(new Set([
       ...Array.from(groups.values()).flatMap((items) => items.flatMap((item) => [item.recipientId, item.otherId])),
@@ -160,25 +181,34 @@ export async function GET(req: NextRequest) {
     const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
     let emailed = 0;
     let pushed = 0;
+    let pushed48h = 0;
     let skipped = 0;
     let mutualNudgeEmailed = 0;
     let mutualNudgePushed = 0;
     const failures: string[] = [];
+    const reachedRecipients = new Set<string>();
 
     for (const [key, items] of groups) {
-      const kind = key.startsWith('decision_24h:') ? 'decision_24h' : 'decision_final';
+      const kind: ReminderKind = key.startsWith('decision_final:')
+        ? 'decision_final'
+        : key.startsWith('decision_48h:')
+          ? 'decision_48h'
+          : 'decision_24h';
       const type = kind as LoveNotificationType;
       const recipient = byId.get(items[0].recipientId);
       const names = items.map((item) => (byId.get(item.otherId)?.name || 'your match').split(' ')[0]);
+      const isMidpoint = kind === 'decision_48h';
 
-      const emailEventIds = (await Promise.all(items.map((item) =>
-        claimLoveNotificationEvent({
-          matchId: item.match.id,
-          recipientId: item.recipientId,
-          type,
-          channel: 'email',
-        })
-      ))).filter((id): id is string => !!id);
+      const emailEventIds = isMidpoint
+        ? []
+        : (await Promise.all(items.map((item) =>
+            claimLoveNotificationEvent({
+              matchId: item.match.id,
+              recipientId: item.recipientId,
+              type,
+              channel: 'email',
+            })
+          ))).filter((id): id is string => !!id);
 
       const pushEventIds = (await Promise.all(items.map((item) =>
         claimLoveNotificationEvent({
@@ -193,6 +223,7 @@ export async function GET(req: NextRequest) {
       const dashboardPath = loveDashboardUrl(firstMatchId);
       const isFinal = kind === 'decision_final';
       let handled = false;
+      let reached = false;
       if (emailEventIds.length > 0) {
         if (!recipient?.email || recipient.email_notifications === false || recipient.notifications_paused_at) {
           await markLoveNotificationSkipped(emailEventIds, 'email_unavailable_or_disabled');
@@ -231,16 +262,25 @@ export async function GET(req: NextRequest) {
           if (result.ok) {
             emailed++;
             handled = true;
+            reached = true;
           }
           else failures.push(`${kind}:email:${recipient.id}`);
         }
       }
 
       if (pushEventIds.length > 0) {
-        const didPush = await sendPushToUser(items[0].recipientId, {
-          title: isFinal ? 'Your Love Line choice closes soon' : 'You have a Love Line choice waiting',
+        // If a more urgent/fresher Love notice already reached this person in
+        // the same run, defer the midpoint push to the next hourly pass rather
+        // than alerting twice back-to-back.
+        const deferMidpoint = isMidpoint && reachedRecipients.has(items[0].recipientId);
+        const didPush = deferMidpoint ? false : await sendPushToUser(items[0].recipientId, {
+          title: isFinal
+            ? 'Your Love Line choice closes soon'
+            : isMidpoint
+              ? 'Your Love Line choice is still waiting'
+              : 'You have a Love Line choice waiting',
           body: names.length === 1
-            ? `${names[0]} chose you. Review their profile and choose Yes or Pass.`
+            ? `${names[0]} chose you. ${isMidpoint ? 'Take one more look' : 'Review their profile'} and choose Yes or Pass.`
             : `${names.length} people chose you. Review each profile and choose Yes or Pass.`,
           url: loveDashboardUrl(firstMatchId, pushEventIds[0]),
           tag: 'love-decisions',
@@ -248,12 +288,20 @@ export async function GET(req: NextRequest) {
         if (didPush) {
           await markLoveNotificationResult(pushEventIds, { ok: true });
           pushed++;
+          if (isMidpoint) pushed48h++;
           handled = true;
+          reached = true;
+        } else if (deferMidpoint) {
+          // Keep the claim retryable for the next run rather than recording a
+          // permanent skip merely because another Love alert just went out.
+          await markLoveNotificationResult(pushEventIds, { ok: false, error: 'deferred_same_run' });
         } else {
           await markLoveNotificationSkipped(pushEventIds, 'push_unavailable');
           skipped += pushEventIds.length;
         }
       }
+
+      if (reached) reachedRecipients.add(items[0].recipientId);
 
       // Provider email failures remain retryable after the ledger claim cools
       // down; we only close the match-level reminder gate once some channel
@@ -327,10 +375,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       due24h: dayMatches?.length || 0,
+      due48h: fortyEightHourMatches?.length || 0,
       dueFinal: finalMatches?.length || 0,
       recipients: groups.size,
       emailed,
       pushed,
+      pushed48h,
       skipped,
       failures: failures.slice(0, 8),
       mutualNoMessage12h: {

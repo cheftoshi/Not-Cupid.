@@ -633,6 +633,7 @@ export default function AdminClient() {
                     <div className={s.chips}>
                       <span className={s.chip}>Immediate sent <b>{data.loveFunnel.notifications.immediateSent}</b></span>
                       <span className={s.chip}>24h sent <b>{data.loveFunnel.notifications.reminder24hSent}</b></span>
+                      <span className={s.chip}>48h push <b>{data.loveFunnel.notifications.reminder48hPushSent}</b></span>
                       <span className={s.chip}>Final sent <b>{data.loveFunnel.notifications.finalSent}</b></span>
                       <span className={s.chip}>12h mutual nudge <b>{data.loveFunnel.notifications.mutualNoMessage12hSent}</b></span>
                       <span className={s.chip}>Delivered <b>{data.loveFunnel.notifications.delivered}</b></span>

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 export type LoveNotificationType =
   | 'interest_immediate'
   | 'decision_24h'
+  | 'decision_48h'
   | 'decision_final'
   | 'mutual'
   | 'mutual_no_message_12h'

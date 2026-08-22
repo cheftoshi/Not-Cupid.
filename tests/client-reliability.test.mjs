@@ -15,6 +15,7 @@ test('client errors are grouped without collecting raw messages, stacks, or quer
   assert.equal(classifyClientError('ChunkLoadError', 'Loading chunk 81 failed'), 'chunk_load');
   assert.equal(classifyClientError('NotAllowedError', 'Permission denied'), 'permission');
   assert.equal(classifyClientError(null, 'Script error.'), 'script_error');
+  assert.equal(classifyClientError('Error', 'Minified React error #418; visit react.dev/errors/418'), 'hydration');
   assert.equal(safeClientErrorName('CustomError'), 'Error');
   assert.equal(
     safeClientErrorSource('https://notcupid.com/_next/static/chunks/app.js?token=private', 'https://notcupid.com'),
@@ -60,6 +61,13 @@ test('Love chat, Friend Line and Dating Experiment actions handle network failur
   assert.match(friend, /friend-message-failed[\s\S]*setMsg\(body\)/);
   assert.match(discovery, /could not post that signal — check your connection/);
   assert.match(experiment, /could not save your private choices — check your connection/);
+});
+
+test('Friend Line deep links preserve a deterministic first hydration render', () => {
+  const friend = source('app/friends/friend-hub-client.tsx');
+  assert.match(friend, /useState<NavKey>\('home'\)/);
+  assert.match(friend, /syncViewFromLocation\(\);/);
+  assert.doesNotMatch(friend, /useState<NavKey>\(\(\) => \{[\s\S]*window\.location/);
 });
 
 test('Friend profile and account actions recover instead of leaving rejected promises', () => {

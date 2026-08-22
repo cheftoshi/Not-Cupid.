@@ -62,7 +62,7 @@ test('a pick notifies the other person and mutual acceptance notifies both', () 
   assert.match(acceptMigration, /grant execute on function public\.accept_love_match[\s\S]*to service_role/i);
 });
 
-test('Love concierge records and deduplicates immediate, 24h, final, decision, and expiry events', () => {
+test('Love concierge records and deduplicates immediate, 24h, push-only 48h, final, decision, and expiry events', () => {
   const migration = readFileSync(new URL('../supabase/migrations/20260818174000_love_concierge_event_ledger.sql', import.meta.url), 'utf8');
   const ledger = readFileSync(new URL('../lib/love-notification-ledger.ts', import.meta.url), 'utf8');
   const cron = readFileSync(new URL('../app/api/cron/expiring-soon/route.ts', import.meta.url), 'utf8');
@@ -74,7 +74,10 @@ test('Love concierge records and deduplicates immediate, 24h, final, decision, a
   assert.match(ledger, /recordLoveDecision/);
   assert.match(ledger, /recordLoveExpiry/);
   assert.match(cron, /decision_24h/);
+  assert.match(cron, /decision_48h/);
   assert.match(cron, /decision_final/);
+  assert.match(cron, /isMidpoint\s*\?\s*\[\]/);
+  assert.match(cron, /pushed48h/);
   assert.match(cron, /You have a Love Line choice waiting/);
   assert.match(cron, /Your Love Line choice closes soon/);
   assert.match(cron, /loveDashboardUrl/);

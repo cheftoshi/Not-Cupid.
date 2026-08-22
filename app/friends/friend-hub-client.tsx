@@ -906,12 +906,11 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       }
     } catch { /* storage unavailable — drafts just don't persist */ }
   }, [composerOpen, composerStep, newAct]);
-  // Deep-link: a crew push opens /friends?view=crew straight into the chat.
-  const [view, setView] = useState<NavKey>(() => {
-    if (typeof window === 'undefined') return 'home';
-    const v = new URLSearchParams(window.location.search).get('view');
-    return (['home', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home';
-  });
+  // Keep the server and first browser render identical. Deep links are applied
+  // immediately after hydration; reading location in the state initializer made
+  // /friends?view=... render different trees on mobile/PWA and triggered React
+  // hydration recovery errors.
+  const [view, setView] = useState<NavKey>('home');
   function goView(next: NavKey, opts: { replace?: boolean } = {}) {
     setView(next);
     if (typeof window === 'undefined') return;
@@ -1055,12 +1054,13 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
   useEffect(() => { try { if (localStorage.getItem('nc-friend-terms') === '1') setTermsOk(true); } catch { /* ignore */ } setTermsChecked(true); }, []);
   useEffect(() => {
-    const onPop = () => {
+    const syncViewFromLocation = () => {
       const v = new URLSearchParams(window.location.search).get('view');
       setView((['home', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home');
     };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
+    syncViewFromLocation();
+    window.addEventListener('popstate', syncViewFromLocation);
+    return () => window.removeEventListener('popstate', syncViewFromLocation);
   }, []);
 
   useEffect(() => { loadMatches(); loadPulse(); loadClubs(); }, [loadMatches, loadPulse, loadClubs]);

@@ -33,7 +33,10 @@ export function classifyClientError(name: unknown, message: unknown): ClientErro
   const combined = `${normalizedName} ${normalizedMessage}`;
   if (/abort|cancelled|canceled/.test(combined)) return 'abort';
   if (/chunkload|loading chunk|dynamically imported module|failed to fetch.*module/.test(combined)) return 'chunk_load';
-  if (/hydration|hydrating/.test(combined)) return 'hydration';
+  // React production builds replace descriptive hydration messages with
+  // invariant numbers. Keep these coarse codes actionable without collecting
+  // the raw message or stack (which could contain user-rendered text).
+  if (/hydration|hydrating|minified react error #(418|423|425)\b/.test(combined)) return 'hydration';
   if (/resizeobserver/.test(combined)) return 'resize_observer';
   if (/script error/.test(combined)) return 'script_error';
   if (/notallowed|permission|securityerror|pushmanager|serviceworker/.test(combined)) return 'permission';

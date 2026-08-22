@@ -988,6 +988,7 @@ export async function GET(req: NextRequest) {
       .map((message: any) => message.match_id))
     const sentStatuses = new Set(['sent', 'delivered', 'opened', 'clicked'])
     const emailEvents = loveNotificationEvents.filter((event: any) => event.channel === 'email')
+    const pushEvents = loveNotificationEvents.filter((event: any) => event.channel === 'push')
     const eventCount = (type: string, statuses?: Set<string>) => emailEvents.filter((event: any) =>
       event.notification_type === type && (!statuses || statuses.has(event.status))
     ).length
@@ -1014,6 +1015,9 @@ export async function GET(req: NextRequest) {
       notifications: {
         immediateSent: eventCount('interest_immediate', sentStatuses),
         reminder24hSent: eventCount('decision_24h', sentStatuses),
+        reminder48hPushSent: pushEvents.filter((event: any) =>
+          event.notification_type === 'decision_48h' && sentStatuses.has(event.status)
+        ).length,
         finalSent: eventCount('decision_final', sentStatuses),
         mutualNoMessage12hSent: eventCount('mutual_no_message_12h', sentStatuses),
         delivered: emailEvents.filter((event: any) => ['delivered', 'opened', 'clicked'].includes(event.status)).length,
@@ -1029,7 +1033,7 @@ export async function GET(req: NextRequest) {
       notes: [
         'A live connection is pending inside its 72-hour decision window or mutually accepted.',
         'Need to answer means someone else already chose them; awaiting means they made the first choice.',
-        '24-hour and near-expiry deliveries are deduplicated by match, recipient, and channel.',
+        '24-hour, push-only 48-hour, and near-expiry deliveries are deduplicated by match, recipient, and channel.',
       ],
     }
 

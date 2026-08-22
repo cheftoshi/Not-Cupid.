@@ -106,6 +106,7 @@ export function detectProductBottlenecks(input: SnapshotInput) {
   if (love?.notifications) {
     const attempted = Number(love.notifications.immediateSent ?? 0)
       + Number(love.notifications.reminder24hSent ?? 0)
+      + Number(love.notifications.reminder48hPushSent ?? 0)
       + Number(love.notifications.finalSent ?? 0)
       + Number(love.notifications.mutualNoMessage12hSent ?? 0);
     const terminal = Number(love.notifications.delivered ?? 0) + Number(love.notifications.failed ?? 0);
