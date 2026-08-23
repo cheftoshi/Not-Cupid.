@@ -45,9 +45,13 @@ test('HTML-only inbound messages get a readable text fallback', () => {
 
 test('inbound forwarding archives first and is retry-idempotent', () => {
   const route = source('app/api/inbound/route.ts');
+  const permissionMigration = source('supabase/migrations/20260823165000_inbound_message_service_grant.sql');
   assert.ok(route.indexOf("from('inbound_messages').insert") < route.indexOf('resend.emails.send'));
   assert.match(route, /idempotencyKey: `inbound-forward-\$\{emailId\}`/);
   assert.match(route, /isMatchInboxRecipient\(email\.to \|\| \[\], email\.received_for \|\| \[\]\)/);
+  assert.match(permissionMigration, /revoke all on table public\.inbound_messages from anon, authenticated/i);
+  assert.match(permissionMigration, /grant insert on table public\.inbound_messages to service_role/i);
+  assert.doesNotMatch(permissionMigration, /grant all|to anon|to authenticated/i);
 });
 
 test('legacy direct Resend senders use the configured operator reply address', () => {
