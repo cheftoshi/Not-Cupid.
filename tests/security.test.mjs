@@ -60,6 +60,7 @@ test('managed video URLs cannot leave the expected user prefix', () => {
 test('account deactivation is transactional and only clears the session after success', () => {
   const route = readFileSync(new URL('../app/api/profile/delete/route.ts', import.meta.url), 'utf8');
   const migration = readFileSync(new URL('../supabase/migrations/20260819043331_atomic_profile_deactivation.sql', import.meta.url), 'utf8');
+  const suppression = readFileSync(new URL('../supabase/migrations/20260825103500_account_deletion_email_suppression.sql', import.meta.url), 'utf8');
   assert.match(route, /rpc\('deactivate_notcupid_account'/);
   assert.match(route, /if \(error \|\| deactivated !== true\)/);
   assert.match(route, /await destroySession\(\)/);
@@ -67,6 +68,21 @@ test('account deactivation is transactional and only clears the session after su
   assert.match(migration, /for update/i);
   assert.match(migration, /delete from public\.sessions/);
   assert.match(migration, /grant execute on function public\.deactivate_notcupid_account[\s\S]*to service_role/i);
+  assert.match(suppression, /status in \('waiting', 'matched', 'inactive', 'deleted'\)/);
+  assert.match(suppression, /email_notifications = false/);
+  assert.match(suppression, /notifications_paused_at = coalesce/);
+  assert.match(suppression, /delete from public\.push_subscriptions/);
+  assert.match(suppression, /delete from public\.sessions/);
+});
+
+test('activity notification paths suppress deleted and opted-out recipients', () => {
+  const love = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
+  const friend = readFileSync(new URL('../app/api/friend/accept/route.ts', import.meta.url), 'utf8');
+  assert.match(love, /recipient\.deleted_at/);
+  assert.match(love, /recipient\.email_notifications === false/);
+  assert.match(love, /other\.deleted_at/);
+  assert.match(friend, /u\.deleted_at/);
+  assert.match(friend, /u\.email_notifications === false/);
 });
 
 test('blocking and reporting are atomic server-only account transitions', () => {

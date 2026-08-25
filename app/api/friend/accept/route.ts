@@ -21,8 +21,9 @@ async function notifyCrewMember(memberId: string, joinerName: string, crewSize: 
   });
 
   const { data: u } = await supabaseAdmin
-    .from('users').select('name, email, email_notifications, is_test').eq('id', memberId).single();
-  if (!u?.email || u.email_notifications === false || u.is_test) return;
+    .from('users').select('name, email, email_notifications, notifications_paused_at, is_test, is_blocked, deleted_at').eq('id', memberId).single();
+  if (!u?.email || u.email_notifications === false || u.notifications_paused_at
+    || u.is_test || u.is_blocked === true || u.deleted_at) return;
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const others = crewSize > 2 ? `you + ${crewSize - 1} others` : 'your crew';
   const html = renderEmail({

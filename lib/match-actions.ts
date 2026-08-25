@@ -235,8 +235,9 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
 }
 
 async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: string) {
-  const { data: user1 } = await supabaseAdmin.from('users').select('id, name, email').eq('id', user1Id).single();
-  const { data: user2 } = await supabaseAdmin.from('users').select('id, name, email').eq('id', user2Id).single();
+  const notificationFields = 'id, name, email, email_notifications, notifications_paused_at, deleted_at, is_blocked';
+  const { data: user1 } = await supabaseAdmin.from('users').select(notificationFields).eq('id', user1Id).single();
+  const { data: user2 } = await supabaseAdmin.from('users').select(notificationFields).eq('id', user2Id).single();
   if (!user1 || !user2) return;
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
@@ -274,8 +275,9 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
       channel: 'email',
     });
     if (!eventId) return;
-    if (!recipient.email) {
-      await markLoveNotificationSkipped([eventId], 'email_unavailable');
+    if (!recipient.email || recipient.email_notifications === false || recipient.notifications_paused_at
+      || recipient.deleted_at || recipient.is_blocked === true) {
+      await markLoveNotificationSkipped([eventId], 'email_unavailable_or_suppressed');
       return;
     }
     const result = await sendEmail({
@@ -296,7 +298,7 @@ async function sendInterestNudge(matchId: string, otherId: string, accepterId: s
   const [{ data: other }, { data: accepter }] = await Promise.all([
     supabaseAdmin
       .from('users')
-      .select('id, name, email, email_notifications')
+      .select('id, name, email, email_notifications, notifications_paused_at, deleted_at, is_blocked')
       .eq('id', otherId)
       .single(),
     supabaseAdmin
@@ -315,8 +317,9 @@ async function sendInterestNudge(matchId: string, otherId: string, accepterId: s
   if (!eventId) return accepterFirst;
   // Email can be disabled independently; the caller still uses the resolved
   // first name for web push on subscribed devices.
-  if (!other?.email || other.email_notifications === false) {
-    await markLoveNotificationSkipped([eventId], 'email_unavailable_or_disabled');
+  if (!other?.email || other.email_notifications === false || other.notifications_paused_at
+    || other.deleted_at || other.is_blocked === true) {
+    await markLoveNotificationSkipped([eventId], 'email_unavailable_or_suppressed');
     return accepterFirst;
   }
 

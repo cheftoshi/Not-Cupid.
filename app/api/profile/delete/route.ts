@@ -16,5 +16,7 @@ export async function POST() {
 
   await destroySession();
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }, {
+    headers: { 'Cache-Control': 'no-store, max-age=0' },
+  });
 }

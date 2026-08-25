@@ -265,7 +265,9 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       const response = await fetch('/api/profile/delete', { method: 'POST' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'could not delete your account');
-      router.push('/');
+      // Force a document navigation so an installed PWA cannot retain a
+      // prefetched authenticated tree after the server destroys the session.
+      window.location.replace('/?account=deleted');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'could not delete your account — try again');
     } finally { setSaving(false); }

@@ -162,7 +162,8 @@ export async function POST(req: NextRequest) {
     const { data: user } = await supabaseAdmin
       .from('users').select('*').eq('id', userId).single()
 
-    if (user) {
+    if (user?.email && user.email_notifications !== false && !user.notifications_paused_at
+      && !user.deleted_at && user.is_blocked !== true) {
       await sendEmail({
         to: user.email,
         subject: 'You passed — back in the pool',
