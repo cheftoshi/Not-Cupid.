@@ -76,6 +76,7 @@
 .conciergeIdentity { min-width: 0; }
 .conciergeIdentity > span,
 .conciergeBubble small,
+.conciergeMatchingInvite small,
 .conciergeControlButton,
 .conciergeControls span,
 .conciergeControls button,
@@ -88,6 +89,34 @@
   text-transform: uppercase;
   letter-spacing: 0.09em;
 }
+
+.conciergeMatchingInvite {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--h-accent) 24%, var(--h-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--h-accent) 4%, var(--h-surface));
+  padding: 0.75rem;
+}
+.conciergeMatchingInvite small { display: block; color: var(--h-accent); font-size: 0.42rem; }
+.conciergeMatchingInvite strong { display: block; margin-top: 0.25rem; font: italic 400 0.96rem/1.2 'Playfair Display', Georgia, serif; }
+.conciergeMatchingInvite p { margin: 0.3rem 0 0; color: var(--h-text-dim); font-size: 0.68rem; line-height: 1.42; }
+.conciergeMatchingInvite button {
+  min-height: 40px;
+  border: 1px solid var(--h-accent);
+  border-radius: 999px;
+  background: var(--h-accent);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  font: 700 0.46rem/1 'DM Mono', monospace;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.conciergeMatchingInvite button:disabled { cursor: wait; opacity: 0.55; }
 
 .conciergeIdentity > span {
   display: block;
@@ -520,6 +549,8 @@
     border-radius: 0;
     box-shadow: none;
   }
+  .conciergeMatchingInvite { grid-template-columns: 1fr; }
+  .conciergeMatchingInvite button { width: 100%; }
   .conciergeHead {
     grid-template-columns: 38px minmax(0, 1fr) auto;
     gap: 0.6rem;

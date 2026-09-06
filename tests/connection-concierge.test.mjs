@@ -104,6 +104,7 @@ test('Hub concierge is consented, bounded, measurable, and phone-first', () => {
   const migration = readFileSync(new URL('../supabase/migrations/20260818220000_hub_connection_concierge_v1.sql', import.meta.url), 'utf8');
   const memoryMigration = readFileSync(new URL('../supabase/migrations/20260820034945_connection_concierge_v2.sql', import.meta.url), 'utf8');
   const hub = readFileSync(new URL('../app/hub/hub-client.tsx', import.meta.url), 'utf8');
+  const nav = readFileSync(new URL('../components/top-nav.tsx', import.meta.url), 'utf8');
   const privacy = readFileSync(new URL('../app/privacy/page.tsx', import.meta.url), 'utf8');
 
   assert.match(route, /AI consent required/);
@@ -124,9 +125,11 @@ test('Hub concierge is consented, bounded, measurable, and phone-first', () => {
   assert.match(css, /height: calc\(var\(--app-visual-viewport-height, 100dvh\) - var\(--app-top-nav-height/);
   assert.match(css, /\.hub \{[\s\S]*min-height: 0;/);
   assert.match(css, /\.conciergeBody[\s\S]*touch-action: pan-y[\s\S]*-webkit-overflow-scrolling: touch/);
-  assert.match(client, /window\.visualViewport/);
-  assert.match(client, /orientationchange/);
-  assert.match(client, /visibilitychange/);
+  assert.match(nav, /window\.visualViewport/);
+  assert.match(nav, /orientationchange/);
+  assert.match(nav, /visibilitychange/);
+  assert.match(client, /optional match learning/);
+  assert.match(client, /enable privately/);
   assert.match(css, /var\(--app-safe-bottom/);
   assert.match(hub, /<ConnectionConcierge/);
   assert.doesNotMatch(hub, /RaffleCard|friend\/activities|profileMini|membershipCard/);

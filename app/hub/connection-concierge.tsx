@@ -75,45 +75,6 @@ export default function ConnectionConcierge({
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Android installed PWAs do not always keep CSS `dvh` in sync with the
-  // actually visible viewport, especially when the keyboard, app switcher, or
-  // an orientation change is involved. Keep one measured value for the Hub so
-  // its nested conversation scroller can never be sized beyond the visible
-  // screen and become effectively immovable.
-  useEffect(() => {
-    const root = document.documentElement;
-    const viewport = window.visualViewport;
-    let frame = 0;
-
-    const syncViewportHeight = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        const height = Math.round(viewport?.height || window.innerHeight);
-        if (height > 0) root.style.setProperty('--app-visual-viewport-height', `${height}px`);
-      });
-    };
-    const syncAfterVisibilityChange = () => {
-      if (document.visibilityState === 'visible') syncViewportHeight();
-    };
-
-    syncViewportHeight();
-    viewport?.addEventListener('resize', syncViewportHeight);
-    window.addEventListener('resize', syncViewportHeight);
-    window.addEventListener('orientationchange', syncViewportHeight);
-    window.addEventListener('pageshow', syncViewportHeight);
-    document.addEventListener('visibilitychange', syncAfterVisibilityChange);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      viewport?.removeEventListener('resize', syncViewportHeight);
-      window.removeEventListener('resize', syncViewportHeight);
-      window.removeEventListener('orientationchange', syncViewportHeight);
-      window.removeEventListener('pageshow', syncViewportHeight);
-      document.removeEventListener('visibilitychange', syncAfterVisibilityChange);
-      root.style.removeProperty('--app-visual-viewport-height');
-    };
-  }, []);
-
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -363,6 +324,19 @@ export default function ConnectionConcierge({
             </div>
           )}
         </div>
+
+        {consented && !matchingPersonalization && (
+          <div className={styles.conciergeMatchingInvite}>
+            <div>
+              <small>optional match learning</small>
+              <strong>Help the matcher learn your connection style.</strong>
+              <p>AI can privately compare selected quiz scores, values, rhythms and interests. It excludes names, contact details, ZIP, photos, bios and messages, and it cannot reorder your live roster yet.</p>
+            </div>
+            <button type="button" onClick={() => void toggleMatchingPersonalization()} disabled={matchingBusy}>
+              {matchingBusy ? 'enabling…' : 'enable privately'}
+            </button>
+          </div>
+        )}
 
         {messages.map((message) => (
           <div key={message.id} className={`${styles.conciergeBubble} ${message.role === 'user' ? styles.conciergeUser : styles.conciergeAssistant}`}>

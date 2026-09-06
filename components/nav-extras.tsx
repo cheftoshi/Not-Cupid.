@@ -43,7 +43,7 @@ export default function NavExtras() {
         .nxMobileMenu { position: fixed; right: 0.75rem; top: calc(env(safe-area-inset-top, 0px) + 3.85rem); background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 14px; box-shadow: 0 18px 52px -18px rgba(0,0,0,0.48); padding: 0.4rem; display: flex; flex-direction: column; gap: 0.12rem; z-index: 220; min-width: 174px; }
         .nxScrim { position: fixed; inset: 0; z-index: 210; background: transparent; }
         .nxOverlay { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; padding: max(1rem, env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px)) max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px)); background: rgba(11,11,11,0.54); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
-        .nxModal { display: flex; flex-direction: column; width: min(460px, 100%); max-height: calc(100vh - 2rem); max-height: calc(100dvh - max(2rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))); overflow: hidden; border: 1px solid var(--h-border); border-radius: 18px; background: var(--h-surface); box-shadow: 0 24px 70px -22px rgba(11,11,11,0.55); }
+        .nxModal { display: flex; flex-direction: column; width: min(460px, 100%); max-height: calc(var(--app-visual-viewport-height, 100dvh) - max(2rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))); overflow: hidden; border: 1px solid var(--h-border); border-radius: 18px; background: var(--h-surface); box-shadow: 0 24px 70px -22px rgba(11,11,11,0.55); }
         .nxModalToolbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; min-height: 54px; padding: 0.55rem 0.75rem 0.55rem 1.1rem; border-bottom: 1px solid var(--h-border); background: var(--h-surface); }
         .nxModalTitle { font-family: 'DM Mono', monospace; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--h-accent); }
         .nxModalClose { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid var(--h-border); border-radius: 999px; background: var(--h-surface-2); color: var(--h-text); font: 24px/1 system-ui, sans-serif; cursor: pointer; }
@@ -52,7 +52,7 @@ export default function NavExtras() {
           .nxInline { display: none; }
           .nxMore { display: inline-block; }
           .nxOverlay { align-items: flex-end; padding: max(0.5rem, env(safe-area-inset-top, 0px)) 0 0; }
-          .nxModal { width: 100%; max-height: calc(100vh - max(0.5rem, env(safe-area-inset-top, 0px))); max-height: calc(100dvh - max(0.5rem, env(safe-area-inset-top, 0px))); border-radius: 20px 20px 0 0; border-bottom: 0; }
+          .nxModal { width: 100%; max-height: calc(var(--app-visual-viewport-height, 100dvh) - max(0.5rem, env(safe-area-inset-top, 0px))); border-radius: 20px 20px 0 0; border-bottom: 0; }
           .nxModalToolbar { padding-top: 0.6rem; padding-left: max(1.1rem, env(safe-area-inset-left, 0px)); padding-right: max(0.75rem, env(safe-area-inset-right, 0px)); }
           .nxModalBody { padding-left: max(1.2rem, env(safe-area-inset-left, 0px)); padding-right: max(1.2rem, env(safe-area-inset-right, 0px)); }
         }

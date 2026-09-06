@@ -14,7 +14,7 @@
   max-width: 480px;
   position: relative;
   animation: slideUp 0.22s cubic-bezier(.16,.84,.44,1);
-  max-height: min(90vh, calc(100dvh - var(--app-safe-top, 0px)));
+  max-height: min(90vh, calc(var(--app-visual-viewport-height, 100dvh) - var(--app-safe-top, 0px)));
   overflow-y: auto;
   overscroll-behavior: contain;
 }

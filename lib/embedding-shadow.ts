@@ -46,9 +46,15 @@ export async function evaluateEmbeddingShadow(input: {
   });
   const latencyMs = Date.now() - startedAt;
   const shadowTopIds = (data ?? []).flatMap((row: any) => typeof row.user_id === 'string' ? [row.user_id] : []).slice(0, 10);
+  if (!error && shadowTopIds.length === 0) {
+    // There is nothing to evaluate until another eligible person has opted in
+    // and has a ready embedding. Treat coverage as insufficient, not as a
+    // retrieval failure that poisons the shadow error-rate health signal.
+    return { status: 'skipped', shadowCount: 0, reason: 'insufficient_shadow_coverage' };
+  }
   const overlap = topKOverlap(liveTopIds, shadowTopIds, 10);
   const rankCorrelation = sharedRankCorrelation(liveTopIds, shadowTopIds);
-  const errorCode = error ? `rpc_${error.code || 'failed'}` : shadowTopIds.length === 0 ? 'no_shadow_candidates' : null;
+  const errorCode = error ? `rpc_${error.code || 'failed'}` : null;
 
   const { error: writeError } = await supabaseAdmin.from('embedding_shadow_evaluations').insert({
     user_id: input.userId,

@@ -23,26 +23,46 @@ export default function TopNav() {
   const navRef = useRef<HTMLElement>(null);
   const isAppRoute = APP_ROUTE(p);
 
-  // Match rooms need the exact space left beneath this responsive, safe-area
-  // aware header. On an installed iPhone PWA the nav is two rows tall, so a
-  // guessed pixel offset makes the chat a full viewport *plus* the header and
-  // pushes the composer/date tools into a broken stacked view.
+  // Every app surface shares the same measured nav and visible viewport. Some
+  // Android/iOS PWAs leave CSS `dvh` stale after rotation, keyboard use, or an
+  // app switch; using visualViewport here keeps every fixed sheet and chat in
+  // the actually visible screen instead of implementing one-off fixes.
   useEffect(() => {
     const root = document.documentElement;
     const nav = navRef.current;
     if (!isAppRoute || !nav) {
       root.style.setProperty('--app-top-nav-height', '0px');
+      root.style.removeProperty('--app-visual-viewport-height');
       return;
     }
 
-    const sync = () => root.style.setProperty('--app-top-nav-height', `${Math.ceil(nav.getBoundingClientRect().height)}px`);
+    let frame = 0;
+    const viewport = window.visualViewport;
+    const sync = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        root.style.setProperty('--app-top-nav-height', `${Math.ceil(nav.getBoundingClientRect().height)}px`);
+        const viewportHeight = Math.round(viewport?.height || window.innerHeight);
+        if (viewportHeight > 0) root.style.setProperty('--app-visual-viewport-height', `${viewportHeight}px`);
+      });
+    };
+    const syncVisible = () => { if (document.visibilityState === 'visible') sync(); };
     sync();
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
     observer?.observe(nav);
+    viewport?.addEventListener('resize', sync);
     window.addEventListener('resize', sync);
+    window.addEventListener('orientationchange', sync);
+    window.addEventListener('pageshow', sync);
+    document.addEventListener('visibilitychange', syncVisible);
     return () => {
+      window.cancelAnimationFrame(frame);
       observer?.disconnect();
+      viewport?.removeEventListener('resize', sync);
       window.removeEventListener('resize', sync);
+      window.removeEventListener('orientationchange', sync);
+      window.removeEventListener('pageshow', sync);
+      document.removeEventListener('visibilitychange', syncVisible);
     };
   }, [isAppRoute, p]);
 

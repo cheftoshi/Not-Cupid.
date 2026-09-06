@@ -70,7 +70,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
     if (pushSupported && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
       if (Notification.permission === 'granted') {
         // Keep the subscription fresh silently — no UI.
-        subscribeToPush().catch(() => {});
+        subscribeToPush({ repair: true }).catch(() => {});
       }
     }
 

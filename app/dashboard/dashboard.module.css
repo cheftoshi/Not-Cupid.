@@ -199,7 +199,7 @@
   z-index: 190;
   width: 100vw;
   height: 100vh;
-  height: 100dvh;
+  height: var(--app-visual-viewport-height, 100dvh);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -210,7 +210,7 @@
 .loveCheckoutCard,
 .loveSwapSheet {
   width: 100%;
-  max-height: calc(100dvh - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem);
+  max-height: calc(var(--app-visual-viewport-height, 100dvh) - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--h-surface);
@@ -226,7 +226,7 @@
   flex-direction: column;
   min-width: 0;
   width: min(100%, 520px);
-  max-height: calc(100dvh - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem);
+  max-height: calc(var(--app-visual-viewport-height, 100dvh) - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem);
   overflow: hidden;
   background: var(--h-surface);
   border-radius: 22px;
@@ -907,7 +907,7 @@
   .loveRosterRail { margin-inline: -0.15rem; padding-bottom: 0.85rem; }
   .loveModalOverlay { align-items: flex-end; padding: max(0.5rem, var(--app-safe-top, 0px)) 0 0; }
   .loveSwapSheet { align-self: flex-end; border-radius: 20px 20px 0 0; padding: 1.2rem; padding-bottom: max(1.2rem, var(--app-safe-bottom, 0px)); }
-  .loveProfilePreviewSheet { align-self: flex-end; width: 100%; height: calc(100dvh - max(0.5rem, var(--app-safe-top, 0px))); max-height: calc(100dvh - max(0.5rem, var(--app-safe-top, 0px))); border-radius: 22px 22px 0 0; border-bottom: 0; }
+  .loveProfilePreviewSheet { align-self: flex-end; width: 100%; height: calc(var(--app-visual-viewport-height, 100dvh) - max(0.5rem, var(--app-safe-top, 0px))); max-height: calc(var(--app-visual-viewport-height, 100dvh) - max(0.5rem, var(--app-safe-top, 0px))); border-radius: 22px 22px 0 0; border-bottom: 0; }
   .loveProfilePreviewPhoto { height: min(30dvh, 240px); aspect-ratio: auto; }
   .loveProfilePreviewBody { padding: 1rem 1rem max(1rem, var(--app-safe-bottom, 0px)); }
   .loveProfilePreviewChoose { position: sticky; bottom: max(0.35rem, var(--app-safe-bottom, 0px)); z-index: 4; box-shadow: 0 10px 28px -12px rgba(11,11,11,0.55); }

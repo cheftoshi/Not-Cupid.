@@ -59,6 +59,7 @@
   --app-safe-bottom: env(safe-area-inset-bottom, 0px);
   --app-safe-left: env(safe-area-inset-left, 0px);
   --app-top-nav-height: 0px;
+  --app-visual-viewport-height: 100dvh;
 }
 
 html{scroll-behavior:smooth;max-width:100%;overflow-x:clip}

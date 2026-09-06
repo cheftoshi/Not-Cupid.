@@ -93,6 +93,8 @@ test('OpenAI embeddings are idempotent and shadow retrieval cannot drive the liv
   assert.doesNotMatch(roster, /orderedIds\s*=\s*shadow|roster\s*=\s*shadow/i);
   assert.match(shadow, /EMBEDDING_SHADOW_ENABLED === 'true'/);
   assert.match(shadow, /live_order_changed: false/);
+  assert.match(shadow, /status: 'skipped'.*insufficient_shadow_coverage/s);
+  assert.doesNotMatch(shadow, /shadowTopIds\.length === 0 \? 'no_shadow_candidates'/);
 });
 
 test('Hub exposes a separate informed control and revocation deletes stored embeddings', () => {
@@ -129,4 +131,6 @@ test('evidence gates keep the candidate ranker at zero live allocation until hum
   assert.match(adminUi, /SHADOW/);
   assert.match(shadow, /metro: input\.metro/);
   assert.match(shadow, /acquisition_source: input\.acquisitionSource/);
+  const repair = read('../supabase/migrations/20260906200000_close_love_history_and_shadow_gaps.sql');
+  assert.match(repair, /error_code is distinct from 'no_shadow_candidates'/i);
 });

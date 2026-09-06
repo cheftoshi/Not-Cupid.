@@ -37,7 +37,7 @@ test('every Love roster option has a free, phone-safe profile preview before cho
   assert.match(picker, /this profile is free/);
   assert.match(picker, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(css, /\.loveProfilePreviewSheet \{/);
-  assert.match(css, /max-height: calc\(100dvh/);
+  assert.match(css, /max-height: calc\(var\(--app-visual-viewport-height, 100dvh\)/);
   assert.match(css, /app-safe-bottom/);
   assert.match(css, /\.loveProfilePreviewToolbar \{/);
   assert.match(css, /\.loveProfilePreviewScroll \{/);
@@ -314,4 +314,19 @@ test('ending remains free and safe but does not replenish a user-started roster 
   assert.match(dialog, /does not replenish a pick you started/);
   assert.match(dialog, /end connection →/);
   assert.match(route, /returnLovePickEntitlement\(matchId, user\.id\)/);
+});
+
+test('every terminal or legacy Love pair is excluded before another pick can fail', () => {
+  const actions = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
+  const roster = readFileSync(new URL('../app/api/match/roster/route.ts', import.meta.url), 'utf8');
+  const pick = readFileSync(new URL('../app/api/match/pick/route.ts', import.meta.url), 'utf8');
+  const cron = readFileSync(new URL('../app/api/cron/rematch/route.ts', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20260906200000_close_love_history_and_shadow_gaps.sql', import.meta.url), 'utf8');
+  assert.match(actions, /await recordMatchHistory\(claimed, 'expired'\)/);
+  assert.match(cron, /recordMatchHistory\(match, 'expired', nowIso\)/);
+  assert.match(roster, /priorMatchesResult/);
+  assert.match(pick, /code: 'already_matched'/);
+  assert.match(pick, /claimErr\.code === '23505'/);
+  assert.match(migration, /capture_terminal_love_match_history_trigger/);
+  assert.match(migration, /with newest_terminal as/);
 });

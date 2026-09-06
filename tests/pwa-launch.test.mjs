@@ -51,6 +51,8 @@ test('PWA performance is measured and push permission is requested in context', 
   assert.match(vitals, /useReportWebVitals/);
   assert.match(prompt, /nc:show-push-prompt/);
   assert.match(prompt, /prompt_push/);
+  assert.match(prompt, /subscribeToPush\(\{ repair: true \}\)/);
+  assert.match(source('lib/push-client.ts'), /PUSH_REPAIR_INTERVAL_MS/);
   assert.doesNotMatch(prompt, /setTimeout\(.*Notification\.requestPermission/s);
 });
 
@@ -128,6 +130,7 @@ test('Friend Scene stays inside the phone viewport and keeps every response visi
 });
 
 test('phone-critical chats and app roots stay viewport-safe in the installed PWA', () => {
+  const nav = source('components/top-nav.tsx');
   const friend = source('app/friends/friend-hub-client.tsx');
   const friendCss = source('app/friends/friend-hub.module.css');
   const loveChatCss = source('app/match/[id]/chat.module.css');
@@ -141,8 +144,8 @@ test('phone-critical chats and app roots stay viewport-safe in the installed PWA
   assert.match(friend, /visualViewport\?\.addEventListener\('resize'/);
   assert.match(friend, /clubSending/);
   assert.match(friend, /role="dialog" aria-modal="true"/);
-  assert.match(friendCss, /\.chatOverlay \{[^}]*width: 100vw;[^}]*height: 100dvh;[^}]*overflow: hidden/);
-  assert.match(friendCss, /\.chatSheet \{[^}]*max-width: 100vw;[^}]*min-width: 0;[^}]*100dvh/);
+  assert.match(friendCss, /\.chatOverlay \{[^}]*width: 100vw;[^}]*app-visual-viewport-height[^}]*overflow: hidden/);
+  assert.match(friendCss, /\.chatSheet \{[^}]*max-width: 100vw;[^}]*min-width: 0;[^}]*app-visual-viewport-height/);
   assert.match(friendCss, /\.chatComposer \{[^}]*min-width: 0;[^}]*width: 100%;[^}]*app-safe-right[^}]*app-safe-left/);
   assert.match(friendCss, /\.chatInput \{[^}]*width: 0;[^}]*min-width: 0;[^}]*font-size: 16px/);
   assert.match(friendCss, /\.chatBubble \{[^}]*overflow-wrap: anywhere/);
@@ -152,11 +155,13 @@ test('phone-critical chats and app roots stay viewport-safe in the installed PWA
   assert.match(hubCss, /--app-visual-viewport-height, 100dvh/);
   assert.match(hubCss, /\.conciergeBody \{[^}]*overflow-y: auto;[^}]*overscroll-behavior-y: auto;[^}]*touch-action: pan-y/);
   assert.match(dashboardCss, /\.page \{[\s\S]*app-safe-right[\s\S]*app-safe-left[\s\S]*overflow-x: clip/);
-  assert.match(dashboardCss, /\.loveModalOverlay \{[^}]*height: 100dvh;[^}]*overflow: hidden/);
+  assert.match(dashboardCss, /\.loveModalOverlay \{[^}]*app-visual-viewport-height[^}]*overflow: hidden/);
   assert.match(dashboardCss, /\.loveProfilePreviewSheet \{[^}]*display: flex;[^}]*overflow: hidden/);
   assert.match(dashboardCss, /\.loveProfilePreviewScroll \{[^}]*overflow-y: auto/);
   assert.match(dashboardCss, /\.loveProfilePreviewToolbar \{[^}]*flex: 0 0 auto/);
   assert.match(profileCss, /\.page \{[\s\S]*min-height: 100dvh[\s\S]*app-safe-right[\s\S]*app-safe-bottom[\s\S]*app-safe-left[\s\S]*overflow-x: clip/);
   assert.match(experimentProfileCss, /min-height: 100dvh/);
   assert.match(experimentProfileCss, /safe-area-inset-right/);
+  assert.match(nav, /--app-visual-viewport-height/);
+  assert.match(nav, /visualViewport/);
 });

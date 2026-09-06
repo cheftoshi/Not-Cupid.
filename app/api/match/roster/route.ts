@@ -114,7 +114,23 @@ export async function composeLoveRosterForUser(
     if (applyIgnored) q = q.lte('ignored_picks', MAX_IGNORED_PICKS);
     return q;
   };
-  let { data: pool, error: poolErr } = await buildPool(true);
+  const [initialPool, historyResult, priorMatchesResult] = await Promise.all([
+    buildPool(true),
+    supabaseAdmin
+      .from('match_history')
+      .select('user_a_id, user_b_id')
+      .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`),
+    // Match rows are the defensive source of truth for pre-trigger data. This
+    // both prevents repeat candidates and supplies the wait-time decay input
+    // without another sequential database round trip.
+    supabaseAdmin
+      .from('matches')
+      .select('user_1_id, user_2_id, ended_at')
+      .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
+      .order('created_at', { ascending: false })
+      .limit(1000),
+  ]);
+  let { data: pool, error: poolErr } = initialPool;
   if (poolErr) {
     // ignored_picks not migrated yet (or other error) → retry without that filter.
     ({ data: pool } = await buildPool(false));
@@ -123,26 +139,20 @@ export async function composeLoveRosterForUser(
   pool = pool ?? [];
 
   // Wait-time decay input (same derivation as /api/match).
-  const { data: lastEnded } = await supabaseAdmin
-    .from('matches')
-    .select('ended_at')
-    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-    .not('ended_at', 'is', null)
-    .order('ended_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const lastEnded = (priorMatchesResult.data ?? [])
+    .filter((match: any) => !!match.ended_at)
+    .sort((left: any, right: any) => String(right.ended_at).localeCompare(String(left.ended_at)))[0];
   const waitStartMs = lastEnded?.ended_at ? new Date(lastEnded.ended_at).getTime() : new Date(user.created_at).getTime();
   const waitDays = Math.max(0, (Date.now() - waitStartMs) / 86_400_000);
 
   // Exclude anyone this user has already matched with before (no repeats) AND
   // anyone they're currently in a live conversation with.
-  const { data: history } = await supabaseAdmin
-    .from('match_history')
-    .select('user_a_id, user_b_id')
-    .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
   const seen = new Set<string>(livePartnerIds);
-  for (const h of history ?? []) {
+  for (const h of historyResult.data ?? []) {
     seen.add(h.user_a_id === user.id ? h.user_b_id : h.user_a_id);
+  }
+  for (const match of priorMatchesResult.data ?? []) {
+    seen.add(match.user_1_id === user.id ? match.user_2_id : match.user_1_id);
   }
   let freshPool = pool.filter((p: any) => !seen.has(p.id));
 

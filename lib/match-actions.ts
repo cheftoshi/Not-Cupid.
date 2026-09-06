@@ -36,6 +36,26 @@ export const MAX_CONNECTIONS = LOVE_MAX_CONNECTIONS;
 // picks landing on people who never respond.
 export const MAX_IGNORED_PICKS = 3;
 
+/** Persist a canonical pair tombstone so a completed/expired Love connection
+ * can never be offered again. Database triggers enforce the same invariant;
+ * this application-level write keeps mixed-version deployments safe while a
+ * migration is rolling out. */
+export async function recordMatchHistory(match: {
+  id: string;
+  user_1_id: string;
+  user_2_id: string;
+}, outcome: string, lastMatchedAt = new Date().toISOString()): Promise<void> {
+  const [userA, userB] = [match.user_1_id, match.user_2_id].sort();
+  const { error } = await supabaseAdmin.from('match_history').upsert({
+    user_a_id: userA,
+    user_b_id: userB,
+    match_id: match.id,
+    last_matched_at: lastMatchedAt,
+    outcome,
+  }, { onConflict: 'user_a_id,user_b_id' });
+  if (error) throw error;
+}
+
 /** A pending match's NON-accepting party (the picked side that hasn't said yes),
  *  but only if the OTHER side actually accepted (a real pick that got ignored). */
 export function ignoringParty(m: any): string | null {
@@ -111,6 +131,9 @@ export async function releaseTimedOutMatches(userId: string): Promise<void> {
       .maybeSingle();
     if (claimError) throw claimError;
     if (!claimed) continue;
+    // This was the missing path that allowed an expired partner to reappear in
+    // a later roster and then collide with love_pick_ledger's pair uniqueness.
+    await recordMatchHistory(claimed, 'expired');
     await recordLoveExpiry(claimed.id, [
       ...(!claimed.user_1_accepted ? [claimed.user_1_id] : []),
       ...(!claimed.user_2_accepted ? [claimed.user_2_id] : []),

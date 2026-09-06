@@ -15,6 +15,7 @@ import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
 const buzz = () => { try { navigator.vibrate?.(15); } catch { /* unsupported */ } };
+const promptForPush = () => { try { window.dispatchEvent(new Event('nc:show-push-prompt')); } catch { /* browser-only enhancement */ } };
 
 // ── Friend Line theme (warm MBTA transit) ──
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
@@ -1214,6 +1215,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       const response = await fetch('/api/friend/accept', { method: 'POST' });
       if (!response.ok) throw new Error('friend-pack-accept-failed');
       await loadMatches(); await loadChat();
+      promptForPush();
       setTimeout(() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     } catch { toast('could not open this pack — check your connection and try again', 'error'); }
     finally { setBusy(false); }
@@ -1231,6 +1233,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
         throw new Error(detail.error || 'friend-connect-failed');
       }
       await loadMatches(); await loadChat();
+      promptForPush();
     } catch (error) { toast(error instanceof Error && error.message !== 'friend-connect-failed' ? error.message : 'could not save that connection — try again', 'error'); }
     finally { setBusy(false); }
   }
@@ -1482,6 +1485,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       if (r.ok) {
         const d = await r.json();
         setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
+        if (d.joined) promptForPush();
       } else {
         const d = await r.json().catch(() => ({} as any));
         if (d?.full) { toast('this plan is full — say “maybe” in case a spot opens', 'error'); await loadActs(); }
@@ -1502,6 +1506,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const clubUnreadTotal = clubs.reduce((sum, club) => sum + Number(club.unreadCount || 0), 0);
   const dmUnreadTotal = Object.values(dmUnread).reduce((sum, count) => sum + Number(count || 0), 0);
   const crewUnreadTotal = Number(chat.unread || 0) + dmUnreadTotal;
+  const incomingFriendChoices = matches.filter((match) => !match.connected && match.theyAccepted && !match.iAccepted).length;
+  const unreviewedFriendChoices = matches.filter((match) => !match.connected && !match.iAccepted).length;
 
   return (
     <div className={`friendDark ${s.friendPage}`} style={{ background: 'radial-gradient(95% 65% at 4% 0%, #f6d4b4 0%, transparent 46%), radial-gradient(90% 60% at 99% 5%, #f4cadd 0%, transparent 44%), radial-gradient(120% 80% at 50% 116%, #c9d9f5 0%, transparent 54%), #f0e4d0', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative' }}>
@@ -1860,6 +1866,15 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
             <SkeletonRow /><SkeletonRow />
           </div>
         ) : (<>
+          {unreviewedFriendChoices > 0 && (
+            <button type="button" className={s.friendConnectionCallout} onClick={() => goView('crew')}>
+              <span>{incomingFriendChoices > 0 ? 'someone chose you' : 'people picked for you'}</span>
+              <strong>{incomingFriendChoices > 0
+                ? `${incomingFriendChoices} connection ${incomingFriendChoices === 1 ? 'choice needs' : 'choices need'} your answer.`
+                : `${unreviewedFriendChoices} nearby ${unreviewedFriendChoices === 1 ? 'person is' : 'people are'} ready to review.`}</strong>
+              <em>review people →</em>
+            </button>
+          )}
           <FriendDiscoveryCard
             onOpenScene={() => goView('scene')}
             onOpenCommunities={() => goView('pulse')}

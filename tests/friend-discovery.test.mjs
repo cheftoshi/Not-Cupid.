@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { friendCompatibilityScore } from '../lib/friend-matching.ts';
 import { rankFriendDiscovery } from '../lib/friend-discovery.ts';
 import { friendActivityAffinity, friendSceneCategory, normalizeFriendActivity } from '../lib/friend-taxonomy.ts';
@@ -42,4 +43,12 @@ test('discovery routes exact, soon, local plans ahead of unrelated inventory', (
   assert.equal(ranked[0].id, 'right-plan');
   assert.ok(ranked[0].reasons.includes('happening soon'));
   assert.equal(ranked.at(-1).id, 'far-club');
+});
+
+test('Friend home surfaces unreviewed people and asks for push in action context', () => {
+  const client = readFileSync(new URL('../app/friends/friend-hub-client.tsx', import.meta.url), 'utf8');
+  assert.match(client, /unreviewedFriendChoices/);
+  assert.match(client, /friendConnectionCallout/);
+  assert.match(client, /someone chose you/);
+  assert.match(client, /promptForPush\(\)/);
 });

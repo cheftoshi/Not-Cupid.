@@ -14,7 +14,7 @@
 .modal {
   position: relative;
   width: min(100%, 680px);
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(var(--app-visual-viewport-height, 100dvh) - 2rem);
   overflow-y: auto;
   border: 1px solid color-mix(in srgb, var(--blue) 22%, var(--h-border));
   border-radius: 26px;
@@ -207,7 +207,7 @@
   .backdrop { align-items: end; padding: 0; }
   .modal {
     width: 100%;
-    max-height: calc(100dvh - env(safe-area-inset-top));
+    max-height: calc(var(--app-visual-viewport-height, 100dvh) - env(safe-area-inset-top));
     border-radius: 24px 24px 0 0;
     padding: 1.25rem 1rem max(1.1rem, env(safe-area-inset-bottom));
   }

@@ -151,17 +151,27 @@ export async function POST(req: NextRequest) {
 
   // Don't allow re-matching a prior pair.
   const [a, b] = [user.id, candidateId].sort();
-  const { data: prior } = await supabaseAdmin
-    .from('match_history')
-    .select('match_id')
-    .eq('user_a_id', a)
-    .eq('user_b_id', b)
-    .maybeSingle();
-  if (prior) {
+  const [{ data: priorHistory }, { data: priorMatch }] = await Promise.all([
+    supabaseAdmin
+      .from('match_history')
+      .select('match_id')
+      .eq('user_a_id', a)
+      .eq('user_b_id', b)
+      .maybeSingle(),
+    // Defensive bridge for legacy terminal rows created before every expiry
+    // path wrote match_history. Never let that data gap become a 500 again.
+    supabaseAdmin
+      .from('matches')
+      .select('id')
+      .or(`and(user_1_id.eq.${user.id},user_2_id.eq.${candidateId}),and(user_1_id.eq.${candidateId},user_2_id.eq.${user.id})`)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (priorHistory || priorMatch) {
     await preservePaidCredit();
     return NextResponse.json({ error: preferPaid === true
       ? 'You two have already been matched before. Your extra-connection credit is saved.'
-      : 'You two have already been matched before.' }, { status: 409 });
+      : 'You two have already been matched before.', code: 'already_matched' }, { status: 409 });
   }
 
   let accessType: 'included' | 'paid' | 'pro';
@@ -205,6 +215,17 @@ export async function POST(req: NextRequest) {
 
   if (claimErr) {
     console.error('pick: capacity claim failed', claimErr);
+    // The ledger's historical pair constraint is a final race-safe guard. A
+    // legacy missing-history collision is availability, not a server outage.
+    if (claimErr.code === '23505') {
+      await preservePaidCredit();
+      return NextResponse.json({
+        error: preferPaid === true
+          ? 'You two have already been matched before. Your extra-connection credit is saved.'
+          : 'You two have already been matched before.',
+        code: 'already_matched',
+      }, { status: 409 });
+    }
     return NextResponse.json({ error: 'Could not create the match. Try again.' }, { status: 500 });
   }
   if (!matchId) {

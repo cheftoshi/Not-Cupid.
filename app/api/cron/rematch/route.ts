@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getCurrentAdmin } from '@/lib/admin'
 import { releaseBalanceHolds } from '@/lib/balance'
-import { ignoringParty } from '@/lib/match-actions'
+import { ignoringParty, recordMatchHistory } from '@/lib/match-actions'
 import { isAuthorizedCronRequest } from '@/lib/request-security'
 import { sendPushToUser } from '@/lib/push'
 import { button, renderEmail, sendEmail } from '@/lib/email'
@@ -243,18 +243,31 @@ export async function GET(req: NextRequest) {
 
     // ============== 2) Expire pending matches older than 72h ==============
     const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
-    const { data: expiredPending } = await supabaseAdmin
+    const { data: pendingCandidates } = await supabaseAdmin
       .from('matches')
       .select('*')
       .eq('status', 'pending')
+      .is('ended_at', null)
       .lt('created_at', cutoff)
 
-    if (expiredPending && expiredPending.length > 0) {
-      const ids = expiredPending.map((m: any) => m.id)
-      await supabaseAdmin
+    let expiredPending: any[] = []
+    if (pendingCandidates && pendingCandidates.length > 0) {
+      const ids = pendingCandidates.map((m: any) => m.id)
+      const { data: claimedPending, error: pendingClaimError } = await supabaseAdmin
         .from('matches')
         .update({ status: 'expired', ended_at: nowIso, ended_reason: 'expired' })
         .in('id', ids)
+        .eq('status', 'pending')
+        .is('ended_at', null)
+        .select('*')
+      if (pendingClaimError) throw pendingClaimError
+      expiredPending = claimedPending ?? []
+    }
+
+    if (expiredPending.length > 0) {
+      await Promise.all(expiredPending.map((match: any) =>
+        recordMatchHistory(match, 'expired', nowIso)
+      ))
       await Promise.all(expiredPending.map((match: any) => recordLoveExpiry(match.id, [
         ...(!match.user_1_accepted ? [match.user_1_id] : []),
         ...(!match.user_2_accepted ? [match.user_2_id] : []),

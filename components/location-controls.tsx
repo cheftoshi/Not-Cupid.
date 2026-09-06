@@ -66,7 +66,7 @@ export default function LocationControls({
 
       {picker && (
         <div onClick={() => setPicker(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(10,8,16,0.55)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 540, width: '100%', maxHeight: 'min(82vh, calc(100dvh - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem))', overflow: 'auto', overscrollBehavior: 'contain', padding: '1.5rem', paddingBottom: 'max(1.5rem, var(--app-safe-bottom, 0px))', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 540, width: '100%', maxHeight: 'calc(var(--app-visual-viewport-height, 100dvh) - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem)', overflow: 'auto', overscrollBehavior: 'contain', padding: '1.5rem', paddingBottom: 'max(1.5rem, var(--app-safe-bottom, 0px))', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
               <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>where are you?</span>
               <button onClick={() => setPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44, fontSize: '1.1rem', color: 'var(--h-text-faint)' }} aria-label="close city picker">✕</button>
