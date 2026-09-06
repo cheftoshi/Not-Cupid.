@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchWithTimeout, parseResponse } from '@/lib/fetch-helpers';
 import { trackLoveEvent } from '@/lib/love-events-client';
 import { toast } from '@/components/feedback';
@@ -11,6 +11,7 @@ import styles from './chat.module.css';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 import { ATTACH_LABEL, VIBE_HEADS, vibeLabel, type AttachStyle, type VibeKey } from '@/lib/quiz-data';
 import CompatibilityReadPanel from './compatibility-read-panel';
+import { useChatRealtime } from '@/lib/use-chat-realtime';
 
 // Emoji labels for a partner's picked interests (mirrors INTEREST_OPTIONS).
 const INTEREST_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ interface Props {
   readOnly?: boolean;
   profileUnlocked: boolean;
   compatibilityReadAvailable?: boolean;
+  realtimeTopic?: string;
 }
 
 type LoveCoach = {
@@ -110,6 +112,7 @@ export default function ChatRoom({
   readOnly = false,
   profileUnlocked,
   compatibilityReadAvailable = false,
+  realtimeTopic,
 }: Props) {
   const [messages, setMessages] = useState<any[]>(initialMessages);
   const [hasOlder, setHasOlder] = useState(hasOlderMessages);
@@ -341,36 +344,36 @@ export default function ChatRoom({
     );
   }
 
+  const refreshMessages = useCallback(async () => {
+    if (readOnly) return;
+    try {
+      const afterMessage = lastMsgAtRef.current;
+      const response = await fetchWithTimeout(`/api/messages?match_id=${matchId}${afterMessage ? `&after=${encodeURIComponent(afterMessage)}` : ''}`, {}, 8_000);
+      if (!response.ok) return;
+      const data = await parseResponse<any>(response);
+      const fresh: any[] = data.messages || [];
+      if (data.incremental) {
+        if (fresh.length) setMessages((previous) => {
+          const seen = new Set(previous.map((message: any) => message.id));
+          const additions = fresh.filter((message: any) => !seen.has(message.id));
+          return additions.length ? [...previous, ...additions] : previous;
+        });
+      } else setMessages(fresh);
+      if (data.match) setLiveMatch((previous: any) => ({ ...previous, ...data.match }));
+      if ('otherTypingAt' in data) setOtherTypingAt(data.otherTypingAt || null);
+      if ('otherReadAt' in data) setOtherReadAt(data.otherReadAt || null);
+    } catch { /* the fallback poll retries */ }
+  }, [matchId, readOnly]);
+
+  useChatRealtime(realtimeTopic, () => { void refreshMessages(); });
+
   useEffect(() => {
     if (readOnly) return; // ended conversations don't change — no need to poll
     let stopped = false;
     let timer: number | undefined;
     const poll = async () => {
-      try {
-        // Incremental poll: only fetch messages newer than the last one we
-        // have (the server re-ships the whole thread without `after`).
-        const after = lastMsgAtRef.current;
-        const res = await fetchWithTimeout(`/api/messages?match_id=${matchId}${after ? `&after=${encodeURIComponent(after)}` : ''}`, {}, 8_000);
-        if (res.ok) {
-          const data = await parseResponse<any>(res);
-          const fresh: any[] = data.messages || [];
-          if (data.incremental) {
-            if (fresh.length) {
-              setMessages((prev) => {
-                const seen = new Set(prev.map((m: any) => m.id));
-                const add = fresh.filter((m: any) => !seen.has(m.id));
-                return add.length ? [...prev, ...add] : prev;
-              });
-            }
-          } else {
-            setMessages(fresh);
-          }
-          if (data.match) setLiveMatch((prev: any) => ({ ...prev, ...data.match }));
-          if ('otherTypingAt' in data) setOtherTypingAt(data.otherTypingAt || null);
-          if ('otherReadAt' in data) setOtherReadAt(data.otherReadAt || null);
-        }
-      } catch {}
-      if (!stopped) timer = window.setTimeout(poll, document.visibilityState === 'visible' ? 3_000 : 12_000);
+      await refreshMessages();
+      if (!stopped) timer = window.setTimeout(poll, document.visibilityState === 'visible' ? (realtimeTopic ? 30_000 : 3_000) : 45_000);
     };
     timer = window.setTimeout(poll, 3_000);
     const wake = () => {
@@ -384,7 +387,7 @@ export default function ChatRoom({
       if (timer) window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', wake);
     };
-  }, [matchId, readOnly]);
+  }, [readOnly, realtimeTopic, refreshMessages]);
 
   // Re-render every 2s while a typing ping is live so the bubble expires cleanly.
   const [, typingTick] = useState(0);

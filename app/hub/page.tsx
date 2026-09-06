@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { HUB_CONCIERGE_VERSION } from '@/lib/connection-concierge';
 import { hasMatchingEmbeddingConsent } from '@/lib/connection-embeddings';
+import { hasCrossIntentBridgeConsent } from '@/lib/matching-rollouts';
 import HubClient from './hub-client';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,7 @@ export default async function HubPage() {
       city={city}
       conciergeConsented={conciergeConsented}
       matchingPersonalizationEnabled={hasMatchingEmbeddingConsent(user)}
+      crossIntentBridgeEnabled={hasCrossIntentBridgeConsent(user)}
     />
   );
 }

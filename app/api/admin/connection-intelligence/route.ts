@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const days = Number.isFinite(requestedDays) ? Math.max(1, Math.min(Math.round(requestedDays), 365)) : 30;
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
 
-  const [outcomes, retention, shadow, coverage, readiness, configuration, recentEvaluations] = await Promise.all([
+  const [outcomes, retention, shadow, coverage, readiness, configuration, recentEvaluations, matchingRollouts, matchingSummary, notificationOutbox] = await Promise.all([
     supabaseAdmin.rpc('connection_outcome_summary', { p_since: since }),
     supabaseAdmin.rpc('connection_retention_cohorts', { p_days: Math.max(90, days) }),
     supabaseAdmin.rpc('embedding_shadow_summary', { p_since: since }),
@@ -27,9 +27,14 @@ export async function GET(req: NextRequest) {
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(50),
+    supabaseAdmin.from('matching_feature_config')
+      .select('feature_key, phase, allocation_percent, kill_switch, algorithm_version, approved_at, updated_at')
+      .order('feature_key'),
+    supabaseAdmin.rpc('matching_rollout_summary', { p_since: since }),
+    supabaseAdmin.rpc('notification_outbox_health'),
   ]);
 
-  const errors = [outcomes.error, retention.error, shadow.error, coverage.error, readiness.error, configuration.error, recentEvaluations.error]
+  const errors = [outcomes.error, retention.error, shadow.error, coverage.error, readiness.error, configuration.error, recentEvaluations.error, matchingRollouts.error, matchingSummary.error, notificationOutbox.error]
     .filter(Boolean)
     .map((error: any) => ({ code: error.code || 'unknown', message: error.message || 'unknown' }));
 
@@ -58,6 +63,9 @@ export async function GET(req: NextRequest) {
     readiness: readinessRow,
     configuration: configuration.data,
     recentEvaluations: recentEvaluations.data ?? [],
+    matchingRollouts: matchingRollouts.data ?? [],
+    matchingSummary: matchingSummary.data ?? [],
+    notificationOutbox: Array.isArray(notificationOutbox.data) ? notificationOutbox.data[0] ?? null : null,
     errors,
   });
 }

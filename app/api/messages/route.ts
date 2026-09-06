@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { acceptMatch } from '@/lib/match-actions';
-import { renderEmail, sendEmail, button } from '@/lib/email';
-import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
-import { dailyActivityEmailActivation } from '@/lib/daily-activity-email';
+import { enqueueLoveMessageNotification, processNotificationOutbox } from '@/lib/notification-outbox';
+import { broadcastChatRefresh, chatRealtimeTopic } from '@/lib/chat-realtime';
 
 export const dynamic = 'force-dynamic';
-
-const MESSAGE_EMAIL_THROTTLE_MS = 60 * 60 * 1000; // one new-message email per hour per match
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -69,6 +66,7 @@ export async function GET(req: NextRequest) {
     hasMore: !!before && (messageRows?.length ?? 0) === 100,
     otherTypingAt,
     otherReadAt,
+    realtimeTopic: chatRealtimeTopic('love', matchId),
     match: {
       chat_expires_at: match.chat_expires_at,
       ended_at: match.ended_at,
@@ -164,72 +162,23 @@ export async function POST(req: NextRequest) {
       .eq('id', match_id);
   }
 
-  // Activity email to the recipient (throttled 1/hr per match). Skipped when
-  // this message just activated the match — acceptMatch already sent the
-  // "it's a match" email in that case, so we don't double up.
+  // Persist the notification instruction before returning. Provider work is
+  // leased from the durable outbox; after() is the fast path and the cron is
+  // the recovery path if this serverless invocation ends early.
   if (bothBefore) {
-    notifyNewMessage(match_id, isU1 ? match.user_2_id : match.user_1_id, user.id, message.id).catch((e) =>
-      console.error('notifyNewMessage failed', e)
-    );
+    await enqueueLoveMessageNotification({
+      matchId: match_id,
+      recipientId: isU1 ? match.user_2_id : match.user_1_id,
+      senderId: user.id,
+      messageId: message.id,
+    });
   }
+  after(async () => {
+    await Promise.allSettled([
+      broadcastChatRefresh('love', match_id),
+      processNotificationOutbox(5),
+    ]);
+  });
 
   return NextResponse.json({ message });
-}
-
-async function notifyNewMessage(matchId: string, recipientId: string, senderId: string, messageId: string) {
-  const { data: recipient } = await supabaseAdmin
-    .from('users').select('email, email_notifications, notifications_paused_at, is_test, deleted_at').eq('id', recipientId).single();
-  if (!recipient || recipient.is_test === true || recipient.deleted_at) return;
-
-  const { data: senderRow } = await supabaseAdmin.from('users').select('name').eq('id', senderId).single();
-  const senderFirst = (senderRow?.name || 'Your match').split(' ')[0];
-
-  // Push: every message (the per-chat tag collapses stacked pings — the
-  // lock screen shows one "Maya sent you a message", not ten).
-  await sendPushToUser(recipientId, {
-    title: `${senderFirst} sent you a message`,
-    body: 'Open the chat before it goes quiet.',
-    url: `/match/${matchId}`,
-    tag: `chat-${matchId}`,
-  });
-
-  if (!recipient.email || recipient.email_notifications === false || recipient.notifications_paused_at) return;
-  // Once the consolidated drop is activated, Love chat email is held for that
-  // one daily message. Push remains immediate either way.
-  if (dailyActivityEmailActivation().enabled) return;
-
-  const { data: throttle } = await supabaseAdmin
-    .from('match_notifications')
-    .select('last_message_email_at')
-    .eq('match_id', matchId).eq('recipient_id', recipientId)
-    .maybeSingle();
-  if (
-    throttle?.last_message_email_at &&
-    Date.now() - new Date(throttle.last_message_email_at).getTime() < MESSAGE_EMAIL_THROTTLE_MS
-  ) return;
-
-  const senderName = senderFirst;
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
-
-  const emailResult = await sendEmail({
-    to: recipient.email,
-    subject: `${senderName} sent you a message`,
-    html: renderEmail({
-      preheader: `${senderName} just messaged you on NotCupid.`,
-      eyebrow: 'new message',
-      headline: `${senderName} sent you a message.`,
-      bodyHtml: `<p style="margin:0 0 18px 0;">Don't leave them hanging — the chat goes quiet after 36h of silence.</p>${button({ href: `${base}/match/${matchId}`, label: 'Open the chat →' })}`,
-    }),
-    idempotencyKey: `chat-message-${matchId}-${recipientId}-${messageId}`,
-  });
-
-  // A provider failure must not consume the one-hour throttle. The next real
-  // message may retry the notification; the stable per-message key protects a
-  // route retry from creating a duplicate email.
-  if (!emailResult.ok) return;
-
-  await supabaseAdmin.from('match_notifications').upsert(
-    { match_id: matchId, recipient_id: recipientId, last_message_email_at: new Date().toISOString() },
-    { onConflict: 'match_id,recipient_id' }
-  );
 }

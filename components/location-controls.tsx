@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { METRO_CENTERS, METRO_ZIP } from '@/lib/quiz-data';
 
 // Location controls — change your city (repoints your pool) + (love only) your
@@ -26,6 +27,7 @@ export default function LocationControls({
 }: {
   city?: string | null; currentMetro?: string | null; radius?: number; showRadius?: boolean; accent?: string;
 }) {
+  const router = useRouter();
   const [picker, setPicker] = useState(false);
   const [cityBusy, setCityBusy] = useState<string | null>(null);
   const [r, setR] = useState(radius);
@@ -35,14 +37,14 @@ export default function LocationControls({
     setCityBusy(metro);
     try {
       const res = await fetch('/api/profile/set-city', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ metro }) });
-      if (res.ok) window.location.reload(); else setCityBusy(null);
+      if (res.ok) { setPicker(false); setCityBusy(null); router.refresh(); } else setCityBusy(null);
     } catch { setCityBusy(null); }
   }
   async function changeRadius(v: number) {
     const prev = r; setR(v); setRBusy(true);
     try {
       const res = await fetch('/api/profile/set-radius', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ radius: v }) });
-      if (!res.ok) setR(prev); else window.location.reload();
+      if (!res.ok) setR(prev); else router.refresh();
     } catch { setR(prev); } finally { setRBusy(false); }
   }
 

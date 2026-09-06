@@ -1,6 +1,6 @@
 # NotCupid — current project memory
 
-Last reconciled with the current application code on **August 20, 2026**.
+Last reconciled with the current application code on **September 6, 2026**.
 
 This file is a current-state handoff, not a chronological session log. Git history
 contains retired plans and earlier implementations. Do not reintroduce an older
@@ -27,14 +27,20 @@ copying entry, traffic, or delivery counts from a handoff document.
 
 ## Current Boston Dating Experiment
 
+This section describes the completed August round for operational history. The
+round is closed, its draw/reminder schedules are disabled, and all one-time
+relaunch, last-chance, and closeout send routes are archived with HTTP 410.
+Do not reuse its dates, venue, recipient counts, or approval tokens for a future
+event; a future round must be a new database event and a new approval version.
+
 - Public name: **The NotCupid Dating Experiment**. Never call it a raffle in
   public UI, email, social copy, FAQ, or terms.
 - Internal compatibility note: the `RAFFLE` constant, `/api/raffle/*` routes,
   `raffle_*` tables, and `raffle-videos` bucket retain legacy names so the
   shipped system does not need a risky data/API migration.
 - Event key: `boston-dating-experiment-v1`.
-- Status: the production event is `entry_closed`. Public entry ended at the
-  documented server boundary. Do not reopen it or accept late entries.
+- Status: the August production event is closed/completed. Public entry ended
+  at the documented server boundary. Do not reopen it or accept late entries.
 - Entry deadline: **Tuesday, August 18, 2026 at 11:59 PM ET**, or 400 eligible
   entries, whichever comes first. The exact server boundary is
   `2026-08-19T04:00:00Z`, midnight starting Wednesday in Boston.

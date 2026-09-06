@@ -13,16 +13,8 @@
       "schedule": "0,5,10 17,18 * * *"
     },
     {
-      "path": "/api/cron/raffle-draw",
-      "schedule": "*/10 * * * *"
-    },
-    {
       "path": "/api/cron/dating-experiment-retention",
       "schedule": "15 5 * * *"
-    },
-    {
-      "path": "/api/cron/dating-experiment-reminders",
-      "schedule": "20 * * * *"
     },
     {
       "path": "/api/cron/weekly-drop",
@@ -31,6 +23,10 @@
     {
       "path": "/api/cron/connection-embeddings",
       "schedule": "35 8 * * *"
+    },
+    {
+      "path": "/api/cron/notification-outbox",
+      "schedule": "*/2 * * * *"
     }
   ]
 }

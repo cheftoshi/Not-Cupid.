@@ -54,11 +54,13 @@ export default function ConnectionConcierge({
   city,
   initialConsented,
   initialMatchingPersonalization,
+  initialCrossIntentBridge,
 }: {
   firstName: string;
   city?: string | null;
   initialConsented: boolean;
   initialMatchingPersonalization: boolean;
+  initialCrossIntentBridge: boolean;
 }) {
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [brief, setBrief] = useState<ConciergeBrief>(FALLBACK_BRIEF);
@@ -69,6 +71,8 @@ export default function ConnectionConcierge({
   const [consented, setConsented] = useState(initialConsented);
   const [matchingPersonalization, setMatchingPersonalization] = useState(initialMatchingPersonalization);
   const [matchingBusy, setMatchingBusy] = useState(false);
+  const [crossIntentBridge, setCrossIntentBridge] = useState(initialCrossIntentBridge);
+  const [crossIntentBusy, setCrossIntentBusy] = useState(false);
   const [pendingConsentMessage, setPendingConsentMessage] = useState('');
   const [error, setError] = useState('');
   const [showControls, setShowControls] = useState(false);
@@ -96,6 +100,7 @@ export default function ConnectionConcierge({
         if (Array.isArray(body.memories)) setMemories(body.memories);
         setConsented(body.consented === true);
         setMatchingPersonalization(body.matchingPersonalization === true);
+        setCrossIntentBridge(body.crossIntentBridge === true);
       })
       .catch(() => {})
       .finally(() => setBriefLoading(false));
@@ -262,6 +267,29 @@ export default function ConnectionConcierge({
     }
   }
 
+  async function toggleCrossIntentBridge() {
+    if (crossIntentBusy) return;
+    setCrossIntentBusy(true);
+    setError('');
+    const next = !crossIntentBridge;
+    try {
+      const response = await fetch('/api/concierge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'cross_intent_bridge', enabled: next }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'failed');
+      setCrossIntentBridge(body.enabled === true);
+    } catch (caught) {
+      setError(caught instanceof Error && caught.message !== 'failed'
+        ? caught.message
+        : 'Cross-line discovery could not be updated. Try again.');
+    } finally {
+      setCrossIntentBusy(false);
+    }
+  }
+
   return (
     <section className={styles.conciergeShell} aria-labelledby="concierge-title">
       <header className={styles.conciergeHead}>
@@ -303,6 +331,15 @@ export default function ConnectionConcierge({
             </div>
             <button type="button" onClick={() => void toggleMatchingPersonalization()} disabled={matchingBusy || !consented}>
               {matchingBusy ? 'updating…' : matchingPersonalization ? 'turn off' : 'enable'}
+            </button>
+          </div>
+          <div className={styles.conciergePersonalization}>
+            <div>
+              <strong>Friend to Love discovery</strong>
+              <p>Optional and mutual. A connected friend can appear in Love only when you both enable this and your stated Love preferences fit. Private chats, emojis and response speed are never analyzed.</p>
+            </div>
+            <button type="button" onClick={() => void toggleCrossIntentBridge()} disabled={crossIntentBusy}>
+              {crossIntentBusy ? 'updating…' : crossIntentBridge ? 'turn off' : 'enable'}
             </button>
           </div>
           <div className={styles.conciergeControlActions}>

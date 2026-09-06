@@ -106,10 +106,11 @@ test('roster rotation email retries are idempotent', () => {
 
 test('chat notification email failures remain retryable and route retries are idempotent', () => {
   const messages = readFileSync(new URL('../app/api/messages/route.ts', import.meta.url), 'utf8');
+  const notification = readFileSync(new URL('../lib/love-message-notification.ts', import.meta.url), 'utf8');
   const email = readFileSync(new URL('../lib/email.ts', import.meta.url), 'utf8');
-  assert.match(messages, /idempotencyKey: `chat-message-/);
-  assert.match(messages, /if \(!emailResult\.ok\) return/);
-  assert.match(messages, /notifyNewMessage\(match_id,[\s\S]*message\.id/);
+  assert.match(messages, /enqueueLoveMessageNotification\([\s\S]*messageId: message\.id/);
+  assert.match(notification, /idempotencyKey: `chat-message-/);
+  assert.match(notification, /if \(!emailResult\.ok\) return \{ complete: false/);
   assert.match(email, /providerMessage: safeProviderMessage/);
   assert.match(email, /redacted-email/);
 });
@@ -279,7 +280,8 @@ test('chat polling is incremental, idempotent, adaptive, and paginates older his
   assert.match(messages, /client_id/);
   assert.match(messages, /\.lt\('created_at', before\)/);
   assert.match(messages, /hasMore/);
-  assert.match(room, /document\.visibilityState === 'visible' \? 3_000 : 12_000/);
+  assert.match(room, /realtimeTopic \? 30_000 : 3_000/);
+  assert.match(room, /useChatRealtime\(realtimeTopic/);
   assert.match(room, /loadOlderMessages/);
   assert.match(room, /client_id: clientId/);
   assert.match(page, /\.limit\(100\)/);

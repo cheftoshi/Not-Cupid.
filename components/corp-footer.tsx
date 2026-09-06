@@ -21,7 +21,7 @@ export default function CorpFooter() {
           marginBottom: '0.5rem',
         }}
       >
-        <span style={{ color: '#2563ff' }}>Not</span><span style={{ color: '#ff6a1f' }}>Cupid</span>
+        <span style={{ color: '#2563ff' }}>Not</span><span style={{ color: '#c94f12' }}>Cupid</span>
       </div>
       <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1.1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         {[
@@ -86,7 +86,7 @@ export default function CorpFooter() {
           fontSize: '0.5rem',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          color: 'var(--h-text-faint)',
+          color: 'var(--h-text-dim)',
         }}
       >
         © {year} notcupid · a lemon labs property

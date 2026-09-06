@@ -31,6 +31,7 @@ import {
   generateConnectionEmbeddingsForUser,
   loadConnectionEmbeddingUser,
 } from '@/lib/connection-embeddings-server';
+import { hasCrossIntentBridgeConsent } from '@/lib/matching-rollouts';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -113,6 +114,7 @@ export async function GET() {
       memories,
       consented: hasConsent(user),
       matchingPersonalization: hasMatchingEmbeddingConsent(user),
+      crossIntentBridge: hasCrossIntentBridgeConsent(user),
       version: HUB_CONCIERGE_VERSION,
     });
   } catch (error) {
@@ -126,6 +128,7 @@ export async function GET() {
       memories: [],
       consented: hasConsent(user),
       matchingPersonalization: hasMatchingEmbeddingConsent(user),
+      crossIntentBridge: hasCrossIntentBridgeConsent(user),
       version: HUB_CONCIERGE_VERSION,
     });
   }
@@ -306,6 +309,28 @@ export async function PATCH(req: NextRequest) {
       },
     });
     return NextResponse.json({ ok: true, enabled, embeddingResults });
+  }
+
+  if (body.type === 'cross_intent_bridge') {
+    const enabled = body.enabled === true;
+    if (enabled && (!user.friend_opted_in_at || user.pool_active === false)) {
+      return NextResponse.json({ error: 'Join both Love and Friend before enabling this bridge.' }, { status: 412 });
+    }
+    const now = new Date().toISOString();
+    const { error } = await supabaseAdmin.from('users').update(enabled ? {
+      cross_intent_bridge_opted_in_at: now,
+      cross_intent_bridge_revoked_at: null,
+    } : {
+      cross_intent_bridge_revoked_at: now,
+    }).eq('id', user.id);
+    if (error) return NextResponse.json({ error: 'Could not update cross-line discovery.' }, { status: 500 });
+    await recordAppEvent({
+      userId: user.id,
+      eventName: enabled ? 'cross_intent_bridge_consent_granted' : 'cross_intent_bridge_consent_revoked',
+      surface: 'hub_concierge',
+      metadata: { version: 'cross-intent-mutual-opt-in-v1' },
+    });
+    return NextResponse.json({ ok: true, enabled });
   }
 
   if (body.type === 'remember') {

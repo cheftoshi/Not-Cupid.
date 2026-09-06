@@ -22,6 +22,7 @@ const MAX_RUN_MS = 52_000;
 const BATCH_SIZE = 4;
 const BATCH_DELAY_MS = 1_100;
 const CAMPAIGN_ACTIVE_DAYS = 90;
+const CAMPAIGN_ARCHIVED = true;
 
 type CampaignUser = {
   id: string;
@@ -158,6 +159,7 @@ function previewUser(admin: any): CampaignUser {
 export async function GET(req: NextRequest) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (CAMPAIGN_ARCHIVED) return NextResponse.json({ error: 'This August 2026 campaign is archived.' }, { status: 410 });
   const requestedVariant = new URL(req.url).searchParams.get('variant');
   const variant: Variant = requestedVariant === 'profile' || requestedVariant === 'live' ? requestedVariant : 'ready';
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
@@ -177,6 +179,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (CAMPAIGN_ARCHIVED) return NextResponse.json({ error: 'This August 2026 campaign is archived and cannot send.' }, { status: 410 });
 
   const url = new URL(req.url);
   const dryRun = url.searchParams.get('dry') === '1';

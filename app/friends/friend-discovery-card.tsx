@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from '@/components/feedback';
 import { FRIEND_ACTIVITIES, FRIEND_TIME_WINDOWS, friendActivity, type FriendActivityKey, type FriendTimeWindow } from '@/lib/friend-taxonomy';
 import { METRO_CENTERS } from '@/lib/quiz-data';
@@ -40,6 +41,7 @@ const TRAVEL_METROS = Object.entries(METRO_CENTERS).sort(([, first], [, second])
 );
 
 export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, onStartPlan, onRsvp }: Props) {
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -130,7 +132,9 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       const body = await response.json().catch(() => ({}));
       if (!response.ok) { toast(body.error || 'could not save travel mode', 'error'); return; }
       toast(`trip saved — ${body.label || 'your destination'} is on deck ✈️`, 'success');
-      window.location.reload();
+      setShowTravel(false);
+      await load(selected);
+      router.refresh();
     } catch { toast('could not save travel mode — check your connection', 'error'); }
     finally { setTravelBusy(false); }
   }
@@ -147,7 +151,9 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       const body = await response.json().catch(() => ({}));
       if (!response.ok) { toast(body.error || 'could not cancel that trip', 'error'); return; }
       toast('travel mode off — back to your home Friend Line', 'success');
-      window.location.reload();
+      setShowTravel(false);
+      await load(selected);
+      router.refresh();
     } catch { toast('could not cancel that trip — check your connection', 'error'); }
     finally { setTravelBusy(false); }
   }

@@ -14,7 +14,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 const SOCIAL_TITLE = 'The Boston Dating Experiment — NotCupid';
-const SOCIAL_DESCRIPTION = 'Choose privately from compatibility-led options. Up to two mutual Boston pairs get dinner on NotCupid on August 20.';
+const SOCIAL_DESCRIPTION = 'The first Boston Dating Experiment is complete. See how NotCupid uses private, compatibility-led choices to create real connections.';
 
 export const metadata: Metadata = {
   title: SOCIAL_TITLE,

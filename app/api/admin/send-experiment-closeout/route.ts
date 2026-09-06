@@ -12,6 +12,7 @@ const TERMS_VERSION = 'boston-v13-2026-08-15';
 const WINNER_APPROVAL = 'winner-closeout-v1-2026-08-19:2';
 const NON_SELECTED_APPROVAL = 'round-complete-v1-2026-08-19:47';
 const FULFILLMENT = 'NotCupid prepaid The Berkeley directly for the included dinner. Selected participants are not required to pay or request reimbursement for the included dinner. Food, alcoholic or non-alcoholic drinks, ordinary tax, and gratuity may all count toward the same $200 per-pair cap. Selected participants are responsible for any amount above $200, plus transportation, parking, or valet charges.';
+const CAMPAIGN_ARCHIVED = true;
 
 type CloseoutMode = 'winner' | 'non-selected';
 type UserRow = {
@@ -155,6 +156,7 @@ function nonSelectedEmail(user: UserRow & { email: string }, mailingAddress: str
 export async function GET() {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (CAMPAIGN_ARCHIVED) return NextResponse.json({ error: 'This August 2026 closeout campaign is archived.' }, { status: 410 });
   return new NextResponse(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dating Experiment closeout</title></head><body style="font-family:system-ui;padding:32px;max-width:680px;margin:auto"><h1>Dating Experiment closeout</h1><p>Each approved send is audience-count locked and idempotent.</p><form method="post" style="margin:24px 0"><input type="hidden" name="mode" value="winner"><input type="hidden" name="expected" value="2"><input type="hidden" name="approval" value="${WINNER_APPROVAL}"><button type="submit" style="padding:14px 18px">Send winner follow-up to 2</button></form><form method="post"><input type="hidden" name="mode" value="non-selected"><input type="hidden" name="expected" value="47"><input type="hidden" name="approval" value="${NON_SELECTED_APPROVAL}"><button type="submit" style="padding:14px 18px">Send round-complete email to 47</button></form></body></html>`, {
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' },
   });
@@ -163,6 +165,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (CAMPAIGN_ARCHIVED) return NextResponse.json({ error: 'This August 2026 closeout campaign is archived and cannot send.' }, { status: 410 });
   const contentType = req.headers.get('content-type') || '';
   let body: { mode?: CloseoutMode; expected?: number; approval?: string } | null = null;
   if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {

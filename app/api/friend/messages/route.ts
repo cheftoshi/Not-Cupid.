@@ -1,23 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { activeCircleOf } from '@/lib/friend-circles';
 import { hasCircleAccess, circleChatStatus } from '@/lib/friend-access';
-import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { sameRealm } from '@/lib/realm';
 import { ensureFriendChatRead, markFriendChatRead } from '@/lib/friend-chat-read';
+import { enqueuePushNotification, processNotificationOutbox } from '@/lib/notification-outbox';
+import { broadcastChatRefresh, chatRealtimeTopic } from '@/lib/chat-realtime';
 
 export const dynamic = 'force-dynamic';
-
-// Push every other live member of a circle immediately. The separate unread
-// cron may send one fallback email after 12 hours; the per-circle push tag
-// collapses a burst into one lock-screen notification.
-async function pushCrew(circleId: string, ids: string[], title: string, body: string) {
-  await Promise.all(
-    ids.map((id) => sendPushToUser(id, { title, body, url: '/friends?view=crew&chat=pack', tag: `crew-${circleId}` }))
-  );
-}
 
 // GET: the caller's friend-circle group chat — members + messages.
 export async function GET(req: NextRequest) {
@@ -93,6 +85,7 @@ export async function GET(req: NextRequest) {
     iHaveAccess,
     chatLive: status.live,
     waitingOn: Math.max(0, status.total - status.ready),
+    realtimeTopic: canSee ? chatRealtimeTopic('friend-circle', circleId) : null,
   });
 }
 
@@ -167,9 +160,26 @@ export async function POST(req: NextRequest) {
   // Notify the rest of the crew (awaited — Vercel can kill un-awaited work, and
   // this is the crew chat's only notification channel). Never blocks the send.
   const senderFirst = (user.name || 'A crewmate').split(' ')[0];
-  const preview = message.body.length > 90 ? message.body.slice(0, 90) + '…' : message.body;
   const recipientIds = realmMemberIds.filter((id) => id !== user.id);
-  await pushCrew(circleId, recipientIds, `${senderFirst} · your crew`, preview).catch(() => {});
+  await Promise.all(recipientIds.map((recipientId) => enqueuePushNotification({
+    recipientId,
+    actorId: user.id,
+    entityType: 'friend_circle',
+    entityId: circleId,
+    dedupeKey: `friend-circle:${message.id}:${recipientId}`,
+    payload: {
+      title: `${senderFirst} · your crew`,
+      body: 'Open the crew chat to read the new message.',
+      url: '/friends?view=crew&chat=pack',
+      tag: `crew-${circleId}`,
+    },
+  })));
+  after(async () => {
+    await Promise.allSettled([
+      broadcastChatRefresh('friend-circle', circleId),
+      processNotificationOutbox(10),
+    ]);
+  });
 
   return NextResponse.json({ message });
 }

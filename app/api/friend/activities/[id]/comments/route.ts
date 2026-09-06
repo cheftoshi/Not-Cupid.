@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { friendActivityInCurrentMetro, hasFriendActivityHistory } from '@/lib/friend-activity-access';
 import { sameRealm } from '@/lib/realm';
+import { enqueuePushNotification, processNotificationOutbox } from '@/lib/notification-outbox';
+import { broadcastChatRefresh, chatRealtimeTopic } from '@/lib/chat-realtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       const u: any = byId.get(c.user_id) || {};
       return { id: c.id, body: c.body, created_at: c.created_at, name: u.name, photo_url: u.photo_url, isMe: c.user_id === user.id };
     }),
+    realtimeTopic: chatRealtimeTopic('friend-plan', id),
   });
 }
 
@@ -118,8 +120,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const first = (user.name || 'someone').split(' ')[0];
-  const preview = text.length > 80 ? text.slice(0, 80) + '…' : text;
   const isEvent = (act.kind || 'event') === 'event';
+  const notificationJobs: Promise<boolean>[] = [];
   if (isEvent) {
     // A plan chat is a small coordination room. Notify the host and everyone
     // who has committed "interested", excluding the sender. A stable tag keeps
@@ -131,20 +133,41 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .eq('response', 'yes');
     const recipients = new Set<string>([act.author_id, ...(attendees ?? []).map((row: any) => row.user_id)]);
     recipients.delete(user.id);
-    await Promise.all(Array.from(recipients).map((recipientId) => sendPushToUser(recipientId, {
-      title: `${first} · ${act.title || 'plan chat'} 💬`,
-      body: preview,
-      url: `/friends?view=scene&plan=${encodeURIComponent(id)}`,
-      tag: `friend-plan-chat-${id}`,
-    }).catch(() => false)));
+    notificationJobs.push(...Array.from(recipients).map((recipientId) => enqueuePushNotification({
+      recipientId,
+      actorId: user.id,
+      entityType: 'friend_plan',
+      entityId: id,
+      dedupeKey: `friend-plan:${row.id}:${recipientId}`,
+      payload: {
+        title: `${first} · ${act.title || 'plan chat'} 💬`,
+        body: 'Open the plan chat to read the new message.',
+        url: `/friends?view=scene&plan=${encodeURIComponent(id)}`,
+        tag: `friend-plan-chat-${id}`,
+      },
+    })));
   } else if (act.author_id && act.author_id !== user.id) {
-    await sendPushToUser(act.author_id, {
-      title: `${first} commented 💬`,
-      body: preview,
-      url: `/friends?view=scene&plan=${encodeURIComponent(id)}`,
-      tag: `friend-comment-${id}`,
-    }).catch(() => {});
+    notificationJobs.push(enqueuePushNotification({
+      recipientId: act.author_id,
+      actorId: user.id,
+      entityType: 'friend_plan',
+      entityId: id,
+      dedupeKey: `friend-comment:${row.id}:${act.author_id}`,
+      payload: {
+        title: `${first} commented 💬`,
+        body: 'Open the conversation to read the new comment.',
+        url: `/friends?view=scene&plan=${encodeURIComponent(id)}`,
+        tag: `friend-comment-${id}`,
+      },
+    }));
   }
+  await Promise.all(notificationJobs);
+  after(async () => {
+    await Promise.allSettled([
+      broadcastChatRefresh('friend-plan', id),
+      processNotificationOutbox(10),
+    ]);
+  });
 
   return NextResponse.json({
     ok: true,

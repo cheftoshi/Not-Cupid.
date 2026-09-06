@@ -11,6 +11,7 @@ import { SkeletonStyles, Skeleton, SkeletonCard, SkeletonRow } from '@/component
 import { DROP, untilNextDrop } from '@/lib/weekly-drop';
 import { FRIEND_ACTIVITIES } from '@/lib/friend-taxonomy';
 import FriendDiscoveryCard from './friend-discovery-card';
+import { useChatRealtime } from '@/lib/use-chat-realtime';
 import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
@@ -636,9 +637,19 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
   const [cBusy, setCBusy] = useState(false);
   const [cCount, setCCount] = useState<number>(a.commentCount || 0);
   const [cErr, setCErr] = useState<string | null>(null);
-  async function loadComments() {
-    try { const res = await fetch(`/api/friend/activities/${a.id}/comments`); if (res.ok) { const d = await res.json(); setComments(d.comments || []); setCCount((d.comments || []).length); } } catch { /* ignore */ }
-  }
+  const [commentsRealtimeTopic, setCommentsRealtimeTopic] = useState<string | null>(null);
+  const loadComments = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/friend/activities/${a.id}/comments`);
+      if (res.ok) {
+        const d = await res.json();
+        setComments(d.comments || []);
+        setCCount((d.comments || []).length);
+        setCommentsRealtimeTopic(d.realtimeTopic || null);
+      }
+    } catch { /* the next realtime event or open retries */ }
+  }, [a.id]);
+  useChatRealtime(showC ? commentsRealtimeTopic : null, loadComments);
   function toggleComments() { const next = !showC; setShowC(next); if (next) { setCErr(null); loadComments(); } }
   useEffect(() => {
     if (!autoOpenChat || showC) return;
@@ -929,6 +940,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // Private 1:1 DM with a connection (separate from the pack/crew group chat).
   const [dmWith, setDmWith] = useState<any | null>(null);
   const [dmMsgs, setDmMsgs] = useState<any[]>([]);
+  const [dmRealtimeTopic, setDmRealtimeTopic] = useState<string | null>(null);
   const [dmText, setDmText] = useState('');
   const [dmError, setDmError] = useState<string | null>(null);
   const dmEndRef = useRef<HTMLDivElement>(null);
@@ -978,6 +990,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [newLink, setNewLink] = useState({ title: '', url: '', kind: 'discord', activityKey: 'other', description: '', area: '', cadence: 'ongoing', audience: '' });
   const [clubChat, setClubChat] = useState<{ id: string; name: string } | null>(null);
   const [clubMsgs, setClubMsgs] = useState<any[]>([]);
+  const [clubRealtimeTopic, setClubRealtimeTopic] = useState<string | null>(null);
   const [clubText, setClubText] = useState('');
   const [clubSending, setClubSending] = useState(false);
   const [clubError, setClubError] = useState<string | null>(null);
@@ -986,7 +999,16 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [clubReqs, setClubReqs] = useState<any[]>([]);
   const loadClubs = useCallback(async () => { try { const r = await fetch('/api/friend/clubs'); if (r.ok) setClubs((await r.json()).clubs || []); } catch { /* ignore */ } }, []);
   const loadComLinks = useCallback(async () => { try { const r = await fetch('/api/friend/community-links'); if (r.ok) setComLinks((await r.json()).links || []); } catch { /* ignore */ } }, []);
-  const loadClubChat = useCallback(async (id: string) => { try { const r = await fetch(`/api/friend/clubs/${id}/messages`); if (r.ok) setClubMsgs((await r.json()).messages || []); } catch { /* ignore */ } }, []);
+  const loadClubChat = useCallback(async (id: string) => {
+    try {
+      const r = await fetch(`/api/friend/clubs/${id}/messages`);
+      if (r.ok) {
+        const payload = await r.json();
+        setClubMsgs(payload.messages || []);
+        setClubRealtimeTopic(payload.realtimeTopic || null);
+      }
+    } catch { /* the next realtime event or fallback poll retries */ }
+  }, []);
   async function createClub() {
     const name = newClub.name.trim(); if (!name || clubBusy) return; setClubBusy(true);
     try { const r = await fetch('/api/friend/clubs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newClub) });
@@ -998,7 +1020,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     try { await fetch(`/api/friend/clubs/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, userId }) }); } catch { /* ignore */ }
   }
   async function openClubChat(c: { id: string; name: string }, syncUrl = true) {
-    setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); setClubError(null);
+    setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); setClubRealtimeTopic(null); setClubError(null);
     setClubs((current) => current.map((club) => club.id === c.id ? { ...club, unreadCount: 0 } : club));
     if (syncUrl && typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -1080,9 +1102,10 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     if (!filterRanOnce.current) { filterRanOnce.current = true; return; }
     feedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [kindFilter, sceneTime, nearMe, filterCat, filterMain, sceneSort, areaFilter]);
-  // light polling for the group chat
-  // only poll the group chat when it's actually on screen + the tab is visible
-  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(chatOpen); }, 4000); return () => clearInterval(t); }, [loadChat, view, chatOpen]);
+  // Realtime is primary; a low-frequency poll heals missed websocket events.
+  // Before the first authorized response yields an opaque topic, retain the
+  // short fallback so chat still works if Realtime is unavailable.
+  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(chatOpen); }, chat.realtimeTopic ? 30000 : 4000); return () => clearInterval(t); }, [loadChat, view, chatOpen, chat.realtimeTopic]);
   // Entering the crew view refetches immediately — no stale-message window
   // while waiting for the first 4s poll tick.
   useEffect(() => { loadChat(view === 'crew' && chatOpen); }, [view, chatOpen, loadChat]);
@@ -1111,7 +1134,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   useEffect(() => { if (view === 'pulse' || view === 'crew') loadClubs(); }, [view, loadClubs]);
   useEffect(() => { const t = setInterval(() => { if (!document.hidden && !clubChat) loadClubs(); }, 45000); return () => clearInterval(t); }, [clubChat, loadClubs]);
   useEffect(() => { if (view === 'pulse') { loadComLinks(); loadPulse(); } }, [view, loadComLinks, loadPulse]);
-  useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, 5000); return () => clearInterval(t); }, [clubChat, loadClubChat]);
+  useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, clubRealtimeTopic ? 30000 : 5000); return () => clearInterval(t); }, [clubChat, clubRealtimeTopic, loadClubChat]);
   // A push/email opens the exact club instead of dropping someone at the top
   // of Communities. Fetch by id as a fallback for travel-mode memberships that
   // are outside the currently browsed metro.
@@ -1328,8 +1351,20 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   }
   // ── Private 1:1 DM with a connection ──
   const loadDm = useCallback(async (otherId: string): Promise<boolean> => {
-    try { const r = await fetch('/api/friend/dm?with=' + otherId); if (r.ok) { setDmMsgs((await r.json()).messages || []); return true; } return false; } catch { return false; }
+    try {
+      const r = await fetch('/api/friend/dm?with=' + otherId);
+      if (r.ok) {
+        const payload = await r.json();
+        setDmMsgs(payload.messages || []);
+        setDmRealtimeTopic(payload.realtimeTopic || null);
+        return true;
+      }
+      return false;
+    } catch { return false; }
   }, []);
+  useChatRealtime(view === 'crew' && chatOpen ? chat.realtimeTopic : null, () => { void loadChat(true); });
+  useChatRealtime(clubChat ? clubRealtimeTopic : null, () => { if (clubChat) void loadClubChat(clubChat.id); });
+  useChatRealtime(dmWith ? dmRealtimeTopic : null, () => { if (dmWith) void loadDm(dmWith.otherId); });
   // Unread DM counts per connection (badge on the rail). Loaded with matches,
   // refreshed by the acts poll; opening a thread clears its badge.
   const [dmUnread, setDmUnread] = useState<Record<string, number>>({});
@@ -1406,7 +1441,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
   async function openDm(m: any) {
     setDmUnread((u) => ({ ...u, [m.otherId]: 0 })); // read the moment it opens
-    setCardMember(null); setConfirmDrop(false); setDmText(''); setDmMsgs([]); setDmError(null); setDmWith(m);
+    setCardMember(null); setConfirmDrop(false); setDmText(''); setDmMsgs([]); setDmRealtimeTopic(null); setDmError(null); setDmWith(m);
     const ok = await loadDm(m.otherId);
     if (!ok) setDmError('Couldn’t open this chat. If you just connected, give it a second and reopen.');
     setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 90);
@@ -1436,9 +1471,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // poll the open DM thread for new messages
   useEffect(() => {
     if (!dmWith) return;
-    const id = setInterval(() => { if (!document.hidden) loadDm(dmWith.otherId); }, 5000);
+    const id = setInterval(() => { if (!document.hidden) loadDm(dmWith.otherId); }, dmRealtimeTopic ? 30000 : 5000);
     return () => clearInterval(id);
-  }, [dmWith, loadDm]);
+  }, [dmWith, dmRealtimeTopic, loadDm]);
   // arriving from a DM push (/friends?dm=<id>) → open that thread once matches load
   const dmParamDone = useRef(false);
   useEffect(() => {

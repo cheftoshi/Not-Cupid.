@@ -17,6 +17,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+const CAMPAIGN_ARCHIVED = true;
 
 function firstName(name: string | null | undefined) {
   return (name || 'there').trim().split(/\s+/)[0] || 'there';
@@ -40,6 +41,7 @@ async function loadAudience() {
 export async function POST(req: NextRequest) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (CAMPAIGN_ARCHIVED) return NextResponse.json({ error: 'This August 2026 last-chance campaign is archived and cannot send.' }, { status: 410 });
 
   const body = await req.json().catch(() => ({}));
   const sendRequested = body.send === true;

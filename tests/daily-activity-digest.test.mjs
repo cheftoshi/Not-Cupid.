@@ -98,9 +98,11 @@ test('opening or joining a plan conversation advances its read cursor', () => {
 
 test('Love message push stays immediate while email folds into the daily drop after activation', () => {
   const messages = source('app/api/messages/route.ts');
-  const pushIndex = messages.indexOf('await sendPushToUser(recipientId');
-  const activationIndex = messages.indexOf('dailyActivityEmailActivation().enabled');
+  const delivery = source('lib/love-message-notification.ts');
+  const pushIndex = delivery.indexOf('await sendPushToUserDetailed(recipientId');
+  const activationIndex = delivery.indexOf('dailyActivityEmailActivation().enabled');
   assert.ok(pushIndex >= 0 && activationIndex > pushIndex);
-  assert.match(messages, /if \(dailyActivityEmailActivation\(\)\.enabled\) return/);
-  assert.match(messages, /idempotencyKey: `chat-message-/);
+  assert.match(messages, /enqueueLoveMessageNotification/);
+  assert.match(delivery, /if \(dailyActivityEmailActivation\(\)\.enabled\) return/);
+  assert.match(delivery, /idempotencyKey: `chat-message-/);
 });

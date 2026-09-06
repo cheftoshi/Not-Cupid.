@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { parseResponse } from '@/lib/fetch-helpers';
 
 // Radius selector shown in the "in the queue" / roster state. Lets a user set
@@ -10,6 +11,7 @@ import { parseResponse } from '@/lib/fetch-helpers';
 const LADDER = [5, 10, 15, 25, 50, 75];
 
 export default function ExpandRadiusButton({ radius, maxRadius }: { radius: number; maxRadius: number }) {
+  const router = useRouter();
   const [r, setR] = useState(radius);
   const [busy, setBusy] = useState(false);
   const options = LADDER.filter((v) => v <= maxRadius);
@@ -26,8 +28,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
       const data = await parseResponse<any>(res);
       if (res.ok && data.radius) {
         setR(data.radius);
-        // Give the new radius a beat, then reload to surface a fresh roster.
-        setTimeout(() => window.location.reload(), 700);
+        router.refresh();
       }
     } finally {
       setBusy(false);

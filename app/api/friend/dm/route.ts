@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { sameRealm } from '@/lib/realm';
+import { enqueuePushNotification, processNotificationOutbox } from '@/lib/notification-outbox';
+import { broadcastChatRefresh, chatRealtimeTopic } from '@/lib/chat-realtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,24 +29,24 @@ export async function GET(req: NextRequest) {
   const otherId = req.nextUrl.searchParams.get('with');
 
   // No `with` → unread summary across ALL my DM threads (badge counts for the
-  // connections rail). Graceful if friend_dm_reads isn't migrated yet.
+  // connections rail). This schema is part of the production contract now;
+  // surfacing a database error is safer than silently hiding unread messages.
   if (!otherId) {
     const unread: Record<string, number> = {};
-    try {
-      const { data: rows } = await supabaseAdmin
-        .from('friend_dms').select('user_a_id, user_b_id, sender_id, created_at')
-        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
-        .order('created_at', { ascending: false }).limit(400);
-      const { data: reads } = await supabaseAdmin
-        .from('friend_dm_reads').select('other_id, read_at').eq('user_id', user.id);
-      const readByOther = new Map((reads ?? []).map((r: any) => [r.other_id, r.read_at]));
-      (rows ?? []).forEach((m: any) => {
-        if (m.sender_id === user.id) return;
-        const other = m.user_a_id === user.id ? m.user_b_id : m.user_a_id;
-        const readAt = readByOther.get(other);
-        if (!readAt || new Date(m.created_at) > new Date(readAt)) unread[other] = (unread[other] || 0) + 1;
-      });
-    } catch { /* reads table not migrated — no badges */ }
+    const { data: rows, error: rowsError } = await supabaseAdmin
+      .from('friend_dms').select('user_a_id, user_b_id, sender_id, created_at')
+      .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+      .order('created_at', { ascending: false }).limit(400);
+    const { data: reads, error: readsError } = await supabaseAdmin
+      .from('friend_dm_reads').select('other_id, read_at').eq('user_id', user.id);
+    if (rowsError || readsError) return NextResponse.json({ error: 'Could not load unread messages' }, { status: 503 });
+    const readByOther = new Map((reads ?? []).map((r: any) => [r.other_id, r.read_at]));
+    (rows ?? []).forEach((m: any) => {
+      if (m.sender_id === user.id) return;
+      const other = m.user_a_id === user.id ? m.user_b_id : m.user_a_id;
+      const readAt = readByOther.get(other);
+      if (!readAt || new Date(m.created_at) > new Date(readAt)) unread[other] = (unread[other] || 0) + 1;
+    });
     return NextResponse.json({ unread });
   }
 
@@ -69,17 +70,17 @@ export async function GET(req: NextRequest) {
   if (after) q = q.gt('created_at', after);
   const { data: messages } = await q;
 
-  // Opening/polling the thread = reading it. Graceful pre-migration.
-  try {
-    await supabaseAdmin.from('friend_dm_reads').upsert(
-      { user_id: user.id, other_id: otherId, read_at: new Date().toISOString() },
-      { onConflict: 'user_id,other_id' }
-    );
-  } catch { /* reads table not migrated */ }
+  // Opening/polling the thread = reading it.
+  const { error: readError } = await supabaseAdmin.from('friend_dm_reads').upsert(
+    { user_id: user.id, other_id: otherId, read_at: new Date().toISOString() },
+    { onConflict: 'user_id,other_id' }
+  );
+  if (readError) return NextResponse.json({ error: 'Could not update read state' }, { status: 503 });
 
   return NextResponse.json({
     messages: (messages ?? []).map((m: any) => ({ ...m, isMe: m.sender_id === user.id })),
     other: other ?? null,
+    realtimeTopic: chatRealtimeTopic('friend-dm', `${aId}:${bId}`),
   });
 }
 
@@ -121,11 +122,24 @@ export async function POST(req: NextRequest) {
   }
 
   const meFirst = (user.name || 'A friend').split(' ')[0];
-  await sendPushToUser(otherId, {
+  await enqueuePushNotification({
+    recipientId: otherId,
+    actorId: user.id,
+    entityType: 'friend_dm',
+    entityId: `${aId}:${bId}`,
+    dedupeKey: `friend-dm:${row.id}:${otherId}`,
+    payload: {
     title: `${meFirst} messaged you 🧡`,
-    body: text.length > 80 ? text.slice(0, 80) + '…' : text,
+    body: 'Open your Friend Line chat to read it.',
     url: '/friends?dm=' + user.id, tag: `friend-dm-${aId}-${bId}`,
-  }).catch(() => {});
+    },
+  });
+  after(async () => {
+    await Promise.allSettled([
+      broadcastChatRefresh('friend-dm', `${aId}:${bId}`),
+      processNotificationOutbox(5),
+    ]);
+  });
 
   return NextResponse.json({ ok: true, message: { ...row, isMe: true } });
 }

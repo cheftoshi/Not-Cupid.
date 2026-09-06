@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
 import Wordmark from '@/components/wordmark';
@@ -17,17 +17,15 @@ function safeNextPath(raw: string | null): string | null {
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginInner />
-    </Suspense>
-  );
+  return <LoginInner />;
 }
 
 function LoginInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextPath = safeNextPath(searchParams.get('next'));
+  const [nextPath, setNextPath] = useState<string | null>(null);
+  useEffect(() => {
+    setNextPath(safeNextPath(new URLSearchParams(window.location.search).get('next')));
+  }, []);
   const experimentNext = nextPath === '/dating-experiment';
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');

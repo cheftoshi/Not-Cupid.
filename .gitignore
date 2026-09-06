@@ -30,6 +30,12 @@ yarn-error.log*
 
 # vercel
 .vercel/
+playwright-report/
+test-results/
+
+# local compiler / profiling artifacts
+default.profraw
+reports/
 
 # local claude overrides (per-machine permissions, etc.)
 .claude/settings.local.json

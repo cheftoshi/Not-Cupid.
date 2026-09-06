@@ -30,6 +30,15 @@ import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 import { lovePickAccessFor } from '@/lib/love-pick-access';
 import { evaluateEmbeddingShadow } from '@/lib/embedding-shadow';
 import { hasMatchingEmbeddingConsent } from '@/lib/connection-embeddings';
+import { adaptiveReasonAdjustment, diversifyLoveRanking } from '@/lib/match-diversity';
+import {
+  hasCrossIntentBridgeConsent,
+  loadConnectedFriendIds,
+  loadEmbeddingColdStartOrder,
+  loadLoveSignalPreferences,
+  loadMatchingFeatures,
+  matchingTreatmentVersion,
+} from '@/lib/matching-rollouts';
 
 // ZIP → human metro label (e.g. "Boston, MA"), or "Boston area" fallback.
 // Never returns the raw ZIP — that's a location-privacy leak.
@@ -59,7 +68,11 @@ export async function composeLoveRosterForUser(
   // roster keeps showing until you're maxed out (it no longer disappears the
   // moment you have one match). We also exclude anyone you're already talking to.
   const now = Date.now();
-  const myLive = await liveMatchesFor(user.id);
+  const [myLive, features] = await Promise.all([
+    liveMatchesFor(user.id),
+    loadMatchingFeatures(user.id),
+  ]);
+  const treatmentVersion = matchingTreatmentVersion(MATCHING_ALGORITHM_VERSION, features);
   // A scheduled verification can refresh roster membership, but it must not
   // start a person's 24-hour included-pick clock before they actually return.
   const pickAccess = options.interactive === false ? null : await lovePickAccessFor(user);
@@ -94,12 +107,11 @@ export async function composeLoveRosterForUser(
     'id, name, age, gender, seeking, age_min, age_max, zip, photo_url, intro_video_url, archetype, occupation, ' +
     'bio, prompts, relationship_style, love_availability, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, music, food, hobbies, sports, ' +
     'score_honesty, score_emotionality, score_extraversion, score_agreeableness, ' +
-    'score_conscientiousness, score_openness, last_matched_at, ignored_picks, is_test';
+    'score_conscientiousness, score_openness, last_matched_at, ignored_picks, is_test, cross_intent_bridge_opted_in_at, cross_intent_bridge_revoked_at';
   const nowIso = new Date().toISOString();
   // Responsiveness gate: bench chronic no-shows (ignored_picks > MAX_IGNORED_PICKS)
-  // so the pool stops surfacing people who never accept. `applyIgnored` is dropped
-  // on the pre-migration fallback below if the column doesn't exist yet.
-  const buildPool = (applyIgnored: boolean) => {
+  // so the pool stops surfacing people who never accept.
+  const buildPool = () => {
     let q = supabaseAdmin
       .from('users')
       .select(POOL_COLS)
@@ -111,11 +123,10 @@ export async function composeLoveRosterForUser(
       .or(`matching_cooldown_until.is.null,matching_cooldown_until.lt.${nowIso}`);
     // Realm segregation: test ↔ test, real ↔ real only.
     q = (user as any).is_test === true ? q.eq('is_test', true) : q.not('is_test', 'is', true);
-    if (applyIgnored) q = q.lte('ignored_picks', MAX_IGNORED_PICKS);
-    return q;
+    return q.lte('ignored_picks', MAX_IGNORED_PICKS);
   };
   const [initialPool, historyResult, priorMatchesResult] = await Promise.all([
-    buildPool(true),
+    buildPool(),
     supabaseAdmin
       .from('match_history')
       .select('user_a_id, user_b_id')
@@ -130,13 +141,9 @@ export async function composeLoveRosterForUser(
       .order('created_at', { ascending: false })
       .limit(1000),
   ]);
-  let { data: pool, error: poolErr } = initialPool;
-  if (poolErr) {
-    // ignored_picks not migrated yet (or other error) → retry without that filter.
-    ({ data: pool } = await buildPool(false));
-  }
-
-  pool = pool ?? [];
+  const { data: poolRows, error: poolErr } = initialPool;
+  if (poolErr) throw new Error(`love_roster_pool_${poolErr.code || 'query_failed'}`);
+  let pool = poolRows ?? [];
 
   // Wait-time decay input (same derivation as /api/match).
   const lastEnded = (priorMatchesResult.data ?? [])
@@ -155,6 +162,16 @@ export async function composeLoveRosterForUser(
     seen.add(match.user_1_id === user.id ? match.user_2_id : match.user_1_id);
   }
   let freshPool = pool.filter((p: any) => !seen.has(p.id));
+  const [signalPreferences, connectedFriendIds] = await Promise.all([
+    features.love_adaptive.enabled ? loadLoveSignalPreferences(user.id) : Promise.resolve([]),
+    features.cross_intent_bridge.enabled && hasCrossIntentBridgeConsent(user)
+      ? loadConnectedFriendIds(user)
+      : Promise.resolve(new Set<string>()),
+  ]);
+  const bridgeCandidateIds = new Set<string>();
+  for (const candidate of freshPool as any[]) {
+    if (connectedFriendIds.has(candidate.id) && hasCrossIntentBridgeConsent(candidate)) bridgeCandidateIds.add(candidate.id);
+  }
 
   // Fetch operational ranking inputs together. These used to run in three
   // sequential waves (live capacity, sessions/exposures, reciprocity), which
@@ -270,15 +287,29 @@ export async function composeLoveRosterForUser(
       ignored * 3 -
       incoming * 3 +
       confidenceBonus +
-      reciprocal;
+      reciprocal +
+      (features.love_adaptive.enabled ? adaptiveReasonAdjustment(breakdown.reasonCodes, signalPreferences) : 0) +
+      (features.cross_intent_bridge.enabled && bridgeCandidateIds.has(p.id) ? 1.5 : 0);
     if (adj) candidateAdjustments.set(p.id, adj);
   }
 
+  const isColdStart = (priorMatchesResult.data?.length ?? 0) === 0 && (historyResult.data?.length ?? 0) === 0;
+  if (features.love_embedding_cold_start.enabled && isColdStart && freshPool.length > 0) {
+    const embeddingOrder = await loadEmbeddingColdStartOrder(user, freshPool.map((candidate: any) => candidate.id));
+    embeddingOrder.forEach((candidateId, index) => {
+      const percentile = 1 - index / Math.max(1, embeddingOrder.length);
+      candidateAdjustments.set(candidateId, (candidateAdjustments.get(candidateId) || 0) + 3 * percentile);
+    });
+  }
+
   const { ranked } = rankCandidates(user, freshPool, { waitDays, candidateAdjustments });
-  const rotationRanked = orderForRosterRotation(ranked, activityByCandidateId, recentlyShownIds);
+  const rotationBase = orderForRosterRotation(ranked, activityByCandidateId, recentlyShownIds);
   // Three included picks plus seven browseable alternatives keeps choice useful
   // without turning Love Line into an endless feed.
   const size = LOVE_ROSTER_OPTIONS;
+  const rotationRanked = features.love_diversity.enabled
+    ? diversifyLoveRanking(rotationBase, size)
+    : rotationBase;
 
   // Map of currently-eligible candidates by id (for snapshot validation +
   // hydration). Anyone in the prior snapshot who's since been taken / matched /
@@ -337,10 +368,15 @@ export async function composeLoveRosterForUser(
           ? 'active lately'
           : null,
       score: c.score,
-      why: breakdownByCandidateId.get(c.user.id)?.reasons[0] ?? 'there is enough overlap here to be curious',
-      reasonCodes: breakdownByCandidateId.get(c.user.id)?.reasonCodes ?? [],
+      why: bridgeCandidateIds.has(c.user.id)
+        ? 'you both opted into exploring a friendship that might have more potential'
+        : breakdownByCandidateId.get(c.user.id)?.reasons[0] ?? 'there is enough overlap here to be curious',
+      reasonCodes: [
+        ...(breakdownByCandidateId.get(c.user.id)?.reasonCodes ?? []),
+        ...(bridgeCandidateIds.has(c.user.id) ? ['friend_foundation'] : []),
+      ],
       scoreConfidence: breakdownByCandidateId.get(c.user.id)?.confidence ?? 0,
-      algorithmVersion: MATCHING_ALGORITHM_VERSION,
+      algorithmVersion: treatmentVersion,
     }));
 
   const priorIds = snapshot.slice(0, size);
@@ -375,7 +411,7 @@ export async function composeLoveRosterForUser(
             shown_at: shownAt,
             position: position + 1,
             score: candidate.score,
-            algorithm_version: MATCHING_ALGORITHM_VERSION,
+            algorithm_version: treatmentVersion,
             reason_codes: candidate.reasonCodes,
             reciprocal_adjustment: reciprocalByCandidateId.get(candidate.id) ?? 0,
             treatment_id: treatmentId,
@@ -418,7 +454,7 @@ export async function composeLoveRosterForUser(
     await evaluateEmbeddingShadow({
       userId: user.id,
       intent: 'love',
-      liveAlgorithmVersion: MATCHING_ALGORITHM_VERSION,
+      liveAlgorithmVersion: treatmentVersion,
       liveTopIds: roster.map((candidate) => candidate.id),
       eligibleCandidateIds: ranked.map((candidate) => candidate.user.id),
       metro: metroOf(user.zip),
@@ -446,6 +482,7 @@ export async function composeLoveRosterForUser(
     addedCandidateCount: !snapshotFresh ? addedCandidateIds.length : 0,
     nextRotationAt: new Date(rotationStart + ROSTER_TTL_MS).toISOString(),
     rotationHours: ROSTER_RETURN_ROTATION_HOURS,
+    matchingTreatment: treatmentVersion,
   };
 }
 
@@ -465,5 +502,10 @@ export async function GET() {
       .eq('id', user.id);
   }
 
-  return NextResponse.json(await composeLoveRosterForUser(user));
+  try {
+    return NextResponse.json(await composeLoveRosterForUser(user));
+  } catch (error) {
+    console.error('[love-roster] compose failed', error instanceof Error ? error.message : 'unknown');
+    return NextResponse.json({ error: 'Your Love roster could not refresh. Please try again.' }, { status: 503 });
+  }
 }

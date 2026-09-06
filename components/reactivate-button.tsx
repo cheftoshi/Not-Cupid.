@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { toast } from '@/components/feedback';
 
@@ -8,6 +9,7 @@ import { toast } from '@/components/feedback';
 // spending a "start fresh" refresh. Used on the paused-state cards (both lines).
 // `accent` lets the friend side render it in orange; defaults to love-blue.
 export default function ReactivateButton({ accent = '#2563ff' }: { accent?: string }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
 
   async function reactivate() {
@@ -17,7 +19,7 @@ export default function ReactivateButton({ accent = '#2563ff' }: { accent?: stri
       const r = await fetch('/api/profile/reactivate', { method: 'POST' });
       const d = await parseResponse<any>(r);
       if (!r.ok) { toast(d.error || 'could not reactivate — try again', 'error'); setBusy(false); return; }
-      window.location.reload();
+      router.refresh();
     } catch {
       toast('something went wrong — try again', 'error'); setBusy(false);
     }

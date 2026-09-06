@@ -505,7 +505,7 @@ test('V9 adds a transparent event questionnaire, private Berkeley reveal, and op
   assert.match(reminders, /status: 'failed'/);
   assert.match(reminders, /\.eq\('status', 'failed'\)/);
   assert.match(reminders, /entry\.notify !== false/);
-  assert.match(cron, /\/api\/cron\/dating-experiment-reminders/);
+  assert.doesNotMatch(cron, /\/api\/cron\/dating-experiment-reminders/);
 });
 
 test('experiment terms do not bundle a marketing likeness license', () => {

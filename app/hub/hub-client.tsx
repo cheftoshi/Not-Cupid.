@@ -6,11 +6,13 @@ export default function HubClient({
   city,
   conciergeConsented,
   matchingPersonalizationEnabled,
+  crossIntentBridgeEnabled,
 }: {
   firstName: string;
   city?: string | null;
   conciergeConsented: boolean;
   matchingPersonalizationEnabled: boolean;
+  crossIntentBridgeEnabled: boolean;
 }) {
   return (
     <main className={styles.hub}>
@@ -21,6 +23,7 @@ export default function HubClient({
           city={city}
           initialConsented={conciergeConsented}
           initialMatchingPersonalization={matchingPersonalizationEnabled}
+          initialCrossIntentBridge={crossIntentBridgeEnabled}
         />
       </div>
     </main>

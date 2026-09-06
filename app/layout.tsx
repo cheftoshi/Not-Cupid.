@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* No-flash theme: apply the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('nc-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}` }} />
       </head>
-      <body><WebVitals /><TopNav />{children}<SiteFooter /><DeferredClientShell /></body>
+      <body style={{ margin: 0 }}><WebVitals /><TopNav />{children}<SiteFooter /><DeferredClientShell /></body>
     </html>
   )
 }

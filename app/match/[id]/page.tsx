@@ -8,6 +8,7 @@ import { withPrivateVideoPreview } from '@/lib/private-media';
 import { attachStyle } from '@/lib/quiz-data';
 import { markLoveNotificationOpened } from '@/lib/love-notification-ledger';
 import { isPro } from '@/lib/pro';
+import { chatRealtimeTopic } from '@/lib/chat-realtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +87,7 @@ export default async function MatchPage({
       readOnly={readOnly}
       profileUnlocked={mutuallyConnected}
       compatibilityReadAvailable={compatibilityReadAvailable}
+      realtimeTopic={chatRealtimeTopic('love', id)}
     />
   );
 }
