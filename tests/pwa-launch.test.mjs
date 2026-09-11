@@ -62,7 +62,11 @@ test('service worker keeps pages and APIs network-first while supporting install
   const subscribe = source('app/api/push/subscribe/route.ts');
   const pushMigration = source('supabase/migrations/20260816014500_push_subscription_service_role.sql');
   const privateMedia = source('lib/private-media.ts');
-  assert.match(register, /serviceWorker\.register\('\/sw\.js'\)/);
+  assert.match(register, /serviceWorker\.register\('\/sw\.js', \{ updateViaCache: 'none' \}\)/);
+  assert.match(register, /updateViaCache: 'none'/);
+  assert.match(register, /visibilitychange/);
+  assert.match(register, /pageshow/);
+  assert.match(worker, /nc-static-v4/);
   assert.match(worker, /event\.request\.mode === 'navigate'/);
   assert.match(worker, /fetch\(event\.request\)\.catch/);
   assert.match(worker, /url\.pathname\.startsWith\('\/_next\/static\/'\)/);

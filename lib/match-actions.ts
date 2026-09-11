@@ -102,21 +102,30 @@ export async function syncMatchRosters(userIds: string[]): Promise<void> {
 // Lazily expire a user's timed-out pending matches and return both parties to
 // the pool. The cron does this every 20 min, but roster/pick call this on
 // demand so a just-timed-out user can immediately pick again (no 20-min limbo
-// where their status is still 'matched'). Idempotent.
-export async function releaseTimedOutMatches(userId: string): Promise<void> {
+// where their status is still 'matched'). Idempotent. Return the still-live
+// rows from the same read so interactive routes do not immediately repeat this
+// relatively expensive match query.
+export async function releaseTimedOutMatches(userId: string): Promise<any[]> {
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
   const { data: matches, error: matchReadError } = await supabaseAdmin
     .from('matches')
-    .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, expires_at, status')
+    .select('*')
     .or(`user_1_id.eq.${userId},user_2_id.eq.${userId}`)
     .is('ended_at', null)
     .neq('status', 'expired');
   if (matchReadError) throw matchReadError;
+  const liveMatches: any[] = [];
   for (const m of matches ?? []) {
     const both = m.user_1_accepted && m.user_2_accepted;
-    if (both) continue;
-    if (!m.expires_at || new Date(m.expires_at).getTime() >= nowMs) continue;
+    if (both) {
+      liveMatches.push(m);
+      continue;
+    }
+    if (!m.expires_at || new Date(m.expires_at).getTime() >= nowMs) {
+      liveMatches.push(m);
+      continue;
+    }
     // Timed out without a mutual accept → expire it and free both parties.
     // Compare-and-set is the claim. Concurrent cron/roster requests may read
     // the same due row, but only one can transition it and run side effects.
@@ -144,6 +153,7 @@ export async function releaseTimedOutMatches(userId: string): Promise<void> {
     const ignorer = ignoringParty(claimed);
     if (ignorer) await supabaseAdmin.rpc('bump_ignored_picks', { p_id: ignorer }).then(undefined, () => {});
   }
+  return liveMatches;
 }
 
 // Chat expires after this much SILENCE. Each new message slides it forward

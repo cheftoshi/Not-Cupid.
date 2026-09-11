@@ -12,7 +12,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { MATCHING_ALGORITHM_VERSION, compatibilityBreakdown, rankCandidates } from '@/lib/matching';
 import { reciprocalMomentumAdjustment, type ReciprocalOutcomeStats } from '@/lib/reciprocity';
-import { releaseTimedOutMatches, liveMatchesFor, isMatchLive, MAX_CONNECTIONS, MAX_IGNORED_PICKS } from '@/lib/match-actions';
+import { releaseTimedOutMatches, isMatchLive, MAX_CONNECTIONS, MAX_IGNORED_PICKS } from '@/lib/match-actions';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import { isHardLocked } from '@/lib/ghost';
 import {
@@ -60,21 +60,21 @@ export async function composeLoveRosterForUser(
   user: any,
   options: { recordNotificationChange?: boolean; interactive?: boolean } = {},
 ) {
-  // Free any of the caller's timed-out matches first, so a just-expired match
-  // doesn't block their roster (and so they show as 'waiting' for picking).
-  await releaseTimedOutMatches(user.id);
-
   // Capacity model: you can run up to MAX_CONNECTIONS live conversations. The
   // roster keeps showing until you're maxed out (it no longer disappears the
   // moment you have one match). We also exclude anyone you're already talking to.
   const now = Date.now();
+  // Expiry cleanup returns the current live rows from its own database read.
+  // Load independent matching features beside it, removing the duplicate live
+  // match read from the phone-critical roster request.
   const [myLive, features] = await Promise.all([
-    liveMatchesFor(user.id),
+    releaseTimedOutMatches(user.id),
     loadMatchingFeatures(user.id),
   ]);
   const treatmentVersion = matchingTreatmentVersion(MATCHING_ALGORITHM_VERSION, features);
-  // A scheduled verification can refresh roster membership, but it must not
-  // start a person's 24-hour included-pick clock before they actually return.
+  // A scheduled verification does not request pick access, so it cannot start
+  // a person's 24-hour included-pick clock before they actually return. Keep
+  // this after expiry cleanup because a returned included pick changes access.
   const pickAccess = options.interactive === false ? null : await lovePickAccessFor(user);
   const livePartnerIds = new Set<string>(
     myLive.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))

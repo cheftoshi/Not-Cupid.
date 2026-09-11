@@ -15,13 +15,31 @@ export default function SwRegister() {
         .catch(() => {});
       return;
     }
+    let disposed = false;
     let id: number | undefined;
-    navigator.serviceWorker.register('/sw.js').then((reg) => {
-      reg.update().catch(() => {});
-      id = window.setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+    let registration: ServiceWorkerRegistration | undefined;
+    const updateWhenVisible = () => {
+      if (!disposed && registration && document.visibilityState === 'visible') {
+        registration.update().catch(() => {});
+      }
+    };
+
+    // Android can keep an installed PWA process alive for days. Always check
+    // the worker script itself at launch and whenever the app returns to the
+    // foreground so an old shell cannot linger behind a production deploy.
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((reg) => {
+      if (disposed) return;
+      registration = reg;
+      updateWhenVisible();
+      document.addEventListener('visibilitychange', updateWhenVisible);
+      window.addEventListener('pageshow', updateWhenVisible);
+      id = window.setInterval(updateWhenVisible, 60 * 60 * 1000);
     }).catch(() => {});
     return () => {
+      disposed = true;
       if (id) window.clearInterval(id);
+      document.removeEventListener('visibilitychange', updateWhenVisible);
+      window.removeEventListener('pageshow', updateWhenVisible);
     };
   }, []);
   return null;

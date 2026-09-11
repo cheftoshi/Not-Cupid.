@@ -5,7 +5,7 @@ import RosterPicker from './roster-picker';
 import LoveConnections from './love-connections';
 import LocationControls from '@/components/location-controls';
 import { DEFAULT_MATCH_RADIUS, MAX_MATCH_RADIUS, metroOf, METRO_CENTERS } from '@/lib/quiz-data';
-import { liveMatchesFor, releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
+import { releaseTimedOutMatches, MAX_CONNECTIONS } from '@/lib/match-actions';
 import styles from './dashboard.module.css';
 import { sameRealm } from '@/lib/realm';
 import { profileReadiness } from '@/lib/profile-readiness';
@@ -38,17 +38,14 @@ export default async function DashboardPage({
 
   if (loveEventId) await markLoveNotificationOpened(loveEventId, user.id);
 
-  await releaseTimedOutMatches(user.id);
-  const [liveMatches, { data: historyMatches }] = await Promise.all([
-    liveMatchesFor(user.id),
-    supabaseAdmin
-      .from('matches')
-      .select('id, user_1_id, user_2_id, ended_at')
-      .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
-      .not('ended_at', 'is', null)
-      .order('ended_at', { ascending: false })
-      .limit(10),
-  ]);
+  const liveMatches = await releaseTimedOutMatches(user.id);
+  const { data: historyMatches } = await supabaseAdmin
+    .from('matches')
+    .select('id, user_1_id, user_2_id, ended_at')
+    .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
+    .not('ended_at', 'is', null)
+    .order('ended_at', { ascending: false })
+    .limit(10);
   liveMatches.sort(
     (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );

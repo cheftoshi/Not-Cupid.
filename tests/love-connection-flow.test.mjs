@@ -20,6 +20,21 @@ test('Love Line exposes three included picks plus seven alternatives and a hard 
   assert.match(migration, /unique \(user_id, candidate_id\)/);
 });
 
+test('phone-critical Love requests reuse expiry cleanup results instead of rereading live matches', () => {
+  const actions = readFileSync(new URL('../lib/match-actions.ts', import.meta.url), 'utf8');
+  const roster = readFileSync(new URL('../app/api/match/roster/route.ts', import.meta.url), 'utf8');
+  const pick = readFileSync(new URL('../app/api/match/pick/route.ts', import.meta.url), 'utf8');
+  const dashboard = readFileSync(new URL('../app/dashboard/page.tsx', import.meta.url), 'utf8');
+  assert.match(actions, /releaseTimedOutMatches\(userId: string\): Promise<any\[\]>/);
+  assert.match(actions, /return liveMatches/);
+  assert.match(roster, /const \[myLive, features\] = await Promise\.all/);
+  assert.doesNotMatch(roster, /liveMatchesFor/);
+  assert.match(pick, /const myLive = await releaseTimedOutMatches/);
+  assert.match(pick, /const pickAccess = await lovePickAccessFor/);
+  assert.match(dashboard, /const liveMatches = await releaseTimedOutMatches/);
+  assert.doesNotMatch(dashboard, /liveMatchesFor/);
+});
+
 test('every Love roster option has a free, phone-safe profile preview before choosing', () => {
   const route = readFileSync(new URL('../app/api/match/roster/route.ts', import.meta.url), 'utf8');
   const pick = readFileSync(new URL('../app/api/match/pick/route.ts', import.meta.url), 'utf8');

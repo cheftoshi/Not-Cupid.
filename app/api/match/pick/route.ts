@@ -80,12 +80,9 @@ export async function POST(req: NextRequest) {
   // Free timed-out matches first. The hard cap is only a safety ceiling; the
   // actual product boundary is three included distinct picks per roster cycle,
   // then a one-time extra-connection entitlement (or Pro).
-  await releaseTimedOutMatches(user.id);
-
-  const [myLive, pickAccess] = await Promise.all([
-    liveMatchesFor(user.id),
-    lovePickAccessFor(user),
-  ]);
+  const myLive = await releaseTimedOutMatches(user.id);
+  // Expiry can return an included pick, so access must be read afterward.
+  const pickAccess = await lovePickAccessFor(user);
   if (myLive.length >= MAX_CONNECTIONS) {
     return NextResponse.json(
       { error: `You're at the safety limit of ${MAX_CONNECTIONS} live connections. Wrap one up before starting another.` },
