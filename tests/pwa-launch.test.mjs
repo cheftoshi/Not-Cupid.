@@ -131,6 +131,9 @@ test('Friend Scene stays inside the phone viewport and keeps every response visi
   assert.match(css, /\.sceneFilterDock \{[^}]*overflow-x: auto/);
   assert.match(css, /\.activityRsvpActions \{ display: grid; grid-template-columns: repeat\(2,minmax\(0,1fr\)\); \}/);
   assert.match(css, /\.activityRsvpButton:first-child \{ grid-column: 1 \/ -1; \}/);
+  assert.match(css, /@media \(max-width: 560px\) \{[\s\S]*\.fbTopNav \{ position: static;/);
+  assert.match(css, /\.sceneFilterDock \{ position: static;/);
+  assert.match(css, /\.activityCommentList \{ max-height: none; overflow-y: visible; \}/);
 });
 
 test('phone-critical chats and app roots stay viewport-safe in the installed PWA', () => {
@@ -168,6 +171,9 @@ test('phone-critical chats and app roots stay viewport-safe in the installed PWA
   assert.match(experimentProfileCss, /safe-area-inset-right/);
   assert.match(nav, /--app-visual-viewport-height/);
   assert.match(nav, /visualViewport/);
+  assert.match(nav, /heightDelta > 160/);
+  assert.match(nav, /hasEditableFocus\(\)/);
+  assert.match(source('app/globals.css'), /@media \(hover:none\) and \(pointer:coarse\)[\s\S]*backdrop-filter:none !important/);
 });
 
 test('profile hydration uses one Eastern date label across the server and Android client', () => {

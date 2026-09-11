@@ -37,31 +37,62 @@ export default function TopNav() {
     }
 
     let frame = 0;
+    let lastViewportHeight = 0;
+    let lastViewportWidth = 0;
     const viewport = window.visualViewport;
-    const sync = () => {
+    const hasEditableFocus = () => {
+      const active = document.activeElement;
+      return active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement ||
+        active instanceof HTMLSelectElement ||
+        (active instanceof HTMLElement && active.isContentEditable);
+    };
+    const sync = (forceViewport = false) => {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
         root.style.setProperty('--app-top-nav-height', `${Math.ceil(nav.getBoundingClientRect().height)}px`);
         const viewportHeight = Math.round(viewport?.height || window.innerHeight);
-        if (viewportHeight > 0) root.style.setProperty('--app-visual-viewport-height', `${viewportHeight}px`);
+        const viewportWidth = Math.round(viewport?.width || window.innerWidth);
+        const heightDelta = Math.abs(viewportHeight - lastViewportHeight);
+        const widthChanged = Math.abs(viewportWidth - lastViewportWidth) > 1;
+
+        // Android Chrome can emit visualViewport resize events while its URL
+        // bar moves during an ordinary swipe. Rewriting the viewport CSS var
+        // for every one of those events forces the whole app to re-layout and
+        // makes scrolling feel stuck. Still sync real rotations, keyboards,
+        // app restores, and large viewport changes.
+        if (viewportHeight > 0 && (
+          forceViewport ||
+          lastViewportHeight === 0 ||
+          widthChanged ||
+          hasEditableFocus() ||
+          heightDelta > 160
+        )) {
+          root.style.setProperty('--app-visual-viewport-height', `${viewportHeight}px`);
+          lastViewportHeight = viewportHeight;
+          lastViewportWidth = viewportWidth;
+        }
       });
     };
-    const syncVisible = () => { if (document.visibilityState === 'visible') sync(); };
-    sync();
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
+    const syncVisible = () => { if (document.visibilityState === 'visible') sync(true); };
+    const syncNav = () => sync(false);
+    const syncViewport = () => sync(false);
+    const syncForced = () => sync(true);
+    sync(true);
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncNav) : null;
     observer?.observe(nav);
-    viewport?.addEventListener('resize', sync);
-    window.addEventListener('resize', sync);
-    window.addEventListener('orientationchange', sync);
-    window.addEventListener('pageshow', sync);
+    viewport?.addEventListener('resize', syncViewport);
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncForced);
+    window.addEventListener('pageshow', syncForced);
     document.addEventListener('visibilitychange', syncVisible);
     return () => {
       window.cancelAnimationFrame(frame);
       observer?.disconnect();
-      viewport?.removeEventListener('resize', sync);
-      window.removeEventListener('resize', sync);
-      window.removeEventListener('orientationchange', sync);
-      window.removeEventListener('pageshow', sync);
+      viewport?.removeEventListener('resize', syncViewport);
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncForced);
+      window.removeEventListener('pageshow', syncForced);
       document.removeEventListener('visibilitychange', syncVisible);
     };
   }, [isAppRoute, p]);

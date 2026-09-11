@@ -39,6 +39,6 @@
   ],
   "exclude": [
     "node_modules",
-    ".next/**/* 2.ts"
+    ".next/**/* *.ts"
   ]
 }

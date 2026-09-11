@@ -904,7 +904,7 @@
 
   .loveLinks a, .historyDetails summary { min-height: 44px; }
   .loveRosterCard { width: min(76vw, 270px); flex-basis: min(76vw, 270px); }
-  .loveRosterRail { margin-inline: -0.15rem; padding-bottom: 0.85rem; }
+  .loveRosterRail { margin-inline: -0.15rem; padding-bottom: 0.85rem; scroll-snap-type: x proximity; }
   .loveModalOverlay { align-items: flex-end; padding: max(0.5rem, var(--app-safe-top, 0px)) 0 0; }
   .loveSwapSheet { align-self: flex-end; border-radius: 20px 20px 0 0; padding: 1.2rem; padding-bottom: max(1.2rem, var(--app-safe-bottom, 0px)); }
   .loveProfilePreviewSheet { align-self: flex-end; width: 100%; height: calc(var(--app-visual-viewport-height, 100dvh) - max(0.5rem, var(--app-safe-top, 0px))); max-height: calc(var(--app-visual-viewport-height, 100dvh) - max(0.5rem, var(--app-safe-top, 0px))); border-radius: 22px 22px 0 0; border-bottom: 0; }

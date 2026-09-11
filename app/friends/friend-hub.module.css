@@ -105,11 +105,13 @@
 @media (max-width: 1040px) { .friendTodayLayout { grid-template-columns: minmax(0,1fr) minmax(230px,290px); } }
 @media (max-width: 760px) { .friendTodayLayout, .friendLoopSteps { grid-template-columns: 1fr; } .friendTodayPeople, .friendTodayActions, .friendTodayMain { grid-column: auto; grid-row: auto; } .friendTodaySide { position: static; } .friendLoopHead { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 560px) {
-  .fbTopNav { position: sticky; top: calc(var(--app-top-nav-height, 0px) + 0.45rem); z-index: 30; flex-wrap: nowrap; overflow-x: auto; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: color-mix(in srgb, var(--h-surface) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); scrollbar-width: none; }
+  /* One page scroller on phones: pinning these two horizontal rails beneath
+     the global nav made diagonal Android swipes fight three sticky layers. */
+  .fbTopNav { position: static; z-index: auto; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; padding: 0.38rem; border: 1px solid var(--h-border); border-radius: 999px; background: var(--h-surface); box-shadow: var(--shadow-sm); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .fbTopNav::-webkit-scrollbar { display: none; }
   .fbTopNav button { white-space: nowrap; }
   .fbShell { gap: 0.95rem; margin-top: 0.9rem; }
-  .sceneFilterDock { position: sticky; top: calc(var(--app-top-nav-height, 0px) + 3.7rem); z-index: 24; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; margin: 0 -0.2rem 0.9rem; padding: 0.45rem 0.2rem; background: color-mix(in srgb, var(--h-bg) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
+  .sceneFilterDock { position: static; z-index: auto; display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; margin: 0 -0.2rem 0.9rem; padding: 0.45rem 0.2rem; background: transparent; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .sceneFilterDock::-webkit-scrollbar { display: none; }
   .sceneFilterDock button, .sceneFilterDock span { flex: 0 0 auto; white-space: nowrap; }
   .sceneFilterDock > div { margin-left: 0 !important; flex: 0 0 auto; }
@@ -267,6 +269,10 @@
   .activityRsvpActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .activityRsvpButton { min-height: 44px; width: 100%; padding: 0.45rem 0.35rem; }
   .activityRsvpButton:first-child { grid-column: 1 / -1; }
+  /* Comments belong to the document scroll on a phone. A 240px nested
+     scroller trapped vertical gestures in the middle of Scene cards. */
+  .activityCommentList { max-height: none; overflow-y: visible; }
+  .scrollRow { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
   .chatSheet { width: 100%; height: min(calc(var(--app-visual-viewport-height, 100dvh) * 0.84),680px); }
   .chatMessage { max-width: 84%; }
   .chatComposer { gap: 0.45rem; }
