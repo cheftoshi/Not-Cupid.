@@ -9,11 +9,13 @@ import { toast } from '@/components/feedback';
 
 export default function ProfileShell({
   initialUser,
+  profileDateLabel,
   startEditing = false,
   relaunchMode = false,
   experimentMode = false,
 }: {
   initialUser: any;
+  profileDateLabel: string;
   startEditing?: boolean;
   relaunchMode?: boolean;
   experimentMode?: boolean;
@@ -62,6 +64,7 @@ export default function ProfileShell({
   return (
     <ProfileDashboard
       user={user}
+      profileDateLabel={profileDateLabel}
       onEdit={() => setMode('edit')}
       onLogout={handleLogout}
     />

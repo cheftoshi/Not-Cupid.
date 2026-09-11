@@ -16,6 +16,14 @@ export default async function ProfilePage({
   const user = currentUser ? await withPrivateVideoPreview(currentUser) : null;
   if (!user) redirect('/login?next=/profile');
   if (!user.archetype) redirect('/quiz');
+  // Render one server-owned label into the client tree. Computing "today" in
+  // both places caused an Android hydration failure after midnight UTC while
+  // the phone was still on the prior calendar day in the Eastern launch area.
+  const profileDateLabel = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date()).toLowerCase();
 
   return (
     <div className={styles.page}>
@@ -30,6 +38,7 @@ export default async function ProfilePage({
         </nav>
         <ProfileShell
           initialUser={user}
+          profileDateLabel={profileDateLabel}
           startEditing={params.mode === 'edit' || params.from === 'dating-experiment-comeback'}
           relaunchMode={params.from === 'welcome-back'}
           experimentMode={params.from === 'dating-experiment-comeback'}

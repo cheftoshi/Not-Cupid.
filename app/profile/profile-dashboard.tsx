@@ -8,8 +8,9 @@ import type { VibeKey } from '@/lib/quiz-data';
 import { signLabel } from '@/lib/astrology';
 import RaffleCard from '@/components/raffle-card';
 
-export default function ProfileDashboard({ user, onEdit, onLogout }: {
+export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLogout }: {
   user: any;
+  profileDateLabel: string;
   onEdit: () => void;
   onLogout: () => void;
 }) {
@@ -57,7 +58,7 @@ export default function ProfileDashboard({ user, onEdit, onLogout }: {
       <div className={styles.dashHero}>
         <div className={styles.dashHeroLeft}>
           <div className={styles.dashGreet}>hi <em>{firstName.toLowerCase()}.</em></div>
-          <div className={styles.dashEyebrow}>your profile · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase()}</div>
+          <div className={styles.dashEyebrow}>your profile · {profileDateLabel}</div>
           {user.archetype && (
             <div className={styles.dashArchetype}>
               <span className={styles.dashArchetypeKick}>you are the</span>

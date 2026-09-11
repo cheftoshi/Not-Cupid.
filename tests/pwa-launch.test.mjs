@@ -169,3 +169,14 @@ test('phone-critical chats and app roots stay viewport-safe in the installed PWA
   assert.match(nav, /--app-visual-viewport-height/);
   assert.match(nav, /visualViewport/);
 });
+
+test('profile hydration uses one Eastern date label across the server and Android client', () => {
+  const page = source('app/profile/page.tsx');
+  const shell = source('app/profile/profile-shell.tsx');
+  const dashboard = source('app/profile/profile-dashboard.tsx');
+  assert.match(page, /timeZone: 'America\/New_York'/);
+  assert.match(page, /profileDateLabel=\{profileDateLabel\}/);
+  assert.match(shell, /profileDateLabel=\{profileDateLabel\}/);
+  assert.match(dashboard, /your profile · \{profileDateLabel\}/);
+  assert.doesNotMatch(dashboard, /new Date\(\)\.toLocaleDateString/);
+});
