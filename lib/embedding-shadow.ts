@@ -29,6 +29,7 @@ export async function evaluateEmbeddingShadow(input: {
   metro?: string | null;
   acquisitionSource?: string | null;
   force?: boolean;
+  queueJobId?: string;
 }): Promise<ShadowEvaluationResult> {
   if (!input.force && !embeddingShadowEnabled()) return { status: 'disabled' };
   const liveTopIds = Array.from(new Set(input.liveTopIds.filter(Boolean))).slice(0, 10);
@@ -56,7 +57,8 @@ export async function evaluateEmbeddingShadow(input: {
   const rankCorrelation = sharedRankCorrelation(liveTopIds, shadowTopIds);
   const errorCode = error ? `rpc_${error.code || 'failed'}` : null;
 
-  const { error: writeError } = await supabaseAdmin.from('embedding_shadow_evaluations').insert({
+  const evaluation = {
+    ...(input.queueJobId ? { queue_job_id: input.queueJobId } : {}),
     user_id: input.userId,
     intent_scope: input.intent,
     live_algorithm_version: input.liveAlgorithmVersion,
@@ -74,7 +76,10 @@ export async function evaluateEmbeddingShadow(input: {
     error_code: errorCode,
     metro: input.metro?.slice(0, 80) || null,
     acquisition_source: input.acquisitionSource?.slice(0, 80) || null,
-  });
+  };
+  const { error: writeError } = input.queueJobId
+    ? await supabaseAdmin.from('embedding_shadow_evaluations').upsert(evaluation, { onConflict: 'queue_job_id' })
+    : await supabaseAdmin.from('embedding_shadow_evaluations').insert(evaluation);
   if (writeError) {
     console.error('[embedding-shadow] evaluation write failed:', writeError.message);
     return { status: 'failed', reason: 'database_write_failed' };

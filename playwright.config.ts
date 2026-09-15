@@ -13,6 +13,8 @@ export default defineConfig({
   reporter: process.env.CI ? [['html', { open: 'never' }], ['list']] : 'list',
   use: {
     baseURL,
+    // Only the ephemeral local test server uses a self-signed certificate.
+    ignoreHTTPSErrors: process.env.E2E_LOCAL_HTTPS === '1' && new URL(baseURL).hostname === '127.0.0.1',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

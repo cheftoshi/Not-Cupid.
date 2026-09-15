@@ -89,7 +89,7 @@ test('OpenAI embeddings are idempotent and shadow retrieval cannot drive the liv
   assert.match(server, /existing\.input_hash === inputHash/);
   assert.match(server, /status: 'unchanged'/);
   assert.match(roster, /orderedIds = rotationRanked\.slice/);
-  assert.match(roster, /evaluateEmbeddingShadow/);
+  assert.match(roster, /enqueueEmbeddingShadow/);
   assert.doesNotMatch(roster, /orderedIds\s*=\s*shadow|roster\s*=\s*shadow/i);
   assert.match(shadow, /EMBEDDING_SHADOW_ENABLED === 'true'/);
   assert.match(shadow, /live_order_changed: false/);

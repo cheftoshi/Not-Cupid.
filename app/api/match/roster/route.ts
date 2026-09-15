@@ -28,7 +28,7 @@ import {
 } from '@/lib/matching-policy';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 import { lovePickAccessFor } from '@/lib/love-pick-access';
-import { evaluateEmbeddingShadow } from '@/lib/embedding-shadow';
+import { enqueueEmbeddingShadow } from '@/lib/embedding-shadow-jobs';
 import { hasMatchingEmbeddingConsent } from '@/lib/connection-embeddings';
 import { adaptiveReasonAdjustment, diversifyLoveRanking } from '@/lib/match-diversity';
 import {
@@ -449,7 +449,7 @@ export async function composeLoveRosterForUser(
   // capacity-safe eligible pool. It records overlap and rank stability, and
   // its database schema forbids it from claiming that live order changed.
   if (options.interactive !== false && hasMatchingEmbeddingConsent(user)) {
-    await evaluateEmbeddingShadow({
+    await enqueueEmbeddingShadow({
       userId: user.id,
       intent: 'love',
       liveAlgorithmVersion: treatmentVersion,
@@ -458,7 +458,7 @@ export async function composeLoveRosterForUser(
       metro: metroOf(user.zip),
       acquisitionSource: user.acquisition_source,
     }).catch((error) => {
-      console.error('[love-roster] embedding shadow evaluation failed:', error instanceof Error ? error.message : 'unknown');
+      console.error('[love-roster] embedding shadow enqueue failed:', error instanceof Error ? error.message : 'unknown');
     });
   }
 

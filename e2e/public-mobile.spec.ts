@@ -22,6 +22,7 @@ for (const route of routes) {
   test(`${route} renders inside a phone viewport`, async ({ page }) => {
     await page.goto(route, { waitUntil: 'load' });
     await expect(page.locator('body')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('Inter');
     const overflow = await horizontalOverflow(page);
     expect(overflow.scrollWidth, JSON.stringify(overflow)).toBeLessThanOrEqual(overflow.viewportWidth + 1);
     await expect(page.locator('body')).not.toContainText('Application error');

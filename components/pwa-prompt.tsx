@@ -115,6 +115,29 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
     return () => window.removeEventListener('nc:show-install-prompt', forceInstallPrompt);
   }, [installEvt]);
 
+  useEffect(() => {
+    // Optional acquisition prompts must never cover a composer or modal action.
+    // Hide for this visit (not a permanent dismissal); the menu can reopen them.
+    function pausePrompts() {
+      setShowInstall(false);
+      setShowPush(false);
+    }
+    function onFocus(event: FocusEvent) {
+      if (event.target instanceof Element && event.target.matches('input, textarea, [contenteditable="true"]')) pausePrompts();
+    }
+    function checkDialog() {
+      if (document.querySelector('[role="dialog"], dialog[open]')) pausePrompts();
+    }
+    document.addEventListener('focusin', onFocus);
+    const observer = new MutationObserver(checkDialog);
+    observer.observe(document.body, { childList: true, subtree: true });
+    checkDialog();
+    return () => {
+      document.removeEventListener('focusin', onFocus);
+      observer.disconnect();
+    };
+  }, []);
+
   if (!showPush && !showInstall) return null;
 
   async function enablePush() {

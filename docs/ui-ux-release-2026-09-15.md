@@ -73,3 +73,43 @@ the same suite passed when allowed to launch outside the sandbox.
 Stripe activation, AI rollout allocation, closed Dating Experiment state,
 notification-outbox operations, and outbound email approvals are outside this
 UI/UX batch and have not been changed.
+
+## Follow-up: finishing the pending checks and shadow queue
+
+The initial verification/pending list above describes commit `4ee5ecc`. This
+follow-up adds a forward migration and closes the following items:
+
+- Durable, service-only embedding shadow jobs replace inline evaluation on the
+  Love roster. The roster awaits only a bounded queue insert; a five-minute cron
+  claims leased jobs, retries at most three times, rechecks owner consent and
+  account status, and records idempotent evaluations. Live ranking and AI rollout
+  flags are unchanged. Stale snapshots expire; queued payloads are deleted after
+  one day and on owner consent revocation/deletion/blocking.
+- Migration `20260915170635_embedding_shadow_jobs.sql` passed the linked dry run,
+  was applied, and its local/remote ledger entries match. It is now immutable.
+- Install prompts yield to text entry and open dialogs instead of covering chat
+  controls. The install option remains accessible from the existing menu.
+- Authenticated WebKit/iPhone and Chromium/Pixel checks passed for Hub, Love,
+  profile and Friend layouts at normal/enlarged text and landscape, composer
+  resizing, simulated interrupted Hub requests, and Friend lost-acknowledgement
+  retries/polling with one client ID.
+- QA uses a temporary session for an existing synthetic `is_test` account in the
+  linked database, never a real/admin account. It is not a separate staging
+  database. Message and AI mutation requests are mocked; the temporary session
+  is deleted afterwards. No emails are sent by this runner.
+- The runner uses local HTTPS because Safari honors production CSP upgrades for
+  assets; tests now verify that styles actually loaded. Production TLS/CSP is
+  unchanged. Service workers are blocked in the authenticated mocked tests so
+  they cannot bypass request interception.
+- Typecheck, all 224 Node tests, production build and bundle budget passed.
+- The combined HTTPS mobile run passed all 32 tests: 14 authenticated and 18
+  public, across both browser engines, including automated accessibility checks.
+
+Still pending: physical installed-Android scroll/keyboard/resume verification,
+real service-worker/offline-radio and delivery testing, and enough new-release
+telemetry to measure performance and user outcomes. Simulated browser tests are
+not a claim of physical-device certification or measured retention improvement.
+
+The data-backed next product step is documented in
+`docs/friend-line-growth-plan-2026-09-15.md`; it proposes an activity-first pilot
+and organization Apple enrollment, not an already-executed campaign or purchase.

@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/embedding-shadow",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/rematch",
       "schedule": "*/20 * * * *"
     },
