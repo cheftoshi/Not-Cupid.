@@ -1,7 +1,7 @@
 /* Hub Concierge V2: one focused, text-only conversation below the app nav. */
 .hub {
   position: relative;
-  height: calc(var(--app-visual-viewport-height, 100dvh) - var(--app-top-nav-height, 0px));
+  height: calc(var(--app-visual-viewport-height, 100svh) - var(--app-top-nav-height, 72px));
   min-height: 0;
   overflow: hidden;
   color: var(--h-text);
@@ -41,6 +41,7 @@
   width: 100%;
   height: 100%;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--h-accent) 22%, var(--h-border));
   border-radius: 28px;
@@ -602,4 +603,20 @@
 
 @media (prefers-reduced-motion: reduce) {
   .conciergeThinking p span { animation: none; }
+}
+
+/* Keep text and controls usable on small phones and with larger text settings. */
+.conciergeShell button, .conciergeControls a { min-height: 44px; }
+.conciergeControlButton, .conciergeControls button, .conciergeControls a,
+.conciergeFoot button, .conciergeCorrections button { font-size: 0.8rem; letter-spacing: 0.01em; }
+.conciergeHead h1 { overflow-wrap: anywhere; }
+.conciergeBrief { min-height: 120px; }
+.conciergeConsent { max-height: 45%; overflow-y: auto; flex-shrink: 0; }
+.conciergeShell :focus-visible { outline: 3px solid var(--h-accent); outline-offset: 3px; }
+@media (max-height: 500px) {
+  .conciergeHead { padding: 0.4rem 0.7rem; }
+  .conciergeIdentity h1 { font-size: 1.05rem; }
+  .conciergeIdentity > p, .conciergeIdentity > span, .conciergeFoot { display: none; }
+  .conciergeStarts { display: none; }
+  .conciergeControls { inset: 0.25rem; }
 }

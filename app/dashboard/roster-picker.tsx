@@ -73,6 +73,8 @@ export default function RosterPicker({
   const router = useRouter();
   const [roster, setRoster] = useState<Candidate[] | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const rosterRequest = useRef(false);
   const [picking, setPicking] = useState<string | null>(null);
   // The just-picked candidate — their card flips to a "it's on" moment in place
   // (no hard reload; router.refresh() brings the new chat in behind it).
@@ -142,7 +144,10 @@ export default function RosterPicker({
   }, [paywallCandidate]);
 
   async function load() {
+    if (rosterRequest.current) return;
+    rosterRequest.current = true;
     const startedAt = performance.now();
+    setRefreshing(true);
     setLoadError(false);
     try {
       const res = await fetchWithTimeout('/api/match/roster', {}, 15_000);
@@ -174,8 +179,11 @@ export default function RosterPicker({
       const beaconed = navigator.sendBeacon?.('/api/performance', new Blob([timingPayload], { type: 'application/json' })) === true;
       if (!beaconed) void fetch('/api/performance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: timingPayload, keepalive: true }).catch(() => {});
     } catch {
-      setRoster([]);
+      setRoster(current => current ?? []);
       setLoadError(true);
+    } finally {
+      rosterRequest.current = false;
+      setRefreshing(false);
     }
   }
 
@@ -389,7 +397,7 @@ export default function RosterPicker({
     );
   }
 
-  if (loadError) {
+  if (loadError && roster.length === 0) {
     return (
       <div style={emptyWrap} role="alert">
         <div style={{ fontSize: '2.2rem', marginBottom: '0.65rem' }}>↻</div>
@@ -449,7 +457,11 @@ export default function RosterPicker({
   }
 
   return (
-    <div className={styles.loveRoster}>
+    <div data-perf-region="love-roster" className={styles.loveRoster}>
+      {(refreshing || loadError) && <div role="status" className={styles.rosterRefreshNotice}>
+        {loadError ? 'Could not refresh. Your previous options are still here; availability is checked when you choose.' : 'Refreshing your options…'}
+        {loadError && <button type="button" disabled={refreshing} onClick={() => void load()}>Retry refresh</button>}
+      </div>}
       <style>{`
         [data-card] { transition: transform .22s var(--ease), box-shadow .22s var(--ease); }
         [data-card]:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
@@ -461,9 +473,7 @@ export default function RosterPicker({
       {/* slim header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.9rem' }}>
         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
-          {hasActive
-            ? `${roster.length} options · ${pro ? 'extra picks included with Pro' : `${includedRemaining} of ${includedPicks} included picks left`}`
-            : `${roster.length} curated options · ${includedPicks} picks included`}
+          {roster.length} options · {pro ? 'extra picks included with Pro' : `${includedRemaining} of ${includedPicks} included picks left`} · profiles are free
         </span>
         {horizontal && roster.length > 0 && (
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>scroll →</span>

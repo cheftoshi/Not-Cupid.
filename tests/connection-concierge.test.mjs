@@ -122,14 +122,15 @@ test('Hub concierge is consented, bounded, measurable, and phone-first', () => {
   assert.match(client, /too far/);
   assert.doesNotMatch(client, /microphone|MediaRecorder|SpeechRecognition|audio/i);
   assert.match(css, /\.conciergeComposer textarea[\s\S]*font-size: 16px/);
-  assert.match(css, /height: calc\(var\(--app-visual-viewport-height, 100dvh\) - var\(--app-top-nav-height/);
+  assert.match(css, /height: calc\(var\(--app-visual-viewport-height, 100svh\) - var\(--app-top-nav-height/);
   assert.match(css, /\.hub \{[\s\S]*min-height: 0;/);
   assert.match(css, /\.conciergeBody[\s\S]*touch-action: pan-y[\s\S]*-webkit-overflow-scrolling: touch/);
   assert.match(nav, /window\.visualViewport/);
   assert.match(nav, /orientationchange/);
   assert.match(nav, /visibilitychange/);
-  assert.match(client, /optional match learning/);
-  assert.match(client, /enable privately/);
+  assert.match(client, /AI match evaluation/);
+  assert.match(client, /showControls &&/);
+  assert.doesNotMatch(client, /className=\{styles.conciergeMatchingInvite\}/);
   assert.match(css, /var\(--app-safe-bottom/);
   assert.match(hub, /<ConnectionConcierge/);
   assert.doesNotMatch(hub, /RaffleCard|friend\/activities|profileMini|membershipCard/);

@@ -296,3 +296,14 @@
 .cardEmpty { padding: 1.25rem; font-family: Georgia, serif; font-style: italic; color: var(--h-text-dim); }
 /* City Pulse section sub-heads (community hubs / clubs / where it's happening) */
 .pulseH3 { font-family: Georgia, serif; font-style: italic; font-size: 1.35rem; line-height: 1.08; margin: 0.25rem 0 0; }
+
+.chatRetry { min-height: 44px; padding: 0.4rem 0.7rem; border: 1px solid var(--h-border); border-radius: 10px; background: var(--h-surface); color: var(--h-text); font: inherit; cursor: pointer; }
+.chatRetry:disabled { opacity: 0.6; cursor: wait; }
+.activityRsvpButton { min-height: 44px; font-size: 0.8rem; }
+.friendPage :focus-visible, .chatSheet :focus-visible { outline: 3px solid var(--h-accent, #2563ff); outline-offset: 3px; }
+@media (max-width: 560px) {
+  .chatOverlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .chatSheet { height: calc(var(--app-visual-viewport-height, 100dvh) - max(0.5rem, var(--app-safe-top, 0px))); }
+  .scrollRow { scroll-snap-type: x proximity; }
+  .activityCommentList { overflow: visible; max-height: none; }
+}

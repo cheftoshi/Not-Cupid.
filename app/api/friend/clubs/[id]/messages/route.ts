@@ -27,9 +27,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!m.ok) return NextResponse.json({ error: 'Members only', messages: [] }, { status: 403 });
 
   const after = req.nextUrl.searchParams.get('after');
-  let q = supabaseAdmin.from('friend_club_messages').select('id, sender_id, body, created_at').eq('club_id', id).order('created_at', { ascending: false }).limit(200);
+  let q = supabaseAdmin.from('friend_club_messages').select('id, sender_id, body, created_at, client_id').eq('club_id', id).order('created_at', { ascending: false }).limit(200);
   if (after) q = q.gt('created_at', after);
-  const { data } = await q;
+  const { data, error } = await q;
+  if (error) return NextResponse.json({ error: 'Could not load messages' }, { status: 503 });
   const rows = (data ?? []).slice().reverse();
 
   const ids = Array.from(new Set(rows.map((r) => r.sender_id)));
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   await markFriendChatRead(user.id, 'club', id);
   return NextResponse.json({
     name: m.name,
-    messages: rows.map((r) => { const u: any = byId.get(r.sender_id) || {}; return { id: r.id, body: r.body, created_at: r.created_at, name: u.name, photo_url: u.photo_url, isMe: r.sender_id === user.id }; }),
+    messages: rows.map((r) => { const u: any = byId.get(r.sender_id) || {}; return { id: r.id, clientId: r.sender_id === user.id ? r.client_id : null, body: r.body, created_at: r.created_at, name: u.name, photo_url: u.photo_url, isMe: r.sender_id === user.id }; }),
     realtimeTopic: chatRealtimeTopic('friend-club', id),
   });
 }

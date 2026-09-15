@@ -159,7 +159,7 @@ test('phone-critical chats and app roots stay viewport-safe in the installed PWA
   assert.match(loveChatCss, /\.inputForm \{[^}]*width: 100%;[^}]*min-width: 0;[^}]*safe-area-inset-right[^}]*safe-area-inset-left/);
   assert.match(loveChatCss, /\.input \{[^}]*width: 0;[^}]*min-width: 0/);
   assert.match(hubCss, /\.dashWrap \{[^}]*app-safe-right[^}]*app-safe-bottom[^}]*app-safe-left[^}]*overflow-x: clip/);
-  assert.match(hubCss, /--app-visual-viewport-height, 100dvh/);
+  assert.match(hubCss, /--app-visual-viewport-height, 100svh/);
   assert.match(hubCss, /\.conciergeBody \{[^}]*overflow-y: auto;[^}]*overscroll-behavior-y: auto;[^}]*touch-action: pan-y/);
   assert.match(dashboardCss, /\.page \{[\s\S]*app-safe-right[\s\S]*app-safe-left[\s\S]*overflow-x: clip/);
   assert.match(dashboardCss, /\.loveModalOverlay \{[^}]*app-visual-viewport-height[^}]*overflow: hidden/);

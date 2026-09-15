@@ -52,6 +52,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   const [showPush, setShowPush] = useState(false);
   const [showInstall, setShowInstall] = useState<false | 'native' | 'ios' | 'fallback'>(false);
   const [busy, setBusy] = useState(false);
+  const [pushError, setPushError] = useState('');
   const [installEvt, setInstallEvt] = useState<any>(null);
 
   useEffect(() => {
@@ -118,14 +119,21 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
 
   async function enablePush() {
     setBusy(true);
+    setPushError('');
     try {
       const enabled = await subscribeToPush();
-      if (enabled) trackLoveEvent('push_enabled');
-      setShowPush(false);
+      if (enabled) {
+        trackLoveEvent('push_enabled');
+        setShowPush(false);
+      } else {
+        setPushError(typeof Notification !== 'undefined' && Notification.permission === 'denied'
+          ? 'Notifications are blocked in your browser settings. You can still check updates in the app.'
+          : 'Notifications could not be enabled. Try again, or check updates in the app.');
+      }
     } catch {
       // The shared helper already fails closed; keep this guard so a browser
       // permission implementation can never surface an unhandled rejection.
-      setShowPush(false);
+      setPushError('Notifications could not be enabled. You can still use the app.');
     } finally {
       setBusy(false);
     }
@@ -141,11 +149,11 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   }
 
   function dismiss() {
-    if (showPush) {
-      localStorage.setItem(PUSH_DISMISS_KEY, String(Date.now()));
-      trackLoveEvent('push_dismissed');
-    }
-    if (showInstall) localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
+    try {
+      if (showPush) localStorage.setItem(PUSH_DISMISS_KEY, String(Date.now()));
+      if (showInstall) localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
+    } catch { /* Dismiss still works when browser storage is unavailable. */ }
+    if (showPush) trackLoveEvent('push_dismissed');
     setShowPush(false);
     setShowInstall(false);
   }
@@ -190,6 +198,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
             <button onClick={enablePush} disabled={busy} style={{ ...pill, background: accent, color: '#fff', width: '100%' }}>
               {busy ? 'turning on…' : 'notify me about this connection'}
             </button>
+            {pushError && <p role="alert" style={{ fontSize: '0.9rem', lineHeight: 1.4, margin: 0 }}>{pushError}</p>}
           </div>
         )}
         {showInstall === 'native' && (
@@ -208,7 +217,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
         <button
           onClick={dismiss}
           aria-label="dismiss"
-          style={{ justifySelf: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.1rem 0.3rem' }}
+          style={{ justifySelf: 'center', minHeight: 44, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-dim)', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
         >
           not now
         </button>

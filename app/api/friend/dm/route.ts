@@ -64,11 +64,12 @@ export async function GET(req: NextRequest) {
   const after = req.nextUrl.searchParams.get('after');
   let q = supabaseAdmin
     .from('friend_dms')
-    .select('id, sender_id, body, created_at')
+    .select('id, sender_id, body, created_at, client_id')
     .eq('user_a_id', aId).eq('user_b_id', bId)
     .order('created_at', { ascending: true });
   if (after) q = q.gt('created_at', after);
-  const { data: messages } = await q;
+  const { data: messages, error: messagesError } = await q;
+  if (messagesError) return NextResponse.json({ error: 'Could not load messages' }, { status: 503 });
 
   // Opening/polling the thread = reading it.
   const { error: readError } = await supabaseAdmin.from('friend_dm_reads').upsert(
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
   if (readError) return NextResponse.json({ error: 'Could not update read state' }, { status: 503 });
 
   return NextResponse.json({
-    messages: (messages ?? []).map((m: any) => ({ ...m, isMe: m.sender_id === user.id })),
+    messages: (messages ?? []).map(({ client_id, ...m }: any) => ({ ...m, clientId: m.sender_id === user.id ? client_id : null, isMe: m.sender_id === user.id })),
     other: other ?? null,
     realtimeTopic: chatRealtimeTopic('friend-dm', `${aId}:${bId}`),
   });

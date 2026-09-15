@@ -120,6 +120,9 @@ export default async function DashboardPage({
       age: o.age ?? null, archetype: o.archetype || null,
       score: m.compatibility_score ?? null,
       unread,
+      replyBy: !both && m.expires_at ? new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+      }).format(new Date(m.expires_at)) : null,
       needsStarter: both && !messagedMatchIds.has(m.id),
       status: (both ? 'chatting' : myAcc ? 'waiting' : 'your-move') as 'chatting' | 'waiting' | 'your-move',
     };

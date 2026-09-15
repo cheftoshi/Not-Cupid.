@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import EndMatchDialog from '@/components/end-match-dialog';
 import { trackLoveEvent } from '@/lib/love-events-client';
+import { connectionPriority } from '@/lib/connection-priority';
 import styles from './dashboard.module.css';
 
 export type LoveConnectionCard = {
@@ -14,6 +15,7 @@ export type LoveConnectionCard = {
   score: number | null;
   unread: boolean;
   needsStarter: boolean;
+  replyBy?: string | null;
   status: 'chatting' | 'waiting' | 'your-move';
 };
 
@@ -47,7 +49,8 @@ export default function LoveConnections({
   );
   const [filter, setFilter] = useState<Filter>(focused?.status === 'your-move' ? 'your-move' : 'all');
   const [ending, setEnding] = useState<LoveConnectionCard | null>(null);
-  const visible = filter === 'all' ? connections : connections.filter((connection) => connection.status === filter);
+  const ordered = useMemo(() => [...connections].sort((a, b) => connectionPriority(a) - connectionPriority(b)), [connections]);
+  const visible = filter === 'all' ? ordered : ordered.filter((connection) => connection.status === filter);
   const countFor = (key: Filter) => key === 'all' ? connections.length : connections.filter((connection) => connection.status === key).length;
   const yourMoveCount = countFor('your-move');
   const needsStarterCount = connections.filter((connection) => connection.needsStarter).length;
@@ -62,15 +65,13 @@ export default function LoveConnections({
   }, [focusMatchId, focused]);
 
   return (
-    <section className={styles.loveConnections} id="connections" aria-labelledby="love-connections-title">
+    <section className={styles.loveConnections} data-perf-region="love-connections" id="connections" aria-labelledby="love-connections-title">
       <div className={styles.loveConnectionsHead}>
         <div>
           <div className={styles.panelKicker}>your connections</div>
-          <h2 id="love-connections-title">everyone waiting or talking, in one place.</h2>
+          <h2 id="love-connections-title">Your next move.</h2>
           <p>
-            {connections.length >= includedPicks
-              ? `${connections.length} connections are in motion. Your roster still stays open; extra picks after the ${includedPicks} included ones are $0.99 each.`
-              : `${connections.length} connections are in motion. Each roster includes ${includedPicks} distinct picks.`}
+            {yourMoveCount > 0 ? `${yourMoveCount} ${yourMoveCount === 1 ? 'choice needs' : 'choices need'} your answer. Viewing profiles and replying are free.` : 'Review a choice, say hello, or explore your roster below.'}
           </p>
         </div>
         <a href="#roster">see your options →</a>
@@ -84,19 +85,18 @@ export default function LoveConnections({
               <span>Review each profile and choose Yes or Pass. Either answer keeps the Love Line moving.</span>
             </div>
           )}
-          {needsStarterCount > 0 && (
+          {needsStarterCount > 0 && yourMoveCount === 0 && (
             <div className={styles.connectionDecisionCallout} role="status">
               <strong>{needsStarterCount} mutual {needsStarterCount === 1 ? 'match is' : 'matches are'} ready.</strong>
               <span>The chat is open. Start with one specific question—the match coach can help.</span>
             </div>
           )}
-          <div className={styles.connectionFilters} role="tablist" aria-label="Filter Love Line connections">
+          <div className={styles.connectionFilters} role="group" aria-label="Filter Love Line connections">
             {FILTERS.map((item) => (
               <button
                 key={item.key}
                 type="button"
-                role="tab"
-                aria-selected={filter === item.key}
+                aria-pressed={filter === item.key}
                 onClick={() => setFilter(item.key)}
               >
                 {item.label} <span>{countFor(item.key)}</span>
@@ -127,6 +127,7 @@ export default function LoveConnections({
                     <strong>{connection.name.split(' ')[0]}{connection.age ? `, ${connection.age}` : ''}</strong>
                     <em>{statusCopy(connection.status)}{connection.score != null ? ` · ${connection.score}% match` : ''}</em>
                     {connection.archetype && <small>{connection.archetype}</small>}
+                    {connection.replyBy && connection.status !== 'chatting' && <small>{connection.status === 'your-move' ? 'Reply by' : 'Choice closes'} {connection.replyBy}</small>}
                   </span>
                 </a>
                 <div className={styles.connectionActions}>
@@ -137,7 +138,7 @@ export default function LoveConnections({
                 </div>
               </article>
             )) : (
-              <div className={styles.connectionFilterEmpty}>No connections in this segment.</div>
+              <div className={styles.connectionFilterEmpty}>Nothing here right now. <button type="button" onClick={() => setFilter('all')}>See all connections</button></div>
             )}
           </div>
         </>

@@ -37,6 +37,9 @@ export default function TopNav() {
     }
 
     let frame = 0;
+    let settleTimer = 0;
+    let forceNextFrame = false;
+    let lastNavHeight = -1;
     let lastViewportHeight = 0;
     let lastViewportWidth = 0;
     const viewport = window.visualViewport;
@@ -48,9 +51,16 @@ export default function TopNav() {
         (active instanceof HTMLElement && active.isContentEditable);
     };
     const sync = (forceViewport = false) => {
+      forceNextFrame ||= forceViewport;
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
-        root.style.setProperty('--app-top-nav-height', `${Math.ceil(nav.getBoundingClientRect().height)}px`);
+        const forced = forceNextFrame;
+        forceNextFrame = false;
+        const navHeight = Math.ceil(nav.getBoundingClientRect().height);
+        if (navHeight !== lastNavHeight) {
+          root.style.setProperty('--app-top-nav-height', `${navHeight}px`);
+          lastNavHeight = navHeight;
+        }
         const viewportHeight = Math.round(viewport?.height || window.innerHeight);
         const viewportWidth = Math.round(viewport?.width || window.innerWidth);
         const heightDelta = Math.abs(viewportHeight - lastViewportHeight);
@@ -62,7 +72,7 @@ export default function TopNav() {
         // makes scrolling feel stuck. Still sync real rotations, keyboards,
         // app restores, and large viewport changes.
         if (viewportHeight > 0 && (
-          forceViewport ||
+          forced ||
           lastViewportHeight === 0 ||
           widthChanged ||
           hasEditableFocus() ||
@@ -78,6 +88,13 @@ export default function TopNav() {
     const syncNav = () => sync(false);
     const syncViewport = () => sync(false);
     const syncForced = () => sync(true);
+    // Keyboard dismissal can finish in increments smaller than the toolbar
+    // threshold, after focus has already left the field. Reconcile once settled.
+    const syncKeyboard = () => {
+      sync(true);
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => sync(true), 450);
+    };
     sync(true);
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncNav) : null;
     observer?.observe(nav);
@@ -86,14 +103,19 @@ export default function TopNav() {
     window.addEventListener('orientationchange', syncForced);
     window.addEventListener('pageshow', syncForced);
     document.addEventListener('visibilitychange', syncVisible);
+    document.addEventListener('focusin', syncKeyboard);
+    document.addEventListener('focusout', syncKeyboard);
     return () => {
       window.cancelAnimationFrame(frame);
+      window.clearTimeout(settleTimer);
       observer?.disconnect();
       viewport?.removeEventListener('resize', syncViewport);
       window.removeEventListener('resize', syncViewport);
       window.removeEventListener('orientationchange', syncForced);
       window.removeEventListener('pageshow', syncForced);
       document.removeEventListener('visibilitychange', syncVisible);
+      document.removeEventListener('focusin', syncKeyboard);
+      document.removeEventListener('focusout', syncKeyboard);
     };
   }, [isAppRoute, p]);
 
@@ -127,7 +149,7 @@ export default function TopNav() {
   const linkStyle: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 
   return (
-    <header ref={navRef} className="appTopNav" style={{
+    <header ref={navRef} data-perf-region="navigation" className="appTopNav" style={{
       position: 'sticky', top: 0, zIndex: 45, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gap: '0.6rem', padding: '0.6rem 1rem', background: 'var(--h-glass)',
       backdropFilter: 'saturate(180%) blur(14px)', WebkitBackdropFilter: 'saturate(180%) blur(14px)',

@@ -68,15 +68,12 @@ function messageTime(iso: string): string {
 // server and browser render the same text during hydration.
 // (Keep these warm, never surveillance-y — "the algo's watching" read as creepy.)
 const PLACEHOLDERS = [
-  "say something better than 'hey'…",
-  'make it count…',
+  'Say hello or ask a question…',
+  'Start with something simple…',
   'ask the thing you actually want to know…',
-  'open strong.',
-  'no pressure. (ok, a little pressure.)',
+  'What caught your attention?',
+  'A hello is a good place to start…',
 ];
-
-// Lone low-effort greetings we gently roast on the FIRST message.
-const LOW_EFFORT = /^(he+y+|hi+|yo+|sup|hello+|wyd|hey there)\s*[.!?]*$/i;
 
 // Build sendable conversation starters from the match's actual profile.
 function buildStarters(other: any): string[] {
@@ -126,9 +123,8 @@ export default function ChatRoom({
   }, [messages]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const retrySendRef = useRef<{ matchId: string; body: string; clientId: string } | null>(null);
   const [decisionBusy, setDecisionBusy] = useState(false);
-  const [heyWarned, setHeyWarned] = useState(false);
-  const [nudge, setNudge] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -400,7 +396,6 @@ export default function ChatRoom({
 
   function pickStarter(text: string) {
     setInput(text);
-    setNudge(null);
     inputRef.current?.focus();
   }
 
@@ -432,24 +427,15 @@ export default function ChatRoom({
     const text = input.trim();
     if (!text || sending) return;
 
-    // Gentle roast: block a lone "hey" as the opener — once. If they send
-    // again (same or edited), it goes through.
-    if (messages.length === 0 && !heyWarned && LOW_EFFORT.test(text)) {
-      setHeyWarned(true);
-      setNudge(
-        score != null
-          ? `"${text}"? you matched at ${score}%. that deserves better than "${text}". (send again to send it anyway)`
-          : `"${text}"? c'mon — you can do better. (send again to send it anyway)`
-      );
-      return;
-    }
-
-    setNudge(null);
+    // Coaching is optional. Never block a valid first greeting.
     setSending(true);
 
-    const clientId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    const clientId = retrySendRef.current?.matchId === matchId && retrySendRef.current.body === text
+      ? retrySendRef.current.clientId
+      : typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    retrySendRef.current = { matchId, body: text, clientId };
     const optimistic = {
       id: `temp-${clientId}`,
       sender_id: currentUserId,
@@ -468,6 +454,8 @@ export default function ChatRoom({
       }, 12_000);
       if (!res.ok) throw new Error('Send failed');
       const data = await parseResponse<any>(res);
+      if (!data.message?.id) throw new Error('Missing message confirmation');
+      retrySendRef.current = null;
       // Swap the optimistic bubble for the real row in place — no full refetch,
       // no flicker. RACE GUARD: if the 3s poll already delivered this message
       // (slow POST, fast poll), drop the optimistic bubble instead of swapping,
@@ -482,8 +470,8 @@ export default function ChatRoom({
       });
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      setInput(text);
-      toast('message didn’t send — it’s back in the box, try again', 'error');
+      setInput(current => current || text);
+      toast('Send not confirmed. Your message is kept; retrying the same text will not send it twice.', 'error');
     } finally {
       setSending(false);
     }
@@ -669,7 +657,6 @@ export default function ChatRoom({
         )}
       </div>
 
-      {nudge && <div className={styles.nudge}>{nudge}</div>}
 
       {readOnly ? (
         <div style={{ padding: '0.9rem 1rem', textAlign: 'center', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', borderTop: '1px solid var(--h-border)' }}>

@@ -12,6 +12,8 @@ import { DROP, untilNextDrop } from '@/lib/weekly-drop';
 import { FRIEND_ACTIVITIES } from '@/lib/friend-taxonomy';
 import FriendDiscoveryCard from './friend-discovery-card';
 import { useChatRealtime } from '@/lib/use-chat-realtime';
+import { reconcileMessages } from '@/lib/chat-recovery';
+import { fetchWithTimeout } from '@/lib/fetch-helpers';
 import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
@@ -634,6 +636,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
   const [showC, setShowC] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [cText, setCText] = useState('');
+  const commentRetry = useRef<{ body: string; id: string } | null>(null);
   const [cBusy, setCBusy] = useState(false);
   const [cCount, setCCount] = useState<number>(a.commentCount || 0);
   const [cErr, setCErr] = useState<string | null>(null);
@@ -660,22 +663,27 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
   async function postComment() {
     const body = cText.trim(); if (!body || cBusy) return; setCBusy(true); setCText(''); setCErr(null);
     // optimistic — show it immediately so it never just "vanishes"
-    const tmpId = 'tmp-' + Date.now();
+    const tmpId = commentRetry.current?.body === body ? commentRetry.current.id : crypto.randomUUID();
+    commentRetry.current = { body, id: tmpId };
     setComments((prev) => [...prev, { id: tmpId, body, isMe: true, name: 'you', pending: true }]);
     setCCount((n) => n + 1);
     try {
-      const res = await fetch(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: tmpId }) });
+      const res = await fetchWithTimeout(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: tmpId }) });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setComments((prev) => prev.filter((c) => c.id !== tmpId)); setCCount((n) => Math.max(0, n - 1));
         setCErr(j.error || 'couldn’t post — try again.');
+        setCText(current => current || body);
         return;
       }
       const d = await res.json();
-      if (d.comment) setComments((prev) => prev.map((c) => (c.id === tmpId ? d.comment : c)));
+      if (!d.comment?.id) throw new Error('Missing comment confirmation');
+      commentRetry.current = null;
+      setComments(prev => [...prev.filter(c => c.id !== tmpId && c.id !== d.comment.id), d.comment]);
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== tmpId)); setCCount((n) => Math.max(0, n - 1));
       setCErr('couldn’t post — check your connection.');
+      setCText(current => current || body);
     } finally { setCBusy(false); }
   }
   // Share → the public /p/<id> page: the acquisition loop. Native share sheet on
@@ -827,7 +835,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
             {canUsePlanChat ? (
               <>
                 <button onClick={toggleComments} className={s.planChatButton} aria-expanded={showC}>
-                  💬 {showC ? 'close plan chat' : `talk to the organizer${cCount ? ` · ${cCount}` : ''}`}
+                  💬 {showC ? 'close plan chat' : `open plan chat${cCount ? ` · ${cCount}` : ''}`}
                 </button>
                 {showC && commentsPanel}
               </>
@@ -887,6 +895,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState('');
+  const crewRetry = useRef<{ body: string; id: string; circleId: string | null } | null>(null);
+  const crewInFlight = useRef(false);
+  const [crewSending, setCrewSending] = useState(false);
   const [newAct, setNewAct] = useState<{ title: string; category: string; happens_at: string; kind: 'post' | 'event'; area: string; location: string; audGenders: string[]; audMin: string; audMax: string; capacity: string; datingFriendly: boolean }>({ title: '', category: 'hang', happens_at: '', kind: 'post', area: '', location: '', audGenders: prefAud.audGenders, audMin: prefAud.audMin, audMax: prefAud.audMax, capacity: '', datingFriendly: false });
   const [busy, setBusy] = useState(false);
   const [rewipesUsed, setRewipesUsed] = useState(refreshCount);
@@ -943,6 +954,11 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [dmRealtimeTopic, setDmRealtimeTopic] = useState<string | null>(null);
   const [dmText, setDmText] = useState('');
   const [dmError, setDmError] = useState<string | null>(null);
+  const [dmSending, setDmSending] = useState(false);
+  const sendingIds = useRef(new Set<string>());
+  const dmTarget = useRef<string | null>(null);
+  const clubTarget = useRef<string | null>(null);
+  const drafts = useRef<Record<string, string>>({});
   const dmEndRef = useRef<HTMLDivElement>(null);
   // In-app "new event" notification (no email — the daily digest covers that).
   const [evToast, setEvToast] = useState<{ id: string; title: string; author: string } | null>(null);
@@ -1001,13 +1017,19 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const loadComLinks = useCallback(async () => { try { const r = await fetch('/api/friend/community-links'); if (r.ok) setComLinks((await r.json()).links || []); } catch { /* ignore */ } }, []);
   const loadClubChat = useCallback(async (id: string) => {
     try {
-      const r = await fetch(`/api/friend/clubs/${id}/messages`);
+      const r = await fetchWithTimeout(`/api/friend/clubs/${id}/messages`);
       if (r.ok) {
         const payload = await r.json();
-        setClubMsgs(payload.messages || []);
+        if (clubTarget.current !== id) return;
+        setClubMsgs(current => reconcileMessages(current, payload.messages || []));
         setClubRealtimeTopic(payload.realtimeTopic || null);
+        setClubError(null);
+      } else if (clubTarget.current === id) {
+        setClubError('Could not load this chat. Your unsent messages are kept.');
       }
-    } catch { /* the next realtime event or fallback poll retries */ }
+    } catch {
+      if (clubTarget.current === id) setClubError('Could not load this chat. Check your connection and retry.');
+    }
   }, []);
   async function createClub() {
     const name = newClub.name.trim(); if (!name || clubBusy) return; setClubBusy(true);
@@ -1020,7 +1042,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     try { await fetch(`/api/friend/clubs/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, userId }) }); } catch { /* ignore */ }
   }
   async function openClubChat(c: { id: string; name: string }, syncUrl = true) {
-    setClubManage(null); setClubChat(c); setClubText(''); setClubMsgs([]); setClubRealtimeTopic(null); setClubError(null);
+    clubTarget.current = c.id;
+    setClubManage(null); setClubChat(c); setClubText(drafts.current[`club:${c.id}`] || ''); setClubMsgs([]); setClubRealtimeTopic(null); setClubError(null);
     setClubs((current) => current.map((club) => club.id === c.id ? { ...club, unreadCount: 0 } : club));
     if (syncUrl && typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -1031,30 +1054,42 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 90);
   }
   function closeClubChat() {
+    clubTarget.current = null;
     setClubChat(null);
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href); url.searchParams.delete('club');
     window.history.replaceState({ ncFriendView: view }, '', url.toString());
   }
-  async function sendClubMsg() {
-    const body = clubText.trim(); if (!body || !clubChat || clubSending) return;
-    const tmpId = 'tmp-' + Date.now();
-    setClubText(''); setClubError(null); setClubSending(true);
-    setClubMsgs((prev) => [...prev, { id: tmpId, body, isMe: true, pending: true }]);
+  async function sendClubMsg(retry?: { id: string; body: string }) {
+    const body = (retry?.body || clubText).trim(); if (!body || !clubChat || clubSending) return;
+    const targetId = clubChat.id;
+    const tmpId = retry?.id || crypto.randomUUID();
+    if (sendingIds.current.has(`club:${targetId}`)) return;
+    sendingIds.current.add(`club:${targetId}`);
+    if (!retry) { setClubText(''); drafts.current[`club:${targetId}`] = ''; }
+    setClubError(null); setClubSending(true);
+    setClubMsgs(prev => [...prev.filter(message => message.id !== tmpId), { id: tmpId, clientId: tmpId, body, isMe: true, pending: true }]);
     setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 40);
     try {
-      const response = await fetch(`/api/friend/clubs/${clubChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, clientId: tmpId }) });
+      const response = await fetchWithTimeout(`/api/friend/clubs/${clubChat.id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, clientId: tmpId }) });
+      if (clubTarget.current !== targetId) return;
       if (!response.ok) {
         const detail = await response.json().catch(() => ({}));
+        if (clubTarget.current !== targetId) return;
         setClubMsgs((prev) => prev.map((message) => message.id === tmpId ? { ...message, pending: false, failed: true } : message));
         setClubError(detail.error || 'Couldn’t send that message — try again.');
         return;
       }
-      await loadClubChat(clubChat.id);
+      const result = await response.json();
+      if (clubTarget.current !== targetId) return;
+      setClubMsgs(prev => [...prev.filter(message => message.id !== tmpId && message.id !== result.message.id), result.message]);
+      await loadClubChat(targetId);
     } catch {
+      if (clubTarget.current !== targetId) return;
       setClubMsgs((prev) => prev.map((message) => message.id === tmpId ? { ...message, pending: false, failed: true } : message));
       setClubError('Couldn’t send — check your connection and try again.');
     } finally {
+      sendingIds.current.delete(`club:${targetId}`);
       setClubSending(false);
       setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 60);
     }
@@ -1338,25 +1373,32 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     finally { setBusy(false); }
   }
   async function send() {
-    const body = msg.trim(); if (!body) return; setMsg('');
-    const clientId = `crew-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const body = msg.trim(); if (!body || crewInFlight.current) return; setMsg('');
+    crewInFlight.current = true; setCrewSending(true);
+    const clientId = crewRetry.current?.body === body && crewRetry.current.circleId === chat.circleId ? crewRetry.current.id : crypto.randomUUID();
+    crewRetry.current = { body, id: clientId, circleId: chat.circleId };
     try {
-      const response = await fetch('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: clientId }) });
+      const response = await fetchWithTimeout('/api/friend/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: clientId }) });
       if (!response.ok) throw new Error('friend-message-failed');
+      crewRetry.current = null;
       await loadChat();
     } catch {
-      setMsg(body);
-      toast('message not sent — check your connection and try again', 'error');
+      setMsg(current => current || body);
+      toast('Send not confirmed. Your message is kept; retry the same text safely.', 'error');
+    } finally {
+      crewInFlight.current = false; setCrewSending(false);
     }
   }
   // ── Private 1:1 DM with a connection ──
   const loadDm = useCallback(async (otherId: string): Promise<boolean> => {
     try {
-      const r = await fetch('/api/friend/dm?with=' + otherId);
+      const r = await fetchWithTimeout('/api/friend/dm?with=' + otherId);
       if (r.ok) {
         const payload = await r.json();
-        setDmMsgs(payload.messages || []);
+        if (dmTarget.current !== otherId) return false;
+        setDmMsgs(current => reconcileMessages(current, payload.messages || []));
         setDmRealtimeTopic(payload.realtimeTopic || null);
+        setDmError(null);
         return true;
       }
       return false;
@@ -1441,30 +1483,44 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
   async function openDm(m: any) {
     setDmUnread((u) => ({ ...u, [m.otherId]: 0 })); // read the moment it opens
-    setCardMember(null); setConfirmDrop(false); setDmText(''); setDmMsgs([]); setDmRealtimeTopic(null); setDmError(null); setDmWith(m);
+    dmTarget.current = m.otherId;
+    setCardMember(null); setConfirmDrop(false); setDmText(drafts.current[`dm:${m.otherId}`] || ''); setDmMsgs([]); setDmRealtimeTopic(null); setDmError(null); setDmWith(m);
     const ok = await loadDm(m.otherId);
-    if (!ok) setDmError('Couldn’t open this chat. If you just connected, give it a second and reopen.');
+    if (!ok && dmTarget.current === m.otherId) setDmError('Couldn’t open this chat. If you just connected, give it a second and reopen.');
     setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 90);
   }
-  async function sendDm() {
-    const body = dmText.trim(); if (!body || !dmWith) return;
-    setDmText(''); setDmError(null);
+  async function sendDm(retry?: { id: string; body: string }) {
+    const body = (retry?.body || dmText).trim(); if (!body || !dmWith || dmSending) return;
+    const targetId = dmWith.otherId;
+    const tmpId = retry?.id || crypto.randomUUID();
+    if (sendingIds.current.has(`dm:${targetId}`)) return;
+    sendingIds.current.add(`dm:${targetId}`);
+    if (!retry) { setDmText(''); drafts.current[`dm:${targetId}`] = ''; }
+    setDmError(null); setDmSending(true);
     // optimistic — show it immediately so it never just "vanishes"
-    const tmpId = 'tmp-' + Date.now();
-    setDmMsgs((prev) => [...prev, { id: tmpId, body, isMe: true, pending: true }]);
+    setDmMsgs(prev => [...prev.filter(message => message.id !== tmpId), { id: tmpId, clientId: tmpId, body, isMe: true, pending: true }]);
     setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 40);
     try {
-      const res = await fetch('/api/friend/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId: dmWith.otherId, body, clientId: tmpId }) });
+      const res = await fetchWithTimeout('/api/friend/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otherId: dmWith.otherId, body, clientId: tmpId }) });
+      if (dmTarget.current !== targetId) return;
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
+        if (dmTarget.current !== targetId) return;
         setDmMsgs((prev) => prev.map((mm) => (mm.id === tmpId ? { ...mm, pending: false, failed: true } : mm)));
         setDmError(res.status === 403 ? 'You can only message a connection.' : (j.error || 'Couldn’t send — try again.'));
         return;
       }
-      await loadDm(dmWith.otherId); // reconcile with the server (replaces the optimistic row)
+      const result = await res.json();
+      if (dmTarget.current !== targetId) return;
+      setDmMsgs(prev => [...prev.filter(message => message.id !== tmpId && message.id !== result.message.id), result.message]);
+      await loadDm(targetId);
     } catch {
+      if (dmTarget.current !== targetId) return;
       setDmMsgs((prev) => prev.map((mm) => (mm.id === tmpId ? { ...mm, pending: false, failed: true } : mm)));
       setDmError('Couldn’t send — check your connection and try again.');
+    } finally {
+      sendingIds.current.delete(`dm:${targetId}`);
+      setDmSending(false);
     }
     setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 60);
   }
@@ -1520,7 +1576,10 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       if (r.ok) {
         const d = await r.json();
         setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
-        if (d.joined) promptForPush();
+        if (d.joined) {
+          toast('Interest saved. Open plan chat to talk with the organizer.', 'success');
+          promptForPush();
+        }
       } else {
         const d = await r.json().catch(() => ({} as any));
         if (d?.full) { toast('this plan is full — say “maybe” in case a spot opens', 'error'); await loadActs(); }
@@ -1762,15 +1821,16 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               {dmMsgs.map((msg: any) => (
                 <div key={msg.id} className={`${s.chatMessage} ${msg.isMe ? s.chatMessageMine : s.chatMessageTheirs}`}>
                   <div className={`${s.chatBubble} ${msg.failed ? s.chatBubbleFailed : msg.isMe ? s.chatBubbleMine : s.chatBubbleTheirs}`} style={{ opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
-                  {msg.failed && <span className={s.chatFailed}>not sent</span>}
+                  {msg.pending && <span className={s.chatFailed}>sending…</span>}
+                  {msg.failed && <button type="button" className={s.chatRetry} disabled={dmSending} onClick={() => void sendDm(msg)}>Not confirmed · retry</button>}
                 </div>
               ))}
               <div ref={dmEndRef} />
             </div>
-            {dmError && <div className={s.chatError} role="alert">{dmError}</div>}
+            {dmError && <div className={s.chatError} role="alert">{dmError} <button type="button" className={s.chatRetry} onClick={() => void loadDm(m.otherId)}>Reload chat</button></div>}
             <form onSubmit={(event) => { event.preventDefault(); sendDm(); }} className={s.chatComposer}>
-              <input value={dmText} onChange={(e) => setDmText(e.target.value)} onFocus={() => setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 80)} placeholder={`message ${first}…`} className={s.chatInput} enterKeyHint="send" autoComplete="off" maxLength={2000} aria-label={`message ${first}`} />
-              <button type="submit" disabled={!dmText.trim()} className={s.chatSend}>send</button>
+              <input value={dmText} onChange={(e) => { setDmText(e.target.value); drafts.current[`dm:${m.otherId}`] = e.target.value; }} onFocus={() => setTimeout(() => dmEndRef.current?.scrollIntoView({ block: 'end' }), 80)} placeholder={`message ${first}…`} className={s.chatInput} enterKeyHint="send" autoComplete="off" maxLength={2000} aria-label={`message ${first}`} />
+              <button type="submit" disabled={!dmText.trim() || dmSending} className={s.chatSend}>{dmSending ? 'sending…' : 'send'}</button>
             </form>
           </section>
         </div>, document.body
@@ -1794,14 +1854,15 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 <div key={msg.id} className={`${s.chatMessage} ${msg.isMe ? s.chatMessageMine : s.chatMessageTheirs}`}>
                   {!msg.isMe && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.04em', color: LINE_DEEP, margin: '0 0 0.1rem 0.5rem' }}>{(msg.name || 'someone').split(' ')[0]}</div>}
                   <div className={`${s.chatBubble} ${msg.failed ? s.chatBubbleFailed : msg.isMe ? s.chatBubbleMine : s.chatBubbleTheirs}`} style={{ opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
-                  {msg.failed && <span className={s.chatFailed}>not sent</span>}
+                  {msg.pending && <span className={s.chatFailed}>sending…</span>}
+                  {msg.failed && <button type="button" className={s.chatRetry} disabled={clubSending} onClick={() => void sendClubMsg(msg)}>Not confirmed · retry</button>}
                 </div>
               ))}
               <div ref={clubEndRef} />
             </div>
-            {clubError && <div className={s.chatError} role="alert">{clubError}</div>}
+            {clubError && <div className={s.chatError} role="alert">{clubError} <button type="button" className={s.chatRetry} onClick={() => void loadClubChat(clubChat.id)}>Reload chat</button></div>}
             <form onSubmit={(event) => { event.preventDefault(); sendClubMsg(); }} className={s.chatComposer}>
-              <input value={clubText} onChange={(e) => setClubText(e.target.value)} onFocus={() => setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 80)} placeholder="message the club…" className={s.chatInput} enterKeyHint="send" autoComplete="off" maxLength={2000} aria-label={`message ${clubChat.name}`} />
+              <input value={clubText} onChange={(e) => { setClubText(e.target.value); drafts.current[`club:${clubChat.id}`] = e.target.value; }} onFocus={() => setTimeout(() => clubEndRef.current?.scrollIntoView({ block: 'end' }), 80)} placeholder="message the club…" className={s.chatInput} enterKeyHint="send" autoComplete="off" maxLength={2000} aria-label={`message ${clubChat.name}`} />
               <button type="submit" disabled={!clubText.trim() || clubSending} className={s.chatSend}>{clubSending ? '…' : 'send'}</button>
             </form>
           </section>
@@ -2076,8 +2137,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                           })}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', padding: '0.8rem 1.1rem', borderTop: `3px dashed rgba(36,29,18,0.25)` }}>
-                          <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="say something to the pack…" style={{ flex: 1, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '0.9rem' }} />
-                          <button onClick={send} className={s.poppyBtn} style={{ fontSize: '1.1rem', padding: '0 1rem' }}>→</button>
+                          <input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && send()} placeholder="say something to the pack…" aria-label="Message your pack" style={{ flex: 1, minWidth: 0, border: `1px solid var(--h-border)`, borderRadius: 999, padding: '0.55rem 1rem', fontSize: '16px' }} />
+                          <button onClick={send} disabled={crewSending || !msg.trim()} aria-label="Send to pack" className={s.poppyBtn} style={{ minHeight: 44, fontSize: '1.1rem', padding: '0 1rem' }}>{crewSending ? '…' : '→'}</button>
                         </div>
                       </>) : (
                         <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>

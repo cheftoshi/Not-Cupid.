@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
   const metadata: Record<string, string | number | boolean | null> = {
     release: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) || 'local',
   };
+  if (body.eventName === 'web_vital' && metricName === 'CLS' && Array.isArray(body.layoutRegions)) {
+    const allowed = new Set(['navigation', 'hub', 'hub-brief', 'hub-composer', 'love-roster', 'love-connections', 'friend', 'chat']);
+    metadata.layoutRegions = [...new Set(body.layoutRegions.filter((region: unknown) => typeof region === 'string' && allowed.has(region)))].slice(0, 8).join(',');
+  }
   if (body.eventName === 'client_error') {
     metadata.errorKind = ERROR_KINDS.has(body.errorKind) ? body.errorKind : 'runtime';
     metadata.errorCode = ERROR_CODES.has(body.errorCode) ? body.errorCode : 'unknown';

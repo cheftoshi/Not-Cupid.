@@ -59,7 +59,7 @@
   --app-safe-bottom: env(safe-area-inset-bottom, 0px);
   --app-safe-left: env(safe-area-inset-left, 0px);
   --app-top-nav-height: 0px;
-  --app-visual-viewport-height: 100dvh;
+  --app-visual-viewport-height: 100svh;
 }
 
 html{scroll-behavior:smooth;max-width:100%;overflow-x:clip}
@@ -75,6 +75,12 @@ html[data-native-shell]{
   padding-top:calc(.6rem + var(--app-safe-top)) !important;
   padding-right:calc(1rem + var(--app-safe-right)) !important;
   padding-left:calc(1rem + var(--app-safe-left)) !important;
+}
+
+/* Reserve the shared header before hydration; JS measures the exact height. */
+html:has(.appTopNav){--app-top-nav-height:calc(3.2rem + var(--app-safe-top))}
+@media (max-width:600px){
+  html:has(.appTopNav){--app-top-nav-height:calc(7.1rem + var(--app-safe-top))}
 }
 
 .siteFooterShell{

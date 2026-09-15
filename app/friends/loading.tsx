@@ -1,5 +1,5 @@
-import RouteLoading from '@/components/route-loading';
+import AppLoading from '@/components/app-loading';
 
 export default function Loading() {
-  return <RouteLoading label="opening your Friend Line" />;
+  return <AppLoading surface="friend" />;
 }

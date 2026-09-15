@@ -125,7 +125,7 @@ export async function composeLoveRosterForUser(
     q = (user as any).is_test === true ? q.eq('is_test', true) : q.not('is_test', 'is', true);
     return q.lte('ignored_picks', MAX_IGNORED_PICKS);
   };
-  const [initialPool, historyResult, priorMatchesResult] = await Promise.all([
+  const [initialPool, historyResult, priorMatchesResult, signalPreferences, connectedFriendIds] = await Promise.all([
     buildPool(),
     supabaseAdmin
       .from('match_history')
@@ -140,6 +140,10 @@ export async function composeLoveRosterForUser(
       .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
       .limit(1000),
+    features.love_adaptive.enabled ? loadLoveSignalPreferences(user.id) : Promise.resolve([]),
+    features.cross_intent_bridge.enabled && hasCrossIntentBridgeConsent(user)
+      ? loadConnectedFriendIds(user)
+      : Promise.resolve(new Set<string>()),
   ]);
   const { data: poolRows, error: poolErr } = initialPool;
   if (poolErr) throw new Error(`love_roster_pool_${poolErr.code || 'query_failed'}`);
@@ -162,12 +166,6 @@ export async function composeLoveRosterForUser(
     seen.add(match.user_1_id === user.id ? match.user_2_id : match.user_1_id);
   }
   let freshPool = pool.filter((p: any) => !seen.has(p.id));
-  const [signalPreferences, connectedFriendIds] = await Promise.all([
-    features.love_adaptive.enabled ? loadLoveSignalPreferences(user.id) : Promise.resolve([]),
-    features.cross_intent_bridge.enabled && hasCrossIntentBridgeConsent(user)
-      ? loadConnectedFriendIds(user)
-      : Promise.resolve(new Set<string>()),
-  ]);
   const bridgeCandidateIds = new Set<string>();
   for (const candidate of freshPool as any[]) {
     if (connectedFriendIds.has(candidate.id) && hasCrossIntentBridgeConsent(candidate)) bridgeCandidateIds.add(candidate.id);
@@ -487,7 +485,9 @@ export async function composeLoveRosterForUser(
 }
 
 export async function GET() {
+  const startedAt = performance.now();
   const user = await getCurrentUser();
+  const authMs = performance.now() - startedAt;
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // If a background verification already produced a fresh roster, opening it
@@ -503,7 +503,13 @@ export async function GET() {
   }
 
   try {
-    return NextResponse.json(await composeLoveRosterForUser(user));
+    const composeStartedAt = performance.now();
+    const roster = await composeLoveRosterForUser(user);
+    const composeMs = performance.now() - composeStartedAt;
+    return NextResponse.json(roster, { headers: {
+      'Server-Timing': `auth;dur=${authMs.toFixed(1)}, compose;dur=${composeMs.toFixed(1)}, total;dur=${(performance.now() - startedAt).toFixed(1)}`,
+      'Cache-Control': 'private, no-store',
+    } });
   } catch (error) {
     console.error('[love-roster] compose failed', error instanceof Error ? error.message : 'unknown');
     return NextResponse.json({ error: 'Your Love roster could not refresh. Please try again.' }, { status: 503 });

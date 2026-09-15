@@ -9,7 +9,7 @@ test('Scene plans open a participant-only organizer chat after an interested RSV
   const comments = source('app/api/friend/activities/[id]/comments/route.ts');
 
   assert.match(client, /a\.isMine \|\| a\.myResponse === 'yes'/);
-  assert.match(client, /talk to the organizer/);
+  assert.match(client, /open plan chat/);
   assert.match(client, /Choose “I’m interested” to open the plan chat\./);
   assert.match(comments, /response\?\.response === 'yes'/);
   assert.match(comments, /RSVP interested to join this plan chat\./);

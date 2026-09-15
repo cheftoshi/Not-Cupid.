@@ -141,6 +141,8 @@ export default function ConnectionConcierge({
         return;
       }
       if (!response.ok || !body.recommendation) {
+        setInput(current => current || message);
+        setMessages(current => current.filter(entry => entry.id !== userMessage.id));
         setError(body.error || 'I could not answer that. Try again in a moment.');
         return;
       }
@@ -150,6 +152,8 @@ export default function ConnectionConcierge({
         localMessage('assistant', body.recommendation.message, body.recommendation),
       ].slice(-12));
     } catch {
+      setInput(current => current || message);
+      setMessages(current => current.filter(entry => entry.id !== userMessage.id));
       setError('I could not connect. Your Love and Friend tabs are still available above.');
     } finally {
       setBusy(false);
@@ -163,7 +167,7 @@ export default function ConnectionConcierge({
   }
 
   function onInputKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       if (input.trim()) void ask(input);
     }
@@ -291,13 +295,13 @@ export default function ConnectionConcierge({
   }
 
   return (
-    <section className={styles.conciergeShell} aria-labelledby="concierge-title">
+    <section data-perf-region="hub" className={styles.conciergeShell} aria-labelledby="concierge-title">
       <header className={styles.conciergeHead}>
         <div className={styles.conciergeMark} aria-hidden>✦</div>
         <div className={styles.conciergeIdentity}>
           <span>notcupid concierge</span>
-          <h1 id="concierge-title">I’m your AI connection concierge.</h1>
-          <p>{city ? `Live context for ${city.split(',')[0]}.` : 'Live context from your NotCupid account.'} You choose every action.</p>
+          <h1 id="concierge-title">What’s your next move, {firstName}?</h1>
+          <p>Your AI concierge{city ? ` in ${city.split(',')[0]}` : ''}. You choose every action.</p>
         </div>
         <button className={styles.conciergeControlButton} type="button" onClick={() => setShowControls((current) => !current)} aria-expanded={showControls}>
           {memories.length ? `memory · ${memories.length}` : 'AI controls'}
@@ -351,7 +355,7 @@ export default function ConnectionConcierge({
       )}
 
       <div className={styles.conciergeBody} aria-live="polite">
-        <div className={`${styles.conciergeBubble} ${styles.conciergeAssistant} ${styles.conciergeBrief}`}>
+        <div data-perf-region="hub-brief" className={`${styles.conciergeBubble} ${styles.conciergeAssistant} ${styles.conciergeBrief}`}>
           <small>{briefLoading ? 'checking what is live' : 'your connection brief'}</small>
           <strong>{brief.headline}</strong>
           <p>{brief.message}</p>
@@ -361,19 +365,6 @@ export default function ConnectionConcierge({
             </div>
           )}
         </div>
-
-        {consented && !matchingPersonalization && (
-          <div className={styles.conciergeMatchingInvite}>
-            <div>
-              <small>optional match learning</small>
-              <strong>Help the matcher learn your connection style.</strong>
-              <p>AI can privately compare selected quiz scores, values, rhythms and interests. It excludes names, contact details, ZIP, photos, bios and messages, and it cannot reorder your live roster yet.</p>
-            </div>
-            <button type="button" onClick={() => void toggleMatchingPersonalization()} disabled={matchingBusy}>
-              {matchingBusy ? 'enabling…' : 'enable privately'}
-            </button>
-          </div>
-        )}
 
         {messages.map((message) => (
           <div key={message.id} className={`${styles.conciergeBubble} ${message.role === 'user' ? styles.conciergeUser : styles.conciergeAssistant}`}>
@@ -443,7 +434,7 @@ export default function ConnectionConcierge({
         </div>
       )}
 
-      <form className={styles.conciergeComposer} onSubmit={submit}>
+      <form data-perf-region="hub-composer" className={styles.conciergeComposer} onSubmit={submit}>
         <textarea
           ref={inputRef}
           value={input}
@@ -458,7 +449,7 @@ export default function ConnectionConcierge({
         <button type="submit" disabled={busy || !input.trim()} aria-label="Send to concierge">{busy ? '…' : 'send'}</button>
       </form>
 
-      {error && <p className={styles.conciergeError}>{error}</p>}
+      {error && <p role="alert" className={styles.conciergeError}>{error}</p>}
       <footer className={styles.conciergeFoot}>
         <span>AI can be wrong. Nothing is sent, joined, or booked for you.</span>
         <button type="button" onClick={() => setShowControls(true)}>your memory</button>

@@ -690,13 +690,13 @@
   background: color-mix(in srgb, var(--h-text) 7%, transparent);
 }
 
-.connectionFilters button[aria-selected='true'] {
+.connectionFilters button[aria-pressed='true'] {
   background: #0b0b0b;
   color: #fff;
   box-shadow: var(--shadow-sm);
 }
 
-.connectionFilters button[aria-selected='true'] span { background: rgba(255,255,255,0.18); }
+.connectionFilters button[aria-pressed='true'] span { background: rgba(255,255,255,0.18); }
 
 .connectionDecisionCallout {
   display: grid;
@@ -913,3 +913,10 @@
   .loveProfilePreviewChoose { position: sticky; bottom: max(0.35rem, var(--app-safe-bottom, 0px)); z-index: 4; box-shadow: 0 10px 28px -12px rgba(11,11,11,0.55); }
   .loveCompatibilityColumns { grid-template-columns: 1fr; }
 }
+
+.rosterRefreshNotice { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; padding: 0.6rem 0; font-size: 0.9rem; color: var(--h-text-dim); }
+.rosterRefreshNotice button, .connectionFilterEmpty button { min-height: 44px; padding: 0.5rem 0.8rem; border: 1px solid var(--h-border); border-radius: 10px; background: var(--h-surface); color: var(--h-text); font: inherit; }
+.connectionFilters button { min-height: 44px; font-size: 0.8rem; letter-spacing: 0; }
+.connectionActions > a, .connectionActions > button { min-height: 44px; font-size: 0.8rem; }
+.loveRosterCard { scroll-snap-stop: normal; }
+.loveConnections :focus-visible, .loveRoster :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }

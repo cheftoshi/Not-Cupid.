@@ -58,7 +58,7 @@ test('Love chat, Friend Line and Dating Experiment actions handle network failur
   const experiment = source('app/raffle/raffle-client.tsx');
   assert.match(love, /date-vibe-save-failed[\s\S]*catch/);
   assert.match(friend, /const loadMatches = useCallback\(async \(\) => \{[\s\S]*catch/);
-  assert.match(friend, /friend-message-failed[\s\S]*setMsg\(body\)/);
+  assert.match(friend, /friend-message-failed[\s\S]*setMsg\(current => current \|\| body\)/);
   assert.match(discovery, /could not post that signal — check your connection/);
   assert.match(experiment, /could not save your private choices — check your connection/);
 });

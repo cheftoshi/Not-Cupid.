@@ -21,11 +21,23 @@ function context() {
 export default function WebVitals() {
   useReportWebVitals((metric) => {
     try {
+      // Attribute layout shifts to explicit UI regions only. Never collect
+      // selectors, element IDs, user text, or message contents.
+      const regions = new Set<string>();
+      if (metric.name === 'CLS') {
+        for (const entry of metric.entries) {
+          for (const source of (entry as PerformanceEntry & { sources?: Array<{ node?: Node }> }).sources || []) {
+            const region = source.node instanceof Element ? source.node.closest('[data-perf-region]')?.getAttribute('data-perf-region') : null;
+            if (region && ['navigation', 'hub', 'hub-brief', 'hub-composer', 'love-roster', 'love-connections', 'friend', 'chat'].includes(region)) regions.add(region);
+          }
+        }
+      }
       const payload = JSON.stringify({
         eventName: 'web_vital',
         metricName: metric.name,
         metricValue: metric.value,
         rating: metric.rating,
+        layoutRegions: [...regions].slice(0, 8),
         path: window.location.pathname,
         dedupeKey: `web-vital:${metric.id}:${metric.name}`,
         ...context(),
