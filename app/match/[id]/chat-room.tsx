@@ -12,6 +12,7 @@ import { normalizeProfilePrompts } from '@/lib/profile-prompts';
 import { ATTACH_LABEL, VIBE_HEADS, vibeLabel, type AttachStyle, type VibeKey } from '@/lib/quiz-data';
 import CompatibilityReadPanel from './compatibility-read-panel';
 import { useChatRealtime } from '@/lib/use-chat-realtime';
+import { chatPollDelay } from '@/lib/realtime-policy';
 
 // Emoji labels for a partner's picked interests (mirrors INTEREST_OPTIONS).
 const INTEREST_LABELS: Record<string, string> = {
@@ -340,13 +341,19 @@ export default function ChatRoom({
     );
   }
 
+  const [chatConnectionIssue, setChatConnectionIssue] = useState<'session' | 'network' | null>(null);
   const refreshMessages = useCallback(async () => {
     if (readOnly) return;
     try {
       const afterMessage = lastMsgAtRef.current;
       const response = await fetchWithTimeout(`/api/messages?match_id=${matchId}${afterMessage ? `&after=${encodeURIComponent(afterMessage)}` : ''}`, {}, 8_000);
-      if (!response.ok) return;
+      if (!response.ok) {
+        setChatConnectionIssue(response.status === 401 ? 'session' : 'network');
+        return;
+      }
       const data = await parseResponse<any>(response);
+      if (!Array.isArray(data.messages)) throw new Error('Invalid chat response');
+      setChatConnectionIssue(null);
       const fresh: any[] = data.messages || [];
       if (data.incremental) {
         if (fresh.length) setMessages((previous) => {
@@ -358,10 +365,10 @@ export default function ChatRoom({
       if (data.match) setLiveMatch((previous: any) => ({ ...previous, ...data.match }));
       if ('otherTypingAt' in data) setOtherTypingAt(data.otherTypingAt || null);
       if ('otherReadAt' in data) setOtherReadAt(data.otherReadAt || null);
-    } catch { /* the fallback poll retries */ }
+    } catch { setChatConnectionIssue('network'); }
   }, [matchId, readOnly]);
 
-  useChatRealtime(realtimeTopic, () => { void refreshMessages(); });
+  const realtimeConnected = useChatRealtime(realtimeTopic, () => { void refreshMessages(); });
 
   useEffect(() => {
     if (readOnly) return; // ended conversations don't change — no need to poll
@@ -369,7 +376,7 @@ export default function ChatRoom({
     let timer: number | undefined;
     const poll = async () => {
       await refreshMessages();
-      if (!stopped) timer = window.setTimeout(poll, document.visibilityState === 'visible' ? (realtimeTopic ? 30_000 : 3_000) : 45_000);
+      if (!stopped) timer = window.setTimeout(poll, chatPollDelay(realtimeConnected, document.visibilityState === 'visible'));
     };
     timer = window.setTimeout(poll, 3_000);
     const wake = () => {
@@ -383,7 +390,7 @@ export default function ChatRoom({
       if (timer) window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', wake);
     };
-  }, [readOnly, realtimeTopic, refreshMessages]);
+  }, [readOnly, realtimeConnected, refreshMessages]);
 
   // Re-render every 2s while a typing ping is live so the bubble expires cleanly.
   const [, typingTick] = useState(0);
@@ -543,6 +550,11 @@ export default function ChatRoom({
         )}
       </div>
 
+      {chatConnectionIssue && <div role="status" style={{ padding: '0.65rem 1rem', background: 'var(--h-surface-2)', fontSize: '0.85rem' }}>
+        {chatConnectionIssue === 'session'
+          ? <>Your session expired. <a href={`/login?next=${encodeURIComponent(`/match/${matchId}`)}`}>Sign in to reconnect</a>.</>
+          : <>Chat updates are delayed. Your messages are still here. <button type="button" onClick={() => void refreshMessages()}>Retry connection</button></>}
+      </div>}
       <div className={styles.messages} ref={scrollRef} onScroll={trackScroll}>
         {hasOlder && (
           <button type="button" className={styles.loadOlder} onClick={loadOlderMessages} disabled={loadingOlder}>

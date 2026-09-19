@@ -55,7 +55,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run build
-      - run: npm run test:e2e
+      - run: npm run test:e2e:https
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

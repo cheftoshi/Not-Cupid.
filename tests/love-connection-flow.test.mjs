@@ -295,7 +295,7 @@ test('chat polling is incremental, idempotent, adaptive, and paginates older his
   assert.match(messages, /client_id/);
   assert.match(messages, /\.lt\('created_at', before\)/);
   assert.match(messages, /hasMore/);
-  assert.match(room, /realtimeTopic \? 30_000 : 3_000/);
+  assert.match(room, /chatPollDelay\(realtimeConnected, document.visibilityState === 'visible'\)/);
   assert.match(room, /useChatRealtime\(realtimeTopic/);
   assert.match(room, /loadOlderMessages/);
   assert.match(room, /client_id: clientId/);

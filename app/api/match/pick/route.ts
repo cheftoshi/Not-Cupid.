@@ -56,13 +56,16 @@ export async function POST(req: NextRequest) {
   // ids, duplicates, stale profiles, or cross-realm picks.
   let wasRecentlyExposed = false;
   if (!rosterSnapshot.includes(candidateId)) {
-    const { data: exposure } = await supabaseAdmin
+    const { data: exposure, error: exposureError } = await supabaseAdmin
       .from('roster_exposures')
       .select('shown_at')
       .eq('user_id', user.id)
       .eq('candidate_id', candidateId)
       .gte('shown_at', new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString())
       .maybeSingle();
+    if (exposureError) {
+      return NextResponse.json({ error: 'We could not verify that choice. Please try again.', code: 'roster_check_unavailable' }, { status: 503 });
+    }
     wasRecentlyExposed = !!exposure;
   }
   if (!rosterSnapshot.includes(candidateId) && !wasRecentlyExposed) {
@@ -74,7 +77,7 @@ export async function POST(req: NextRequest) {
   // refresh their profile (which clears the flag and starts them over).
   const callerCooldown = user.matching_cooldown_until && new Date(user.matching_cooldown_until).getTime() > Date.now();
   if (user.matching_disabled_at || callerCooldown) {
-    return NextResponse.json({ error: 'Your matching is paused. Refresh your profile to start over.' }, { status: 403 });
+    return NextResponse.json({ error: 'Your matching is paused. Open your Love Line to see how to resume.', code: 'matching_paused' }, { status: 403 });
   }
 
   // Free timed-out matches first. The hard cap is only a safety ceiling; the
@@ -85,7 +88,7 @@ export async function POST(req: NextRequest) {
   const pickAccess = await lovePickAccessFor(user);
   if (myLive.length >= MAX_CONNECTIONS) {
     return NextResponse.json(
-      { error: `You're at the safety limit of ${MAX_CONNECTIONS} live connections. Wrap one up before starting another.` },
+      { error: `You're at the safety limit of ${MAX_CONNECTIONS} live connections. Wrap one up before starting another.`, code: 'connection_capacity' },
       { status: 409 }
     );
   }

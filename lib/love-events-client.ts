@@ -46,9 +46,8 @@ export function trackLoveEvent(
       ...detail,
       ...clientContext(),
     });
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/love/events', new Blob([payload], { type: 'application/json' }));
-    } else {
+    const queued = navigator.sendBeacon?.('/api/love/events', new Blob([payload], { type: 'application/json' })) === true;
+    if (!queued) {
       void fetch('/api/love/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

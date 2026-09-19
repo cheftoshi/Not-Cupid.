@@ -41,6 +41,7 @@ export default function FriendLinePreviewPage() {
         </div>
 
         <div className="friendPreviewBoard" aria-label="Friend Line preview">
+          <p>Illustrative preview. Plans and counts below are examples, not live availability.</p>
           <div className="moveCard">
             <small>best move today</small>
             <h2>join a plan that already has momentum.</h2>
@@ -58,7 +59,7 @@ export default function FriendLinePreviewPage() {
 
       <section className="friendPreviewColumns">
         <article>
-          <small>today</small>
+          <small>example plans</small>
           <h2>Plans that fit your vibe.</h2>
           <div className="planStack">
             {plans.map((p) => (
@@ -72,7 +73,7 @@ export default function FriendLinePreviewPage() {
         </article>
 
         <article>
-          <small>pack chat</small>
+          <small>example pack chat</small>
           <h2>A warmer way to start talking.</h2>
           <div className="chatBox">
             <div className="bubble other">plan vote: coffee, food, or something active?</div>
@@ -84,7 +85,7 @@ export default function FriendLinePreviewPage() {
         </article>
 
         <article>
-          <small>city pulse</small>
+          <small>example city pulse</small>
           <h2>See where people are actually gathering.</h2>
           <div className="pulseList">
             {['Somerville', 'Cambridge', 'Back Bay'].map((area, i) => (

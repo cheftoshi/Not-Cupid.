@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { realtimeCspSource } from './lib/realtime-policy'
 
 const scriptSrc = process.env.NODE_ENV === 'development'
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com"
@@ -26,7 +27,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     // Camera/file previews use object URLs while validating video duration on
     // the device. Playback after upload still comes from signed Supabase URLs.
     "media-src 'self' blob: https://*.supabase.co",
-    "connect-src 'self' https://*.supabase.co https://api.stripe.com",
+    `connect-src 'self' https://*.supabase.co https://api.stripe.com ${realtimeCspSource(process.env.NEXT_PUBLIC_SUPABASE_URL)}`.trim(),
     "frame-src https://js.stripe.com https://hooks.stripe.com",
     "frame-ancestors 'none'",
     "form-action 'self'",

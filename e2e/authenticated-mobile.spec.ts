@@ -109,4 +109,71 @@ test.describe('authenticated test-realm mobile path', () => {
     await dialog.getByRole('button', { name: 'close private chat' }).click();
     // No real user receives any of the test messages above.
   });
+
+  test('blocked realtime does not crash Friend chat and HTTP polling still receives replies', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.addInitScript(() => {
+      window.WebSocket = class extends WebSocket {
+        constructor(url: string | URL, protocols?: string | string[]) {
+          // Throw before any connection can leave the browser.
+          throw new DOMException('QA blocks realtime', 'SecurityError');
+          super(url, protocols);
+        }
+      };
+    });
+    const otherId = '00000000-0000-4000-8000-000000000112';
+    let reads = 0;
+    let replyReady = false;
+    await page.route('**/api/friend/roster', route => route.fulfill({ json: {
+      matches: [{ otherId, name: 'QA Friend', connected: true, iAccepted: true, theyAccepted: true }], sealedCount: 0,
+    } }));
+    await page.route('**/api/friend/dm*', route => {
+      reads++;
+      return route.fulfill({ json: {
+        realtimeTopic: 'qa-blocked-channel', unread: {},
+        messages: replyReady ? [{ id: 'qa-reply', body: 'Reply through polling', isMe: false }] : [],
+      } });
+    });
+    await page.goto(`/friends?dm=${otherId}`);
+    await page.getByRole('button', { name: 'I agree — let me in →' }).click();
+    const dialog = page.getByRole('dialog', { name: 'private chat with QA' });
+    await expect(dialog).toBeVisible();
+    replyReady = true;
+    await expect(dialog.getByText('Reply through polling', { exact: true })).toBeVisible({ timeout: 12_000 });
+    expect(reads).toBeGreaterThan(1);
+    expect(errors).toEqual([]);
+  });
+
+  test('a stale Love choice closes its preview and another included choice remains usable', async ({ page }) => {
+    const candidates = [
+      { id: '00000000-0000-4000-8000-000000000121', name: 'QAFirst', age: 30, score: 75 },
+      { id: '00000000-0000-4000-8000-000000000122', name: 'QASecond', age: 31, score: 72 },
+    ];
+    let rejected = false;
+    const picks: string[] = [];
+    await page.route('**/api/match/roster', route => route.fulfill({ json: {
+      roster: rejected ? [candidates[1]] : candidates, includedPicksRemaining: 3,
+      atCapacity: false, pro: false, ghosted: false,
+    } }));
+    await page.route('**/api/match/pick', route => {
+      const id = route.request().postDataJSON().candidateId;
+      picks.push(id);
+      if (id === candidates[0].id) {
+        rejected = true;
+        return route.fulfill({ status: 403, json: { code: 'stale_roster', error: 'That roster changed. We refreshed your current options.' } });
+      }
+      return route.fulfill({ json: { ok: true, accessType: 'included' } });
+    });
+    await page.goto('/dashboard');
+    await page.getByRole('button', { name: "View QAFirst's profile", exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: /choose QAFirst · included/ }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByText('That roster changed. We refreshed your current options.')).toBeVisible();
+    await page.getByRole('button', { name: /choose QASecond · included/ }).click();
+    await expect.poll(() => picks.length).toBe(2);
+    expect(picks).toEqual(candidates.map(candidate => candidate.id));
+    // Both selection responses are mocked; no real invitation is created.
+  });
 });

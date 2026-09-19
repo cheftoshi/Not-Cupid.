@@ -27,6 +27,7 @@ import {
   rosterExposureCutoffIso,
 } from '@/lib/matching-policy';
 import { normalizeProfilePrompts } from '@/lib/profile-prompts';
+import { rosterSnapshotChanged } from '@/lib/roster-snapshot';
 import { lovePickAccessFor } from '@/lib/love-pick-access';
 import { enqueueEmbeddingShadow } from '@/lib/embedding-shadow-jobs';
 import { hasMatchingEmbeddingConsent } from '@/lib/connection-embeddings';
@@ -330,7 +331,7 @@ export async function composeLoveRosterForUser(
     const backfill = rotationRanked.map((c) => c.user.id).filter((id) => !keptSet.has(id));
     orderedIds = [...kept, ...backfill].slice(0, size);
     // Only re-persist if the membership actually changed (backfill kicked in).
-    if (kept.length < Math.min(snapshot.length, size)) persist = true;
+    persist = rosterSnapshotChanged(snapshot, orderedIds);
   } else {
     // Stale or no snapshot → recompute fresh and persist with a new timestamp.
     orderedIds = rotationRanked.slice(0, size).map((c) => c.user.id);
@@ -393,14 +394,15 @@ export async function composeLoveRosterForUser(
     if (!snapshotFresh && rosterChanged && options.recordNotificationChange) {
       updates.roster_changed_at = new Date().toISOString();
     }
-    await supabaseAdmin.from('users').update(updates).eq('id', user.id);
+    const { error: snapshotError } = await supabaseAdmin.from('users').update(updates).eq('id', user.id);
+    if (snapshotError) throw new Error('Could not save selectable roster');
 
     // Record only rosters that were actually composed/persisted. Upsert keeps
     // one latest exposure per pair, which is all the seven-day cooldown needs.
     if (roster.length > 0) {
       const shownAt = new Date().toISOString();
       const treatmentId = randomUUID();
-      await supabaseAdmin
+      const { error: exposureError } = await supabaseAdmin
         .from('roster_exposures')
         .upsert(
           roster.map((candidate, position) => ({
@@ -415,8 +417,8 @@ export async function composeLoveRosterForUser(
             treatment_id: treatmentId,
           })),
           { onConflict: 'user_id,candidate_id' },
-        )
-        .then(undefined, () => {});
+        );
+      if (exposureError) console.error('[love-roster] exposure recording failed', exposureError.code);
     }
   }
 

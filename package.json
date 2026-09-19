@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "playwright test e2e/public-mobile.spec.ts",
+    "test:e2e:https": "node scripts/run-public-mobile-https.mjs",
     "test:e2e:auth": "playwright test e2e/authenticated-mobile.spec.ts",
     "test:e2e:release": "E2E_REQUIRE_AUTH=1 playwright test e2e/authenticated-mobile.spec.ts",
     "performance:budget": "node scripts/check-client-budgets.mjs",

@@ -168,14 +168,16 @@
 }
 .loveRosterRail::-webkit-scrollbar { display: none; }
 .loveRosterSkeleton { overflow: hidden; }
+.loveRosterSkeleton > div { min-height: 560px; }
 .loveRosterGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; }
 .loveRosterCard {
   width: 210px;
   flex: 0 0 210px;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  content-visibility: auto;
-  contain-intrinsic-size: 210px 390px;
+  /* This small rail must measure its real cards. A 390px intrinsic placeholder
+     expanded as Android painted cards, shifting the connections below it. */
+  min-height: 560px;
 }
 .loveRosterAction { min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
 .loveRosterPreviewAction {

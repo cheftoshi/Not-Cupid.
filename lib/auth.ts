@@ -66,7 +66,9 @@ export async function getCurrentUser() {
   if (!session) return null;
   if (new Date(session.expires_at) < new Date()) {
     await supabaseAdmin.from('sessions').delete().eq('token', session.token);
-    cookieStore.delete(COOKIE_NAME);
+    // This reader is also called from Server Components, where Next forbids
+    // cookie writes. Return unauthenticated so pages can redirect normally;
+    // login/logout Route Handlers own replacing/clearing the browser cookie.
     return null;
   }
 

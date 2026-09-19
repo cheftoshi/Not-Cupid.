@@ -153,6 +153,7 @@ export default function RosterPicker({
       const res = await fetchWithTimeout('/api/match/roster', {}, 15_000);
       const data = await parseResponse<any>(res);
       if (!res.ok) throw new Error(data.error || 'Roster unavailable');
+      if (!Array.isArray(data.roster)) throw new Error('Invalid roster response');
       setGhosted(!!data.ghosted);
       setHardLocked(!!data.hardLocked);
       setAtCapacity(!!data.atCapacity);
@@ -298,7 +299,11 @@ export default function RosterPicker({
         return;
       }
       // Conflict (taken / already matched) — show why + refresh the roster.
-      setNotice(data.error || 'That didn’t work — refreshed your options.');
+      setPreviewCandidate(null);
+      setNotice(res.status === 401 ? 'Your session expired. Sign in again to choose someone.' : data.error || 'That didn’t work — refreshed your options.');
+      if (data.code === 'stale_roster' || data.code === 'already_matched') {
+        setRoster((current) => current?.filter((item) => item.id !== c.id) ?? current);
+      }
       trackLoveEvent('pick_failed', {
         candidateId: c.id,
         metadata: {
@@ -306,7 +311,7 @@ export default function RosterPicker({
           reason: typeof data.code === 'string'
             ? data.code
             : res.status === 403
-              ? 'stale_roster'
+              ? 'permission_denied'
               : res.status === 409
                 ? 'candidate_unavailable'
                 : res.status >= 500
@@ -566,7 +571,7 @@ export default function RosterPicker({
                 </button>
                 {pickedId === c.id ? (
                   <div style={{ marginTop: 'auto', textAlign: 'center', background: 'rgba(37,99,255,0.1)', border: '1.5px solid #2563ff', color: '#2563ff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, animation: 'ncPickedIn .4s var(--ease) both' }}>
-                    ✦ it&apos;s on — opening your chat…
+                    ✓ choice sent — waiting for their answer
                   </div>
                 ) : (
                 <button

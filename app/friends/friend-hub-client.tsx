@@ -652,7 +652,12 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
       }
     } catch { /* the next realtime event or open retries */ }
   }, [a.id]);
-  useChatRealtime(showC ? commentsRealtimeTopic : null, loadComments);
+  const commentsConnected = useChatRealtime(showC ? commentsRealtimeTopic : null, loadComments);
+  useEffect(() => {
+    if (!showC) return;
+    const timer = window.setInterval(() => { if (!document.hidden) void loadComments(); }, commentsConnected ? 30_000 : 5_000);
+    return () => window.clearInterval(timer);
+  }, [showC, commentsConnected, loadComments]);
   function toggleComments() { const next = !showC; setShowC(next); if (next) { setCErr(null); loadComments(); } }
   useEffect(() => {
     if (!autoOpenChat || showC) return;
@@ -1140,7 +1145,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // Realtime is primary; a low-frequency poll heals missed websocket events.
   // Before the first authorized response yields an opaque topic, retain the
   // short fallback so chat still works if Realtime is unavailable.
-  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(chatOpen); }, chat.realtimeTopic ? 30000 : 4000); return () => clearInterval(t); }, [loadChat, view, chatOpen, chat.realtimeTopic]);
+  const packConnected = useChatRealtime(view === 'crew' && chatOpen ? chat.realtimeTopic : null, () => { void loadChat(true); });
+  const clubConnected = useChatRealtime(clubChat ? clubRealtimeTopic : null, () => { if (clubChat) void loadClubChat(clubChat.id); });
+  useEffect(() => { const t = setInterval(() => { if (!document.hidden && view === 'crew') loadChat(chatOpen); }, packConnected ? 30000 : 4000); return () => clearInterval(t); }, [loadChat, view, chatOpen, packConnected]);
   // Entering the crew view refetches immediately — no stale-message window
   // while waiting for the first 4s poll tick.
   useEffect(() => { loadChat(view === 'crew' && chatOpen); }, [view, chatOpen, loadChat]);
@@ -1169,7 +1176,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   useEffect(() => { if (view === 'pulse' || view === 'crew') loadClubs(); }, [view, loadClubs]);
   useEffect(() => { const t = setInterval(() => { if (!document.hidden && !clubChat) loadClubs(); }, 45000); return () => clearInterval(t); }, [clubChat, loadClubs]);
   useEffect(() => { if (view === 'pulse') { loadComLinks(); loadPulse(); } }, [view, loadComLinks, loadPulse]);
-  useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, clubRealtimeTopic ? 30000 : 5000); return () => clearInterval(t); }, [clubChat, clubRealtimeTopic, loadClubChat]);
+  useEffect(() => { if (!clubChat) return; const t = setInterval(() => { if (!document.hidden) loadClubChat(clubChat.id); }, clubConnected ? 30000 : 5000); return () => clearInterval(t); }, [clubChat, clubConnected, loadClubChat]);
   // A push/email opens the exact club instead of dropping someone at the top
   // of Communities. Fetch by id as a fallback for travel-mode memberships that
   // are outside the currently browsed metro.
@@ -1404,9 +1411,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       return false;
     } catch { return false; }
   }, []);
-  useChatRealtime(view === 'crew' && chatOpen ? chat.realtimeTopic : null, () => { void loadChat(true); });
-  useChatRealtime(clubChat ? clubRealtimeTopic : null, () => { if (clubChat) void loadClubChat(clubChat.id); });
-  useChatRealtime(dmWith ? dmRealtimeTopic : null, () => { if (dmWith) void loadDm(dmWith.otherId); });
+  const dmConnected = useChatRealtime(dmWith ? dmRealtimeTopic : null, () => { if (dmWith) void loadDm(dmWith.otherId); });
   // Unread DM counts per connection (badge on the rail). Loaded with matches,
   // refreshed by the acts poll; opening a thread clears its badge.
   const [dmUnread, setDmUnread] = useState<Record<string, number>>({});
@@ -1527,9 +1532,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // poll the open DM thread for new messages
   useEffect(() => {
     if (!dmWith) return;
-    const id = setInterval(() => { if (!document.hidden) loadDm(dmWith.otherId); }, dmRealtimeTopic ? 30000 : 5000);
+    const id = setInterval(() => { if (!document.hidden) loadDm(dmWith.otherId); }, dmConnected ? 30000 : 5000);
     return () => clearInterval(id);
-  }, [dmWith, dmRealtimeTopic, loadDm]);
+  }, [dmWith, dmConnected, loadDm]);
   // arriving from a DM push (/friends?dm=<id>) → open that thread once matches load
   const dmParamDone = useRef(false);
   useEffect(() => {
