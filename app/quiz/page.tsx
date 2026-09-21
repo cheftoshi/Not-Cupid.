@@ -9,6 +9,7 @@ import type { VibeKey } from '@/lib/quiz-data'
 import { parseResponse } from '@/lib/fetch-helpers'
 import { toast } from '@/components/feedback'
 import { readStoredAcquisition } from '@/lib/acquisition'
+import { loadQuizProfile } from '@/lib/quiz-profile-loader'
 import styles from './quiz.module.css'
 
 type Screen = 'intro' | 'details' | 'verify' | 'save-error' | 'quiz-intro' | 'quiz' | 'vibes-intro' | 'vibes' | 'rapid-intro' | 'rapid' | 'love-preferences' | 'partner-intro' | 'partner' | 'attach-intro' | 'attach' | 'values-intro' | 'values' | 'loading' | 'result' | 'love-done'
@@ -132,7 +133,8 @@ function QuizInner() {
     return fromUrl
   })()
   const [screen, setScreen] = useState<Screen>('intro')
-  const [retakeReady, setRetakeReady] = useState(false)
+  const [profileLoadState, setProfileLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [profileLoadAttempt, setProfileLoadAttempt] = useState(0)
   const [form, setForm] = useState<FormData>({ name:'', age:'', gender:'', seek:'', zip:'', email:'', ageMin:'22', ageMax:'38' })
   // Live pool teaser for the entered ZIP ("214 people in the Boston experiment").
   const [poolPeek, setPoolPeek] = useState<{ city: string; count: number; recent: number } | null>(null)
@@ -181,7 +183,6 @@ function QuizInner() {
   const [partnerAnswers, setPartnerAnswers] = useState<(number | number[])[]>([])
   const [partnerSelected, setPartnerSelected] = useState<number|null>(null)
   const [partnerMulti, setPartnerMulti] = useState<number[]>([]) // multi-select picks for the current Q
-  const [loveDeepReady, setLoveDeepReady] = useState(false)
   const [loveSaveError, setLoveSaveError] = useState('')
   const [loveSaveBusy, setLoveSaveBusy] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
@@ -192,90 +193,68 @@ function QuizInner() {
   const [shake, setShake] = useState(false)
   const userIdRef = useRef<string>('')
 
-  // Retake flow: if user is authenticated, skip intro + verify and go straight to quiz.
+  // All quiz entry paths share one bounded, cancellable profile check. A
+  // failed connection must not masquerade as logout or restart signup.
   useEffect(() => {
-    if (!isRetake || retakeReady) return
-    (async () => {
-      const res = await fetch('/api/profile')
-      if (res.ok) {
-        const data = await parseResponse<any>(res)
-        // Hydrate the form so submit has the user's existing details
-        if (data?.user) {
-          setForm((f) => ({
-            ...f,
-            name: data.user.name || '',
-            age: String(data.user.age || ''),
-            gender: data.user.gender || '',
-            seek: data.user.seeking || '',
-            zip: data.user.zip || '',
-            email: data.user.email || '',
-            ageMin: String(data.user.age_min || 22),
-            ageMax: String(data.user.age_max || 38),
-          }))
-        }
-        setRetakeReady(true)
-        setScreen('quiz')
-      } else {
-        // Not logged in — send them to login with return path
-        window.location.href = '/login?next=' + encodeURIComponent('/quiz?retake=1')
-      }
-    })()
-  }, [isRetake, retakeReady])
-
-  // Love-deep entry: logged-in user boarding the Love line completes the deeper
-  // romantic quiz (partner → attachment → values). Requires the core quiz first.
-  useEffect(() => {
-    if (!isLoveDeep || loveDeepReady) return
-    (async () => {
-      const res = await fetch('/api/profile')
-      if (res.ok) {
-        const data = await parseResponse<any>(res)
-        if (!data?.user?.archetype) {
-          // Haven't done the core quiz yet — send them there first.
-          window.location.href = '/quiz'
+    const controller = new AbortController()
+    setProfileLoadState('loading')
+    void (async () => {
+      try {
+        const result = await loadQuizProfile({ signal: controller.signal })
+        if (controller.signal.aborted || result.status === 'cancelled') return
+        if (result.status === 'error') {
+          setProfileLoadState('error')
           return
         }
-        const seeking = data.user.seeking || ''
-        const ageMin = Number(data.user.age_min) || 18
-        const ageMax = Number(data.user.age_max) || 99
-        setForm((f) => ({
-          ...f,
-          name: data.user.name || '',
-          email: data.user.email || '',
-          seek: seeking,
-          ageMin: String(ageMin),
-          ageMax: String(ageMax),
-        }))
-        setLoveDeepReady(true)
-        // Friend-first signup stores deliberately broad legacy defaults because
-        // these columns are required. Ask for real Love preferences exactly once
-        // when those defaults are still present; otherwise avoid a repeated step.
-        const needsLovePreferences = !seeking || ageMin < 18 || ageMax <= ageMin ||
-          (seeking === 'b' && ageMin === 18 && ageMax === 99)
-        setScreen(needsLovePreferences ? 'love-preferences' : 'partner-intro')
-      } else {
-        window.location.href = '/login?next=' + encodeURIComponent('/quiz?line=love')
+        if (result.status === 'signed-out') {
+          if (isLoveDeep || isRetake) {
+            const destination = isLoveDeep ? '/quiz?line=love' : '/quiz?retake=1'
+            window.location.replace('/login?next=' + encodeURIComponent(destination))
+          } else {
+            setProfileLoadState('ready')
+          }
+          return
+        }
+        if (result.status !== 'ready') return
+        const user = result.user
+        if (isLoveDeep) {
+          if (!user.archetype) {
+            window.location.replace('/quiz?retake=1')
+            return
+          }
+          const seeking = user.seeking || ''
+          const ageMin = Number(user.age_min) || 18
+          const ageMax = Number(user.age_max) || 99
+          setForm((f) => ({
+            ...f, name: user.name || '', email: user.email || '',
+            seek: seeking, ageMin: String(ageMin), ageMax: String(ageMax),
+          }))
+          const needsLovePreferences = !seeking || ageMin < 18 || ageMax <= ageMin ||
+            (seeking === 'b' && ageMin === 18 && ageMax === 99)
+          setScreen(needsLovePreferences ? 'love-preferences' : 'partner-intro')
+        } else if (isRetake) {
+          setForm((f) => ({
+            ...f,
+            name: user.name || '', age: String(user.age || ''),
+            gender: user.gender || '', seek: user.seeking || '',
+            zip: user.zip || '', email: user.email || '',
+            ageMin: String(user.age_min || 22), ageMax: String(user.age_max || 38),
+          }))
+          setScreen('quiz')
+        } else {
+          // Existing accounts resume their baseline without re-verifying email.
+          const params = new URLSearchParams(searchParams.toString())
+          params.set('retake', '1')
+          window.location.replace('/quiz?' + params.toString())
+          return
+        }
+        setProfileLoadState('ready')
+      } catch {
+        if (!controller.signal.aborted) setProfileLoadState('error')
       }
     })()
-  }, [isLoveDeep, loveDeepReady])
-
-  // Already logged in but landed on the bare signup quiz (e.g. sent here by the
-  // hub or friend-quiz gate)? Don't make them re-enter details + re-verify their
-  // email — that read as "it's making me sign up / take the quiz again". Route
-  // them into the retake flow, which hydrates their info and jumps straight to
-  // the questions, saving via /api/quiz/update (no duplicate-email 409).
-  useEffect(() => {
-    if (isRetake || isLoveDeep || screen !== 'intro') return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetch('/api/profile')
-        if (!cancelled && res.ok) window.location.replace('/quiz?retake=1')
-      } catch { /* not logged in — stay on signup */ }
-    })()
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    return () => controller.abort()
+  }, [isRetake, isLoveDeep, profileLoadAttempt, searchParams])
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const friendOnly = intent === 'friends'
@@ -662,6 +641,33 @@ function QuizInner() {
   const q = QUESTIONS[currentQ]
   const progress = (currentQ / QUESTIONS.length) * 100
   const MAX_SCORE = 8 // HEXACO trimmed to 2 questions/dim × 4 pts
+
+  if (profileLoadState !== 'ready') {
+    return (
+      <>
+        <Nav />
+        <div className={styles.screen}>
+          <div className={styles.introWrap}>
+            {profileLoadState === 'loading' ? (
+              <p role="status" className={styles.introLede}>Loading your quiz…</p>
+            ) : (
+              <>
+                <div role="alert">
+                  <h1 className={styles.introH1}>Couldn&apos;t load your profile.</h1>
+                  <p className={styles.introLede}>Check your connection and try again. Your saved profile hasn&apos;t changed.</p>
+                </div>
+                <button className="btn-primary" onClick={() => {
+                  setProfileLoadState('loading')
+                  setProfileLoadAttempt((attempt) => attempt + 1)
+                }}>Retry loading quiz</button>
+                <a className="btn-ghost" href="/hub">Back to Hub</a>
+              </>
+            )}
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
