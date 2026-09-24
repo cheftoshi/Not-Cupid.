@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const EVENTS = new Set([
   'love_dashboard_open', 'roster_view', 'profile_open', 'pick_attempt',
   'compatibility_read_requested', 'compatibility_read_paywall',
-  'pick_failed', 'no_suitable_choice', 'mutual_chat_open', 'coach_requested',
+  'pick_failed', 'no_suitable_choice', 'roster_feedback', 'mutual_chat_open', 'coach_requested',
   'push_prompt_shown', 'push_enabled', 'push_dismissed',
 ]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

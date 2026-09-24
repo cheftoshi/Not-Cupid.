@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/admin';
 import { embeddingShadowEnabled } from '@/lib/embedding-shadow';
 import { supabaseAdmin } from '@/lib/supabase';
+import { fetchAllSupabaseRows } from '@/lib/supabase-pagination';
+import { summarizeShadowHealth } from '@/lib/shadow-health';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +14,7 @@ export async function GET(req: NextRequest) {
   const days = Number.isFinite(requestedDays) ? Math.max(1, Math.min(Math.round(requestedDays), 365)) : 30;
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
 
-  const [outcomes, retention, shadow, coverage, readiness, configuration, recentEvaluations, matchingRollouts, matchingSummary, notificationOutbox] = await Promise.all([
+  const [outcomes, retention, shadow, coverage, readiness, configuration, recentEvaluations, matchingRollouts, matchingSummary, notificationOutbox, shadowJobs] = await Promise.all([
     supabaseAdmin.rpc('connection_outcome_summary', { p_since: since }),
     supabaseAdmin.rpc('connection_retention_cohorts', { p_days: Math.max(90, days) }),
     supabaseAdmin.rpc('embedding_shadow_summary', { p_since: since }),
@@ -32,9 +34,14 @@ export async function GET(req: NextRequest) {
       .order('feature_key'),
     supabaseAdmin.rpc('matching_rollout_summary', { p_since: since }),
     supabaseAdmin.rpc('notification_outbox_health'),
+    fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('embedding_shadow_jobs')
+      .select('status,result_code,created_at,finished_at,available_at,lease_until')
+      .order('created_at').order('id').range(from, to))
+      .then(data => ({ data, error: null as { code: string; message: string } | null }))
+      .catch(() => ({ data: [], error: { code: 'shadow_jobs_unavailable', message: 'Shadow queue diagnostics unavailable' } })),
   ]);
 
-  const errors = [outcomes.error, retention.error, shadow.error, coverage.error, readiness.error, configuration.error, recentEvaluations.error, matchingRollouts.error, matchingSummary.error, notificationOutbox.error]
+  const errors = [outcomes.error, retention.error, shadow.error, coverage.error, readiness.error, configuration.error, recentEvaluations.error, matchingRollouts.error, matchingSummary.error, notificationOutbox.error, shadowJobs.error]
     .filter(Boolean)
     .map((error: any) => ({ code: error.code || 'unknown', message: error.message || 'unknown' }));
 
@@ -59,7 +66,12 @@ export async function GET(req: NextRequest) {
       maintenanceLimitPerRun: 25,
       scheduledBatchSize: 10,
       scheduleUtc: '35 8 * * *',
+      shadowWorkerScheduleUtc: '*/5 * * * *',
     },
+    shadowHealth: summarizeShadowHealth({
+      enabled: embeddingShadowEnabled(), readyUsers: coverageRow?.ready_real_users ?? null,
+      jobs: shadowJobs.data, available: !shadowJobs.error && !coverage.error,
+    }),
     readiness: readinessRow,
     configuration: configuration.data,
     recentEvaluations: recentEvaluations.data ?? [],

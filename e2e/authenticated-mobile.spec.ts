@@ -145,6 +145,63 @@ test.describe('authenticated test-realm mobile path', () => {
     expect(errors).toEqual([]);
   });
 
+  test('confirmed plan interest opens chat, retries loading, and keeps starter text unsent', async ({ page }) => {
+    const id = '00000000-0000-4000-8000-000000000141';
+    const plan = { id, title: 'QA walk', kind: 'event', authorName: 'QA Host', eligible: true,
+      created_at: new Date().toISOString(), happens_at: new Date(Date.now() + 86400000).toISOString(),
+      isMine: false, myResponse: null, responses: { yes: 0, maybe: 0, no: 0 } };
+    let joined = false, recovered = false, sends = 0;
+    await page.route('**/api/friend/activities', route => route.fulfill({ json: { activities: [{ ...plan, myResponse: joined ? 'yes' : null }] } }));
+    await page.route(`**/api/friend/activities/${id}/rsvp`, route => {
+      const response = route.request().postDataJSON().response;
+      joined = response === 'yes';
+      return route.fulfill({ json: { joined: true, count: 1, myResponse: response, responses: { yes: joined ? 1 : 0, maybe: joined ? 0 : 1, no: 0 } } });
+    });
+    await page.route(`**/api/friend/activities/${id}/comments`, route => {
+      if (route.request().method() === 'POST') { sends++; return route.fulfill({ status: 503, json: {} }); }
+      return route.fulfill({ status: recovered ? 200 : 503, json: recovered ? { comments: [] } : {} });
+    });
+    await page.goto('/friends?view=scene');
+    await page.getByRole('button', { name: 'I agree — let me in →' }).click();
+    const card = page.locator(`#scene-plan-${id}`);
+    await card.getByRole('button', { name: /save/ }).click();
+    await expect(card.getByPlaceholder('message the plan…')).toHaveCount(0);
+    await card.getByRole('button', { name: /i’m interested/ }).click();
+    await expect(card.getByRole('alert')).toBeVisible();
+    await expect(card.getByText('no messages yet — ask the organizer anything.')).toHaveCount(0);
+    recovered = true;
+    await card.getByRole('button', { name: 'Retry conversation' }).click();
+    await expect(card.getByText('no messages yet — ask the organizer anything.')).toBeVisible();
+    await card.getByRole('button', { name: 'Add a conversation starter' }).click();
+    const input = card.getByPlaceholder('message the plan…');
+    await expect(input).toHaveValue('Hi! Is this plan still happening, and where should we meet?');
+    expect(sends).toBe(0);
+    await card.getByRole('button', { name: 'send', exact: true }).click();
+    await expect(input).toHaveValue('Hi! Is this plan still happening, and where should we meet?');
+    expect(sends).toBe(1);
+  });
+
+  test('Love feedback is optional, explicit, and does not change preferences', async ({ page }) => {
+    // WebKit's intercepted Blob beacon may omit postData; exercise the real
+    // fetch fallback so this assertion can inspect the structured payload.
+    await page.addInitScript(() => { navigator.sendBeacon = () => false; });
+    const events: any[] = [];
+    await page.route('**/api/match/roster', route => route.fulfill({ json: { roster: [
+      { id: '00000000-0000-4000-8000-000000000151', name: 'QA Option', age: 30, score: 70 },
+    ], includedPicksRemaining: 3 } }));
+    await page.route('**/api/love/events', route => { events.push(route.request().postDataJSON()); return route.fulfill({ json: { ok: true } }); });
+    await page.goto('/dashboard');
+    await page.getByRole('button', { name: 'none of these feel right today' }).click();
+    const feedback = page.getByRole('region', { name: 'Roster feedback' });
+    await feedback.getByRole('button', { name: 'More shared interests' }).click();
+    await expect(feedback.getByRole('status')).toContainText('unchanged');
+    await expect.poll(() => events.filter(e => e.eventName === 'no_suitable_choice').length).toBe(1);
+    await expect.poll(() => events.filter(e => e.eventName === 'roster_feedback').length).toBe(1);
+    expect(events.find(e => e.eventName === 'roster_feedback').metadata.reason).toBe('interests');
+    await expect(feedback.getByRole('button', { name: 'More shared interests' })).toBeDisabled();
+    await expect(feedback.getByRole('link', { name: 'Review my preferences' })).toHaveAttribute('href', '/profile');
+  });
+
   test('a stale Love choice closes its preview and another included choice remains usable', async ({ page }) => {
     const candidates = [
       { id: '00000000-0000-4000-8000-000000000121', name: 'QAFirst', age: 30, score: 75 },

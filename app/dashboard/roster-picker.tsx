@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchWithTimeout, parseResponse } from '@/lib/fetch-helpers';
+import { fetchWithTimeout, fetchJsonWithTimeout, parseResponse } from '@/lib/fetch-helpers';
 import { trackLoveEvent } from '@/lib/love-events-client';
 import { SkeletonStyles, SkeletonCard } from '@/components/skeleton';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
@@ -80,6 +80,8 @@ export default function RosterPicker({
   // (no hard reload; router.refresh() brings the new chat in behind it).
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [choiceFeedback, setChoiceFeedback] = useState(false);
+  const [choiceReason, setChoiceReason] = useState<string | null>(null);
   const [ghosted, setGhosted] = useState(false);
   const [hardLocked, setHardLocked] = useState(false);
   const [atCapacity, setAtCapacity] = useState(false);
@@ -150,8 +152,7 @@ export default function RosterPicker({
     setRefreshing(true);
     setLoadError(false);
     try {
-      const res = await fetchWithTimeout('/api/match/roster', {}, 15_000);
-      const data = await parseResponse<any>(res);
+      const { response: res, data } = await fetchJsonWithTimeout('/api/match/roster', { cache: 'no-store' }, 15_000);
       if (!res.ok) throw new Error(data.error || 'Roster unavailable');
       if (!Array.isArray(data.roster)) throw new Error('Invalid roster response');
       setGhosted(!!data.ghosted);
@@ -610,14 +611,33 @@ export default function RosterPicker({
         <button
           type="button"
           onClick={() => {
-            trackLoveEvent('no_suitable_choice', { metadata: { candidate_count: roster.length } });
-            setNotice('Got it — no forced pick. Your roster will check for fresh compatible people at the next rotation.');
+            if (!choiceFeedback) trackLoveEvent('no_suitable_choice', { metadata: { candidate_count: roster.length } });
+            setChoiceFeedback(true);
           }}
           style={{ display: 'block', margin: '0.4rem auto 0', minHeight: 44, padding: '0.55rem 0.9rem', border: '1px solid var(--h-border)', borderRadius: 999, background: 'var(--h-surface)', color: 'var(--h-text-dim)', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}
         >
           none of these feel right today
         </button>
       )}
+
+      {choiceFeedback && <section aria-label="Roster feedback" style={{ padding: '1rem', lineHeight: 1.6 }}>
+        <p>No pressure to choose. What would help? This is optional and does not change your preferences.</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[
+            ['distance', 'Closer to me'], ['interests', 'More shared interests'],
+            ['intent', 'Better-aligned intentions'], ['repeated', 'Different options'],
+            ['not_ready', 'Not ready to choose'], ['prefer_not_to_say', 'Prefer not to say'],
+          ].map(([reason, label]) => <button key={reason} type="button" disabled={!!choiceReason}
+            style={{ minHeight: 44, padding: '0.5rem 0.8rem' }} onClick={() => {
+              if (choiceReason) return;
+              setChoiceReason(reason);
+              trackLoveEvent('roster_feedback', { metadata: { candidate_count: roster.length, reason } });
+            }}>{label}</button>)}
+        </div>
+        {choiceReason && <p role="status">Thanks. Your preferences and current choices are unchanged.</p>}
+        <p><a href="/profile">Review my preferences</a> · {rotationLabel || 'Your roster checks for fresh options every 24 hours.'}</p>
+        <p>A refresh cannot guarantee new people. We only show options that meet both people’s requirements.</p>
+      </section>}
 
       <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
         checks for fresh options every 24h · shown people cool down for 7 days

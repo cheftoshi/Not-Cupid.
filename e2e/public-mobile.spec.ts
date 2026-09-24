@@ -3,6 +3,56 @@ import AxeBuilder from '@axe-core/playwright';
 
 const routes = ['/', '/login', '/about', '/privacy', '/safety', '/faq', '/dating-experiment'];
 
+test.describe('login recovery without delivering email', () => {
+  test.use({ serviceWorkers: 'block' });
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'No live API calls in this test' } }));
+  });
+  for (const failure of ['network', 'invalid-body', 'timeout']) {
+    test(`code delivery ${failure} preserves email and allows manual retry`, async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      let calls = 0;
+      await page.route('**/api/send-otp', async route => {
+        calls++;
+        if (calls > 1) return route.fulfill({ json: { success: true } });
+        if (failure === 'network') return route.abort('internetdisconnected');
+        if (failure === 'invalid-body') return route.fulfill({ body: 'null', contentType: 'application/json' });
+        await new Promise(resolve => setTimeout(resolve, 13_000));
+        await route.fulfill({ json: { success: true } }).catch(() => {});
+      });
+      await page.goto('/login?next=%2Fdashboard');
+      await page.getByLabel('Email', { exact: true }).fill('qa@example.com');
+      await page.getByRole('button', { name: /send code/ }).click();
+      await expect(page.getByRole('alert').filter({ hasText: /confirm delivery/ })).toBeVisible({ timeout: 16_000 });
+      await expect(page.getByLabel('Email', { exact: true })).toHaveValue('qa@example.com');
+      expect(calls).toBe(1);
+      await page.getByRole('button', { name: /send code/ }).click();
+      await expect(page.getByLabel('Code for qa@example.com')).toBeVisible();
+      expect(calls).toBe(2);
+      expect(errors).toEqual([]);
+    });
+  }
+  test('verification recovers without losing the code or destination', async ({ page }) => {
+    let calls = 0;
+    await page.route('**/api/verify-otp', route => {
+      calls++;
+      return calls === 1 ? route.abort('internetdisconnected') : route.fulfill({ json: { redirect: '/profile', returning: true } });
+    });
+    // A public same-origin target avoids authenticating any real user.
+    await page.goto('/login?next=%2Fabout');
+    await page.getByLabel('Email', { exact: true }).fill('qa@example.com');
+    await page.getByRole('button', { name: /Already have a code/ }).click();
+    await page.getByLabel('Code for qa@example.com').fill('123456');
+    await page.getByRole('button', { name: /verify/ }).click();
+    await expect(page.getByRole('alert').filter({ hasText: /confirm sign-in/ })).toBeVisible();
+    await expect(page.getByLabel('Code for qa@example.com')).toHaveValue('123456');
+    await page.getByRole('button', { name: /verify/ }).click();
+    await expect(page).toHaveURL(/\/about/);
+    expect(calls).toBe(2);
+  });
+});
+
 test.describe('quiz profile recovery without real accounts or writes', () => {
   test.use({ serviceWorkers: 'block' });
   test.beforeEach(async ({ page }) => {

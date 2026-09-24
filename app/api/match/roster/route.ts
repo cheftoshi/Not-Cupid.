@@ -76,7 +76,6 @@ export async function composeLoveRosterForUser(
   // A scheduled verification does not request pick access, so it cannot start
   // a person's 24-hour included-pick clock before they actually return. Keep
   // this after expiry cleanup because a returned included pick changes access.
-  const pickAccess = options.interactive === false ? null : await lovePickAccessFor(user);
   const livePartnerIds = new Set<string>(
     myLive.map((m: any) => (m.user_1_id === user.id ? m.user_2_id : m.user_1_id))
   );
@@ -126,7 +125,7 @@ export async function composeLoveRosterForUser(
     q = (user as any).is_test === true ? q.eq('is_test', true) : q.not('is_test', 'is', true);
     return q.lte('ignored_picks', MAX_IGNORED_PICKS);
   };
-  const [initialPool, historyResult, priorMatchesResult, signalPreferences, connectedFriendIds] = await Promise.all([
+  const [initialPool, historyResult, priorMatchesResult, signalPreferences, connectedFriendIds, pickAccess] = await Promise.all([
     buildPool(),
     supabaseAdmin
       .from('match_history')
@@ -145,9 +144,13 @@ export async function composeLoveRosterForUser(
     features.cross_intent_bridge.enabled && hasCrossIntentBridgeConsent(user)
       ? loadConnectedFriendIds(user)
       : Promise.resolve(new Set<string>()),
+    // Expiry cleanup has finished; pick access and candidate discovery are now
+    // independent. Never cache balances or skip eligibility to save latency.
+    options.interactive === false ? Promise.resolve(null) : lovePickAccessFor(user),
   ]);
   const { data: poolRows, error: poolErr } = initialPool;
   if (poolErr) throw new Error(`love_roster_pool_${poolErr.code || 'query_failed'}`);
+  if (historyResult.error || priorMatchesResult.error) throw new Error('love_roster_history_unavailable');
   let pool = poolRows ?? [];
 
   // Wait-time decay input (same derivation as /api/match).
@@ -185,8 +188,8 @@ export async function composeLoveRosterForUser(
     const poolIds = freshPool.map((p: any) => p.id);
     const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
     const [
-      { data: m1 },
-      { data: m2 },
+      { data: m1, error: capacityError1 },
+      { data: m2, error: capacityError2 },
       { data: activeSessions },
       { data: recentExposures, error: exposureErr },
       { data: outcomeRows, error: outcomeErr },
@@ -213,6 +216,7 @@ export async function composeLoveRosterForUser(
         p_since: since,
       }),
     ]);
+    if (capacityError1 || capacityError2) throw new Error('love_roster_capacity_unavailable');
     const byId = new Map<string, any>();
     for (const m of [...(m1 ?? []), ...(m2 ?? [])]) byId.set(m.id, m);
     const poolSet = new Set(poolIds);

@@ -9,6 +9,7 @@ export type LoveClientEvent =
   | 'pick_attempt'
   | 'pick_failed'
   | 'no_suitable_choice'
+  | 'roster_feedback'
   | 'mutual_chat_open'
   | 'coach_requested'
   | 'push_prompt_shown'

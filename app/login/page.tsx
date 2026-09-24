@@ -1,20 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
 import Wordmark from '@/components/wordmark';
 import { suggestEmailCorrection } from '@/lib/email-typos';
-import { parseResponse } from '@/lib/fetch-helpers';
+import { requestLogin, safeLoginPath, recordLoginRecovery } from '@/lib/login-request';
 import { withReturningUserWelcome } from '@/lib/returning-user';
-
-function safeNextPath(raw: string | null): string | null {
-  if (!raw) return null;
-  if (!raw.startsWith('/')) return null;
-  if (raw.startsWith('//')) return null;
-  return raw;
-}
 
 export default function LoginPage() {
   return <LoginInner />;
@@ -24,7 +17,7 @@ function LoginInner() {
   const router = useRouter();
   const [nextPath, setNextPath] = useState<string | null>(null);
   useEffect(() => {
-    setNextPath(safeNextPath(new URLSearchParams(window.location.search).get('next')));
+    setNextPath(safeLoginPath(new URLSearchParams(window.location.search).get('next')));
   }, []);
   const experimentNext = nextPath === '/dating-experiment';
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -33,6 +26,13 @@ function LoginInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const pending = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const cancel = () => pending.current?.abort();
+    window.addEventListener('pagehide', cancel);
+    window.addEventListener('offline', cancel);
+    return () => { cancel(); window.removeEventListener('pagehide', cancel); window.removeEventListener('offline', cancel); };
+  }, []);
 
   // Check for email typos as user types
   useEffect(() => {
@@ -45,41 +45,36 @@ function LoginInner() {
 
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
+    if (pending.current) return;
+    const controller = new AbortController();
+    pending.current = controller;
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
-      const data = await parseResponse<any>(res);
-      if (!res.ok) throw new Error(data.error || 'Could not send code');
+      const data = await requestLogin('send', { email: email.trim().toLowerCase() }, { signal: controller.signal });
+      if (!data.ok) { setError(data.error); recordLoginRecovery('send', data.code); return; }
       setStep('code');
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
+      pending.current = null;
       setLoading(false);
     }
   }
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
+    if (pending.current) return;
+    const controller = new AbortController();
+    pending.current = controller;
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          code: code.trim(),
-        }),
-      });
-      const data = await parseResponse<any>(res);
+      const data = await requestLogin('verify', { email: email.trim().toLowerCase(), code: code.trim() }, { signal: controller.signal });
+      if (!data.ok) { setError(data.error); recordLoginRecovery('verify', data.code); return; }
 
       // Happy path: new verify-otp returns 200 with redirect (handles both /profile and /quiz)
-      if (res.ok && data.redirect) {
+      if (data.redirect) {
         const welcomePath = (path: string) => data.returning ? withReturningUserWelcome(path) : path;
         // Prefer ?next= if the user came from a gated page (e.g. /admin) and has an account
         if (nextPath && !data.needsQuiz) {
@@ -94,16 +89,11 @@ function LoginInner() {
         return;
       }
 
-      // Legacy path: old verify-otp returned 404 + needsQuiz
-      if (data.needsQuiz) {
-        router.push(experimentNext ? '/quiz?next=experiment' : nextPath?.startsWith('/friends') ? '/quiz?next=friends' : '/quiz');
-        return;
-      }
-
-      setError(data.error || 'invalid code');
+      setError('Could not confirm sign-in. Please try again.');
     } catch (err) {
       setError('something went wrong');
     } finally {
+      pending.current = null;
       setLoading(false);
     }
   }
@@ -132,8 +122,10 @@ function LoginInner() {
         {step === 'email' ? (
           <form onSubmit={handleSendCode} className={styles.form}>
             <div className={styles.field}>
-              <label className={styles.label}>Email</label>
+              <label htmlFor="login-email" className={styles.label}>Email</label>
               <input
+                id="login-email"
+                autoComplete="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -152,16 +144,19 @@ function LoginInner() {
                 </div>
               )}
             </div>
-            {error && <div className={styles.error}>{error}</div>}
+            {error && <div role="alert" className={styles.error}>{error}</div>}
             <button type="submit" disabled={loading || !email} className={styles.button}>
               {loading ? 'sending...' : 'send code →'}
             </button>
+            <button type="button" disabled={loading || !email.trim()} className={styles.linkButton} onClick={() => { setStep('code'); setError(''); }}>Already have a code? Enter it</button>
           </form>
         ) : (
           <form onSubmit={handleVerify} className={styles.form}>
             <div className={styles.field}>
-              <label className={styles.label}>Code sent to {email}</label>
+              <label htmlFor="login-code" className={styles.label}>Code for {email}</label>
               <input
+                id="login-code"
+                autoComplete="one-time-code"
                 type="text"
                 inputMode="numeric"
                 value={code}
@@ -173,12 +168,13 @@ function LoginInner() {
                 className={`${styles.input} ${styles.codeInput}`}
               />
             </div>
-            {error && <div className={styles.error}>{error}</div>}
+            {error && <div role="alert" className={styles.error}>{error}</div>}
             <button type="submit" disabled={loading || code.length !== 6} className={styles.button}>
               {loading ? 'verifying...' : 'verify →'}
             </button>
             <button
               type="button"
+              disabled={loading}
               onClick={() => {
                 setStep('email');
                 setCode('');

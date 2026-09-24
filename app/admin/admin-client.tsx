@@ -185,6 +185,14 @@ function ConnectionIntelligenceAdmin() {
         <div><b>Review gate:</b> {reviewReady ? 'ready for human review' : blockers.length ? blockers.join(' · ').replaceAll('_', ' ') : 'collecting evidence'}</div>
         <div><b>Kill switch:</b> {gate.kill_switch === false ? 'off' : 'on'} · <b>configured allocation:</b> {gate.live_allocation_percent ?? 0}%</div>
         <div><b>Maintenance:</b> {operating.scheduledBatchSize ?? 10} consented users/day · maximum {operating.maintenanceLimitPerRun ?? 25}/run</div>
+        {snapshot.shadowHealth && <>
+          <div><b>Shadow diagnosis:</b> {snapshot.shadowHealth.diagnosis.replaceAll('_', ' ')}</div>
+          <div><b>Worker schedule:</b> every five minutes · <b>overdue jobs:</b> {snapshot.shadowHealth.overdue}</div>
+          <div><b>Last completed job:</b> {snapshot.shadowHealth.lastFinishedAt ? new Date(snapshot.shadowHealth.lastFinishedAt).toLocaleString() : 'not observed'}</div>
+          <div><b>Job outcomes:</b> {Object.entries(snapshot.shadowHealth.statuses || {}).map(([key, count]) => `${key}: ${count}`).join(' · ') || 'none observed'}</div>
+          <div><b>Skip/failure reasons:</b> {Object.entries(snapshot.shadowHealth.reasons || {}).map(([key, count]) => `${key.replaceAll('_', ' ')}: ${count}`).join(' · ') || 'none recorded'}</div>
+          <div>{snapshot.shadowHealth.note}</div>
+        </>}
       </div>
 
       {(snapshot.shadow || []).length > 0 && (
@@ -669,6 +677,7 @@ export default function AdminClient() {
                       <span className={s.chip}>INP p75 <b>{data.appExperience.performance.inpP75Ms ?? '—'}ms</b></span>
                       <span className={s.chip}>CLS p75 <b>{data.appExperience.performance.clsP75 ?? '—'}</b></span>
                       <span className={`${s.chip} ${data.appExperience.performance.clientErrors ? s.chipRed : ''}`}>Current release errors <b>{data.appExperience.performance.clientErrors}</b></span>
+                      <span className={s.chip}>Handled sign-in failures/cancellations · 24h <b>{data.appExperience.performance.loginRecoveries24h ?? 0}</b></span>
                       <span className={`${s.chip} ${data.appExperience.performance.clientErrorSessions ? s.chipRed : ''}`}>Current affected sessions <b>{data.appExperience.performance.clientErrorSessions ?? 0}</b></span>
                       <span className={s.chip}>Prior-release errors in 24h <b>{data.appExperience.performance.clientErrors24h ?? 0}</b></span>
                     </div>
@@ -990,6 +999,11 @@ export default function AdminClient() {
                 <span className={s.chip}>Signal creators <b>{data.friend.intentCreators30d ?? 0}</b></span>
                 <span className={s.chip}>Signal joiners <b>{data.friend.intentJoiners30d ?? 0}</b></span>
                 <span className={s.chip}>Plan RSVPs <b>{data.friend.planRsvps30d ?? 0}</b></span>
+                {data.friend.planConversations30d && <>
+                  <span className={s.chip}>Plans with participant messages <b>{data.friend.planConversations30d.participantThreads}</b></span>
+                  <span className={s.chip}>Plans with organizer replies <b>{data.friend.planConversations30d.organizerReplies}</b></span>
+                  <span className={s.chip}>Plans without organizer replies <b>{data.friend.planConversations30d.awaitingOrganizer}</b></span>
+                </>}
                 <span className={s.chip}>Community opens <b>{data.friend.communityOpeners30d ?? 0}</b></span>
                 <span className={s.chip}>Clubs <b>{data.friend.clubs ?? 0}</b></span>
                 <span className={s.chip}>Communities <b>{data.friend.communities ?? 0}</b></span>

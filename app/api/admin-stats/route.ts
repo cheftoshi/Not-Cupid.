@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getCurrentAdmin } from '@/lib/admin'
+import { getCurrentAdmin, getAdminEmails } from '@/lib/admin'
+import { summarizeFriendPlanConversations } from '@/lib/friend-plan-funnel'
 import { LOVE_RELAUNCH_CAMPAIGN } from '@/lib/love-relaunch'
 import { ELIGIBLE_READY_REMINDER_CAMPAIGN } from '@/lib/eligible-ready-reminder'
 import { experimentProfileReadiness } from '@/lib/experiment-profile'
@@ -172,6 +173,7 @@ export async function GET(req: NextRequest) {
         release: currentRelease,
         clientErrors: currentReleaseErrors.length,
         clientErrors24h: recentClientErrors.length,
+        loginRecoveries24h: interaction('login_recovery'),
         clientErrorSessions: new Set(currentReleaseErrors.map((row: any) => row.session_id).filter(Boolean)).size,
         recentErrorGroups,
       },
@@ -211,7 +213,7 @@ export async function GET(req: NextRequest) {
     try {
       const liveUsers = (users ?? []).filter((u: any) => !u.deleted_at)
       const optedIn = liveUsers.filter((u: any) => u.friend_opted_in_at)
-      const [conns, circleMembers, acts, intentRows, actionRows, tripRows] = await Promise.all([
+      const [conns, circleMembers, acts, intentRows, actionRows, tripRows, planComments] = await Promise.all([
         fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_connections')
           .select('id, status, match_metro, match_context, match_expires_at')
           .order('id', { ascending: true }).range(from, to)),
@@ -219,7 +221,7 @@ export async function GET(req: NextRequest) {
           .select('circle_id, user_id').is('left_at', null)
           .order('user_id', { ascending: true }).order('circle_id', { ascending: true }).range(from, to)),
         fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_activities')
-          .select('id, kind').order('id', { ascending: true }).range(from, to)),
+          .select('id, kind, author_id, is_test').order('id', { ascending: true }).range(from, to)),
         fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_intents')
           .select('id, user_id, status, expires_at').order('id', { ascending: true }).range(from, to)),
         fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_action_events')
@@ -228,6 +230,9 @@ export async function GET(req: NextRequest) {
         fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_trips')
           .select('id, user_id, destination_metro, starts_on, ends_on, status')
           .order('id', { ascending: true }).range(from, to)),
+        fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_activity_comments')
+          .select('activity_id,user_id,created_at').gte('created_at', thirtyDaysAgo)
+          .order('created_at').order('id').range(from, to)),
       ])
       const { count: fMsgCount } = await supabaseAdmin.from('friend_messages').select('id', { count: 'exact', head: true })
       const { count: unlockCount } = await supabaseAdmin.from('friend_chat_unlocks').select('user_id', { count: 'exact', head: true })
@@ -253,6 +258,8 @@ export async function GET(req: NextRequest) {
         connection.status !== 'declined' && Array.isArray(connection.match_context?.travelers) && connection.match_context.travelers.length > 0
       ).length
       friend = {
+        planConversations30d: summarizeFriendPlanConversations(acts, planComments,
+          new Set(liveUsers.filter((u: any) => !u.is_test && !getAdminEmails().includes(String(u.email || '').trim().toLowerCase())).map((u: any) => u.id))),
         optedIn: optedIn.length,
         matchRounds: friendPaidPacks,
         chatUnlocks: friendChatUnlocks,

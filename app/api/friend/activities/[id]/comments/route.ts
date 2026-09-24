@@ -46,7 +46,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: newestComments, error: commentsError } = await supabaseAdmin
     .from('friend_activity_comments')
-    .select('id, user_id, body, created_at')
+    .select('id, user_id, body, created_at, client_id')
     .eq('activity_id', id)
     .order('created_at', { ascending: false })
     .limit(200);
@@ -68,7 +68,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json({
     comments: (comments ?? []).map((c) => {
       const u: any = byId.get(c.user_id) || {};
-      return { id: c.id, body: c.body, created_at: c.created_at, name: u.name, photo_url: u.photo_url, isMe: c.user_id === user.id };
+      return { id: c.id, clientId: c.user_id === user.id ? c.client_id : null, body: c.body, created_at: c.created_at, name: u.name, photo_url: u.photo_url, isMe: c.user_id === user.id };
     }),
     realtimeTopic: chatRealtimeTopic('friend-plan', id),
   });

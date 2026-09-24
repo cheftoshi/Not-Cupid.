@@ -13,7 +13,7 @@ import { FRIEND_ACTIVITIES } from '@/lib/friend-taxonomy';
 import FriendDiscoveryCard from './friend-discovery-card';
 import { useChatRealtime } from '@/lib/use-chat-realtime';
 import { reconcileMessages } from '@/lib/chat-recovery';
-import { fetchWithTimeout } from '@/lib/fetch-helpers';
+import { fetchWithTimeout, fetchJsonWithTimeout } from '@/lib/fetch-helpers';
 import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
@@ -640,17 +640,26 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
   const [cBusy, setCBusy] = useState(false);
   const [cCount, setCCount] = useState<number>(a.commentCount || 0);
   const [cErr, setCErr] = useState<string | null>(null);
+  const [cLoadError, setCLoadError] = useState<string | null>(null);
+  const [cLoaded, setCLoaded] = useState(false);
+  const commentsRequest = useRef(false);
   const [commentsRealtimeTopic, setCommentsRealtimeTopic] = useState<string | null>(null);
   const loadComments = useCallback(async () => {
+    if (commentsRequest.current) return;
+    commentsRequest.current = true;
     try {
-      const res = await fetch(`/api/friend/activities/${a.id}/comments`);
-      if (res.ok) {
-        const d = await res.json();
-        setComments(d.comments || []);
-        setCCount((d.comments || []).length);
-        setCommentsRealtimeTopic(d.realtimeTopic || null);
+      const { response: res, data: d } = await fetchJsonWithTimeout(`/api/friend/activities/${a.id}/comments`, { cache: 'no-store' });
+      if (!res.ok || !Array.isArray(d?.comments)) {
+        setCLoadError(res.status === 401 ? 'Sign in again to read this conversation.' : res.status === 403 ? 'Choose interested to join this plan chat.' : 'Could not load this conversation. Retry when connected.');
+        return;
       }
-    } catch { /* the next realtime event or open retries */ }
+      setComments(previous => reconcileMessages(previous, d.comments));
+      setCCount(d.comments.length);
+      setCommentsRealtimeTopic(d.realtimeTopic || null);
+      setCLoadError(null);
+      setCLoaded(true);
+    } catch { setCLoadError('Could not load this conversation. Your draft is safe. Check your connection and retry.'); }
+    finally { commentsRequest.current = false; }
   }, [a.id]);
   const commentsConnected = useChatRealtime(showC ? commentsRealtimeTopic : null, loadComments);
   useEffect(() => {
@@ -660,11 +669,12 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
   }, [showC, commentsConnected, loadComments]);
   function toggleComments() { const next = !showC; setShowC(next); if (next) { setCErr(null); loadComments(); } }
   useEffect(() => {
+    if (isEvent && !a.isMine && a.myResponse !== 'yes') { setShowC(false); return; }
     if (!autoOpenChat || showC) return;
     setShowC(true);
     setCErr(null);
     loadComments();
-  }, [autoOpenChat]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoOpenChat, a.myResponse]); // eslint-disable-line react-hooks/exhaustive-deps
   async function postComment() {
     const body = cText.trim(); if (!body || cBusy) return; setCBusy(true); setCText(''); setCErr(null);
     // optimistic — show it immediately so it never just "vanishes"
@@ -673,15 +683,13 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
     setComments((prev) => [...prev, { id: tmpId, body, isMe: true, name: 'you', pending: true }]);
     setCCount((n) => n + 1);
     try {
-      const res = await fetchWithTimeout(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: tmpId }) });
+      const { response: res, data: d } = await fetchJsonWithTimeout(`/api/friend/activities/${a.id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, client_id: tmpId }) });
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
         setComments((prev) => prev.filter((c) => c.id !== tmpId)); setCCount((n) => Math.max(0, n - 1));
-        setCErr(j.error || 'couldn’t post — try again.');
+        setCErr(d?.error || 'couldn’t post — try again.');
         setCText(current => current || body);
         return;
       }
-      const d = await res.json();
       if (!d.comment?.id) throw new Error('Missing comment confirmation');
       commentRetry.current = null;
       setComments(prev => [...prev.filter(c => c.id !== tmpId && c.id !== d.comment.id), d.comment]);
@@ -708,7 +716,8 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
   const commentsPanel = (
     <div className={s.activityComments}>
       <div className={s.activityCommentList}>
-        {comments.length === 0 && <div className={s.activityCommentEmpty}>{isEvent ? 'no messages yet — ask the organizer anything.' : 'no comments yet — say something.'}</div>}
+        {!cLoaded && !cLoadError && <div role="status">Loading conversation…</div>}
+        {cLoaded && !cLoadError && comments.length === 0 && <div className={s.activityCommentEmpty}>{isEvent ? 'no messages yet — ask the organizer anything.' : 'no comments yet — say something.'}</div>}
         {comments.map((c) => (
           <div key={c.id} className={s.activityCommentRow}>
             {c.photo_url
@@ -721,10 +730,18 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           </div>
         ))}
       </div>
+      {cLoadError && <div role="alert" className={s.activityCommentError}>
+        {cLoadError} <button type="button" onClick={() => void loadComments()}>Retry conversation</button>
+        <a href={`/login?next=${encodeURIComponent(`/friends?view=scene&plan=${a.id}`)}`}>Sign in</a>
+      </div>}
+      {isEvent && cLoaded && !cLoadError && comments.length === 0 && <button type="button" className={s.linkBtn}
+        onClick={() => setCText(current => current || (a.isMine ? 'Hi everyone! What time works for you?' : 'Hi! Is this plan still happening, and where should we meet?'))}>
+        Add a conversation starter
+      </button>}
       {cErr && <div className={s.activityCommentError}>{cErr}</div>}
       <div className={s.activityCommentComposer}>
         <input value={cText} onChange={(e) => setCText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder={isEvent ? 'message the plan…' : 'add a comment…'} className={s.activityCommentInput} />
-        <button onClick={postComment} disabled={cBusy || !cText.trim()} className={s.poppyBtn} style={{ opacity: cText.trim() ? 1 : 0.5, padding: '0.4rem 0.9rem', fontSize: '0.9rem' }}>{cBusy ? '…' : 'post'}</button>
+        <button onClick={postComment} disabled={cBusy || !cText.trim()} className={s.poppyBtn} style={{ opacity: cText.trim() ? 1 : 0.5, padding: '0.4rem 0.9rem', fontSize: '0.9rem' }}>{cBusy ? '…' : 'send'}</button>
       </div>
     </div>
   );
@@ -1574,19 +1591,20 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
     buzz();
     try {
-      const r = await fetch(`/api/friend/activities/${id}/rsvp`, {
+      const { response: r, data: d } = await fetchJsonWithTimeout(`/api/friend/activities/${id}/rsvp`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(response ? { response } : {}),
       });
       if (r.ok) {
-        const d = await r.json();
+        if (!d || typeof d.joined !== 'boolean') throw new Error('Missing interest confirmation');
         setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
-        if (d.joined) {
-          toast('Interest saved. Open plan chat to talk with the organizer.', 'success');
+        if (d.myResponse === 'yes') {
+          setView('scene');
+          setDeepLinkedPlan(id);
+          toast('Interest saved. Say hello in the plan chat.', 'success');
           promptForPush();
         }
       } else {
-        const d = await r.json().catch(() => ({} as any));
         if (d?.full) { toast('this plan is full — say “maybe” in case a spot opens', 'error'); await loadActs(); }
         else toast(d?.error || 'could not update that plan — try again', 'error');
       }

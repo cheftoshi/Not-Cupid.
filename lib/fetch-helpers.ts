@@ -35,6 +35,29 @@ export async function fetchWithTimeout(
   }
 }
 
+// Unlike fetchWithTimeout, this bounds consumption of a stalled body too.
+// Callers choose how to present errors; no write is automatically retried.
+export async function fetchJsonWithTimeout<T = any>(
+  input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 12_000,
+  request: typeof fetch = fetch,
+): Promise<{ response: Response; data: T }> {
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  init.signal?.addEventListener('abort', cancel, { once: true });
+  if (init.signal?.aborted) cancel();
+  const timer = setTimeout(cancel, timeoutMs);
+  try {
+    if (controller.signal.aborted) throw new Error('Request cancelled');
+    const response = await request(input, { ...init, signal: controller.signal });
+    const data = await response.json() as T;
+    if (controller.signal.aborted) throw new Error('Request cancelled');
+    return { response, data };
+  } finally {
+    clearTimeout(timer);
+    init.signal?.removeEventListener('abort', cancel);
+  }
+}
+
 function friendlyHttpError(status: number, text: string): string {
   if (status === 413) return 'request too large';
   if (status === 401) return 'not signed in';

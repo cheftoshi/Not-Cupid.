@@ -4,7 +4,7 @@ import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-const EVENTS = new Set(['web_vital', 'client_error', 'route_transition', 'api_timing']);
+const EVENTS = new Set(['web_vital', 'client_error', 'route_transition', 'api_timing', 'login_recovery']);
 const METRICS = new Set(['TTFB', 'FCP', 'LCP', 'FID', 'INP', 'CLS', 'roster_api']);
 const ERROR_KINDS = new Set(['runtime', 'promise', 'resource']);
 const ERROR_CODES = new Set(['abort', 'chunk_load', 'hydration', 'network', 'permission', 'resize_observer', 'script_error', 'syntax', 'type', 'unknown']);
@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
   const metadata: Record<string, string | number | boolean | null> = {
     release: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) || 'local',
   };
+  if (body.eventName === 'login_recovery') {
+    metadata.loginAction = ['send', 'verify'].includes(body.loginAction) ? body.loginAction : 'unknown';
+    metadata.recoveryCode = ['http', 'timeout', 'cancelled', 'network', 'invalid_response'].includes(body.recoveryCode) ? body.recoveryCode : 'unknown';
+  }
   if (body.eventName === 'web_vital' && metricName === 'CLS' && Array.isArray(body.layoutRegions)) {
     const allowed = new Set(['navigation', 'hub', 'hub-brief', 'hub-composer', 'love-roster', 'love-connections', 'friend', 'chat']);
     metadata.layoutRegions = [...new Set(body.layoutRegions.filter((region: unknown) => typeof region === 'string' && allowed.has(region)))].slice(0, 8).join(',');
