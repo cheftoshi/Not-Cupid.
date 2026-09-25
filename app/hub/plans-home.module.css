@@ -1,0 +1,43 @@
+.home { min-height: calc(100svh - var(--app-top-nav-height, 72px)); background: var(--h-bg); color: var(--h-text); padding: 24px max(16px, var(--app-safe-right, 0px)) calc(40px + var(--app-safe-bottom, 0px)) max(16px, var(--app-safe-left, 0px)); }
+.wrap { width: 100%; max-width: 760px; min-width: 0; margin: auto; overflow-wrap: anywhere; }
+.header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 20px; }
+.header h1 { font: 600 clamp(1.7rem, 5vw, 2.6rem)/1.12 'Playfair Display', Georgia, serif; margin: 8px 0; }
+.header p, .muted { color: var(--h-text-dim); line-height: 1.5; }
+.eyebrow { font: 600 .7rem/1.5 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .09em; }
+.actions, .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.filters { margin: 18px 0; }
+.home button, .button { min-height: 44px; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); font: inherit; padding: 10px 16px; cursor: pointer; text-decoration: none; }
+.home button:disabled { opacity: .6; cursor: default; }
+.home button:focus-visible, .home a:focus-visible, .home input:focus-visible, .home textarea:focus-visible, .home select:focus-visible { outline: 3px solid var(--h-accent); outline-offset: 3px; }
+.home .primary, .home button[aria-pressed=true] { background: var(--h-text); color: var(--h-surface); border-color: var(--h-text); }
+.grid { display: grid; gap: 16px; }
+.card, .form, .empty { background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 22px; padding: 20px; min-width: 0; }
+.card h2 { font: 600 1.35rem/1.3 'Playfair Display', Georgia, serif; margin: 14px 0 8px; }
+.card p { line-height: 1.55; white-space: pre-wrap; }
+.host { display: flex; align-items: center; gap: 10px; }
+.host img { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
+.badge { display: inline-block; font-size: .75rem; border-radius: 20px; padding: 5px 9px; background: var(--h-bg); margin: 10px 8px 0 0; }
+.details { color: var(--h-text-dim); font-size: .9rem; margin-bottom: 16px; line-height: 1.7; }
+.form { display: grid; gap: 14px; margin-bottom: 20px; }
+.form h2 { margin: 0; }
+.form label, .composer label { display: grid; gap: 7px; font-size: .9rem; }
+.home input, .home textarea, .home select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; border: 1px solid var(--h-border); border-radius: 10px; padding: 12px; background: var(--h-bg); color: var(--h-text); font: inherit; line-height: 1.4; font-size: 16px; }
+.home summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
+.home textarea { min-height: 80px; resize: vertical; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.error { padding: 12px; border: 1px solid #b54c38; border-radius: 12px; margin: 10px 0; }
+.chat { border-top: 1px solid var(--h-border); margin-top: 16px; padding-top: 16px; }
+.messages { max-height: 360px; overflow-y: auto; overscroll-behavior-y: auto; margin-bottom: 12px; }
+.message { background: var(--h-bg); border-radius: 12px; padding: 10px; margin: 8px 0; }
+.message p { margin: 4px 0; }
+.composer { display: grid; gap: 8px; }
+.link { color: var(--h-text); text-underline-offset: 3px; }
+@media (max-width: 420px) { .row { grid-template-columns: minmax(0, 1fr); } .card, .form, .empty { padding: 16px; } }
+
+/* Connection-first Home keeps the app's cream, blue, orange and dark tokens. */
+.wrap{max-width:1200px}.home{font-family:Inter,Arial,sans-serif}.home *{box-sizing:border-box}.header{margin:8px 0 28px}.header h1{font-size:clamp(30px,4vw,46px);font-weight:500;letter-spacing:-.025em}.home .primary{background:var(--blue-deep);border-color:var(--blue-deep);color:#fff}.home button[aria-pressed=true]{background:var(--h-surface-2);border-color:var(--h-accent);color:var(--h-accent)}.home a{color:var(--h-accent);text-underline-offset:4px}
+.highlights{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:36px}.highlights button{display:grid;gap:10px;text-align:left;padding:24px;border-radius:20px;background:var(--h-surface-2)}.highlights button+button{background:var(--h-surface-3)}.highlights strong{font:500 22px/1.35 'Playfair Display',Georgia,serif}.highlights small{color:var(--h-text-dim)}.columns{display:grid;grid-template-columns:minmax(0,1fr) 355px;gap:28px;align-items:start}.feed{min-width:0}.sectionHead{display:flex;justify-content:space-between;gap:16px;align-items:center}.sectionHead h2{font:500 28px/1.3 'Playfair Display',Georgia,serif;margin:4px 0 12px}.sectionHead a{font-size:12px}.filters{gap:6px}.filters button{font-size:13px;padding:9px 12px}.card h2{font-size:27px;font-weight:500;line-height:1.25}.cardStrip{display:flex;justify-content:space-between;gap:8px;padding:12px;margin:-4px 0 18px;border-radius:10px;background:var(--h-surface-3);font:600 10px/1.4 'DM Mono',monospace;text-transform:uppercase;color:var(--h-accent-2)}.host>div{display:grid;gap:4px}.host small{font-size:11px;color:var(--h-text-dim)}.place{display:grid;gap:4px;font-size:12px;margin:14px 0}.place span,.place small{color:var(--h-text-dim)}.profile{padding:14px;background:var(--h-surface-2);border-radius:12px;margin:10px 0}.profile img{width:56px;height:56px;object-fit:cover;border-radius:12px;float:left;margin:0 12px 8px 0}.profile p{font-size:13px;clear:both}.profile small{font-size:11px}.requests{margin-top:16px;border-top:1px solid var(--h-border)}.request{margin:12px 0;border-bottom:1px solid var(--h-border);padding-bottom:12px}.notice{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--h-surface-2);padding:12px;border-radius:12px}
+.home fieldset{min-width:0;border:0;margin:0}.home legend{font-size:13px;font-weight:600;margin-bottom:10px}.home .check{display:flex;align-items:center;gap:10px;min-height:44px}.home .check input{width:18px;height:18px;flex:none;accent-color:var(--h-accent)}.dateSetup,.locationFields{padding:16px!important;border:1px solid var(--h-border)!important;border-radius:14px;background:var(--h-surface-2);display:grid;gap:12px}.locationFields p{font-size:12px;margin:0}.home small{color:var(--h-text-dim)}.formDetails{display:grid;gap:14px}.locationFilters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:16px 0 10px}.locationFilters label{display:grid;gap:7px;font-size:13px}.locationFilters+small{font-size:11px;display:block}
+.sidebar{position:sticky;top:calc(var(--app-top-nav-height,72px) + 12px);background:var(--h-surface);border:1px solid var(--h-border);border-radius:20px;padding:18px;min-width:0;max-height:calc(100dvh - var(--app-top-nav-height,72px) - 24px);overflow-y:auto}.sidebar h2{font-size:23px}.sidebar .eyebrow{font-size:8px}.roomList{display:grid;gap:6px;max-height:160px;overflow-y:auto;margin-bottom:14px}.roomList button{display:grid;text-align:left;gap:3px;font-size:12px;min-width:0}.roomList small{font-size:10px}.roomTitle{border-top:1px solid var(--h-border);padding-top:14px}.roomTitle h3{font-size:14px;margin:0}.sidebar .form{padding:10px;margin-top:12px}.sidebar .messages{max-height:none;overflow:visible}.message{background:var(--h-surface-2)}.message p{font-size:13px}.composer{position:sticky;bottom:-18px;background:var(--h-surface);padding:12px 0 18px}.composer textarea{min-height:70px;max-height:180px}.footer{display:flex;align-items:center;flex-wrap:wrap;gap:18px;border-top:1px solid var(--h-border);margin-top:36px;padding-top:24px;font-size:12px}.mobileChat{display:none}
+@media(max-width:900px){.columns{display:block}.sidebar{display:none}.sidebar.sheetOpen{display:block;position:fixed;z-index:101;top:max(8px,var(--app-safe-top,0px));left:10px;right:10px;height:calc(var(--app-visual-viewport-height,100dvh) - 16px);max-height:calc(var(--app-visual-viewport-height,100dvh) - 16px);max-width:460px;margin-inline:auto;box-shadow:0 15px 60px #0004;overscroll-behavior-y:contain}.backdrop{position:fixed;inset:0;background:#0007;z-index:100}.home .mobileChat{display:block;position:fixed;right:16px;bottom:calc(16px + var(--app-safe-bottom,0px));background:var(--blue-deep);color:#fff;z-index:40;box-shadow:0 5px 22px #0002}.home{padding-bottom:100px}}
+@media(max-width:520px){.header h1{font-size:32px}.highlights{grid-template-columns:1fr;gap:12px}.highlights button{padding:18px}.card h2{font-size:25px}.header p{font-size:13px}.filters button{padding:8px 10px;font-size:12px}.sectionHead{flex-wrap:wrap}.locationFilters{grid-template-columns:1fr}.highlights strong{font-size:21px}}

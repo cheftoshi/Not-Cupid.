@@ -1,6 +1,6 @@
 # NotCupid — current project memory
 
-Last reconciled with the current application code on **September 6, 2026**.
+Last reconciled with the current application code on **September 24, 2026**.
 
 This file is a current-state handoff, not a chronological session log. Git history
 contains retired plans and earlier implementations. Do not reintroduce an older
@@ -159,12 +159,12 @@ supersede them.
   recommendation → two honest reasons → one action or dismissal → a small
   outcome check-in. Keep Love/Friend direct access; the concierge is a front
   door, never a gate.
-- The Hub is the focused, text-only AI front door through the consent-gated
-  `hub-concierge-openai-v3-2026-08-19` contract. It opens with a deterministic
-  live Connection Brief and can route a user to one validated Love, Friend,
-  plan, community, profile, or travel action drawn from live inventory. Do not
-  rebuild the old profile/activity/membership dashboard inside the Hub; those
-  surfaces remain directly available from the persistent navigation.
+- `/hub` is now the connection-first Home: real member-created invitations,
+  upcoming plans, and conversations. Default discovery follows selected lines;
+  exploring another filter does not enroll a user or infer romantic intent.
+  The existing focused, text-only AI coach remains at `/hub?view=coach` with
+  the consent-gated `hub-concierge-openai-v3-2026-08-19` contract. No imported
+  event listings or invented activity should fill an empty Home feed.
 - Hub conversation text stays on the current device. Only structured intent,
   recommendation, correction, and outcome metadata is persisted. Small
   connection memories may be stored only after a separate explicit user tap;
@@ -248,6 +248,19 @@ supersede them.
   community join, RSVP, or conversation—not passive page views.
 
 ### Monetization
+
+- Member-created date invitations are free, explicitly separate from Love
+  roster picks, paid entitlements, and Stripe. An adult user may request an
+  eligible local invitation; its host accepts exactly one guest. The separate
+  `connection_date_*` tables/RPC enforce two-person membership, realm and
+  report exclusions, and retry-safe messaging. Blind names/photos/bios and
+  date venues are withheld server-side until acceptance; the host always sees
+  their own venue. Do not reintroduce a payment gate to plan-based dates.
+- New friendship plan venues use `friend_plan_locations`: private venues must
+  remain NULL in the legacy public activity location column. Approximate
+  distance is between public neighborhood centroids, never live GPS or a
+  member's precise home location. Date-plan emails are not enabled; web push
+  is attempted for genuine requests, acceptance, cancellation, and messages.
 
 - A fourth or later distinct outgoing Love connection in the current roster is
   a one-time $0.99 bundled with that person's optional private AI/HEXACO

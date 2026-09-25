@@ -39,8 +39,69 @@ test.describe('authenticated test-realm mobile path', () => {
     });
   }
 
-  test('Hub keeps the composer reachable after focus and a short viewport', async ({ page }) => {
+  test('Home read APIs work against the migrated database in the isolated test realm', async ({ page }) => {
+    for(const path of ['/api/friend/activities?surface=home','/api/friend/activities?surface=home&scope=conversations','/api/date-plans?surface=home']) {
+      const response=await page.request.get(path);
+      expect(response.status(),path).toBe(200);
+      expect(Array.isArray((await response.json()).activities)).toBe(true);
+    }
+  });
+
+  test('Home creates a free blind date with a participant-only public venue', async ({ page }) => {
+    let posted: any;
+    await page.route('**/api/friend/activities?*', route => route.fulfill({ json: {activities:[],areas:['Back Bay','Cambridge'],origin:'Back Bay'} }));
+    await page.route('**/api/date-plans*', route => {
+      if(route.request().method()==='POST') {posted=route.request().postDataJSON();return route.fulfill({json:{ok:true,id:posted.client_id}});}
+      return route.fulfill({json:{activities:[]}});
+    });
     await page.goto('/hub');
+    await page.getByRole('button',{name:'＋ Invite someone',exact:true}).click();
+    const form=page.getByRole('form',{name:'Create an invitation'});
+    await form.getByLabel('Your invitation').fill('A coffee and a walk?');
+    await form.getByLabel('What kind of connection?').selectOption('date');
+    await form.getByLabel('Date style').selectOption('blind');
+    await form.getByLabel('Women',{exact:true}).check();
+    await form.getByRole('button',{name:'Add a public place'}).click();
+    await form.getByLabel('Public meeting place',{exact:true}).fill('QA café');
+    await form.getByLabel('This is a public place, not a home address.').check();
+    await form.getByRole('button',{name:'Create invitation',exact:true}).click();
+    await expect(page.getByRole('status').filter({hasText:'Your invitation is published.'})).toBeVisible();
+    expect(posted).toMatchObject({capacity:2,date_mode:'blind',genders:['f'],visibility:'participants',area:'Back Bay',location:'QA café'});
+    expect(posted.client_id).toMatch(/^[a-f0-9-]{36}$/);
+  });
+
+  test('Home accepts one free date request and opens a recoverable mobile conversation', async ({ page }) => {
+    const id='00000000-0000-4000-8000-000000000901';let accepted=false;const attempts:string[]=[];
+    const person={name:'QA Guest',age:30,gender:'f',photo:null,bio:'Coffee and walks',interests:['Walking']};
+    await page.route('**/api/friend/activities?*', route=>route.fulfill({json:{activities:[],areas:['Back Bay'],origin:'Back Bay'}}));
+    await page.route('**/api/date-plans?*',route=>route.fulfill({json:{activities:[{id,title:'QA coffee date',kind:'event',connectionKind:'date',dateMode:'blind',state:accepted?'confirmed':'open',area:'Back Bay',location:accepted?'QA café':null,locationVisibility:'participants',locationHidden:!accepted,capacity:2,isMine:true,eligible:false,canChat:accepted,myResponse:accepted?'yes':null,authorName:'You',authorProfile:person,audienceGender:['f'],responses:{yes:accepted?2:1,maybe:0,no:0},expires_at:'2099-01-01T00:00:00Z',partner:accepted?person:null,requests:accepted?[]:[{id:'00000000-0000-4000-8000-000000000902',profile:{...person,name:'A little mystery',bio:null}}]}]}}));
+    await page.route(`**/api/date-plans/${id}`,route=>{expect(route.request().postDataJSON().action).toBe('accept');accepted=true;return route.fulfill({json:{ok:true}});});
+    await page.route(`**/api/date-plans/${id}/messages`,route=>{
+      if(route.request().method()==='GET')return route.fulfill({json:{comments:[]}});
+      const body=route.request().postDataJSON();attempts.push(body.client_id);
+      return attempts.length===1?route.abort('connectionfailed'):route.fulfill({json:{comment:{id:'qa-date-message',body:body.body,isMe:true,name:'You',clientId:body.client_id}}});
+    });
+    await page.goto('/hub');
+    await page.getByRole('button',{name:'Dates',exact:true}).click();
+    await page.getByRole('button',{name:'Accept request',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'Your conversations'});
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText('QA café',{exact:true})).toBeVisible();
+    const input=dialog.getByLabel('Message the plan');await input.fill('See you soon');
+    await dialog.getByRole('button',{name:'Send message',exact:true}).click();
+    await expect(input).toHaveValue('See you soon');
+    await expect(dialog.getByRole('alert')).toContainText('Send not confirmed');
+    await dialog.getByRole('button',{name:'Send message',exact:true}).click();
+    await expect(input).toHaveValue('');expect(attempts[1]).toBe(attempts[0]);
+    await expect(dialog.getByText('See you soon',{exact:true})).toHaveCount(1);
+    await page.setViewportSize({width:390,height:440});
+    await input.fill('Draft stays here');await input.scrollIntoViewIfNeeded();await expect(input).toBeInViewport();
+    await dialog.getByRole('button',{name:'Close conversations'}).click();
+    await page.getByRole('button',{name:/^Conversations ·/}).click();await expect(input).toHaveValue('Draft stays here');
+  });
+
+  test('Hub keeps the composer reachable after focus and a short viewport', async ({ page }) => {
+    await page.goto('/hub?view=coach');
     const composer = page.getByPlaceholder('What do you want to do?');
     await composer.fill('A local plan');
     await page.setViewportSize({ width: 390, height: 440 });
@@ -56,7 +117,7 @@ test.describe('authenticated test-realm mobile path', () => {
     await page.route('**/api/concierge', route => route.fulfill({ json: route.request().method() === 'GET'
       ? { consented: true, memories: [] }
       : { recommendation: { message: 'Test-only suggestion', actions: [], reasons: [] } } }));
-    await page.goto('/hub');
+    await page.goto('/hub?view=coach');
     const input = page.getByPlaceholder('What do you want to do?');
     await input.fill('Find a quiet plan');
     // Abort the request like an interrupted connection, without contacting AI.

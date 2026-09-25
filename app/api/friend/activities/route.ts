@@ -4,6 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { metroOf } from '@/lib/quiz-data';
 import { friendLocationContext } from '@/lib/friend-location';
+import { hasFriendActivityHistory } from '@/lib/friend-activity-access';
+import { rateLimit } from '@/lib/rate-limit';
+import { planAreasForMetro, planAreaDistance } from '@/lib/neighborhoods';
+import { validatePlanLocation, visiblePlanVenue } from '@/lib/plan-location';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,36 +20,60 @@ export async function GET(req: NextRequest) {
 
   const area = req.nextUrl.searchParams.get('area');
   const category = req.nextUrl.searchParams.get('category');
+  const planId = req.nextUrl.searchParams.get('plan');
+  if (planId && !/^[0-9a-f-]{36}$/i.test(planId)) return NextResponse.json({ error: 'Invalid plan.' }, { status: 400 });
+  const retained = planId ? await hasFriendActivityHistory(user.id, planId) : false;
   const nowIso = new Date().toISOString();
 
   const meTest = (user as any).is_test === true;
   const locationContext = await friendLocationContext(user);
   const myMetro = locationContext.metro;
+  const areas = planAreasForMetro(myMetro);
+  const requestedOrigin = req.nextUrl.searchParams.get('near');
+  const origin = requestedOrigin && areas.includes(requestedOrigin) ? requestedOrigin : locationContext.area;
+  const conversations = req.nextUrl.searchParams.get('scope') === 'conversations';
+  const joinedIds = new Set<string>();
+  if (conversations) {
+    const membership = await supabaseAdmin.from('friend_activity_rsvps').select('activity_id').eq('user_id', user.id).eq('response', 'yes').limit(200);
+    if (membership.error) return NextResponse.json({ error: 'Could not load your conversations.' }, { status: 503 });
+    membership.data?.forEach(r => joinedIds.add(r.activity_id));
+  }
   let q = supabaseAdmin
     .from('friend_activities')
     .select('*')
     .eq('is_test', meTest)
-    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order('created_at', { ascending: false })
     .limit(120); // headroom for legacy rows whose metro is author-derived below
-  if (myMetro) q = q.or(`metro.eq.${myMetro},metro.is.null`);
+  if (planId) q = q.eq('id', planId);
+  else if (conversations) q = q.or(`author_id.eq.${user.id}${joinedIds.size ? `,id.in.(${[...joinedIds].join(',')})` : ''}`);
+  else q = q.or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+  if (myMetro && !retained && !conversations) q = q.or(`metro.eq.${myMetro},metro.is.null`);
+  if (req.nextUrl.searchParams.get('surface') === 'home') q = q.eq('kind', 'event');
   if (area) q = q.eq('area', area);
   if (category) q = q.eq('category', category);
-  const { data: rawActs } = await q;
+  const { data: rawActs, error: plansError } = await q;
+  if (plansError) return NextResponse.json({ error: 'Could not load plans. Please retry.' }, { status: 503 });
+  const { data: reports, error: reportsError } = await supabaseAdmin.from('user_reports')
+    .select('reporter_id,reported_id').or(`reporter_id.eq.${user.id},reported_id.eq.${user.id}`);
+  if (reportsError) return NextResponse.json({ error: 'Could not verify plan access.' }, { status: 503 });
+  const blocked = new Set((reports || []).map(r => r.reporter_id === user.id ? r.reported_id : r.reporter_id));
 
   // REALM SEGREGATION: real users only see real-authored activity, test only test.
   // The Scene is public WITHIN a realm — test dummies never surface in the real app
   // (and vice-versa). This also keeps the derived "around in {city}" people clean.
   const rawAuthorIds = Array.from(new Set((rawActs ?? []).map((a) => a.author_id)));
-  const { data: authors } = await supabaseAdmin
+  const { data: authors, error: authorsError } = await supabaseAdmin
     .from('users').select('id, name, photo_url, is_test, zip, gender, age, archetype, music, food, hobbies')
+    .is('deleted_at', null).neq('is_blocked', true)
     .in('id', rawAuthorIds.length ? rawAuthorIds : ['00000000-0000-0000-0000-000000000000']);
+  if (authorsError) return NextResponse.json({ error: 'Could not load plan hosts.' }, { status: 503 });
   const aById = new Map((authors ?? []).map((u) => [u.id, u]));
   const acts = (rawActs ?? [])
     .filter((a) => {
       const author: any = aById.get(a.author_id);
-      if (!author || (author.is_test === true) !== meTest) return false;
-      return !myMetro || a.metro === myMetro || (!a.metro && metroOf(author.zip) === myMetro);
+      if (!author || blocked.has(author.id) || (author.is_test === true) !== meTest) return false;
+      if (planId && !retained && a.author_id !== user.id && a.expires_at && Date.parse(a.expires_at) <= Date.now()) return false;
+      return retained || joinedIds.has(a.id) || a.author_id === user.id || (!!myMetro && (a.metro === myMetro || (!a.metro && metroOf(author.zip) === myMetro)));
     })
     .slice(0, 60);
 
@@ -66,15 +94,17 @@ export async function GET(req: NextRequest) {
         countByAct.set(c.activity_id, tally.yes + tally.maybe + tally.no);
       }
       // The caller's OWN response per activity — bounded by the ~60 shown events.
-      const { data: mine } = await supabaseAdmin
+      const { data: mine, error: mineError } = await supabaseAdmin
         .from('friend_activity_rsvps').select('activity_id, response')
         .eq('user_id', user.id).in('activity_id', ids);
+      if (mineError) return NextResponse.json({ error: 'Could not verify your plan memberships.' }, { status: 503 });
       (mine ?? []).forEach((r) => myRespByAct.set(r.activity_id, (r.response || 'yes')));
     } else {
       // Fallback (RPC not migrated yet — 20260617_activity_rsvp_counts.sql): the
       // original fetch-all tally, so the board never breaks pre-migration.
-      const { data: rsvps } = await supabaseAdmin
+      const { data: rsvps, error: rsvpsError } = await supabaseAdmin
         .from('friend_activity_rsvps').select('activity_id, user_id, response').in('activity_id', ids);
+      if (rsvpsError) return NextResponse.json({ error: 'Could not load plan responses.' }, { status: 503 });
       (rsvps ?? []).forEach((r) => {
         const resp = (r.response || 'yes') as 'yes' | 'maybe' | 'no';
         countByAct.set(r.activity_id, (countByAct.get(r.activity_id) || 0) + 1);
@@ -139,13 +169,18 @@ export async function GET(req: NextRequest) {
     return true;
   };
 
+  const locations = ids.length ? await supabaseAdmin.from('friend_plan_locations').select('activity_id,venue,visibility').in('activity_id', ids) : { data: [], error: null };
+  if (locations.error) return NextResponse.json({ error: 'Could not verify meeting-place visibility. Please retry.' }, { status: 503 });
+  const venueById = new Map((locations.data || []).map(v => [v.activity_id, v]));
   const activities = (acts ?? []).map((a) => {
     const author: any = aById.get(a.author_id) || {};
     return {
       id: a.id, title: a.title, body: a.body, category: a.category, area: a.area,
-      location: a.location ?? null,
+      ...visiblePlanVenue(venueById.get(a.id), a.location ?? null, a.author_id === user.id, myRespByAct.get(a.id) || null),
+      distanceMiles: a.metro && a.metro !== myMetro ? null : planAreaDistance(myMetro, origin, a.area),
+      locationAreas: a.author_id === user.id ? planAreasForMetro(a.metro || myMetro) : undefined,
       kind: a.kind || 'event',
-      happens_at: a.happens_at, created_at: a.created_at,
+      happens_at: a.happens_at, created_at: a.created_at, expires_at: a.expires_at,
       authorName: author.name, authorPhoto: author.photo_url,
       // Author vetting card — so you can see WHO is behind a post/event before engaging.
       authorId: a.author_id, authorGender: author.gender ?? null, authorAge: author.age ?? null,
@@ -168,25 +203,41 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ activities });
+  return NextResponse.json({ activities, areas, origin, city: locationContext.metro });
 }
 
 // POST — create an activity. expires_at defaults to happens_at or +14 days.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
+  const limit = await rateLimit({ key: `connection-plan:${user.id}`, windowSec: 3600, maxAttempts: 10, blockSec: 900 });
+  if (!limit.ok) return NextResponse.json({ error: 'Please wait before posting another plan.' }, { status: 429 });
 
   const locationContext = await friendLocationContext(user);
   const body = await req.json().catch(() => ({}));
+  // Private/blind dates cannot use the legacy immediate-join Scene API.
+  if (body.connection_kind === 'date' || body.date_mode) return NextResponse.json({ error: 'Create your free two-person date from Home’s date invitation form.' }, { status: 409 });
+  let chosenLocation: ReturnType<typeof validatePlanLocation> | null = null;
+  if (body.location_version === 1) {
+    try { chosenLocation = validatePlanLocation(body, planAreasForMetro(locationContext.metro)); }
+    catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 400 }); }
+  }
+  // The primary key also acts as a sender-owned create idempotency key. No
+  // schema change needed; an uncertain POST must not duplicate a plan.
+  const clientId = typeof body.client_id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.client_id) ? body.client_id : null;
+  if (body.client_id && !clientId) return NextResponse.json({ error: 'Invalid plan request.' }, { status: 400 });
   const title = (body.title || '').toString().trim();
   if (!title) return NextResponse.json({ error: 'Give it a title.' }, { status: 400 });
   if (title.length > 140) return NextResponse.json({ error: 'Title too long (140 max).' }, { status: 400 });
   const kind = body.kind === 'post' ? 'post' : 'event';
+  // Plans are app-wide; discussion posts remain a Friend Line feature.
+  if (kind === 'post' && !user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line to publish discussion posts.' }, { status: 400 });
+  if (kind === 'event' && (!locationContext.metro || !user.age || user.age < 18)) return NextResponse.json({ error: 'Complete your age and local area in your profile before posting a plan.' }, { status: 400 });
   const category = CATEGORIES.includes(body.category) ? body.category : 'hang';
   // Posts have no time; events can. Posts live 7d, events until 12h after they happen (or 14d).
   const happensAt = kind === 'event' && body.happens_at ? new Date(body.happens_at) : null;
-  const area = (body.area || '').toString().trim() || locationContext.area;
+  if (happensAt && (!Number.isFinite(happensAt.getTime()) || happensAt.getTime() <= Date.now())) return NextResponse.json({ error: 'Choose a future time or leave it flexible.' }, { status: 400 });
+  const area = chosenLocation?.area || (body.area || '').toString().trim() || locationContext.area;
   const expiresAt = kind === 'post'
     ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     : happensAt
@@ -212,13 +263,15 @@ export async function POST(req: NextRequest) {
   const audMax = kind === 'event' ? clampAge(body.audience_age_max) : null;
 
   // Events can name a specific place/venue (free text), separate from the zone.
-  const location = kind === 'event' ? ((body.location || '').toString().trim().slice(0, 120) || null) : null;
+  // Save the new private venue through the atomic host-only RPC below.
+  const location = chosenLocation ? null : kind === 'event' ? ((body.location || '').toString().trim().slice(0, 120) || null) : null;
   // Optional headcount cap (events). 1–1000, or null = unlimited.
   const capacity = kind === 'event' ? (() => { const n = parseInt(body.capacity); return Number.isFinite(n) && n > 0 ? Math.min(1000, n) : null; })() : null;
   // "Dating-friendly" — host is open to romantic sparks at this plan too.
   const datingFriendly = kind === 'event' && body.dating_friendly === true;
 
   const baseRow: any = {
+    ...(clientId ? { id: clientId } : {}),
     author_id: user.id, title, kind,
     body: (body.body || '').toString().slice(0, 1000) || null,
     category, area,
@@ -233,27 +286,23 @@ export async function POST(req: NextRequest) {
 
   const ins = (row: any) => supabaseAdmin.from('friend_activities').insert(row).select('id').single();
   let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity, dating_friendly: datingFriendly });
-  // Graceful fallbacks for un-migrated columns: drop dating_friendly, then capacity,
-  // then location, then audience, so the event still posts instead of failing.
-  if (error && /dating_friendly|column|schema cache/i.test(error.message || '')) {
-    ({ data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity }));
+  if (error?.code === '23505' && clientId) {
+    const existing = await supabaseAdmin.from('friend_activities').select('id').eq('id', clientId).eq('author_id', user.id).maybeSingle();
+    if (existing.data && !existing.error) { act = existing.data; error = null; }
   }
-  if (error && /capacity|column|schema cache/i.test(error.message || '')) {
-    ({ data: act, error } = await ins({ ...baseRow, ...audienceRow, location }));
-  }
-  if (error && /location|column|schema cache/i.test(error.message || '')) {
-    ({ data: act, error } = await ins({ ...baseRow, ...audienceRow }));
-  }
-  if (error && /audience_|column|schema cache/i.test(error.message || '')) {
-    ({ data: act, error } = await ins(baseRow));
-  }
+  // Never silently publish without the chosen audience, intent or capacity.
   if (error) return NextResponse.json({ error: 'Could not create activity' }, { status: 500 });
   if (!act) return NextResponse.json({ error: 'Could not create activity.' }, { status: 500 });
+  if (chosenLocation) {
+    const saved = await supabaseAdmin.rpc('set_connection_plan_location', { p_activity_id: act.id, p_user_id: user.id, p_area: chosenLocation.area, p_venue: chosenLocation.location, p_visibility: chosenLocation.visibility });
+    if (saved.error) return NextResponse.json({ error: 'Your invitation was saved without its meeting place. Retry this same form to finish it.' }, { status: 503 });
+  }
 
   // Author auto-RSVPs their own activity.
-  await supabaseAdmin.from('friend_activity_rsvps').upsert(
-    { activity_id: act.id, user_id: user.id }, { onConflict: 'activity_id,user_id' }
+  const { error: hostError } = await supabaseAdmin.from('friend_activity_rsvps').upsert(
+    { activity_id: act.id, user_id: user.id, response: 'yes' }, { onConflict: 'activity_id,user_id' }
   );
+  if (hostError) return NextResponse.json({ error: 'Your plan was saved, but host registration needs a retry. Please submit this same plan again.' }, { status: 503 });
   await supabaseAdmin.from('friend_plan_chat_reads').upsert({
     activity_id: act.id, user_id: user.id, read_at: new Date().toISOString(),
   }, { onConflict: 'activity_id,user_id' }).then(undefined, () => {});

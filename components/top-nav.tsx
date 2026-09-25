@@ -157,7 +157,7 @@ export default function TopNav() {
     }}>
       <Wordmark size={1.05} href="/hub" />
       <nav className="appTopNavTabs" style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexShrink: 0 }}>
-        {tab('/hub', 'Hub', 'hub', '#0b0b0b')}
+        {tab('/hub', 'Home', 'hub', '#0b0b0b')}
         {tab('/dashboard', '💘 Love', 'love', '#2563ff')}
         {tab('/friends', '🧡 Friend', 'friend', '#ff6a1f')}
       </nav>

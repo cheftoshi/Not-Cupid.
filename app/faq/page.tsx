@@ -11,7 +11,15 @@ const ORANGE = '#ff6a1f';
 const FAQS: { q: string; a: string }[] = [
   {
     q: 'What is NotCupid?',
-    a: 'The anti–dating-app. No swiping, no scrolling a catalog of strangers. You take a short personality quiz, the algorithm curates a small roster of your most compatible people, and you choose who to meet. Two lines: Love (dating) and Friend (platonic crews).',
+    a: 'A place to make real connections. Home shows invitations from NotCupid members for walks, dates, and small-group plans. Love Line offers curated dating connections, Friend Line helps you find platonic company, and your AI coach is there when you want a little help.',
+  },
+  {
+    q: 'Are date invitations on Home free?',
+    a: 'Yes. Creating a date, requesting to join, accepting one guest, and chatting afterward are free. They do not use your Love Line picks or require a payment. A date has two people: its host and one accepted guest. Both must be 18 or older, and requests must meet the invitation’s gender preferences. The host chooses who joins.',
+  },
+  {
+    q: 'How do blind dates and meeting places work?',
+    a: 'Profile-first dates show a basic profile before you request. Blind dates withhold names, photos, and bios until the host accepts; age, gender, and interests stay visible. Blind does not mean anonymous: avoid identifying details in your invitation. Date venues are shared only with the accepted pair. Friendship hosts can choose a public venue or keep it visible only to joined participants. Neighborhood distances are approximate, not GPS or travel times. Always meet in public.',
   },
   {
     q: 'How does the matching actually work?',

@@ -2,7 +2,7 @@ import 'server-only';
 import { createHmac } from 'node:crypto';
 import { supabaseAdmin } from '@/lib/supabase';
 
-export type ChatRealtimeKind = 'love' | 'friend-dm' | 'friend-circle' | 'friend-club' | 'friend-plan';
+export type ChatRealtimeKind = 'love' | 'friend-dm' | 'friend-circle' | 'friend-club' | 'friend-plan' | 'date-plan';
 
 function topicSecret(): string {
   return process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_KEY || 'local-realtime-topic';

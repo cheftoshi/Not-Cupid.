@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'NotCupid — A Connection Experiment',
     short_name: 'NotCupid',
     description:
-      'Meet people, not profiles. Open Love Line or Friend Line and make one real connection move today.',
+      'Find member-created plans near you. Meet for a walk, a date, or a small-group hangout.',
     id: '/',
     scope: '/',
     start_url: '/hub',
@@ -38,9 +38,9 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
       {
-        name: 'Hub',
-        short_name: 'Hub',
-        description: 'Open your NotCupid home base.',
+        name: 'Home plans',
+        short_name: 'Home',
+        description: 'See real invitations from NotCupid members.',
         url: '/hub?source=pwa-shortcut',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },

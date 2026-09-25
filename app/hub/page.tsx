@@ -5,12 +5,23 @@ import { HUB_CONCIERGE_VERSION } from '@/lib/connection-concierge';
 import { hasMatchingEmbeddingConsent } from '@/lib/connection-embeddings';
 import { hasCrossIntentBridgeConsent } from '@/lib/matching-rollouts';
 import HubClient from './hub-client';
+import PlansHome from './plans-home';
+import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
+import { initialPlanFilter } from '@/lib/connection-plans';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HubPage() {
+export default async function HubPage({ searchParams }: { searchParams: Promise<{ view?: string; plan?: string; date?: string }> }) {
   const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  const params = await searchParams;
+  if (!user) redirect(`/login?next=${encodeURIComponent(params.date ? `/hub?date=${params.date}` : params.plan ? `/hub?plan=${params.plan}` : params.view === 'coach' ? '/hub?view=coach' : '/hub')}`);
+
+  if (params.view !== 'coach') {
+    const location = await friendLocationContext(user);
+    // Setup completion is a default filter, not permission to enroll someone
+    // in another line or infer romantic interest from a friendship action.
+    return <PlansHome firstName={(user.name || 'friend').split(' ')[0]} city={friendMetroLabel(location.metro)} initialFilter={initialPlanFilter(user)} />;
+  }
 
   const firstName = (user.name || 'friend').split(' ')[0];
   const metro = metroOf(user.zip);

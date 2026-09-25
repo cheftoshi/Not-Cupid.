@@ -2,7 +2,7 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { rateLimit } from '@/lib/rate-limit';
-import { friendActivityInCurrentMetro, hasFriendActivityHistory } from '@/lib/friend-activity-access';
+import { friendActivityInCurrentMetro, hasFriendActivityHistory, friendActivityAuthorAvailable } from '@/lib/friend-activity-access';
 import { sameRealm } from '@/lib/realm';
 import { enqueuePushNotification, processNotificationOutbox } from '@/lib/notification-outbox';
 import { broadcastChatRefresh, chatRealtimeTopic } from '@/lib/chat-realtime';
@@ -36,6 +36,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .select('id, author_id, kind, metro, is_test').eq('id', id).maybeSingle();
   if (!activity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!sameRealm(user, activity)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!(await friendActivityAuthorAvailable(user, activity.author_id))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const retained = await hasFriendActivityHistory(user.id, id);
   if (!retained && !(await friendActivityInCurrentMetro(user, activity))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -79,7 +80,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
   const limit = await rateLimit({ key: `friend-comment:${user.id}`, windowSec: 3600, maxAttempts: 30, blockSec: 1800 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many comments' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
 
@@ -87,22 +87,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const text = String(body ?? '').trim().slice(0, 1000);
   if (!text) return NextResponse.json({ error: 'Empty comment' }, { status: 400 });
   const clientId = typeof client_id === 'string' && /^[a-zA-Z0-9_-]{8,80}$/.test(client_id) ? client_id : null;
-  if (clientId) {
-    const { data: existing } = await supabaseAdmin.from('friend_activity_comments')
-      .select('id, body, created_at').eq('user_id', user.id).eq('client_id', clientId).maybeSingle();
-    if (existing) return NextResponse.json({ ok: true, comment: { ...existing, name: user.name, photo_url: (user as any).photo_url, isMe: true }, already: true });
-  }
 
   const { data: act } = await supabaseAdmin
     .from('friend_activities').select('id, author_id, title, kind, metro, is_test').eq('id', id).maybeSingle();
   if (!act) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!sameRealm(user, act)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!(await friendActivityAuthorAvailable(user, act.author_id))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if ((act.kind || 'event') !== 'event' && !user.friend_opted_in_at) return NextResponse.json({ error: 'Join the Friend Line first.' }, { status: 400 });
   const retained = await hasFriendActivityHistory(user.id, id);
   if (!retained && !(await friendActivityInCurrentMetro(user, act))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
   if (!(await canUseEventChat(user.id, act, id))) {
     return NextResponse.json({ error: 'RSVP interested to join this plan chat.' }, { status: 403 });
+  }
+  if (clientId) {
+    const { data: existing } = await supabaseAdmin.from('friend_activity_comments')
+      .select('id, body, created_at').eq('user_id', user.id).eq('activity_id', id).eq('client_id', clientId).maybeSingle();
+    if (existing) return NextResponse.json({ ok: true, comment: { ...existing, name: user.name, photo_url: (user as any).photo_url, isMe: true }, already: true });
   }
 
   const { data: row, error } = await supabaseAdmin
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (error) {
     if (error.code === '23505' && clientId) {
       const { data: existing } = await supabaseAdmin.from('friend_activity_comments')
-        .select('id, body, created_at').eq('user_id', user.id).eq('client_id', clientId).maybeSingle();
+        .select('id, body, created_at').eq('user_id', user.id).eq('activity_id', id).eq('client_id', clientId).maybeSingle();
       if (existing) return NextResponse.json({ ok: true, comment: { ...existing, name: user.name, photo_url: (user as any).photo_url, isMe: true }, already: true });
     }
     return NextResponse.json({ error: 'Could not add comment' }, { status: 500 });
@@ -142,7 +144,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       payload: {
         title: `${first} · ${act.title || 'plan chat'} 💬`,
         body: 'Open the plan chat to read the new message.',
-        url: `/friends?view=scene&plan=${encodeURIComponent(id)}`,
+        url: `/hub?plan=${encodeURIComponent(id)}`,
         tag: `friend-plan-chat-${id}`,
       },
     })));

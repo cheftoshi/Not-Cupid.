@@ -5,7 +5,8 @@ import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { sendPushToUser } from '@/lib/push';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordFriendAction } from '@/lib/friend-events';
-import { friendActivityInCurrentMetro } from '@/lib/friend-activity-access';
+import { friendActivityInCurrentMetro, friendActivityAuthorAvailable } from '@/lib/friend-activity-access';
+import { planHasEnded } from '@/lib/connection-plans';
 import { sameRealm } from '@/lib/realm';
 
 export const dynamic = 'force-dynamic';
@@ -24,17 +25,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { id: activityId } = await params;
   const body = await req.json().catch(() => ({} as any));
-  const desired: Response = RESPONSES.includes(body?.response) ? body.response : 'yes';
+  const explicit = body?.mode === 'set';
+  const desired: Response | null = explicit && body.response === null ? null : RESPONSES.includes(body?.response) ? body.response : 'yes';
 
   const { data: activity } = await supabaseAdmin
     .from('friend_activities')
-    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max, capacity, metro, is_test')
+    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max, capacity, metro, is_test, happens_at, expires_at')
     .eq('id', activityId)
     .maybeSingle();
   if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
   if (!sameRealm(user, activity)) {
     return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
   }
+  if (!(await friendActivityAuthorAvailable(user, activity.author_id))) return NextResponse.json({ error: 'That plan is no longer available.' }, { status: 404 });
 
   const { data: existing } = await supabaseAdmin
     .from('friend_activity_rsvps')
@@ -43,12 +46,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .eq('user_id', user.id)
     .maybeSingle();
   const retained = existing?.response === 'yes' || existing?.response === 'maybe';
+  if ((activity.kind || 'event') === 'event' && desired === 'yes' && existing?.response !== 'yes' && planHasEnded(activity)) return NextResponse.json({ error: 'That plan has ended.' }, { status: 409 });
   if (!retained && !(await friendActivityInCurrentMetro(user, activity))) {
     return NextResponse.json({ error: 'That plan is outside your current Friend Line metro.' }, { status: 404 });
   }
 
   // Audience gate (events only; author is always allowed).
-  if ((activity.kind || 'event') === 'event' && activity.author_id !== user.id) {
+  if ((activity.kind || 'event') === 'event' && activity.author_id !== user.id && desired !== null && desired !== 'no') {
+    if (!user.age || user.age < 18) return NextResponse.json({error:'Complete your age in your profile before joining a plan.'},{status:403});
     const aud = activity.audience_gender as string[] | null;
     const inGender = !Array.isArray(aud) || aud.length === 0 || aud.includes(user.gender) || (aud.includes('lgbtq') && isLgbtqIdentity(user));
     const inAgeMin = activity.audience_age_min == null || (user.age != null && user.age >= activity.audience_age_min);
@@ -58,11 +63,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  const { data: rsvpRows, error: rsvpError } = await supabaseAdmin.rpc('set_friend_activity_rsvp', {
+  const rsvpArgs = {
     p_activity_id: activityId,
     p_user_id: user.id,
     p_response: desired,
-  });
+  };
+  const { data: rsvpRows, error: rsvpError } = explicit
+    ? await supabaseAdmin.rpc('set_connection_plan_response', rsvpArgs)
+    : await supabaseAdmin.rpc('set_friend_activity_rsvp', rsvpArgs);
   if (rsvpError) {
     if ((rsvpError.message || '').includes('capacity reached')) {
       return NextResponse.json({ error: 'This plan is full.', full: true }, { status: 409 });
@@ -93,7 +101,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (
     (activity.kind || 'event') === 'event' &&
     activity.author_id !== user.id &&
-    (myResponse === 'yes' || myResponse === 'maybe')
+    (myResponse === 'yes' || myResponse === 'maybe') && existing?.response !== myResponse
   ) {
     const who = (user.name || 'Someone').split(' ')[0];
     const verb = myResponse === 'yes' ? 'is going to' : 'might come to';
@@ -101,7 +109,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await sendPushToUser(activity.author_id, {
       title: `${who} ${verb} your event 🎟️`,
       body: `${what} — ${responses.yes} going, ${responses.maybe} maybe`,
-      url: `/friends?view=scene&plan=${encodeURIComponent(activityId)}`,
+      url: `/hub?plan=${encodeURIComponent(activityId)}`,
       tag: `rsvp-${activityId}`,
     }).catch(() => {});
   }

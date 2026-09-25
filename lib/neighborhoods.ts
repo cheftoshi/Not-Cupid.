@@ -1,4 +1,4 @@
-import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
+import { metroOf, METRO_CENTERS, ZIP_COORDS, haversine } from '@/lib/quiz-data';
 
 // Map a ZIP to a human area label for the City Pulse view. Covers the
 // Boston-metro towns/neighborhoods that make up the bulk of the pool; anything
@@ -123,3 +123,23 @@ export const NEIGHBORHOODS: string[] = Array.from(new Set([
   ...Object.values(METRO_CENTERS).map((m) => m.city),
   'Greater Boston',
 ])).sort();
+
+// Public area centroids only. These are not member coordinates or venue pins.
+export function planAreasForMetro(metro: string | null): string[] {
+  if (!metro || !METRO_CENTERS[metro]) return [];
+  return Array.from(new Set([
+    ...Object.entries(ZIP_AREA).filter(([zip]) => metroOf(zip) === metro).map(([, area]) => area),
+    METRO_CENTERS[metro].city,
+  ])).sort();
+}
+
+export function planAreaDistance(metro: string | null, origin: string, destination: string | null): number | null {
+  if (!metro || !destination) return null;
+  const center = (area: string) => {
+    const points = Object.entries(ZIP_AREA).filter(([zip, label]) => label === area && metroOf(zip) === metro && ZIP_COORDS[zip]).map(([zip]) => ZIP_COORDS[zip]);
+    if (!points.length) return null;
+    return { lat: points.reduce((sum, p) => sum + p.lat, 0) / points.length, lng: points.reduce((sum, p) => sum + p.lng, 0) / points.length };
+  };
+  const a = center(origin), b = center(destination);
+  return a && b ? Math.round(haversine(a.lat, a.lng, b.lat, b.lng)) : null;
+}

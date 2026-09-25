@@ -23,9 +23,9 @@ test('Plan-chat replies notify the organizer and interested participants with an
 
   assert.match(comments, /new Set<string>\(\[act\.author_id/);
   assert.match(comments, /\.eq\('response', 'yes'\)/);
-  assert.match(comments, /url: `\/friends\?view=scene&plan=\$\{encodeURIComponent\(id\)\}`/);
+  assert.match(comments, /url: `\/hub\?plan=\$\{encodeURIComponent\(id\)\}`/);
   assert.match(comments, /tag: `friend-plan-chat-\$\{id\}`/);
-  assert.match(rsvp, /url: `\/friends\?view=scene&plan=\$\{encodeURIComponent\(activityId\)\}`/);
+  assert.match(rsvp, /url: `\/hub\?plan=\$\{encodeURIComponent\(activityId\)\}`/);
   assert.match(client, /scene-plan-\$\{planId\}/);
   assert.match(client, /autoOpenChat=\{deepLinkedPlan === a\.id\}/);
 });

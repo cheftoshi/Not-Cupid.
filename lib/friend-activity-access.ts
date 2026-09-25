@@ -29,3 +29,15 @@ export async function hasFriendActivityHistory(userId: string, activityId: strin
   ]);
   return !!rsvp.data || !!comment.data;
 }
+
+// Applying the shared board app-wide must not reopen contact with a reported
+// host or an account that has been deleted/disabled. Fail closed on read errors.
+export async function friendActivityAuthorAvailable(user: any, authorId: string): Promise<boolean> {
+  const [{ data: author, error }, reports] = await Promise.all([
+    supabaseAdmin.from('users').select('id,is_test').eq('id', authorId)
+      .is('deleted_at', null).neq('is_blocked', true).maybeSingle(),
+    supabaseAdmin.from('user_reports').select('reporter_id,reported_id')
+      .or(`and(reporter_id.eq.${user.id},reported_id.eq.${authorId}),and(reporter_id.eq.${authorId},reported_id.eq.${user.id})`).limit(1),
+  ]);
+  return !error && !reports.error && !!author && (author.is_test === true) === (user.is_test === true) && !reports.data?.length;
+}
