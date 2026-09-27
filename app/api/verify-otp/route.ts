@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     const { data: user } = await supabaseAdmin
       .from('users')
       .select('id, archetype, is_blocked')
-      .ilike('email', email)         // case-insensitive
+      .eq('email', email) // Normalized identity, never a SQL wildcard pattern.
       .is('deleted_at', null)
       .limit(1)
       .maybeSingle()

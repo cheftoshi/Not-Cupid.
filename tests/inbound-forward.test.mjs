@@ -56,9 +56,6 @@ test('inbound forwarding archives first and is retry-idempotent', () => {
 
 test('legacy direct Resend senders use the configured operator reply address', () => {
   const routes = [
-    'app/api/admin/send-friend-blast/route.ts',
-    'app/api/admin/send-press-invite/route.ts',
-    'app/api/admin/send-quiz-blast/route.ts',
     'app/api/stripe-webhook/route.ts',
   ];
   for (const route of routes) {

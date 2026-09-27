@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     const { data: clash } = await supabaseAdmin
       .from('users')
       .select('id')
-      .ilike('email', c.suggestion)
+      .eq('email', c.suggestion.toLowerCase())
       .neq('id', c.id)
       .is('deleted_at', null)
       .maybeSingle();
