@@ -125,15 +125,24 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
     function onFocus(event: FocusEvent) {
       if (event.target instanceof Element && event.target.matches('input, textarea, [contenteditable="true"]')) pausePrompts();
     }
+    function onAction(event: PointerEvent) {
+      if (!(event.target instanceof Element) || event.target.closest('[data-pwa-prompt]')) return;
+      if (event.target.closest('button, a, input, select, textarea, summary')) pausePrompts();
+    }
     function checkDialog() {
       if (document.querySelector('[role="dialog"], dialog[open]')) pausePrompts();
     }
     document.addEventListener('focusin', onFocus);
+    document.addEventListener('pointerdown', onAction, true);
+    // A floating acquisition prompt must not trap controls below it after scrolling.
+    window.addEventListener('scroll', pausePrompts, { passive: true });
     const observer = new MutationObserver(checkDialog);
     observer.observe(document.body, { childList: true, subtree: true });
     checkDialog();
     return () => {
       document.removeEventListener('focusin', onFocus);
+      document.removeEventListener('pointerdown', onAction, true);
+      window.removeEventListener('scroll', pausePrompts);
       observer.disconnect();
     };
   }, []);
@@ -195,7 +204,7 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   };
 
   return (
-    <div style={{ position: 'fixed', left: '50%', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.8rem)', transform: 'translateX(-50%)', zIndex: 90, width: 'min(460px, calc(100vw - 1rem))' }}>
+    <div data-pwa-prompt style={{ position: 'fixed', left: '50%', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.8rem)', transform: 'translateX(-50%)', zIndex: 90, width: 'min(460px, calc(100vw - 1rem))' }}>
       <div style={{ display: 'grid', gap: '0.65rem', background: 'color-mix(in srgb, var(--h-surface) 96%, transparent)', border: '1px solid var(--h-border)', borderRadius: 24, padding: '0.8rem', boxShadow: '0 20px 60px -22px rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
         {showInstall && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.72rem', padding: '0.12rem 0.18rem 0' }}>

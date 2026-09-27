@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { dateParticipant,dateRequestEligible,dateVenue,publicDatePerson } from '../lib/date-plan-policy.ts';
 import {validatePlanLocation,visiblePlanVenue} from '../lib/plan-location.ts';
 import {planChatAllowed,liveConnectionPlans} from '../lib/connection-plans.ts';
@@ -42,9 +41,4 @@ test('location validates area, public-place confirmation, visibility and length'
 test('confirmed and cancelled dates stay out of discovery',()=>{
  const base={kind:'event',created_at:'2026-09-24',expires_at:'2026-10-01'};
  assert.deepEqual(liveConnectionPlans([{...base,id:'open',state:'open'},{...base,id:'closed',state:'confirmed'},{...base,id:'cancelled',state:'cancelled'}],now).map(p=>p.id),['open']);
-});
-test('date database locks acceptance and preserves sender retry IDs without Love charges',()=>{
- const sql=readFileSync(new URL('../supabase/migrations/20260925011141_connection_plan_location_privacy.sql',import.meta.url),'utf8');
- assert.match(sql,/for update/);assert.match(sql,/unique\(plan_id,user_id,client_id\)/);assert.match(sql,/state='confirmed'/);assert.match(sql,/from public,anon,authenticated/);
- assert.doesNotMatch(sql,/stripe|love_pick_ledger|paid_entitlements/);
 });

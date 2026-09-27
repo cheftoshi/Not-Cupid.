@@ -261,6 +261,20 @@ supersede them.
   distance is between public neighborhood centroids, never live GPS or a
   member's precise home location. Date-plan emails are not enabled; web push
   is attempted for genuine requests, acceptance, cancellation, and messages.
+- Date invitations use explicit `date_plan_genders`, falling back to stated
+  Love `seeking` preferences. Unknown intent requires choosing preferences;
+  never infer it or require a paid pick. Discovery and requests are reciprocal.
+- New dates can be scheduled at most 60 days ahead. Unfilled invitations expire
+  after 14 days or at their start time, whichever is sooner. Confirmed dates
+  remain reachable. A withdrawn request can be retried; a host's pass cannot.
+- Closed requests have distinct filled/passed/cancelled/expired in-app outcomes.
+  Request/accept/pass/fill/cancel/venue push notices use the transactional outbox;
+  delivery rechecks blocks, deletion, test realm, and current state. Date emails
+  remain disabled. Confirmed venue edits add a private conversation note.
+- Cancelled date chats are read-only archives for the original pair, subject
+  to current account/report exclusions. Cancelled venues cannot be edited.
+- Lifecycle SQL behavior checks are in `tests/date-plan-lifecycle.sql`; run
+  only inside a rollback transaction with synthetic test accounts.
 
 - A fourth or later distinct outgoing Love connection in the current roster is
   a one-time $0.99 bundled with that person's optional private AI/HEXACO

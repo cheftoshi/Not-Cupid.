@@ -100,6 +100,63 @@ test.describe('authenticated test-realm mobile path', () => {
     await page.getByRole('button',{name:/^Conversations ·/}).click();await expect(input).toHaveValue('Draft stays here');
   });
 
+  test('date withdrawal can be requested again and an unchosen requester sees the outcome', async ({ page }) => {
+    const id='00000000-0000-4000-8000-000000000911';
+    let status='withdrawn';
+    const person={name:'QA Host',age:30,gender:'m',photo:null,bio:'Walks',interests:['Walking']};
+    await page.route('**/api/friend/activities?*',route=>route.fulfill({json:{activities:[],areas:['Back Bay'],origin:'Back Bay'}}));
+    await page.route('**/api/date-plans?*',route=>route.fulfill({json:{preferences:['m'],activities:status==='filled'?[]:[{id,title:'QA request recovery',kind:'event',connectionKind:'date',dateMode:'profile',state:'open',area:'Back Bay',capacity:2,isMine:false,eligible:true,canChat:false,myResponse:status,authorName:'QA Host',authorProfile:person,audienceGender:['f'],responses:{yes:1,maybe:0,no:0},expires_at:'2099-01-01T00:00:00Z'}],outcomes:status==='filled'?[{planId:id,title:'QA request recovery',status:'filled',message:'This invitation has been filled. Your request is now closed.'}]:[]}}));
+    await page.route(`**/api/date-plans/${id}`,route=>{
+      expect(route.request().postDataJSON().action).toBe('request');
+      status='pending';return route.fulfill({json:{ok:true,changed:true}});
+    });
+    await page.goto('/hub');
+    await page.getByRole('button',{name:'Dates',exact:true}).click();
+    await page.getByRole('button',{name:'Request again →',exact:true}).click();
+    await expect(page.locator('[data-pwa-prompt]')).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Withdraw request',exact:true})).toBeVisible();
+    status='filled';
+    await page.getByRole('button',{name:'Refresh invitations',exact:true}).click();
+    await page.getByText('Your date updates · 1',{exact:true}).click();
+    await expect(page.getByText('This invitation has been filled. Your request is now closed.',{exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Withdraw request',exact:true})).toHaveCount(0);
+  });
+
+  test('cancelled dates show a read-only chat and no venue editor', async ({ page }) => {
+    const id='00000000-0000-4000-8000-000000000912';
+    const person={name:'QA Guest',age:30,gender:'f',photo:null,bio:'Walks',interests:[]};
+    await page.route('**/api/friend/activities?*',route=>route.fulfill({json:{activities:[],areas:['Back Bay'],origin:'Back Bay'}}));
+    await page.route('**/api/date-plans?*',route=>route.fulfill({json:{preferences:['f'],activities:[{id,title:'QA archived date',kind:'event',connectionKind:'date',dateMode:'profile',state:'cancelled',area:'Back Bay',location:'QA cafe',capacity:2,isMine:true,eligible:false,canChat:true,myResponse:'yes',authorName:'You',authorProfile:person,partner:person,responses:{yes:2,maybe:0,no:0},expires_at:'2099-01-01T00:00:00Z'}]}}));
+    await page.route(`**/api/date-plans/${id}/messages`,route=>{
+      expect(route.request().method()).toBe('GET');
+      return route.fulfill({json:{readOnly:true,comments:[{id:'note',name:'Meeting place update',isMe:false,body:'Meeting place updated: Back Bay. QA cafe.'}]}});
+    });
+    await page.goto(`/hub?date=${id}`);
+    const dialog=page.getByRole('dialog',{name:'Your conversations'});
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/read-only conversation archive/)).toBeVisible();
+    await expect(dialog.getByLabel('Message the plan')).toBeDisabled();
+    await expect(dialog.getByRole('button',{name:'Edit meeting place',exact:true})).toHaveCount(0);
+    await expect(dialog.getByText('Meeting place update',{exact:true})).toBeVisible();
+  });
+
+  test('date preferences save without Love signup or payment', async ({ page }) => {
+    let preferences:string[]=[];
+    await page.route('**/api/friend/activities?*',route=>route.fulfill({json:{activities:[],areas:['Back Bay'],origin:'Back Bay'}}));
+    await page.route('**/api/date-plans?*',route=>route.fulfill({json:{activities:[],preferences}}));
+    await page.route('**/api/date-plans/preferences',route=>{
+      expect(route.request().method()).toBe('PATCH');preferences=route.request().postDataJSON().genders;
+      return route.fulfill({json:{ok:true}});
+    });
+    await page.goto('/hub');
+    await page.getByRole('button',{name:'Dates',exact:true}).click();
+    const form=page.getByRole('form',{name:'Date invitation preferences'});
+    await form.getByLabel('Nonbinary people',{exact:true}).check();
+    await form.getByRole('button',{name:'Save date preferences',exact:true}).click();
+    await expect.poll(()=>preferences).toEqual(['nb']);
+    await expect(page).toHaveURL(/\/hub/);
+  });
+
   test('Hub keeps the composer reachable after focus and a short viewport', async ({ page }) => {
     await page.goto('/hub?view=coach');
     const composer = page.getByPlaceholder('What do you want to do?');
