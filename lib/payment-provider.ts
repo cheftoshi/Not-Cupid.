@@ -76,6 +76,7 @@ async function markUnavailable(code: StripeFailureCode, retryAfterSec: number): 
 export async function createStripeCheckoutSession(input: {
   params: URLSearchParams;
   idempotencyKey?: string;
+  stableIdempotencyKey?: boolean;
 }): Promise<CheckoutResult> {
   const gate = await claimProviderRequest();
   if (!gate.allowed) {
@@ -94,7 +95,7 @@ export async function createStripeCheckoutSession(input: {
       headers: {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/x-www-form-urlencoded',
-        ...(input.idempotencyKey ? { 'Idempotency-Key': `${input.idempotencyKey}-g${gate.generation}` } : {}),
+        ...(input.idempotencyKey ? { 'Idempotency-Key': input.stableIdempotencyKey ? input.idempotencyKey : `${input.idempotencyKey}-g${gate.generation}` } : {}),
       },
       body: input.params.toString(),
     });

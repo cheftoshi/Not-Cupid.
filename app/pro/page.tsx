@@ -20,5 +20,5 @@ export default async function ProPage() {
     });
   }
   const until = user.friend_pro_until ? new Date(user.friend_pro_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : null;
-  return <ProClient pro={pro} renewsOn={until} />;
+  return <ProClient pro={pro} renewsOn={until} billingLinked={!!user.stripe_customer_id} />;
 }

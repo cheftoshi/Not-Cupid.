@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import ManageSubscription from '@/components/manage-subscription';
 
 const INK = '#0a0a0a';
 const BLUE = '#2563ff';
@@ -15,7 +16,7 @@ const PERKS = [
   { icon: '✦', t: 'One price, no repeat checkout', d: 'Skip the per-extra-connection and per-pack checkout. One subscription across the Love Line and the Friend Line.' },
 ];
 
-export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: string | null }) {
+export default function ProClient({ pro, renewsOn, billingLinked = false }: { pro: boolean; renewsOn: string | null; billingLinked?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -93,6 +94,7 @@ export default function ProClient({ pro, renewsOn }: { pro: boolean; renewsOn: s
           </>
         )}
 
+        {billingLinked && <ManageSubscription />}
         {/* social connect links (dark-friendly) */}
         <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           {[['instagram', 'https://instagram.com/notcupidapp'], ['tiktok', 'https://tiktok.com/@notcupid11'], ['x', 'https://x.com/notcupidapp']].map(([label, href]) => (

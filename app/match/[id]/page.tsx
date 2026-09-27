@@ -42,10 +42,15 @@ export default async function MatchPage({
   const mutuallyConnected = !!match.user_1_accepted && !!match.user_2_accepted;
 
   const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
+  const {data:reports,error:reportError}=await supabaseAdmin.from('user_reports').select('id')
+    .or(`and(reporter_id.eq.${user.id},reported_id.eq.${otherId}),and(reporter_id.eq.${otherId},reported_id.eq.${user.id})`).limit(1);
+  if(reportError || reports?.length) redirect('/dashboard');
   const { data: otherUser } = await supabaseAdmin
     .from('users')
     .select('id, name, age, photo_url, gallery, bio, archetype, occupation, education, music, food, hobbies, sports, prompts, vibes, values_profile, attach_anxiety, attach_avoidance, attach_style, relationship_style, sun_sign, intro_video_url, is_test')
     .eq('id', otherId)
+    .is('deleted_at',null)
+    .neq('is_blocked',true)
     .single();
 
   if (!otherUser || !sameRealm(user, otherUser)) redirect('/dashboard');

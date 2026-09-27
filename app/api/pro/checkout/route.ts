@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
 import { PRO_PRICE_CENTS, isPro } from '@/lib/pro';
 import { rateLimit } from '@/lib/rate-limit';
 import { recordMonetizationEvent } from '@/lib/monetization';
@@ -14,14 +15,18 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if ((user as any).is_test === true) return NextResponse.json({ error: 'Payments are disabled for test accounts.' }, { status: 403 });
-  if (isPro(user)) return NextResponse.json({ error: 'Your Pro membership is already active.' }, { status: 409 });
+  if (isPro(user) || user.friend_sub_id) return NextResponse.json({ error: 'A subscription is already linked. Use Manage subscription.' }, { status: 409 });
   const limit = await rateLimit({ key: `checkout-pro:${user.id}`, windowSec: 600, maxAttempts: 10, blockSec: 600 });
   if (!limit.ok) return NextResponse.json({ error: 'Too many checkout attempts' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } });
+  const {data: claim,error: claimError}=await supabaseAdmin.rpc('claim_pro_checkout',{p_user:user.id});
+  if(claimError) return NextResponse.json({error:'Checkout is temporarily unavailable.'},{status:503});
+  if(!claim) return NextResponse.json({error:'A subscription is already linked. Use Manage subscription.'},{status:409});
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://notcupid.com';
   const p = new URLSearchParams();
   p.append('payment_method_types[]', 'card');
   p.append('mode', 'subscription');
+  p.append('expires_at', String(claim.expires_at));
   p.append('line_items[0][quantity]', '1');
   p.append('line_items[0][price_data][currency]', 'usd');
   p.append('line_items[0][price_data][product_data][name]', 'NotCupid Pro');
@@ -45,7 +50,7 @@ export async function POST(req: NextRequest) {
     userId: user.id, event: 'checkout_clicked', product: 'pro', surface: 'pro_checkout_api',
     amountCents: PRO_PRICE_CENTS,
   });
-  const checkout = await createStripeCheckoutSession({ params: p });
+  const checkout = await createStripeCheckoutSession({ params: p, idempotencyKey:`pro:${user.id}:${claim.key}`, stableIdempotencyKey:true });
   if (!checkout.ok) {
     await recordMonetizationEvent({
       userId: user.id, event: 'checkout_failed', product: 'pro', surface: 'pro_checkout_api',

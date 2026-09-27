@@ -49,7 +49,7 @@ test('payment routes prevent test charges and duplicate subscriber purchases', (
     assert.match(source, /Payments are disabled for test accounts/);
   }
   assert.match(friend, /isPro\(user\)/);
-  assert.match(pro, /Your Pro membership is already active/);
+  assert.match(pro, /A subscription is already linked/);
 });
 
 test('checkout analytics distinguish intent from an actual Stripe handoff', () => {

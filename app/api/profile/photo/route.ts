@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { detectSafeImageType } from '@/lib/request-security';
+import { removeProfilePhoto } from '@/lib/account-media-cleanup';
+import { randomUUID } from 'node:crypto';
 
 // Vercel serverless functions cap request bodies at 4.5MB; multipart adds
 // overhead, so the practical ceiling is ~4MB.
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!detected || (file.type && file.type !== detected.mime)) {
     return NextResponse.json({ error: 'File contents must be JPEG, PNG, or WebP' }, { status: 400 });
   }
-  const filename = `${user.id}/${Date.now()}.${detected.ext}`;
+  const filename = `${user.id}/${randomUUID()}.${detected.ext}`;
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from('profile-photos')
@@ -41,10 +43,19 @@ export async function POST(req: NextRequest) {
     .from('profile-photos')
     .getPublicUrl(filename);
 
-  await supabaseAdmin
+  let update = supabaseAdmin
     .from('users')
     .update({ photo_url: publicUrl })
-    .eq('id', user.id);
+    .eq('id', user.id).is('deleted_at',null);
+  update = user.photo_url ? update.eq('photo_url',user.photo_url) : update.is('photo_url',null);
+  const {data:saved,error:saveError}=await update.select('id').maybeSingle();
+  if(saveError || !saved) {
+    await supabaseAdmin.storage.from('profile-photos').remove([filename]);
+    return NextResponse.json({error:'Profile changed while uploading. Please try again.'},{status:409});
+  }
+  try {
+    if(!user.gallery?.includes(user.photo_url || '')) await removeProfilePhoto(user.id,user.photo_url);
+  } catch {console.error('[profile-photo] old photo cleanup failed',{userId:user.id});}
 
   return NextResponse.json({ url: publicUrl });
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 import ChipInput, { type ChipInputHandle } from './chip-input';
 import RefreshProfileButton from '@/components/refresh-profile-button';
+import ManageSubscription from '@/components/manage-subscription';
 import { ConnectionSigil, ProfileStrengthMeter } from '@/components/connection-ui';
 import { parseResponse } from '@/lib/fetch-helpers';
 import { RELATIONSHIP_STYLES } from '@/lib/quiz-data';
@@ -265,6 +266,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       const response = await fetch('/api/profile/delete', { method: 'POST' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'could not delete your account');
+      if(data.cleanupPending) await confirmDialog({title:'Account removed; cleanup pending',body:'Your account is deactivated, but billing or stored-media cleanup could not be confirmed. Please contact match@notcupid.com so we can finish it.',confirmLabel:'Understood'});
       // Force a document navigation so an installed PWA cannot retain a
       // prefetched authenticated tree after the server destroys the session.
       window.location.replace('/?account=deleted');
@@ -667,6 +669,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       {/* ACCOUNT */}
       <div className={styles.accountSection}>
         <div className={styles.accountTitle}>Account</div>
+        {user.stripe_customer_id && <ManageSubscription />}
         <button type="button" onClick={handleLogout} className={styles.linkButton} disabled={saving}>Log out</button>
         <RefreshProfileButton usedCount={user.profile_refresh_count} />
         {/* Delete is now a clear full-width danger button — users couldn't find the old text link. */}

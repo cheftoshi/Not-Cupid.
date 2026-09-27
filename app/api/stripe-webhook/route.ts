@@ -8,6 +8,7 @@ import { recordMonetizationEvent } from '@/lib/monetization'
 import { recordLoveConnectionPurchase } from '@/lib/love-pick-access'
 import { FRIEND_PACK_CENTS } from '@/lib/friend-access'
 import { PRO_PRICE_CENTS } from '@/lib/pro'
+import { cancelStripeSubscription } from '@/lib/subscription-management'
 
 export const dynamic = 'force-dynamic'
 
@@ -174,12 +175,18 @@ export async function POST(req: NextRequest) {
         }
         // Grant a month immediately; renewals extend it via invoice.payment_succeeded.
         const until = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
-        const { error } = await supabaseAdmin.from('users').update({
-          friend_pro_until: until,
-          stripe_customer_id: session.customer || null,
-          friend_sub_id: session.subscription || null,
-        }).eq('id', session.metadata.user_id)
+        const { data: bound, error } = await supabaseAdmin.rpc('bind_pro_subscription', {
+          p_user: session.metadata.user_id, p_subscription: session.subscription,
+          p_customer: typeof session.customer === 'string' ? session.customer : null, p_until: until,
+        })
         if (error) throw new Error(`Pro subscription start failed: ${error.message}`)
+        if (!bound) {
+          // Never overwrite an existing subscription or bill a deleted account.
+          if (!(await cancelStripeSubscription(session.subscription))) throw new Error('duplicate_subscription_cancel_failed')
+          console.error('[stripe-webhook] subscription rejected; cancelled; review initial payment', {eventId:event.id})
+          await completeStripeEvent(event.id)
+          return NextResponse.json({received:true,ignored:true})
+        }
         console.log('Friend Pro subscription started')
         await recordMonetizationEvent({
           userId: session.metadata.user_id,
