@@ -1,4 +1,5 @@
 "use client";
+import FriendReportButton from '@/components/friend-report-button';
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,6 +24,7 @@ import s from "./plans-home.module.css";
 import { type DateOutcome } from "@/lib/date-plan-lifecycle";
 
 type Message = {
+  senderId?: string;
   id: string;
   body: string;
   name: string;
@@ -141,6 +143,7 @@ function PlanChat({ plan, active }: { plan: ConnectionPlan; active: boolean }) {
           <div key={m.id} className={s.message}>
             <small>{m.isMe ? "You" : m.name}</small>
             <p>{m.body}</p>
+            {plan.connectionKind !== "date" && !m.isMe && m.senderId && <FriendReportButton reportedId={m.senderId} contextType="plan" contextId={plan.id} onReported={() => void load()} />}
           </div>
         ))}
         {loaded && !error && messages.length === 0 && (

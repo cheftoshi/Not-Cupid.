@@ -1,4 +1,5 @@
 import { after, NextRequest, NextResponse } from 'next/server';
+import { reportedFriendIds } from '@/lib/friend-report-policy';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { activeCircleOf } from '@/lib/friend-circles';
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest) {
 
   const circleId = await activeCircleOf(user.id);
   if (!circleId) return NextResponse.json({ circleId: null, members: [], messages: [] });
+  const excluded = await reportedFriendIds(user.id).catch(() => null);
+  if (!excluded) return NextResponse.json({ error: 'Safety checks unavailable' }, { status: 503 });
 
   const { data: memberRows } = await supabaseAdmin
     .from('friend_circle_members')
@@ -35,7 +38,7 @@ export async function GET(req: NextRequest) {
     || (memberData ?? []).some((member: any) => !sameRealm(user, member));
   // Mark the caller + float them first, so the "who's here" roster can say "you".
   const members = (memberData ?? [])
-    .filter((member: any) => sameRealm(user, member))
+    .filter((member: any) => sameRealm(user, member) && !excluded.has(member.id))
     .map(({ is_test: _isTest, ...m }: any) => ({ ...m, isMe: m.id === user.id }))
     .sort((a: any, b: any) => (a.isMe === b.isMe ? 0 : a.isMe ? -1 : 1));
 
@@ -58,7 +61,7 @@ export async function GET(req: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(200)
     : { data: [] };
-  const messages = (recentMsgs ?? []).slice().reverse();
+  const messages = (recentMsgs ?? []).filter(m => !excluded.has(m.sender_id)).reverse();
 
   let unread = 0;
   if (canSee) {

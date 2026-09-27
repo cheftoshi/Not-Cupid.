@@ -1,4 +1,5 @@
 import { after, NextRequest, NextResponse } from 'next/server';
+import { reportedFriendIds } from '@/lib/friend-report-policy';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { rateLimit } from '@/lib/rate-limit';
@@ -52,7 +53,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .order('created_at', { ascending: false })
     .limit(200);
   if (commentsError) return NextResponse.json({ error: 'Could not load this conversation.' }, { status: 503 });
-  const comments = (newestComments ?? []).slice().reverse();
+  const excluded = await reportedFriendIds(user.id).catch(() => null);
+  if (!excluded) return NextResponse.json({ error: 'Safety checks unavailable' }, { status: 503 });
+  const comments = (newestComments ?? []).filter(c => !excluded.has(c.user_id)).reverse();
 
   const ids = Array.from(new Set((comments ?? []).map((c) => c.user_id)));
   const { data: users } = await supabaseAdmin
@@ -69,7 +72,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json({
     comments: (comments ?? []).map((c) => {
       const u: any = byId.get(c.user_id) || {};
-      return { id: c.id, clientId: c.user_id === user.id ? c.client_id : null, body: c.body, created_at: c.created_at, name: u.name, photo_url: u.photo_url, isMe: c.user_id === user.id };
+      return { id: c.id, senderId: c.user_id, clientId: c.user_id === user.id ? c.client_id : null, body: c.body, created_at: c.created_at, name: u.name, photo_url: u.photo_url, isMe: c.user_id === user.id };
     }),
     realtimeTopic: chatRealtimeTopic('friend-plan', id),
   });

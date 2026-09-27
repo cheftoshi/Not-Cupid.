@@ -1,4 +1,5 @@
 import "server-only";
+import { reportedFriendIds } from '@/lib/friend-report-policy';
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendPushToUserDetailed, type PushPayload } from "@/lib/push";
 import { deliverLoveMessageNotification } from "@/lib/love-message-notification";
@@ -88,6 +89,15 @@ export async function processNotificationOutbox(limit = 25) {
       let delivered = false;
       let errorCode = "delivery_failed";
       if (job.job_type === "push") {
+        if (job.actor_id && job.entity_type?.startsWith('friend_') &&
+            (await reportedFriendIds(job.recipient_id)).has(job.actor_id)) {
+          const skipped = await supabaseAdmin.rpc('skip_notification_job', {
+            p_job_id: job.id, p_reason: 'friend_pair_reported',
+          });
+          if (skipped.error) throw skipped.error;
+          if (skipped.data) result.skipped++;
+          continue;
+        }
         if (
           job.entity_type === "date_plan" &&
           !(await dateNoticeStillRelevant(job))

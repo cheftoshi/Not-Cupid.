@@ -40,10 +40,9 @@ export async function POST() {
     .delete()
     .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
 
-  // Friend line: drop connections + history + leave circles so they re-pool.
+  // A refresh must never undo another person's decline or safety history.
   await supabaseAdmin.from('friend_connections').delete()
-    .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
-  await supabaseAdmin.from('friend_match_history').delete()
+    .neq('status', 'declined')
     .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
   // Soft-leave any friend circles (matches the app's left_at convention).
   await supabaseAdmin.from('friend_circle_members')

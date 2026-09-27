@@ -1,4 +1,5 @@
 import { after, NextRequest, NextResponse } from 'next/server';
+import { reportedFriendIds } from '@/lib/friend-report-policy';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { rateLimit } from '@/lib/rate-limit';
@@ -12,6 +13,8 @@ export const dynamic = 'force-dynamic';
 // chat (which lives in friend_circles). Only a `status='connected'` pair can DM.
 
 async function areConnected(userId: string, otherId: string): Promise<boolean> {
+  const excluded = await reportedFriendIds(userId).catch(() => null);
+  if (!excluded || excluded.has(otherId)) return false;
   const [aId, bId] = [userId, otherId].sort();
   const { data } = await supabaseAdmin
     .from('friend_connections')

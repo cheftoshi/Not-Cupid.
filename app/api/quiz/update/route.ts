@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { clampQuizScore, validQuizObjects } from '@/lib/quiz-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,10 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== 'object' || Array.isArray(body) || !validQuizObjects(body)) {
+    return NextResponse.json({ error: 'Quiz details must be objects of at most 5000 characters.' }, { status: 400 });
+  }
   const {
     score_honesty,
     score_emotionality,
@@ -30,13 +34,13 @@ export async function POST(req: NextRequest) {
 
   const clamp100 = (v: any) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
   const updates: any = {
-    score_honesty,
-    score_emotionality,
-    score_extraversion,
-    score_agreeableness,
-    score_conscientiousness,
-    score_openness,
-    archetype,
+    score_honesty: clampQuizScore(score_honesty),
+    score_emotionality: clampQuizScore(score_emotionality),
+    score_extraversion: clampQuizScore(score_extraversion),
+    score_agreeableness: clampQuizScore(score_agreeableness),
+    score_conscientiousness: clampQuizScore(score_conscientiousness),
+    score_openness: clampQuizScore(score_openness),
+    archetype: archetype == null ? archetype : String(archetype).slice(0, 80),
     status: 'waiting',
     pool_active: true,
     roster_snapshot: [],

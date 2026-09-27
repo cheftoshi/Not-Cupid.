@@ -7,6 +7,7 @@ import { metroOf } from '@/lib/quiz-data';
 import { friendLocationContext, friendMetroLabel, travelerPresenceByUser } from '@/lib/friend-location';
 import { connectionInFriendSegment, travelMatchExpiry, travelSegmentCapacity } from '@/lib/friend-travel';
 import { sameRealm } from '@/lib/realm';
+import { reportedFriendIds } from '@/lib/friend-report-policy';
 
 // Auto-assign: top the user up to the current segment's friend-match capacity by
 // score, excluding anyone they already have a connection or history with, and
@@ -14,7 +15,7 @@ import { sameRealm } from '@/lib/realm';
 // every matches-fetch, so we don't need a cron for v1. Returns # created.
 export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNECTIONS): Promise<number> {
   const { data: me } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
-  if (!me || !me.friend_opted_in_at) return 0;
+  if (!me || !me.friend_opted_in_at || me.is_blocked || me.deleted_at) return 0;
 
   // Ghosted/paused users are locked out of BOTH lines until they refresh their
   // profile (which clears the flag). Don't assign them any new friend matches.
@@ -30,10 +31,11 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     .eq('status', 'pending').not('match_expires_at', 'is', null)
     .lt('match_expires_at', new Date().toISOString());
 
-  const { data: conns } = await supabaseAdmin
+  const { data: conns, error: connectionsError } = await supabaseAdmin
     .from('friend_connections')
     .select('user_a_id, user_b_id, status, match_metro')
     .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`);
+  if (connectionsError) return 0;
   const location = await friendLocationContext(me);
   const targetMetro = location.metro;
   const segmentMax = location.isTraveling ? travelSegmentCapacity(max, FRIEND_MAX_CONNECTIONS) : max;
@@ -43,11 +45,12 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
   if (active.length >= segmentMax) return 0;
   const need = segmentMax - active.length;
 
-  const { data: hist } = await supabaseAdmin
+  const { data: hist, error: historyError } = await supabaseAdmin
     .from('friend_match_history')
     .select('user_a_id, user_b_id')
     .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`);
-  const seen = new Set<string>();
+  if (historyError) return 0;
+  const seen = await reportedFriendIds(userId);
   [...(conns ?? []), ...(hist ?? [])].forEach((r: any) =>
     seen.add(r.user_a_id === userId ? r.user_b_id : r.user_a_id)
   );
@@ -61,6 +64,7 @@ export async function assignFriendMatches(userId: string, max = FRIEND_MAX_CONNE
     .select('id, age, gender, is_test, is_lgbtq, friend_age_min, friend_age_max, friend_seeking, friend_vibes, zip, score_openness, score_extraversion, score_agreeableness, score_honesty, score_conscientiousness')
     .not('friend_opted_in_at', 'is', null)
     .is('deleted_at', null)
+    .neq('is_blocked', true)
     // Query-time realm boundary: never even download the other realm into the
     // candidate pool. Keep legacy NULL rows in the real realm, matching
     // sameRealm's fail-safe normalization. The JS check below remains as

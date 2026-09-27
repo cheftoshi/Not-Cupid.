@@ -1,4 +1,5 @@
 'use client';
+import FriendReportButton from '@/components/friend-report-button';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -726,6 +727,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
             <div style={{ minWidth: 0 }}>
               <span className={s.activityCommentName}>{(c.name || 'someone').split(' ')[0]}</span>
               <span className={s.activityCommentBody}>{c.body}</span>
+              {!c.isMe && c.senderId && isEvent && <FriendReportButton reportedId={c.senderId} contextType="plan" contextId={a.id} onReported={() => void loadComments()} />}
             </div>
           </div>
         ))}
@@ -1833,6 +1835,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 : <span style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', display: 'inline-block' }} />}
               <div className={s.chatHeaderText}>
                 <div className={s.chatTitle}>{m.name}</div>
+                <FriendReportButton reportedId={m.otherId} contextType="dm" contextId={m.otherId} onReported={() => setDmWith(null)} />
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>🔒 private message · just you two</div>
               </div>
               <button onClick={() => setDmWith(null)} aria-label="close private chat" className={s.chatClose}>✕</button>
@@ -1879,6 +1882,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   <div className={`${s.chatBubble} ${msg.failed ? s.chatBubbleFailed : msg.isMe ? s.chatBubbleMine : s.chatBubbleTheirs}`} style={{ opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
                   {msg.pending && <span className={s.chatFailed}>sending…</span>}
                   {msg.failed && <button type="button" className={s.chatRetry} disabled={clubSending} onClick={() => void sendClubMsg(msg)}>Not confirmed · retry</button>}
+                  {!msg.isMe && msg.senderId && <FriendReportButton reportedId={msg.senderId} contextType="club" contextId={clubChat.id} onReported={() => void loadClubChat(clubChat.id)} />}
                 </div>
               ))}
               <div ref={clubEndRef} />
@@ -2154,7 +2158,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                               <div key={mm.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
                                 {sender?.photo_url ? <img src={sender.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover' }} /> : <div style={{ width: 26, height: 26, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)' }} />}
                                 <div><span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.5rem', color: 'var(--h-text-dim)' }}>{sender?.name?.split(' ')[0] || '—'}</span>
-                                  <div style={{ background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, borderRadius: 12, padding: '0.45rem 0.75rem', fontSize: '0.9rem', maxWidth: 520 }}>{mm.body}</div></div>
+                                  <div style={{ background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, borderRadius: 12, padding: '0.45rem 0.75rem', fontSize: '0.9rem', maxWidth: 520 }}>{mm.body}</div>
+                                  {sender && !sender.isMe && <FriendReportButton reportedId={mm.sender_id} contextType="circle" contextId={chat.circleId} onReported={() => void loadChat(true)} />}
+                                </div>
                               </div>
                             );
                           })}

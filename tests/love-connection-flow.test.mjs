@@ -325,12 +325,12 @@ test('phone match room separates chat, plan, and profile below the measured PWA 
 test('ending remains free and safe but does not replenish a user-started roster pick', () => {
   const route = readFileSync(new URL('../app/api/matches/[id]/end/route.ts', import.meta.url), 'utf8');
   const dialog = readFileSync(new URL('../components/end-match-dialog.tsx', import.meta.url), 'utf8');
-  assert.match(route, /status: 'ended'/);
-  assert.match(route, /status: 'waiting'/);
-  assert.match(route, /match_history/);
+  // State/history/penalty transitions now execute atomically in PostgreSQL.
+  // Runtime eligibility is exercised in safety-group-three.sql and route tests.
+  assert.match(route, /end_love_match_safely/);
   assert.match(dialog, /does not replenish a pick you started/);
   assert.match(dialog, /end connection →/);
-  assert.match(route, /returnLovePickEntitlement\(matchId, user\.id\)/);
+  assert.match(route, /returnLovePickEntitlement\(id, user\.id\)/);
 });
 
 test('every terminal or legacy Love pair is excluded before another pick can fail', () => {

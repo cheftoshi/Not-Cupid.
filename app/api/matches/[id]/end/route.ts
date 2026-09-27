@@ -1,113 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
-import { GHOST_COOLDOWN_DAYS, GHOST_PAUSE_AT } from '@/lib/ghost'
-import { returnLovePickEntitlement } from '@/lib/love-pick-access'
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase';
+import { returnLovePickEntitlement } from '@/lib/love-pick-access';
 
-export const dynamic = 'force-dynamic'
-
-type Reason = 'ghosted' | 'not_vibing' | 'user_ended'
-const VALID_REASONS: Reason[] = ['ghosted', 'not_vibing', 'user_ended']
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  let body: any = {}
-  try { body = await req.json() } catch { /* end with no body is OK */ }
-
-  const reason: Reason = VALID_REASONS.includes(body?.reason) ? body.reason : 'user_ended'
-
-  const { id: matchId } = await params
-
-  const { data: match } = await supabaseAdmin
-    .from('matches')
-    .select('*')
-    .eq('id', matchId)
-    .single()
-
-  if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 })
-  if (match.user_1_id !== user.id && match.user_2_id !== user.id) {
-    return NextResponse.json({ error: 'Not your match' }, { status: 403 })
-  }
-  if (match.status === 'ended') {
-    return NextResponse.json({ success: true, alreadyEnded: true })
-  }
-
-  const targetId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id
-  const bothAccepted = !!(match.user_1_accepted && match.user_2_accepted)
-  const now = new Date().toISOString()
-
-  // End the match
-  const { error: matchError } = await supabaseAdmin
-    .from('matches')
-    .update({
-      status: 'ended',
-      ended_at: now,
-      ended_reason: reason,
-      chat_expires_at: now,
-    })
-    .eq('id', matchId)
-
-  if (matchError) {
-    console.error('End match error:', matchError)
-    return NextResponse.json({ error: 'Could not end match' }, { status: 500 })
-  }
-  if (!bothAccepted) await returnLovePickEntitlement(matchId, user.id)
-
-  // Record end_reports row (admin moderation context, always)
-  await supabaseAdmin.from('end_reports').insert({
-    match_id: matchId,
-    reporter_id: user.id,
-    target_id: targetId,
-    reason,
-  })
-
-  // Add to match_history to prevent re-matching
-  const [aId, bId] = [match.user_1_id, match.user_2_id].sort()
-  await supabaseAdmin.from('match_history').upsert(
-    { user_a_id: aId, user_b_id: bId, match_id: matchId, outcome: reason },
-    { onConflict: 'user_a_id,user_b_id' }
-  )
-
-  // Return both parties to the pool so they can be matched again (otherwise a
-  // stale 'matched' status strands them: roster shows, but picking can't claim).
-  // Ghost penalties below are enforced separately via matching_disabled_at /
-  // matching_cooldown_until, so 'waiting' here is safe.
-  await supabaseAdmin.from('users').update({ status: 'waiting' }).in('id', [match.user_1_id, match.user_2_id])
-
-  if (reason === 'ghosted') {
-    // Only count ghost reports if the match actually reached mutual acceptance —
-    // prevents weaponizing the report against people who simply passed.
-    if (bothAccepted) {
-      const { data: target } = await supabaseAdmin
-        .from('users')
-        .select('ghost_reports_received, ghost_strikes, is_test')
-        .eq('id', targetId)
-        .single()
-
-      // Test accounts are exempt — they're for QA and never penalized.
-      if (!target?.is_test) {
-        const strikes = (target?.ghost_strikes ?? 0) + 1
-        const updates: any = {
-          ghost_strikes: strikes, // permanent — reactivate can't zero this
-          ghost_reports_received: (target?.ghost_reports_received ?? 0) + 1,
-        }
-
-        // Escalate by LIFETIME strikes (so a reactivate that zeroes the soft
-        // counter can't reset the ladder): 1–2 → cooldown, 3+ → full pause.
-        // Past the hard cap the pause stays but self-reactivate is refused
-        // (enforced in /api/profile/reactivate), so no extra flag needed here.
-        if (strikes >= GHOST_PAUSE_AT) {
-          updates.matching_disabled_at = now
-        } else {
-          updates.matching_cooldown_until = new Date(Date.now() + GHOST_COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString()
-        }
-
-        await supabaseAdmin.from('users').update(updates).eq('id', targetId)
-      }
-    }
-  }
-
-  return NextResponse.json({ success: true })
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const body = await req.json().catch(() => ({}));
+  const reason = ['ghosted', 'not_vibing', 'user_ended'].includes(body?.reason) ? body.reason : 'user_ended';
+  const { id } = await params;
+  const { data, error } = await supabaseAdmin.rpc('end_love_match_safely', {
+    p_match: id, p_user: user.id, p_reason: reason,
+  });
+  if (error) return NextResponse.json({ error: 'Could not end match' }, { status: 503 });
+  if (!data) return NextResponse.json({ error: 'Match unavailable' }, { status: 404 });
+  // Entitlement returns are idempotent; retrying after a network failure is safe.
+  if (!data.was_mutual) await returnLovePickEntitlement(id, user.id);
+  return NextResponse.json({ success: true, alreadyEnded: !data.changed });
 }
