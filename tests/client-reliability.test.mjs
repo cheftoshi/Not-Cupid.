@@ -47,7 +47,7 @@ test('shared client telemetry cannot turn a failed analytics request into an app
     assert.match(source(path), /fetch\([\s\S]*?\.catch\(\(\) => \{\}\)/, `${path} should swallow best-effort telemetry failures`);
   }
   const prompt = source('components/pwa-prompt.tsx');
-  assert.match(prompt, /import \{ subscribeToPush \} from '@\/lib\/push-client'/);
+  assert.match(prompt, /import \{ subscribeToPush \} from ["']@\/lib\/push-client["']/);
   assert.doesNotMatch(prompt, /function urlBase64ToUint8Array/);
 });
 

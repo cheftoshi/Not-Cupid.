@@ -268,6 +268,10 @@ supersede them.
   after 14 days or at their start time, whichever is sooner. Confirmed dates
   remain reachable. A withdrawn request can be retried; a host's pass cannot.
 - Closed requests have distinct filled/passed/cancelled/expired in-app outcomes.
+  Outcomes are owner-dismissible and age out of Home after 30 days; direct
+  links retain closure explanations. Withdraw/re-request uses one stable
+  request-notice key. Outbox skips are not deliveries. PWA prompts reserve
+  Home control space and suspend temporarily for editing/dialogs, not scrolling.
   Request/accept/pass/fill/cancel/venue push notices use the transactional outbox;
   delivery rechecks blocks, deletion, test realm, and current state. Date emails
   remain disabled. Confirmed venue edits add a private conversation note.

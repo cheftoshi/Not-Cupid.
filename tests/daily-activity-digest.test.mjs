@@ -103,6 +103,6 @@ test('Love message push stays immediate while email folds into the daily drop af
   const activationIndex = delivery.indexOf('dailyActivityEmailActivation().enabled');
   assert.ok(pushIndex >= 0 && activationIndex > pushIndex);
   assert.match(messages, /enqueueLoveMessageNotification/);
-  assert.match(delivery, /if \(dailyActivityEmailActivation\(\)\.enabled\) return/);
+  assert.match(delivery, /if \(dailyActivityEmailActivation\(\)\.enabled\)\s+return/);
   assert.match(delivery, /idempotencyKey: `chat-message-/);
 });

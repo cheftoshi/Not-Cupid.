@@ -113,13 +113,40 @@ test.describe('authenticated test-realm mobile path', () => {
     await page.goto('/hub');
     await page.getByRole('button',{name:'Dates',exact:true}).click();
     await page.getByRole('button',{name:'Request again →',exact:true}).click();
-    await expect(page.locator('[data-pwa-prompt]')).toHaveCount(0);
     await expect(page.getByRole('button',{name:'Withdraw request',exact:true})).toBeVisible();
     status='filled';
     await page.getByRole('button',{name:'Refresh invitations',exact:true}).click();
     await page.getByText('Your date updates · 1',{exact:true}).click();
     await expect(page.getByText('This invitation has been filled. Your request is now closed.',{exact:true})).toBeVisible();
     await expect(page.getByRole('button',{name:'Withdraw request',exact:true})).toHaveCount(0);
+    await page.route(`**/api/date-plans/${id}/outcome`,route=>{
+      expect(route.request().method()).toBe('DELETE');return route.fulfill({json:{ok:true}});
+    });
+    await page.getByRole('button',{name:'Dismiss update for QA request recovery',exact:true}).click();
+    await expect(page.getByText('Your date updates · 1',{exact:true})).toHaveCount(0);
+  });
+
+  test('contextual push survives scrolling and Home controls stay reachable', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'Notification', { configurable:true, value:{permission:'default'} });
+      Object.defineProperty(window, 'PushManager', { configurable:true, value:function(){} });
+    });
+    await page.goto('/hub');
+    await page.evaluate(() => window.dispatchEvent(new Event('nc:show-push-prompt')));
+    const prompt = page.locator('[data-pwa-prompt]');
+    await expect(prompt.getByRole('button',{name:'notify me about this connection'})).toBeVisible();
+    await page.getByRole('button',{name:'Dates',exact:true}).click();
+    await page.getByRole('button',{name:'Refresh invitations',exact:true}).click();
+    await expect(prompt).toBeVisible();
+    await expect.poll(async () => {
+      const p=await prompt.boundingBox();
+      const c=await page.getByRole('button',{name:/^Conversations ·/}).boundingBox();
+      return !!p && !!c && c.y+c.height<=p.y;
+    }).toBe(true);
+    await page.getByRole('button',{name:/^Conversations ·/}).click();
+    await expect(prompt).toHaveCount(0);
+    await page.getByRole('button',{name:'Close conversations'}).click();
+    await expect(prompt).toBeVisible();
   });
 
   test('cancelled dates show a read-only chat and no venue editor', async ({ page }) => {

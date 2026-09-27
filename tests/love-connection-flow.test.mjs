@@ -125,7 +125,7 @@ test('chat notification email failures remain retryable and route retries are id
   const email = readFileSync(new URL('../lib/email.ts', import.meta.url), 'utf8');
   assert.match(messages, /enqueueLoveMessageNotification\([\s\S]*messageId: message\.id/);
   assert.match(notification, /idempotencyKey: `chat-message-/);
-  assert.match(notification, /if \(!emailResult\.ok\) return \{ complete: false/);
+  assert.match(notification, /if \(!emailResult\.ok\)\s+return \{ complete: false/);
   assert.match(email, /providerMessage: safeProviderMessage/);
   assert.match(email, /redacted-email/);
 });

@@ -42,6 +42,23 @@ export type DateOutcome = {
   status: string;
   message: string;
 };
+export function dateOutcomeVisible(
+  request: { dismissed_at?: string | null; status_updated_at: string },
+  outcome: { status: string },
+  expiresAt: string,
+  happensAt: string | null,
+  now = Date.now(),
+) {
+  if (request.dismissed_at) return false;
+  const resolved =
+    outcome.status === "expired"
+      ? Math.min(
+          Date.parse(expiresAt),
+          happensAt ? Date.parse(happensAt) : Infinity,
+        )
+      : Date.parse(request.status_updated_at);
+  return Number.isFinite(resolved) && resolved >= now - 30 * DAY;
+}
 export function dateOutcome(
   status: string,
   state: string,

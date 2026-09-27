@@ -78,22 +78,26 @@ export async function processNotificationOutbox(limit = 25) {
   const result = {
     claimed: jobs?.length || 0,
     delivered: 0,
+    skipped: 0,
     retried: 0,
     dead: 0,
   };
   for (const job of jobs ?? []) {
     try {
       let complete = false;
+      let delivered = false;
       let errorCode = "delivery_failed";
       if (job.job_type === "push") {
         if (
           job.entity_type === "date_plan" &&
           !(await dateNoticeStillRelevant(job))
         ) {
-          await supabaseAdmin.rpc("complete_notification_job", {
+          const skipped = await supabaseAdmin.rpc("skip_notification_job", {
             p_job_id: job.id,
+            p_reason: "date_notice_no_longer_relevant",
           });
-          result.delivered++;
+          if (skipped.error) throw skipped.error;
+          if (skipped.data) result.skipped++;
           continue;
         }
         const delivery = await sendPushToUserDetailed(
@@ -101,13 +105,16 @@ export async function processNotificationOutbox(limit = 25) {
           job.payload as PushPayload,
         );
         complete = !delivery.retryable;
+        delivered = delivery.delivered;
         errorCode = delivery.reason;
       } else if (job.job_type === "love_chat_message") {
         if (!job.actor_id || !job.payload?.messageId) {
-          await supabaseAdmin.rpc("complete_notification_job", {
+          const skipped = await supabaseAdmin.rpc("skip_notification_job", {
             p_job_id: job.id,
+            p_reason: "invalid_message_job",
           });
-          result.dead++;
+          if (skipped.error) throw skipped.error;
+          if (skipped.data) result.skipped++;
           continue;
         }
         const delivery = await deliverLoveMessageNotification({
@@ -117,15 +124,25 @@ export async function processNotificationOutbox(limit = 25) {
           messageId: String(job.payload?.messageId || ""),
         });
         complete = delivery.complete;
+        delivered = delivery.delivered === true;
         errorCode = delivery.errorCode || errorCode;
       } else {
         complete = true;
       }
       if (complete) {
-        await supabaseAdmin.rpc("complete_notification_job", {
-          p_job_id: job.id,
-        });
-        result.delivered++;
+        const finished = delivered
+          ? await supabaseAdmin.rpc("complete_notification_job", {
+              p_job_id: job.id,
+            })
+          : await supabaseAdmin.rpc("skip_notification_job", {
+              p_job_id: job.id,
+              p_reason: errorCode,
+            });
+        if (finished.error) throw finished.error;
+        if (finished.data) {
+          if (delivered) result.delivered++;
+          else result.skipped++;
+        }
       } else {
         const { data: status } = await supabaseAdmin.rpc(
           "fail_notification_job",

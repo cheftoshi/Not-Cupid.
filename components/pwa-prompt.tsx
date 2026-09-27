@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { isNativeShell } from '@/lib/native-platform';
-import { trackLoveEvent } from '@/lib/love-events-client';
-import { subscribeToPush } from '@/lib/push-client';
+import { useEffect, useRef, useState } from "react";
+import { isNativeShell } from "@/lib/native-platform";
+import { trackLoveEvent } from "@/lib/love-events-client";
+import { subscribeToPush } from "@/lib/push-client";
 
 // PWA niceties — a FLOATING prompt mounted ONCE in the root layout, so the
 // "install the app" tag shows on EVERY page (not just dashboard/friends):
@@ -16,15 +16,15 @@ import { subscribeToPush } from '@/lib/push-client';
 // A logged-out user who grants push gets silently subscribed on their next
 // logged-in load via the `granted` branch.
 
-const INSTALL_DISMISS_KEY = 'nc_pwa_install_dismissed';
-const PUSH_DISMISS_KEY = 'nc_pwa_push_dismissed';
+const INSTALL_DISMISS_KEY = "nc_pwa_install_dismissed";
+const PUSH_DISMISS_KEY = "nc_pwa_push_dismissed";
 const DISMISS_MS = 24 * 60 * 60 * 1000;
 
 function dismissedRecently(key: string) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return false;
-    if (raw === '1') {
+    if (raw === "1") {
       localStorage.removeItem(key);
       return false;
     }
@@ -35,41 +35,47 @@ function dismissedRecently(key: string) {
   }
 }
 
-function getInstallMode(): false | 'native' | 'ios' | 'fallback' {
-  if (typeof window === 'undefined') return false;
+function getInstallMode(): false | "native" | "ios" | "fallback" {
+  if (typeof window === "undefined") return false;
   if (isNativeShell()) return false;
   const standalone =
-    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.matchMedia?.("(display-mode: standalone)").matches ||
     (navigator as any).standalone === true;
   if (standalone) return false;
   const ua = navigator.userAgent;
-  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
-  if (/android|mobile/i.test(ua)) return 'fallback';
+  if (/iphone|ipad|ipod/i.test(ua)) return "ios";
+  if (/android|mobile/i.test(ua)) return "fallback";
   return false;
 }
 
-export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
+export default function PwaPrompt({ accent = "#2563ff" }: { accent?: string }) {
   const [showPush, setShowPush] = useState(false);
-  const [showInstall, setShowInstall] = useState<false | 'native' | 'ios' | 'fallback'>(false);
+  const [showInstall, setShowInstall] = useState<
+    false | "native" | "ios" | "fallback"
+  >(false);
   const [busy, setBusy] = useState(false);
-  const [pushError, setPushError] = useState('');
+  const [pushError, setPushError] = useState("");
   const [installEvt, setInstallEvt] = useState<any>(null);
+  const [suspended, setSuspended] = useState(false);
+  const promptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     // Capacitor is already an installed app. Web Push only works reliably for
     // browser/Home Screen PWAs on iOS; the native build will use APNs instead.
     if (isNativeShell()) return;
     const installDismissed = dismissedRecently(INSTALL_DISMISS_KEY);
     const standalone =
-      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.matchMedia?.("(display-mode: standalone)").matches ||
       (navigator as any).standalone === true;
 
     // ── push ──
     const pushSupported =
-      'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window;
     if (pushSupported && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === "granted") {
         // Keep the subscription fresh silently — no UI.
         subscribeToPush({ repair: true }).catch(() => {});
       }
@@ -78,15 +84,17 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
     // ── install ──
     if (!standalone && !installDismissed) {
       const installMode = getInstallMode();
-      if (installMode === 'ios' || installMode === 'fallback') setShowInstall(installMode);
-      if (installMode !== 'ios') {
+      if (installMode === "ios" || installMode === "fallback")
+        setShowInstall(installMode);
+      if (installMode !== "ios") {
         const onPrompt = (e: Event) => {
           e.preventDefault();
           setInstallEvt(e);
-          setShowInstall('native');
+          setShowInstall("native");
         };
-        window.addEventListener('beforeinstallprompt', onPrompt);
-        return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+        window.addEventListener("beforeinstallprompt", onPrompt);
+        return () =>
+          window.removeEventListener("beforeinstallprompt", onPrompt);
       }
     }
   }, []);
@@ -94,78 +102,130 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
   useEffect(() => {
     function showContextualPushPrompt() {
       if (isNativeShell()) return;
-      const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-      if (!supported || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || Notification.permission !== 'default') return;
+      const supported =
+        "serviceWorker" in navigator &&
+        "PushManager" in window &&
+        "Notification" in window;
+      if (
+        !supported ||
+        !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+        Notification.permission !== "default"
+      )
+        return;
       if (dismissedRecently(PUSH_DISMISS_KEY)) return;
       setShowPush(true);
-      trackLoveEvent('push_prompt_shown');
+      trackLoveEvent("push_prompt_shown");
     }
-    window.addEventListener('nc:show-push-prompt', showContextualPushPrompt);
-    if (new URLSearchParams(window.location.search).get('prompt_push') === '1') showContextualPushPrompt();
-    return () => window.removeEventListener('nc:show-push-prompt', showContextualPushPrompt);
+    window.addEventListener("nc:show-push-prompt", showContextualPushPrompt);
+    if (new URLSearchParams(window.location.search).get("prompt_push") === "1")
+      showContextualPushPrompt();
+    return () =>
+      window.removeEventListener(
+        "nc:show-push-prompt",
+        showContextualPushPrompt,
+      );
   }, []);
 
   useEffect(() => {
     function forceInstallPrompt() {
       if (isNativeShell()) return;
-      try { localStorage.removeItem(INSTALL_DISMISS_KEY); } catch { /* ignore */ }
-      setShowInstall(installEvt ? 'native' : getInstallMode() || 'fallback');
+      try {
+        localStorage.removeItem(INSTALL_DISMISS_KEY);
+      } catch {
+        /* ignore */
+      }
+      setShowInstall(installEvt ? "native" : getInstallMode() || "fallback");
     }
-    window.addEventListener('nc:show-install-prompt', forceInstallPrompt);
-    return () => window.removeEventListener('nc:show-install-prompt', forceInstallPrompt);
+    window.addEventListener("nc:show-install-prompt", forceInstallPrompt);
+    return () =>
+      window.removeEventListener("nc:show-install-prompt", forceInstallPrompt);
   }, [installEvt]);
 
   useEffect(() => {
-    // Optional acquisition prompts must never cover a composer or modal action.
-    // Hide for this visit (not a permanent dismissal); the menu can reopen them.
-    function pausePrompts() {
-      setShowInstall(false);
-      setShowPush(false);
+    // Temporarily suspend during composition, never dismiss because someone scrolls.
+    const selector = '[role="dialog"], dialog[open]';
+    let frame = 0;
+    function scheduleCheck() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const editing = document.activeElement?.matches(
+          'input, textarea, select, [contenteditable="true"]',
+        );
+        setSuspended(!!editing || !!document.querySelector(selector));
+      });
     }
-    function onFocus(event: FocusEvent) {
-      if (event.target instanceof Element && event.target.matches('input, textarea, [contenteditable="true"]')) pausePrompts();
-    }
-    function onAction(event: PointerEvent) {
-      if (!(event.target instanceof Element) || event.target.closest('[data-pwa-prompt]')) return;
-      if (event.target.closest('button, a, input, select, textarea, summary')) pausePrompts();
-    }
-    function checkDialog() {
-      if (document.querySelector('[role="dialog"], dialog[open]')) pausePrompts();
-    }
-    document.addEventListener('focusin', onFocus);
-    document.addEventListener('pointerdown', onAction, true);
-    // A floating acquisition prompt must not trap controls below it after scrolling.
-    window.addEventListener('scroll', pausePrompts, { passive: true });
-    const observer = new MutationObserver(checkDialog);
-    observer.observe(document.body, { childList: true, subtree: true });
-    checkDialog();
+    const observer = new MutationObserver((records) => {
+      if (
+        records.some(
+          (record) =>
+            record.type === "attributes" ||
+            [...record.addedNodes, ...record.removedNodes].some(
+              (node) =>
+                node instanceof Element &&
+                (node.matches(selector) || !!node.querySelector(selector)),
+            ),
+        )
+      )
+        scheduleCheck();
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["role", "open"],
+    });
+    document.addEventListener("focusin", scheduleCheck);
+    document.addEventListener("focusout", scheduleCheck);
+    scheduleCheck();
     return () => {
-      document.removeEventListener('focusin', onFocus);
-      document.removeEventListener('pointerdown', onAction, true);
-      window.removeEventListener('scroll', pausePrompts);
+      document.removeEventListener("focusin", scheduleCheck);
+      document.removeEventListener("focusout", scheduleCheck);
+      cancelAnimationFrame(frame);
       observer.disconnect();
     };
   }, []);
 
-  if (!showPush && !showInstall) return null;
+  const visible = !suspended && !!(showPush || showInstall);
+  useEffect(() => {
+    const root = document.documentElement;
+    const measure = () =>
+      root.style.setProperty(
+        "--app-pwa-prompt-height",
+        `${visible && promptRef.current ? Math.ceil(promptRef.current.getBoundingClientRect().height) + 28 : 0}px`,
+      );
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (promptRef.current) observer.observe(promptRef.current);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--app-pwa-prompt-height");
+    };
+  }, [visible, showPush, showInstall]);
+
+  if (!visible) return null;
 
   async function enablePush() {
     setBusy(true);
-    setPushError('');
+    setPushError("");
     try {
       const enabled = await subscribeToPush();
       if (enabled) {
-        trackLoveEvent('push_enabled');
+        trackLoveEvent("push_enabled");
         setShowPush(false);
       } else {
-        setPushError(typeof Notification !== 'undefined' && Notification.permission === 'denied'
-          ? 'Notifications are blocked in your browser settings. You can still check updates in the app.'
-          : 'Notifications could not be enabled. Try again, or check updates in the app.');
+        setPushError(
+          typeof Notification !== "undefined" &&
+            Notification.permission === "denied"
+            ? "Notifications are blocked in your browser settings. You can still check updates in the app."
+            : "Notifications could not be enabled. Try again, or check updates in the app.",
+        );
       }
     } catch {
       // The shared helper already fails closed; keep this guard so a browser
       // permission implementation can never surface an unhandled rejection.
-      setPushError('Notifications could not be enabled. You can still use the app.');
+      setPushError(
+        "Notifications could not be enabled. You can still use the app.",
+      );
     } finally {
       setBusy(false);
     }
@@ -176,80 +236,228 @@ export default function PwaPrompt({ accent = '#2563ff' }: { accent?: string }) {
     try {
       await installEvt.prompt();
       await installEvt.userChoice.catch(() => {});
-    } catch { /* browser dismissed or invalidated the install event */ }
-    finally { setShowInstall(false); }
+    } catch {
+      /* browser dismissed or invalidated the install event */
+    } finally {
+      setShowInstall(false);
+    }
   }
 
   function dismiss() {
     try {
       if (showPush) localStorage.setItem(PUSH_DISMISS_KEY, String(Date.now()));
-      if (showInstall) localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
-    } catch { /* Dismiss still works when browser storage is unavailable. */ }
-    if (showPush) trackLoveEvent('push_dismissed');
+      if (showInstall)
+        localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
+    } catch {
+      /* Dismiss still works when browser storage is unavailable. */
+    }
+    if (showPush) trackLoveEvent("push_dismissed");
     setShowPush(false);
     setShowInstall(false);
   }
 
   const pill: React.CSSProperties = {
     border: `1px solid ${accent}`,
-    background: 'var(--h-surface)',
+    background: "var(--h-surface)",
     color: accent,
     borderRadius: 999,
-    padding: '0.64rem 1rem',
+    padding: "0.64rem 1rem",
     fontFamily: "'Bebas Neue', system-ui, sans-serif",
-    fontSize: '1rem',
-    letterSpacing: '0.04em',
-    textTransform: 'uppercase',
-    cursor: 'pointer',
+    fontSize: "1rem",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+    cursor: "pointer",
   };
 
   return (
-    <div data-pwa-prompt style={{ position: 'fixed', left: '50%', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.8rem)', transform: 'translateX(-50%)', zIndex: 90, width: 'min(460px, calc(100vw - 1rem))' }}>
-      <div style={{ display: 'grid', gap: '0.65rem', background: 'color-mix(in srgb, var(--h-surface) 96%, transparent)', border: '1px solid var(--h-border)', borderRadius: 24, padding: '0.8rem', boxShadow: '0 20px 60px -22px rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+    <div
+      ref={promptRef}
+      data-pwa-prompt
+      style={{
+        position: "fixed",
+        left: "50%",
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 0.8rem)",
+        transform: "translateX(-50%)",
+        zIndex: 90,
+        width: "min(460px, calc(100vw - 1rem))",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gap: "0.65rem",
+          background: "color-mix(in srgb, var(--h-surface) 96%, transparent)",
+          border: "1px solid var(--h-border)",
+          borderRadius: 24,
+          padding: "0.8rem",
+          boxShadow: "0 20px 60px -22px rgba(0,0,0,0.55)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+        }}
+      >
         {showInstall && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.72rem', padding: '0.12rem 0.18rem 0' }}>
-            <img src="/icons/icon-192.png" alt="" style={{ width: 46, height: 46, borderRadius: 14, flexShrink: 0, boxShadow: '0 12px 26px -18px rgba(0,0,0,0.55)' }} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.72rem",
+              padding: "0.12rem 0.18rem 0",
+            }}
+          >
+            <img
+              src="/icons/icon-192.png"
+              alt=""
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 14,
+                flexShrink: 0,
+                boxShadow: "0 12px 26px -18px rgba(0,0,0,0.55)",
+              }}
+            />
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.06rem', lineHeight: 1.08, color: 'var(--h-text)' }}>Keep your connection experiment in your pocket.</div>
-              <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.76rem', lineHeight: 1.35, color: 'var(--h-text-dim)', marginTop: 4 }}>Install NotCupid for faster access to Love Line, Friend Line, chats, and real-plan pings.</div>
+              <div
+                style={{
+                  fontFamily: "Georgia, ui-serif, serif",
+                  fontStyle: "italic",
+                  fontSize: "1.06rem",
+                  lineHeight: 1.08,
+                  color: "var(--h-text)",
+                }}
+              >
+                Keep your connection experiment in your pocket.
+              </div>
+              <div
+                style={{
+                  fontFamily: "system-ui, sans-serif",
+                  fontSize: "0.76rem",
+                  lineHeight: 1.35,
+                  color: "var(--h-text-dim)",
+                  marginTop: 4,
+                }}
+              >
+                Install NotCupid for faster access to Love Line, Friend Line,
+                chats, and real-plan pings.
+              </div>
             </div>
           </div>
         )}
         {showInstall && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '0.35rem' }}>
-            {['love line', 'friend line', 'pings'].map((x) => (
-              <span key={x} style={{ textAlign: 'center', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.3rem 0.35rem', background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{x}</span>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+              gap: "0.35rem",
+            }}
+          >
+            {["love line", "friend line", "pings"].map((x) => (
+              <span
+                key={x}
+                style={{
+                  textAlign: "center",
+                  border: "1px solid var(--h-border)",
+                  borderRadius: 999,
+                  padding: "0.3rem 0.35rem",
+                  background: "var(--h-surface-2)",
+                  color: "var(--h-text-dim)",
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: "0.5rem",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {x}
+              </span>
             ))}
           </div>
         )}
         {showPush && (
-          <div style={{ display: 'grid', gap: '0.55rem' }}>
-            <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.9rem', lineHeight: 1.4, color: 'var(--h-text)', textAlign: 'center' }}>
-              Get a real-time ping when someone answers your Love Line choice or sends a message.
+          <div style={{ display: "grid", gap: "0.55rem" }}>
+            <div
+              style={{
+                fontFamily: "Georgia, ui-serif, serif",
+                fontStyle: "italic",
+                fontSize: "0.9rem",
+                lineHeight: 1.4,
+                color: "var(--h-text)",
+                textAlign: "center",
+              }}
+            >
+              Get a real-time ping when someone answers your Love Line choice or
+              sends a message.
             </div>
-            <button onClick={enablePush} disabled={busy} style={{ ...pill, background: accent, color: '#fff', width: '100%' }}>
-              {busy ? 'turning on…' : 'notify me about this connection'}
+            <button
+              onClick={enablePush}
+              disabled={busy}
+              style={{
+                ...pill,
+                background: accent,
+                color: "#fff",
+                width: "100%",
+              }}
+            >
+              {busy ? "turning on…" : "notify me about this connection"}
             </button>
-            {pushError && <p role="alert" style={{ fontSize: '0.9rem', lineHeight: 1.4, margin: 0 }}>{pushError}</p>}
+            {pushError && (
+              <p
+                role="alert"
+                style={{ fontSize: "0.9rem", lineHeight: 1.4, margin: 0 }}
+              >
+                {pushError}
+              </p>
+            )}
           </div>
         )}
-        {showInstall === 'native' && (
-          <button onClick={install} style={{ ...pill, width: '100%' }}>install NotCupid</button>
+        {showInstall === "native" && (
+          <button onClick={install} style={{ ...pill, width: "100%" }}>
+            install NotCupid
+          </button>
         )}
-        {showInstall === 'ios' && (
-          <div style={{ border: '1px dashed var(--h-border)', borderRadius: 16, padding: '0.7rem', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.45 }}>
-            <strong style={{ color: 'var(--h-text)' }}>iPhone install:</strong> tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>. It will open from your home screen like an app.
+        {showInstall === "ios" && (
+          <div
+            style={{
+              border: "1px dashed var(--h-border)",
+              borderRadius: 16,
+              padding: "0.7rem",
+              color: "var(--h-text-dim)",
+              fontSize: "0.82rem",
+              lineHeight: 1.45,
+            }}
+          >
+            <strong style={{ color: "var(--h-text)" }}>iPhone install:</strong>{" "}
+            tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>
+            . It will open from your home screen like an app.
           </div>
         )}
-        {showInstall === 'fallback' && (
-          <div style={{ border: '1px dashed var(--h-border)', borderRadius: 16, padding: '0.7rem', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.45 }}>
-            Open your browser menu and tap <strong>Install app</strong> or <strong>Add to Home Screen</strong>.
+        {showInstall === "fallback" && (
+          <div
+            style={{
+              border: "1px dashed var(--h-border)",
+              borderRadius: 16,
+              padding: "0.7rem",
+              color: "var(--h-text-dim)",
+              fontSize: "0.82rem",
+              lineHeight: 1.45,
+            }}
+          >
+            Open your browser menu and tap <strong>Install app</strong> or{" "}
+            <strong>Add to Home Screen</strong>.
           </div>
         )}
         <button
           onClick={dismiss}
           aria-label="dismiss"
-          style={{ justifySelf: 'center', minHeight: 44, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-dim)', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
+          style={{
+            justifySelf: "center",
+            minHeight: 44,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--h-text-dim)",
+            fontFamily: "'DM Mono', monospace",
+            fontSize: "0.8rem",
+            padding: "0.3rem 0.7rem",
+          }}
         >
           not now
         </button>

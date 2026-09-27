@@ -1,5 +1,5 @@
 .home { min-height: calc(100svh - var(--app-top-nav-height, 72px)); background: var(--h-bg); color: var(--h-text); padding: 24px max(16px, var(--app-safe-right, 0px)) calc(40px + var(--app-safe-bottom, 0px)) max(16px, var(--app-safe-left, 0px)); }
-.wrap { width: 100%; max-width: 760px; min-width: 0; margin: auto; overflow-wrap: anywhere; }
+.wrap { width: 100%; max-width: 760px; min-width: 0; margin: auto; overflow-wrap: anywhere; padding-bottom: var(--app-pwa-prompt-height, 0px); }
 .header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 20px; }
 .header h1 { font: 600 clamp(1.7rem, 5vw, 2.6rem)/1.12 'Playfair Display', Georgia, serif; margin: 8px 0; }
 .header p, .muted { color: var(--h-text-dim); line-height: 1.5; }
@@ -8,6 +8,7 @@
 .filters { margin: 18px 0; }
 .home button, .button { min-height: 44px; border: 1px solid var(--h-border); border-radius: 14px; background: var(--h-surface); color: var(--h-text); font: inherit; padding: 10px 16px; cursor: pointer; text-decoration: none; }
 .home button:disabled { opacity: .6; cursor: default; }
+.home .mobileChat { margin-bottom: var(--app-pwa-prompt-height, 0px); }
 .home button:focus-visible, .home a:focus-visible, .home input:focus-visible, .home textarea:focus-visible, .home select:focus-visible { outline: 3px solid var(--h-accent); outline-offset: 3px; }
 .home .primary, .home button[aria-pressed=true] { background: var(--h-text); color: var(--h-surface); border-color: var(--h-text); }
 .grid { display: grid; gap: 16px; }

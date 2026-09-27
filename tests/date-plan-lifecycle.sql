@@ -34,7 +34,7 @@ begin
   assert (result->>'changed')::boolean=false,'empty withdrawal changed';
   perform public.connection_date_action(p,a,'request');
   assert (select count(*)=1 from public.connection_date_requests where plan_id=p and user_id=a and status='pending'),'withdraw recovery failed';
-  assert (select count(*)=notices+1 from public.notification_jobs where entity_id=p::text),'re-request notified twice';
+  assert (select count(*)=notices from public.notification_jobs where entity_id=p::text),'re-request notified twice';
   perform public.connection_date_action(p,b,'request');
   select id into ra from public.connection_date_requests where plan_id=p and user_id=a;
   select id into rb from public.connection_date_requests where plan_id=p and user_id=b;
@@ -42,6 +42,14 @@ begin
   perform public.connection_date_action(p,h,'accept',ra);
   assert (select status='filled' from public.connection_date_requests where id=rb),'unchosen request treated as pass';
   assert (select count(*)=1 from public.notification_jobs where entity_id=p::text and recipient_id=b and payload->>'dateEvent'='filled'),'closure notice missing or duplicate';
+  assert not public.dismiss_date_outcome(p,c),'other user dismissed a request';
+  assert not public.dismiss_date_outcome(p,a),'accepted chat dismissed as outcome';
+  assert public.dismiss_date_outcome(p,b),'filled outcome cannot be dismissed';
+  assert public.dismiss_date_outcome(p,b),'dismissal not idempotent';
+  assert (select dismissed_at is not null from public.connection_date_requests where id=rb),'dismissal not stored';
+  update public.notification_jobs set status='processing' where entity_id=p::text and recipient_id=b;
+  assert public.skip_notification_job((select id from public.notification_jobs where entity_id=p::text and recipient_id=b limit 1),'qa_irrelevant'),'skip failed';
+  assert (select status='skipped' and delivered_at is null and skipped_at is not null from public.notification_jobs where entity_id=p::text and recipient_id=b limit 1),'skip counted delivered';
   denied:=false; begin perform public.connection_date_action(p,h,'accept',rb); exception when others then denied:=true; end;
   assert denied,'second guest accepted';
   perform public.set_date_meeting_place(p,h,'Cambridge','QA public cafe',key);
@@ -62,5 +70,7 @@ begin
   denied:=false; begin perform public.connection_date_action(p2,b,'request'); exception when others then denied:=true; end;
   assert denied,'host decline can be bypassed';
   assert not has_function_privilege('anon','public.set_date_meeting_place(uuid,uuid,text,text,uuid)','EXECUTE'),'anonymous venue RPC';
+  assert not has_function_privilege('authenticated','public.dismiss_date_outcome(uuid,uuid)','EXECUTE'),'client outcome RPC';
+  assert not has_function_privilege('anon','public.skip_notification_job(uuid,text)','EXECUTE'),'client skip RPC';
   assert not has_function_privilege('authenticated','public.connection_date_action(uuid,uuid,text,uuid,text,uuid)','EXECUTE'),'client date RPC';
 end $test$;

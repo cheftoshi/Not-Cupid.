@@ -6,9 +6,18 @@ export async function dateNoticeStillRelevant(job: {
   entity_id: string;
   recipient_id: string;
   actor_id: string | null;
+  dedupe_key?: string;
   payload: { dateEvent?: string };
 }) {
   if (!job.actor_id) return false;
+  // A legacy duplicate may already have been leased when the migration ran.
+  // The canonical historical job was renamed to the stable two-part key.
+  if (
+    job.payload.dateEvent === "pending" &&
+    job.dedupe_key?.startsWith("date-request:") &&
+    job.dedupe_key.split(":").length > 2
+  )
+    return false;
   const [plan, people, reports] = await Promise.all([
     supabaseAdmin
       .from("connection_date_plans")

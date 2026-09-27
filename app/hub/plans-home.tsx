@@ -708,6 +708,28 @@ export default function PlansHome({
                   <div key={o.planId} className={s.notice}>
                     <strong>{o.title}</strong>
                     <p>{o.message}</p>
+                    <button
+                      aria-label={`Dismiss update for ${o.title}`}
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(
+                            `/api/date-plans/${o.planId}/outcome`,
+                            { method: "DELETE" },
+                          );
+                          if (!response.ok)
+                            throw Error(
+                              "Could not dismiss the update. Try again.",
+                            );
+                          setOutcomes((items) =>
+                            items.filter((item) => item.planId !== o.planId),
+                          );
+                        } catch {
+                          setError("Could not dismiss the update. Try again.");
+                        }
+                      }}
+                    >
+                      Dismiss
+                    </button>
                   </div>
                 ))}
               </details>

@@ -7,10 +7,58 @@ import {
   datePreferredGenders,
   datePreferencesMatch,
   dateOutcome,
+  dateOutcomeVisible,
 } from "../lib/date-plan-lifecycle.ts";
 
 const now = Date.parse("2026-09-27T12:00:00Z");
 const day = 86400000;
+test("date updates expire from resolution time and respect dismissal", () => {
+  const recent = { status_updated_at: new Date(now - day).toISOString() };
+  assert.equal(
+    dateOutcomeVisible(recent, { status: "filled" }, "", null, now),
+    true,
+  );
+  assert.equal(
+    dateOutcomeVisible(
+      { ...recent, dismissed_at: new Date(now).toISOString() },
+      { status: "filled" },
+      "",
+      null,
+      now,
+    ),
+    false,
+  );
+  assert.equal(
+    dateOutcomeVisible(
+      { status_updated_at: new Date(now - 31 * day).toISOString() },
+      { status: "filled" },
+      "",
+      null,
+      now,
+    ),
+    false,
+  );
+  assert.equal(
+    dateOutcomeVisible(
+      { status_updated_at: new Date(now - 60 * day).toISOString() },
+      { status: "expired" },
+      new Date(now - day).toISOString(),
+      null,
+      now,
+    ),
+    true,
+  );
+  assert.equal(
+    dateOutcomeVisible(
+      recent,
+      { status: "expired" },
+      new Date(now - 31 * day).toISOString(),
+      null,
+      now,
+    ),
+    false,
+  );
+});
 test("confirmed dates outlive their discovery window", () => {
   const plan = {
     state: "confirmed",

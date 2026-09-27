@@ -18,6 +18,7 @@ import {
   datePreferredGenders,
   datePreferencesMatch,
   dateOutcome,
+  dateOutcomeVisible,
   validateDateSchedule,
   dateDiscoveryExpiry,
 } from "@/lib/date-plan-lifecycle";
@@ -57,10 +58,12 @@ export async function GET(req: NextRequest) {
   // Fetch only this viewer's history; closed invitations remain visible as redacted outcomes.
   let ownQuery = supabaseAdmin
     .from("connection_date_requests")
-    .select("id,plan_id,user_id,status,connection_date_plans!inner(*)")
+    .select(
+      "id,plan_id,user_id,status,status_updated_at,dismissed_at,connection_date_plans!inner(*)",
+    )
     .eq("user_id", user.id)
     .eq("connection_date_plans.is_test", user.is_test === true)
-    .order("created_at", { ascending: false })
+    .order("status_updated_at", { ascending: false })
     .limit(100);
   if (plan) ownQuery = ownQuery.eq("plan_id", plan);
   const ownRequests = await ownQuery;
@@ -247,7 +250,10 @@ export async function GET(req: NextRequest) {
     const p = rows.find((p) => p.id === r.plan_id);
     if (!p || !byId.has(p.host_id) || blocked.has(p.host_id)) return [];
     const outcome = dateOutcome(r.status, p.state, p.expires_at, p.happens_at);
-    return outcome ? [{ planId: p.id, title: p.title, ...outcome }] : [];
+    return outcome &&
+      (plan || dateOutcomeVisible(r, outcome, p.expires_at, p.happens_at))
+      ? [{ planId: p.id, title: p.title, ...outcome }]
+      : [];
   });
   return NextResponse.json({
     activities,
