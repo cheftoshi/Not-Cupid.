@@ -22,6 +22,7 @@ for(const scenario of ['deleted','reported-by-me','reported-by-other','report-qu
     '@/lib/auth':{getCurrentUser:async()=>({id:'u'})},'@/lib/supabase':{supabaseAdmin:db},'./chat-room':{default:()=>{}},
     '@/lib/love-deep-dive':{freeLoveProfileView:x=>x},'@/lib/realm':{sameRealm:()=>true},
     '@/lib/private-media':{withPrivateVideoPreview:()=>{throw Error('private_media_exposed');}},'@/lib/quiz-data':{attachStyle:()=>''},
+    '@/lib/love-chat-lifecycle':{canRestoreChat:()=>false},'./restore-chat':{default:()=>null},
     '@/lib/love-notification-ledger':{markLoveNotificationOpened:()=>{}},'@/lib/pro':{isPro:()=>false},'@/lib/chat-realtime':{chatRealtimeTopic:()=>''},
   });
   await assert.rejects(()=>route.default({params:Promise.resolve({id:'m'}),searchParams:Promise.resolve({})}),/redirect/);

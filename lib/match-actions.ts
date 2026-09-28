@@ -5,7 +5,7 @@
 //   - records the accepting user's `user_X_accepted`
 //   - FIRST accept → email the other person an "interested, accept to connect" nudge
 //   - BOTH accepted → full activation: status='both_accepted', open the chat with
-//     a 36h inactivity window (chat_expires_at), and notify both without exposing
+//     no inactivity deadline, and notify both without exposing
 //     either login email. Idempotent — re-calling after mutual accept is a no-op.
 
 import { supabaseAdmin } from '@/lib/supabase';
@@ -156,8 +156,8 @@ export async function releaseTimedOutMatches(userId: string): Promise<any[]> {
   return liveMatches;
 }
 
-// Chat expires after this much SILENCE. Each new message slides it forward
-// (see /api/messages). An active conversation therefore never expires.
+// Legacy RPC compatibility only. The persistent_love_chat database trigger
+// clears this argument on mutual rows, including older deployed callers.
 export const CHAT_INACTIVITY_MS = 36 * 60 * 60 * 1000;
 
 export type AcceptResult =

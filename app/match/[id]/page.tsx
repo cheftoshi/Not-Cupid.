@@ -9,6 +9,8 @@ import { attachStyle } from '@/lib/quiz-data';
 import { markLoveNotificationOpened } from '@/lib/love-notification-ledger';
 import { isPro } from '@/lib/pro';
 import { chatRealtimeTopic } from '@/lib/chat-realtime';
+import { canRestoreChat } from '@/lib/love-chat-lifecycle';
+import RestoreChat from './restore-chat';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +84,8 @@ export default async function MatchPage({
   const messages = (messagesDesc ?? []).reverse();
 
   return (
+    <>
+    {canRestoreChat(match) && <RestoreChat matchId={id} />}
     <ChatRoom
       matchId={id}
       currentUserId={user.id}
@@ -94,5 +98,6 @@ export default async function MatchPage({
       compatibilityReadAvailable={compatibilityReadAvailable}
       realtimeTopic={chatRealtimeTopic('love', id)}
     />
+    </>
   );
 }

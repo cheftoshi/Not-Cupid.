@@ -1,6 +1,7 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase';
 import { liveMatchesFor } from '@/lib/match-actions';
+import { isArchivedChat } from '@/lib/love-chat-lifecycle';
 import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
 import { isLgbtqIdentity } from '@/lib/friend-matching';
 import { profileReadiness } from '@/lib/profile-readiness';
@@ -78,6 +79,7 @@ export async function connectionConciergeInventory(user: any): Promise<Concierge
 
   const readiness = profileReadiness(user);
   const love = liveLove.flatMap((match: any) => {
+    if (isArchivedChat(match)) return [];
     const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
     const other: any = peopleById.get(otherId);
     if (!other) return [];

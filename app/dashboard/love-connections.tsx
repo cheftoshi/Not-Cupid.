@@ -16,16 +16,18 @@ export type LoveConnectionCard = {
   unread: boolean;
   needsStarter: boolean;
   replyBy?: string | null;
+  archived?: boolean;
   status: 'chatting' | 'waiting' | 'your-move';
 };
 
-type Filter = 'all' | LoveConnectionCard['status'];
+type Filter = 'all' | 'archived' | LoveConnectionCard['status'];
 
 const FILTERS: Array<{ key: Filter; label: string }> = [
   { key: 'all', label: 'all' },
   { key: 'your-move', label: 'your move' },
   { key: 'chatting', label: 'chatting' },
   { key: 'waiting', label: 'waiting' },
+  { key: 'archived', label: 'archived' },
 ];
 
 function statusCopy(status: LoveConnectionCard['status']): string {
@@ -47,16 +49,19 @@ export default function LoveConnections({
     () => connections.find((connection) => connection.matchId === focusMatchId),
     [connections, focusMatchId],
   );
-  const [filter, setFilter] = useState<Filter>(focused?.status === 'your-move' ? 'your-move' : 'all');
+  const [filter, setFilter] = useState<Filter>(focused?.archived ? 'archived' : focused?.status === 'your-move' ? 'your-move' : 'all');
   const [ending, setEnding] = useState<LoveConnectionCard | null>(null);
   const ordered = useMemo(() => [...connections].sort((a, b) => connectionPriority(a) - connectionPriority(b)), [connections]);
-  const visible = filter === 'all' ? ordered : ordered.filter((connection) => connection.status === filter);
-  const countFor = (key: Filter) => key === 'all' ? connections.length : connections.filter((connection) => connection.status === key).length;
+  const inFilter = (connection: LoveConnectionCard, key: Filter) => key === 'archived'
+    ? !!connection.archived : !connection.archived && (key === 'all' || connection.status === key);
+  const visible = ordered.filter((connection) => inFilter(connection, filter));
+  const countFor = (key: Filter) => connections.filter((connection) => inFilter(connection, key)).length;
   const yourMoveCount = countFor('your-move');
-  const needsStarterCount = connections.filter((connection) => connection.needsStarter).length;
+  const needsStarterCount = connections.filter((connection) => !connection.archived && connection.needsStarter).length;
 
   useEffect(() => {
     if (!focusMatchId || !focused) return;
+    if (focused.archived) setFilter('archived');
     if (focused.status === 'your-move') setFilter('your-move');
     const timer = window.setTimeout(() => {
       document.getElementById(`love-connection-${focusMatchId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -105,6 +110,7 @@ export default function LoveConnections({
           </div>
 
           <div className={styles.connectionList} aria-live="polite">
+            {filter === 'archived' && <p>Quiet for 10 days, not closed. Send a message to return a chat to the inbox. Archived chats still count toward the connection limit.</p>}
             {visible.length > 0 ? visible.map((connection) => (
               <article
                 key={connection.matchId}

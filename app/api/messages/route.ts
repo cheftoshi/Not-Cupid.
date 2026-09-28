@@ -131,11 +131,8 @@ export async function POST(req: NextRequest) {
     if (acc.mutual) mutualNow = true;
   }
 
-  // Only an already-active chat can be stale-closed; a pending opener has no
-  // window yet, and a just-activated one is fresh.
-  if (bothBefore && match.chat_expires_at && new Date(match.chat_expires_at) < new Date()) {
-    return NextResponse.json({ error: 'Chat expired' }, { status: 400 });
-  }
+  // Mutual chats never expire through inactivity. Terminal checks above
+  // still apply; message insertion updates the archive activity clock in SQL.
 
   const { data: message, error } = await supabaseAdmin
     .from('messages')
@@ -152,16 +149,6 @@ export async function POST(req: NextRequest) {
     console.error('Insert message error:', error);
     return NextResponse.json({ error: 'Could not send message' }, { status: 500 });
   }
-
-  // Slide the inactivity window forward on an active chat (it never expires
-  // while people are talking). A pending opener has no window until mutual.
-  if (mutualNow) {
-    await supabaseAdmin
-      .from('matches')
-      .update({ chat_expires_at: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString() })
-      .eq('id', match_id);
-  }
-
   // Persist the notification instruction before returning. Provider work is
   // leased from the durable outbox; after() is the fast path and the cron is
   // the recovery path if this serverless invocation ends early.

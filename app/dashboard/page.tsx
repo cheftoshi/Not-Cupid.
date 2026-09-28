@@ -11,6 +11,8 @@ import { sameRealm } from '@/lib/realm';
 import { profileReadiness } from '@/lib/profile-readiness';
 import { LOVE_INCLUDED_PICKS, LOVE_ROSTER_OPTIONS } from '@/lib/matching-policy';
 import { markLoveNotificationOpened } from '@/lib/love-notification-ledger';
+import { isArchivedChat } from '@/lib/love-chat-lifecycle';
+import { reportedFriendIds } from '@/lib/friend-report-policy';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,13 +41,14 @@ export default async function DashboardPage({
   if (loveEventId) await markLoveNotificationOpened(loveEventId, user.id);
 
   const liveMatches = await releaseTimedOutMatches(user.id);
+  const reportedIds = await reportedFriendIds(user.id);
   const { data: historyMatches } = await supabaseAdmin
     .from('matches')
     .select('id, user_1_id, user_2_id, ended_at')
     .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`)
     .not('ended_at', 'is', null)
     .order('ended_at', { ascending: false })
-    .limit(10);
+    .limit(100);
   liveMatches.sort(
     (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
@@ -58,10 +61,10 @@ export default async function DashboardPage({
   const CARD_COLS = 'id, name, age, photo_url, archetype, is_test';
   const [{ data: others }, { data: historyOthers }, { data: recentMsgs }] = await Promise.all([
     otherIds.length
-      ? supabaseAdmin.from('users').select(CARD_COLS).in('id', otherIds)
+      ? supabaseAdmin.from('users').select(CARD_COLS).in('id', otherIds).is('deleted_at', null).neq('is_blocked', true)
       : Promise.resolve({ data: [] as any[] }),
     historyOtherIds.length
-      ? supabaseAdmin.from('users').select('id, name, is_test').in('id', historyOtherIds)
+      ? supabaseAdmin.from('users').select('id, name, is_test').in('id', historyOtherIds).is('deleted_at', null).neq('is_blocked', true)
       : Promise.resolve({ data: [] as any[] }),
     // Latest messages across the live matches → unread badges ("they replied").
     liveIds.length
@@ -88,7 +91,7 @@ export default async function DashboardPage({
     .map((m: any) => {
       const otherId = m.user_1_id === user.id ? m.user_2_id : m.user_1_id;
       const other = otherById.get(otherId);
-      if (!other) return null;
+      if (!other || reportedIds.has(otherId)) return null;
       if (((other as any).is_test === true) !== isTestViewer) return null;
       return {
         match: m,
@@ -98,7 +101,7 @@ export default async function DashboardPage({
     .filter(Boolean) as any[];
   const safeHistoryMatches = (historyMatches ?? []).filter((match: any) => {
     const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
-    return sameRealm(user, historyOtherById.get(otherId));
+    return !reportedIds.has(otherId) && !!historyOtherById.get(otherId) && sameRealm(user, historyOtherById.get(otherId));
   });
 
   const dashMetro = metroOf(user.zip);
@@ -120,6 +123,7 @@ export default async function DashboardPage({
       age: o.age ?? null, archetype: o.archetype || null,
       score: m.compatibility_score ?? null,
       unread,
+      archived: isArchivedChat(m),
       replyBy: !both && m.expires_at ? new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
       }).format(new Date(m.expires_at)) : null,
@@ -256,6 +260,8 @@ export default async function DashboardPage({
                 archetype: card.archetype,
                 score: card.score,
                 unread: card.unread,
+                archived: card.archived,
+                replyBy: card.replyBy,
                 needsStarter: card.needsStarter,
                 status: card.status,
               }))}

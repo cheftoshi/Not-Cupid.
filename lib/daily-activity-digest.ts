@@ -76,7 +76,7 @@ export async function collectDailyActivityCandidates(now = new Date()): Promise<
 
   const [users, matches, loveMessages, activities, rsvps, comments, planReads, clubs, clubMembers, clubMessages, circles, circleMembers, circleMessages, chatReads, friendDms, dmReads, trips] = await Promise.all([
     fetchAllSupabaseRows<UserRow>((from, to) => supabaseAdmin.from('users').select('id,name,email,zip,gender,age,is_lgbtq,email_notifications,notifications_paused_at,friend_opted_in_at,activity_digest_sent_at,is_test,deleted_at,is_blocked').order('id').range(from, to)),
-    fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('matches').select('id,user_1_id,user_2_id,user_1_accepted,user_2_accepted,user_1_read_at,user_2_read_at,status,created_at,expires_at,chat_expires_at,ended_at').is('ended_at', null).order('id').range(from, to)),
+    fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('matches').select('id,user_1_id,user_2_id,user_1_accepted,user_2_accepted,user_1_accepted_at,user_2_accepted_at,user_1_read_at,user_2_read_at,status,created_at,expires_at,ended_at').is('ended_at', null).order('id').range(from, to)),
     fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('messages').select('id,match_id,sender_id,created_at').gte('created_at', lookbackIso).order('created_at').order('id').range(from, to)),
     fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_activities').select('id,author_id,title,kind,area,metro,is_test,happens_at,expires_at,created_at,audience_gender,audience_age_min,audience_age_max').or(`expires_at.is.null,expires_at.gt.${nowIso}`).order('created_at').order('id').range(from, to)),
     fetchAllSupabaseRows<any>((from, to) => supabaseAdmin.from('friend_activity_rsvps').select('activity_id,user_id,response,created_at').order('created_at').order('activity_id').range(from, to)),
@@ -134,7 +134,7 @@ export async function collectDailyActivityCandidates(now = new Date()): Promise<
           detail: 'Your Love Line conversation is waiting.', url: `${baseUrl}/match/${match.id}?from=daily-activity-drop`, occurredAt: unread.at(-1).created_at, count: unread.length,
         });
       } else if (!readAt) {
-        const mutualAt = match.chat_expires_at ? new Date(new Date(match.chat_expires_at).getTime() - 36 * 60 * 60 * 1000).toISOString() : match.created_at;
+        const mutualAt = latestIso(match.created_at, match.user_1_accepted_at, match.user_2_accepted_at);
         if (mutualAt > baseline) pushItem(itemsByUser, recipientId, {
           section: 'love', kind: 'love_mutual', entityId: match.id, label: `You matched with ${firstName(other.name)}`,
           detail: 'The chat is open—say something real.', url: `${baseUrl}/match/${match.id}?from=daily-activity-drop`, occurredAt: mutualAt,

@@ -59,7 +59,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What if I don’t respond to my matches?',
-    a: 'A pending Love invitation lasts up to 72 hours. Three unanswered incoming decisions pause new incoming roster exposure until you respond with Yes or Pass. You never need to accept someone to stay eligible. Ending an established connection is separate: a ghost strike requires at least 24 hours of mutual acceptance and no messages from the reported person in that conversation. Three lifetime strikes pause matching.',
+    a: 'A pending Love invitation lasts up to 72 hours. Mutual chats have no reply deadline. After 10 days without activity, they move to Archived; a new message brings them back. Archived chats still count toward your connection limit. Previously mutual chats closed by the old inactivity timer can be restored from Past conversations: three restores per 30 days, once per chat, subject to both people’s connection limits. Passed, reported, blocked, deleted-account and manually ended connections cannot be restored. Three unanswered incoming decisions pause new incoming roster exposure until you respond with Yes or Pass. You never need to accept someone to stay eligible. A ghost strike requires at least 24 hours of mutual acceptance and no messages from the reported person in that conversation. Three lifetime strikes pause matching.',
   },
   {
     q: 'How do you keep things safe?',

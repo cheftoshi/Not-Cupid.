@@ -7,7 +7,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // Same activation path as the email link: sets accepted, nudges the other on
-  // first accept, fully activates (status + 24h chat window + it's-a-match
+  // first accept, fully activates (persistent chat + it's-a-match
   // emails) on mutual accept.
   const { id } = await params;
   const result = await acceptMatch(id, user.id);

@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data: matches } = await supabaseAdmin
     .from('matches')
-    .select('user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at, ended_reason, expires_at, chat_expires_at')
+    .select('id, user_1_id, user_2_id, user_1_accepted, user_2_accepted, status, ended_at, ended_reason, expires_at')
     .or(`user_1_id.eq.${user.id},user_2_id.eq.${user.id}`);
 
   const list = matches || [];
@@ -21,16 +21,14 @@ export async function GET() {
   const accepted = list.filter(m => m.user_1_accepted && m.user_2_accepted).length;
   const passed = list.filter(m => m.status === 'passed' || m.ended_reason === 'one_passed').length;
 
-  // A match where both said yes and it isn't terminal. chat_expires_at is only
-  // set once the FIRST message is sent, so split this into two real states:
-  //   - matched: both yes, no one's messaged yet (chat_expires_at null) → "say hi"
-  //   - live:    a message has been sent and the window is still open → live chat
+  // Message presence, not the retired timer, distinguishes a conversation.
   const matchedNotTerminal = (m: any) =>
     m.user_1_accepted && m.user_2_accepted && !isTerminal(m);
 
-  const live = list.filter(m =>
-    matchedNotTerminal(m) && m.chat_expires_at && new Date(m.chat_expires_at).getTime() > now
-  ).length;
+  const mutual = list.filter(matchedNotTerminal);
+  const messageChecks = await Promise.all(mutual.map(m => supabaseAdmin.from('messages')
+    .select('id').eq('match_id', m.id).limit(1)));
+  const live = messageChecks.filter(result => result.data?.length).length;
 
   // "active" kept for back-compat = any non-terminal mutual match (live + say-hi).
   const active = list.filter(matchedNotTerminal).length;

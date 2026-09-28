@@ -215,31 +215,9 @@ export async function GET(req: NextRequest) {
     }
     console.log(`Balance-hold release: ${balanceReleased.length}`)
 
-    // ============== 1) Auto-end active chats whose timer expired ==============
-    // Close chats that have gone silent past their (sliding) 24h window.
-    // Keyed on both-accepted + chat_expires_at, not status='active' (matches
-    // are activated as 'both_accepted', so the old status filter never fired).
-    const { data: expiredChats } = await supabaseAdmin
-      .from('matches')
-      .update({ status: 'ended', ended_at: nowIso, ended_reason: 'expired' })
-      .eq('user_1_accepted', true)
-      .eq('user_2_accepted', true)
-      .is('ended_at', null)
-      .not('chat_expires_at', 'is', null)
-      .lt('chat_expires_at', nowIso)
-      .select('id, user_1_id, user_2_id')
-
-    console.log(`Auto-ended ${expiredChats?.length || 0} expired chats`)
-
-    if (expiredChats && expiredChats.length > 0) {
-      const historyRows = expiredChats.map((m) => {
-        const [a, b] = [m.user_1_id, m.user_2_id].sort()
-        return { user_a_id: a, user_b_id: b, match_id: m.id, outcome: 'expired' }
-      })
-      await supabaseAdmin
-        .from('match_history')
-        .upsert(historyRows, { onConflict: 'user_a_id,user_b_id' })
-    }
+    // Mutual chats persist. Ten-day inactivity only hides inbox cards; it must
+    // never end consent, remove messages, or create a no-repeat tombstone.
+    const expiredChats: { user_1_id: string; user_2_id: string }[] = [];
 
     // ============== 2) Expire pending matches older than 72h ==============
     const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()

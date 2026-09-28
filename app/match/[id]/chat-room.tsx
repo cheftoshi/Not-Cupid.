@@ -45,15 +45,6 @@ type LoveCoach = {
   disclosure: string;
 };
 
-function timeLeft(iso: string, nowMs: number): string {
-  const ms = new Date(iso).getTime() - nowMs;
-  if (ms <= 0) return 'expired';
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  if (h >= 1) return `${h}h ${m}m left`;
-  return `${m}m left`;
-}
-
 function messageTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', {
     hour: 'numeric',
@@ -144,12 +135,6 @@ export default function ChatRoom({
   // Live match status — seeded from the server, refreshed by the poll, so the
   // header stays accurate (countdown ticking, or "ended" if they bailed).
   const [liveMatch, setLiveMatch] = useState<any>(match);
-  // Keep the server render and the browser's first render identical. Calling
-  // Date.now() in the state initializer made the countdown differ by a few
-  // milliseconds during hydration, which caused React to discard and rebuild
-  // the entire chat screen on mobile. Start without a clock value, then enable
-  // the live countdown immediately after hydration.
-  const [now, setNow] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // "typing…" — the poll carries the other side's last typing ping; we show the
@@ -195,18 +180,8 @@ export default function ChatRoom({
     ? ATTACH_LABEL[otherUser.attach_style as AttachStyle]
     : null;
 
-  // Tick a clock so the countdown re-renders live (every 30s is plenty).
-  useEffect(() => {
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(id);
-  }, []);
-
   const ended = !!liveMatch?.ended_at;
-  const expiredByTimer = now !== null
-    && !!liveMatch?.chat_expires_at
-    && new Date(liveMatch.chat_expires_at).getTime() < now;
-  const chatExpired = ended || expiredByTimer;
+  const chatExpired = ended || ['ended', 'passed', 'expired'].includes(liveMatch?.status);
   // Pending = matched but not yet mutually accepted. Sending a message here
   // auto-accepts (server-side), which opens the chat — so we prompt for it.
   const pendingAccept = !chatExpired && liveMatch?.status !== 'both_accepted' && !liveMatch?.chat_expires_at;
@@ -222,8 +197,6 @@ export default function ChatRoom({
     ? 'waiting on their answer'
     : pendingAccept
     ? 'choose to connect'
-    : liveMatch?.chat_expires_at && now !== null
-    ? timeLeft(liveMatch.chat_expires_at, now)
     : 'active';
 
   async function answerIncomingChoice(answer: 'yes' | 'pass') {

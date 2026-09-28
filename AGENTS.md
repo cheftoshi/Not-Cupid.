@@ -213,6 +213,14 @@ supersede them.
   unanswered; an explicit Yes or Pass restores responsiveness standing.
 - Picking creates a 72-hour pending invitation. Chat opens only after mutual
   acceptance.
+- Mutual Love chats have no inactivity expiry. After 10 days without a message
+  or activation/restore they move to the Archived inbox filter; sending restores
+  visibility. Archiving does not free the ten-connection safety capacity.
+  Prior mutually accepted chats ended only by automatic expiry can be restored
+  once per match, up to three initiated restores per user in 30 days. Database
+  locks enforce caps, reports, account eligibility and realm exclusions. Passes,
+  manual endings and pending expirations never qualify. No automatic restoration
+  or announcement emails are authorized by this lifecycle change.
 - Ending a pending or mutual connection closes the pair, records no-repeat
   history, returns both people to the pool when eligible, and frees a slot.
 - Matching activity segments authenticated users as recent (0–3 days), active
