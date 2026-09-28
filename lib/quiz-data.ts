@@ -1192,10 +1192,26 @@ export function computeScores(answers: number[]): Record<Dimension, number> {
   return scores as Record<Dimension, number>
 }
 
-export function pickArchetype(scores: Record<Dimension, number>) {
-  const topDim = DIMS.reduce((a, b) => scores[a] > scores[b] ? a : b)
+export function pickArchetype(scores: Record<Dimension, number>, answers: readonly number[] = []) {
+  // Rank by total, then the single highest scored answer in that dimension
+  // (not its option index; a skipped answer contributes the usual neutral 2).
+  // Remaining ties use H, O, X, E, A, C for BOTH first and second place.
+  // Score-only callers have no answer evidence and use that same fixed order.
+  const order: Dimension[] = [
+    'Honesty-Humility', 'Openness', 'Extraversion',
+    'Emotionality', 'Agreeableness', 'Conscientiousness',
+  ]
+  const highest = Object.fromEntries(order.map(dim => [dim, 0])) as Record<Dimension, number>
+  QUESTIONS.forEach((question, i) => {
+    const answer = answers[i]
+    const points = answer === -1 ? 2 : question.score[answer] ?? 0
+    highest[question.dim] = Math.max(highest[question.dim], points)
+  })
+  const [topDim, secondDim] = [...order].sort((a, b) =>
+    scores[b] - scores[a] || highest[b] - highest[a] || order.indexOf(a) - order.indexOf(b),
+  )
   const map: Record<Dimension, number> = {
-    'Honesty-Humility': 0,
+    'Honesty-Humility': secondDim === 'Openness' ? 5 : 1,
     'Emotionality': 2,
     'Extraversion': 4,
     'Agreeableness': 3,

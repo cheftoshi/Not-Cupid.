@@ -513,7 +513,7 @@ function QuizInner() {
     if (currentQ + 1 >= QUESTIONS.length) {
       // HEXACO is done — move to the vibes mini-quiz.
       const finalScores = computeScores(newAnswers)
-      const arch = pickArchetype(finalScores)
+      const arch = pickArchetype(finalScores, newAnswers)
       setScores(finalScores)
       setArchetype(arch)
       setScreen('vibes-intro')
