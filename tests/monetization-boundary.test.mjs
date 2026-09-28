@@ -15,7 +15,7 @@ test('Love profiles, acceptance, replies, planning, and safety controls stay fre
   assert.match(faq, /The recipient never pays to accept or reply/);
   assert.match(how, /accepting, replying, blocking and reporting never cost anything/);
   assert.match(privacy, /before choosing/);
-  assert.match(terms, /Core profiles, accepting, replying, blocking, reporting, and planning are free/);
+  assert.match(terms, /Basic profile viewing, accepting connections, replying, blocking, reporting, and member-created plans are free/);
   for (const source of [roster, faq, how, privacy, terms]) {
     assert.doesNotMatch(source, /unlocking a full match profile|Love profile unlocks|every private profile/i);
   }
