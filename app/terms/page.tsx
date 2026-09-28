@@ -80,6 +80,7 @@ export default function TermsPage() {
       <p>We may update these terms; we&apos;ll change the date above when we do. Continued use means you accept the current version.</p>
 
       <h2 id="contact">Contact and business information</h2>
+      <p>Official requests for member information are reviewed under our <a href="/law-enforcement">Law Enforcement Request Protocol</a>.</p>
       <p><strong>Lemon Labs, operator of NotCupid</strong><br />109 California Ave<br />Quincy, MA 02169, United States</p>
       <p>For account help, billing, cancellation, or refund requests, email <a href="mailto:match@notcupid.com">match@notcupid.com</a>.</p>
     </LegalPage>

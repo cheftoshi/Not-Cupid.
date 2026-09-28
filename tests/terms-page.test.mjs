@@ -26,3 +26,23 @@ test('public terms render billing disclosures, working section links, and busine
   }
   assert.doesNotMatch(html, /Be cool|The legal bits|Ending things/);
 });
+
+test('law enforcement protocol is public and renders verification and emergency limits', async () => {
+  const { default: LegalPage } = await loadTs('components/legal-page.tsx', {
+    'react/jsx-runtime': jsxRuntime,
+  });
+  const { default: Page } = await loadTs('app/law-enforcement/page.tsx', {
+    'react/jsx-runtime': jsxRuntime,
+    '@/components/legal-page': { default: LegalPage },
+  });
+  const html = renderToStaticMarkup(jsxRuntime.jsx(Page, {}));
+  for (const text of ['Law Enforcement Requests', 'match@notcupid.com',
+    'Verification and disclosure review', 'Preservation requests',
+    'Emergency requests', 'not monitored continuously', 'call 911',
+    'Notification to members', '109 California Ave']) {
+    assert.ok(html.includes(text), `Missing protocol content: ${text}`);
+  }
+  for (const href of ['/privacy', '/terms', '/safety']) {
+    assert.ok(html.includes(`href="${href}"`));
+  }
+});
