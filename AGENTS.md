@@ -232,6 +232,15 @@ supersede them.
   `CONNECTION_HOME_V2_METROS` controls the enabled metro list.
 - The new Friend entry separates Do something, Meet people, Your chats, and
   Clubs. Existing DM/pack/club panels and their deep links remain available.
+- Home/Friend's optional Find something to do panel shows attributed outside
+  Ticketmaster events, separately from member invitations. User publication is
+  explicit and revalidates the event; it uses normal social-plan participation
+  and chat, never buys tickets. No outside events are automatically posted.
+- The Friday city roundup at `/admin/friday-digest` is a read-only draft, with
+  no enrolled recipients, send route or scheduled job. Exact content, consent,
+  provider email reuse, recipient count, unsubscribe and delivery approval are
+  still required. The approved daily email policy is unchanged; scheduler
+  summaries are recorded in `activity_digest_runs` for gap diagnosis.
 - `users.discovery_metro` changes plan/Friend discovery without rewriting home
   ZIP or deleting connections. It takes precedence over dated travel; Love's
   explicit home-location control remains separate. Current plan times use

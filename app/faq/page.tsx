@@ -10,6 +10,10 @@ const ORANGE = '#ff6a1f';
 
 const FAQS: { q: string; a: string }[] = [
   {
+    q: 'Can I find an event and invite people to go with me?',
+    a: 'Yes. Choose Find something to do on Home or the new Friend home to browse outside events for your selected city. Ticketmaster listings are labeled separately from member invitations. Pick Find people to go with, review your invitation, choose your meeting area and group size, then publish. Joining opens the existing participant plan chat; it does not purchase a ticket or reserve admission. Check current prices, age restrictions, venue and availability with the event provider before going. Outside listings can change or be unavailable without affecting your member plans or chats.',
+  },
+  {
     q: 'What is NotCupid?',
     a: 'A place to make real connections. Home shows invitations from NotCupid members for walks, dates, and small-group plans. Love Line offers curated dating connections, Friend Line helps you find platonic company, and your AI coach is there when you want a little help.',
   },

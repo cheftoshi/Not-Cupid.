@@ -16,5 +16,5 @@ export async function GET(req: NextRequest) {
     if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   const activation = dailyActivityEmailActivation();
-  return NextResponse.json(await runDailyActivityDigest({ send: activation.enabled }));
+  return NextResponse.json(await runDailyActivityDigest({ send: activation.enabled, recordRun: true }));
 }

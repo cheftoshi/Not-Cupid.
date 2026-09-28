@@ -29,7 +29,7 @@ test('daily delivery is version-gated and has no manual send endpoint', () => {
   assert.match(email, /DAILY_ACTIVITY_EMAIL_TEMPLATE_VERSION/);
   assert.match(cadence, /DAILY_ACTIVITY_EMAIL_WINDOW_MINUTES = 15/);
   assert.match(cadence, /Number\(parts\.minute\) < DAILY_ACTIVITY_EMAIL_WINDOW_MINUTES/);
-  assert.match(cron, /runDailyActivityDigest\(\{ send: activation\.enabled \}\)/);
+  assert.match(cron, /runDailyActivityDigest\(\{ send: activation\.enabled, recordRun: true \}\)/);
   assert.match(admin, /runDailyActivityDigest\(\{ send: false \}\)/);
   assert.match(vercel, /"path": "\/api\/cron\/daily-activity"/);
   assert.match(vercel, /"schedule": "0,5,10 17,18 \* \* \*"/);

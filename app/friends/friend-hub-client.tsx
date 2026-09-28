@@ -771,6 +771,9 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
       </div>
       <div className={s.activityPostBody}>
         <div className={s.activityTitle}>{a.title}</div>
+        {a.externalEventUrl && <p>Member invitation to an outside event. Admission is separate.{' '}
+          <a href={a.externalEventUrl} target="_blank" rel="noopener noreferrer">Current details & tickets on Ticketmaster ↗</a>
+        </p>}
         {isEvent && (() => {
           const st = planStatus(a);
           return (

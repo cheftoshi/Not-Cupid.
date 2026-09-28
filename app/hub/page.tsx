@@ -14,9 +14,14 @@ import { recordAppEvent } from '@/lib/app-events';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HubPage({ searchParams }: { searchParams: Promise<{ view?: string; plan?: string; date?: string; city?: string }> }) {
+export default async function HubPage({ searchParams }: { searchParams: Promise<{ view?: string; plan?: string; date?: string; city?: string; discover?: string; create?: string; event?: string }> }) {
   const user = await getCurrentUser();
   const params = await searchParams;
+  if (!user && params.discover === '1') {
+    const event = params.event && /^live:tm:[A-Za-z0-9_-]{1,100}$/.test(params.event) ? `&event=${encodeURIComponent(params.event)}` : '';
+    redirect(`/login?next=${encodeURIComponent('/hub?discover=1' + event)}`);
+  }
+  if (!user && params.create === '1') redirect('/login?next=%2Fhub%3Fcreate%3D1');
   if (!user) redirect(`/login?next=${encodeURIComponent(params.date ? `/hub?date=${params.date}` : params.plan ? `/hub?plan=${params.plan}` : params.city && METRO_CENTERS[params.city] ? `/hub?city=${params.city}` : params.view === 'coach' ? '/hub?view=coach' : '/hub')}`);
 
   if (params.view !== 'coach') {

@@ -2,6 +2,8 @@ export type ConnectionPlan = {
   id: string;
   title: string;
   body?: string | null;
+  externalEventId?: string | null;
+  externalEventUrl?: string | null;
   kind: string;
   category: string;
   area?: string | null;

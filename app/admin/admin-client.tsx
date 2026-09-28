@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { parseResponse } from '@/lib/fetch-helpers'
 import s from './admin.module.css'
 import AdminCityConnections from '@/components/admin-city-connections'
+import Link from 'next/link'
 
 // Pending community-link submissions (Discord/group-chat) awaiting approval.
 // Hidden entirely when there's nothing to review.
@@ -120,6 +121,10 @@ function DailyActivityEmailPreviewAdmin() {
         <div><b>Cadence:</b> {preview.template?.cadence}</div>
       </div>
       <p className={s.note} style={{ marginTop: '0.7rem' }}>Read-only preview. No manual send button: once separately approved, the cron sends at most one consolidated email per person per day and only when something is new or unread.</p>
+      <details><summary>Recent scheduler outcomes</summary>
+        {!preview.runHistoryAvailable ? <p>Run history is unavailable.</p> : !preview.recentRuns?.length ? <p>No runs recorded since diagnostics were enabled. Older gaps cannot be reconstructed from this ledger.</p> :
+          <ul>{preview.recentRuns.map((run: any, i: number) => <li key={i}>{run.created_at} · {run.status} · {run.candidates} eligible · {run.sent} sent · {run.failed} failed</li>)}</ul>}
+      </details>
     </div>
   )
 }
@@ -431,6 +436,7 @@ export default function AdminClient() {
           <CommunityLinksAdmin />
           <SceneModerationAdmin />
           <DailyActivityEmailPreviewAdmin />
+          <p><Link href="/admin/friday-digest">Preview Friday city roundup (no sends)</Link></p>
           <ConnectionIntelligenceAdmin />
 
           {/* KPI row */}

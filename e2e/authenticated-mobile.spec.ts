@@ -6,6 +6,37 @@ if (process.env.E2E_REQUIRE_AUTH === '1' && !session) {
 }
 
 test.describe('authenticated test-realm mobile path', () => {
+  test('outside event becomes an explicit member invitation with its existing plan chat', async ({ page }) => {
+    const event = { id: 'live:tm:qa-event', title: 'QA live music', venue: 'QA public theater', startsAt: new Date(Date.now() + 86400000).toISOString(),
+      url: 'https://www.ticketmaster.com/event/qa', category: 'music', price: null };
+    const id = '00000000-0000-4000-8000-000000000901';
+    let posted: any = null;
+    await page.route('**/api/friend/events', route => route.fulfill({ json: { status: 'ready', events: [event], metro: 'boston' } }));
+    await page.route('**/api/friend/activities?*', route => route.fulfill({ json: {
+      activities: posted ? [{ id, title: posted.title, body: posted.body, externalEventId: event.id, externalEventUrl: event.url,
+        kind: 'event', category: 'hang', area: 'Back Bay', authorName: 'QA Host', authorId: 'qa', isMine: true, eligible: true,
+        happens_at: event.startsAt, expires_at: new Date(Date.now() + 2 * 86400000).toISOString(), created_at: new Date().toISOString(),
+        capacity: 4, myResponse: 'yes', responses: { yes: 1, maybe: 0, no: 0 } }] : [], areas: ['Back Bay'], origin: 'Back Bay',
+    } }));
+    await page.route('**/api/date-plans?*', route => route.fulfill({ json: { activities: [], outcomes: [], preferences: [] } }));
+    await page.route('**/api/friend/activities', route => { posted = route.request().postDataJSON(); return route.fulfill({ json: { ok: true, id } }); });
+    await page.route(`**/api/friend/activities/${id}/comments`, route => route.fulfill({ json: { comments: [] } }));
+    await page.goto('/hub');
+    await page.getByRole('button', { name: 'Find something to do', exact: true }).click();
+    await expect(page.getByRole('heading', { name: event.title })).toBeVisible();
+    await expect(page.getByText('Check ticket price', { exact: true })).toBeVisible();
+    expect(posted).toBeNull();
+    await page.getByRole('button', { name: 'Find people to go with', exact: true }).click();
+    await expect(page.getByRole('form', { name: 'Create an invitation' })).toContainText('not a ticket or reservation');
+    await expect(page.getByLabel('Your invitation', { exact: true })).toHaveValue(/QA live music/);
+    await page.getByRole('button', { name: 'Create invitation', exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Your invitation is published.' })).toBeVisible();
+    expect(posted.external_event_id).toBe(event.id); expect(posted.happens_at).toBe(event.startsAt);
+    const dialog = page.getByRole('dialog', { name: 'Your conversations' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel('Message the plan')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  });
   // Keep all mocked mutations in Playwright; a service worker can bypass routes.
   // Installed-PWA service-worker behavior needs a separate real-device check.
   test.use({ serviceWorkers: 'block' });

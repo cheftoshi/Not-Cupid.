@@ -9,6 +9,8 @@ import { rateLimit } from '@/lib/rate-limit';
 import { validateSocialPlan } from '@/lib/plan-discovery';
 import { planAreasForMetro, planAreaDistance } from '@/lib/neighborhoods';
 import { validatePlanLocation, visiblePlanVenue } from '@/lib/plan-location';
+import { cityEvents } from '@/lib/city-events-server';
+import { ticketmasterUrl } from '@/lib/city-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,6 +179,8 @@ export async function GET(req: NextRequest) {
     const author: any = aById.get(a.author_id) || {};
     return {
       id: a.id, title: a.title, body: a.body, category: a.category, area: a.area,
+      externalEventId: a.external_event_id || null,
+      externalEventUrl: ticketmasterUrl(a.external_event_url),
       ...visiblePlanVenue(venueById.get(a.id), a.location ?? null, a.author_id === user.id, myRespByAct.get(a.id) || null),
       distanceMiles: a.metro && a.metro !== myMetro ? null : planAreaDistance(myMetro, origin, a.area),
       locationAreas: a.author_id === user.id ? planAreasForMetro(a.metro || myMetro) : undefined,
@@ -216,6 +220,21 @@ export async function POST(req: NextRequest) {
 
   const locationContext = await friendLocationContext(user);
   const body = await req.json().catch(() => ({}));
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'Invalid invitation.' }, { status: 400 });
+  // Never trust imported titles, event links, or times supplied by the browser.
+  // Revalidate on deliberate publication; browsing itself never posts a plan.
+  let externalEvent: Awaited<ReturnType<typeof cityEvents>>['events'][number] | undefined;
+  if (body.external_event_id != null) {
+    if (typeof body.external_event_id !== 'string' || !/^live:tm:[A-Za-z0-9_-]{1,100}$/.test(body.external_event_id) || body.kind !== 'event' || !locationContext.metro)
+      return NextResponse.json({ error: 'Invalid outside event.' }, { status: 400 });
+    const catalog = await cityEvents(locationContext.metro, true);
+    if (catalog.status !== 'ready') return NextResponse.json({ error: 'We could not verify this event. Your invitation is not published; please retry.' }, { status: 503 });
+    externalEvent = catalog.events.find(event => event.id === body.external_event_id);
+    if (!externalEvent) return NextResponse.json({ error: 'This event is no longer available in your selected city. Choose another event.' }, { status: 409 });
+    // Linked invitations use the provider event time; a custom meeting time can
+    // be coordinated in participant chat. Do not silently publish a changed time.
+    if (body.happens_at !== externalEvent.startsAt) return NextResponse.json({ error: 'The event time changed. Refresh the event before posting.' }, { status: 409 });
+  }
   // Private/blind dates cannot use the legacy immediate-join Scene API.
   if (body.connection_kind === 'date' || body.date_mode) return NextResponse.json({ error: 'Create your free two-person date from Home’s date invitation form.' }, { status: 409 });
   let chosenLocation: ReturnType<typeof validatePlanLocation> | null = null;
@@ -285,11 +304,18 @@ export async function POST(req: NextRequest) {
     // author-verified for metro; every new row is filterable before LIMIT.
     metro: locationContext.metro,
     is_test: (user as any).is_test === true,
+    ...(externalEvent ? { external_event_id: externalEvent.id, external_event_url: externalEvent.url } : {}),
   };
   const audienceRow = { audience_gender: audienceGender, audience_age_min: audMin, audience_age_max: audMax };
 
   const ins = (row: any) => supabaseAdmin.from('friend_activities').insert(row).select('id').single();
   let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity, dating_friendly: datingFriendly });
+  if (error?.code === '23505' && externalEvent) {
+    const existing = await supabaseAdmin.from('friend_activities').select('id').eq('author_id', user.id).eq('external_event_id', externalEvent.id).maybeSingle();
+    if (existing.error) return NextResponse.json({ error: 'Could not verify your existing event invitation. Please retry.' }, { status: 503 });
+    // A two-tab duplicate must not overwrite the original meeting place.
+    if (existing.data && existing.data.id !== clientId) return NextResponse.json({ ok: true, id: existing.data.id, existing: true });
+  }
   if (error?.code === '23505' && clientId) {
     const existing = await supabaseAdmin.from('friend_activities').select('id').eq('id', clientId).eq('author_id', user.id).maybeSingle();
     if (existing.data && !existing.error) { act = existing.data; error = null; }

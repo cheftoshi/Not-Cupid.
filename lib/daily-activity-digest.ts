@@ -258,7 +258,7 @@ export async function collectDailyActivityCandidates(now = new Date()): Promise<
   });
 }
 
-export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date } = {}) {
+async function collectAndRunDailyActivityDigest(opts: { send?: boolean; now?: Date } = {}) {
   const now = opts.now || new Date();
   const activation = dailyActivityEmailActivation();
   const mailingAddress = process.env.EMAIL_MAILING_ADDRESS?.trim() || '';
@@ -339,4 +339,28 @@ export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date 
       sampleItems,
     },
   };
+}
+
+// Logging does not alter the existing approved audience, template or send gate.
+// Admin previews remain strictly read-only; only actual scheduler calls log.
+export async function runDailyActivityDigest(opts: { send?: boolean; now?: Date; recordRun?: boolean } = {}) {
+  const record = async (row: Record<string, unknown>) => {
+    if (!opts.recordRun) return;
+    try {
+      const result = await supabaseAdmin.from('activity_digest_runs').insert(row);
+      if (result.error) console.warn('digest_run_log_failed');
+    } catch { console.warn('digest_run_log_failed'); }
+  };
+  try {
+    const result = await collectAndRunDailyActivityDigest(opts);
+    await record({
+      status: !result.enabled ? 'disabled' : !result.mailingAddressReady ? 'address_missing' :
+        !result.sendWindowOpen ? 'outside_window' : !result.candidates ? 'empty' : result.failed ? 'partial_failure' : 'completed',
+      candidates: result.candidates, sent: result.sent, failed: result.failed, skipped_claimed: result.skippedClaimed,
+    });
+    return result;
+  } catch (error) {
+    await record({ status: 'error' });
+    throw error;
+  }
 }

@@ -302,6 +302,7 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       <div style={{ marginTop: '0.95rem', borderTop: '1px solid var(--h-border)', paddingTop: '0.8rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.55rem' }}>
           <div className={s.sideHd}>best ways in right now</div>
+          <a href="/hub?discover=1" className={s.pulseBtn}>Find something to do</a>
           {data?.counts && <span style={{ marginLeft: 'auto', color: 'var(--h-text-faint)', fontSize: '0.68rem' }}>{data.counts.plans} plans · {data.counts.clubs + data.counts.communities} groups · {data.counts.people} people</span>}
         </div>
         {loading ? (

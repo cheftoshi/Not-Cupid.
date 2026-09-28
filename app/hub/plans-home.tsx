@@ -26,6 +26,9 @@ import { useChatRealtime } from "@/lib/use-chat-realtime";
 import s from "./plans-home.module.css";
 
 import { type DateOutcome } from "@/lib/date-plan-lifecycle";
+import dynamic from 'next/dynamic';
+import type { CityEvent } from '@/lib/city-events';
+const CityEventsPanel = dynamic(() => import('./city-events-panel'));
 
 type Message = {
   senderId?: string;
@@ -294,6 +297,10 @@ function PlanCard({
       </span>
       <h2>{plan.title}</h2>
       {plan.body && <p>{plan.body}</p>}
+      {plan.externalEventUrl && <p className={s.notice}>
+        Member invitation to an outside event. Admission is separate.{' '}
+        <a href={plan.externalEventUrl} target="_blank" rel="noopener noreferrer">Check current details & tickets on Ticketmaster ↗</a>
+      </p>}
       <div className={s.details}>
         <div>
           {planWhen(plan.happens_at)}
@@ -392,6 +399,13 @@ export default function PlansHome({
     [editing, setEditing] = useState(false),
     [opened, setOpened] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
+  const [discovering, setDiscovering] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CityEvent | null>(null);
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    if (search.get('discover') === '1') setDiscovering(true);
+    if (search.get('create') === '1') setCreating(true);
+  }, []);
   const [outcomes, setOutcomes] = useState<DateOutcome[]>([]),
     [preferences, setPreferences] = useState<string[]>([]);
   const pending = useRef(false),
@@ -567,7 +581,7 @@ export default function PlansHome({
               Real invitations from people nearby. Join in, or put your own idea out there.
             </p>
           </div>
-          <button className={s.primary} onClick={() => setCreating(!creating)}>
+          <button className={s.primary} onClick={() => { setSelectedEvent(null); setCreating(!creating); }}>
             ＋ Invite someone
           </button>
         </header>
@@ -621,14 +635,23 @@ export default function PlansHome({
           <Link href="/friends?view=pulse">Clubs & communities</Link>
         </nav>}
         {suggestedCity && suggestedCity !== metro && <p className={s.notice}>You came to explore {METRO_CENTERS[suggestedCity]?.city}. Use Change city below to choose it; your home location stays the same.</p>}
+        <div className={s.discoveryEntry}>
+          <div><strong>Have the time, need an idea?</strong><p>Find a local event and invite people to go with you.</p></div>
+          <button type="button" aria-expanded={discovering} onClick={() => setDiscovering(!discovering)}>Find something to do</button>
+        </div>
+        {discovering && <CityEventsPanel city={city} plans={plans} onClose={() => setDiscovering(false)} onOpen={open}
+          onChoose={event => { setSelectedEvent(event); setCreating(true); setDiscovering(false); }} />}
         {creating && (
           <CreateInvitation
+            key={selectedEvent?.id || 'original'}
+            event={selectedEvent}
             areas={areas}
             origin={origin}
             allowDates={!friendMode}
-            onClose={() => setCreating(false)}
+            onClose={() => { setCreating(false); setSelectedEvent(null); }}
             onCreated={(id, date) => {
               setCreating(false);
+              setSelectedEvent(null);
               setFilter("mine");
               setNotice("Your invitation is published.");
               window.history.replaceState(null, '', `/hub?${date ? 'date' : 'plan'}=${id}`);

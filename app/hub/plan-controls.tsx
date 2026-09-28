@@ -10,6 +10,7 @@ import {
 import { fetchJsonWithTimeout } from "@/lib/fetch-helpers";
 import { validateDateSchedule } from "@/lib/date-plan-lifecycle";
 import s from "./plans-home.module.css";
+import type { CityEvent } from '@/lib/city-events';
 
 type Place = {
   area: string;
@@ -183,16 +184,18 @@ export function CreateInvitation({
   areas,
   origin,
   allowDates = true,
+  event,
   onCreated,
   onClose,
 }: {
   areas: string[];
   origin: string;
   allowDates?: boolean;
+  event?: CityEvent | null;
   onCreated: (id: string, date: boolean) => void;
   onClose: () => void;
 }) {
-  const [title, setTitle] = useState(""),
+  const [title, setTitle] = useState(event ? `Who wants to join me? ${event.title}`.slice(0, 140) : ""),
     [body, setBody] = useState(""),
     [when, setWhen] = useState(""),
     [capacity, setCapacity] = useState("4"),
@@ -217,7 +220,7 @@ export function CreateInvitation({
     setBusy(true);
     setError("");
     try {
-      const at = planLocalTime(when);
+      const at = event ? new Date(event.startsAt) : planLocalTime(when);
       if (!date) validateSocialPlan(at, capacity);
       if (at && (!Number.isFinite(at.getTime()) || at.getTime() <= Date.now()))
         throw Error("Choose a future time or leave it flexible.");
@@ -231,6 +234,7 @@ export function CreateInvitation({
         capacity: date ? 2 : Number(capacity),
         ...place,
         location_version: 1,
+        ...(event ? { external_event_id: event.id, happens_at: event.startsAt } : {}),
         ...(date ? { date_mode: mode, genders: seeks } : {}),
       };
       const signature = JSON.stringify(payload);
@@ -271,6 +275,11 @@ export function CreateInvitation({
           Close
         </button>
       </div>
+      {event && <div className={s.notice}>
+        <strong>{event.title}</strong><p>{planWhen(event.startsAt)} · {event.venue}</p>
+        <p>This is your invitation to go together, not a ticket or reservation. The event venue is public; choose where your group will meet below.</p>
+        <a href={event.url} target="_blank" rel="noopener noreferrer">Event details & tickets on Ticketmaster ↗</a>
+      </div>}
       <label>
         Your invitation
         <input
@@ -286,7 +295,7 @@ export function CreateInvitation({
         What kind of connection?
         <select value={intent} onChange={(e) => setIntent(e.target.value)}>
           <option value="friends">Friendship</option>
-          {allowDates && <option value="date">A date for two · free</option>}
+          {allowDates && !event && <option value="date">A date for two · free</option>}
         </select>
       </label>
       {date ? (
@@ -357,10 +366,12 @@ export function CreateInvitation({
             When · Eastern time · optional
             <input
               type="datetime-local"
+              disabled={!!event}
               value={when}
               onChange={(e) => setWhen(e.target.value)}
             />
           </label>
+          {event && <small>Event time is fixed above. Agree on arrival details in your plan chat.</small>}
           <label>
             A little more · optional
             <textarea

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/admin';
 import { runDailyActivityDigest } from '@/lib/daily-activity-digest';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -11,5 +12,9 @@ export const maxDuration = 300;
 export async function GET() {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  return NextResponse.json(await runDailyActivityDigest({ send: false }));
+  const [preview, runs] = await Promise.all([
+    runDailyActivityDigest({ send: false }),
+    supabaseAdmin.from('activity_digest_runs').select('created_at,status,candidates,sent,failed,skipped_claimed').order('created_at', { ascending: false }).limit(30),
+  ]);
+  return NextResponse.json({ ...preview, recentRuns: runs.data || [], runHistoryAvailable: !runs.error });
 }
