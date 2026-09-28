@@ -5,11 +5,15 @@ import { hasFriendVibes } from '@/lib/friend-quiz';
 import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
 import FriendHubClient from './friend-hub-client';
 import { FRIEND_PACK_CENTS } from '@/lib/friend-access';
+import PlansHome from '@/app/hub/plans-home';
+import { connectionHomeEnabled } from '@/lib/connection-home-rollout';
+import { after } from 'next/server';
+import { recordAppEvent } from '@/lib/app-events';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FriendsHubPage({ searchParams }: { searchParams: Promise<{ more_matches?: string }> }) {
-  const { more_matches: moreMatches } = await searchParams;
+export default async function FriendsHubPage({ searchParams }: { searchParams: Promise<{ more_matches?: string; view?: string; plan?: string }> }) {
+  const { more_matches: moreMatches, view, plan } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/friends');
   if (!user.friend_opted_in_at || !hasFriendVibes(user.friend_vibes)) redirect('/friends/quiz');
@@ -56,11 +60,16 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: P
     gender: user.gender || null,
     isLgbtq: user.is_lgbtq === true,
   };
-  // Friend discovery can temporarily enter a dated destination without
-  // overwriting the user's home city. The city-change control still edits home.
+  // Explicit discovery city, dated travel, and home remain separate.
   const location = await friendLocationContext(user);
   const city = friendMetroLabel(location.metro);
   const homeCity = friendMetroLabel(location.homeMetro);
+  if (connectionHomeEnabled(location.metro) && !moreMatches && !plan && (!view || view === 'scene')) {
+    after(() => recordAppEvent({ userId: user.id, eventName: 'connection_home_open', surface: 'plans', path: '/friends',
+      dedupeKey: `plans-home:${user.id}:${location.metro}:${new Date().toISOString().slice(0,10)}`,
+      metadata: { metro: location.metro, release: 'connection-home-v2' } }));
+    return <PlansHome key={location.metro} city={city} metro={location.metro} firstName={(user.name || 'friend').split(' ')[0]} initialFilter="friends" friendMode reboot />;
+  }
   return <FriendHubClient
     firstName={(user.name || 'friend').split(' ')[0]}
     me={me}

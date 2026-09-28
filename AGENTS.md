@@ -1,6 +1,6 @@
 # NotCupid — current project memory
 
-Last reconciled with the current application code on **September 24, 2026**.
+Last reconciled with the current application code on **September 27, 2026**.
 
 This file is a current-state handoff, not a chronological session log. Git history
 contains retired plans and earlier implementations. Do not reintroduce an older
@@ -226,6 +226,21 @@ supersede them.
   profile viewing, accepting, replying, blocking, or reporting behind payment.
 
 ### Friend Line
+
+- Connection Home v2 defaults on in Boston, NYC and Providence. Set
+  `CONNECTION_HOME_V2=off` to restore the prior navigation; optional
+  `CONNECTION_HOME_V2_METROS` controls the enabled metro list.
+- The new Friend entry separates Do something, Meet people, Your chats, and
+  Clubs. Existing DM/pack/club panels and their deep links remain available.
+- `users.discovery_metro` changes plan/Friend discovery without rewriting home
+  ZIP or deleting connections. It takes precedence over dated travel; Love's
+  explicit home-location control remains separate. Current plan times use
+  America/New_York; add a city timezone mapping before expanding westward.
+- New social plans have 2–10 people including the host and may be scheduled
+  within 60 days or left flexible. Existing plans are not resized.
+- Private optional post-plan feedback is stored in `plan_outcome_feedback`.
+  Admin city outcomes distinguish views, participation, reciprocal chats and
+  self-reported meetups; these are activity counts, not a conversion cohort.
 
 - Friend Line is live. It includes intent-based discovery, persistent 1:1
   connections/DMs, group pack chat, Scene plans/posts, clubs, and approved

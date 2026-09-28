@@ -6,6 +6,7 @@ import { metroOf } from '@/lib/quiz-data';
 import { friendLocationContext } from '@/lib/friend-location';
 import { hasFriendActivityHistory } from '@/lib/friend-activity-access';
 import { rateLimit } from '@/lib/rate-limit';
+import { validateSocialPlan } from '@/lib/plan-discovery';
 import { planAreasForMetro, planAreaDistance } from '@/lib/neighborhoods';
 import { validatePlanLocation, visiblePlanVenue } from '@/lib/plan-location';
 
@@ -236,7 +237,11 @@ export async function POST(req: NextRequest) {
   const category = CATEGORIES.includes(body.category) ? body.category : 'hang';
   // Posts have no time; events can. Posts live 7d, events until 12h after they happen (or 14d).
   const happensAt = kind === 'event' && body.happens_at ? new Date(body.happens_at) : null;
-  if (happensAt && (!Number.isFinite(happensAt.getTime()) || happensAt.getTime() <= Date.now())) return NextResponse.json({ error: 'Choose a future time or leave it flexible.' }, { status: 400 });
+  let capacity: number | null = null;
+  if (kind === 'event') {
+    try { capacity = validateSocialPlan(happensAt, body.capacity); }
+    catch (error) { return NextResponse.json({ error: (error as Error).message }, { status: 400 }); }
+  }
   const area = chosenLocation?.area || (body.area || '').toString().trim() || locationContext.area;
   const expiresAt = kind === 'post'
     ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -265,8 +270,7 @@ export async function POST(req: NextRequest) {
   // Events can name a specific place/venue (free text), separate from the zone.
   // Save the new private venue through the atomic host-only RPC below.
   const location = chosenLocation ? null : kind === 'event' ? ((body.location || '').toString().trim().slice(0, 120) || null) : null;
-  // Optional headcount cap (events). 1–1000, or null = unlimited.
-  const capacity = kind === 'event' ? (() => { const n = parseInt(body.capacity); return Number.isFinite(n) && n > 0 ? Math.min(1000, n) : null; })() : null;
+  // New member events have 2–10 places, including the organizer.
   // "Dating-friendly" — host is open to romantic sparks at this plan too.
   const datingFriendly = kind === 'event' && body.dating_friendly === true;
 

@@ -8,19 +8,25 @@ import HubClient from './hub-client';
 import PlansHome from './plans-home';
 import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
 import { initialPlanFilter } from '@/lib/connection-plans';
+import { connectionHomeEnabled } from '@/lib/connection-home-rollout';
+import { after } from 'next/server';
+import { recordAppEvent } from '@/lib/app-events';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HubPage({ searchParams }: { searchParams: Promise<{ view?: string; plan?: string; date?: string }> }) {
+export default async function HubPage({ searchParams }: { searchParams: Promise<{ view?: string; plan?: string; date?: string; city?: string }> }) {
   const user = await getCurrentUser();
   const params = await searchParams;
-  if (!user) redirect(`/login?next=${encodeURIComponent(params.date ? `/hub?date=${params.date}` : params.plan ? `/hub?plan=${params.plan}` : params.view === 'coach' ? '/hub?view=coach' : '/hub')}`);
+  if (!user) redirect(`/login?next=${encodeURIComponent(params.date ? `/hub?date=${params.date}` : params.plan ? `/hub?plan=${params.plan}` : params.city && METRO_CENTERS[params.city] ? `/hub?city=${params.city}` : params.view === 'coach' ? '/hub?view=coach' : '/hub')}`);
 
   if (params.view !== 'coach') {
     const location = await friendLocationContext(user);
+    after(() => recordAppEvent({ userId: user.id, eventName: 'connection_home_open', surface: 'plans', path: '/hub',
+      dedupeKey: `plans-home:${user.id}:${location.metro}:${new Date().toISOString().slice(0,10)}`,
+      metadata: { metro: location.metro, release: 'connection-home-v2' } }));
     // Setup completion is a default filter, not permission to enroll someone
     // in another line or infer romantic interest from a friendship action.
-    return <PlansHome firstName={(user.name || 'friend').split(' ')[0]} city={friendMetroLabel(location.metro)} initialFilter={initialPlanFilter(user)} />;
+    return <PlansHome key={location.metro} firstName={(user.name || 'friend').split(' ')[0]} city={friendMetroLabel(location.metro)} metro={location.metro} suggestedCity={params.city && METRO_CENTERS[params.city] ? params.city : undefined} reboot={connectionHomeEnabled(location.metro)} initialFilter={initialPlanFilter(user)} />;
   }
 
   const firstName = (user.name || 'friend').split(' ')[0];

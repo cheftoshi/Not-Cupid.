@@ -1167,6 +1167,9 @@ export const METRO_ZIP: Record<Metro, string> = {
 // every metro center.
 export function metroOf(zip: string | null | undefined): Metro | null {
   if (!zip) return null
+  // Borough boundaries precede proximity: Staten Island and the Rockaways
+  // are NYC even when a neighboring metro's center is closer.
+  if (/^(100|101|102|103|104|111|112|113|114|116)\d{2}$/.test(zip)) return 'nyc'
   const c = coordsForZip(zip)
   if (!c) return null
   let best: Metro | null = null

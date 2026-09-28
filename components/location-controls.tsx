@@ -32,13 +32,18 @@ export default function LocationControls({
   const [cityBusy, setCityBusy] = useState<string | null>(null);
   const [r, setR] = useState(radius);
   const [rBusy, setRBusy] = useState(false);
+  const [error, setError] = useState('');
 
   async function changeCity(metro: string) {
     setCityBusy(metro);
+    setError('');
     try {
-      const res = await fetch('/api/profile/set-city', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ metro }) });
-      if (res.ok) { setPicker(false); setCityBusy(null); router.refresh(); } else setCityBusy(null);
-    } catch { setCityBusy(null); }
+      const res = await fetch('/api/profile/set-city', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ metro, scope: showRadius ? 'home' : 'discovery' }) });
+      if (!res.ok) throw Error('City change was not saved. Please retry.');
+      setPicker(false); router.refresh();
+      window.dispatchEvent(new Event('notcupid:city-changed'));
+    } catch { setError('City change was not saved. Please retry.'); }
+    finally { setCityBusy(null); }
   }
   async function changeRadius(v: number) {
     const prev = r; setR(v); setRBusy(true);
@@ -74,8 +79,9 @@ export default function LocationControls({
               <button onClick={() => setPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44, fontSize: '1.1rem', color: 'var(--h-text-faint)' }} aria-label="close city picker">✕</button>
             </div>
             <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1.1rem' }}>
-              live in <b>{CITY_OPTIONS.length} cities</b> across New England + NYC. tap one to set where you match &amp; see events — your connections stay put.
+              {showRadius ? 'This updates your home matching location. Existing connections stay put.' : 'Explore plans in another city without changing your home location or existing chats. This choice takes priority over travel discovery.'} Availability depends on local members.
             </p>
+            {error && <p role="alert">{error}</p>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.05rem' }}>
               {BY_STATE.map(({ st, cities }) => (
                 <div key={st}>

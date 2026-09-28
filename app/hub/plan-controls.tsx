@@ -1,4 +1,5 @@
 "use client";
+import { planWhen, planLocalTime, validateSocialPlan } from "@/lib/plan-discovery";
 import { useRef, useState } from "react";
 import {
   ConnectionPlan,
@@ -181,11 +182,13 @@ export function Profile({ person }: { person: DateProfile }) {
 export function CreateInvitation({
   areas,
   origin,
+  allowDates = true,
   onCreated,
   onClose,
 }: {
   areas: string[];
   origin: string;
+  allowDates?: boolean;
   onCreated: (id: string, date: boolean) => void;
   onClose: () => void;
 }) {
@@ -214,7 +217,8 @@ export function CreateInvitation({
     setBusy(true);
     setError("");
     try {
-      const at = when ? new Date(when) : null;
+      const at = planLocalTime(when);
+      if (!date) validateSocialPlan(at, capacity);
       if (at && (!Number.isFinite(at.getTime()) || at.getTime() <= Date.now()))
         throw Error("Choose a future time or leave it flexible.");
       if (date) validateDateSchedule(at?.toISOString() || null);
@@ -282,7 +286,7 @@ export function CreateInvitation({
         What kind of connection?
         <select value={intent} onChange={(e) => setIntent(e.target.value)}>
           <option value="friends">Friendship</option>
-          <option value="date">A date for two · free</option>
+          {allowDates && <option value="date">A date for two · free</option>}
         </select>
       </label>
       {date ? (
@@ -350,7 +354,7 @@ export function CreateInvitation({
         <summary>Optional details · when, a little more</summary>
         <div className={s.formDetails}>
           <label>
-            When · optional
+            When · Eastern time · optional
             <input
               type="datetime-local"
               value={when}
@@ -467,7 +471,7 @@ export function DateInvitation({
       {plan.body && <p>{plan.body}</p>}
       <small>
         {plan.happens_at
-          ? new Date(plan.happens_at).toLocaleString()
+          ? planWhen(plan.happens_at)
           : "Find a time together"}
       </small>
       <MeetingPlace plan={plan} />

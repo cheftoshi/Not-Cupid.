@@ -11,8 +11,8 @@
 .home .mobileChat { margin-bottom: var(--app-pwa-prompt-height, 0px); }
 .home button:focus-visible, .home a:focus-visible, .home input:focus-visible, .home textarea:focus-visible, .home select:focus-visible { outline: 3px solid var(--h-accent); outline-offset: 3px; }
 .home .primary, .home button[aria-pressed=true] { background: var(--h-text); color: var(--h-surface); border-color: var(--h-text); }
-.grid { display: grid; gap: 16px; }
-.card, .form, .empty { background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 22px; padding: 20px; min-width: 0; }
+.grid { display: grid; gap: 20px; }
+.card, .form, .empty { background: var(--h-surface); border: 1px solid var(--h-border); border-radius: 22px; padding: 24px; min-width: 0; }
 .card h2 { font: 600 1.35rem/1.3 'Playfair Display', Georgia, serif; margin: 14px 0 8px; }
 .card p { line-height: 1.55; white-space: pre-wrap; }
 .host { display: flex; align-items: center; gap: 10px; }

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { supabaseAdmin } from '@/lib/supabase';
+import { publicPlans } from '@/lib/public-plans';
+import { planWhen } from '@/lib/plan-discovery';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,22 +11,7 @@ export const dynamic = 'force-dynamic';
 // FIRST NAME + count — no photos of others, no exact venue, no test content.
 
 async function loadPlan(id: string) {
-  const clean = String(id || '').replace(/[^a-zA-Z0-9-]/g, '');
-  if (!clean) return null;
-  const { data: a } = await supabaseAdmin
-    .from('friend_activities')
-    .select('id, title, kind, category, area, happens_at, expires_at, author_id')
-    .eq('id', clean)
-    .maybeSingle();
-  if (!a) return null;
-  if (a.expires_at && new Date(a.expires_at) < new Date()) return null;
-  const { data: author } = await supabaseAdmin
-    .from('users').select('name, is_test, deleted_at').eq('id', a.author_id).maybeSingle();
-  if (!author || author.is_test === true || author.deleted_at) return null;
-  const { count: going } = await supabaseAdmin
-    .from('friend_activity_rsvps').select('*', { count: 'exact', head: true })
-    .eq('activity_id', a.id).eq('response', 'yes');
-  return { ...a, hostFirst: (author.name || 'someone').split(' ')[0], going: going ?? 0 };
+  return (await publicPlans({ id }))[0] || null;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -47,11 +33,9 @@ const CAT_EMOJI: Record<string, string> = {
 export default async function PublicPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const plan = await loadPlan(id);
-  if (!plan) redirect('/');
+  if (!plan) return <main style={{ maxWidth: 600, margin: '3rem auto', padding: 24 }}><h1>This invitation isn’t available.</h1><p>It may have ended, been removed, or be limited to eligible members. No response has been sent.</p><a href="/hub">Explore current plans</a></main>;
 
-  const when = plan.happens_at
-    ? new Date(plan.happens_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-    : null;
+  const when = planWhen(plan.happens_at);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', background: 'radial-gradient(900px 480px at 12% -5%, rgba(255,106,31,0.09), transparent 55%), radial-gradient(760px 420px at 96% 8%, rgba(37,99,255,0.06), transparent 52%), var(--h-bg)', color: 'var(--h-text)' }}>
@@ -63,12 +47,12 @@ export default async function PublicPlanPage({ params }: { params: Promise<{ id:
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.05em', color: 'var(--h-text-dim)', marginBottom: '1.2rem' }}>
             {when && <span>🗓 {when}</span>}
             {plan.area && <span>📍 {plan.area}</span>}
-            <span>👥 {plan.hostFirst} is organizing{plan.going > 0 ? ` · ${plan.going} going` : ''}</span>
+            <span>👥 {plan.hostFirst} is organizing</span>
           </div>
           <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.9rem', lineHeight: 1.55, color: 'var(--h-text-dim)', margin: '0 0 1.4rem' }}>
             NotCupid is a connection experiment — real plans with real people, no swiping. Join to RSVP and see who&apos;s going.
           </p>
-          <a href="/quiz" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>join to rsvp →</a>
+          <a href={`/login?next=${encodeURIComponent(`/hub?plan=${plan.id}`)}`} className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>join this plan →</a>
           <div style={{ marginTop: '0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>free to join · notcupid.com</div>
         </div>
       </div>

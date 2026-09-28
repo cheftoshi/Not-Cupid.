@@ -214,9 +214,9 @@ function ConnectionBackdrop() {
 // ── old-school-FB shell pieces (warm transit palette) ──
 type NavKey = 'home' | 'scene' | 'crew' | 'pulse';
 const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
-  { key: 'home', icon: '✨', label: 'today' },
+  { key: 'home', icon: '✨', label: 'overview' },
   { key: 'scene', icon: '🎟️', label: 'do something' },
-  { key: 'crew', icon: '🧡', label: 'my circle' },
+  { key: 'crew', icon: '🧡', label: 'people & chats' },
   { key: 'pulse', icon: '🌆', label: 'communities' },
 ];
 
@@ -1692,7 +1692,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   <div style={{ ...opt(false), display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     📅 pick a date
                     <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })}
-                      min={localDT(new Date())} max={localDT(new Date(Date.now() + 90 * 24 * 3600 * 1000))}
+                      min={localDT(new Date())} max={localDT(new Date(Date.now() + 60 * 24 * 3600 * 1000))}
                       style={{ flex: 1, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.3rem 0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                   </div>
                   {newAct.happens_at && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.82rem', color: LINE_DEEP }}>✓ {friendlyWhen(newAct.happens_at)}</div>}
@@ -1751,7 +1751,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 1rem', fontSize: '1rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                 {!isPost && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.8rem', fontFamily: "'DM Mono',monospace", fontSize: '0.66rem', color: 'var(--h-text-dim)' }}>
-                    👥 cap <input type="number" min={1} max={1000} placeholder="∞" value={newAct.capacity} onChange={(e) => setNewAct({ ...newAct, capacity: e.target.value })} style={{ width: 70, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.35rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} /> <span>people (blank = no limit)</span>
+                    👥 cap <input type="number" min={2} max={10} placeholder="4" value={newAct.capacity} onChange={(e) => setNewAct({ ...newAct, capacity: e.target.value })} style={{ width: 70, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.35rem', fontFamily: "'DM Mono',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} /> <span>people including you (default 4)</span>
                   </div>
                 )}
                 {!isPost && (
@@ -1953,7 +1953,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{city ? `all of ${city.split(',')[0].toLowerCase()}` : 'your metro'}</span>
           </div>
           {/* friends: change your city (metro-wide; no radius) */}
-          <LocationControls city={homeCity || city} currentMetro={homeMetro || metro} accent={LINE} />
+          <LocationControls city={city} currentMetro={metro} accent={LINE} />
         </div>
 
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2rem,6vw,3rem)', lineHeight: 0.96, color: 'var(--h-text)', margin: '0.6rem 0 1.2rem' }}>

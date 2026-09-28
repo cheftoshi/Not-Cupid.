@@ -1,4 +1,8 @@
 "use client";
+import LocationControls from '@/components/location-controls';
+import { planWhen, planTimeMatches } from '@/lib/plan-discovery';
+import { METRO_CENTERS } from '@/lib/quiz-data';
+import PlanFollowthrough from './plan-followthrough';
 import FriendReportButton from '@/components/friend-report-button';
 
 import Link from "next/link";
@@ -292,15 +296,7 @@ function PlanCard({
       {plan.body && <p>{plan.body}</p>}
       <div className={s.details}>
         <div>
-          {plan.happens_at
-            ? new Date(plan.happens_at).toLocaleString([], {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })
-            : "Find a time together"}
+          {planWhen(plan.happens_at)}
         </div>
         <MeetingPlace plan={plan} />
         <div>
@@ -336,7 +332,7 @@ function PlanCard({
                   ? "Plan ended"
                   : full
                     ? "Plan full"
-                    : "Yes, I’m interested"}
+                    : "Join plan"}
             </button>
             {plan.myResponse !== "yes" && (
               <button disabled={busy} onClick={() => void respond("no")}>
@@ -346,7 +342,7 @@ function PlanCard({
           </>
         )}
         {canChat && (
-          <button onClick={() => onOpen(plan)}>Open conversation ↗</button>
+          <button className={s.primary} onClick={() => onOpen(plan)}>Open chat ↗</button>
         )}
         {plan.isMine && !ended && (
           <button disabled={busy} onClick={() => void cancel()}>
@@ -372,8 +368,10 @@ export default function PlansHome({
   city,
   firstName = "friend",
   initialFilter = "friends",
+  metro = null, reboot = false, friendMode = false, suggestedCity,
 }: {
   city: string | null;
+  metro?: string | null; reboot?: boolean; friendMode?: boolean; suggestedCity?: string;
   firstName?: string;
   initialFilter?: string;
 }) {
@@ -393,6 +391,7 @@ export default function PlansHome({
     [narrow, setNarrow] = useState(false),
     [editing, setEditing] = useState(false),
     [opened, setOpened] = useState<string[]>([]);
+  const [timeFilter, setTimeFilter] = useState("all");
   const [outcomes, setOutcomes] = useState<DateOutcome[]>([]),
     [preferences, setPreferences] = useState<string[]>([]);
   const pending = useRef(false),
@@ -413,7 +412,7 @@ export default function PlansHome({
           "/api/friend/activities?surface=home&scope=conversations",
           { cache: "no-store" },
         ),
-        fetchJsonWithTimeout("/api/date-plans?surface=home" + suffix, {
+        friendMode ? Promise.resolve({ response: { ok: true }, data: { activities: [], outcomes: [], preferences: [] } }) : fetchJsonWithTimeout("/api/date-plans?surface=home" + suffix, {
           cache: "no-store",
         }),
       ]);
@@ -436,7 +435,7 @@ export default function PlansHome({
       setOrigin(feed.data.origin || "");
       if (!deepLinked.current) {
         const search = new URLSearchParams(window.location.search),
-          date = search.get("date"),
+          date = friendMode ? null : search.get("date"),
           id = date || search.get("plan");
         if (id && /^[a-f0-9-]{36}$/i.test(id)) {
           const found = await fetchJsonWithTimeout(
@@ -471,13 +470,15 @@ export default function PlansHome({
       pending.current = false;
       setLoading(false);
     }
-  }, [near]);
+  }, [near, friendMode]);
   useEffect(() => {
     void load();
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, 30000);
-    return () => clearInterval(timer);
+    const refreshCity = () => { setNear(""); void load(); };
+    window.addEventListener('notcupid:city-changed', refreshCity);
+    return () => { clearInterval(timer); window.removeEventListener('notcupid:city-changed', refreshCity); };
   }, [load]);
   useEffect(() => {
     const mq = matchMedia("(max-width: 900px)");
@@ -544,6 +545,7 @@ export default function PlansHome({
         radius === "all" ||
         (p.distanceMiles != null && p.distanceMiles <= Number(radius)),
     );
+  const visiblePlans = shown.filter(p => (!friendMode || p.connectionKind !== "date") && (filter === "mine" || planTimeMatches(p.happens_at, timeFilter)));
   const requests = plans.reduce((n, p) => n + (p.requests?.length || 0), 0);
   function open(p: ConnectionPlan) {
     returnFocus.current = document.activeElement as HTMLElement;
@@ -560,16 +562,16 @@ export default function PlansHome({
             <span className={s.eyebrow}>
               Your home · {city || "Your local community"}
             </span>
-            <h1>Good to see you, {firstName}.</h1>
+            <h1>{reboot ? (friendMode ? "Good company starts here." : "What are we doing next?") : `Good to see you, ${firstName}.`}</h1>
             <p>
-              A familiar face. A new connection. Something to look forward to.
+              Real invitations from people nearby. Join in, or put your own idea out there.
             </p>
           </div>
           <button className={s.primary} onClick={() => setCreating(!creating)}>
             ＋ Invite someone
           </button>
         </header>
-        <div className={s.highlights}>
+        {(!reboot || upcoming || requests > 0) && <div className={s.highlights}>
           <button
             onClick={() => (upcoming ? open(upcoming) : setCreating(true))}
           >
@@ -611,15 +613,26 @@ export default function PlansHome({
             </small>
           </button>
         </div>
+        }
+        {reboot && <nav className={s.filters} aria-label="Connection navigation">
+          <button aria-pressed={filter !== "mine"} onClick={() => setFilter(friendMode ? "friends" : initialFilter)}>Do something</button>
+          <Link className={s.button} href="/friends?view=crew">Meet people</Link>
+          <button onClick={() => { if (rooms[0]) open(rooms[0]); else setSheet(true); }}>Your chats</button>
+          <Link href="/friends?view=pulse">Clubs & communities</Link>
+        </nav>}
+        {suggestedCity && suggestedCity !== metro && <p className={s.notice}>You came to explore {METRO_CENTERS[suggestedCity]?.city}. Use Change city below to choose it; your home location stays the same.</p>}
         {creating && (
           <CreateInvitation
             areas={areas}
             origin={origin}
+            allowDates={!friendMode}
             onClose={() => setCreating(false)}
-            onCreated={() => {
+            onCreated={(id, date) => {
               setCreating(false);
               setFilter("mine");
               setNotice("Your invitation is published.");
+              window.history.replaceState(null, '', `/hub?${date ? 'date' : 'plan'}=${id}`);
+              deepLinked.current = false;
               void load();
             }}
           />
@@ -640,12 +653,13 @@ export default function PlansHome({
             <div className={s.sectionHead}>
               <div>
                 <span className={s.eyebrow}>
-                  A little closer to your people
+                  Member invitations
                 </span>
-                <h2>Around you</h2>
+                <h2>{filter === "mine" ? "Your plans" : "Find your next plan"}</h2>
               </div>
-              <Link href="/friends">Change city in Friend Line</Link>
+              <LocationControls city={city} currentMetro={metro} />
             </div>
+            <details><summary>Area & distance</summary>
             <div className={s.locationFilters}>
               <label>
                 Near
@@ -680,6 +694,8 @@ export default function PlansHome({
               Approximate neighborhood-to-neighborhood distance, not directions
               or live location. Unknown distances appear under Whole city.
             </small>
+            </details>
+            {reboot && <nav className={s.filters} aria-label="When to meet">{[["all", "Any time"], ["today", "Today"], ["week", "Next 7 days"], ["flexible", "Flexible"]].map(([key, label]) => <button key={key} aria-pressed={timeFilter === key} onClick={() => setTimeFilter(key)}>{label}</button>)}</nav>}
             <nav className={s.filters} aria-label="Filter plans">
               {[
                 ["all", "Discover"],
@@ -687,7 +703,7 @@ export default function PlansHome({
                 ["dating", "Dates"],
                 ["mine", "Your invitations"],
                 ["passed", "Passed"],
-              ].map(([key, label]) => (
+              ].filter(([key]) => !friendMode || !["all", "dating"].includes(key)).map(([key, label]) => (
                 <button
                   key={key}
                   aria-pressed={filter === key}
@@ -697,12 +713,12 @@ export default function PlansHome({
                 </button>
               ))}
             </nav>
-            {!loading && (filter === "dating" || filter === "all") && (
+            {!loading && !friendMode && (filter === "dating" || filter === "all") && (<details open={!preferences.length}><summary>Date preferences</summary>
               <DatePreferences
                 key={preferences.join(",")}
                 value={preferences}
                 onSaved={load}
-              />
+              /></details>
             )}
             {!!outcomes.length && (
               <details>
@@ -739,7 +755,7 @@ export default function PlansHome({
             )}
             {loading && <p role="status">Loading member invitations…</p>}
             <div className={s.grid}>
-              {shown.map((p) =>
+              {visiblePlans.map((p) =>
                 p.connectionKind === "date" ? (
                   <DateInvitation
                     key={p.id}
@@ -752,12 +768,11 @@ export default function PlansHome({
                 ),
               )}
             </div>
-            {!loading && !error && !shown.length && (
+            {!loading && !error && !visiblePlans.length && (
               <section className={s.empty}>
                 <h2>Be the start of something.</h2>
                 <p>
-                  No invitations in this view yet. Try a wider distance or
-                  invite someone for a walk, lunch, or a date.
+                  No member plans match this view yet. Try another time or area, or start with a walk, coffee, or lunch. We never fill this space with made-up plans.
                 </p>
                 <button onClick={() => setCreating(true)}>
                   Create a real invitation
@@ -789,12 +804,13 @@ export default function PlansHome({
                   aria-label="Close conversations"
                   onClick={() => setSheet(false)}
                 >
-                  ×
+                  ← Back to plans
                 </button>
               )}
             </div>
+            <Link href="/friends?view=crew">Friend DMs & group chats →</Link>
             <div className={s.roomList}>
-              {rooms.map((p) => (
+              {rooms.filter(p => !friendMode || p.connectionKind !== 'date').map((p) => (
                 <button
                   key={p.id}
                   aria-pressed={room?.id === p.id}
@@ -829,6 +845,7 @@ export default function PlansHome({
                     </div>
                   )}
                   <MeetingPlace plan={room} />
+                  {reboot && <PlanFollowthrough plan={room} />}
                   {room.isMine && room.state !== "cancelled" && !editing && (
                     <button onClick={() => setEditing(true)}>
                       {room.location

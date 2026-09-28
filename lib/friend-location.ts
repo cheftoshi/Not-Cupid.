@@ -55,17 +55,21 @@ export async function friendLocationContext(user: any, now = Date.now()): Promis
   } catch { /* pre-migration: keep home behavior */ }
 
   const isTraveling = !!trip && trip.starts_on <= planningEnd;
-  const metro = (isTraveling ? trip?.destination_metro as Metro | undefined : null) || homeMetro;
-  const area = (isTraveling ? trip?.destination_area || METRO_CENTERS[trip!.destination_metro]?.city : neighborhoodOf(user?.zip)) || 'your area';
+  const discoveryMetro = METRO_CENTERS[user?.discovery_metro] ? user.discovery_metro as Metro : null;
+  // An explicit discovery choice wins; saved travel remains visible separately.
+  const metro = discoveryMetro || (isTraveling ? trip?.destination_metro as Metro | undefined : null) || homeMetro;
+  const area = discoveryMetro && discoveryMetro !== homeMetro
+    ? METRO_CENTERS[discoveryMetro].city
+    : (isTraveling && !discoveryMetro ? trip?.destination_area || METRO_CENTERS[trip!.destination_metro]?.city : neighborhoodOf(user?.zip)) || 'your area';
   return {
     homeMetro,
     metro,
     area,
     trip,
-    isTraveling,
+    isTraveling: isTraveling && !discoveryMetro,
     isOnTrip: !!trip && trip.starts_on <= today && trip.ends_on >= today,
-    windowStart: isTraveling ? trip!.starts_on : today,
-    windowEnd: isTraveling ? trip!.ends_on : planningEnd,
+    windowStart: isTraveling && !discoveryMetro ? trip!.starts_on : today,
+    windowEnd: isTraveling && !discoveryMetro ? trip!.ends_on : planningEnd,
   };
 }
 

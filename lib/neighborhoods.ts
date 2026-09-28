@@ -94,13 +94,14 @@ add('Forest Hills / Central Queens', ['11375', '11374', '11377', '11385', '11355
 // Other boroughs
 add('The Bronx', ['10451', '10452', '10453', '10454', '10455', '10456', '10457', '10458', '10463', '10467', '10468']);
 add('Staten Island', ['10301', '10304', '10305', '10306', '10314']);
+add('Rockaways', ['11691', '11692', '11693', '11694', '11695', '11697']);
 
 export function neighborhoodOf(zip: string | null | undefined): string {
-  if (!zip) return 'Greater Boston';
+  if (!zip) return 'Choose your city';
   if (ZIP_AREA[zip]) return ZIP_AREA[zip];
   const m = metroOf(zip);
   if (m && METRO_CENTERS[m]) return METRO_CENTERS[m].city; // metro city for unmapped zips
-  return 'Greater Boston';
+  return 'Choose your city';
 }
 
 // Is this ZIP one of the named Boston neighborhoods or inner-ring towns (Back

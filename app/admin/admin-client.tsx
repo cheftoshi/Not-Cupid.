@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { parseResponse } from '@/lib/fetch-helpers'
 import s from './admin.module.css'
+import AdminCityConnections from '@/components/admin-city-connections'
 
 // Pending community-link submissions (Discord/group-chat) awaiting approval.
 // Hidden entirely when there's nothing to review.
@@ -1209,6 +1210,7 @@ export default function AdminClient() {
           {/* ── METRO HEALTH ── */}
           <div className={s.card} id="metros">
             <div className={s.cardHead}><p className={s.cardTitle}>Metro health — <b>Northeast by city</b></p></div>
+            {metroHealth && !metroHealth.__error && <AdminCityConnections rows={metroHealth.connections30d || []} />}
             {!metroHealth && <p className={s.note}>loading…</p>}
             {metroHealth?.__error && <p className={s.noteErr}>couldn’t load: {metroHealth.__error}</p>}
             {metroHealth && !metroHealth.__error && (
@@ -1227,7 +1229,7 @@ export default function AdminClient() {
                         <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>NB</th>
                         <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Women %</th>
                         <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Ratio (M/F)</th>
-                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>In pool</th>
+                        <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Active 7d</th>
                         <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Friend</th>
                       </tr>
                     </thead>

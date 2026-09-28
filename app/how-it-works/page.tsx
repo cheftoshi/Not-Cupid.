@@ -16,7 +16,7 @@ const ORANGE_DEEP = '#d2530f';
 const CORE_STEPS = [
   { n: '1', emoji: '📝', title: 'sign up', body: 'name, email, a 6-digit code to prove it’s you. born in Boston, now open across the Northeast — all of New England, the NYC metro, and North Jersey.' },
   { n: '2', emoji: '🧠', title: 'take the core quiz', body: 'a short, chaptered run — who you are (personality), the day-to-day (lifestyle), and a rapid-fire round. ~4 minutes, no photos, no performing.' },
-  { n: '3', emoji: '🚉', title: 'pick your line', body: 'board the Love Line (dating), the Friend Line (platonic), or both. your core quiz powers both sides — then each line asks a few questions of its own.' },
+  { n: '3', emoji: '🚉', title: 'choose your connections', body: 'choose friendship, dating, or both. Home shows real member invitations. Join a small-group plan or request a free two-person date; the date host chooses one guest. Your existing conversations stay available when you explore another city.' },
 ];
 
 const LOVE_STEPS = [
@@ -34,7 +34,7 @@ const FRIEND_STEPS = [
   { emoji: '🤝', title: 'connect — your 1:1s', body: 'tap connect on anyone in a pack; they get a ping, and when they accept back you’re connected for good. connect with as many people as you like.' },
   { emoji: '💬', title: 'the group chat', body: 'choose the whole pack to open a group chat with everyone in it — the room you meet in. people who opt in are active; the rest show as invited.' },
   { emoji: '🪪', title: 'connections, added & dropped', body: 'click any connection to open their friend card — their interests, your match, and a button to connect or to drop the connection. drop one and you quietly leave the shared chat if they were your last tie there. only connections can message each other.' },
-  { emoji: '🎟️', title: 'the scene & city pulse', body: 'the Scene is the live board for plans and posts. City Pulse is the discovery layer: community hubs, clubs, and which neighborhoods have plans forming.' },
+  { emoji: '🎟️', title: 'do something together', body: 'browse member plans, meet people through curated introductions, and come back to your chats. New social plans fit 2–10 people including the host; dates are always two people. Times are shown in the meeting city’s timezone. Clubs and communities are still available.' },
 ];
 
 function Chapter({ tag, title, accent, accentLight, steps }: { tag: string; title: string; accent: string; accentLight: string; steps: { emoji: string; title: string; body: string }[] }) {
@@ -83,7 +83,7 @@ export default function HowItWorks() {
           meet people. <span style={{ color: BLUE }}>not profiles.</span>
         </h1>
         <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 2rem' }}>
-          one quiz, two lines, real connection — the algo does the heavy lifting.
+          a plan, the right company, and a conversation that goes somewhere. AI can help, but you choose every connection.
         </p>
 
         {/* THE BASICS — shared start */}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { planReturnPath } from '@/lib/plan-discovery'
 import Nav from '@/components/Nav'
 import { suggestEmailCorrection } from '@/lib/email-typos'
 import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype, ATTACHMENT_QUESTIONS, computeAttachment, VALUES_QUESTIONS, valuesFromAnswers, RAPID_FIRE, rapidFromAnswers, PARTNER_QUESTIONS, partnerFromAnswers, typeSlug } from '@/lib/quiz-data'
@@ -116,8 +117,9 @@ function QuizInner() {
   const searchParams = useSearchParams()
   const isRetake = searchParams.get('retake') === '1'
   const requestedNext = searchParams.get('next')
+  const returnTo = planReturnPath(searchParams.get('returnTo'))
   const nextIntent = requestedNext === 'friends' ? 'friends' : requestedNext === 'experiment' ? 'experiment' : null
-  const afterCorePath = nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/hub'
+  const afterCorePath = returnTo || (nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/hub')
   // Love-line deep quiz: /quiz?line=love (logged-in users, after the core quiz).
   const isLoveDeep = searchParams.get('line') === 'love'
   // Invite attribution: /quiz?ref=<code> (from a /join/<code> link). Kept in
@@ -434,7 +436,7 @@ function QuizInner() {
       if (res.status === 409) {
         // Email already has an account — send them to log in (they own the email,
         // so they can OTP in). We never expose user ids to the browser.
-        window.location.href = '/login?next=' + encodeURIComponent('/hub')
+        window.location.href = '/login?next=' + encodeURIComponent(afterCorePath)
         return
       }
       if (!res.ok) throw new Error(data.error || 'Could not save your baseline')
@@ -450,11 +452,11 @@ function QuizInner() {
         // intent they picked at signup: straight into the right deep quiz, no
         // hub fork mid-flow.
         setPostQuizPath(
-          nextIntent === 'experiment' ? '/quiz?line=love&next=experiment'
+          returnTo || (nextIntent === 'experiment' ? '/quiz?line=love&next=experiment'
           : intent === 'friends' ? '/friends/quiz'
           : intent === 'both' ? '/quiz?line=love&next=friends'
           : intent === 'love' ? '/quiz?line=love'
-          : afterCorePath
+          : afterCorePath)
         )
       }
     } catch (err) {

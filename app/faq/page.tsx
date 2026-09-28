@@ -39,7 +39,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Where is NotCupid available?',
-    a: 'Born in Boston, now open across all of New England plus the New York City metro. Matching stays local — within a range you control — so you can actually meet up.',
+    a: 'NotCupid supports cities across New England, including Boston and Providence, plus the New York City metro and North Jersey. Love suggestions use your preferences and distance settings; Friend discovery and plans use your selected metro. Available people and plans vary by city. A supported city does not guarantee a match or an active plan.',
   },
   {
     q: 'What’s the Friend Line?',
@@ -47,7 +47,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What’s the quiz like?',
-    a: 'About four minutes, chaptered like an experience: who you are (personality), the day-to-day (lifestyle), and a rapid-fire round. No photos, no performing — the algorithm clocks when you’re not being honest.',
+    a: 'About four minutes of questions about personality, lifestyle, and preferences. Answer for how you usually feel, not who you think you should be. The quiz does not detect dishonesty, diagnose personality, or guarantee compatibility.',
   },
   {
     q: 'Can I do both Love and Friend?',
@@ -55,11 +55,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What if I don’t respond to my matches?',
-    a: 'Please do — someone chose you. If you keep letting matches expire without ever responding, we’ll quietly pause you from new rosters until you re-engage; accepting any match brings you straight back. It keeps the pool fair for the people who actually show up — silence wastes more of someone’s time than an honest no.',
+    a: 'A pending Love invitation lasts up to 72 hours. Three unanswered incoming decisions pause new incoming roster exposure until you respond with Yes or Pass. You never need to accept someone to stay eligible. Ending an established connection is separate: a ghost strike requires at least 24 hours of mutual acceptance and no messages from the reported person in that conversation. Three lifetime strikes pause matching.',
   },
   {
     q: 'How do you keep things safe?',
-    a: 'You can block and report anyone, we never show your exact location (just a fuzzy metro and distance band), and date-safety tips are built into your matches. People who repeatedly ghost get paused.',
+    a: 'Love conversations and Friend DMs, crew chats, club chats, and plan chats have reporting controls. Friend reports disconnect the pair and hide their shared-chat messages from each other; the reported person is not notified of the report. Neighborhood distance is approximate. A plan’s meeting place may be public or participant-only, so do not post a home address. Date venues are shared with the confirmed pair.',
   },
   {
     q: 'What is the NotCupid Dating Experiment?',
@@ -67,11 +67,19 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How do I install the app — and turn on notifications?',
-    a: 'NotCupid runs in your browser, but you can install it like a real app. On iPhone: open notcupid.com in Safari, tap the Share icon (the square with an arrow), scroll to “Add to Home Screen,” then open NotCupid from your Home Screen. On Android / desktop Chrome: tap “install the app” when the prompt appears, or use the browser menu → Install. Notifications: Android and desktop can turn them on right in the browser, but iPhone only allows notifications once you’ve installed the app to your Home Screen (iOS 16.4+) — they don’t work in the Safari tab. So on iPhone: install first, open the app from your Home Screen, then tap “🔔 get pinged when you match.” A native App Store version is on the way.',
+    a: 'NotCupid runs in your browser, but you can install it like a real app. On iPhone: open notcupid.com in Safari, tap the Share icon (the square with an arrow), scroll to “Add to Home Screen,” then open NotCupid from your Home Screen. On Android / desktop Chrome: tap “install the app” when the prompt appears, or use the browser menu → Install. Notifications: Android and desktop can turn them on right in the browser, but iPhone only allows notifications once you’ve installed the app to your Home Screen (iOS 16.4+) — they don’t work in the Safari tab. So on iPhone: install first, open the app from your Home Screen, then tap “🔔 get pinged when you match.” The installable web app is the current version; no App Store download is required.',
+  },
+  {
+    q: 'How do I cancel Pro?',
+    a: 'Open Manage subscription on the Pro page or in profile settings. You can manage billing through Stripe or use Cancel renewal to stop the next renewal while keeping the remaining paid period. If cancellation fails, retry or contact match@notcupid.com; a failed attempt is not confirmation of cancellation.',
+  },
+  {
+    q: 'Where do I chat after joining a plan?',
+    a: 'On Home, open Your conversations. A friendship plan opens its participant chat after you join; a date chat opens only after the host accepts one guest. Joining a group plan does not automatically create a private Friend DM. Cancelled date chats remain read-only, subject to account and safety restrictions.',
   },
   {
     q: 'How do I delete my account?',
-    a: 'From your profile settings, any time — full account deletion, no hoops.',
+    a: 'Use Delete account in profile settings. Your profile is deactivated and removed from matching. The app also attempts to cancel your linked Pro subscription and remove uploaded profile media. If billing or storage cleanup fails, it shows a warning and records the failure for follow-up. Limited payment and safety records may be retained as described in the privacy policy.',
   },
 ];
 

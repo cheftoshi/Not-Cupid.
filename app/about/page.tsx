@@ -14,13 +14,14 @@ export default function AboutPage() {
       <p>Instead, an algorithm reads compatibility from a real personality quiz and quietly shows you a small, curated roster of people you&apos;d actually get along with. Each Love roster includes three connection picks and seven browseable alternatives when the local pool supports it—the way introductions feel when a friend has done the filtering, not the way it feels to doom-scroll a catalog.</p>
 
       <h2>Two lines, one region</h2>
+      <p>Start with something you want to do. Home brings together real member-created plans: a walk, lunch with a small group, or a free two-person date invitation. Friendship and dating are explicit choices, not assumptions. Join, talk through the details, and meet somewhere public.</p>
       <ul>
         <li><strong>The Love Line</strong> — for dating. Compatible people, a limited set of intentional choices, then a real conversation when the interest is mutual.</li>
         <li><strong>The Friend Line</strong> — for making actual friends as an adult, which is somehow harder than dating. Crews, group chats, and a feed of what&apos;s happening around town.</li>
       </ul>
 
       <h2>Started in Boston, now across the Northeast</h2>
-      <p>We started in Boston — Cambridge, Somerville, the whole T map — because real-life connection is local. We&apos;ve since opened up the rest of New England — Providence, Hartford, New Haven, Portland, Burlington, Manchester — and now New York City too. Wherever you are, the algorithm only ever matches you with people in your own metro. We&apos;d rather be the best way to meet someone in your city than a mediocre one everywhere.</p>
+      <p>Born in Boston, with discovery available across New England, New York City, and nearby metros. Plan discovery follows your selected city; Love introductions follow your stated distance and preferences. Exploring another city does not relocate your home or erase your chats. A supported city can still be quiet: availability depends on real members posting and responding.</p>
 
       <h2>Who&apos;s behind it</h2>
       <p>NotCupid is built and run by <strong>Lemon Labs</strong>, an independent studio. We&apos;re a small team that actually answers its email — if you have a bug, an idea, or just want to tell us what&apos;s missing, write to <a href="mailto:match@notcupid.com">match@notcupid.com</a> and a person will read it.</p>
