@@ -345,6 +345,19 @@ supersede them.
 
 ## Accounts, privacy, and operator facts
 
+- New-email signup requires a signed HttpOnly `nc_signup_proof` cookie issued
+  by successful OTP verification plus the matching, unexpired verified OTP
+  record. An email-level verified flag alone never authorizes `/api/submit`.
+  Verification atomically claims the unused code and clears an old session
+  before new-email onboarding. The unique email insert allows only one signup
+  winner to receive a session; successful signup clears its proof. Do not
+  weaken this back to an email-only lookup to recover an expired signup.
+- City balance counts/releases exclude test, blocked, deleted and penalized
+  accounts, paginate eligible rows, and recheck eligibility on release writes.
+- Legacy personality scores are display-bounded only, not silently normalized
+  to a guessed historical scale or assigned a new archetype.
+- Email unsubscribe stops email only; matching and push preferences are
+  separate. Do not describe unsubscribe as pausing matches.
 - Test accounts use `users.is_test` and must never appear to real users or in
   real public/admin counts. All cross-realm matches, Friend connections, DMs,
   Scene interactions, and experiment entries must fail closed.

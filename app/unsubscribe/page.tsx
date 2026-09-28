@@ -5,10 +5,10 @@ import UnsubClient from './unsub-client';
 
 export const dynamic = 'force-dynamic';
 
-// Two-step unsubscribe so a single accidental click can't take someone out
-// of the matching pool. Step 1 (this page): show a confirmation. Step 2:
+// Two-step unsubscribe so a link scanner cannot change email preferences.
+// Step 1 (this page): show a confirmation. Step 2:
 // the client posts to /api/unsubscribe with the same token to actually
-// flip email_notifications + pool_active off.
+// turn off email notifications only; matching and push remain separate choices.
 export default async function UnsubscribePage({
   searchParams,
 }: {

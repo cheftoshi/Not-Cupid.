@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createSession } from '@/lib/auth'
+import { cookies } from 'next/headers'
+import { verifySignupProof, SIGNUP_PROOF_COOKIE } from '@/lib/signup-proof'
 import { metroOf } from '@/lib/quiz-data'
 import { metroGenderCounts, shouldHoldForBalance } from '@/lib/balance'
 import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email'
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
     const cleanName = String(name).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100)
     if (!cleanName) return NextResponse.json({ error: 'Name required' }, { status: 400 })
-    // HEXACO dimensions are 0–16 (4 questions × 4 pts); clamp so a tampered
+    // HEXACO dimensions are 0–8 (2 questions × 4 pts); clamp so a tampered
     // client can't store fake personality scores that skew matching.
     const clampScore = (v: any) => Math.max(0, Math.min(8, Number(v) || 0)) // 2 questions/dim × 4 = max 8
     const clampAge = (v: any, d: number) => { const n = parseInt(v); return Number.isFinite(n) ? Math.max(18, Math.min(120, n)) : d }
@@ -117,12 +119,20 @@ export async function POST(req: NextRequest) {
     }
     if (boundedObject(values_profile)) insertRow.values_profile = values_profile
 
+    const cookieStore = await cookies()
+    const proof = verifySignupProof(cookieStore.get(SIGNUP_PROOF_COOKIE)?.value, normalizedEmail)
+    if (!proof) {
+      return NextResponse.json({ error: 'Please verify your email again in this browser.', code: 'signup_verification_required' }, { status: 403 })
+    }
     // Verify first, then consume only after the unique user insert succeeds.
+    // users_email_unique serializes concurrent submissions: only the insert
+    // winner can create a session. A duplicate never logs in an existing user.
     // A transient insert failure must not burn the code and force a restart.
     const { data: verifiedOtp, error: verifyError } = await supabaseAdmin
       .from('otp_codes')
       .select('email')
       .eq('email', normalizedEmail)
+      .eq('code', proof.codeHash)
       .eq('verified', true)
       .gt('expires_at', new Date().toISOString())
       .maybeSingle()
@@ -131,7 +141,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Could not verify email ownership' }, { status: 500 })
     }
     if (!verifiedOtp) {
-      return NextResponse.json({ error: 'Please verify your email again.' }, { status: 403 })
+      return NextResponse.json({ error: 'Please verify your email again.', code: 'signup_verification_required' }, { status: 403 })
     }
 
     // Invite attribution — best-effort, never blocks signup. A valid ref code
@@ -172,8 +182,10 @@ if (error) {
       .from('otp_codes')
       .delete()
       .eq('email', normalizedEmail)
+      .eq('code', proof.codeHash)
       .eq('verified', true)
     if (consumeError) console.error('Submit: verified OTP cleanup failed:', consumeError)
+    cookieStore.delete(SIGNUP_PROOF_COOKIE)
     // Referral reward — BOTH sides get a free friend pack when an invite lands
     // (a free match round each; idempotent per referred signup via the unique
     // synthetic payment ids). Best-effort: never blocks signup.

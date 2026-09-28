@@ -182,9 +182,8 @@ export default function ChatRoom({
 
   const ended = !!liveMatch?.ended_at;
   const chatExpired = ended || ['ended', 'passed', 'expired'].includes(liveMatch?.status);
-  // Pending = matched but not yet mutually accepted. Sending a message here
-  // auto-accepts (server-side), which opens the chat — so we prompt for it.
-  const pendingAccept = !chatExpired && liveMatch?.status !== 'both_accepted' && !liveMatch?.chat_expires_at;
+  // A pending invitation is not an open conversation, even if a legacy timer exists.
+  const pendingAccept = !chatExpired && !(liveMatch?.user_1_accepted && liveMatch?.user_2_accepted);
   const isUser1 = liveMatch?.user_1_id === currentUserId;
   const myAccepted = isUser1 ? !!liveMatch?.user_1_accepted : !!liveMatch?.user_2_accepted;
   const otherAccepted = isUser1 ? !!liveMatch?.user_2_accepted : !!liveMatch?.user_1_accepted;
@@ -404,6 +403,7 @@ export default function ChatRoom({
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
+    if (pendingAccept || chatExpired) return;
     const text = input.trim();
     if (!text || sending) return;
 
@@ -552,13 +552,13 @@ export default function ChatRoom({
           </div>
         )}
 
-        {!readOnly && messages.length > 0 && !coach && (
+        {!readOnly && !pendingAccept && messages.length > 0 && !coach && (
           <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
             {coachBusy ? 'thinking…' : '✦ make the next move easier'}
           </button>
         )}
 
-        {!readOnly && coach && messages.length > 0 && (
+        {!readOnly && !pendingAccept && coach && messages.length > 0 && (
           <div className={styles.coachCard}>
             <div className={styles.coachKicker}>{coach.source === 'ai' ? '✦ AI match coach' : '✦ match coach'}</div>
             <strong>{coach.headline}</strong>
@@ -576,14 +576,14 @@ export default function ChatRoom({
 
         {messages.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>{readOnly ? 'this one is closed.' : needsDecision ? `${firstName} chose you.` : 'your move.'}</div>
-            <div className={styles.emptySub}>{readOnly ? 'no messages were sent before it ended.' : needsDecision ? 'review their profile · choose below' : 'blank page energy? steal one of these:'}</div>
-            {!readOnly && !needsDecision && !coach && (
+            <div className={styles.emptyTitle}>{readOnly ? 'this one is closed.' : needsDecision ? `${firstName} chose you.` : pendingAccept ? `Waiting for ${firstName} to connect` : 'Start with hello.'}</div>
+            <div className={styles.emptySub}>{readOnly ? 'no messages were sent before it ended.' : needsDecision ? 'review their profile · choose below' : pendingAccept ? 'Chat opens when you both say yes. In the meantime, get to know their profile.' : 'A small question is a good place to start.'}</div>
+            {!readOnly && !pendingAccept && !coach && (
               <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
                 {coachBusy ? 'curating your angle…' : '✦ ask the AI match coach'}
               </button>
             )}
-            {!readOnly && !needsDecision && (
+            {!readOnly && !pendingAccept && (
               coach ? (
                 <div className={styles.coachCard}>
                   <div className={styles.coachKicker}>{coach.source === 'ai' ? '✦ AI match coach' : '✦ match coach'}</div>
@@ -656,6 +656,8 @@ export default function ChatRoom({
             pass
           </button>
         </div>
+      ) : pendingAccept ? (
+        <div className={styles.waitingBar} role="status">Waiting to connect · messages open after a mutual yes</div>
       ) : (
         <form onSubmit={handleSend} className={styles.inputForm}>
           <input
@@ -723,6 +725,7 @@ export default function ChatRoom({
             {otherUser?.bio && <p>{otherUser.bio}</p>}
             {profilePrompts.length > 0 && (
               <div className={styles.matchPrompts}>
+                <h3 className={styles.profileSectionTitle}>A little more about {firstName}</h3>
                 {profilePrompts.map((prompt) => (
                   <div key={prompt.question}>
                     <span>{prompt.question}</span>
@@ -732,8 +735,11 @@ export default function ChatRoom({
               </div>
             )}
             {profileTags.length > 0 && (
-              <div className={styles.matchTags}>
-                {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}
+              <div>
+                <h3 className={styles.profileSectionTitle}>Interests &amp; everyday favorites</h3>
+                <div className={styles.matchTags}>
+                  {profileTags.map((tag: string) => <span key={tag}>{tag}</span>)}
+                </div>
               </div>
             )}
             {profileUnlocked ? (
@@ -792,8 +798,8 @@ export default function ChatRoom({
           {pendingAccept ? (
             <div className={styles.pendingPlanLock}>
               <span>plan together after the mutual yes</span>
-              <strong>waiting for {firstName} to connect.</strong>
-              <p>Once they say yes, both of you can privately pick date ideas and anything you choose in common will lock in here.</p>
+              <strong>{needsDecision ? 'Your invitation is waiting.' : `Waiting for ${firstName} to connect.`}</strong>
+              <p>Once you both say yes, you can chat and privately pick date ideas together.</p>
             </div>
           ) : (
           <>

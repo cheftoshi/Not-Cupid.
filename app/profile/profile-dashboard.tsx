@@ -7,6 +7,7 @@ import { ARCHETYPES, VIBE_HEADS, attachStyle, vibeLabel, relationshipStyleLabel 
 import type { VibeKey } from '@/lib/quiz-data';
 import { signLabel } from '@/lib/astrology';
 import RaffleCard from '@/components/raffle-card';
+import { personalityPercent } from '@/lib/personality-display';
 
 export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLogout }: {
   user: any;
@@ -39,10 +40,8 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
     ? attachStyle(user.attach_anxiety, user.attach_avoidance)
     : user.attach_style;
 
-  // HEXACO dimension bars — raw scores are 0–16 (4 questions × 4pts). Show as
-  // a percentage fill so users see their personality breakdown, not just the
-  // archetype label.
-  const HEXACO_MAX = 8;
+  // Current quiz: 2 questions × 4 points per dimension. Older stored scores
+  // are displayed within bounds, never silently rewritten or reclassified.
   const hexaco: Array<{ label: string; score: number }> = [
     { label: 'Honesty', score: user.score_honesty },
     { label: 'Emotionality', score: user.score_emotionality },
@@ -197,7 +196,7 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
           <div className={styles.dashSectionLabel}>your personality</div>
           <div className={styles.hexacoList}>
             {hexaco.map((d) => {
-              const pct = Math.round((d.score / HEXACO_MAX) * 100);
+              const pct = personalityPercent(d.score);
               return (
                 <div key={d.label} className={styles.hexacoRow}>
                   <span className={styles.hexacoLabel}>{d.label}</span>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { createSession } from '@/lib/auth'
+import { createSession, destroySession } from '@/lib/auth'
+import { cookies } from 'next/headers'
+import { issueSignupProof, SIGNUP_PROOF_COOKIE } from '@/lib/signup-proof'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { hashOtp } from '@/lib/otp'
 
@@ -82,22 +84,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Code expired. Request a new one.' }, { status: 400 })
     }
 
-    // Mark this specific code as verified (and any others for this email)
-    await supabaseAdmin
+    // Claim exactly this unused code. Concurrent verification must not issue
+    // multiple login/signup credentials, or verify a newly resent code.
+    const { data: claimedOtp, error: claimError } = await supabaseAdmin
       .from('otp_codes')
       .update({ verified: true })
       .eq('email', email)
+      .eq('code', codeHash)
+      .eq('verified', false)
+      .gt('expires_at', new Date().toISOString())
+      .select('email')
+      .maybeSingle()
+    if (claimError) return NextResponse.json({ error: 'Could not verify code. Please try again.' }, { status: 503 })
+    if (!claimedOtp) return NextResponse.json({ error: 'Code expired or already used. Request a new one.' }, { status: 400 })
 
     // Look up user
-    const { data: user } = await supabaseAdmin
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, archetype, is_blocked')
       .eq('email', email) // Normalized identity, never a SQL wildcard pattern.
       .is('deleted_at', null)
       .limit(1)
       .maybeSingle()
+    if (userError) return NextResponse.json({ error: 'Could not load account. Request a new code.' }, { status: 503 })
 
     if (!user) {
+      // Switching to a new email must not turn into a retake of the old account.
+      await destroySession()
+      const cookieStore = await cookies()
+      cookieStore.set(SIGNUP_PROOF_COOKIE, issueSignupProof(email, codeHash, otp.expires_at), {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict', path: '/', expires: new Date(otp.expires_at),
+      })
       // Brand-new user (no row yet). They take the core personality quiz first
       // — it powers BOTH lines (the Friend Line reuses these HEXACO scores).
       // /api/submit creates their row + session, then routes them to /hub (the
@@ -114,6 +132,7 @@ export async function POST(req: NextRequest) {
     }
 
     await createSession(user.id)
+    ;(await cookies()).delete(SIGNUP_PROOF_COOKIE)
     await supabaseAdmin.from('otp_codes').delete().eq('email', email)
 
     // Existing user. If they've completed the quiz → /hub. If they

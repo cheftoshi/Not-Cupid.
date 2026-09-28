@@ -119,7 +119,7 @@ export function renderEmail(args: RenderArgs): string {
     : null;
 
   const unsubBlock = unsubLink
-    ? `<div style="margin-top:18px;font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.mutedSoft};letter-spacing:0.1em;">Don't want these? <a href="${unsubLink}" style="color:${C.lav};text-decoration:underline;">unsubscribe</a> — note this also pauses your matches.</div>`
+    ? `<div style="margin-top:18px;font-family:'DM Mono','SF Mono',monospace;font-size:10px;color:${C.mutedSoft};letter-spacing:0.1em;">Don't want these emails? <a href="${unsubLink}" style="color:${C.lav};text-decoration:underline;">unsubscribe</a>. Your matching and push notification settings stay unchanged.</div>`
     : '';
 
   const eyebrowBlock = args.eyebrow

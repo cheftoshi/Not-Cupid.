@@ -6,24 +6,33 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { metroOf } from '@/lib/quiz-data';
 import { maxOverrep, BALANCE_MIN_POOL, MAX_BALANCE_HOLD_DAYS } from '@/lib/pools';
+import { fetchAllSupabaseRows } from '@/lib/supabase-pagination';
 
 type Counts = { m: number; f: number; other: number };
+
+// Use the same real-account eligibility on reads AND release writes. In
+// particular, an old hold must never reactivate a deleted/blocked/test account.
+function eligible(query: any, now: string) {
+  return query.is('deleted_at', null)
+    .or('is_test.is.null,is_test.eq.false')
+    .or('is_blocked.is.null,is_blocked.eq.false')
+    .is('matching_disabled_at', null)
+    .or(`matching_cooldown_until.is.null,matching_cooldown_until.lte.${now}`);
+}
 
 // Active matchable pool tallied by metro + gender. "Active" = pool_active and
 // not in a penalty state. Held users (pool_active=false) are excluded — they
 // aren't competing yet.
 export async function metroGenderCounts(): Promise<Record<string, Counts>> {
-  const { data } = await supabaseAdmin
+  const now = new Date().toISOString();
+  const data = await fetchAllSupabaseRows<any>((from, to) => eligible(supabaseAdmin
     .from('users')
-    .select('gender, zip, pool_active, matching_disabled_at, matching_cooldown_until, deleted_at')
-    .eq('pool_active', true)
-    .is('deleted_at', null);
+    .select('id, gender, zip')
+    .eq('pool_active', true), now)
+    .order('id', { ascending: true }).range(from, to), 500);
 
-  const now = Date.now();
   const out: Record<string, Counts> = {};
   for (const u of data ?? []) {
-    if (u.matching_disabled_at) continue;
-    if (u.matching_cooldown_until && new Date(u.matching_cooldown_until).getTime() > now) continue;
     const metro = metroOf(u.zip) ?? 'unknown';
     if (!out[metro]) out[metro] = { m: 0, f: 0, other: 0 };
     if (u.gender === 'm') out[metro].m++;
@@ -48,16 +57,17 @@ export function shouldHoldForBalance(counts: Counts | undefined, gender: string 
 // Release held users: oldest-held first, as long as their metro has room under
 // the ceiling — plus anyone past the max hold (anti-churn). Returns released ids.
 export async function releaseBalanceHolds(): Promise<string[]> {
-  const { data: held } = await supabaseAdmin
+  const now = Date.now();
+  const held = await fetchAllSupabaseRows<any>((from, to) => eligible(supabaseAdmin
     .from('users')
     .select('id, gender, zip, balance_hold_at')
     .not('balance_hold_at', 'is', null)
-    .eq('pool_active', false)
-    .order('balance_hold_at', { ascending: true });
+    .eq('pool_active', false), new Date(now).toISOString())
+    .order('balance_hold_at', { ascending: true })
+    .order('id', { ascending: true }).range(from, to), 500);
   if (!held?.length) return [];
 
   const counts = await metroGenderCounts();
-  const now = Date.now();
   const maxHoldMs = MAX_BALANCE_HOLD_DAYS * 86_400_000;
   const toRelease: string[] = [];
 
@@ -83,11 +93,17 @@ export async function releaseBalanceHolds(): Promise<string[]> {
     }
   }
 
-  if (toRelease.length) {
-    await supabaseAdmin
+  const released: string[] = [];
+  for (let i = 0; i < toRelease.length; i += 100) {
+    const { data, error } = await eligible(supabaseAdmin
       .from('users')
       .update({ pool_active: true, balance_hold_at: null, status: 'waiting' })
-      .in('id', toRelease);
+      .in('id', toRelease.slice(i, i + 100))
+      .eq('pool_active', false)
+      .not('balance_hold_at', 'is', null), new Date().toISOString())
+      .select('id');
+    if (error) throw new Error('Could not release eligible balance holds');
+    released.push(...(data ?? []).map((row: { id: string }) => row.id));
   }
-  return toRelease;
+  return released;
 }

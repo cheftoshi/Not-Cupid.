@@ -58,14 +58,14 @@
   border-top: 1px solid var(--h-border);
 }
 .vibesInner {
-  order: 1;
+  order: 2;
   padding: 1.1rem 1.1rem 2.5rem;
   border-bottom: 1px solid var(--h-border);
   scroll-margin-top: 1rem;
 }
 
 .matchProfile {
-  order: 2;
+  order: 1;
   display: grid;
   gap: 0.9rem;
   padding: 1.1rem;
@@ -91,7 +91,24 @@
   border: 1px solid var(--h-border);
   border-radius: 22px;
   background: var(--h-surface-2);
-  aspect-ratio: 1.08;
+  aspect-ratio: 1.6;
+  max-height: 280px;
+}
+
+.waitingBar {
+  padding: 1.2rem;
+  border-top: 1px solid var(--h-border);
+  background: var(--h-surface-2);
+  color: var(--h-text-dim);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.profileSectionTitle {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--h-text);
 }
 
 .matchPhoto,
