@@ -7,6 +7,12 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
+      react-stack:
+        patterns:
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
       safe-patches:
         update-types:
           - patch
