@@ -1,6 +1,8 @@
 import {readFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
-import ts from 'typescript';
+// TypeScript 7 provides the CLI, but no JavaScript transpileModule API.
+// Keep this isolated test loader on the explicitly pinned test-only compiler.
+import ts from 'typescript-test-compiler';
 
 // Execute production TypeScript with explicit dependency seams, without network access.
 export async function loadTs(path, mocks) {
