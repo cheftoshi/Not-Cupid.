@@ -54,7 +54,7 @@ test('expired sessions do not write cookies during Server Component rendering', 
   const auth = source('lib/auth.ts');
   const reader = auth.split('export async function getCurrentUser()')[1].split('export async function destroySession()')[0];
   assert.doesNotMatch(reader, /cookieStore\.(delete|set)\(/);
-  assert.match(reader, /new Date\(session.expires_at\) < new Date\(\)/);
+  assert.match(reader, /!Number.isFinite\(expiresAt\) \|\| expiresAt <= Date.now\(\)/);
 });
 
 test('invalid successful responses cannot silently clear existing chat or roster state', () => {

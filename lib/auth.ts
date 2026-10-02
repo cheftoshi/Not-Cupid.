@@ -59,22 +59,21 @@ export async function getCurrentUser() {
   const { data: session } = await supabaseAdmin
     .from('sessions')
     .select('token, token_hash_version, user_id, expires_at')
-    .in('token', [tokenHash, token])
+    // Only the hash of the presented bearer may match. Accepting the raw
+    // value here would make a leaked database hash a usable login credential.
+    .eq('token', tokenHash)
+    .eq('token_hash_version', 1)
     .limit(1)
     .single();
 
   if (!session) return null;
-  if (new Date(session.expires_at) < new Date()) {
+  const expiresAt = Date.parse(session.expires_at);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
     await supabaseAdmin.from('sessions').delete().eq('token', session.token);
     // This reader is also called from Server Components, where Next forbids
     // cookie writes. Return unauthenticated so pages can redirect normally;
     // login/logout Route Handlers own replacing/clearing the browser cookie.
     return null;
-  }
-
-  // Transparently migrate sessions created before tokens were hashed at rest.
-  if (session.token === token) {
-    await supabaseAdmin.from('sessions').update({ token: tokenHash, token_hash_version: 1 }).eq('token', token);
   }
 
   supabaseAdmin
@@ -99,7 +98,9 @@ export async function destroySession() {
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return;
 
-  await supabaseAdmin.from('sessions').delete().in('token', [hashSessionToken(token), token]);
+  await supabaseAdmin.from('sessions').delete()
+    .eq('token', hashSessionToken(token))
+    .eq('token_hash_version', 1);
   cookieStore.delete(COOKIE_NAME);
 }
 
