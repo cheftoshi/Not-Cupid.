@@ -60,10 +60,14 @@ test('public projection restricts city/audience/realm before limit and hides ven
 test('metro metrics paginate past 1000 and separate recent activity from pool eligibility', async () => {
   const rows=Array.from({length:1001},(_,i)=>({id:String(i),zip:'10001',gender:'f',status:'waiting',pool_active:true,last_seen_at:i===0?new Date().toISOString():null}));
   const offsets=[];
-  const chain=new Proxy({}, {get:(_,key)=>(...args)=>{if(key==='range'){offsets.push(args[0]);return Promise.resolve({data:rows.slice(args[0],args[1]+1),error:null});}return chain;}});
+  const makeChain=table=>{const chain=new Proxy({}, {get:(_,key)=>(...args)=>{if(key==='range'){
+    if(table==='users')offsets.push(args[0]);
+    // Session and client activity overlap, and a non-user must not inflate totals.
+    const source=table==='users'?rows:[{user_id:'0'},{user_id:'not-eligible'}];
+    return Promise.resolve({data:source.slice(args[0],args[1]+1),error:null});}return chain;}});return chain;};
   const route=await loadTs('app/api/admin/metro-health/route.ts', {
     'next/server':nextMock, '@/lib/admin':{getCurrentAdmin:async()=>({id:'admin'})},
-    '@/lib/supabase':{supabaseAdmin:{from:()=>chain,rpc:async()=>({data:[],error:null})}},
+    '@/lib/supabase':{supabaseAdmin:{from:makeChain,rpc:async()=>({data:[],error:null})}},
     '@/lib/quiz-data':{metroOf,METRO_CENTERS:{nyc:{city:'NYC',state:'NY'}}},
   });
   const response=await route.GET();const data=await response.json();

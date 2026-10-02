@@ -1,0 +1,33 @@
+name: Authenticated staging release checks
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authenticated-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    env:
+      E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+      E2E_TEST_SESSION: ${{ secrets.E2E_TEST_SESSION }}
+      E2E_REQUIRE_AUTH: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Require isolated staging configuration
+        run: node scripts/check-authenticated-e2e.mjs
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:e2e:release
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: authenticated-mobile-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

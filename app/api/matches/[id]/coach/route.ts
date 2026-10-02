@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { pairAllowed } from '@/lib/pair-safety';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { generateStructured, aiEnabled, privacySafeAiUserId } from '@/lib/ai';
@@ -48,6 +49,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (match.ended_at) return NextResponse.json({ error: 'This conversation has ended' }, { status: 409 });
 
   const otherId = match.user_1_id === user.id ? match.user_2_id : match.user_1_id;
+  try {
+    if (!await pairAllowed(user, otherId)) return NextResponse.json({error:'Conversation unavailable'},{status:403});
+  } catch { return NextResponse.json({error:'Safety checks unavailable'},{status:503}); }
   const [{ data: other }, { data: messages }] = await Promise.all([
     supabaseAdmin.from('users')
       .select('id, name, archetype, occupation, relationship_style, bio, music, food, hobbies, sports, vibes, values_profile, attach_anxiety, attach_avoidance, score_honesty, score_emotionality, score_extraversion, score_agreeableness, score_conscientiousness, score_openness')

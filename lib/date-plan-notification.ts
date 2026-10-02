@@ -51,6 +51,10 @@ export async function dateNoticeStillRelevant(job: {
   )
     return false;
   const event = job.payload.dateEvent;
+  if (event === 'message')
+    return p.state === 'confirmed' && job.actor_id !== job.recipient_id &&
+      [p.host_id, p.guest_id].includes(job.actor_id) &&
+      [p.host_id, p.guest_id].includes(job.recipient_id);
   if (event === "venue_update")
     return p.state === "confirmed" && p.guest_id === job.recipient_id;
   if (

@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { accessibleDatePlan } from "@/lib/date-plan-server";
 import { dateParticipant } from "@/lib/date-plan-policy";
 import { rateLimit } from "@/lib/rate-limit";
-import { sendPushToUser } from "@/lib/push";
+import { processNotificationOutbox } from "@/lib/notification-outbox";
 import { chatRealtimeTopic, broadcastChatRefresh } from "@/lib/chat-realtime";
 
 export const dynamic = "force-dynamic";
@@ -116,15 +116,8 @@ export async function POST(
       after(async () => {
         await Promise.allSettled([
           broadcastChatRefresh("date-plan", id),
-          sendPushToUser(
-            user.id === plan.host_id ? plan.guest_id! : plan.host_id,
-            {
-              title: "A new message in your date plan",
-              body: "Open your private conversation on NotCupid.",
-              url: `/hub?date=${id}`,
-              tag: `date-chat-${id}`,
-            },
-          ),
+          // The message transaction already persisted its notification job.
+          processNotificationOutbox(5),
         ]);
       });
     return NextResponse.json({

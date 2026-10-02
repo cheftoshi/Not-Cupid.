@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { parseResponse } from '@/lib/fetch-helpers'
 import s from './admin.module.css'
 import AdminCityConnections from '@/components/admin-city-connections'
+import AdminAccountCleanup from '@/components/admin-account-cleanup'
 import Link from 'next/link'
 
 // Pending community-link submissions (Discord/group-chat) awaiting approval.
@@ -434,6 +435,7 @@ export default function AdminClient() {
         <div className={s.wrap}>
 
           <CommunityLinksAdmin />
+          <AdminAccountCleanup />
           <SceneModerationAdmin />
           <DailyActivityEmailPreviewAdmin />
           <p><Link href="/admin/friday-digest">Preview Friday city roundup (no sends)</Link></p>

@@ -7,6 +7,7 @@ import { isPro } from '@/lib/pro';
 import { isHardLocked } from '@/lib/ghost';
 import { friendLocationContext, friendMetroLabel } from '@/lib/friend-location';
 import { connectionInFriendSegment } from '@/lib/friend-travel';
+import { safePeerIds } from '@/lib/pair-safety';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ async function loadFriends(userId: string, rows: any[]) {
   const { data: me } = await supabaseAdmin.from('users').select('friend_vibes, is_test').eq('id', userId).single();
   const myActs: string[] = (me as any)?.friend_vibes?.activities ?? [];
   const meTest = (me as any)?.is_test === true;
+  const allowed = await safePeerIds({id:userId,is_test:meTest}, ids);
   return rows
     .map((c) => {
       const otherId = c.user_a_id === userId ? c.user_b_id : c.user_a_id;
@@ -44,7 +46,7 @@ async function loadFriends(userId: string, rows: any[]) {
         _test: o.is_test === true, _meTest: meTest,
       };
     })
-    .filter((m) => m._test === m._meTest) // realm segregation
+    .filter((m) => allowed.has(m.otherId) && m._test === m._meTest) // safety and realm segregation
     .map(({ _test, _meTest, ...m }) => m);
 }
 
@@ -75,7 +77,9 @@ export async function GET() {
   const segmentRows = all.filter((connection: any) => connectionInFriendSegment(connection, location.metro, location.isTraveling));
   const sealedRows = segmentRows.filter(sealed);
   const openedCount = segmentRows.filter((connection: any) => !sealed(connection)).length;
-  const friends = await loadFriends(user.id, sealedRows);
+  let friends;
+  try { friends = await loadFriends(user.id, sealedRows); }
+  catch { return NextResponse.json({ error: 'Safety checks unavailable. Please retry.' }, { status: 503 }); }
   return NextResponse.json({
     optedIn: true, sealed: friends, openedCount, pro: isPro(user),
     location: { metro: location.metro, label: friendMetroLabel(location.metro), isTraveling: location.isTraveling },

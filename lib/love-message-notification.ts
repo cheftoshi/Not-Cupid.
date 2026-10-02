@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { renderEmail, sendEmail, button } from "@/lib/email";
 import { sendPushToUserDetailed } from "@/lib/push";
 import { dailyActivityEmailActivation } from "@/lib/daily-activity-email";
+import { pairAllowed } from '@/lib/pair-safety';
 
 const MESSAGE_EMAIL_THROTTLE_MS = 60 * 60 * 1000;
 
@@ -13,16 +14,26 @@ export async function deliverLoveMessageNotification(input: {
   messageId: string;
 }): Promise<{ complete: boolean; delivered?: boolean; errorCode?: string }> {
   const { matchId, recipientId, senderId, messageId } = input;
+  const { data: match, error: matchError } = await supabaseAdmin.from('matches')
+    .select('user_1_id,user_2_id,ended_at,status,user_1_accepted,user_2_accepted').eq('id', matchId).maybeSingle();
+  if (matchError) return { complete: false, errorCode: 'match_safety_lookup_failed' };
+  if (!match || match.ended_at || ['ended','passed','expired'].includes(match.status) ||
+      !match.user_1_accepted || !match.user_2_accepted || senderId === recipientId ||
+      ![match.user_1_id, match.user_2_id].includes(senderId) ||
+      ![match.user_1_id, match.user_2_id].includes(recipientId))
+    return { complete: true, errorCode: 'conversation_closed' };
+  if (!await pairAllowed({ id: recipientId, is_test: false }, senderId))
+    return { complete: true, errorCode: 'pair_unavailable' };
   const { data: recipient, error: recipientError } = await supabaseAdmin
     .from("users")
     .select(
-      "email, email_notifications, notifications_paused_at, is_test, deleted_at",
+      "email, email_notifications, notifications_paused_at, is_test, deleted_at, is_blocked",
     )
     .eq("id", recipientId)
     .single();
   if (recipientError)
     return { complete: false, errorCode: "recipient_lookup_failed" };
-  if (!recipient || recipient.is_test === true || recipient.deleted_at)
+  if (!recipient || recipient.is_test === true || recipient.deleted_at || recipient.is_blocked)
     return { complete: true };
 
   const { data: senderRow, error: senderError } = await supabaseAdmin

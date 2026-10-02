@@ -16,7 +16,7 @@ export async function GET() {
   // Stable pagination avoids Supabase's default 1000-row response ceiling.
   for (let offset = 0; ; offset += 500) {
     const { data, error } = await supabaseAdmin.from('users')
-      .select('id,gender,zip,status,pool_active,friend_opted_in_at,last_seen_at')
+      .select('id,gender,zip,status,pool_active,friend_opted_in_at')
       .is('deleted_at', null).not('is_test', 'is', true).not('is_blocked', 'is', true)
       .order('id').range(offset, offset + 499);
     if (error) return NextResponse.json({ error: 'City metrics unavailable; retry.' }, { status: 503 });
@@ -25,6 +25,19 @@ export async function GET() {
   }
 
   type Bucket = { key: string; city: string; state: string; total: number; men: number; women: number; other: number; active: number; eligible: number; friends: number };
+  const activeIds = new Set<string>();
+  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+  // last_seen_at is legacy; authenticated sessions and client activity are the
+  // current sources. Paginate both, deduplicate users, then apply eligibility.
+  for (const [table, timestamp] of [['sessions', 'last_used_at'], ['app_client_events', 'created_at']]) {
+    for (let offset = 0; ; offset += 500) {
+      const { data, error } = await supabaseAdmin.from(table).select('user_id')
+        .gte(timestamp, cutoff).order(table === 'sessions' ? 'token' : 'id').range(offset, offset + 499);
+      if (error) return NextResponse.json({ error: 'Activity metrics unavailable; retry.' }, { status: 503 });
+      for (const row of data || []) if (row.user_id) activeIds.add(row.user_id);
+      if (!data || data.length < 500) break;
+    }
+  }
   const buckets: Record<string, Bucket> = {};
   for (const u of real) {
     const key = (metroOf(u.zip) as string) || '_other';
@@ -38,7 +51,7 @@ export async function GET() {
     else if (u.gender === 'f') b.women++;
     else b.other++;
     if ((u.status === 'waiting' || u.status === 'matched') && u.pool_active !== false) b.eligible++;
-    if (u.last_seen_at && Date.parse(u.last_seen_at) >= Date.now() - 7 * 86400000) b.active++;
+    if (activeIds.has(u.id)) b.active++;
     if (u.friend_opted_in_at) b.friends++;
   }
 
@@ -59,7 +72,7 @@ export async function GET() {
   const outcomes = await supabaseAdmin.rpc('city_connection_health');
   if (outcomes.error) return NextResponse.json({ error: 'Connection metrics unavailable; retry.' }, { status: 503 });
   return NextResponse.json({ metros, totals, connections30d: outcomes.data, definitions: {
-    active: 'Seen in the last seven days', eligible: 'Waiting or matched and pool active',
+    active: 'Unique eligible accounts with session or client activity in the last seven days', eligible: 'Waiting or matched and pool active',
     total: 'Non-test, non-blocked, non-deleted accounts; not available inventory',
     connections30d: 'Last 30 days of actions, not a cohort conversion rate. Repeat participants acted on at least two different plans. Meetups are optional self-reports, not verified attendance.',
   } });

@@ -16,6 +16,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Could not delete your account. Please try again.' }, { status: 500 });
   }
 
+  // Deactivation atomically queues durable billing/media retries. These immediate
+  // attempts reduce latency; the idempotent worker repeats them if we are interrupted.
   // Read after the locked deactivation: a racing webhook cannot attach a new subscription.
   const {data:billing,error:billingError}=await supabaseAdmin.from('users').select('friend_sub_id').eq('id',user.id).single();
   const subscription=billing?.friend_sub_id || user.friend_sub_id;

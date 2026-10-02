@@ -5,6 +5,7 @@ import { acceptMatch } from '@/lib/match-actions';
 import { rateLimit } from '@/lib/rate-limit';
 import { enqueueLoveMessageNotification, processNotificationOutbox } from '@/lib/notification-outbox';
 import { broadcastChatRefresh, chatRealtimeTopic } from '@/lib/chat-realtime';
+import { pairAllowed } from '@/lib/pair-safety';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,12 @@ export async function GET(req: NextRequest) {
   if (match.user_1_id !== user.id && match.user_2_id !== user.id) {
     return NextResponse.json({ error: 'Not your match' }, { status: 403 });
   }
+  try {
+    if (!await pairAllowed(user, match.user_1_id === user.id ? match.user_2_id : match.user_1_id)) {
+      return NextResponse.json({ error: 'Conversation unavailable' }, { status: 403 });
+    }
+  } catch { return NextResponse.json({ error: 'Safety checks unavailable' }, { status: 503 }); }
+  const terminal = !!match.ended_at || ['ended', 'passed', 'expired'].includes(match.status);
 
   // Incremental polling: the chat polls every few seconds — with `after` (an
   // ISO timestamp of the newest message the client has) we return only newer
@@ -47,14 +54,14 @@ export async function GET(req: NextRequest) {
   const messages = after ? (messageRows ?? []) : [...(messageRows ?? [])].reverse();
 
   const isU1 = match.user_1_id === user.id;
-  const otherTypingAt = (isU1 ? match.user_2_typing_at : match.user_1_typing_at) ?? null;
-  const otherReadAt = (isU1 ? match.user_2_read_at : match.user_1_read_at) ?? null;
+  const otherTypingAt = terminal ? null : (isU1 ? match.user_2_typing_at : match.user_1_typing_at) ?? null;
+  const otherReadAt = terminal ? null : (isU1 ? match.user_2_read_at : match.user_1_read_at) ?? null;
   // Polling with the chat open = reading. Stamp my side only on initial load or
   // when fresh messages arrive, avoiding a write on every three-second poll.
-  if (!after || (messages ?? []).length > 0) {
+  if (!terminal && (!after || (messages ?? []).length > 0)) {
     await supabaseAdmin.from('matches')
       .update({ [isU1 ? 'user_1_read_at' : 'user_2_read_at']: new Date().toISOString() })
-      .eq('id', matchId);
+      .eq('id', matchId).is('ended_at', null);
   }
 
   // Return live match status alongside messages so the chat header can
@@ -93,11 +100,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Message too long (max 2000)' }, { status: 400 });
   }
   const clientId = typeof client_id === 'string' && /^[a-zA-Z0-9_-]{8,80}$/.test(client_id) ? client_id : null;
-  if (clientId) {
-    const { data: existing } = await supabaseAdmin.from('messages')
-      .select('*').eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
-    if (existing) return NextResponse.json({ message: existing, already: true });
-  }
 
   const { data: match } = await supabaseAdmin
     .from('matches')
@@ -109,8 +111,18 @@ export async function POST(req: NextRequest) {
   const isU1 = match.user_1_id === user.id;
   const isU2 = match.user_2_id === user.id;
   if (!isU1 && !isU2) return NextResponse.json({ error: 'Not your match' }, { status: 403 });
+  try {
+    if (!await pairAllowed(user, isU1 ? match.user_2_id : match.user_1_id)) {
+      return NextResponse.json({ error: 'Conversation unavailable' }, { status: 403 });
+    }
+  } catch { return NextResponse.json({ error: 'Safety checks unavailable' }, { status: 503 }); }
   if (match.ended_at || ['ended', 'passed', 'expired'].includes(match.status)) {
     return NextResponse.json({ error: 'This match has ended.' }, { status: 400 });
+  }
+  if (clientId) {
+    const { data: existing } = await supabaseAdmin.from('messages')
+      .select('*').eq('match_id', match_id).eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
+    if (existing) return NextResponse.json({ message: existing, already: true });
   }
 
   const bothBefore = !!(match.user_1_accepted && match.user_2_accepted);
@@ -136,14 +148,14 @@ export async function POST(req: NextRequest) {
 
   const { data: message, error } = await supabaseAdmin
     .from('messages')
-    .insert({ match_id, sender_id: user.id, body: body.trim(), client_id: clientId })
+    .insert({ match_id, sender_id: user.id, body: body.trim(), client_id: clientId, notify_recipient: bothBefore })
     .select()
     .single();
 
   if (error) {
     if (error.code === '23505' && clientId) {
       const { data: existing } = await supabaseAdmin.from('messages')
-        .select('*').eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
+        .select('*').eq('match_id', match_id).eq('sender_id', user.id).eq('client_id', clientId).maybeSingle();
       if (existing) return NextResponse.json({ message: existing, already: true });
     }
     console.error('Insert message error:', error);
