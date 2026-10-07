@@ -31,7 +31,9 @@ Space Grotesk and DM Sans directories and their official WOFF2 distribution.
   No video, looping canvas, cursor listener, or new animation library ships.
   The earlier cinematic animation is not integrated. Reduced-motion preferences
   disable decorative transitions globally.
-- App/share metadata and existing install icons use the new identity.
+- App/share metadata and existing install icons use the new identity. The PWA
+  cache version refreshes stable icon/font URLs, and the cached offline screen
+  uses the same brand kit. Its retry link works without an inline script.
 
 ## Product boundaries
 

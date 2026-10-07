@@ -66,7 +66,7 @@ test('service worker keeps pages and APIs network-first while supporting install
   assert.match(register, /updateViaCache: 'none'/);
   assert.match(register, /visibilitychange/);
   assert.match(register, /pageshow/);
-  assert.match(worker, /nc-static-v4/);
+  assert.match(worker, /nc-static-v5/);
   assert.match(worker, /event\.request\.mode === 'navigate'/);
   assert.match(worker, /fetch\(event\.request\)\.catch/);
   assert.match(worker, /url\.pathname\.startsWith\('\/_next\/static\/'\)/);

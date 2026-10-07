@@ -3,13 +3,13 @@
 // assets. Pages and API calls always go to the network; navigations only fall
 // back to a static offline screen when the network is unavailable.
 
-const STATIC_CACHE = 'nc-static-v4';
+const STATIC_CACHE = 'nc-static-v5';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll([OFFLINE_URL, '/icons/icon-192.png']))
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll([OFFLINE_URL, '/icons/icon-192.png', '/fonts/SpaceGrotesk.woff2', '/fonts/DMSans.woff2']))
   );
 });
 
@@ -35,12 +35,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Only cache Next's content-hashed build assets + our icons — these are
-  // immutable by name, so cache-first is always safe.
+  // Cache hashed build assets and the versioned brand kit. Bump STATIC_CACHE
+  // whenever stable icon/font URLs change; pages and APIs remain network-only.
   const cacheable =
     event.request.method === 'GET' &&
     url.origin === self.location.origin &&
-    (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/'));
+    (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/fonts/'));
   if (!cacheable) return; // everything else: straight to the network
 
   event.respondWith(
