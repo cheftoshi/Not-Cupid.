@@ -1816,6 +1816,11 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 ) : (
                   <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} className={s.poppyBtn} style={{ width: '100%', opacity: termsOk ? 1 : 0.5, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>{busy ? '…' : `🤝 connect with ${first}`}</button>
                 )}
+                {!m.connected && !m.iAccepted && matches.some(candidate => candidate.otherId === m.otherId) && (
+                  <button onClick={() => dropConnection(m.otherId)} disabled={busy} className={s.pulseBtnGhost}>
+                    {m.theyAccepted ? 'Pass on this request' : 'Pass on this suggestion'}
+                  </button>
+                )}
                 {!termsOk && !m.connected && <div style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.74rem', textAlign: 'center' }}>agree to the terms (on the page) before you connect.</div>}
               </div>
               {/* safety: vet + report. Connecting is opt-in; they can't DM you unless you connect. */}

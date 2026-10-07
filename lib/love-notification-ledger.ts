@@ -1,4 +1,14 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import type { PushDeliveryResult } from '@/lib/push';
+
+/** Missing/expired devices are skips; configuration and provider failures are not. */
+export async function markLovePushResult(eventIds: string[], result: PushDeliveryResult): Promise<void> {
+  if (!result.delivered && ['no_subscription', 'subscription_expired'].includes(result.reason)) {
+    await markLoveNotificationSkipped(eventIds, result.reason);
+  } else {
+    await markLoveNotificationResult(eventIds, { ok: result.delivered, error: result.reason });
+  }
+}
 
 export type LoveNotificationType =
   | 'interest_immediate'

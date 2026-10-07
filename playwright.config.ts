@@ -1,6 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+import { requireStagingTarget } from './scripts/e2e-target.mjs';
 
 const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:3000';
+// Protect direct Playwright invocations too, before any session cookie is set.
+if (process.env.E2E_TEST_SESSION || process.env.E2E_REQUIRE_AUTH === '1') {
+  requireStagingTarget(process.env.E2E_BASE_URL, process.env.E2E_STAGING_ORIGIN);
+}
 
 export default defineConfig({
   testDir: './e2e',

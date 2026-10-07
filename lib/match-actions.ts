@@ -10,13 +10,14 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email';
-import { sendPushToUser } from '@/lib/push';
+import { sendPushToUserDetailed } from '@/lib/push';
 import { LOVE_MAX_CONNECTIONS } from '@/lib/matching-policy';
 import { returnLovePickEntitlement } from '@/lib/love-pick-access';
 import {
   claimLoveNotificationEvent,
   loveDashboardUrl,
   markLoveNotificationResult,
+  markLovePushResult,
   markLoveNotificationSkipped,
   recordLoveDecision,
   recordLoveExpiry,
@@ -221,16 +222,13 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
         channel: 'push',
       });
       if (!eventId) return;
-      const pushed = await sendPushToUser(recipientId, {
+      const pushed = await sendPushToUserDetailed(recipientId, {
         title: "It's a match ✦",
         body: 'Both of you said yes — the chat is open.',
         url: `/match/${matchId}?love_event=${eventId}`,
         tag: `match-${matchId}`,
       });
-      await markLoveNotificationResult([eventId], {
-        ok: pushed,
-        error: pushed ? undefined : 'push_unavailable',
-      });
+      await markLovePushResult([eventId], pushed);
     }));
     return { ok: true, mutual: true };
   }
@@ -252,17 +250,14 @@ export async function acceptMatch(matchId: string, userId: string): Promise<Acce
     type: 'interest_immediate',
     channel: 'push',
   });
-  const pushed = pushEventId ? await sendPushToUser(otherId, {
-    title: `${accepterFirst} chose you 👀`,
-    body: 'Review their profile, then choose Yes or Pass.',
-    url: loveDashboardUrl(matchId, pushEventId),
-    tag: `match-${matchId}`,
-  }) : false;
   if (pushEventId) {
-    await markLoveNotificationResult([pushEventId], {
-      ok: pushed,
-      error: pushed ? undefined : 'push_unavailable',
+    const pushed = await sendPushToUserDetailed(otherId, {
+      title: `${accepterFirst} chose you 👀`,
+      body: 'Review their profile, then choose Yes or Pass.',
+      url: loveDashboardUrl(matchId, pushEventId),
+      tag: `match-${matchId}`,
     });
+    await markLovePushResult([pushEventId], pushed);
   }
   return { ok: true, mutual: false };
 }

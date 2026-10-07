@@ -11,6 +11,7 @@ import { isPro } from '@/lib/pro';
 import { chatRealtimeTopic } from '@/lib/chat-realtime';
 import { canRestoreChat } from '@/lib/love-chat-lifecycle';
 import RestoreChat from './restore-chat';
+import ChatLoadError from './chat-load-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,12 +76,13 @@ export default async function MatchPage({
 
   // Keep first paint bounded. Incremental polling fetches only newer rows; old
   // conversations no longer ship hundreds of bubbles before the screen opens.
-  const { data: messagesDesc } = await supabaseAdmin
+  const { data: messagesDesc, error: messagesError } = await supabaseAdmin
     .from('messages')
     .select('*')
     .eq('match_id', id)
     .order('created_at', { ascending: false })
     .limit(100);
+  if (messagesError) return <ChatLoadError />;
   const messages = (messagesDesc ?? []).reverse();
 
   return (

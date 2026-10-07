@@ -16,28 +16,32 @@ export async function POST(req: NextRequest) {
   if (!otherId) return NextResponse.json({ error: 'otherId required' }, { status: 400 });
 
   const [aId, bId] = [user.id, otherId].sort();
-  const { data: conn } = await supabaseAdmin
+  const { data: conn, error: lookupError } = await supabaseAdmin
     .from('friend_connections').select('*').eq('user_a_id', aId).eq('user_b_id', bId).maybeSingle();
+  if (lookupError) return NextResponse.json({ error: 'Connection temporarily unavailable' }, { status: 503 });
   if (!conn) return NextResponse.json({ error: 'No such connection' }, { status: 404 });
 
   const circleId = conn.circle_id;
-  await supabaseAdmin.from('friend_connections')
+  const { error: declineError } = await supabaseAdmin.from('friend_connections')
     .update({ status: 'declined', circle_id: null })
     .eq('user_a_id', aId).eq('user_b_id', bId);
-  await supabaseAdmin.from('friend_match_history')
+  if (declineError) return NextResponse.json({ error: 'Could not close this connection. Please retry.' }, { status: 503 });
+  const { error: historyError } = await supabaseAdmin.from('friend_match_history')
     .upsert({ user_a_id: aId, user_b_id: bId, outcome: 'disconnected' }, { onConflict: 'user_a_id,user_b_id' });
+  // The retained declined connection also excludes this pair from assignment.
+  if (historyError) console.error('[friend-disconnect] history write failed', { code: historyError.code });
 
   // For each of the two, if they have no remaining CONNECTED tie in this circle,
   // remove them from it (leave the group chat).
   if (circleId) {
     for (const uid of [user.id, otherId]) {
-      const { count } = await supabaseAdmin
+      const { count, error: countError } = await supabaseAdmin
         .from('friend_connections')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'connected')
         .eq('circle_id', circleId)
         .or(`user_a_id.eq.${uid},user_b_id.eq.${uid}`);
-      if ((count ?? 0) === 0) {
+      if (!countError && count === 0) {
         await supabaseAdmin.from('friend_circle_members')
           .update({ left_at: new Date().toISOString() })
           .eq('circle_id', circleId).eq('user_id', uid);

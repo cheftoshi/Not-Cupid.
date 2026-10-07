@@ -61,12 +61,13 @@ export async function sendPushToUserDetailed(userId: string, payload: PushPayloa
           await supabaseAdmin.from('push_subscriptions').delete().eq('id', subscription.id);
           return 'dead' as const;
         }
-        return error?.statusCode === 429 || error?.statusCode >= 500 ? 'retry' as const : 'failed' as const;
+        // Network/timeouts have no HTTP status and should not be discarded.
+        return !error?.statusCode || error.statusCode === 429 || error.statusCode >= 500 ? 'retry' as const : 'failed' as const;
       }
     }));
     if (outcomes.includes('delivered')) return { delivered: true, retryable: false, reason: 'delivered' };
     if (outcomes.includes('retry')) return { delivered: false, retryable: true, reason: 'push_provider_retryable' };
-    return { delivered: false, retryable: false, reason: 'push_unavailable' };
+    return { delivered: false, retryable: false, reason: outcomes.every(outcome => outcome === 'dead') ? 'subscription_expired' : 'push_provider_rejected' };
   } catch (error) {
     console.error('push: send failed', error);
     return { delivered: false, retryable: true, reason: 'push_worker_failed' };

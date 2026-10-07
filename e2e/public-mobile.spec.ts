@@ -64,6 +64,9 @@ test.describe('quiz profile recovery without real accounts or writes', () => {
   for (const mode of ['retake=1', 'line=love']) {
     for (const failure of ['network', 'server', 'invalid-data', 'timeout']) {
       test(`${mode} recovers from ${failure} without a crash or login redirect`, async ({ page }) => {
+        // This scenario intentionally spends 12s waiting for the app timeout;
+        // leave room for mobile navigation and the subsequent recovery checks.
+        if (failure === 'timeout') test.setTimeout(45_000);
         const errors: string[] = [];
         page.on('pageerror', error => errors.push(error.message));
         let recovered = false;

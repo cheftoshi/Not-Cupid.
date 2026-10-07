@@ -5,7 +5,7 @@ import { loadTs, nextMock } from './helpers/load-ts.mjs';
 for(const denied of ['reported','lookup-failed']) {
   for(const method of ['GET','POST']) test(`authenticated Love ${method} denies ${denied} before history/idempotency access`,async()=>{
     const reads=[];
-    const db={from(table){reads.push(table);return {select(){return this},eq(){return this},single:async()=>({data:{
+    const db={from(table){reads.push(table);return {select(){return this},eq(){return this},maybeSingle(){return this.single()},single:async()=>({data:{
       user_1_id:'me',user_2_id:'other',status:'both_accepted',user_1_accepted:true,user_2_accepted:true,
     }})}}};
     const route=await loadTs('app/api/messages/route.ts',{

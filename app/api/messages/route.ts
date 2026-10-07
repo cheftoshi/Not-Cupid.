@@ -16,12 +16,13 @@ export async function GET(req: NextRequest) {
   const matchId = req.nextUrl.searchParams.get('match_id');
   if (!matchId) return NextResponse.json({ error: 'match_id required' }, { status: 400 });
 
-  const { data: match } = await supabaseAdmin
+  const { data: match, error: matchError } = await supabaseAdmin
     .from('matches')
     .select('user_1_id, user_2_id, chat_expires_at, ended_at, ended_reason, status, user_1_typing_at, user_2_typing_at, user_1_read_at, user_2_read_at')
     .eq('id', matchId)
-    .single();
+    .maybeSingle();
 
+  if (matchError) return NextResponse.json({ error: 'Conversation temporarily unavailable. Please retry.' }, { status: 503 });
   if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
   if (match.user_1_id !== user.id && match.user_2_id !== user.id) {
     return NextResponse.json({ error: 'Not your match' }, { status: 403 });
@@ -39,6 +40,9 @@ export async function GET(req: NextRequest) {
   // pages backward in bounded chunks when someone explicitly asks for history.
   const after = req.nextUrl.searchParams.get('after');
   const before = req.nextUrl.searchParams.get('before');
+  if ((after && Number.isNaN(Date.parse(after))) || (before && Number.isNaN(Date.parse(before))) || (after && before)) {
+    return NextResponse.json({ error: 'Use one valid message cursor.' }, { status: 400 });
+  }
   let msgQuery = supabaseAdmin
     .from('messages')
     .select('*')
@@ -50,7 +54,10 @@ export async function GET(req: NextRequest) {
   } else {
     msgQuery = msgQuery.order('created_at', { ascending: false }).limit(100);
   }
-  const { data: messageRows } = await msgQuery;
+  const { data: messageRows, error: messagesError } = await msgQuery;
+  // Never turn a storage outage into a successful empty conversation or mark
+  // messages read when they were not actually fetched.
+  if (messagesError) return NextResponse.json({ error: 'Messages temporarily unavailable. Please retry.' }, { status: 503 });
   const messages = after ? (messageRows ?? []) : [...(messageRows ?? [])].reverse();
 
   const isU1 = match.user_1_id === user.id;
