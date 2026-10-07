@@ -24,7 +24,7 @@ export default function LandingClient() {
     </section>
     <section className={styles.landBottom} aria-label="You choose how to connect">
       <h2>A little hello.<br/>A lot of possibility.</h2>
-      <p>Find people, start conversations, and make plans.<br/>You choose who to meet.</p>
+      <p>Find people, start conversations, and make plans.{' '}<br/>You choose who to meet.</p>
       <Link href="/how-it-works">See how it works ↗</Link>
     </section>
   </main>
