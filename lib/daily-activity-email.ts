@@ -7,7 +7,7 @@ export {
   isDailyActivitySendWindow,
 } from '@/lib/daily-activity-cadence';
 
-export const DAILY_ACTIVITY_EMAIL_APPROVAL_VERSION = 'daily-activity-drop-v1-2026-08-17';
+export const DAILY_ACTIVITY_EMAIL_APPROVAL_VERSION = 'daily-activity-drop-v2-2026-10-07';
 export const DAILY_ACTIVITY_EMAIL_SUBJECT = 'You have something waiting on NotCupid';
 
 export type DailyActivitySection = 'love' | 'friend' | 'plans';
@@ -71,7 +71,7 @@ function itemRow(item: DailyActivityItem) {
 
 function section(title: string, items: DailyActivityItem[]) {
   if (!items.length) return '';
-  return `<div style="margin:22px 0 0;font-family:'DM Mono','SF Mono',monospace;font-size:10px;letter-spacing:0.17em;text-transform:uppercase;color:${C.lav};">${escapeHtml(title)}</div>
+  return `<div style="margin:22px 0 0;font-family:'DM Sans',Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.17em;text-transform:uppercase;color:${C.lav};">${escapeHtml(title)}</div>
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">${items.map(itemRow).join('')}</table>`;
 }
 
@@ -93,11 +93,11 @@ export function dailyActivityEmailHtml(input: {
 <body style="margin:0;padding:0;background:${C.paper};-webkit-text-size-adjust:100%;">
   <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:${C.paper};opacity:0;">${escapeHtml(preheader(input.items))}${'‌ '.repeat(50)}</div>
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.paper};"><tr><td align="center" style="padding:28px 14px;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;background:#fff;border:1px solid ${C.border};border-radius:14px;">
-      <tr><td style="padding:30px 32px 8px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:25px;font-weight:700;"><span style="color:#2563ff;">Not</span><span style="color:#ff6a1f;">Cupid</span></td></tr>
-      <tr><td style="padding:18px 32px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${C.muted};">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:560px;background:#fff;border:1px solid ${C.border};border-top:5px solid #f4c542;border-radius:14px;">
+      <tr><td style="padding:30px 24px 8px;font-family:'Space Grotesk',Arial,Helvetica,sans-serif;font-size:25px;font-weight:700;"><span style="color:${C.lav};">NotCupid<span style="color:#b08a00;">.</span></span></td></tr>
+      <tr><td style="padding:18px 24px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${C.muted};">
         <p style="margin:0 0 12px;font-size:15px;line-height:1.55;">Hi ${first},</p>
-        <p style="margin:0;color:${C.ink};font-size:22px;line-height:1.25;font-family:Georgia,'Times New Roman',serif;">Here’s what’s waiting for you.</p>
+        <p style="margin:0;color:${C.ink};font-size:22px;line-height:1.25;font-family:'Space Grotesk',Arial,Helvetica,sans-serif;">Here’s what’s waiting for you.</p>
         <p style="margin:10px 0 0;font-size:14px;line-height:1.55;">A quick daily drop of activity you haven’t opened yet.</p>
         ${section('Love Line', love)}
         ${section('Friend Hub', friend)}
@@ -106,7 +106,7 @@ export function dailyActivityEmailHtml(input: {
         <p style="margin:18px 0 0;font-size:11px;line-height:1.5;color:${C.muted};">Sent at most once a day—and only when there’s something new or unread.</p>
       </td></tr>
     </table>
-    <div style="max-width:560px;margin-top:12px;font-family:'DM Mono','SF Mono',monospace;font-size:9px;line-height:1.55;color:${C.muted};text-align:center;">
+    <div style="max-width:560px;margin-top:12px;font-family:'DM Sans',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.55;color:${C.muted};text-align:center;">
       NotCupid · operated by Lemon Labs · ${escapeHtml(input.mailingAddress)} · <a href="${escapeHtml(unsubscribe)}" style="color:${C.muted};text-decoration:underline;">Unsubscribe</a>
     </div>
   </td></tr></table>

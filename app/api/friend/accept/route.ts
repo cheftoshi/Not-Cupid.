@@ -29,8 +29,8 @@ async function notifyCrewMember(memberId: string, joinerName: string, crewSize: 
   const html = renderEmail({
     preheader: `${first} just joined — your crew chat is active. hop in.`,
     eyebrow: 'friend line · all aboard',
-    headline: `${first} is in. the crew chat is live.`,
-    bodyHtml: `<p style="margin:0 0 16px 0;">${escapeHtml(first)} just said they're in, so the group thread is open for ${escapeHtml(others)}. hop in, say hi, and make a plan before the moment passes.</p>
+    headline: `${first} joined. Your crew chat is open.`,
+    bodyHtml: `<p style="margin:0 0 16px 0;">${escapeHtml(first)} just said they're in, so the group thread is open for ${escapeHtml(others)}. Say hello and find something you’d like to do together.</p>
       ${button({ href: `${base}/friends`, label: 'hop in to the chat →' })}`,
   });
   await sendEmail({ to: u.email, subject: `${first} joined your crew — chat's live on NotCupid`, html }).catch(() => {});

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAdmin } from '@/lib/admin';
 import { supabaseAdmin } from '@/lib/supabase';
-import { button, C, escapeHtml, renderEmail, sendEmail } from '@/lib/email';
+import { button, C, escapeHtml, renderEmail, sendEmail } from '@/lib/legacy-email';
 import {
   LOVE_RELAUNCH_APPROVAL_VERSION,
   LOVE_RELAUNCH_CAMPAIGN,

@@ -1,4 +1,4 @@
-import { button, escapeHtml, renderEmail, sendEmail } from '@/lib/email';
+import { button, escapeHtml, renderEmail, sendEmail } from '@/lib/legacy-email';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export const DATING_EXPERIMENT_EMAIL_APPROVAL_VERSION = 'dating-experiment-selection-v1-2026-08-19';

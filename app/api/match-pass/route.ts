@@ -172,8 +172,8 @@ export async function POST(req: NextRequest) {
           eyebrow: 'noted.',
           headline: `You passed on ${other?.name?.split(' ')[0] ?? 'your match'}.`,
           bodyHtml: `
-            <p style="margin:0 0 12px 0;">No hard feelings — better an honest "not it" than a wasted coffee.</p>
-            <p style="margin:0;">Your roster's open on the dashboard — your most compatible people, you pick who's next.</p>
+            <p style="margin:0 0 12px 0;">Your choice is saved. You can explore your Love Line whenever you’re ready.</p>
+            <p style="margin:0;">Your roster is on the dashboard. Take a look and choose who you’d like to get to know.</p>
           `,
           recipientId: user.id,
           footerNote: 'you choose. quality over chaos.',

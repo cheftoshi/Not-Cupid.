@@ -1,4 +1,4 @@
-import { button, escapeHtml, renderEmail } from './email.ts';
+import { button, escapeHtml, renderEmail } from './legacy-email.ts';
 import { signWinnerConfirmation } from './dating-experiment-winner-confirmation.ts';
 
 export const WINNER_DAY_OF_CAMPAIGN = 'dating_experiment_boston_v1_day_of_confirmation';

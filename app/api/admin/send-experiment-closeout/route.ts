@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminEmails, getCurrentAdmin } from '@/lib/admin';
-import { button, escapeHtml, infoCard, renderEmail, sendEmail } from '@/lib/email';
+import { button, escapeHtml, infoCard, renderEmail, sendEmail } from '@/lib/legacy-email';
 import { looksLikePublicPostalAddress } from '@/lib/email-address';
 import { supabaseAdmin } from '@/lib/supabase';
 

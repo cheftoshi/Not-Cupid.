@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import { button, C, escapeHtml, signUnsubToken } from '@/lib/email';
+import { button, C, escapeHtml, signUnsubToken } from '@/lib/legacy-email';
 
 export const ELIGIBLE_READY_REMINDER_CAMPAIGN = 'dating_experiment_ready_reminder_aug17_2026';
 export const ELIGIBLE_READY_REMINDER_APPROVAL_VERSION = 'dating-experiment-ready-reminder-v1-2026-08-17';

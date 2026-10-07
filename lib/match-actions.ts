@@ -275,11 +275,11 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
       eyebrow: "it's a match ✦",
       headline: `${otherName.split(' ')[0]} said yes too.`,
       bodyHtml: `
-        <p style="margin:0 0 14px 0;">The algo lit the spark; the rest is on you. Your private chat is open in the app.</p>
+        <p style="margin:0 0 14px 0;">You both said yes. Your private chat is open whenever you’re ready to say hello.</p>
         <p style="margin:14px 0 6px 0;color:${C.ink};font-size:15px;font-weight:500;">A nudge, not a script:</p>
         <ul style="margin:0 0 18px 0;padding-left:18px;font-size:14px;color:${C.muted};line-height:1.7;">
-          <li>Message soon — the chat closes after 36 quiet hours (every message resets the clock).</li>
-          <li>Make the first message a real one, not "hey." You both already passed the hard part.</li>
+          <li>Your chat has no inactivity deadline. After 10 quiet days it moves to Archived; sending a message brings it back.</li>
+          <li>Start with something that caught your eye in their profile.</li>
           <li>If it lands, come back and tell us how it went.</li>
         </ul>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${C.paper};border:1px solid ${C.border};border-radius:10px;margin:0 0 18px 0;"><tr><td style="padding:12px 16px;">
@@ -289,7 +289,7 @@ async function sendItsAMatchEmails(matchId: string, user1Id: string, user2Id: st
         ${button({ href: `${base}/match/${matchId}`, label: 'Open chat & profile →' })}
       `,
       recipientId,
-      footerNote: 'mutual yes. you earned this one.',
+      footerNote: 'A mutual yes. A new conversation.',
     });
 
   await Promise.all([

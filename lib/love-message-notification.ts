@@ -97,7 +97,7 @@ export async function deliverLoveMessageNotification(input: {
       preheader: `${senderFirst} just messaged you on NotCupid.`,
       eyebrow: "new message",
       headline: `${senderFirst} sent you a message.`,
-      bodyHtml: `<p style="margin:0 0 18px 0;">Don't leave them hanging — the chat goes quiet after 36h of silence.</p>${button({ href: `${base}/match/${matchId}`, label: "Open the chat →" })}`,
+      bodyHtml: `<p style="margin:0 0 18px 0;">Your conversation has a new message. Open it when you’re ready to reply.</p>${button({ href: `${base}/match/${matchId}`, label: "Open the chat →" })}`,
     }),
     idempotencyKey: `chat-message-${matchId}-${recipientId}-${messageId}`,
   });

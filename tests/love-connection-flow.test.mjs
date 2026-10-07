@@ -105,7 +105,7 @@ test('Love concierge records and deduplicates immediate, 24h, push-only 48h, fin
 test('the mutual no-message nudge is deduplicated and fail-closed behind exact approval', () => {
   const cron = readFileSync(new URL('../app/api/cron/expiring-soon/route.ts', import.meta.url), 'utf8');
   const migration = readFileSync(new URL('../supabase/migrations/20260818184532_love_performance_and_interaction_funnel.sql', import.meta.url), 'utf8');
-  assert.match(cron, /MUTUAL_NUDGE_VERSION = 'love-mutual-no-message-v1-2026-08-18'/);
+  assert.match(cron, /MUTUAL_NUDGE_VERSION = 'love-mutual-no-message-v2-2026-10-07'/);
   assert.match(cron, /process\.env\.LOVE_MUTUAL_NUDGE_APPROVAL_VERSION === MUTUAL_NUDGE_VERSION/);
   assert.match(cron, /if \(mutualNudgeEnabled\)/);
   assert.match(cron, /mutual_no_message_12h/);

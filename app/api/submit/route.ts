@@ -9,7 +9,7 @@ import { renderEmail, sendEmail, button, C, escapeHtml } from '@/lib/email'
 import { sendPushToUser } from '@/lib/push'
 import { acquisitionColumns, sanitizeAcquisition } from '@/lib/acquisition'
 
-const PROFILE_COMPLETION_EMAIL_APPROVAL_VERSION = 'profile-completion-v1-2026-08-19'
+const PROFILE_COMPLETION_EMAIL_APPROVAL_VERSION = 'profile-completion-v2-2026-10-07'
 
 async function sendCoreCompletionEmail(user: { id: string; email: string; name?: string | null; archetype?: string | null }, held: boolean) {
   if (!user.email) return

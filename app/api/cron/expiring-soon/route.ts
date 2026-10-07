@@ -19,7 +19,7 @@ export const maxDuration = 300;
 const HOUR = 60 * 60 * 1000;
 const FINAL_MIN_HOURS = 3;
 const FINAL_MAX_HOURS = 6;
-const MUTUAL_NUDGE_VERSION = 'love-mutual-no-message-v1-2026-08-18';
+const MUTUAL_NUDGE_VERSION = 'love-mutual-no-message-v2-2026-10-07';
 
 type PendingMatch = {
   id: string;
@@ -339,7 +339,7 @@ export async function GET(req: NextRequest) {
                 subject: `You matched with ${first}`,
                 html: renderEmail({
                   preheader: `You both said yes. Send a simple first message when you’re ready.`,
-                  bodyHtml: `<p style="margin:0 0 18px 0;">Start with something simple from their profile. If you need a little inspiration, the AI Connect Coach can help.</p>${button({ href: `${base}/match/${match.id}`, label: `Say hello to ${escapeHtml(first)} →` })}`,
+                  bodyHtml: `<p style="margin:0 0 18px 0;">Start with something simple from their profile. If you need a little inspiration, optional AI conversation help is available in the app. You choose what to say.</p>${button({ href: `${base}/match/${match.id}`, label: `Say hello to ${first} →` })}`,
                   recipientId,
                 }),
                 idempotencyKey: `love-mutual-no-message-12h-${match.id}-${recipientId}`,
