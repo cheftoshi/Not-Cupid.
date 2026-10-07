@@ -46,6 +46,21 @@ test.describe('Friend workspace presentation and retained actions',()=>{
   await expect(page.getByRole('button',{name:/connect/}).first()).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  });
+ test('Friend profile retains unsaved text when an explicit save fails',async({page})=>{
+  let saves=0;await page.route('**/api/profile',r=>{if(r.request().method()==='PUT'){saves++;return r.fulfill({status:503,json:{error:'QA save unavailable'}});}return r.continue();});
+  await page.goto('/friends/profile');const bio=page.getByPlaceholder("who are you when you're not working? what's your ideal weekend?");
+  await bio.fill('Keep my Friend profile draft');expect(saves).toBe(0);
+  await page.getByRole('button',{name:'save my card →'}).click();
+  await expect(page.getByText('QA save unavailable',{exact:true})).toBeVisible();await expect(bio).toHaveValue('Keep my Friend profile draft');expect(saves).toBe(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ });
+ test('Friend guide explains user choice and keeps included versus optional benefits clear',async({page})=>{
+  await page.goto('/friends/how-it-works');await expect(page.getByRole('heading',{name:'Find your next friend.'})).toBeVisible();
+  await expect(page.getByText(/you decide what happens next/)).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Included and optional'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Explore Friendship →'})).toHaveAttribute('href','/friends');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ });
  test('pack opens by keyboard without decorative motion and preserves consent before connecting',async({page})=>{
   let opens=0;
   await page.route('**/api/friend/pack',r=>{if(r.request().method()==='POST'){opens++;return r.fulfill({json:{ok:true}});}return r.fulfill({json:{sealed:[{otherId:'qa-pack-person',name:'QA Person',age:30,sharedActivities:['Coffee'],score:75}],openedCount:0}});});

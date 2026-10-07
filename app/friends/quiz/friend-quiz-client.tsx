@@ -18,7 +18,7 @@ const ORANGE_VARS: any = {
   '--ink-faint': 'var(--h-text-faint)',
   '--bg-card': 'var(--h-surface)',
   '--bg-subtle': 'var(--h-surface-3)',
-  '--bg-dark': '#1a120c',
+  '--bg-dark': '#064c48',
   '--border': 'var(--h-border)',
   '--border-md': 'var(--h-border)',
   '--border-dark': 'var(--h-border)',

@@ -94,3 +94,11 @@ Friendship checks for club drafts, failed-load recovery, connection controls and
 keyboard pack opening with explicit consent. Responsive captures at 320, 390,
 768 and 1440px plus 200% zoom recorded no page errors or horizontal overflow.
 Exact-commit CI and deployment are recorded in the handoff.
+
+The final Friend surface audit also aligned `/friends/how-it-works` and the
+Friend profile editor with shared type, color, readable controls and explicit
+user-choice copy. Shared photos/bio/interests are distinguished from separate
+Friendship preferences. The Friend quiz keeps its existing shared layout with
+the common teal dark-surface token. Final targeted browser rerun: 12 passed
+across WebKit/Chromium, including profile save failure retention and guide links.
+Unit checks were rerun after these changes: all 384 passed.
