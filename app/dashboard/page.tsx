@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import DatingWorkspace from '@/components/dating-workspace';
 import RosterPicker from './roster-picker';
 import LoveConnections from './love-connections';
 import LocationControls from '@/components/location-controls';
@@ -204,7 +205,7 @@ export default async function DashboardPage({
               </div>
 
               <div className={styles.loveLinks}>
-                <a href="/profile">edit baseline</a>
+                <a href="/profile">edit profile</a>
                 <a href="/profile/preview">preview</a>
                 <a href="/quiz?line=love">retake love setup</a>
                 <a href="/quiz?retake=1">restart core quiz</a>
@@ -249,7 +250,9 @@ export default async function DashboardPage({
           </aside>
 
           <main className={styles.loveMain}>
-            <LoveConnections
+            <DatingWorkspace needsAction={yourMoveCount}
+              initialView={focusMatchId ? 'inbox' : paidCandidateId || !activeCards.length ? 'discover' : 'inbox'}
+              inbox={<>            <LoveConnections
               includedPicks={LOVE_INCLUDED_PICKS}
               focusMatchId={focusMatchId}
               connections={activeCards.map((card) => ({
@@ -265,9 +268,8 @@ export default async function DashboardPage({
                 needsStarter: card.needsStarter,
                 status: card.status,
               }))}
-            />
-
-            <div id="roster" className={styles.rosterAnchor}>
+            /></>}
+              discovery={<><div id="roster" className={styles.rosterAnchor}>
               <RosterPicker
                 radius={user.match_radius ?? DEFAULT_MATCH_RADIUS}
                 maxRadius={MAX_MATCH_RADIUS}
@@ -283,7 +285,8 @@ export default async function DashboardPage({
                   name: c.otherUser.name || 'your match',
                 }))}
               />
-            </div>
+            </div></>}
+            />
 
           </main>
         </div>

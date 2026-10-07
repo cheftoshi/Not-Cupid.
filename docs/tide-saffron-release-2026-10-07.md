@@ -69,3 +69,10 @@ and native-device delivery behavior require separate device coverage.
 
 The canonical normal production build, GitHub CI, deployment status, and live
 smoke results are recorded in the operator's final release handoff.
+
+## Structural follow-up
+
+The original release above was the visual foundation, not completion of every
+proposed screen. The subsequent non-animation implementation and item-by-item
+scope are recorded in [the UI/UX worklist](ui-ux-worklist-2026-10-07.md).
+Animation was explicitly deferred by the user's latest instruction.

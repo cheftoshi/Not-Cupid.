@@ -364,8 +364,9 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         </div>
       )}
 
+      <nav className={styles.settingsJump} aria-label="Profile settings sections"><a href="#identity">Identity</a><a href="#preferences">Preferences</a><a href="#notifications">Notifications</a><a href="#account">Account</a></nav>
       {/* PHOTO */}
-      <div className={styles.section}>
+      <div id="identity" className={styles.section}>
         <div className={styles.sectionLabel}>01 — Your face</div>
         <div className={styles.photoSection}>
           <button type="button" className={styles.photoFrame} onClick={() => user.photo_url && setPreviewUrl(user.photo_url)} aria-label="Preview main photo">
@@ -626,7 +627,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       )}
 
       {/* PREFERENCES */}
-      <div className={styles.section}>
+      <div id="preferences" className={styles.section}>
         <div className={styles.sectionLabel}>04 — Match preferences</div>
         <div className={styles.row}>
           <div className={styles.field}>
@@ -638,6 +639,9 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
             <input className={styles.input} type="number" min={18} max={100} value={user.age_max || ''} onChange={e => updateUser({ age_max: parseInt(e.target.value) || null })} />
           </div>
         </div>
+      </div>
+      <div id="notifications" className={styles.section}>
+        <h2 className={styles.sectionLabel}>Notifications</h2>
         <label className={styles.checkbox}>
           <input
             type="checkbox"
@@ -667,7 +671,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       </div>
 
       {/* ACCOUNT */}
-      <div className={styles.accountSection}>
+      <div id="account" className={styles.accountSection}>
         <div className={styles.accountTitle}>Account</div>
         {user.stripe_customer_id && <ManageSubscription />}
         <button type="button" onClick={handleLogout} className={styles.linkButton} disabled={saving}>Log out</button>

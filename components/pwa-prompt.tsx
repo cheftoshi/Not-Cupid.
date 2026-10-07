@@ -151,7 +151,9 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
         const editing = document.activeElement?.matches(
           'input, textarea, select, [contenteditable="true"]',
         );
-        setSuspended(!!editing || !!document.querySelector(selector));
+        // Keep controls stable while focus moves from an input to its submit button.
+        const editingForm = document.activeElement?.closest('form')?.querySelector('input, textarea, select');
+        setSuspended(!!editing || !!editingForm || !!document.querySelector(selector));
       });
     }
     const observer = new MutationObserver((records) => {
@@ -276,7 +278,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
       style={{
         position: "fixed",
         left: "50%",
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 0.8rem)",
+        bottom: "calc(var(--app-safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.8rem)",
         transform: "translateX(-50%)",
         zIndex: 90,
         width: "min(460px, calc(100vw - 1rem))",

@@ -28,7 +28,10 @@ test.describe('authenticated test-realm mobile path', () => {
     expect(posted).toBeNull();
     await page.getByRole('button', { name: 'Find people to go with', exact: true }).click();
     await expect(page.getByRole('form', { name: 'Create an invitation' })).toContainText('not a ticket or reservation');
+    await page.getByRole('form', { name: 'Create an invitation' }).getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(page.getByLabel('Your invitation', { exact: true })).toHaveValue(/QA live music/);
+    await page.getByRole('form', { name: 'Create an invitation' }).getByRole('button', { name: 'Continue', exact: true }).click();
+    await page.getByRole('form', { name: 'Create an invitation' }).getByRole('button', { name: 'Continue', exact: true }).click();
     await page.getByRole('button', { name: 'Create invitation', exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Your invitation is published.' })).toBeVisible();
     expect(posted.external_event_id).toBe(event.id); expect(posted.happens_at).toBe(event.startsAt);
@@ -83,18 +86,22 @@ test.describe('authenticated test-realm mobile path', () => {
     await page.route('**/api/friend/activities?*', route => route.fulfill({ json: {activities:[],areas:['Back Bay','Cambridge'],origin:'Back Bay'} }));
     await page.route('**/api/date-plans*', route => {
       if(route.request().method()==='POST') {posted=route.request().postDataJSON();return route.fulfill({json:{ok:true,id:posted.client_id}});}
-      return route.fulfill({json:{activities:[]}});
+      return route.fulfill({json:{activities:posted ? [{...posted,id:posted.client_id,kind:'event',connectionKind:'date',state:'open',isMine:true,canChat:false,authorName:'You',responses:{yes:0,maybe:0,no:0},requests:[],created_at:new Date().toISOString()}] : []}});
     });
     await page.goto('/hub');
     await page.getByRole('button',{name:'＋ Invite someone',exact:true}).click();
     const form=page.getByRole('form',{name:'Create an invitation'});
-    await form.getByLabel('Your invitation').fill('A coffee and a walk?');
     await form.getByLabel('What kind of connection?').selectOption('date');
     await form.getByLabel('Date style').selectOption('blind');
     await form.getByLabel('Women',{exact:true}).check();
+    await form.getByRole('button',{name:'Continue',exact:true}).click();
+    await form.getByLabel('Your invitation').fill('A coffee and a walk?');
+    await form.getByRole('button',{name:'Continue',exact:true}).click();
     await form.getByRole('button',{name:'Add a public place'}).click();
     await form.getByLabel('Public meeting place',{exact:true}).fill('QA café');
     await form.getByLabel('This is a public place, not a home address.').check();
+    await form.getByRole('button',{name:'Continue',exact:true}).click();
+    await expect(form.getByRole('region', {name:'Review your invitation'})).toContainText('Only your accepted date');
     await form.getByRole('button',{name:'Create invitation',exact:true}).click();
     await expect(page.getByRole('status').filter({hasText:'Your invitation is published.'})).toBeVisible();
     expect(posted).toMatchObject({capacity:2,date_mode:'blind',genders:['f'],visibility:'participants',area:'Back Bay',location:'QA café'});

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Wordmark from '@/components/wordmark';
 import ThemeToggle from '@/components/theme-toggle';
@@ -20,6 +20,7 @@ const APP_ROUTE = (p: string) =>
 
 export default function TopNav() {
   const p = usePathname() || '';
+  const query = useSearchParams();
   const navRef = useRef<HTMLElement>(null);
   const isAppRoute = APP_ROUTE(p);
 
@@ -33,6 +34,7 @@ export default function TopNav() {
     if (!isAppRoute || !nav) {
       root.style.setProperty('--app-top-nav-height', '0px');
       root.style.removeProperty('--app-visual-viewport-height');
+      delete root.dataset.appEditing;
       return;
     }
 
@@ -56,7 +58,10 @@ export default function TopNav() {
       frame = window.requestAnimationFrame(() => {
         const forced = forceNextFrame;
         forceNextFrame = false;
-        const navHeight = Math.ceil(nav.getBoundingClientRect().height);
+        const navHeight = window.innerWidth >= 1024 ? 0 : Math.ceil(nav.getBoundingClientRect().height);
+        // Hide the mobile bar only for an actually reduced keyboard viewport.
+        // Focus alone must not move a submit button between pointerdown and click.
+        root.dataset.appEditing = (viewport?.height || window.innerHeight) < window.innerHeight - 120 ? 'true' : 'false';
         if (navHeight !== lastNavHeight) {
           root.style.setProperty('--app-top-nav-height', `${navHeight}px`);
           lastNavHeight = navHeight;
@@ -124,7 +129,8 @@ export default function TopNav() {
   const active =
     p.startsWith('/dashboard') || p.startsWith('/match') ? 'love'
     : p.startsWith('/friends') ? 'friend'
-    : p === '/hub' ? 'hub'
+    : p.startsWith('/profile') ? 'profile'
+    : p === '/hub' ? (query.get('view') === 'coach' ? 'coach' : 'hub')
     : '';
 
   async function logout() {
@@ -132,40 +138,26 @@ export default function TopNav() {
     window.location.href = '/';
   }
 
-  const tab = (href: string, label: string, key: string, color: string) => {
-    const on = active === key;
-    return (
-      <Link href={href} aria-current={on ? 'page' : undefined} style={{
-        fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase',
-        textDecoration: 'none', padding: '0.42rem 0.8rem', borderRadius: 999, whiteSpace: 'nowrap',
-        color: on ? (key === 'friend' ? '#493b05' : '#fff') : 'var(--h-text-dim)', background: on ? color : 'transparent',
-        border: on ? '1px solid transparent' : '1px solid var(--h-border)',
-        boxShadow: on ? `0 6px 16px -8px ${color}` : 'none',
-        transition: 'transform .2s var(--ease), background .2s var(--ease), color .2s var(--ease)',
-      }}>{label}</Link>
-    );
-  };
-
-  const linkStyle: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
-
+  const items = [
+    { href: '/hub', label: 'Home', key: 'hub', icon: '⌂' },
+    { href: '/dashboard', label: 'Dating', key: 'love', icon: '♡' },
+    { href: '/friends', label: 'Friendship', key: 'friend', icon: '☺' },
+    { href: '/profile', label: 'You', key: 'profile', icon: '○' },
+  ];
   return (
-    <header ref={navRef} data-perf-region="navigation" className="appTopNav" style={{
-      position: 'sticky', top: 0, zIndex: 45, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: '0.6rem', padding: '0.6rem 1rem', background: 'var(--h-glass)',
-      backdropFilter: 'saturate(180%) blur(14px)', WebkitBackdropFilter: 'saturate(180%) blur(14px)',
-      borderBottom: '1px solid var(--h-border)', boxShadow: '0 4px 20px -14px rgba(0,0,0,0.45)', flexWrap: 'wrap',
-    }}>
-      <Wordmark size={1.05} href="/hub" />
-      <nav className="appTopNavTabs" style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexShrink: 0 }}>
-        {tab('/hub', 'Home', 'hub', '#064c48')}
-        {tab('/dashboard', '♡ Dating', 'love', '#064c48')}
-        {tab('/friends', '☺ Friendship', 'friend', '#f4c542')}
+    <header ref={navRef} data-perf-region="navigation" className="appTopNav appNavigation">
+      <div className="appNavBrand"><Wordmark size={1.25} href="/hub" /><span>A place for your people.</span></div>
+      <nav className="appPrimaryNav" aria-label="Main navigation">
+        {items.map(item => <Link key={item.key} href={item.href} aria-current={active === item.key ? 'page' : undefined}>
+          <span aria-hidden="true">{item.icon}</span>{item.label}
+        </Link>)}
       </nav>
-      <div className="appTopNavActions" style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexShrink: 0, flexWrap: 'wrap' }}>
-        <NavExtras />
-        <Link href="/profile" style={linkStyle}>profile</Link>
-        <ThemeToggle style={{ width: 28, height: 28 }} />
-        <button onClick={logout} style={{ ...linkStyle, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>log out</button>
+      <div className="appNavTools">
+        <Link href="/hub?view=coach" aria-current={active === 'coach' ? 'page' : undefined}>AI coach <span>Optional help</span></Link>
+        <Link href="/pro" aria-current={p === '/pro' ? 'page' : undefined}>NotCupid Pro <span>Optional extras</span></Link>
+      </div>
+      <div className="appNavUtilities"><NavExtras /><ThemeToggle style={{ width: 44, height: 44 }} />
+        <button onClick={logout}>Log out</button>
       </div>
     </header>
   );

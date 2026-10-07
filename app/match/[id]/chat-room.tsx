@@ -534,15 +534,7 @@ export default function ChatRoom({
             {loadingOlder ? 'loading…' : 'load earlier messages'}
           </button>
         )}
-        {/* algo narrator — frames every chat */}
-        <div className={styles.narrator}>
-          <span className={styles.narratorMark}>✦ NotCupid</span>
-          {score != null ? (
-            <>you &amp; {firstName} scored <strong>{score}%</strong>. start small, stay curious, and see what feels easy.</>
-          ) : (
-            <>you matched with {firstName}. start small, stay curious, and see what feels easy.</>
-          )}
-        </div>
+        {messages.length === 0 && <p className={styles.narrator}>You and {firstName}. Start small, stay curious, and see what feels easy.</p>}
 
         {needsDecision && (
           <div className={styles.decisionCard} role="region" aria-label={`Choose whether to connect with ${firstName}`}>
@@ -552,6 +544,7 @@ export default function ChatRoom({
           </div>
         )}
 
+        {!readOnly && !pendingAccept && messages.length > 0 && <details className={styles.optionalHelp}><summary>Optional AI conversation help</summary>
         {!readOnly && !pendingAccept && messages.length > 0 && !coach && (
           <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
             {coachBusy ? 'thinking…' : '✦ make the next move easier'}
@@ -573,6 +566,8 @@ export default function ChatRoom({
             <small>{coach.disclosure}</small>
           </div>
         )}
+
+        </details>}
 
         {messages.length === 0 ? (
           <div className={styles.empty}>

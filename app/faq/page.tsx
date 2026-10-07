@@ -109,10 +109,10 @@ export default function FAQ() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           {FAQS.map((f) => (
-            <div key={f.q} style={{ background: 'var(--h-surface)', border: '1px solid rgba(6,76,72,0.18)', borderRadius: 16, boxShadow: '0 10px 30px -22px rgba(27,70,201,0.45)', padding: '1.1rem 1.25rem' }}>
-              <div style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '1.2rem', color: 'var(--h-text)', marginBottom: '0.35rem' }}>{f.q}</div>
+            <details key={f.q} id={f.q.includes("notifications") ? "notifications" : undefined} style={{ background: 'var(--h-surface)', border: '1px solid rgba(6,76,72,0.18)', borderRadius: 16, boxShadow: '0 10px 30px -22px rgba(27,70,201,0.45)', padding: '1.1rem 1.25rem' }}>
+              <summary style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",lineHeight:1.5,cursor:"pointer",minHeight:44}}>{f.q}</summary>
               <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)' }}>{f.a}</p>
-            </div>
+            </details>
           ))}
         </div>
 

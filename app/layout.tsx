@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import TopNav from '@/components/top-nav'
@@ -46,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* No-flash theme: apply the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('nc-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}` }} />
       </head>
-      <body style={{ margin: 0 }}><WebVitals /><TopNav />{children}<SiteFooter /><DeferredClientShell /></body>
+      <body style={{ margin: 0 }}><WebVitals /><Suspense fallback={null}><TopNav /></Suspense>{children}<SiteFooter /><DeferredClientShell /></body>
     </html>
   )
 }

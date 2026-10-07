@@ -210,6 +210,8 @@ export function CreateInvitation({
     }),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [step, setStep] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
   const pending = useRef(false),
     retry = useRef<{ payload: string; id: string } | null>(null),
     date = intent === "date";
@@ -263,7 +265,17 @@ export function CreateInvitation({
   return (
     <form
       className={s.form}
-      onSubmit={submit}
+      ref={formRef}
+      noValidate
+      onSubmit={e => {
+        if (step === 3) { void submit(e); return; }
+        e.preventDefault();
+        const fields = formRef.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(`[data-step="${step}"] input, [data-step="${step}"] select, [data-step="${step}"] textarea`);
+        for (const field of fields || []) { if (!field.reportValidity()) return; }
+        if (step === 0 && date && !seeks.length) { setError("Choose who you would like to meet."); return; }
+        setError(""); setStep(step + 1);
+        requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>(`[data-step="${step + 1}"] input, [data-step="${step + 1}"] select`)?.focus());
+      }}
       aria-label="Create an invitation"
     >
       <div className={s.sectionHead}>
@@ -280,17 +292,9 @@ export function CreateInvitation({
         <p>This is your invitation to go together, not a ticket or reservation. The event venue is public; choose where your group will meet below.</p>
         <a href={event.url} target="_blank" rel="noopener noreferrer">Event details & tickets on Ticketmaster ↗</a>
       </div>}
-      <label>
-        Your invitation
-        <input
-          autoFocus
-          required
-          maxLength={140}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="A walk around the Common after work?"
-        />
-      </label>
+      <ol className={s.steps} aria-label="Invitation progress">{['Connection', 'Your idea', 'Meeting place', 'Review'].map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined}>{index + 1}. {label}</li>)}</ol>
+      <p role="status">Step {step + 1} of 4 · {['Choose the kind of connection', 'Describe your plan', 'Choose what to share', 'Check before publishing'][step]}</p>
+      <fieldset hidden={step !== 0} data-step="0" className={s.stepFields}><legend>Connection & audience</legend>
       <label>
         What kind of connection?
         <select value={intent} onChange={(e) => setIntent(e.target.value)}>
@@ -353,13 +357,19 @@ export function CreateInvitation({
           </select>
         </label>
       )}
-      <LocationFields
-        value={place}
-        onChange={setPlace}
-        areas={areas}
-        date={date}
-      />
-      <details>
+      </fieldset>
+      <fieldset hidden={step !== 1} data-step="1" className={s.stepFields}><legend>Your idea</legend>
+      <label>
+        Your invitation
+        <input
+          required
+          maxLength={140}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="A walk around the Common after work?"
+        />
+      </label>
+      <details open>
         <summary>Optional details · when, a little more</summary>
         <div className={s.formDetails}>
           <label>
@@ -382,19 +392,33 @@ export function CreateInvitation({
           </label>
         </div>
       </details>
+      </fieldset>
+      <fieldset hidden={step !== 2} data-step="2" className={s.stepFields}><legend>Meeting place & privacy</legend>
+      <LocationFields
+        value={place}
+        onChange={setPlace}
+        areas={areas}
+        date={date}
+      />
+      </fieldset>
+      {step === 3 && <section className={s.invitationReview} aria-label="Review your invitation">
+        <h3>{title}</h3><p>{date ? `A date for two · ${mode === 'blind' ? 'Blind date' : 'Profile first'}` : `Friendship · ${capacity} people including you`}</p>
+        <p>{event ? planWhen(event.startsAt) : when ? `${when.replace('T', ' at ')} · Eastern time` : 'Flexible timing · decide together'}</p>
+        {body && <p>{body}</p>}<p>Meeting area: <strong>{place.area}</strong></p>
+        <p>{place.location || 'No exact place set · decide together'}</p>
+        <p>{date ? 'Only your accepted date sees the exact place.' : place.visibility === 'participants' ? 'Only joined participants see the exact place.' : 'Everyone viewing your invitation can see the exact place.'}</p>
+        {date && <p>Who you would like to meet: {genders.filter(([id]) => seeks.includes(id)).map(([,label]) => label).join(', ')}. {mode === 'blind' && 'Names, photos and bios reveal only after acceptance.'}</p>}
+        <small>Publishing creates your invitation. It does not buy tickets or make a reservation.</small>
+      </section>}
       {error && (
         <p className={s.error} role="alert">
           {error}
         </p>
       )}
-      <button
-        className={s.primary}
-        disabled={
-          busy || !title.trim() || !place.area || (date && !seeks.length)
-        }
-      >
-        {busy ? "Publishing…" : "Create invitation"}
-      </button>
+      <div className={s.actions}>
+        {step > 0 && <button type="button" disabled={busy} onClick={() => { setError(""); setStep(step - 1); }}>Back</button>}
+        <button type="submit" className={s.primary} disabled={busy}>{busy ? "Publishing…" : step === 3 ? "Create invitation" : "Continue"}</button>
+      </div>
     </form>
   );
 }

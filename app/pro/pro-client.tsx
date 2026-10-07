@@ -58,6 +58,11 @@ export default function ProClient({ pro, renewsOn, billingLinked = false }: { pr
           </div>
         )}
 
+        <section className="membershipComparison" aria-label="Included and optional benefits">
+          <div><h2>Included · free</h2><p>View profiles, accept connections, reply after mutual acceptance, and use safety controls. Three Love picks are included per roster. Member-created date invitations are free.</p></div>
+          <div><h2>One-time extras · $0.99</h2><p>One person-specific AI Compatibility Read with its extra connection, or one additional Friend pack. These are optional purchases.</p></div>
+          <div><h2>Pro · $3.99 / month</h2><p>Includes the optional extras below, without a separate checkout each time. Cancel anytime.</p></div>
+        </section>
         {pro ? (
           <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 18, padding: '1.5rem', textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ fontSize: '2rem' }}>✦</div>

@@ -294,8 +294,13 @@ export default function ConnectionConcierge({
     }
   }
 
+  useEffect(() => {
+    if (window.location.hash === '#ai-controls') setShowControls(true);
+  }, []);
+
   return (
     <section data-perf-region="hub" className={styles.conciergeShell} aria-labelledby="concierge-title">
+      <nav className="coachNavigation" aria-label="Coach navigation"><a href="/hub">← Back to your plans</a><a href="/profile#settings-heading">Your settings</a><span>Optional AI assistance</span></nav>
       <header className={styles.conciergeHead}>
         <div className={styles.conciergeMark} aria-hidden>✦</div>
         <div className={styles.conciergeIdentity}>
@@ -309,7 +314,7 @@ export default function ConnectionConcierge({
       </header>
 
       {showControls && (
-        <aside className={styles.conciergeControls} aria-label="AI and memory controls">
+        <aside id="ai-controls" className={styles.conciergeControls} aria-label="AI and memory controls">
           <div className={styles.conciergeControlsHead}>
             <div>
               <strong>What I remember</strong>

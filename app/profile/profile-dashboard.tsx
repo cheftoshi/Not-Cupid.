@@ -6,6 +6,8 @@ import styles from './profile.module.css';
 import { ARCHETYPES, VIBE_HEADS, attachStyle, vibeLabel, relationshipStyleLabel } from '@/lib/quiz-data';
 import type { VibeKey } from '@/lib/quiz-data';
 import { signLabel } from '@/lib/astrology';
+import LocationControls from '@/components/location-controls';
+import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
 import RaffleCard from '@/components/raffle-card';
 import { personalityPercent } from '@/lib/personality-display';
 
@@ -118,6 +120,16 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
         </button>
       </div>
 
+      <section className={styles.settingsOverview} aria-labelledby="settings-heading">
+        <h2 id="settings-heading">Your settings</h2>
+        <div className={styles.settingsGrid}>
+          <article><h3>Identity & preferences</h3><p>Your photos, story and dating preferences.</p><a href="/profile?mode=edit#identity">Edit profile</a><a href="/profile?mode=edit#preferences">Dating preferences</a></article>
+          <article><h3>Discovery city</h3><p>Choose where to explore friendship and plans. Your Love home location stays separate.</p><LocationControls currentMetro={user.discovery_metro || metroOf(user.zip)} city={METRO_CENTERS[user.discovery_metro || metroOf(user.zip) || '']?.city || null} /></article>
+          <article><h3>Notifications</h3><p>Email, device push and matching are separate choices.</p><a href="/profile?mode=edit#notifications">Email preferences</a><a href="/faq#notifications">Push & installation help</a></article>
+          <article><h3>Privacy & optional AI</h3><p>Review permission, saved memories and optional AI evaluation.</p><a href="/hub?view=coach#ai-controls">AI controls & memories</a><a href="/privacy">Privacy policy</a></article>
+          <article><h3>Account & membership</h3><p>Subscription management and account controls.</p><a href="/profile?mode=edit#account">Manage account</a><a href="/pro">Optional Pro benefits</a></article>
+        </div>
+      </section>
       {/* BIO PULLQUOTE */}
       {user.bio ? (
         <div className={styles.dashBioCard}>

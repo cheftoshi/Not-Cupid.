@@ -8,9 +8,9 @@ export const metadata: Metadata = {
 };
 
 const plans = [
-  { tag: 'tonight', title: 'coffee walk in the neighborhood', meta: '3 interested · low-pressure' },
-  { tag: 'weekend', title: 'beginner tennis + smoothies', meta: 'needs 2 more · active crowd' },
-  { tag: 'talk', title: 'new here, who wants to grab food?', meta: 'open invite · new faces' },
+  { tag: 'tonight', title: 'coffee walk in the neighborhood', meta: 'Example idea · low-pressure' },
+  { tag: 'weekend', title: 'beginner tennis + smoothies', meta: 'Example idea · active afternoon' },
+  { tag: 'talk', title: 'new here, who wants to grab food?', meta: 'Example idea · new faces' },
 ];
 
 const prompts = ['two truths', 'plan vote', 'city recs', 'weekend check'];
@@ -29,10 +29,10 @@ export default function FriendLinePreviewPage() {
       <section className="friendPreviewHero">
         <div className="friendPreviewCopy">
           <div className="friendPreviewKicker"><span /> friend line</div>
-          <h1>Make one real social move today.</h1>
+          <h1>Explore friendship plans near you.</h1>
           <p>
             Friend Line gives you a small, curated way into your city: people you might vibe with,
-            plans that are already forming, and a pack chat that makes the first message easier.
+            member-created invitations, and a pack chat that makes the first message easier.
           </p>
           <div className="friendPreviewActions">
             <Link href="/quiz?next=friends" className="primary">join the Friend Line</Link>
@@ -41,18 +41,12 @@ export default function FriendLinePreviewPage() {
         </div>
 
         <div className="friendPreviewBoard" aria-label="Friend Line preview">
-          <p>Illustrative preview. Plans and counts below are examples, not live availability.</p>
+          <p>Illustrative preview. These examples are ideas, not live availability.</p>
           <div className="moveCard">
-            <small>best move today</small>
-            <h2>join a plan that already has momentum.</h2>
-            <p>Tonight · coffee walk · 3 interested</p>
-            <Link href="/login?next=/friends">ask to join</Link>
-          </div>
-          <div className="miniGrid">
-            <div><b>open plans</b><strong>12</strong></div>
-            <div><b>nearby people</b><strong>8</strong></div>
-            <div><b>in circle</b><strong>3</strong></div>
-            <div><b>your plans</b><strong>2</strong></div>
+            <small>an example invitation</small>
+            <h2>Start with something you enjoy.</h2>
+            <p>Example · a neighborhood coffee walk</p>
+            <Link href="/login?next=/friends">explore Friend Line</Link>
           </div>
         </div>
       </section>
@@ -84,18 +78,7 @@ export default function FriendLinePreviewPage() {
           </div>
         </article>
 
-        <article>
-          <small>example city pulse</small>
-          <h2>See where people are actually gathering.</h2>
-          <div className="pulseList">
-            {['Somerville', 'Cambridge', 'Back Bay'].map((area, i) => (
-              <div key={area}>
-                <b>{area}</b>
-                <span>{i === 0 ? '2 plans · 44 people' : i === 1 ? '1 plan · 31 people' : '3 plans · 28 people'}</span>
-              </div>
-            ))}
-          </div>
-        </article>
+        <article><small>Your city, your pace</small><h2>Find people through shared plans.</h2><p>Explore member invitations, meet people, or find a community. Availability depends on your city and the people taking part.</p><Link href="/quiz?next=friends">Set up friendship preferences →</Link></article>
       </section>
 
       <section className="friendPreviewClose">

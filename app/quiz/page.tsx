@@ -35,24 +35,24 @@ const INTENT_OPTIONS = [
     eyebrow: 'love line',
     icon: '💘',
     title: 'I want to date.',
-    body: 'Up to ten curated options, three included picks per roster, and help turning a chat into a real plan.',
-    next: 'baseline first · Love setup after',
+    body: 'Meet people who are also looking for a romantic connection.',
+    next: 'Shared profile, then dating preferences',
   },
   {
     value: 'friends',
     eyebrow: 'friend line',
     icon: '🧡',
     title: 'I want more people around me.',
-    body: 'Find compatible people, small plans, and communities without pretending you are here to date.',
-    next: 'baseline first · short Friend setup after',
+    body: 'Meet friends, join small plans, and find your community.',
+    next: 'Shared profile, then friendship interests',
   },
   {
     value: 'both',
     eyebrow: 'both lines',
     icon: '✨',
     title: 'I am open to both.',
-    body: 'Build one baseline, then set up Love and Friend one at a time. You can pause between them.',
-    next: 'one clear step at a time',
+    body: 'Explore dating and friendship, with separate preferences for each.',
+    next: 'Set up one at a time',
   },
 ] as const
 
@@ -61,7 +61,7 @@ const INTENT_OPTIONS = [
 // LOVE-line deep quiz (only when you board Love — partner + attachment + values).
 const CHAPTERS: Record<string, { n: number; total: number; title: string; lede: string; sub: string; eyebrow?: string }> = {
   // ── core track (1–3 of 3)
-  who:     { n: 1, total: 3, title: 'who you are',          lede: "the personality stuff. answer honestly — the algorithm clocks when you're performing.", sub: '12 quick ones.' },
+  who:     { n: 1, total: 3, title: 'who you are',          lede: "Answer honestly — there are no right answers.", sub: '12 quick ones.' },
   vibes:   { n: 2, total: 3, title: 'the day-to-day',       lede: 'how you actually live — your rhythms, your energy, your pace.',                        sub: '6 quick ones.' },
   rapid:   { n: 3, total: 3, title: 'rapid fire',           lede: 'no overthinking. gut answer, tap fast. speed-dating style.',                          sub: '8 this-or-thats.' },
   // ── love-deep track (1–3 of 3)
@@ -687,8 +687,8 @@ function QuizInner() {
                 what are you<br />here to <em>find?</em>
               </h1>
               <p className={styles.introLede}>
-                Pick a path now. We&apos;ll only show you the setup that path needs—and you can add the other line later.
-                <span className={styles.introLedeSub}>one baseline powers both lines.</span>
+                What kind of connection would you like?
+                <span className={styles.introLedeSub}>Your choice guides your setup. You can add another path later.</span>
               </p>
             </div>
 
@@ -721,7 +721,7 @@ function QuizInner() {
               style={{width:'100%',justifyContent:'center',marginTop:'1rem'}}>
               continue with {intent === 'friends' ? 'Friend Line' : intent === 'love' ? 'Love Line' : intent === 'both' ? 'both lines' : 'your choice'} →
             </button>
-            <p className={styles.formNote}>about 4 minutes for your baseline · pause anytime after that</p>
+            <p className={styles.formNote}>About 4 minutes for your shared profile. You can pause after that.</p>
           </div>
         </div>
       )}
@@ -736,7 +736,7 @@ function QuizInner() {
               </div>
               <h1 className={styles.detailsTitle}>the basics.<br /><em>nothing weird.</em></h1>
               <p className={styles.detailsLede}>
-                This creates your private baseline and keeps recommendations local.
+                Start your profile and keep recommendations local.
                 {friendOnly
                   ? ' Dating preferences stay out of your Friend-first signup.'
                   : ' Love preferences help us avoid showing you people outside your range.'}

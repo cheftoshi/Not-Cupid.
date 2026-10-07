@@ -10,3 +10,5 @@
 .row { height: 84px; }
 .cards { display: flex; gap: 1rem; overflow: hidden; }
 .card { flex: 1 0 220px; height: 330px; }
+
+.hub{height:auto;min-height:80svh;max-width:1200px;width:100%;box-sizing:border-box;padding:28px}.hub .heading{height:260px;background:var(--h-surface-3);border-radius:8px 36px 8px 8px}.hub .brief{height:170px}.hub .cards{display:grid;grid-template-columns:2fr 1fr}.hub .card{height:300px}@media(max-width:700px){.hub{padding:20px}.hub .heading{height:290px}.hub .cards{grid-template-columns:1fr}.hub .card+ .card{display:none}}

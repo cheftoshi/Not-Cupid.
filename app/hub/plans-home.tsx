@@ -534,9 +534,10 @@ export default function PlansHome({
   }, [sheet, narrow]);
   const all = [...new Map([...rooms, ...plans].map((p) => [p.id, p])).values()],
     room = all.find((p) => p.id === roomId && planChatAllowed(p));
-  const upcoming = all.find(
-    (p) => planChatAllowed(p) && !planHasEnded(p) && p.state !== "cancelled",
-  );
+  const upcoming = all.filter(
+    p => planChatAllowed(p) && !planHasEnded(p) && p.state !== "cancelled" &&
+      (p.connectionKind === "date" ? p.state === "confirmed" : p.responses.yes > 0),
+  ).sort((a, b) => (a.happens_at ? Date.parse(a.happens_at) : Infinity) - (b.happens_at ? Date.parse(b.happens_at) : Infinity))[0];
   const live =
     filter === "mine"
       ? all.filter(
@@ -583,54 +584,19 @@ export default function PlansHome({
               Real invitations from people nearby. A conversation, a plan, a place to start.
             </p>
           </div>
-          <button className={s.primary} onClick={() => { setSelectedEvent(null); setCreating(!creating); }}>
+          <button className={s.secondaryInvite} onClick={() => { setSelectedEvent(null); setCreating(!creating); }}>
             ＋ Invite someone
           </button>
           <ConnectionSketch className={s.headerSketch} />
         </header>
-        {(!reboot || upcoming || requests > 0 || rooms.length > 0) && <div className={s.highlights}>
-          <button
-            onClick={() => (upcoming ? open(upcoming) : setCreating(true))}
-          >
-            <span className={s.eyebrow}>Coming up</span>
-            <strong>
-              {upcoming?.title || "Leave a little room for good company."}
-            </strong>
-            <small>
-              {upcoming
-                ? "Continue the conversation ↗"
-                : "Your next get-together starts with an invitation."}
-            </small>
-          </button>
-          <button
-            onClick={() => {
-              if (requests) setFilter("mine");
-              else if (rooms[0]) open(rooms[0]);
-              else setFilter("all");
-            }}
-          >
-            <span className={s.eyebrow}>{requests ? "Your next step" : "Your conversations"}</span>
-            <strong>
-              {requests
-                ? requests +
-                  " date request" +
-                  (requests === 1 ? "" : "s") +
-                  " to review"
-                : rooms.length
-                  ? rooms.length +
-                    " conversation" +
-                    (rooms.length === 1 ? "" : "s") +
-                    " to come back to"
-                  : "A little closer to your people."}
-            </strong>
-            <small>
-              {requests
-                ? "You choose who joins your date."
-                : "Pick up where you left off."}
-            </small>
-          </button>
-        </div>
-        }
+        <section className={s.nextAction} aria-label="Your next step" aria-busy={loading}>
+          {loading ? <div role="status"><span className={s.eyebrow}>Your next step</span><h2>Finding where you left off…</h2><p>Loading your invitations and conversations.</p></div>
+          : error ? <div><h2>Your plans could not be refreshed.</h2><p>Use Retry plans below. Your invitations have not been changed.</p></div>
+          : requests > 0 ? <><div><span className={s.eyebrow}>Your decision comes first</span><h2>{requests} date {requests === 1 ? "request" : "requests"} to review</h2><p>You choose who joins. Review each profile before accepting.</p></div><button className={s.primary} onClick={() => { setFilter("mine"); document.getElementById("home-invitations")?.scrollIntoView({ block: "start" }); }}>Review requests</button></>
+          : upcoming ? <><div><span className={s.eyebrow}>Your next get-together</span><h2>{upcoming.title}</h2><p>{planWhen(upcoming.happens_at)} · Confirm the details together.</p></div><button className={s.primary} onClick={() => open(upcoming)}>Open conversation</button></>
+          : rooms.length > 0 ? <><div><span className={s.eyebrow}>Pick up where you left off</span><h2>Your conversations are here.</h2><p>{rooms.length} plan {rooms.length === 1 ? "conversation" : "conversations"} to return to.</p></div><button className={s.primary} onClick={() => open(rooms[0])}>View conversations</button></>
+          : <><div><span className={s.eyebrow}>Make a little room for company</span><h2>{plans.length ? "Find an invitation that fits." : "Start with your own invitation."}</h2><p>{plans.length ? "Explore member plans below. You decide what to join." : "There are no invitations loaded for your current area yet. Suggest something you would enjoy."}</p></div><button className={s.primary} onClick={() => plans.length ? document.getElementById("home-invitations")?.scrollIntoView({ block: "start" }) : setCreating(true)}>{plans.length ? "Explore invitations" : "Create an invitation"}</button></>}
+        </section>
         {reboot && <nav className={s.filters} aria-label="Connection navigation">
           <button aria-pressed={filter !== "mine"} onClick={() => setFilter(friendMode ? "friends" : initialFilter)}>Do something</button>
           <Link className={s.button} href="/friends?view=crew">Meet people</Link>
@@ -675,7 +641,7 @@ export default function PlansHome({
           </div>
         )}
         <div className={s.columns}>
-          <section className={s.feed} aria-label="Discover invitations">
+          <section id="home-invitations" className={s.feed} aria-label="Discover invitations">
             <div className={s.sectionHead}>
               <div>
                 <span className={s.eyebrow}>
@@ -798,10 +764,10 @@ export default function PlansHome({
               <section className={s.empty}>
                 <h2>Be the start of something.</h2>
                 <p>
-                  No member plans match this view yet. Try another time or area, or start with a walk, coffee, or lunch. We never fill this space with made-up plans.
+                  No member plans match this view yet. Try another time or area, or start with a walk, coffee, or lunch.
                 </p>
                 <button onClick={() => setCreating(true)}>
-                  Create a real invitation
+                  Create an invitation
                 </button>
               </section>
             )}

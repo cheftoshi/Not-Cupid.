@@ -77,6 +77,13 @@ export default function HowItWorks() {
           Dating and friendship, with more in common. Choose who to meet, start a conversation, and make a plan together.
         </p>
 
+        <ol className="connectionJourney" aria-label="How connection works">
+          <li><h2>Choose your intent</h2><p>Dating, friendship, or both. Set your preferences explicitly.</p></li>
+          <li><h2>Meet people</h2><p>Explore your dating roster or local friendship invitations.</p></li>
+          <li><h2>Decide together</h2><p>You choose who to connect with. Dating chat opens after mutual acceptance.</p></li>
+          <li><h2>Talk and make a plan</h2><p>Start a conversation, agree on details, and choose what works for you.</p></li>
+        </ol>
+        <details className="helpDetails"><summary>Profile setup in detail</summary>
         {/* THE BASICS — shared start */}
         <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.3rem', fontWeight: 700 }}>the basics</div>
         <h2 style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '2rem', lineHeight: 1, margin: '0 0 1rem', color: 'var(--h-text)' }}>everyone starts here.</h2>
@@ -93,6 +100,7 @@ export default function HowItWorks() {
           ))}
         </div>
 
+        </details>
         {/* CHAPTER ONE — Love · CHAPTER TWO — Friend */}
         <Chapter tag="chapter one · dating" title="💘 the love line" accent={BLUE_DEEP} accentLight="rgba(6,76,72,0.22)" steps={LOVE_STEPS} />
         <Chapter tag="chapter two · friends" title="🧡 the friend line" accent={ORANGE_DEEP} accentLight="rgba(255,106,31,0.24)" steps={FRIEND_STEPS} />
