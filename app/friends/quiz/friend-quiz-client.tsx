@@ -9,10 +9,10 @@ import styles from '../../quiz/quiz.module.css';
 // type + chrome from quiz.module.css) with the friend palette: we flip the
 // quiz's accent CSS vars to orange on the wrapper so it reads as a sibling.
 const ORANGE_VARS: any = {
-  '--accent': '#ff6a1f',
-  '--accent-dim': 'rgba(255,106,31,0.12)',
-  '--accent-mid': 'rgba(255,106,31,0.4)',
-  '--gold': '#d2530f',
+  '--accent': '#8a6500',
+  '--accent-dim': 'rgba(244,197,66,0.12)',
+  '--accent-mid': 'rgba(244,197,66,0.4)',
+  '--gold': '#765600',
   '--gold-dim': 'rgba(210,83,15,0.14)',
   '--ink-muted': 'var(--h-text-dim)',
   '--ink-faint': 'var(--h-text-faint)',
@@ -91,7 +91,7 @@ export default function FriendQuizClient() {
 
   const inputStyle: React.CSSProperties = {
     flex: 1, padding: '0.85rem 1rem', borderRadius: '0.3rem',
-    border: '1.5px solid var(--h-border)', fontFamily: "'Inter', sans-serif",
+    border: '1.5px solid var(--h-border)', fontFamily: "'DM Sans', sans-serif",
     fontSize: '0.95rem', background: 'var(--h-surface)', color: 'var(--h-text)',
   };
 
@@ -125,7 +125,7 @@ export default function FriendQuizClient() {
     <div className={styles.screen} style={ORANGE_VARS}>
       <div className={styles.quizWrap}>
         <div className={styles.quizTop}>
-          <div className={styles.quizLogo} style={{ color: '#d2530f' }}>Friend<span style={{ color: '#ff6a1f' }}>Line</span></div>
+          <div className={styles.quizLogo} style={{ color: '#765600' }}>Friend<span style={{ color: '#8a6500' }}>Line</span></div>
           <div className={styles.qMeta}>
             <span className={styles.qDim}>{dim}</span>
             <span className={styles.qCount}>{stepNum}/{total}</span>
@@ -194,12 +194,12 @@ export default function FriendQuizClient() {
                 </button>
               ))}
             </div>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
+            <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
               pick any. leave all unchecked = open to everyone.
             </p>
 
             <p className={styles.qText} style={{ fontSize: '1.1rem' }}>do you identify as LGBTQ+?</p>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 0.85rem' }}>
+            <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 0.85rem' }}>
               optional — so LGBTQ+ folks &amp; events can find you.
             </p>
             <div className={styles.qOptions}>
@@ -226,11 +226,11 @@ export default function FriendQuizClient() {
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0 0 0.75rem' }}>
               <input type="number" inputMode="numeric" min={18} max={100} placeholder="18"
                 value={ageMin} onChange={(e) => setAgeMin(e.target.value)} style={inputStyle} />
-              <span style={{ fontFamily: "'DM Mono', monospace", color: 'var(--h-text-faint)' }}>to</span>
+              <span style={{ fontFamily: "'DM Sans', monospace", color: 'var(--h-text-faint)' }}>to</span>
               <input type="number" inputMode="numeric" min={18} max={100} placeholder="99"
                 value={ageMax} onChange={(e) => setAgeMax(e.target.value)} style={inputStyle} />
             </div>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
+            <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
               leave blank for no limit. friends near your vibe, your age.
             </p>
             {err && <p style={{ color: 'var(--h-accent-2)', fontSize: '0.82rem', marginBottom: '1rem' }}>{err}</p>}

@@ -1,3 +1,5 @@
+import Wordmark from './wordmark';
+
 export default function CorpFooter() {
   const year = new Date().getFullYear()
   return (
@@ -8,21 +10,10 @@ export default function CorpFooter() {
         padding: '2.4rem 1rem 2.6rem',
         borderTop: '1px solid var(--h-border)',
         background: 'var(--h-surface)',
-        fontFamily: "'DM Mono', ui-monospace, monospace",
+        fontFamily: "'DM Sans', ui-monospace, monospace",
       }}
     >
-      <div
-        style={{
-          fontFamily: "'Playfair Display', Georgia, ui-serif, serif",
-          fontStyle: 'italic',
-          fontWeight: 700,
-          fontSize: '1.4rem',
-          letterSpacing: '-0.01em',
-          marginBottom: '0.5rem',
-        }}
-      >
-        <span style={{ color: '#2563ff' }}>Not</span><span style={{ color: '#c94f12' }}>Cupid</span>
-      </div>
+      <div style={{ marginBottom: '1rem' }}><Wordmark size={1.5} href="/" /></div>
       <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1.1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         {[
           { label: 'instagram', handle: '@notcupidapp', href: 'https://instagram.com/notcupidapp' },
@@ -35,11 +26,11 @@ export default function CorpFooter() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              fontFamily: "'DM Mono', ui-monospace, monospace",
-              fontSize: '0.6rem',
+              fontFamily: "'DM Sans', ui-monospace, monospace",
+              fontSize: '0.75rem',
               letterSpacing: '0.14em',
               textTransform: 'lowercase',
-              color: '#2563ff',
+              color: 'var(--h-accent)',
               textDecoration: 'none',
               // 44px-min tap target (Apple HIG) without changing the visual size
               padding: '0.85rem 0.5rem',
@@ -65,7 +56,7 @@ export default function CorpFooter() {
             key={l.label}
             href={l.href}
             style={{
-              fontFamily: "'DM Mono', ui-monospace, monospace",
+              fontFamily: "'DM Sans', ui-monospace, monospace",
               fontSize: '0.58rem',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',

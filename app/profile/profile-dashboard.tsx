@@ -165,7 +165,7 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
                 <span
                   key={k}
                   className={styles.dashTag}
-                  style={{ background: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(37,99,255,0.35)' }}
+                  style={{ background: 'rgba(6,76,72,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(6,76,72,0.35)' }}
                 >
                   <span style={{ opacity: 0.55, marginRight: '0.4rem', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{VIBE_HEADS[k]}</span>
                   {label}
@@ -174,7 +174,7 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
             })}
           </div>
           {Object.keys(user.vibes).length < 6 && (
-            <p style={{fontFamily:"Georgia,ui-serif,serif",fontStyle:"italic",fontSize:".82rem",color:"#2563ff",marginTop:".75rem"}}>
+            <p style={{fontFamily:"Georgia,ui-serif,serif",fontStyle:"italic",fontSize:".82rem",color:"#064c48",marginTop:".75rem"}}>
               <a href="/quiz?retake=1" style={{color:"var(--h-accent)",textDecoration:"underline",textUnderlineOffset:"3px"}}>finish the vibes section →</a>
             </p>
           )}
@@ -218,15 +218,15 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
           <div className={styles.dashSectionLabel}>how you connect</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginTop: '0.6rem' }}>
             {displayedAttachmentStyle && (
-              <span style={{ background: 'rgba(37,99,255,0.1)', color: 'var(--blue)', border: '1px solid rgba(37,99,255,0.3)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.05em', fontWeight: 700 }}>
+              <span style={{ background: 'rgba(6,76,72,0.1)', color: 'var(--blue)', border: '1px solid rgba(6,76,72,0.3)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.66rem', letterSpacing: '0.05em', fontWeight: 700 }}>
                 {displayedAttachmentStyle === 'secure' ? '🌿 secure attachment' : displayedAttachmentStyle === 'anxious' ? '🌀 anxious attachment' : displayedAttachmentStyle === 'avoidant' ? '🏝 avoidant attachment' : '🌗 fearful-avoidant'}
               </span>
             )}
             {typeof user.attach_anxiety === 'number' && (
-              <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem' }}>anxiety {user.attach_anxiety}/100</span>
+              <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem' }}>anxiety {user.attach_anxiety}/100</span>
             )}
             {typeof user.attach_avoidance === 'number' && (
-              <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem' }}>avoidance {user.attach_avoidance}/100</span>
+              <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem' }}>avoidance {user.attach_avoidance}/100</span>
             )}
           </div>
           {user.values_profile && typeof user.values_profile === 'object' && (
@@ -235,13 +235,13 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
                 .filter(([k, v]) => k !== 'partner' && (typeof v === 'number' || typeof v === 'string'))
                 .slice(0, 6)
                 .map(([k, v]) => (
-                  <span key={k} style={{ background: 'rgba(255,106,31,0.08)', color: 'var(--h-accent-2, #d2530f)', border: '1px solid rgba(255,106,31,0.28)', borderRadius: 999, padding: '0.35rem 0.8rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}>
+                  <span key={k} style={{ background: 'rgba(244,197,66,0.08)', color: 'var(--h-accent-2, #765600)', border: '1px solid rgba(244,197,66,0.28)', borderRadius: 999, padding: '0.35rem 0.8rem', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}>
                     {k}{typeof v === 'number' ? ` · ${v}` : ''}
                   </span>
                 ))}
             </div>
           )}
-          <p style={{ margin: '0.6rem 0 0', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>
+          <p style={{ margin: '0.6rem 0 0', fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>
             attachment + values carry the most weight in your matches — more than personality traits.
           </p>
         </div>
@@ -261,7 +261,7 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
                     className={styles.dashTag}
                     style={
                       t.variant === 'lav'
-                        ? { background: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(37,99,255,0.35)' }
+                        ? { background: 'rgba(6,76,72,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(6,76,72,0.35)' }
                         : { background: 'var(--h-surface-2)', color: 'var(--h-text)', borderColor: 'var(--h-border)' }
                     }
                   >

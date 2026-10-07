@@ -47,13 +47,13 @@ export default function RefreshProfileButton({ usedCount }: { usedCount?: number
           display: 'block', width: '100%', padding: '0.9rem',
           background: 'transparent', border: `1.5px solid ${out ? 'var(--h-text-faint)' : 'var(--h-accent)'}`,
           color: out ? 'var(--h-text-faint)' : 'var(--h-accent)', borderRadius: 12,
-          fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.12em',
+          fontFamily: "'DM Sans', monospace", fontSize: '0.7rem', letterSpacing: '0.12em',
           textTransform: 'uppercase', fontWeight: 600, cursor: out || busy ? 'not-allowed' : 'pointer',
         }}
       >
         {busy ? 'refreshing…' : out ? 'no refreshes left' : '↺ start fresh (wipe & re-take quiz)'}
       </button>
-      <div style={{ marginTop: '0.4rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textAlign: 'center' }}>
+      <div style={{ marginTop: '0.4rem', fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textAlign: 'center' }}>
         {remaining} of {MAX} refreshes left
       </div>
     </div>

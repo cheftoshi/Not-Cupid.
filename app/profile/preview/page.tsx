@@ -151,7 +151,7 @@ export default async function ProfilePreviewPage() {
                       <span
                         key={k}
                         className={styles.vibeTag}
-                        style={{ background: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(37,99,255,0.35)' }}
+                        style={{ background: 'rgba(6,76,72,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(6,76,72,0.35)' }}
                       >
                         <span style={{ opacity: 0.55, marginRight: '0.4rem', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{VIBE_HEADS[k]}</span>
                         {label}
@@ -179,7 +179,7 @@ export default async function ProfilePreviewPage() {
                             className={styles.vibeTag}
                             style={
                               r.variant === 'lav'
-                                ? { background: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(37,99,255,0.35)' }
+                                ? { background: 'rgba(6,76,72,0.13)', color: 'var(--h-accent)', borderColor: 'rgba(6,76,72,0.35)' }
                                 : { background: 'var(--h-surface-2)', color: 'var(--h-text)', borderColor: 'var(--h-border)' }
                             }
                           >

@@ -38,22 +38,22 @@ export default async function PublicPlanPage({ params }: { params: Promise<{ id:
   const when = planWhen(plan.happens_at);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', background: 'radial-gradient(900px 480px at 12% -5%, rgba(255,106,31,0.09), transparent 55%), radial-gradient(760px 420px at 96% 8%, rgba(37,99,255,0.06), transparent 52%), var(--h-bg)', color: 'var(--h-text)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', background: 'radial-gradient(900px 480px at 12% -5%, rgba(244,197,66,0.09), transparent 55%), radial-gradient(760px 420px at 96% 8%, rgba(6,76,72,0.06), transparent 52%), var(--h-bg)', color: 'var(--h-text)' }}>
       <div style={{ maxWidth: 480, width: '100%' }}>
-        <div style={{ textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#d2530f', marginBottom: '1rem' }}>🧡 a plan on the friend line</div>
+        <div style={{ textAlign: 'center', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#765600', marginBottom: '1rem' }}>🧡 a plan on the friend line</div>
         <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 20, padding: '1.8rem 1.6rem', boxShadow: 'var(--shadow-lg)', textAlign: 'center' }}>
           <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>{CAT_EMOJI[plan.category] || '🧡'}</div>
-          <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.6rem, 6vw, 2.2rem)', lineHeight: 1.1, margin: '0 0 0.8rem' }}>{plan.title}</h1>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.05em', color: 'var(--h-text-dim)', marginBottom: '1.2rem' }}>
+          <h1 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.6rem, 6vw, 2.2rem)', lineHeight: 1.1, margin: '0 0 0.8rem' }}>{plan.title}</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontFamily: "'DM Sans', monospace", fontSize: '0.66rem', letterSpacing: '0.05em', color: 'var(--h-text-dim)', marginBottom: '1.2rem' }}>
             {when && <span>🗓 {when}</span>}
             {plan.area && <span>📍 {plan.area}</span>}
             <span>👥 {plan.hostFirst} is organizing</span>
           </div>
-          <p style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.9rem', lineHeight: 1.55, color: 'var(--h-text-dim)', margin: '0 0 1.4rem' }}>
+          <p style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '0.9rem', lineHeight: 1.55, color: 'var(--h-text-dim)', margin: '0 0 1.4rem' }}>
             NotCupid is a connection experiment — real plans with real people, no swiping. Join to RSVP and see who&apos;s going.
           </p>
           <a href={`/login?next=${encodeURIComponent(`/hub?plan=${plan.id}`)}`} className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>join this plan →</a>
-          <div style={{ marginTop: '0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>free to join · notcupid.com</div>
+          <div style={{ marginTop: '0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>free to join · notcupid.com</div>
         </div>
       </div>
     </div>

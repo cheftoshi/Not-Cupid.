@@ -12,7 +12,7 @@ export default function RouteLoading({ label = 'loading your NotCupid space' }: 
         color: 'var(--h-text, #16110d)',
       }}
     >
-      <p style={{ fontFamily: 'DM Mono, monospace', letterSpacing: '.12em', textTransform: 'uppercase', fontSize: '.72rem' }}>
+      <p style={{ fontFamily: 'DM Sans, monospace', letterSpacing: '.12em', textTransform: 'uppercase', fontSize: '.72rem' }}>
         {label}…
       </p>
     </main>

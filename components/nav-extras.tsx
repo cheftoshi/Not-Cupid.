@@ -45,7 +45,7 @@ export default function NavExtras() {
         .nxOverlay { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; padding: max(1rem, env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px)) max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px)); background: rgba(11,11,11,0.54); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
         .nxModal { display: flex; flex-direction: column; width: min(460px, 100%); max-height: calc(var(--app-visual-viewport-height, 100dvh) - max(2rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))); overflow: hidden; border: 1px solid var(--h-border); border-radius: 18px; background: var(--h-surface); box-shadow: 0 24px 70px -22px rgba(11,11,11,0.55); }
         .nxModalToolbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; min-height: 54px; padding: 0.55rem 0.75rem 0.55rem 1.1rem; border-bottom: 1px solid var(--h-border); background: var(--h-surface); }
-        .nxModalTitle { font-family: 'DM Mono', monospace; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--h-accent); }
+        .nxModalTitle { font-family: 'DM Sans', monospace; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--h-accent); }
         .nxModalClose { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid var(--h-border); border-radius: 999px; background: var(--h-surface-2); color: var(--h-text); font: 24px/1 system-ui, sans-serif; cursor: pointer; }
         .nxModalBody { min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 1.25rem 1.35rem calc(1.35rem + env(safe-area-inset-bottom, 0px)); }
         @media (max-width: 600px) {
@@ -84,13 +84,13 @@ export default function NavExtras() {
 function WhatsNewModal({ onClose }: { onClose: () => void }) {
   return (
     <Overlay title="what's new" onClose={onClose}>
-      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>we&apos;ve been busy.</h2>
+      <h2 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 26, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>we&apos;ve been busy.</h2>
       {CHANGELOG.map((entry) => (
         <div key={entry.date} style={{ marginBottom: 18 }}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: 10 }}>{entry.date}</div>
+          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: 10 }}>{entry.date}</div>
           <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {entry.items.map((it, i) => (
-              <li key={i} style={{ fontFamily: 'system-ui, sans-serif', fontSize: 14, lineHeight: 1.5, color: 'var(--h-text)' }}>{it}</li>
+              <li key={i} style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, lineHeight: 1.5, color: 'var(--h-text)' }}>{it}</li>
             ))}
           </ul>
         </div>
@@ -121,18 +121,18 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
       {state === 'done' ? (
         <div style={{ textAlign: 'center', padding: '1rem 0' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🙏</div>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 10px 0' }}>thank you.</h2>
-          <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px 0' }}>we read every note — it genuinely shapes what we build next.</p>
+          <h2 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 10px 0' }}>thank you.</h2>
+          <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px 0' }}>we read every note — it genuinely shapes what we build next.</p>
           <button onClick={onClose} style={primaryBtn}>close</button>
         </div>
       ) : (
         <>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--h-accent)', marginBottom: 8 }}>feedback</div>
-          <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 6px 0' }}>tell us anything.</h2>
-          <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px 0' }}>a bug, an idea, a gripe, a win — it all helps. we&apos;re a small team in Boston actually reading this.</p>
+          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--h-accent)', marginBottom: 8 }}>feedback</div>
+          <h2 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 6px 0' }}>tell us anything.</h2>
+          <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px 0' }}>a bug, an idea, a gripe, a win — it all helps. we&apos;re a small team in Boston actually reading this.</p>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} rows={5} placeholder="what's on your mind?"
-            style={{ width: '100%', borderRadius: 12, border: '1px solid var(--h-border)', padding: '12px 14px', fontFamily: 'system-ui, sans-serif', fontSize: 14, resize: 'vertical', outline: 'none', color: 'var(--h-text)', background: 'var(--h-surface)' }} />
-          {state === 'error' && <p style={{ color: 'var(--h-accent-2)', fontSize: 12, margin: '8px 0 0', fontFamily: "'DM Mono', monospace" }}>{err}</p>}
+            style={{ width: '100%', borderRadius: 12, border: '1px solid var(--h-border)', padding: '12px 14px', fontFamily: 'DM Sans, sans-serif', fontSize: 14, resize: 'vertical', outline: 'none', color: 'var(--h-text)', background: 'var(--h-surface)' }} />
+          {state === 'error' && <p style={{ color: 'var(--h-accent-2)', fontSize: 12, margin: '8px 0 0', fontFamily: "'DM Sans', monospace" }}>{err}</p>}
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <button onClick={onClose} style={ghostBtn}>cancel</button>
             <button onClick={submit} disabled={!body.trim() || state === 'sending'} style={{ ...primaryBtn, flex: 1, opacity: !body.trim() || state === 'sending' ? 0.5 : 1 }}>{state === 'sending' ? 'sending…' : 'send feedback'}</button>
@@ -174,8 +174,8 @@ function Overlay({ children, onClose, title }: { children: React.ReactNode; onCl
   );
 }
 
-const navLink: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', whiteSpace: 'nowrap' };
-const menuItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '0.5rem 0.7rem', borderRadius: 8, fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text)', whiteSpace: 'nowrap' };
-const dot: React.CSSProperties = { display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#ff6a1f', marginLeft: 4, verticalAlign: 'middle' };
-const primaryBtn: React.CSSProperties = { background: '#0b0b0b', color: '#fff', border: 'none', borderRadius: 999, padding: '12px 22px', fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' };
-const ghostBtn: React.CSSProperties = { background: 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '12px 18px', fontFamily: "'DM Mono', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' };
+const navLink: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0, position: 'relative', whiteSpace: 'nowrap' };
+const menuItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '0.5rem 0.7rem', borderRadius: 8, fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text)', whiteSpace: 'nowrap' };
+const dot: React.CSSProperties = { display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#8a6500', marginLeft: 4, verticalAlign: 'middle' };
+const primaryBtn: React.CSSProperties = { background: '#0b0b0b', color: '#fff', border: 'none', borderRadius: 999, padding: '12px 22px', fontFamily: "'DM Sans', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' };
+const ghostBtn: React.CSSProperties = { background: 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '12px 18px', fontFamily: "'DM Sans', monospace", fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' };

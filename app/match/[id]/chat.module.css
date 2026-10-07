@@ -5,11 +5,11 @@
   flex-direction: column;
   /* ambient brand depth — soft, large, low-opacity glows over the base. */
   background:
-    radial-gradient(1000px 480px at 10% -8%, rgba(37,99,255,0.06), transparent 55%),
-    radial-gradient(800px 420px at 100% 0%, rgba(255,106,31,0.04), transparent 50%),
+    radial-gradient(1000px 480px at 10% -8%, rgba(6,76,72,0.06), transparent 55%),
+    radial-gradient(800px 420px at 100% 0%, rgba(244,197,66,0.04), transparent 50%),
     var(--h-bg);
   color: var(--h-text);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   min-width: 0;
   max-width: 100vw;
   overflow-x: hidden;
@@ -37,7 +37,7 @@
   background: var(--h-surface);
   color: var(--h-text-dim);
   cursor: pointer;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.55rem;
   letter-spacing: 0.1em;
   padding: 0.5rem 0.8rem;
@@ -71,14 +71,14 @@
   padding: 1.1rem;
   border-bottom: 1px solid var(--h-border);
   background:
-    radial-gradient(circle at 90% 8%, rgba(37,99,255,0.10), transparent 34%),
+    radial-gradient(circle at 90% 8%, rgba(6,76,72,0.10), transparent 34%),
     color-mix(in srgb, var(--h-surface) 94%, var(--blue-pale));
 }
 
 .planStartLabel {
   margin: 0 0 0.3rem 0.2rem;
-  color: #2563ff;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  color: #064c48;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.48rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -122,7 +122,7 @@
 
 .matchPhotoEmpty {
   color: var(--h-accent);
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: 4rem;
   font-style: italic;
   background: linear-gradient(135deg, var(--blue-pale), var(--h-surface));
@@ -132,11 +132,11 @@
   position: absolute;
   left: 0.75rem;
   bottom: 0.75rem;
-  border: 1px solid color-mix(in srgb, #2563ff 35%, var(--h-border));
+  border: 1px solid color-mix(in srgb, #064c48 35%, var(--h-border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--h-surface) 88%, transparent);
-  color: #1b46c9;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  color: #064c48;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -147,16 +147,16 @@
 
 .matchVideoWrap {
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, #2563ff 26%, var(--h-border));
+  border: 1px solid color-mix(in srgb, #064c48 26%, var(--h-border));
   border-radius: 16px;
   background: #050505;
 }
 
 .matchVideoLabel {
   background: color-mix(in srgb, var(--h-surface) 95%, var(--blue-pale));
-  color: #1b46c9;
+  color: #064c48;
   padding: 0.55rem 0.7rem;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.5rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -179,7 +179,7 @@
 .matchKicker,
 .matchFacts span,
 .matchTags span {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   text-transform: uppercase;
 }
 
@@ -191,14 +191,14 @@
 .matchPrompts > div {
   display: grid;
   gap: 0.2rem;
-  border-left: 2px solid #2563ff;
+  border-left: 2px solid #064c48;
   background: color-mix(in srgb, var(--h-surface) 86%, var(--blue-pale));
   padding: 0.65rem 0.72rem;
 }
 
 .matchPrompts span {
-  color: #1b46c9;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  color: #064c48;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.46rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -206,7 +206,7 @@
 
 .matchPrompts strong {
   color: var(--h-text);
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-size: 0.82rem;
   font-style: italic;
   font-weight: 500;
@@ -214,7 +214,7 @@
 }
 
 .matchKicker {
-  color: #2563ff;
+  color: #064c48;
   font-size: 0.52rem;
   letter-spacing: 0.18em;
 }
@@ -222,7 +222,7 @@
 .matchProfileBody h2 {
   margin: 0;
   color: var(--h-text);
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: clamp(2rem, 5vw, 3rem);
   font-style: italic;
   font-weight: 400;
@@ -236,7 +236,7 @@
 .matchProfileBody p {
   margin: 0;
   color: var(--h-text-dim);
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-size: 0.96rem;
   font-style: italic;
   line-height: 1.48;
@@ -275,7 +275,7 @@
   background: #0b0b0b;
   color: #fff;
   cursor: pointer;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.52rem;
   letter-spacing: 0.08em;
   line-height: 1.25;
@@ -290,7 +290,7 @@
   border-radius: 14px;
   background: color-mix(in srgb, var(--h-surface) 82%, var(--blue-pale));
   color: var(--h-text-dim);
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-size: 0.84rem;
   font-style: italic;
   line-height: 1.42;
@@ -301,15 +301,15 @@
   display: grid;
   gap: 0.48rem;
   margin-top: 1rem;
-  border: 1px dashed color-mix(in srgb, #2563ff 30%, var(--h-border));
+  border: 1px dashed color-mix(in srgb, #064c48 30%, var(--h-border));
   border-radius: 16px;
   background: color-mix(in srgb, var(--h-surface) 84%, var(--blue-pale));
   padding: 1rem;
 }
 
 .pendingPlanLock span {
-  color: #2563ff;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  color: #064c48;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.5rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -317,7 +317,7 @@
 
 .pendingPlanLock strong {
   color: var(--h-text);
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: 1.25rem;
   font-style: italic;
   font-weight: 400;
@@ -385,7 +385,7 @@
 .headerInfo { flex: 1; min-width: 0; }
 
 .headerName {
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.35rem;
   font-weight: 400;
@@ -405,7 +405,7 @@
   flex-wrap: wrap;
 }
 .headerArch {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.55rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -415,11 +415,11 @@
   border-radius: 999px;
 }
 .headerStatus {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: #2563ff;
+  color: #064c48;
 }
 .headerStatusExpired { color: #c92a2a; }
 
@@ -428,12 +428,12 @@
   align-self: center;
   max-width: 90%;
   text-align: center;
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-style: italic;
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--h-text-dim);
-  background: rgba(37,99,255,0.08);
+  background: rgba(6,76,72,0.08);
   border: 1px solid var(--h-border);
   border-radius: 14px;
   padding: 0.7rem 1.1rem;
@@ -442,12 +442,12 @@
 .narrator strong { color: var(--h-accent); font-style: normal; }
 .narratorMark {
   display: block;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-style: normal;
   font-size: 0.5rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: #064c48;
   margin-bottom: 0.35rem;
 }
 
@@ -465,7 +465,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e8edff 0%, #c8c4dc 100%);
+  background: linear-gradient(135deg, #e5eee8 0%, #c8c4dc 100%);
   flex-shrink: 0;
 }
 
@@ -491,14 +491,14 @@
   width: min(100%, 430px);
   align-self: center;
   padding: 1rem;
-  border: 1px solid rgba(255, 106, 31, 0.3);
+  border: 1px solid rgba(244, 197, 66, 0.3);
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255,106,31,0.08), rgba(37,99,255,0.06));
+  background: linear-gradient(135deg, rgba(244,197,66,0.08), rgba(6,76,72,0.06));
 }
 
 .decisionCard span {
   color: #d55314;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.52rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -516,18 +516,18 @@
   align-items: center;
 }
 .emptyTitle {
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.7rem;
   color: var(--h-text);
   line-height: 1.1;
 }
 .emptySub {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.6rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: #064c48;
   margin: 0.6rem 0 1.1rem;
 }
 .starters {
@@ -544,14 +544,14 @@
   text-align: left;
   color: var(--h-text);
   background: var(--h-surface);
-  border: 1px solid rgba(37,99,255,0.3);
+  border: 1px solid rgba(6,76,72,0.3);
   border-radius: 14px;
   padding: 0.7rem 0.95rem;
   cursor: pointer;
   transition: all 0.15s;
 }
 .starter:hover {
-  border-color: #2563ff;
+  border-color: #064c48;
   background: var(--h-surface);
   transform: translateY(-1px);
   box-shadow: 0 6px 18px -10px rgba(27,70,201,0.35);
@@ -560,12 +560,12 @@
 
 .coachTrigger {
   align-self: center;
-  border: 1px solid rgba(37,99,255,0.3);
+  border: 1px solid rgba(6,76,72,0.3);
   border-radius: 999px;
-  background: rgba(37,99,255,0.06);
-  color: #1b46c9;
+  background: rgba(6,76,72,0.06);
+  color: #064c48;
   padding: 0.55rem 0.85rem;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.54rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -577,17 +577,17 @@
 .coachCard {
   width: min(100%, 390px);
   align-self: center;
-  border: 1px solid rgba(37,99,255,0.28);
+  border: 1px solid rgba(6,76,72,0.28);
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(37,99,255,0.08), rgba(255,106,31,0.06));
+  background: linear-gradient(135deg, rgba(6,76,72,0.08), rgba(244,197,66,0.06));
   padding: 0.9rem;
   text-align: left;
 }
 
 .coachKicker {
   margin-bottom: 0.35rem;
-  color: #2563ff;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  color: #064c48;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.5rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -596,14 +596,14 @@
 .coachCard strong {
   display: block;
   color: var(--h-text);
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: 1.05rem;
 }
 
 .coachCard p {
   margin: 0.35rem 0 0.65rem;
   color: var(--h-text-dim);
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-size: 0.8rem;
   line-height: 1.45;
 }
@@ -611,7 +611,7 @@
 .coachOpeners { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .coachOpeners button {
-  border: 1px solid rgba(37,99,255,0.24);
+  border: 1px solid rgba(6,76,72,0.24);
   border-radius: 10px;
   background: var(--h-surface);
   color: var(--h-text);
@@ -627,7 +627,7 @@
   display: block;
   margin-top: 0.6rem;
   color: var(--h-text-faint);
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.44rem;
   line-height: 1.45;
 }
@@ -636,9 +636,9 @@
 .nudge {
   margin: 0 1rem;
   background: var(--h-surface-3);
-  border: 1px solid rgba(255,106,31,0.4);
+  border: 1px solid rgba(244,197,66,0.4);
   color: var(--h-accent-2);
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-style: italic;
   font-size: 0.82rem;
   line-height: 1.4;
@@ -669,7 +669,7 @@
   align-self: flex-start;
   background: var(--h-surface-2);
   color: var(--h-text);
-  border: 1px solid rgba(37,99,255,0.25);
+  border: 1px solid rgba(6,76,72,0.25);
   border-bottom-left-radius: 4px;
 }
 
@@ -680,7 +680,7 @@
 }
 
 .bubbleTime {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.55rem;
   margin-top: 0.4rem;
   opacity: 0.45;
@@ -714,8 +714,8 @@
   outline: none;
   transition: border-color 0.15s, background 0.15s;
 }
-.input::placeholder { color: var(--h-text-faint); font-family: Georgia, ui-serif, serif; font-style: italic; }
-.input:focus { border-color: #2563ff; background: var(--h-surface); }
+.input::placeholder { color: var(--h-text-faint); font-family: 'Space Grotesk', ui-serif, serif; font-style: italic; }
+.input:focus { border-color: #064c48; background: var(--h-surface); }
 .input:disabled { opacity: 0.55; background: var(--h-surface-2); cursor: not-allowed; }
 
 .send {
@@ -733,7 +733,7 @@
   flex-shrink: 0;
   transition: background 0.15s, transform 0.1s;
 }
-.send:hover:not(:disabled) { background: #1b46c9; }
+.send:hover:not(:disabled) { background: #064c48; }
 .send:active:not(:disabled) { transform: scale(0.94); }
 .send:disabled { opacity: 0.28; cursor: not-allowed; }
 
@@ -754,7 +754,7 @@
   background: #0b0b0b;
   color: #fff;
   cursor: pointer;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.55rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -799,15 +799,15 @@
     background: transparent;
     color: var(--h-text-dim);
     cursor: pointer;
-    font-family: 'DM Mono', ui-monospace, monospace;
+    font-family: 'DM Sans', ui-monospace, monospace;
     font-size: 0.52rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
   .mobileMatchTabs button[aria-selected='true'] {
-    border-color: #2563ff;
-    background: #2563ff;
+    border-color: #064c48;
+    background: #064c48;
     color: #fff;
   }
 
@@ -844,3 +844,7 @@
   .page[data-mobile-panel='plan'] .matchProfile { display: none; }
   .page[data-mobile-panel='profile'] .vibesInner { display: none; }
 }
+
+/* Keep the measured viewport and composer behavior; simplify the reading surface. */
+.page{background:var(--h-bg);font-family:var(--font-ui)}.header{background:#064c48;color:#fff;border-bottom-color:#064c48}.headerName{font-family:var(--font-display);font-weight:650;color:#fff;letter-spacing:-.04em}.headerMeta,.headerArch{color:#e2eee6}.header a{color:#fff}.bubbleBody{font-family:var(--font-ui);font-size:1rem;line-height:1.6}.bubbleMine{background:#064c48;color:#fff;border-radius:14px 14px 3px 14px}.bubbleMine .bubbleTime{color:#d8e9df}.bubbleTheirs{background:var(--h-surface-2);color:var(--h-text);border-radius:14px 14px 14px 3px}.matchProfile{background:var(--h-surface)}.loadOlder{font-family:var(--font-ui);font-size:.75rem;text-transform:none;letter-spacing:0;min-height:44px}
+.headerArch{background:#f4c542;color:#493b05;font-size:.7rem;letter-spacing:0;text-transform:none}.headerStatus{color:#f4c542;font-size:.7rem;letter-spacing:0}.headerStatusExpired{color:#ffd1ca}.headerName{font-style:normal}.back:hover{background:#ffffff20;color:#fff}

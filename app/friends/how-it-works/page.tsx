@@ -20,16 +20,16 @@ export default function HowItWorks() {
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}` }}>FRIEND LINE</span>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>route map</span>
+            <span style={{ background: LINE, color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}` }}>FRIEND LINE</span>
+            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>route map</span>
           </div>
-          <Link href="/friends" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>my hub →</Link>
+          <Link href="/friends" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>my hub →</Link>
         </div>
 
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.8rem,11vw,5rem)', lineHeight: 0.86, color: LINE, WebkitTextStroke: `3px ${INK}`, textShadow: `5px 5px 0 rgba(36,29,18,0.18)`, margin: '0 0 0.5rem' }}>
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2.8rem,11vw,5rem)', lineHeight: 0.86, color: LINE, WebkitTextStroke: `3px ${INK}`, textShadow: `5px 5px 0 rgba(36,29,18,0.18)`, margin: '0 0 0.5rem' }}>
           find your<br /><span style={{ color: '#3f7d57', WebkitTextStroke: `3px ${INK}` }}>next friend.</span>
         </h1>
-        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '1.05rem', margin: '0 0 2rem' }}>
+        <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '1.05rem', margin: '0 0 2rem' }}>
           five stops to your crew. no swiping, no small talk — the algo routes you.
         </p>
 
@@ -38,9 +38,9 @@ export default function HowItWorks() {
           <div style={{ position: 'absolute', left: 26, top: 24, bottom: 24, width: 5, background: LINE, borderRadius: 999, zIndex: 0 }} />
           {STEPS.map((s) => (
             <div key={s.n} style={{ position: 'relative', zIndex: 1, background: '#fffdf7', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}`, padding: '1.1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}`, color: INK, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>{s.n}</div>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: CREAM, border: `4px solid ${LINE}`, color: INK, fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>{s.n}</div>
               <div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', letterSpacing: '0.02em' }}>{s.emoji} {s.title}</div>
+                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.4rem', letterSpacing: '0.02em' }}>{s.emoji} {s.title}</div>
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.92rem', lineHeight: 1.55, color: '#3a2c20' }}>{s.body}</p>
               </div>
             </div>
@@ -48,14 +48,14 @@ export default function HowItWorks() {
         </div>
 
         <div style={{ background: '#fffaf0', border: `3px dashed ${LINE}`, borderRadius: 16, padding: '1.25rem', margin: '1.75rem 0', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
-          <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem' }}>🎟️ your fare</div>
+          <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.4rem 0 0', fontSize: '0.9rem' }}>
 your crews and their group chats are <b>free</b>. want more people? a fresh pack of up to 5 matches is a one-time <b>$0.99</b> — or unlimited with Pro.
           </p>
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <Link href="/friends" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.5rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: `3px solid ${INK}`, borderRadius: 14, padding: '0.8rem 2rem', boxShadow: `5px 5px 0 ${INK}`, textDecoration: 'none', display: 'inline-block' }}>
+          <Link href="/friends" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: `3px solid ${INK}`, borderRadius: 14, padding: '0.8rem 2rem', boxShadow: `5px 5px 0 ${INK}`, textDecoration: 'none', display: 'inline-block' }}>
             board the friend line →
           </Link>
         </div>

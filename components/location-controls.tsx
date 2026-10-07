@@ -23,7 +23,7 @@ const BY_STATE = [...STATE_ORDER.filter((s) => _states.includes(s)), ..._states.
 const RADIUS_LADDER = [5, 10, 15, 25, 50, 75];
 
 export default function LocationControls({
-  city, currentMetro, radius = 15, showRadius = false, accent = '#2563ff',
+  city, currentMetro, radius = 15, showRadius = false, accent = '#064c48',
 }: {
   city?: string | null; currentMetro?: string | null; radius?: number; showRadius?: boolean; accent?: string;
 }) {
@@ -56,18 +56,18 @@ export default function LocationControls({
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.6rem' }}>
       <button type="button" onClick={() => setPicker(true)}
-        style={{ background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', color: 'var(--h-text-dim)' }}>
-        📍 {city || 'set your city'} <span style={{ color: accent, fontWeight: 700 }}>· change</span>
+        style={{ background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', color: 'var(--h-text-dim)' }}>
+        📍 {city || 'set your city'} <span style={{ color: 'var(--h-accent)', fontWeight: 700 }}>· change</span>
       </button>
 
       {showRadius && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>within</span>
+          <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>within</span>
           {RADIUS_LADDER.map((v) => (
             <button key={v} type="button" onClick={() => changeRadius(v)} disabled={rBusy}
-              style={{ background: v === r ? accent : 'var(--h-surface-2)', color: v === r ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${v === r ? accent : 'var(--h-border)'}`, borderRadius: 8, padding: '0.25rem 0.5rem', cursor: rBusy ? 'wait' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem' }}>{v}</button>
+              style={{ background: v === r ? accent : 'var(--h-surface-2)', color: v === r ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${v === r ? accent : 'var(--h-border)'}`, borderRadius: 8, padding: '0.25rem 0.5rem', cursor: rBusy ? 'wait' : 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.54rem' }}>{v}</button>
           ))}
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', color: 'var(--h-text-faint)' }}>mi</span>
+          <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', color: 'var(--h-text-faint)' }}>mi</span>
         </div>
       )}
 
@@ -75,23 +75,23 @@ export default function LocationControls({
         <div onClick={() => setPicker(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(10,8,16,0.55)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 540, width: '100%', maxHeight: 'calc(var(--app-visual-viewport-height, 100dvh) - var(--app-safe-top, 0px) - var(--app-safe-bottom, 0px) - 2rem)', overflow: 'auto', overscrollBehavior: 'contain', padding: '1.5rem', paddingBottom: 'max(1.5rem, var(--app-safe-bottom, 0px))', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>where are you?</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>where are you?</span>
               <button onClick={() => setPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44, fontSize: '1.1rem', color: 'var(--h-text-faint)' }} aria-label="close city picker">✕</button>
             </div>
-            <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1.1rem' }}>
+            <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1.1rem' }}>
               {showRadius ? 'This updates your home matching location. Existing connections stay put.' : 'Explore plans in another city without changing your home location or existing chats. This choice takes priority over travel discovery.'} Availability depends on local members.
             </p>
             {error && <p role="alert">{error}</p>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.05rem' }}>
               {BY_STATE.map(({ st, cities }) => (
                 <div key={st}>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.5rem' }}>{STATE_NAME[st] || st}</div>
+                  <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.5rem' }}>{STATE_NAME[st] || st}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {cities.map((c) => {
                       const isCurrent = c.key === currentMetro;
                       return (
                         <button key={c.key} onClick={() => { if (!isCurrent) changeCity(c.key); }} disabled={!!cityBusy || isCurrent}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', background: isCurrent ? accent : 'var(--h-surface-2)', color: isCurrent ? '#fff' : 'var(--h-text)', border: `1px solid ${isCurrent ? accent : 'var(--h-border)'}`, borderRadius: 999, padding: '0.42rem 0.9rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer'), fontFamily: 'ui-sans-serif, system-ui, sans-serif', fontSize: '0.85rem' }}>
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', background: isCurrent ? accent : 'var(--h-surface-2)', color: isCurrent ? '#fff' : 'var(--h-text)', border: `1px solid ${isCurrent ? accent : 'var(--h-border)'}`, borderRadius: 999, padding: '0.42rem 0.9rem', cursor: isCurrent ? 'default' : (cityBusy ? 'wait' : 'pointer'), fontFamily: 'DM Sans, sans-serif', fontSize: '0.85rem' }}>
                           {cityBusy === c.key ? '…' : c.city}{isCurrent && <span style={{ fontSize: '0.7rem' }}>✓</span>}
                         </button>
                       );

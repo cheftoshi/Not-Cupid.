@@ -16,8 +16,8 @@
   animation: fadeUp 0.4s ease both;
   /* ambient brand depth — subtle, so the focused quiz still reads designed. */
   background:
-    radial-gradient(900px 460px at 12% -6%, rgba(37,99,255,0.05), transparent 55%),
-    radial-gradient(760px 400px at 96% 4%, rgba(255,106,31,0.04), transparent 52%),
+    radial-gradient(900px 460px at 12% -6%, rgba(6,76,72,0.05), transparent 55%),
+    radial-gradient(760px 400px at 96% 4%, rgba(244,197,66,0.04), transparent 52%),
     var(--h-bg);
 }
 
@@ -56,8 +56,8 @@
 
 .intentCardSelected {
   border-color: var(--blue);
-  background: linear-gradient(135deg, rgba(37,99,255,0.10), rgba(255,106,31,0.04)), var(--h-surface);
-  box-shadow: 0 18px 42px -34px rgba(37,99,255,0.65);
+  background: linear-gradient(135deg, rgba(6,76,72,0.10), rgba(244,197,66,0.04)), var(--h-surface);
+  box-shadow: 0 18px 42px -34px rgba(6,76,72,0.65);
 }
 
 .intentIcon {
@@ -74,26 +74,26 @@
 .intentCopy { display: grid; gap: 0.26rem; min-width: 0; }
 .intentEyebrow {
   color: var(--blue);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.54rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .intentCopy strong {
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: 1.16rem;
   line-height: 1.15;
 }
 .intentCopy > span:not(.intentEyebrow) {
   color: var(--h-text-dim);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.8rem;
   line-height: 1.42;
 }
 .intentCopy em {
   color: var(--h-text-faint);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.52rem;
   font-style: normal;
   letter-spacing: 0.07em;
@@ -107,7 +107,7 @@
   border-radius: 999px;
   background: var(--h-surface-2);
   color: var(--h-text-dim);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.72rem;
 }
 .intentCardSelected .intentCheck { background: var(--blue); color: #fff; }
@@ -120,7 +120,7 @@
 .detailsTitle {
   margin: 0;
   color: var(--h-text);
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: clamp(2.4rem, 8vw, 4rem);
   line-height: 0.96;
 }
@@ -138,7 +138,7 @@
   background: var(--h-surface);
   color: var(--blue);
   padding: 0.3rem 0.7rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.58rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -150,7 +150,7 @@
   color: var(--h-text-faint);
   cursor: pointer;
   padding: 0;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.56rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -160,14 +160,14 @@
 .friendFirstNote {
   display: grid;
   gap: 0.3rem;
-  border: 1px solid rgba(255,106,31,0.28);
+  border: 1px solid rgba(244,197,66,0.28);
   border-radius: 14px;
-  background: rgba(255,106,31,0.06);
+  background: rgba(244,197,66,0.06);
   padding: 0.85rem 0.95rem;
 }
 .friendFirstNote strong {
   color: var(--h-text);
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: 0.95rem;
 }
 .friendFirstNote span { color: var(--h-text-dim); font-size: 0.78rem; line-height: 1.45; }
@@ -179,7 +179,7 @@
 }
 
 .sticker {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -191,7 +191,7 @@
 }
 
 .stickerGold {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -202,7 +202,7 @@
 }
 
 .introH1 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', serif;
   font-size: clamp(3.2rem, 10vw, 5.5rem);
   font-weight: 900;
   line-height: 0.92;
@@ -225,7 +225,7 @@
 .introLedeSub {
   display: block;
   margin-top: 0.4rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   color: var(--accent);
@@ -239,7 +239,7 @@
   background: var(--h-surface);
 }
 .rulesTitle {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.62rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -254,7 +254,7 @@
 }
 .rule:last-child { border-bottom: none; padding-bottom: 0; }
 .ruleDot {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.75rem;
   color: var(--accent);
   flex-shrink: 0;
@@ -265,7 +265,7 @@
 
 .formBlock { }
 .formTitle {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', serif;
   font-size: 1.4rem;
   font-weight: 700;
   font-style: italic;
@@ -283,7 +283,7 @@
 .fieldFull { grid-column: 1/-1; }
 
 .label {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.58rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -296,7 +296,7 @@
   color: var(--h-text);
   padding: 0.75rem 0.9rem;
   border-radius: 0.25rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 0.88rem;
   font-weight: 400;
   outline: none;
@@ -309,7 +309,7 @@
 
 .ageRangeWrap { display: flex; align-items: center; gap: 0.6rem; }
 .ageSep {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.75rem;
   color: var(--h-text-faint);
   flex-shrink: 0;
@@ -319,20 +319,20 @@
 .zipWrap .input { padding-right: 9rem; }
 .zipOk {
   position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%);
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   letter-spacing: 0.08em; color: var(--green);
 }
 .zipBad {
   position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%);
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   letter-spacing: 0.08em; color: var(--accent);
 }
 .fieldError {
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   letter-spacing: 0.06em; color: var(--accent); margin-top: 0.2rem;
 }
 .formNote {
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   letter-spacing: 0.08em; color: var(--h-text-faint);
   text-align: center; margin-top: 0.75rem;
 }
@@ -345,14 +345,14 @@
 .verifyTop { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
 .verifyEmoji { font-size: 2.5rem; line-height: 1; }
 .verifyH2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', serif;
   font-size: 2rem; font-weight: 900;
   letter-spacing: -0.02em; color: var(--h-text);
 }
 .verifySub { font-size: 0.88rem; color: var(--h-text-dim); line-height: 1.65; }
 .verifySub strong { color: var(--h-text); font-weight: 700; }
 .verifyNote {
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   letter-spacing: 0.08em; color: var(--h-text-faint);
 }
 
@@ -368,7 +368,7 @@
   border-radius: 0.35rem;
   background: var(--h-surface);
   color: var(--h-text);
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', serif;
   font-size: 1.5rem; font-weight: 700;
   text-align: center; outline: none;
   transition: border 0.15s, transform 0.1s;
@@ -376,13 +376,13 @@
 .otpBox:focus { border-color: var(--h-text); transform: scale(1.05); }
 .otpBoxError { border-color: #d94f3d !important; background: rgba(217, 79, 61, 0.07); color: #c0392b; }
 .otpError {
-  font-family: 'DM Mono', monospace; font-size: 0.68rem;
+  font-family: 'DM Sans', monospace; font-size: 0.68rem;
   letter-spacing: 0.08em; color: var(--accent);
 }
 
 .resendRow {
   display: flex; align-items: center; gap: 0.6rem;
-  font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em;
+  font-family: 'DM Sans', monospace; font-size: 0.62rem; letter-spacing: 0.08em;
 }
 .resendTimer { color: var(--h-text-faint); }
 .resendDot { color: var(--h-text-faint); }
@@ -401,21 +401,21 @@
 }
 /* Wordmark — matches the social identity: Not=blue, Cupid=orange, italic serif. */
 .quizLogo {
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em;
-  color: #2563ff;
+  color: #064c48;
 }
-.quizLogo span { color: #ff6a1f; }
+.quizLogo span { color: #8a6500; }
 .qMeta { display: flex; align-items: center; gap: 0.75rem; }
 .qDim {
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   letter-spacing: 0.14em; text-transform: uppercase;
   background: var(--accent-dim); color: var(--accent);
   padding: 0.25rem 0.6rem; border-radius: 0.2rem;
 }
 .qCount {
-  font-family: 'DM Mono', monospace; font-size: 0.62rem;
+  font-family: 'DM Sans', monospace; font-size: 0.62rem;
   letter-spacing: 0.1em; color: var(--h-text-dim);
 }
 
@@ -429,7 +429,7 @@
 }
 
 .qText {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', serif;
   font-size: clamp(1.25rem, 2.8vw, 1.65rem);
   font-weight: 700; line-height: 1.28;
   color: var(--h-text); margin-bottom: 2rem;
@@ -443,19 +443,19 @@
   cursor: pointer; transition: all 0.12s;
   display: flex; align-items: flex-start; gap: 0.85rem;
   text-align: left; background: var(--h-surface); width: 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
 }
 .qOpt:hover { border-color: var(--h-text); color: var(--h-text); background: var(--h-surface-2); }
 .qOptSelected { border-color: var(--accent) !important; color: var(--h-text) !important; background: var(--accent-dim) !important; }
 .qKey {
-  font-family: 'DM Mono', monospace; font-size: 0.58rem;
+  font-family: 'DM Sans', monospace; font-size: 0.58rem;
   border: 1px solid currentColor; padding: 0.12rem 0.36rem;
   border-radius: 0.15rem; opacity: 0.5; flex-shrink: 0; margin-top: 0.14rem;
 }
 .qOptText { line-height: 1.5; }
 .qNav { display: flex; justify-content: space-between; align-items: center; }
 .qSkip {
-  font-family: 'DM Mono', monospace; font-size: 0.62rem;
+  font-family: 'DM Sans', monospace; font-size: 0.62rem;
   letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--h-text-faint); background: none; border: none;
   cursor: pointer; transition: color 0.15s; padding: 0;
@@ -468,7 +468,7 @@
   color: var(--h-text-faint); animation: pulse 1.5s ease-in-out infinite;
 }
 .loadingH2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', serif;
   font-size: 2.5rem; font-weight: 900;
   letter-spacing: -0.02em; color: var(--h-text); margin-bottom: 0.75rem;
 }
@@ -479,26 +479,26 @@
 }
 .loadingBar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.7s ease; }
 .loadingStatus {
-  font-family: 'DM Mono', monospace; font-size: 0.62rem;
+  font-family: 'DM Sans', monospace; font-size: 0.62rem;
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--h-text-dim);
 }
 
 .resultWrap { max-width: 560px; width: 100%; padding-bottom: 3rem; }
 .resultHero { margin-bottom: 1.75rem; }
 .resultEyebrow {
-  font-family: 'DM Mono', monospace; font-size: 0.62rem;
+  font-family: 'DM Sans', monospace; font-size: 0.62rem;
   letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--h-text-dim); margin-bottom: 0.75rem;
 }
 .resultH1 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', serif;
   font-size: clamp(2rem, 6vw, 3.5rem);
   font-weight: 900; line-height: 0.95;
   letter-spacing: -0.02em; color: var(--h-text);
 }
 .resultH1 em { font-style: italic; font-weight: 400; color: var(--accent); display: block; }
 .resultTag {
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
   margin-top: 0.75rem; background: var(--gold-dim);
   display: inline-block; padding: 0.25rem 0.6rem; border-radius: 0.2rem;
@@ -519,21 +519,21 @@
 }
 .profileTitle { font-size: 0.8rem; font-weight: 700; color: var(--h-text); text-transform: uppercase; letter-spacing: 0.06em; }
 .profileLock {
-  font-family: 'DM Mono', monospace; font-size: 0.58rem;
+  font-family: 'DM Sans', monospace; font-size: 0.58rem;
   letter-spacing: 0.08em; color: var(--h-text-dim); text-transform: uppercase;
 }
 .dimRows { display: flex; flex-direction: column; gap: 1rem; }
 .dimRow { display: flex; align-items: center; gap: 0.9rem; }
 .blurred { filter: blur(5px); pointer-events: none; user-select: none; }
 .dimName {
-  font-family: 'DM Mono', monospace; font-size: 0.58rem;
+  font-family: 'DM Sans', monospace; font-size: 0.58rem;
   letter-spacing: 0.07em; text-transform: uppercase;
   color: var(--h-text-dim); width: 120px; flex-shrink: 0;
 }
 .dimBarBg { flex: 1; height: 3px; background: var(--h-surface-2); border-radius: 2px; overflow: hidden; }
 .dimBarFill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 1s ease; }
 .dimScore {
-  font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  font-family: 'DM Sans', monospace; font-size: 0.6rem;
   color: var(--h-text-dim); width: 30px; text-align: right; flex-shrink: 0;
 }
 
@@ -542,7 +542,7 @@
   border-radius: 0.35rem; padding: 1.4rem; margin-bottom: 1.1rem;
 }
 .matchBadge {
-  font-family: 'DM Mono', monospace; font-size: 0.58rem;
+  font-family: 'DM Sans', monospace; font-size: 0.58rem;
   letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--green); margin-bottom: 0.5rem;
 }
@@ -556,7 +556,7 @@
 }
 .unlockLeft { flex: 1; }
 .unlockPrice {
-  font-family: 'Playfair Display', serif; font-size: 2rem;
+  font-family: 'Space Grotesk', serif; font-size: 2rem;
   font-weight: 900; color: var(--accent); line-height: 1; margin-bottom: 0.3rem;
 }
 .unlockLabel { font-size: 0.8rem; color: var(--h-text-dim); line-height: 1.55; }
@@ -621,3 +621,6 @@
   .otpBox { width: 38px; height: 48px; font-size: 1.15rem; }
   .otpRow { gap: .3rem; }
 }
+
+/* Readable onboarding controls, without changing questions or consent. */
+.screen{font-family:var(--font-ui)}.screen h1,.screen h2{font-family:var(--font-display);font-style:normal;letter-spacing:-.04em}.screen button{font-family:var(--font-ui)}

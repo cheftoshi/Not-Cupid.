@@ -60,7 +60,7 @@ test.describe('authenticated test-realm mobile path', () => {
       await expect(page).not.toHaveURL(/\/login/);
       await expect(page.locator('body')).toBeVisible();
       // A page without its stylesheet can accidentally pass a width check.
-      await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('Inter');
+      await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('DM Sans');
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       await page.evaluate(() => document.documentElement.style.fontSize = '200%');
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
@@ -252,6 +252,7 @@ test.describe('authenticated test-realm mobile path', () => {
   test('Friend DM keeps failed text through polling and retries a lost acknowledgement with one ID', async ({ page }) => {
     const otherId = '00000000-0000-4000-8000-000000000111';
     const attempts: string[] = [];
+    let reads = 0;
     let saved: any = null;
     await page.route('**/api/friend/roster', route => route.fulfill({ json: {
       matches: [{ otherId, name: 'QA Friend', connected: true, iAccepted: true, theyAccepted: true }], sealedCount: 0,
@@ -264,6 +265,7 @@ test.describe('authenticated test-realm mobile path', () => {
         if (attempts.length === 1) return route.abort('connectionfailed');
         return route.fulfill({ json: { message: saved } });
       }
+      reads++;
       return route.fulfill({ json: { messages: attempts.length > 1 ? [saved] : [], unread: {} } });
     });
     await page.goto(`/friends?dm=${otherId}`);
@@ -274,7 +276,10 @@ test.describe('authenticated test-realm mobile path', () => {
     await input.fill('Test hello');
     await dialog.getByRole('button', { name: 'send', exact: true }).click();
     await expect(dialog.getByRole('button', { name: 'Not confirmed · retry' })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Reload chat' }).click();
+    // A successful background poll may already remove the transient reload button.
+    // Wait for the next read itself, then verify the unconfirmed message survives it.
+    const previousReads = reads;
+    await expect.poll(() => reads, { timeout: 12_000 }).toBeGreaterThan(previousReads);
     await expect(dialog.getByText('Test hello', { exact: true })).toHaveCount(1);
     await dialog.getByRole('button', { name: 'Not confirmed · retry' }).click();
     await expect.poll(() => attempts.length).toBe(2);
@@ -337,7 +342,8 @@ test.describe('authenticated test-realm mobile path', () => {
       if (route.request().method() === 'POST') { sends++; return route.fulfill({ status: 503, json: {} }); }
       return route.fulfill({ status: recovered ? 200 : 503, json: recovered ? { comments: [] } : {} });
     });
-    await page.goto('/friends?view=scene');
+    // An explicit plan deep link retains the legacy participant-chat surface.
+    await page.goto(`/friends?view=scene&plan=${id}`);
     await page.getByRole('button', { name: 'I agree — let me in →' }).click();
     const card = page.locator(`#scene-plan-${id}`);
     await card.getByRole('button', { name: /save/ }).click();

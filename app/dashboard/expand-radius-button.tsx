@@ -37,8 +37,8 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
 
   return (
     <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.7rem' }}>
-        match distance — searching within <strong style={{ color: '#2563ff' }}>{r} mi</strong>
+      <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.7rem' }}>
+        match distance — searching within <strong style={{ color: '#064c48' }}>{r} mi</strong>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
         {options.map((v) => {
@@ -49,12 +49,12 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
               onClick={() => choose(v)}
               disabled={busy}
               style={{
-                background: active ? '#2563ff' : 'var(--h-surface)',
+                background: active ? '#064c48' : 'var(--h-surface)',
                 color: active ? '#fff' : 'var(--h-accent)',
-                border: `1.5px solid ${active ? '#2563ff' : 'var(--h-border)'}`,
+                border: `1.5px solid ${active ? '#064c48' : 'var(--h-border)'}`,
                 borderRadius: 999,
                 padding: '0.5rem 1rem',
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "'DM Sans', monospace",
                 fontSize: '0.62rem',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
@@ -68,7 +68,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
           );
         })}
       </div>
-      <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-faint)', marginTop: '0.7rem', lineHeight: 1.45 }}>
+      <div style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.78rem', color: 'var(--h-text-faint)', marginTop: '0.7rem', lineHeight: 1.45 }}>
         closer = fewer but nearer matches · wider = a bigger pool. the algo re-runs every 20 min.
       </div>
     </div>

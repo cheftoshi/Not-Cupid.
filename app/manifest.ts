@@ -4,7 +4,7 @@ import type { MetadataRoute } from 'next';
 // the installed app its name, icon and standalone window.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'NotCupid — A Connection Experiment',
+    name: 'NotCupid — A place to find your people.',
     short_name: 'NotCupid',
     description:
       'Find member-created plans near you. Meet for a walk, a date, or a small-group hangout.',
@@ -13,8 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/hub',
     display: 'standalone',
     display_override: ['standalone', 'minimal-ui', 'browser'],
-    background_color: '#f6f6f6',
-    theme_color: '#ff6a1f',
+    background_color: '#f7f5ee',
+    theme_color: '#064c48',
     orientation: 'portrait',
     categories: ['social', 'lifestyle'],
     icons: [

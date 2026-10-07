@@ -52,12 +52,12 @@ function LockedScreen({ reason }: { reason: string }) {
   return (
     <main style={{ minHeight: '100vh', background: 'var(--h-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ maxWidth: 480, background: 'var(--h-surface)', padding: '2.5rem', border: '1px solid var(--h-border)', borderRadius: 14 }}>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
+        <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
           locked
         </div>
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, color: 'var(--h-text)', margin: '0 0 16px 0' }}>Not yet.</h1>
-        <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65 }}>{reason}</p>
-        <a href="/dashboard" style={{ display: 'inline-block', marginTop: 18, fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#1b46c9', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        <h1 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 28, color: 'var(--h-text)', margin: '0 0 16px 0' }}>Not yet.</h1>
+        <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65 }}>{reason}</p>
+        <a href="/dashboard" style={{ display: 'inline-block', marginTop: 18, fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           ← back to dashboard
         </a>
       </div>

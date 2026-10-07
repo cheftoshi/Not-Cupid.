@@ -31,9 +31,9 @@ type Event = {
 };
 type Profile = { photo: boolean; quiz: boolean; bio: boolean; gender: string; seekingGenders: string[]; age: number | null; ageMin: number; ageMax: number; interests: number; archetype: string | null };
 
-const ORANGE = '#ff6a1f';
-const ORANGE_DEEP = '#d2530f';
-const BLUE = '#2563ff';
+const ORANGE = '#8a6500';
+const ORANGE_DEEP = '#765600';
+const BLUE = '#064c48';
 const GREEN = '#2d7a4f';
 const GENDERS = [['m', 'a man'], ['f', 'a woman'], ['nb', 'non-binary / another identity']];
 const SEEKING_GENDERS = [['f', 'women'], ['m', 'men'], ['nb', 'non-binary / another identity']];
@@ -354,7 +354,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
       {showRulesGate && (
         <div role="presentation" style={rulesBackdrop}>
           <section role="dialog" aria-modal="true" aria-labelledby="experiment-rules-title" style={rulesModal}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>before you join · 2 minutes</div>
+            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.56rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>before you join · 2 minutes</div>
             <h2 id="experiment-rules-title" style={{ ...cardH, fontSize: 'clamp(1.8rem,8vw,2.45rem)', marginTop: '0.45rem' }}>the rules, without the legal fog.</h2>
             <p style={{ ...cardP, fontSize: '0.94rem' }}>This is a free, compatibility-led Dating Experiment—not a blind date and not a paid-entry raffle.</p>
             <div style={{ display: 'grid', gap: '0.65rem', marginTop: '1rem' }}>
@@ -367,7 +367,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             </div>
             <p style={{ margin: '0.9rem 0 0', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)' }}>No purchase necessary. Four people maximum across two winning pairs. Payment and Pro status never affect selection. Reviewing this summary is not entry or legal consent—you will confirm each required notice separately in the form.</p>
             <div style={{ display: 'grid', gap: '0.55rem', marginTop: '1rem' }}>
-              <button type="button" onClick={continueFromRules} style={{ border: 'none', borderRadius: 14, padding: '0.85rem 1rem', background: ORANGE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.45rem', letterSpacing: '0.04em', cursor: 'pointer' }}>I understand — continue →</button>
+              <button type="button" onClick={continueFromRules} style={{ border: 'none', borderRadius: 14, padding: '0.85rem 1rem', background: ORANGE, color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.45rem', letterSpacing: '0.04em', cursor: 'pointer' }}>I understand — continue →</button>
               <Link href="/dating-experiment/terms" target="_blank" style={{ ...btnGhost, textAlign: 'center' }}>read the full Official Rules ↗</Link>
               <Link href="/hub" style={{ textAlign: 'center', color: 'var(--h-text-faint)', fontSize: '0.72rem' }}>not now — back to hub</Link>
             </div>
@@ -379,17 +379,17 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
         margin: '0 auto',
         padding: 'calc(1.5rem + env(safe-area-inset-top, 0px)) calc(1.25rem + env(safe-area-inset-right, 0px)) calc(4rem + env(safe-area-inset-bottom, 0px)) calc(1.25rem + env(safe-area-inset-left, 0px))',
       }}>
-        <Link href="/hub" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← hub</Link>
+        <Link href="/hub" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← hub</Link>
 
         {ev.rehearsal && (
-          <div role="status" style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', border: '1px solid rgba(37,99,255,0.35)', borderRadius: 12, background: 'rgba(37,99,255,0.08)', color: 'var(--h-text-dim)', fontSize: '0.78rem', lineHeight: 1.45 }}>
+          <div role="status" style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', border: '1px solid rgba(6,76,72,0.35)', borderRadius: 12, background: 'rgba(6,76,72,0.08)', color: 'var(--h-text-dim)', fontSize: '0.78rem', lineHeight: 1.45 }}>
             <b style={{ color: 'var(--h-text)' }}>Private admin rehearsal.</b> You can test the real form, optional video upload, submission, persistence, and withdrawal. Public entries are still closed.
           </div>
         )}
 
-        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
-        <h1 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
-        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
+        <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: ORANGE_DEEP, margin: '1.5rem 0 0.6rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.city}</div>
+        <h1 style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.2rem,8vw,3.2rem)', lineHeight: 1.02, margin: '0 0 0.6rem' }}>{ev.tagline}</h1>
+        <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 1.75rem' }}>
           up to two compatibility-led options, private mutual choices, and up to {ev.winnerPairCount || 2} dinner pairs covered to <b>${ev.budget} each*</b>. <b>{ev.dateLabel}</b>.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', margin: '-0.85rem 0 1.25rem' }}>
@@ -397,12 +397,12 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           <Link href="/dating-experiment/terms" style={infoLink}>experiment terms</Link>
           <Link href="/safety" style={infoLink}>safety</Link>
         </div>
-        <div style={{ ...card, marginBottom: '1.1rem', padding: '0.9rem 1rem', background: 'rgba(37,99,255,0.05)', borderColor: 'rgba(37,99,255,0.22)' }}>
+        <div style={{ ...card, marginBottom: '1.1rem', padding: '0.9rem 1rem', background: 'rgba(6,76,72,0.05)', borderColor: 'rgba(6,76,72,0.22)' }}>
           <p style={{ ...cardP, margin: 0, fontSize: '0.82rem' }}><b>Your profile comes with you.</b> We reuse your existing profile, quiz, photos, interests, and compatibility signals. Your optional experiment video, four quick answers, preferences, consent, and shortlist choices stay separate for this round and never change your regular Love Line.</p>
         </div>
 
         {!loaded ? (
-          <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>
+          <div style={{ ...card, textAlign: 'center', color: 'var(--h-text-faint)', fontFamily: "'DM Sans', monospace", fontSize: '0.7rem', letterSpacing: '0.1em' }}>loading your entry…</div>
         ) : statusError ? (
           <div role="alert" style={card}>
             <h2 style={cardH}>we couldn’t load your experiment status.</h2>
@@ -443,7 +443,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             <Link href="/hub" style={{ ...backLink, display: 'inline-block', marginTop: '0.9rem' }}>back to hub →</Link>
           </div>
         ) : st?.outcome?.state === 'not-selected' ? (
-          <div style={{ ...card, border: '1px solid rgba(37,99,255,0.28)', textAlign: 'center' }}>
+          <div style={{ ...card, border: '1px solid rgba(6,76,72,0.28)', textAlign: 'center' }}>
             <div style={{ fontSize: '2rem' }}>✦</div>
             <h2 style={cardH}>your experiment entry is complete.</h2>
             <p style={cardP}>A dinner pair wasn’t confirmed for you this time. Your yes, pass, and favorite choices remain private—we never reveal whether another person passed or did not respond.</p>
@@ -485,13 +485,13 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                 {st.other.introVideoPreviewUrl && (
                   <video src={st.other.introVideoPreviewUrl} controls playsInline preload="metadata" style={{ width: '100%', display: 'block', marginTop: '0.65rem', borderRadius: 10, background: '#000' }} />
                 )}
-                {st.other.orientation && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{st.other.orientation}</p>}
+                {st.other.orientation && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', color: BLUE, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{st.other.orientation}</p>}
                 {st.other.conversationStarter && <p style={{ margin: '0.7rem 0 0', fontSize: '0.84rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}><b style={{ color: 'var(--h-text)' }}>ask {other} about:</b> {st.other.conversationStarter}</p>}
               </div>
             )}
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', marginTop: '1rem' }}>
-              <button onClick={() => respond(true)} disabled={busy} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 999, padding: '0.7rem 1.9rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.35rem', letterSpacing: '0.04em', cursor: busy ? 'wait' : 'pointer' }}>{busy ? '…' : 'accept →'}</button>
-              <button onClick={() => respond(false)} disabled={busy} style={{ background: 'none', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>pass privately</button>
+              <button onClick={() => respond(true)} disabled={busy} style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 999, padding: '0.7rem 1.9rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.35rem', letterSpacing: '0.04em', cursor: busy ? 'wait' : 'pointer' }}>{busy ? '…' : 'accept →'}</button>
+              <button onClick={() => respond(false)} disabled={busy} style={{ background: 'none', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>pass privately</button>
             </div>
           </div>
         ) : (st?.draw?.myAccepted && !st.draw.bothAccepted) ? (
@@ -503,12 +503,12 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
           </div>
         ) : (done || st?.entered) ? (
           // ── entered, not yet drawn ──
-          <div style={{ background: 'linear-gradient(135deg, rgba(255,106,31,0.12), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.5rem', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(244,197,66,0.12), var(--h-surface))', border: `2px solid ${ORANGE}`, borderRadius: 18, padding: '1.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2.2rem' }}>🎉</div>
-            <h2 style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', margin: '0.3rem 0' }}>you’re in{done ? `, ${firstName.toLowerCase()}` : ''}.</h2>
+            <h2 style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '1.6rem', margin: '0.3rem 0' }}>you’re in{done ? `, ${firstName.toLowerCase()}` : ''}.</h2>
             <p style={{ color: 'var(--h-text-dim)', fontSize: '0.92rem', margin: '0 0 1rem' }}>{st?.outcome?.state === 'round-waiting' ? <>Round {st.shortlistRound?.roundNumber || 1} is underway. We didn’t find a reciprocal option that fit your preferences in this shortlist. Your entry remains active if another round is needed. No action is required.</> : shortlistUnderway ? <>private shortlist selection is underway. We’ll update you when your round status changes.</> : <>shortlists form <b>{ev.drawLabel}</b>. We’ll update you when your round status changes.</>} </p>
-            {!pushOn && <button onClick={enablePush} style={{ display: 'block', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '1px solid rgba(255,106,31,0.4)', color: ORANGE_DEEP, borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on experiment notifications</button>}
-            <Link href="/hub" style={{ display: 'inline-block', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.2rem', textDecoration: 'none' }}>back to hub →</Link>
+            {!pushOn && <button onClick={enablePush} style={{ display: 'block', margin: '0 auto 0.9rem', background: 'var(--h-surface-2)', border: '1px solid rgba(244,197,66,0.4)', color: ORANGE_DEEP, borderRadius: 999, padding: '0.5rem 1.1rem', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>🔔 turn on experiment notifications</button>}
+            <Link href="/hub" style={{ display: 'inline-block', background: ORANGE, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', textDecoration: 'none' }}>back to hub →</Link>
             <button onClick={withdraw} disabled={busy} style={{ display: 'block', margin: '0.9rem auto 0', border: 'none', background: 'none', color: 'var(--h-text-faint)', textDecoration: 'underline', cursor: busy ? 'wait' : 'pointer', fontSize: '0.72rem' }}>withdraw my entry</button>
           </div>
         ) : ev.closed ? (
@@ -534,7 +534,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   <div id={`experiment-cred-${c.key}`} key={c.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: c.ok ? 'var(--h-text)' : 'var(--h-text-dim)', scrollMarginTop: '6rem' }}>
                     <span style={{ color: c.ok ? GREEN : ORANGE_DEEP, fontWeight: 700 }}>{c.ok ? '✓' : '○'}</span>
                     <span style={{ flex: 1 }}>{c.label}</span>
-                    {!c.ok && c.fix && <Link href={c.fix} style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>fix →</Link>}
+                    {!c.ok && c.fix && <Link href={c.fix} style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: ORANGE_DEEP, textDecoration: 'none' }}>fix →</Link>}
                   </div>
                 ))}
               </div>
@@ -583,7 +583,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   <div style={{ display: 'grid', gap: '0.65rem' }}>
                     {availabilityGroups.map((group) => (
                       <fieldset key={group.key} style={{ margin: 0, padding: '0.65rem', border: '1px solid var(--h-border)', borderRadius: 12 }}>
-                        <legend style={{ padding: '0 0.35rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', fontWeight: 700 }}>{group.label}</legend>
+                        <legend style={{ padding: '0 0.35rem', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', fontWeight: 700 }}>{group.label}</legend>
                         <div style={{ display: 'grid', gap: '0.4rem' }}>
                           {group.slots.map((slot) => (
                             <button key={slot.key} type="button" aria-pressed={availableSlotKeys.includes(slot.key)} onClick={() => toggleAvailableSlot(slot.key)} style={{ ...chip(availableSlotKeys.includes(slot.key)), width: '100%', textAlign: 'left' }}>{availableSlotKeys.includes(slot.key) ? '✓ ' : ''}{slot.timeLabel || slot.label}</button>
@@ -631,7 +631,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
                   />
                 </div>
               </div>
-              <div style={{ marginTop: '0.85rem', padding: '0.7rem 0.75rem', borderRadius: 11, background: 'rgba(37,99,255,0.06)', border: '1px solid rgba(37,99,255,0.18)', color: 'var(--h-text-dim)', fontSize: '0.73rem', lineHeight: 1.5 }}>
+              <div style={{ marginTop: '0.85rem', padding: '0.7rem 0.75rem', borderRadius: 11, background: 'rgba(6,76,72,0.06)', border: '1px solid rgba(6,76,72,0.18)', color: 'var(--h-text-dim)', fontSize: '0.73rem', lineHeight: 1.5 }}>
                 <b style={{ color: 'var(--h-text)' }}>How the fit score works:</b> 75% core NotCupid compatibility, 15% shared interests, and 10% this questionnaire. Mutual gender, age, location, and date/time preferences are hard gates—not score boosts.
               </div>
             </div>
@@ -641,7 +641,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               <div style={cardLabel}>④ your intro video <span style={{ color: 'var(--h-text-faint)' }}>· optional</span></div>
               <p style={cardP}>Skip this if it is not your thing. If you add one, aim for about 10 seconds: “hi, I’m {firstName} — my ideal Boston date is…” Only a selected potential date can view it, and it never changes your fit score or odds.</p>
               {videoUrl ? (
-                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', color: GREEN, letterSpacing: '0.06em' }}>✓ {videoDuration?.toFixed(1)}s video added · <button type="button" onClick={removeVideo} disabled={uploading} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: uploading ? 'wait' : 'pointer', textDecoration: 'underline' }}>{uploading ? 'removing…' : 'remove'}</button></div>
+                <div style={{ marginTop: '0.7rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', color: GREEN, letterSpacing: '0.06em' }}>✓ {videoDuration?.toFixed(1)}s video added · <button type="button" onClick={removeVideo} disabled={uploading} style={{ background: 'none', border: 'none', color: ORANGE_DEEP, cursor: uploading ? 'wait' : 'pointer', textDecoration: 'underline' }}>{uploading ? 'removing…' : 'remove'}</button></div>
               ) : (
                 <label style={{ ...btnGhost, display: 'inline-block', marginTop: '0.7rem', cursor: uploading ? 'wait' : 'pointer' }}>
                   {uploading ? 'uploading…' : '🎬 upload a video'}
@@ -676,8 +676,8 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             </div>
 
             {!canEnter && (
-              <div id="experiment-gate-summary" role="status" aria-live="polite" style={{ padding: '0.85rem 0.95rem', borderRadius: 14, border: '1px solid rgba(255,106,31,0.34)', background: 'rgba(255,106,31,0.07)' }}>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>{gateIssues.length} {gateIssues.length === 1 ? 'item' : 'items'} left</div>
+              <div id="experiment-gate-summary" role="status" aria-live="polite" style={{ padding: '0.85rem 0.95rem', borderRadius: 14, border: '1px solid rgba(244,197,66,0.34)', background: 'rgba(244,197,66,0.07)' }}>
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>{gateIssues.length} {gateIssues.length === 1 ? 'item' : 'items'} left</div>
                 <p style={{ margin: '0.35rem 0 0', color: 'var(--h-text)', fontSize: '0.84rem', lineHeight: 1.45 }}><b>Next:</b> {gateIssues[0].label}.</p>
                 <details style={{ marginTop: '0.45rem' }}>
                   <summary style={{ cursor: 'pointer', color: 'var(--h-text-dim)', fontSize: '0.72rem' }}>See every missing item</summary>
@@ -692,7 +692,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
               </div>
             )}
 
-            <button type="button" onClick={enter} disabled={busy || uploading} aria-describedby={!canEnter ? 'experiment-gate-summary' : undefined} style={{ background: canEnter ? ORANGE : 'rgba(255,106,31,0.08)', color: canEnter ? '#fff' : ORANGE_DEEP, border: canEnter ? 'none' : '1px solid rgba(255,106,31,0.45)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || uploading ? 'wait' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(255,106,31,0.7)' : 'none' }}>
+            <button type="button" onClick={enter} disabled={busy || uploading} aria-describedby={!canEnter ? 'experiment-gate-summary' : undefined} style={{ background: canEnter ? ORANGE : 'rgba(244,197,66,0.08)', color: canEnter ? '#fff' : ORANGE_DEEP, border: canEnter ? 'none' : '1px solid rgba(244,197,66,0.45)', borderRadius: 16, padding: '1.05rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.7rem', letterSpacing: '0.03em', cursor: busy || uploading ? 'wait' : 'pointer', boxShadow: canEnter ? '0 16px 44px -18px rgba(244,197,66,0.7)' : 'none' }}>
               {busy ? '…' : canEnter ? '✦ join the dating experiment' : 'show me what’s missing ↑'}
             </button>
             <p style={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--h-text-faint)', margin: '0.4rem 0 0' }}>
@@ -700,7 +700,7 @@ export default function RaffleClient({ firstName, eligible, profile, event }: {
             </p>
           </div>
         )}
-        {err && <p role="alert" aria-live="assertive" style={{ color: ORANGE_DEEP, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', marginTop: '1rem' }}>{err}</p>}
+        {err && <p role="alert" aria-live="assertive" style={{ color: ORANGE_DEEP, fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', marginTop: '1rem' }}>{err}</p>}
       </div>
     </div>
   );
@@ -852,7 +852,7 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
         {offers.length === 1 && (
           <p style={{ ...cardP, marginTop: '0.55rem', fontSize: '0.78rem' }}><b>Why one option?</b> This was the only new person who cleared both people’s age and gender preferences, shared dinner availability, and the minimum fit score. We don’t force a weaker or one-way second choice.</p>
         )}
-        {round?.responseDeadline && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', color: 'var(--h-text-faint)', letterSpacing: '0.05em' }}>respond by {new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' }).format(new Date(round.responseDeadline))}</p>}
+        {round?.responseDeadline && <p style={{ margin: '0.65rem 0 0', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', color: 'var(--h-text-faint)', letterSpacing: '0.05em' }}>respond by {new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' }).format(new Date(round.responseDeadline))}</p>}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: '0.8rem' }}>
         {offers.map((offer) => {
@@ -860,7 +860,7 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
           const first = (person?.name || 'this person').split(' ')[0];
           const choice = decisions[offer.id] || { accept: null, favorite: false };
           return (
-            <div key={offer.id} style={{ ...card, padding: '0.9rem', border: choice.accept === true ? `2px solid ${BLUE}` : choice.accept === false ? '1px solid var(--h-border)' : '1px solid rgba(37,99,255,0.3)' }}>
+            <div key={offer.id} style={{ ...card, padding: '0.9rem', border: choice.accept === true ? `2px solid ${BLUE}` : choice.accept === false ? '1px solid var(--h-border)' : '1px solid rgba(6,76,72,0.3)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '0.35rem' }}>
                 {[person?.photo_url, ...(person?.gallery || [])].filter(Boolean).slice(0, 4).map((src: string, index: number) => (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -868,8 +868,8 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
                 ))}
               </div>
               <div style={{ marginTop: '0.65rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem' }}>
-                <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '1.25rem' }}>{first}{person?.age ? `, ${person.age}` : ''}</h3>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', color: BLUE }}>{offer.score}% fit</span>
+                <h3 style={{ margin: 0, fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', fontSize: '1.25rem' }}>{first}{person?.age ? `, ${person.age}` : ''}</h3>
+                <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', color: BLUE }}>{offer.score}% fit</span>
               </div>
               {person?.introVideoPreviewUrl && <video src={person.introVideoPreviewUrl} controls playsInline preload="metadata" style={{ width: '100%', display: 'block', marginTop: '0.55rem', borderRadius: 9, background: '#000' }} />}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.55rem' }}>
@@ -895,7 +895,7 @@ function ShortlistPanel({ offers, round, budget, busy, setBusy, setErr }: {
           );
         })}
       </div>
-      <button onClick={submit} disabled={!complete || busy} style={{ width: '100%', marginTop: '0.9rem', border: 'none', borderRadius: 14, padding: '0.9rem', background: complete ? ORANGE : 'var(--h-surface-2)', color: complete ? '#fff' : 'var(--h-text-faint)', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.45rem', letterSpacing: '0.04em', cursor: complete && !busy ? 'pointer' : 'not-allowed' }}>{busy ? 'sealing…' : complete ? 'seal my private choices →' : 'decide on every option'}</button>
+      <button onClick={submit} disabled={!complete || busy} style={{ width: '100%', marginTop: '0.9rem', border: 'none', borderRadius: 14, padding: '0.9rem', background: complete ? ORANGE : 'var(--h-surface-2)', color: complete ? '#fff' : 'var(--h-text-faint)', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.45rem', letterSpacing: '0.04em', cursor: complete && !busy ? 'pointer' : 'not-allowed' }}>{busy ? 'sealing…' : complete ? 'seal my private choices →' : 'decide on every option'}</button>
     </div>
   );
 }
@@ -910,21 +910,21 @@ function RuleLine({ icon, title, body }: { icon: string; title: string; body: st
 }
 
 const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 16, padding: '1.1rem 1.2rem' };
-const cardH: React.CSSProperties = { fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '1.35rem', margin: '0 0 0.35rem', color: 'var(--h-text)' };
+const cardH: React.CSSProperties = { fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '1.35rem', margin: '0 0 0.35rem', color: 'var(--h-text)' };
 const cardP: React.CSSProperties = { fontFamily: 'system-ui, sans-serif', fontSize: '0.88rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: 0 };
-const cardLabel: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 };
-const qLabel: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' };
-const btnGhost: React.CSSProperties = { minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.55rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
-const numIn: React.CSSProperties = { width: 64, minHeight: 44, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.5rem', color: 'var(--h-text)', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem' };
-const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
-const infoLink: React.CSSProperties = { display: 'inline-block', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.42rem 0.7rem', background: 'var(--h-surface)', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
+const cardLabel: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 };
+const qLabel: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' };
+const btnGhost: React.CSSProperties = { minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.55rem 1.2rem', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
+const numIn: React.CSSProperties = { width: 64, minHeight: 44, background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.5rem', color: 'var(--h-text)', fontFamily: "'DM Sans', monospace", fontSize: '0.85rem' };
+const backLink: React.CSSProperties = { display: 'inline-block', marginTop: '1rem', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
+const infoLink: React.CSSProperties = { display: 'inline-block', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.42rem 0.7rem', background: 'var(--h-surface)', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 const choiceBtn: React.CSSProperties = { minHeight: 44, border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.55rem 0.35rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' };
 const reasonBtn: React.CSSProperties = { minHeight: 44, maxWidth: '100%', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.55rem 0.7rem', fontSize: '0.7rem', lineHeight: 1.3, textAlign: 'left', cursor: 'pointer' };
-const profileFact: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', color: BLUE, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0.2rem 0.35rem', borderRadius: 999, background: 'rgba(37,99,255,0.08)' };
+const profileFact: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', color: BLUE, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0.2rem 0.35rem', borderRadius: 999, background: 'rgba(6,76,72,0.08)' };
 const rulesBackdrop: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 'max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))', background: 'rgba(10,8,14,0.72)', backdropFilter: 'blur(8px)', overflowY: 'auto' };
-const rulesModal: React.CSSProperties = { width: 'min(100%, 520px)', maxHeight: 'calc(100dvh - 2rem)', overflowY: 'auto', boxSizing: 'border-box', background: 'var(--h-surface)', border: '1px solid rgba(255,106,31,0.34)', borderRadius: 22, padding: 'clamp(1rem,4vw,1.45rem)', boxShadow: '0 26px 80px rgba(0,0,0,0.35)' };
+const rulesModal: React.CSSProperties = { width: 'min(100%, 520px)', maxHeight: 'calc(100dvh - 2rem)', overflowY: 'auto', boxSizing: 'border-box', background: 'var(--h-surface)', border: '1px solid rgba(244,197,66,0.34)', borderRadius: 22, padding: 'clamp(1rem,4vw,1.45rem)', boxShadow: '0 26px 80px rgba(0,0,0,0.35)' };
 function chip(on: boolean): React.CSSProperties {
-  return { minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: on ? ORANGE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? ORANGE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', cursor: 'pointer' };
+  return { minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: on ? ORANGE : 'var(--h-surface-2)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? ORANGE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.04em', cursor: 'pointer' };
 }
 
 function readVideoDuration(file: File): Promise<number> {

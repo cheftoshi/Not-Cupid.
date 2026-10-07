@@ -7,8 +7,8 @@ import { compressImage } from '@/lib/compress-image';
 
 const INK = '#241d12', LINE = '#e8842b', LINE_DEEP = '#c96a18', CREAM = 'var(--h-surface)';
 const card: React.CSSProperties = { background: 'var(--h-surface)', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `5px 5px 0 ${INK}`, padding: '1.25rem' };
-const chip: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', background: 'var(--h-surface-3)', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.25rem 0.6rem' };
-const label: React.CSSProperties = { fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', margin: '1.5rem 0 0.6rem' };
+const chip: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', background: 'var(--h-surface-3)', border: `2px solid ${INK}`, borderRadius: 999, padding: '0.25rem 0.6rem' };
+const label: React.CSSProperties = { fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', margin: '1.5rem 0 0.6rem' };
 
 type Init = { name: string; photo_url: string | null; gallery: string[]; bio: string; occupation: string; music: string[]; food: string[]; hobbies: string[] };
 
@@ -102,14 +102,14 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
     <div style={{ minHeight: '100vh', background: `linear-gradient(170deg, ${CREAM} 0%, var(--h-surface-2) 60%, var(--h-surface-3) 100%)`, color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}`, textDecoration: 'none' }}>FRIEND LINE</a>
-          <a href="/friends" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>← back to hub</a>
+          <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `2px solid ${INK}`, textDecoration: 'none' }}>FRIEND LINE</a>
+          <a href="/friends" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>← back to hub</a>
         </div>
 
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.4rem)', lineHeight: 0.88, color: LINE, WebkitTextStroke: `2px ${INK}`, textShadow: `4px 4px 0 rgba(36,29,18,0.18)`, margin: 0 }}>
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.4rem)', lineHeight: 0.88, color: LINE, WebkitTextStroke: `2px ${INK}`, textShadow: `4px 4px 0 rgba(36,29,18,0.18)`, margin: 0 }}>
           your friend card.
         </h1>
-        <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.4rem 0 1.5rem' }}>
+        <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: LINE_DEEP, margin: '0.4rem 0 1.5rem' }}>
           this is what your crews see — make it you. (separate from your dating profile.)
         </p>
 
@@ -119,7 +119,7 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
             {photo ? <img src={photo} alt="" style={{ width: 96, height: 96, borderRadius: 14, objectFit: 'cover', border: `3px solid ${INK}` }} />
               : <div style={{ width: 96, height: 96, borderRadius: 14, border: `3px dashed ${LINE}`, background: 'var(--h-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>📸</div>}
             <div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem' }}>main photo</div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem' }}>main photo</div>
               <label style={{ ...chip, cursor: 'pointer', display: 'inline-block', marginTop: '0.4rem' }}>
                 {photo ? 'change' : 'upload'} <input type="file" accept="image/*" onChange={uploadPhoto} disabled={busy} style={{ display: 'none' }} />
               </label>
@@ -150,7 +150,7 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
         <div style={card}>
           <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} rows={3}
             placeholder="who are you when you're not working? what's your ideal weekend?"
-            style={{ width: '100%', border: `2px solid ${INK}`, borderRadius: 10, padding: '0.6rem 0.8rem', fontSize: '0.9rem', fontFamily: 'Georgia,serif', marginBottom: '0.6rem' }} />
+            style={{ width: '100%', border: `2px solid ${INK}`, borderRadius: 10, padding: '0.6rem 0.8rem', fontSize: '0.9rem', fontFamily: 'Space Grotesk,serif', marginBottom: '0.6rem' }} />
           <input value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="what do you do?"
             style={{ width: '100%', border: `2px solid ${INK}`, borderRadius: 10, padding: '0.5rem 0.8rem', fontSize: '0.9rem' }} />
         </div>
@@ -158,37 +158,37 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
         {/* INTERESTS */}
         <div style={label}>what you&apos;re into</div>
         <div style={card}>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.4rem' }}>music</div>
+          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.4rem' }}>music</div>
           <TagField value={music} onChange={setMusic} placeholder="add a genre / artist…" />
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>food</div>
+          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>food</div>
           <TagField value={food} onChange={setFood} placeholder="add a cuisine / spot…" />
-          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>hobbies &amp; obsessions</div>
+          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>hobbies &amp; obsessions</div>
           <TagField value={hobbies} onChange={setHobbies} placeholder="add a hobby…" />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
-          <button onClick={save} disabled={busy} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.3rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: `3px solid ${INK}`, borderRadius: 12, padding: '0.6rem 1.75rem', boxShadow: `4px 4px 0 ${INK}`, cursor: 'pointer' }}>
+          <button onClick={save} disabled={busy} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: `3px solid ${INK}`, borderRadius: 12, padding: '0.6rem 1.75rem', boxShadow: `4px 4px 0 ${INK}`, cursor: 'pointer' }}>
             {busy ? 'saving…' : 'save my card →'}
           </button>
-          {msg && <span style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', color: LINE_DEEP }}>{msg}</span>}
+          {msg && <span style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: LINE_DEEP }}>{msg}</span>}
         </div>
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.6rem' }}>
+        <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.6rem' }}>
           photos save instantly · bio &amp; interests save when you hit the button
         </p>
 
         {/* START FRESH — wipe & re-take quiz, capped at 3 per account */}
         <div style={{ ...label, color: LINE_DEEP }}>start over</div>
         <div style={card}>
-          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.6rem' }}>
+          <p style={{ fontFamily: 'Space Grotesk,serif', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.6rem' }}>
             Vibes changed? Re-take the friend quiz to update your activities, who you&apos;re open to, and your age range. Your crews stay put.
           </p>
-          <a href="/friends/quiz?retake=1" style={{ display: 'inline-block', background: 'var(--h-surface)', color: LINE_DEEP, fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', letterSpacing: '0.06em', padding: '0.55rem 1.2rem', borderRadius: 10, border: `2.5px solid ${INK}`, boxShadow: `3px 3px 0 ${INK}`, textDecoration: 'none' }}>
+          <a href="/friends/quiz?retake=1" style={{ display: 'inline-block', background: 'var(--h-surface)', color: LINE_DEEP, fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', letterSpacing: '0.06em', padding: '0.55rem 1.2rem', borderRadius: 10, border: `2.5px solid ${INK}`, boxShadow: `3px 3px 0 ${INK}`, textDecoration: 'none' }}>
             retake friend quiz →
           </a>
         </div>
 
         <div style={card}>
-          <p style={{ fontFamily: 'Georgia,serif', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
+          <p style={{ fontFamily: 'Space Grotesk,serif', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
             Want a clean slate? This wipes your quiz answers, profile, and current matches on <strong>both</strong> the Friend and Love lines, then you re-take the quiz. Your account stays. Limited to 3 times.
           </p>
           <RefreshProfileButton usedCount={refreshCount} />

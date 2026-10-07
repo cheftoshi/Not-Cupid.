@@ -1,10 +1,4 @@
-// The NotCupid wordmark — single source of truth, matches the social identity.
-// "Not" in blue, "Cupid" in orange, italic Playfair serif. Use everywhere a
-// brand lockup appears (navs, headers, footers) so it's identical app-wide.
-//
-// `size` scales the whole lockup; `tagline` shows "MEET PEOPLE. NOT PROFILES."
-// underneath in the split-color mono treatment.
-
+// Shared Tide + saffron wordmark; display font is self-hosted in the root layout.
 import Link from 'next/link';
 
 export default function Wordmark({
@@ -21,17 +15,16 @@ export default function Wordmark({
   const mark = (
     <span
       style={{
-        fontFamily: "'Playfair Display', Georgia, ui-serif, serif",
-        fontStyle: 'italic',
+        fontFamily: "'Space Grotesk', Georgia, ui-serif, serif",
+        fontStyle: 'normal',
         fontWeight: 700,
         fontSize: `${size}rem`,
-        letterSpacing: '-0.01em',
+        letterSpacing: '-0.06em',
         lineHeight: 1,
         whiteSpace: 'nowrap',
       }}
     >
-      <span style={{ color: '#2563ff' }}>Not</span>
-      <span style={{ color: '#ff6a1f' }}>Cupid</span>
+      <span style={{ color: 'var(--h-text)' }}>notcupid</span><span style={{ color: 'var(--h-accent-2)' }}>.</span>
     </span>
   );
 
@@ -40,14 +33,14 @@ export default function Wordmark({
       {mark}
       <span
         style={{
-          fontFamily: "'DM Mono', ui-monospace, monospace",
+          fontFamily: "'DM Sans', ui-monospace, monospace",
           fontSize: `${size * 0.34}rem`,
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
         }}
       >
-        <span style={{ color: '#2563ff' }}>meet people. </span>
-        <span style={{ color: '#ff6a1f' }}>not profiles.</span>
+        <span style={{ color: '#064c48' }}>your connection </span>
+        <span style={{ color: '#8a6500' }}>destination.</span>
       </span>
     </span>
   ) : (

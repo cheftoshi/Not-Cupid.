@@ -19,7 +19,7 @@ export const maxDuration = 300;
 const HOUR = 60 * 60 * 1000;
 const FINAL_MIN_HOURS = 3;
 const FINAL_MAX_HOURS = 6;
-export const MUTUAL_NUDGE_VERSION = 'love-mutual-no-message-v1-2026-08-18';
+const MUTUAL_NUDGE_VERSION = 'love-mutual-no-message-v1-2026-08-18';
 
 type PendingMatch = {
   id: string;

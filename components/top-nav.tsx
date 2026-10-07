@@ -12,7 +12,7 @@ import NavExtras from '@/components/nav-extras';
 // pre-auth / focused-flow routes (landing, login, quiz, the cinematic pack).
 
 const APP_ROUTE = (p: string) =>
-  p === '/hub' ||
+  p === '/hub' || p === '/pro' ||
   p.startsWith('/dashboard') ||
   p.startsWith('/profile') ||
   p.startsWith('/match') ||
@@ -135,10 +135,10 @@ export default function TopNav() {
   const tab = (href: string, label: string, key: string, color: string) => {
     const on = active === key;
     return (
-      <Link href={href} style={{
-        fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase',
+      <Link href={href} aria-current={on ? 'page' : undefined} style={{
+        fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase',
         textDecoration: 'none', padding: '0.42rem 0.8rem', borderRadius: 999, whiteSpace: 'nowrap',
-        color: on ? '#fff' : 'var(--h-text-dim)', background: on ? color : 'transparent',
+        color: on ? (key === 'friend' ? '#493b05' : '#fff') : 'var(--h-text-dim)', background: on ? color : 'transparent',
         border: on ? '1px solid transparent' : '1px solid var(--h-border)',
         boxShadow: on ? `0 6px 16px -8px ${color}` : 'none',
         transition: 'transform .2s var(--ease), background .2s var(--ease), color .2s var(--ease)',
@@ -146,7 +146,7 @@ export default function TopNav() {
     );
   };
 
-  const linkStyle: React.CSSProperties = { fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
+  const linkStyle: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' };
 
   return (
     <header ref={navRef} data-perf-region="navigation" className="appTopNav" style={{
@@ -157,9 +157,9 @@ export default function TopNav() {
     }}>
       <Wordmark size={1.05} href="/hub" />
       <nav className="appTopNavTabs" style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexShrink: 0 }}>
-        {tab('/hub', 'Home', 'hub', '#0b0b0b')}
-        {tab('/dashboard', '💘 Love', 'love', '#2563ff')}
-        {tab('/friends', '🧡 Friend', 'friend', '#ff6a1f')}
+        {tab('/hub', 'Home', 'hub', '#064c48')}
+        {tab('/dashboard', '♡ Dating', 'love', '#064c48')}
+        {tab('/friends', '☺ Friendship', 'friend', '#f4c542')}
       </nav>
       <div className="appTopNavActions" style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexShrink: 0, flexWrap: 'wrap' }}>
         <NavExtras />

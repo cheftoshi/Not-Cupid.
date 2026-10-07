@@ -413,10 +413,10 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-start' }}>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video src={user.intro_video_preview_url || user.intro_video_url} controls playsInline style={{ width: '100%', maxWidth: 280, borderRadius: 14, background: '#000', display: 'block', border: '1px solid var(--h-border)' }} />
-              <button type="button" onClick={handleVideoRemove} style={{ background: 'none', border: 'none', color: 'var(--h-accent)', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'underline' }}>remove video</button>
+              <button type="button" onClick={handleVideoRemove} style={{ background: 'none', border: 'none', color: 'var(--h-accent)', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'underline' }}>remove video</button>
             </div>
           ) : (
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', cursor: uploadingVideo ? 'wait' : 'pointer', background: 'var(--h-surface-2)', border: '1.5px dashed var(--h-border)', borderRadius: 14, padding: '0.85rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text)' }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', cursor: uploadingVideo ? 'wait' : 'pointer', background: 'var(--h-surface-2)', border: '1.5px dashed var(--h-border)', borderRadius: 14, padding: '0.85rem 1.2rem', fontFamily: "'DM Sans', monospace", fontSize: '0.66rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text)' }}>
               {uploadingVideo ? 'uploading…' : '🎬 add a short video'}
               <input type="file" accept="video/*" className={styles.fileInput} onChange={handleVideoUpload} disabled={uploadingVideo} />
             </label>
@@ -680,7 +680,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           style={{
             marginTop: '1rem', display: 'block', width: '100%', padding: '0.9rem',
             background: 'transparent', border: '1.5px solid #c0392b', color: '#c0392b',
-            borderRadius: 12, fontFamily: "'DM Mono', monospace", fontSize: '0.7rem',
+            borderRadius: 12, fontFamily: "'DM Sans', monospace", fontSize: '0.7rem',
             letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.6 : 1,
           }}
         >

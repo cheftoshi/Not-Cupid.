@@ -8,7 +8,7 @@ import { toast } from '@/components/feedback';
 // One-click "I'm back" — lifts a matching pause WITHOUT wiping the profile or
 // spending a "start fresh" refresh. Used on the paused-state cards (both lines).
 // `accent` lets the friend side render it in orange; defaults to love-blue.
-export default function ReactivateButton({ accent = '#2563ff' }: { accent?: string }) {
+export default function ReactivateButton({ accent = '#064c48' }: { accent?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -32,7 +32,7 @@ export default function ReactivateButton({ accent = '#2563ff' }: { accent?: stri
       disabled={busy}
       style={{
         background: accent, color: '#fff', border: 'none', borderRadius: 999,
-        padding: '0.8rem 1.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem',
+        padding: '0.8rem 1.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.66rem',
         letterSpacing: '0.14em', textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
         opacity: busy ? 0.7 : 1,
       }}

@@ -4,7 +4,7 @@
   flex-direction: column;
   background: var(--h-bg);
   color: var(--h-text);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 1.5rem 1.5rem 0;
 }
 
@@ -12,7 +12,7 @@
 
 .banner {
   background: transparent;
-  border: 1px dashed rgba(37,99,255,0.4);
+  border: 1px dashed rgba(6,76,72,0.4);
   border-radius: 999px;
   padding: 0.7rem 1.25rem;
   margin-bottom: 1.75rem;
@@ -24,7 +24,7 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.banner em { font-family: Georgia, ui-serif, serif; font-style: italic; color: var(--h-accent); font-weight: 600; }
+.banner em { font-family: 'Space Grotesk', ui-serif, serif; font-style: italic; color: var(--h-accent); font-weight: 600; }
 .editLink { color: var(--h-accent); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; font-size: 0.78rem; }
 
 /* ============== MAGAZINE ARTICLE ============== */
@@ -44,8 +44,8 @@
   position: absolute;
   top: 1.25rem; right: 1.25rem;
   width: 1.5rem; height: 1.5rem;
-  border-top: 1px solid #2563ff;
-  border-right: 1px solid #2563ff;
+  border-top: 1px solid #064c48;
+  border-right: 1px solid #064c48;
   opacity: 0.5;
 }
 .mag::after {
@@ -53,8 +53,8 @@
   position: absolute;
   bottom: 1.25rem; left: 1.25rem;
   width: 1.5rem; height: 1.5rem;
-  border-bottom: 1px solid #2563ff;
-  border-left: 1px solid #2563ff;
+  border-bottom: 1px solid #064c48;
+  border-left: 1px solid #064c48;
   opacity: 0.5;
 }
 
@@ -63,17 +63,17 @@
 .coverEyebrow {
   display: flex;
   justify-content: space-between;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: #064c48;
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(37,99,255,0.2);
+  border-bottom: 1px solid rgba(6,76,72,0.2);
 }
 .coverName {
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: clamp(2.4rem, 7vw, 3.6rem);
   font-weight: 700;
@@ -82,12 +82,12 @@
   margin: 0;
   color: var(--h-text);
 }
-.coverAge { font-style: italic; font-weight: 400; color: #2563ff; }
+.coverAge { font-style: italic; font-weight: 400; color: #064c48; }
 .coverMeta {
   display: flex;
   gap: 1.25rem;
   margin-top: 0.85rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.7rem;
   color: var(--h-text-dim);
   letter-spacing: 0.04em;
@@ -114,8 +114,8 @@
 .photoEmpty {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  color: #2563ff;
-  font-family: Georgia, ui-serif, serif;
+  color: #064c48;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-style: italic;
   font-size: 1rem;
 }
@@ -138,15 +138,15 @@
 
 .videoBlock {
   margin-bottom: 1.75rem;
-  border: 1px solid rgba(37,99,255,0.22);
+  border: 1px solid rgba(6,76,72,0.22);
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(37,99,255,0.07), rgba(255,106,31,0.05));
+  background: linear-gradient(135deg, rgba(6,76,72,0.07), rgba(244,197,66,0.05));
   padding: 0.75rem;
 }
 .videoLabel {
   margin: 0.1rem 0 0.65rem;
-  color: #2563ff;
-  font-family: 'DM Mono', monospace;
+  color: #064c48;
+  font-family: 'DM Sans', monospace;
   font-size: 0.55rem;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -174,7 +174,7 @@
   position: relative;
 }
 .archeKick {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -182,22 +182,22 @@
   margin-bottom: 0.35rem;
 }
 .archeName {
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.55rem;
   line-height: 1.15;
   margin-bottom: 0.6rem;
 }
 .archeTag {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: #064c48;
   margin-bottom: 0.85rem;
 }
 .archeDesc {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-size: 0.92rem;
   line-height: 1.65;
   color: rgba(255,255,255,0.78);
@@ -209,11 +209,11 @@
   position: relative;
   padding: 0.5rem 0 1.5rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(37,99,255,0.2);
+  border-bottom: 1px solid rgba(6,76,72,0.2);
 }
 .bioQ, .bioQEnd {
-  font-family: Georgia, ui-serif, serif;
-  color: #2563ff;
+  font-family: 'Space Grotesk', ui-serif, serif;
+  color: #064c48;
   font-size: 3rem;
   line-height: 0;
   vertical-align: -0.5em;
@@ -221,7 +221,7 @@
 }
 .bioQEnd { vertical-align: -0.4em; margin-left: 0.05em; }
 .bioText {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-style: italic;
   font-size: 1.15rem;
   line-height: 1.55;
@@ -235,20 +235,20 @@
 .promptCard {
   display: grid;
   gap: 0.38rem;
-  border-top: 1px solid rgba(37,99,255,0.18);
+  border-top: 1px solid rgba(6,76,72,0.18);
   padding: 0.9rem 0;
 }
-.promptCard:last-child { border-bottom: 1px solid rgba(37,99,255,0.18); }
+.promptCard:last-child { border-bottom: 1px solid rgba(6,76,72,0.18); }
 .promptCard span {
-  color: #2563ff;
-  font-family: 'DM Mono', monospace;
+  color: #064c48;
+  font-family: 'DM Sans', monospace;
   font-size: 0.54rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 .promptCard strong {
   color: var(--h-text);
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-size: 1.05rem;
   font-style: italic;
   font-weight: 500;
@@ -268,14 +268,14 @@
   gap: 0.2rem;
 }
 .workK {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: #064c48;
 }
 .workV {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-style: italic;
   font-size: 1rem;
   color: var(--h-text);
@@ -284,11 +284,11 @@
 /* VIBES */
 .vibeSection { margin-bottom: 1.5rem; }
 .vibeHead {
-  font-family: Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', ui-serif, serif;
   font-style: italic;
   font-size: 0.9rem;
   text-align: center;
-  color: #2563ff;
+  color: #064c48;
   margin: 1.25rem 0 1.25rem;
   letter-spacing: 0.05em;
 }
@@ -299,7 +299,7 @@
   margin-bottom: 1rem;
 }
 .vibeLabel {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -311,7 +311,7 @@
   border-radius: 999px;
   padding: 0.35rem 0.85rem;
   font-size: 0.78rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   letter-spacing: 0.02em;
 }
 
@@ -321,12 +321,12 @@
   justify-content: space-between;
   margin-top: 2rem;
   padding-top: 1.25rem;
-  border-top: 1px solid rgba(37,99,255,0.2);
-  font-family: 'DM Mono', monospace;
+  border-top: 1px solid rgba(6,76,72,0.2);
+  font-family: 'DM Sans', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #2563ff;
+  color: #064c48;
 }
 
 /* footer back btn */
@@ -338,14 +338,14 @@
   padding: 0.85rem 1.75rem;
   border-radius: 999px;
   text-decoration: none;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', monospace;
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-weight: 600;
   transition: background 0.15s;
 }
-.backButton:hover { background: #1b46c9; }
+.backButton:hover { background: #064c48; }
 
 @media (max-width: 600px) {
   .mag { padding: 1.75rem 1.4rem; }

@@ -48,7 +48,7 @@ function getInstallMode(): false | "native" | "ios" | "fallback" {
   return false;
 }
 
-export default function PwaPrompt({ accent = "#2563ff" }: { accent?: string }) {
+export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
   const [showPush, setShowPush] = useState(false);
   const [showInstall, setShowInstall] = useState<
     false | "native" | "ios" | "fallback"
@@ -262,7 +262,7 @@ export default function PwaPrompt({ accent = "#2563ff" }: { accent?: string }) {
     color: accent,
     borderRadius: 999,
     padding: "0.64rem 1rem",
-    fontFamily: "'Bebas Neue', system-ui, sans-serif",
+    fontFamily: "'Space Grotesk', system-ui, sans-serif",
     fontSize: "1rem",
     letterSpacing: "0.04em",
     textTransform: "uppercase",
@@ -360,7 +360,7 @@ export default function PwaPrompt({ accent = "#2563ff" }: { accent?: string }) {
                   padding: "0.3rem 0.35rem",
                   background: "var(--h-surface-2)",
                   color: "var(--h-text-dim)",
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "'DM Sans', monospace",
                   fontSize: "0.5rem",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -454,7 +454,7 @@ export default function PwaPrompt({ accent = "#2563ff" }: { accent?: string }) {
             border: "none",
             cursor: "pointer",
             color: "var(--h-text-dim)",
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'DM Sans', monospace",
             fontSize: "0.8rem",
             padding: "0.3rem 0.7rem",
           }}

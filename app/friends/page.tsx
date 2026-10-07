@@ -12,8 +12,8 @@ import { recordAppEvent } from '@/lib/app-events';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FriendsHubPage({ searchParams }: { searchParams: Promise<{ more_matches?: string; view?: string; plan?: string }> }) {
-  const { more_matches: moreMatches, view, plan } = await searchParams;
+export default async function FriendsHubPage({ searchParams }: { searchParams: Promise<{ more_matches?: string; view?: string; plan?: string; dm?: string; club?: string }> }) {
+  const { more_matches: moreMatches, view, plan, dm, club } = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/friends');
   if (!user.friend_opted_in_at || !hasFriendVibes(user.friend_vibes)) redirect('/friends/quiz');
@@ -64,7 +64,7 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: P
   const location = await friendLocationContext(user);
   const city = friendMetroLabel(location.metro);
   const homeCity = friendMetroLabel(location.homeMetro);
-  if (connectionHomeEnabled(location.metro) && !moreMatches && !plan && (!view || view === 'scene')) {
+  if (connectionHomeEnabled(location.metro) && !moreMatches && !plan && !dm && !club && (!view || view === 'scene')) {
     after(() => recordAppEvent({ userId: user.id, eventName: 'connection_home_open', surface: 'plans', path: '/friends',
       dedupeKey: `plans-home:${user.id}:${location.metro}:${new Date().toISOString().slice(0,10)}`,
       metadata: { metro: location.metro, release: 'connection-home-v2' } }));

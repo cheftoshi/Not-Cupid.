@@ -17,7 +17,7 @@ export type ChipInputHandle = {
 };
 
 const variants = {
-  lav:    { bg: 'rgba(37,99,255,0.13)', color: 'var(--h-accent)', border: 'rgba(37,99,255,0.35)' },
+  lav:    { bg: 'rgba(6,76,72,0.13)', color: 'var(--h-accent)', border: 'rgba(6,76,72,0.35)' },
   accent: { bg: 'var(--h-surface-2)',     color: 'var(--h-text)', border: 'var(--h-border)' },
 };
 

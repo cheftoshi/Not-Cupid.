@@ -38,16 +38,16 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
   return (
     <main style={{ minHeight: '100vh', background: 'var(--h-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ maxWidth: 520, width: '100%', background: 'var(--h-surface)', padding: '2.5rem', border: '1px solid var(--h-border)', borderRadius: 14 }}>
-        <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 26, letterSpacing: '0.14em', color: 'var(--h-text)', marginBottom: 24 }}>
-          NOT<span style={{ color: '#2563ff' }}>CUPID</span>
+        <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 26, letterSpacing: '0.14em', color: 'var(--h-text)', marginBottom: 24 }}>
+          NOT<span style={{ color: '#064c48' }}>CUPID</span>
         </div>
 
         {!done ? (
           <>
-            <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
               unsubscribe
             </div>
-            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
               Hold on, {first}. Read this first.
             </h1>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15 }}>
@@ -67,7 +67,7 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
                   color: '#f6f6f6',
                   border: 'none',
                   padding: '14px 24px',
-                  fontFamily: 'DM Mono, monospace',
+                  fontFamily: 'DM Sans, monospace',
                   fontSize: 11,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
@@ -86,7 +86,7 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
                   color: 'var(--h-text-dim)',
                   border: '1px solid var(--h-border)',
                   padding: '14px 24px',
-                  fontFamily: 'DM Mono, monospace',
+                  fontFamily: 'DM Sans, monospace',
                   fontSize: 11,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
@@ -100,15 +100,15 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
             </div>
 
             {error && (
-              <p style={{ marginTop: 18, color: '#d94f3d', fontFamily: 'DM Mono, monospace', fontSize: 12 }}>{error}</p>
+              <p style={{ marginTop: 18, color: '#d94f3d', fontFamily: 'DM Sans, monospace', fontSize: 12 }}>{error}</p>
             )}
           </>
         ) : (
           <>
-            <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
               paused.
             </div>
-            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
               You're out of the pool, {first}.
             </h1>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15 }}>

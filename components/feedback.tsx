@@ -83,7 +83,7 @@ export default function FeedbackHost() {
           {toasts.map((t) => (
             <div key={t.id} role="status" style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 10, maxWidth: 440, background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.6rem 1.1rem', boxShadow: 'var(--shadow-lg)', animation: 'ncToastIn .28s var(--ease) both' }}>
               <span style={{ color: KIND_FG[t.kind], fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>{KIND_ICON[t.kind]}</span>
-              <span style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.85rem', color: 'var(--h-text)', lineHeight: 1.35 }}>{t.message}</span>
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.85rem', color: 'var(--h-text)', lineHeight: 1.35 }}>{t.message}</span>
             </div>
           ))}
         </div>
@@ -93,11 +93,11 @@ export default function FeedbackHost() {
       {confirmReq && (
         <div onClick={() => settle(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem', zIndex: 210 }}>
           <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" style={{ background: 'var(--h-surface)', borderRadius: 'var(--r-lg)', padding: '1.6rem', maxWidth: 400, width: '100%', boxShadow: 'var(--shadow-lg)', animation: 'ncConfirmIn .25s var(--ease) both' }}>
-            <h3 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.35rem', color: 'var(--h-text)', margin: '0 0 0.5rem', lineHeight: 1.2 }}>{confirmReq.spec.title}</h3>
-            {confirmReq.spec.body && <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--h-text-dim)', margin: '0 0 1.25rem' }}>{confirmReq.spec.body}</p>}
+            <h3 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.35rem', color: 'var(--h-text)', margin: '0 0 0.5rem', lineHeight: 1.2 }}>{confirmReq.spec.title}</h3>
+            {confirmReq.spec.body && <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--h-text-dim)', margin: '0 0 1.25rem' }}>{confirmReq.spec.body}</p>}
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end', marginTop: confirmReq.spec.body ? 0 : '1.1rem' }}>
-              <button onClick={() => settle(false)} style={{ background: 'transparent', border: '1px solid var(--h-border)', color: 'var(--h-text-dim)', borderRadius: 999, padding: '0.65rem 1.2rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>{confirmReq.spec.cancelLabel || 'never mind'}</button>
-              <button onClick={() => settle(true)} autoFocus style={{ background: confirmReq.spec.danger ? '#c0392b' : '#0b0b0b', color: '#fff', border: 'none', borderRadius: 999, padding: '0.65rem 1.3rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>{confirmReq.spec.confirmLabel || 'yes, do it'}</button>
+              <button onClick={() => settle(false)} style={{ background: 'transparent', border: '1px solid var(--h-border)', color: 'var(--h-text-dim)', borderRadius: 999, padding: '0.65rem 1.2rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>{confirmReq.spec.cancelLabel || 'never mind'}</button>
+              <button onClick={() => settle(true)} autoFocus style={{ background: confirmReq.spec.danger ? '#c0392b' : '#0b0b0b', color: '#fff', border: 'none', borderRadius: 999, padding: '0.65rem 1.3rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>{confirmReq.spec.confirmLabel || 'yes, do it'}</button>
             </div>
           </div>
         </div>

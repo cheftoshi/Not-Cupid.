@@ -1,4 +1,6 @@
 "use client";
+
+import ConnectionSketch from '@/components/connection-sketch';
 import LocationControls from '@/components/location-controls';
 import { planWhen, planTimeMatches } from '@/lib/plan-discovery';
 import { METRO_CENTERS } from '@/lib/quiz-data';
@@ -576,16 +578,17 @@ export default function PlansHome({
             <span className={s.eyebrow}>
               Your home · {city || "Your local community"}
             </span>
-            <h1>{reboot ? (friendMode ? "Good company starts here." : "What are we doing next?") : `Good to see you, ${firstName}.`}</h1>
+            <h1>Good company<br />starts with <em>you.</em></h1>
             <p>
-              Real invitations from people nearby. Join in, or put your own idea out there.
+              Real invitations from people nearby. A conversation, a plan, a place to start.
             </p>
           </div>
           <button className={s.primary} onClick={() => { setSelectedEvent(null); setCreating(!creating); }}>
             ＋ Invite someone
           </button>
+          <ConnectionSketch className={s.headerSketch} />
         </header>
-        {(!reboot || upcoming || requests > 0) && <div className={s.highlights}>
+        {(!reboot || upcoming || requests > 0 || rooms.length > 0) && <div className={s.highlights}>
           <button
             onClick={() => (upcoming ? open(upcoming) : setCreating(true))}
           >
@@ -606,7 +609,7 @@ export default function PlansHome({
               else setFilter("all");
             }}
           >
-            <span className={s.eyebrow}>Your connections</span>
+            <span className={s.eyebrow}>{requests ? "Your next step" : "Your conversations"}</span>
             <strong>
               {requests
                 ? requests +

@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,900;1,400&family=Inter:wght@300;400&display=swap');
+@font-face{font-family:'Space Grotesk';src:url('/fonts/SpaceGrotesk.woff2') format('woff2');font-weight:300 700;font-style:normal;font-display:swap}
+@font-face{font-family:'DM Sans';src:url('/fonts/DMSans.woff2') format('woff2');font-weight:100 1000;font-style:normal;font-display:swap}
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -8,24 +9,24 @@
      Black #0B0B0B ink, #F6F6F6 paper. Lemon Labs property. */
   --bg:#f8f7f3;
 
-  --blue:#2563ff;
-  --blue-deep:#1b46c9;
-  --blue-pale:#e8edff;
-  --blue-mid:rgba(37,99,255,0.10);
+  --blue:#064c48;
+  --blue-deep:#064c48;
+  --blue-pale:#e5eee8;
+  --blue-mid:rgba(6,76,72,0.10);
 
-  --orange:#ff6a1f;
-  --orange-deep:#d2530f;
-  --orange-pale:#fff1e8;
-  --orange-mid:rgba(255,106,31,0.10);
+  --orange:#8a6500;
+  --orange-deep:#765600;
+  --orange-pale:#fff5cf;
+  --orange-mid:rgba(244,197,66,0.10);
   --rose:#e0457f;
   --rose-mid:rgba(224,69,127,0.10);
 
   /* Legacy --lav* aliases now point at brand blue so every existing
      var()-based surface shifts to the new palette automatically. */
-  --lav:#2563ff;
-  --lav-deep:#1b46c9;
-  --lav-pale:#e8edff;
-  --lav-mid:rgba(37,99,255,0.10);
+  --lav:#064c48;
+  --lav-deep:#064c48;
+  --lav-pale:#e5eee8;
+  --lav-mid:rgba(6,76,72,0.10);
 
   --ink:#0b0b0b;
   --ink2:#6b6b76;
@@ -39,10 +40,10 @@
      orange inline on .screen (friend-quiz-client ORANGE_VARS). They were defined
      NOWHERE, so the Love quiz rendered colorless (no selected-option fill, a
      colorless progress bar, broken result accents). */
-  --accent:#2563ff;
-  --accent-dim:rgba(37,99,255,0.12);
-  --accent-mid:rgba(37,99,255,0.40);
-  --gold:#1b46c9;
+  --accent:#064c48;
+  --accent-dim:rgba(6,76,72,0.12);
+  --accent-mid:rgba(6,76,72,0.40);
+  --gold:#064c48;
   --gold-dim:rgba(27,70,201,0.14);
   --bg-dark:#14111c;
 
@@ -91,7 +92,7 @@ html:has(.appTopNav){--app-top-nav-height:calc(3.2rem + var(--app-safe-top))}
 body{
   background:var(--bg);
   color:var(--ink);
-  font-family:'Inter',sans-serif;
+  font-family:'DM Sans',sans-serif;
   font-weight:300;
   min-height:100vh;
   min-height:100dvh;
@@ -128,7 +129,7 @@ body{
 
 .btn-primary{
   background:var(--ink);color:var(--bg);border:none;
-  padding:.95rem 1.9rem;font-family:'DM Mono',monospace;
+  padding:.95rem 1.9rem;font-family:'DM Sans',monospace;
   font-size:.65rem;letter-spacing:.16em;text-transform:uppercase;
   cursor:pointer;display:inline-block;text-align:center;text-decoration:none;
   border-radius:var(--r-pill);box-shadow:var(--shadow-md);
@@ -141,7 +142,7 @@ body{
 .btn-ghost{
   background:transparent;color:var(--ink2);
   border:1px solid var(--border-md);padding:.9rem 1.9rem;
-  font-family:'DM Mono',monospace;font-size:.65rem;
+  font-family:'DM Sans',monospace;font-size:.65rem;
   letter-spacing:.16em;text-transform:uppercase;
   cursor:pointer;display:inline-block;text-align:center;text-decoration:none;
   border-radius:var(--r-pill);
@@ -174,12 +175,12 @@ body{
   --h-text-dim: #6b6975;
   --h-text-faint: #9a96a8;
   --h-border: rgba(29,24,18,0.11);
-  --h-accent: #1b46c9;
-  --h-accent-2: #d2530f;
+  --h-accent: #064c48;
+  --h-accent-2: #765600;
   --h-human: #e0457f;
   --h-glass: rgba(255,253,248,0.78); /* frosted chrome (nav) */
   /* interest category colors (adapt per theme) */
-  --c-music: #1b46c9; --c-food: #d2530f; --c-hobby: #5a2bc4; --c-sport: #1f7a52; --c-vibe: #c01f6f;
+  --c-music: #064c48; --c-food: #765600; --c-hobby: #5a2bc4; --c-sport: #1f7a52; --c-vibe: #c01f6f;
 }
 :root[data-theme="dark"]{
   --h-bg: linear-gradient(180deg, #14121c 0%, #0c0a12 100%);
@@ -205,9 +206,9 @@ html[data-theme="dark"] body { background: #0c0a12; color: var(--h-text); }
 /* Friend Line = a LIGHT, warm, vibey surface (class name kept for back-compat). */
 .friendDark{
   --h-bg:linear-gradient(180deg, #fffdf8 0%, #f7f3ed 100%);
-  --h-surface:#fffdf8; --h-surface-2:#f4f2ec; --h-surface-3:#fff1e8;
+  --h-surface:#fffdf8; --h-surface-2:#f4f2ec; --h-surface-3:#fff5cf;
   --h-text:#16110d; --h-text-dim:#76695f; --h-text-faint:#a99b91;
-  --h-border:rgba(58,39,24,0.13); --h-accent:#d2530f; --h-accent-2:#1b46c9; --h-human:#e0457f;
+  --h-border:rgba(58,39,24,0.13); --h-accent:#765600; --h-accent-2:#064c48; --h-human:#e0457f;
 }
 
 /* iOS zooms the entire installed PWA when a form control is focused below
@@ -217,3 +218,39 @@ html[data-theme="dark"] body { background: #0c0a12; color: var(--h-text); }
   textarea,
   select { font-size: 16px !important; }
 }
+
+/* Tide + saffron, October 2026. Legacy token names remain compatibility aliases.
+   Saffron is a fill; dark ochre is the accessible text/link counterpart. */
+:root{
+ --font-display:'Space Grotesk',sans-serif;--font-ui:'DM Sans',sans-serif;
+ --brand-teal:#064c48;--brand-saffron:#f4c542;--brand-on-saffron:#493b05;
+ --bg:#f7f5ee;--ink:#173c37;--ink2:#52675e;--ink3:#8a9c91;
+ --blue:var(--brand-teal);--blue-deep:#064c48;--blue-pale:#e5eee8;--blue-mid:rgba(6,76,72,.10);
+ --lav:var(--blue);--lav-deep:var(--blue-deep);--lav-pale:var(--blue-pale);--lav-mid:var(--blue-mid);
+ --orange:#765600;--orange-deep:#765600;--orange-pale:#fff5cf;--orange-mid:rgba(244,197,66,.16);
+ --accent:var(--blue);--accent-dim:var(--blue-mid);--accent-mid:rgba(6,76,72,.35);--gold:#765600;--gold-dim:var(--orange-mid);--bg-dark:#064c48;
+ --border:#dce3d9;--border-md:#bdccc0;
+ --h-bg:#f7f5ee;--h-surface:#fff;--h-surface-2:#eaf0e7;--h-surface-3:#fff5cf;
+ --h-text:#173c37;--h-text-dim:#52675e;--h-text-faint:#60756a;--h-border:#ccd7ca;
+ --h-accent:#064c48;--h-accent-2:#765600;--h-glass:rgba(247,245,238,.97);
+ --shadow-sm:0 2px 6px #173c3706;--shadow-md:0 5px 18px -9px #173c3720;--shadow-lg:0 14px 36px -15px #173c3733;
+ --r-sm:9px;--r-md:14px;--r-lg:22px;
+}
+:root[data-theme="dark"]{
+ --h-bg:#102620;--h-surface:#18352d;--h-surface-2:#24463a;--h-surface-3:#3d381e;
+ --h-text:#f4f5ed;--h-text-dim:#c1d0c6;--h-text-faint:#afc4b6;--h-border:#486354;
+ --h-accent:#a8ddca;--h-accent-2:#f4c542;--h-glass:rgba(16,38,32,.97);
+}
+html[data-theme="dark"] body{background:var(--h-bg)}
+.friendDark{--h-bg:#f7f5ee;--h-surface:#fff;--h-surface-2:#eaf0e7;--h-surface-3:#fff5cf;--h-text:#173c37;--h-text-dim:#52675e;--h-text-faint:#60756a;--h-border:#ccd7ca;--h-accent:#064c48;--h-accent-2:#765600}
+body{font-family:var(--font-ui);font-weight:400}
+button,input,textarea,select{font-family:var(--font-ui)}
+h1,h2,h3{font-family:var(--font-display);letter-spacing:-.035em}
+a,button,input,textarea,select,summary{-webkit-tap-highlight-color:transparent}
+:where(a,button,input,textarea,select,summary):focus-visible{outline:3px solid var(--h-accent);outline-offset:4px}
+.btn-primary,.btn-ghost{font-family:var(--font-ui);font-size:.875rem;font-weight:650;letter-spacing:0;text-transform:none;border-radius:10px}
+.btn-primary{background:var(--brand-teal);color:#fff}.btn-primary:hover{background:#0c6059}
+.appTopNav{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
+.appTopNavTabs a{font-size:.875rem!important;font-weight:650;letter-spacing:0!important;text-transform:none!important;border-radius:10px!important;min-height:44px;display:inline-flex;align-items:center}
+.appTopNavActions>a,.appTopNavActions>button{font-size:.75rem!important;letter-spacing:0!important;text-transform:none!important;min-height:44px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

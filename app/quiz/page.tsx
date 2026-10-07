@@ -811,7 +811,7 @@ function QuizInner() {
                     {zipStatus === 'invalid' && <span className={styles.zipBad}>not in our area</span>}
                   </div>
                   {poolPeek && poolPeek.count > 0 && zipStatus === 'valid' && (
-                    <div style={{ marginTop: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: 'rgba(37,99,255,0.08)', border: '1px solid rgba(37,99,255,0.25)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-accent)' }}>
+                    <div style={{ marginTop: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: 'rgba(6,76,72,0.08)', border: '1px solid rgba(6,76,72,0.25)', borderRadius: 999, padding: '0.4rem 0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-accent)' }}>
                       ✦ {poolPeek.count.toLocaleString()} {poolPeek.count === 1 ? 'person is' : 'people are'} in the {poolPeek.city} experiment{poolPeek.recent > 0 ? ` · ${poolPeek.recent} joined this month` : ''}
                     </div>
                   )}
@@ -828,12 +828,12 @@ function QuizInner() {
                     const suggestion = suggestEmailCorrection(form.email)
                     if (!suggestion) return null
                     return (
-                      <div style={{fontFamily:"'DM Mono', ui-monospace, monospace",fontSize:'.62rem',letterSpacing:'.06em',color:'var(--h-accent)',marginTop:'.35rem'}}>
+                      <div style={{fontFamily:"'DM Sans', ui-monospace, monospace",fontSize:'.62rem',letterSpacing:'.06em',color:'var(--h-accent)',marginTop:'.35rem'}}>
                         did you mean{' '}
                         <button
                           type="button"
                           onClick={() => setForm(f => ({ ...f, email: suggestion }))}
-                          style={{background:'rgba(37,99,255,0.15)',border:'1px solid rgba(37,99,255,0.4)',color:'var(--h-accent)',padding:'.15rem .5rem',borderRadius:'4px',fontFamily:'inherit',fontSize:'inherit',cursor:'pointer'}}
+                          style={{background:'rgba(6,76,72,0.15)',border:'1px solid rgba(6,76,72,0.4)',color:'var(--h-accent)',padding:'.15rem .5rem',borderRadius:'4px',fontFamily:'inherit',fontSize:'inherit',cursor:'pointer'}}
                         >
                           {suggestion}
                         </button>
@@ -847,7 +847,7 @@ function QuizInner() {
               <label style={{display:'flex',alignItems:'flex-start',gap:'0.55rem',margin:'0.9rem 0 0.2rem',cursor:'pointer',textAlign:'left'}}>
                 <input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)}
                   style={{width:17,height:17,marginTop:'0.15rem',flexShrink:0,accentColor:'var(--h-accent)'}} />
-                <span style={{fontFamily:"'DM Mono', ui-monospace, monospace",fontSize:'0.66rem',letterSpacing:'0.03em',lineHeight:1.5,color:'var(--h-text-dim)'}}>
+                <span style={{fontFamily:"'DM Sans', ui-monospace, monospace",fontSize:'0.66rem',letterSpacing:'0.03em',lineHeight:1.5,color:'var(--h-text-dim)'}}>
                   I&apos;m 18 or older and I agree to NotCupid&apos;s{' '}
                   <a href="/terms" target="_blank" style={{color:'var(--h-accent)'}}>Terms</a>,{' '}
                   <a href="/privacy" target="_blank" style={{color:'var(--h-accent)'}}>Privacy Policy</a> &amp;{' '}
@@ -1110,7 +1110,7 @@ function QuizInner() {
             </div>
             <p className={styles.qText}>{PARTNER_QUESTIONS[currentPartnerQ].q}</p>
             {PARTNER_QUESTIONS[currentPartnerQ].hint && (
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2563ff', margin: '-0.4rem 0 0.9rem' }}>
+              <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#064c48', margin: '-0.4rem 0 0.9rem' }}>
                 ⚡ {PARTNER_QUESTIONS[currentPartnerQ].hint}
               </p>
             )}
@@ -1272,8 +1272,8 @@ function QuizInner() {
             {loveSaveError ? (
               <>
                 <div style={{ fontSize: '2.6rem', marginBottom: '0.8rem' }}>↻</div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--h-accent-2)', marginBottom: '0.9rem' }}>save interrupted</div>
-                <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem' }}>nothing was lost.</h1>
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--h-accent-2)', marginBottom: '0.9rem' }}>save interrupted</div>
+                <h1 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem' }}>nothing was lost.</h1>
                 <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem' }}>{loveSaveError}</p>
                 <button className="btn-primary" disabled={loveSaveBusy} onClick={() => submitLoveDeep(attachAnswers, valuesAnswers, partnerAnswers)} style={{ width: '100%', justifyContent: 'center' }}>
                   {loveSaveBusy ? 'saving…' : 'try saving again →'}
@@ -1282,8 +1282,8 @@ function QuizInner() {
             ) : (
               <>
                 <div style={{ fontSize: '2.6rem', marginBottom: '0.8rem', animation: 'fadeUp 0.45s ease both' }}>💘</div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '0.9rem', animation: 'fadeUp 0.45s ease 0.12s both' }}>love profile complete</div>
-                <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem', animation: 'fadeUp 0.45s ease 0.24s both' }}>
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '0.9rem', animation: 'fadeUp 0.45s ease 0.12s both' }}>love profile complete</div>
+                <h1 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.08, margin: '0 0 0.9rem', animation: 'fadeUp 0.45s ease 0.24s both' }}>
                   your Love profile<br />has a clearer <em style={{ color: 'var(--blue)', fontWeight: 700 }}>signal.</em>
                 </h1>
                 <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem', animation: 'fadeUp 0.45s ease 0.36s both' }}>
@@ -1335,11 +1335,11 @@ function QuizInner() {
                   }
                 } catch { /* share sheet closed */ }
               }}
-              style={{ display: 'block', margin: '0.9rem auto 0', background: 'transparent', border: '1.5px solid var(--h-border)', color: 'var(--h-text)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+              style={{ display: 'block', margin: '0.9rem auto 0', background: 'transparent', border: '1.5px solid var(--h-border)', color: 'var(--h-text)', borderRadius: 999, padding: '0.7rem 1.5rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}
             >
               ↗ share your type
             </button>
-            <a href="/types" target="_blank" style={{ display: 'block', textAlign: 'center', marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'underline', textUnderlineOffset: 3 }}>see all the types →</a>
+            <a href="/types" target="_blank" style={{ display: 'block', textAlign: 'center', marginTop: '0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'underline', textUnderlineOffset: 3 }}>see all the types →</a>
 
             <div className={styles.profileCard}>
               <div className={styles.profileHeader}>
@@ -1379,12 +1379,12 @@ function QuizInner() {
                       <span
                         key={vq.key}
                         style={{
-                          background:'rgba(37,99,255,0.13)',
+                          background:'rgba(6,76,72,0.13)',
                           color:'var(--h-accent)',
-                          border:'1px solid rgba(37,99,255,0.35)',
+                          border:'1px solid rgba(6,76,72,0.35)',
                           borderRadius:'999px',
                           padding:'.4rem .9rem',
-                          fontFamily:"'DM Mono', ui-monospace, monospace",
+                          fontFamily:"'DM Sans', ui-monospace, monospace",
                           fontSize:'.72rem',
                           letterSpacing:'.04em',
                         }}

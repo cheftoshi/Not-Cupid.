@@ -36,13 +36,13 @@ export default async function CityPage({ params }: { params: Promise<{ metro: st
   const { plans } = await cityStats(metro);
 
   return (
-    <div style={{ minHeight: '100vh', padding: '4.5rem 1.5rem 4rem', background: 'radial-gradient(900px 480px at 15% -5%, rgba(37,99,255,0.09), transparent 55%), radial-gradient(760px 420px at 95% 8%, rgba(255,106,31,0.07), transparent 52%), var(--h-bg)', color: 'var(--h-text)' }}>
+    <div style={{ minHeight: '100vh', padding: '4.5rem 1.5rem 4rem', background: 'radial-gradient(900px 480px at 15% -5%, rgba(6,76,72,0.09), transparent 55%), radial-gradient(760px 420px at 95% 8%, rgba(244,197,66,0.07), transparent 52%), var(--h-bg)', color: 'var(--h-text)' }}>
       <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '1.3rem', textDecoration: 'none', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.15rem' }}>
-          <span style={{ color: 'var(--blue)' }}>Not</span><span style={{ color: 'var(--orange, #ff6a1f)' }}>Cupid</span>
+        <a href="/" style={{ display: 'inline-block', marginBottom: '1.3rem', textDecoration: 'none', fontFamily: "'Space Grotesk', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.15rem' }}>
+          <span style={{ color: 'var(--blue)' }}>Not</span><span style={{ color: 'var(--orange, #8a6500)' }}>Cupid</span>
         </a>
-        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '1rem' }}>✦ a connection experiment</div>
-        <h1 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(2.2rem, 8vw, 3.2rem)', lineHeight: 1.02, margin: '0 0 1rem' }}>
+        <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '1rem' }}>✦ a connection experiment</div>
+        <h1 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(2.2rem, 8vw, 3.2rem)', lineHeight: 1.02, margin: '0 0 1rem' }}>
           meet people in <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{m.city}.</span>
         </h1>
         <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.98rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.4rem' }}>
@@ -51,17 +51,17 @@ export default async function CityPage({ params }: { params: Promise<{ metro: st
 
         <div>
           <a href={`/hub?city=${metro}`} className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>explore {m.city} →</a>
-          <div style={{ marginTop: '0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>free to join · a 4-minute quiz · you choose who to meet</div>
+          <div style={{ marginTop: '0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>free to join · a 4-minute quiz · you choose who to meet</div>
         </div>
 
         {plans.length > 0 && (
           <div style={{ marginTop: '3rem', textAlign: 'left' }}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#d2530f', marginBottom: '0.8rem', textAlign: 'center' }}>🧡 real plans happening in {m.city.toLowerCase()}</div>
+            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#765600', marginBottom: '0.8rem', textAlign: 'center' }}>🧡 real plans happening in {m.city.toLowerCase()}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {plans.map((p: any) => (
                 <a key={p.id} href={`/p/${p.id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.8rem', background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 14, padding: '0.85rem 1rem', textDecoration: 'none', color: 'var(--h-text)', boxShadow: 'var(--shadow-sm)' }}>
-                  <span style={{ fontFamily: 'Georgia, ui-serif, serif', fontSize: '0.95rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
-                  <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.05em', color: 'var(--h-text-dim)', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontSize: '0.95rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
+                  <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.05em', color: 'var(--h-text-dim)', flexShrink: 0 }}>
                     {p.happens_at ? planWhen(p.happens_at) : p.area || ''}
                   </span>
                 </a>

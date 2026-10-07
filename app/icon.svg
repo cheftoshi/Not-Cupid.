@@ -1,9 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="15" fill="#0b0b0b"/>
-  <text x="32" y="31" dominant-baseline="middle" text-anchor="middle"
-        font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="33" letter-spacing="-1.5">
-    <tspan fill="#2563ff">n</tspan><tspan fill="#ff6a1f">c</tspan>
-  </text>
-  <rect x="22" y="47" width="10" height="3.5" rx="1.75" fill="#2563ff"/>
-  <rect x="32" y="47" width="10" height="3.5" rx="1.75" fill="#ff6a1f"/>
+  <rect width="64" height="64" rx="15" fill="#064c48"/>
+  <g fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 42V24m0 8c0-11 15-11 15 0v10" stroke="#fff"/>
+    <path d="M50 26c-13-9-21 18-4 17l5-2" stroke="#f4c542"/>
+    <path d="m19 52 27-2" stroke="#f4c542" stroke-width="3"/>
+  </g>
 </svg>

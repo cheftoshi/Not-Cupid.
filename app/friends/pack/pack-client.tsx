@@ -205,8 +205,8 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
                     <div className={styles.fshared}>both into {f.sharedActivities.slice(0, 2).join(' · ')}</div>
                   )}
                   {requested.has(f.otherId)
-                    ? <div style={{ marginTop: '0.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9fe0b0' }}>✓ request sent</div>
-                    : <button onClick={() => connectFriend(f.otherId)} disabled={!termsOk} style={{ marginTop: '0.6rem', width: '100%', cursor: termsOk ? 'pointer' : 'not-allowed', opacity: termsOk ? 1 : 0.5, background: 'rgba(255,255,255,0.95)', color: '#1a1030', border: 'none', borderRadius: 999, padding: '0.45rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em' }}>🤝 connect</button>}
+                    ? <div style={{ marginTop: '0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9fe0b0' }}>✓ request sent</div>
+                    : <button onClick={() => connectFriend(f.otherId)} disabled={!termsOk} style={{ marginTop: '0.6rem', width: '100%', cursor: termsOk ? 'pointer' : 'not-allowed', opacity: termsOk ? 1 : 0.5, background: 'rgba(255,255,255,0.95)', color: '#1a1030', border: 'none', borderRadius: 999, padding: '0.45rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em' }}>🤝 connect</button>}
                 </div>
               );
             })}

@@ -7,8 +7,8 @@ import WebVitals from '@/components/web-vitals'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://notcupid.com'),
-  title: 'NotCupid — A Connection Experiment',
-  description: 'Meet people, not profiles. The algorithm curates your most compatible people — you choose who to meet. No swiping. Born in Boston, now across the Northeast — New England + New York City.',
+  title: 'NotCupid — A place to find your people.',
+  description: 'Dating and friendship, with more in common. Find people, start conversations, and make plans. You choose who to meet.',
   applicationName: 'NotCupid',
   appleWebApp: {
     capable: true,
@@ -17,15 +17,15 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    title: 'NotCupid — A Connection Experiment',
-    description: 'Meet people, not profiles. The algorithm curates your most compatible — you choose. No swiping.',
+    title: 'NotCupid — A place to find your people.',
+    description: 'Dating and friendship, with more in common. Find people, start conversations, and make plans. You choose who to meet.',
     url: 'https://notcupid.com',
     siteName: 'NotCupid',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NotCupid — A Connection Experiment',
-    description: 'Meet people, not profiles. The algorithm curates your most compatible — you choose. No swiping.',
+    title: 'NotCupid — A place to find your people.',
+    description: 'Dating and friendship, with more in common. Find people, start conversations, and make plans. You choose who to meet.',
   },
 }
 
@@ -34,13 +34,15 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: '#f6f6f6',
+  themeColor: '#064c48',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preload" href="/fonts/SpaceGrotesk.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/DMSans.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         {/* No-flash theme: apply the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('nc-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}` }} />
       </head>

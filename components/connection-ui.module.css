@@ -8,7 +8,7 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 1rem;
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.58rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -68,7 +68,7 @@
 }
 
 .sigil span {
-  font-family: 'Playfair Display', Georgia, ui-serif, serif;
+  font-family: 'Space Grotesk', Georgia, ui-serif, serif;
   font-style: italic;
   font-size: 1.05rem;
   line-height: 1;
@@ -76,7 +76,7 @@
 }
 
 .sigil b {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'DM Sans', ui-monospace, monospace;
   font-size: 0.48rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;

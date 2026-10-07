@@ -12,17 +12,18 @@ export const dynamic = 'force-dynamic';
 export default async function UnsubscribePage({
   searchParams,
 }: {
-  searchParams: { u?: string; t?: string };
+  searchParams: Promise<{ u?: string; t?: string }>;
 }) {
-  const userId = searchParams.u || '';
-  const token = searchParams.t || '';
+  const params = await searchParams;
+  const userId = params.u || '';
+  const token = params.t || '';
 
   if (!userId || !token || !verifyUnsubToken(userId, token)) {
     return (
       <main style={{ minHeight: '100vh', background: 'var(--h-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div style={{ maxWidth: 480, background: 'var(--h-surface)', padding: '2.5rem', border: '1px solid var(--h-border)', borderRadius: 14 }}>
-          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: '#2563ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>invalid link</div>
-          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, color: 'var(--h-text)', margin: '0 0 16px 0' }}>This link isn't valid.</h1>
+          <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>invalid link</div>
+          <h1 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 28, color: 'var(--h-text)', margin: '0 0 16px 0' }}>This link isn't valid.</h1>
           <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65 }}>
             It may have expired or been tampered with. If you want to stop emails, log in and toggle "email notifications" off in your profile.
           </p>

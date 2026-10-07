@@ -393,11 +393,11 @@ export default function RosterPicker({
     return (
       <div className={styles.loveRoster}>
         <SkeletonStyles />
-        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.9rem' }}>
+        <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.9rem' }}>
           finding your people…
         </p>
         <div className={horizontal ? styles.loveRosterSkeleton : styles.loveRosterGrid}>
-          {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} width={horizontal ? 210 : undefined} />)}
+          {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} width={horizontal ? 270 : undefined} />)}
         </div>
       </div>
     );
@@ -407,7 +407,7 @@ export default function RosterPicker({
     return (
       <div style={emptyWrap} role="alert">
         <div style={{ fontSize: '2.2rem', marginBottom: '0.65rem' }}>↻</div>
-        <h2 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.65rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>your roster hit a connection snag.</h2>
+        <h2 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.65rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>your roster hit a connection snag.</h2>
         <p style={{ color: 'var(--h-text-dim)', lineHeight: 1.5, marginBottom: '1rem' }}>Your picks are safe. Reconnect and try loading the same roster again.</p>
         <button type="button" className="btn-primary" onClick={() => { setRoster(null); void load(); }}>retry roster</button>
       </div>
@@ -421,25 +421,25 @@ export default function RosterPicker({
     return (
       <div style={emptyWrap}>
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>⏸</div>
-        <h2 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>your matching is paused.</h2>
+        <h2 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>your matching is paused.</h2>
         {hardLocked ? (
           <>
-            <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
               this has happened a few times now, so we&apos;ve paused your account on both lines. if you think that&apos;s a mistake, email us and we&apos;ll take a look.
             </p>
-            <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', marginTop: '1.3rem', background: '#0b0b0b', color: '#fff', borderRadius: 999, padding: '0.8rem 1.6rem', fontFamily: "'DM Mono', monospace", fontSize: '0.66rem', letterSpacing: '0.14em', textTransform: 'uppercase', textDecoration: 'none' }}>
+            <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', marginTop: '1.3rem', background: '#0b0b0b', color: '#fff', borderRadius: 999, padding: '0.8rem 1.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', textDecoration: 'none' }}>
               email match@notcupid.com →
             </a>
           </>
         ) : (
           <>
-            <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 460, margin: '0 auto' }}>
               a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — pick back up whenever you&apos;re ready.
             </p>
             <div style={{ marginTop: '1.5rem' }}>
               <ReactivateButton />
             </div>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginTop: '0.9rem' }}>
+            <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginTop: '0.9rem' }}>
               your profile &amp; past matches stay exactly as they are
             </p>
           </>
@@ -453,8 +453,8 @@ export default function RosterPicker({
     return (
       <div style={emptyWrap}>
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>✦</div>
-        <h2 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>in the queue.</h2>
-        <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 440, margin: '0 auto' }}>
+        <h2 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>in the queue.</h2>
+        <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 440, margin: '0 auto' }}>
           recently active people rotate through first. Love Line checks again after 24 hours when you return; in a smaller pool, some compatible people may stay.
         </p>
         <ExpandRadiusButton radius={radius} maxRadius={maxRadius} />
@@ -478,40 +478,40 @@ export default function RosterPicker({
       `}</style>
       {/* slim header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.9rem' }}>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.56rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
+        <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>
           {roster.length} options · {pro ? 'extra picks included with Pro' : `${includedRemaining} of ${includedPicks} included picks left`} · profiles are free
         </span>
         {horizontal && roster.length > 0 && (
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>scroll →</span>
+          <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>scroll →</span>
         )}
       </div>
 
       {rotationLabel && (
-        <div style={{ margin: '-0.45rem 0 0.9rem', fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>
+        <div style={{ margin: '-0.45rem 0 0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>
           {rotationLabel} · fresh people appear when compatible options are available
         </div>
       )}
 
       {atCapacity && (
-        <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.75rem 0.95rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>
+        <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(244,197,66,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.75rem 0.95rem', marginBottom: '1rem', fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>
           you reached the {maxConnections}-connection safety limit. profiles stay browseable, but open another only after you genuinely end one.
         </div>
       )}
 
       {!atCapacity && !pro && includedRemaining === 0 && (
-        <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(37,99,255,0.35)', color: 'var(--h-text)', borderRadius: 12, padding: '0.8rem 0.95rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.86rem', textAlign: 'center', lineHeight: 1.5 }}>
+        <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(6,76,72,0.35)', color: 'var(--h-text)', borderRadius: 12, padding: '0.8rem 0.95rem', marginBottom: '1rem', fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.86rem', textAlign: 'center', lineHeight: 1.5 }}>
           you used this roster&apos;s {includedPicks} included picks. every profile stays free to view; each extra distinct connection is a one-time $0.99.
         </div>
       )}
 
       {!pro && connectionCreditCount > 0 && (
-        <div style={{ background: 'rgba(37,122,79,0.08)', border: '1px solid rgba(45,122,79,0.35)', color: '#2d7a4f', borderRadius: 12, padding: '0.8rem 0.95rem', marginBottom: '1rem', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.5 }}>
+        <div style={{ background: 'rgba(37,122,79,0.08)', border: '1px solid rgba(45,122,79,0.35)', color: '#2d7a4f', borderRadius: 12, padding: '0.8rem 0.95rem', marginBottom: '1rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.5 }}>
           ✓ {connectionCreditCount === 1 ? 'one in-app Love credit is ready' : `${connectionCreditCount} in-app Love credits are ready`} · your next {connectionCreditCount === 1 ? 'extra connection is' : 'extra connections are'} covered
         </div>
       )}
 
       {notice && (
-        <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(255,106,31,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.7rem 0.9rem', marginBottom: '1rem', fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.85rem', textAlign: 'center' }}>
+        <div style={{ background: 'var(--h-surface-3)', border: '1px solid rgba(244,197,66,0.4)', color: 'var(--h-accent-2)', borderRadius: 12, padding: '0.7rem 0.9rem', marginBottom: '1rem', fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.85rem', textAlign: 'center' }}>
           {notice}
         </div>
       )}
@@ -541,28 +541,28 @@ export default function RosterPicker({
                 ) : (
                   <Monogram first={first} />
                 )}
-                <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 11px', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', fontWeight: 600 }}>
-                  {c.score}<span style={{ color: '#ff6a1f' }}>%</span>
+                <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 11px', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 600 }}>
+                  {c.score}<span style={{ color: '#f4c542' }}>%</span>
                 </div>
                 {c.hasIntroVideo && (
-                  <div style={{ position: 'absolute', left: 10, bottom: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 9px', fontFamily: "'DM Mono', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  <div style={{ position: 'absolute', left: 10, bottom: 10, background: 'rgba(11,11,11,0.82)', color: '#fff', borderRadius: 999, padding: '4px 9px', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                     🎬 video hello
                   </div>
                 )}
               </button>
               <div style={{ padding: '0.9rem 0.95rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                <div style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>
-                  {first}{c.age ? <span style={{ fontWeight: 400, fontStyle: 'italic', color: 'var(--h-text-dim)' }}>, {c.age}</span> : null}
+                <div style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontSize: '1.3rem', color: 'var(--h-text)', fontWeight: 700 }}>
+                  {first}{c.age ? <span style={{ fontWeight: 400, fontStyle: 'normal', color: 'var(--h-text-dim)' }}>, {c.age}</span> : null}
                 </div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: '#2563ff', fontWeight: 700 }}>✦ {c.score}% compatible</div>
-                {c.why && <div style={{ fontFamily: 'Georgia, ui-serif, serif', fontStyle: 'italic', fontSize: '0.76rem', lineHeight: 1.35, color: 'var(--h-text-dim)' }}>{(c.scoreConfidence ?? 0) < 0.5 ? 'early read: ' : ''}{c.why}.</div>}
-                {c.archetype && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{c.archetype}</div>}
-                {c.occupation && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>💼 {c.occupation}</div>}
-                {style && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-accent-2)' }}>
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em', color: '#064c48', fontWeight: 700 }}>✦ {c.score}% compatible</div>
+                {c.why && <div style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.76rem', lineHeight: 1.35, color: 'var(--h-text-dim)' }}>{(c.scoreConfidence ?? 0) < 0.5 ? 'early read: ' : ''}{c.why}.</div>}
+                {c.archetype && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.3 }}>{c.archetype}</div>}
+                {c.occupation && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)' }}>💼 {c.occupation}</div>}
+                {style && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', color: 'var(--h-accent)' }}>💞 {style}</div>}
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', color: 'var(--h-accent-2)' }}>
                   ● {c.loveAvailability === 'actively_looking' ? 'actively looking' : 'open to meeting'}{c.activityLabel ? ` · ${c.activityLabel}` : ''}
                 </div>
-                {c.metro && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
+                {c.metro && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', color: 'var(--h-text-faint)' }}>📍 {c.metro}</div>}
                 <button
                   type="button"
                   onClick={() => openProfile(c)}
@@ -571,7 +571,7 @@ export default function RosterPicker({
                   view {first}&apos;s profile
                 </button>
                 {pickedId === c.id ? (
-                  <div style={{ marginTop: 'auto', textAlign: 'center', background: 'rgba(37,99,255,0.1)', border: '1.5px solid #2563ff', color: '#2563ff', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, animation: 'ncPickedIn .4s var(--ease) both' }}>
+                  <div style={{ marginTop: 'auto', textAlign: 'center', background: 'rgba(6,76,72,0.1)', border: '1.5px solid #064c48', color: '#064c48', borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, animation: 'ncPickedIn .4s var(--ease) both' }}>
                     ✓ choice sent — waiting for their answer
                   </div>
                 ) : (
@@ -580,8 +580,8 @@ export default function RosterPicker({
                   onClick={() => pick(c)}
                   disabled={!!picking || pickedId === c.id}
                   style={{
-                    marginTop: 'auto', background: picking === c.id ? '#1b46c9' : '#0b0b0b', color: '#fff', border: 'none',
-                    borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Mono', monospace", fontSize: '0.6rem',
+                    marginTop: 'auto', background: picking === c.id ? '#064c48' : '#0b0b0b', color: '#fff', border: 'none',
+                    borderRadius: 11, padding: '0.7rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem',
                     letterSpacing: '0.1em', textTransform: 'uppercase', cursor: picking ? 'wait' : 'pointer',
                     opacity: (picking && picking !== c.id) || pickedId === c.id ? 0.4 : 1,
                   }}
@@ -614,7 +614,7 @@ export default function RosterPicker({
             if (!choiceFeedback) trackLoveEvent('no_suitable_choice', { metadata: { candidate_count: roster.length } });
             setChoiceFeedback(true);
           }}
-          style={{ display: 'block', margin: '0.4rem auto 0', minHeight: 44, padding: '0.55rem 0.9rem', border: '1px solid var(--h-border)', borderRadius: 999, background: 'var(--h-surface)', color: 'var(--h-text-dim)', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}
+          style={{ display: 'block', margin: '0.4rem auto 0', minHeight: 44, padding: '0.55rem 0.9rem', border: '1px solid var(--h-border)', borderRadius: 999, background: 'var(--h-surface)', color: 'var(--h-text-dim)', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}
         >
           none of these feel right today
         </button>
@@ -639,7 +639,7 @@ export default function RosterPicker({
         <p>A refresh cannot guarantee new people. We only show options that meet both people’s requirements.</p>
       </section>}
 
-      <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
+      <p style={{ textAlign: 'center', marginTop: '0.25rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
         checks for fresh options every 24h · shown people cool down for 7 days
       </p>
 
@@ -804,14 +804,14 @@ export default function RosterPicker({
           className={styles.loveModalOverlay}
         >
           <div onClick={(e) => e.stopPropagation()} className={styles.loveSwapSheet}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563ff', marginBottom: '0.5rem' }}>AI read + extra Love connection · one-time $0.99</div>
-            <h3 style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
+            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#064c48', marginBottom: '0.5rem' }}>AI read + extra Love connection · one-time $0.99</div>
+            <h3 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
               understand the fit—then choose {(paywallCandidate.name || 'them').split(' ')[0]}.
             </h3>
-            <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.85rem', lineHeight: 1.5, margin: '0 0 1.1rem' }}>
               You&apos;ve used the {includedPicks} picks included with this roster. Their full roster profile remains free. This one payment opens the private six-signal AI Compatibility Read and includes the extra connection to this person. If they accept, chat and planning open free. If they decline or the request expires, the connection value returns as an in-app credit and your read stays open.
             </p>
-            <div style={{ background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 0.85rem', fontFamily: "'DM Mono', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
+            <div style={{ background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 0.85rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
               one person · one payment · no subscription · no double charge<br />
               no mutual match = one reusable in-app connection credit · ending the request yourself does not recycle it
             </div>
@@ -819,13 +819,13 @@ export default function RosterPicker({
               type="button"
               disabled={checkoutBusy}
               onClick={() => void openExtraConnectionCheckout(paywallCandidate)}
-              style={{ width: '100%', marginTop: '0.85rem', background: '#0b0b0b', color: '#fff', border: 0, borderRadius: 12, padding: '0.85rem 1rem', cursor: checkoutBusy ? 'wait' : 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+              style={{ width: '100%', marginTop: '0.85rem', background: '#0b0b0b', color: '#fff', border: 0, borderRadius: 12, padding: '0.85rem 1rem', cursor: checkoutBusy ? 'wait' : 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
             >
               {checkoutBusy ? 'opening secure checkout…' : `unlock read + connection · $0.99 →`}
             </button>
             <button
               onClick={() => setPaywallCandidate(null)}
-              style={{ marginTop: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}
+              style={{ marginTop: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}
             >
               never mind
             </button>
@@ -857,9 +857,9 @@ function Monogram({ first }: { first: string }) {
   return (
     <div style={{
       width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'radial-gradient(circle at 30% 26%, rgba(37,99,255,0.18), transparent 58%), radial-gradient(circle at 78% 82%, rgba(255,106,31,0.13), transparent 55%), var(--h-surface-2)',
+      background: 'radial-gradient(circle at 30% 26%, rgba(6,76,72,0.18), transparent 58%), radial-gradient(circle at 78% 82%, rgba(244,197,66,0.13), transparent 55%), var(--h-surface-2)',
     }}>
-      <span style={{ fontFamily: "'Playfair Display', Georgia, ui-serif, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '3.6rem', color: 'var(--h-accent)', opacity: 0.92, lineHeight: 1 }}>
+      <span style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontWeight: 700, fontSize: '3.6rem', color: 'var(--h-accent)', opacity: 0.92, lineHeight: 1 }}>
         {(first?.[0] || '✦').toUpperCase()}
       </span>
     </div>
