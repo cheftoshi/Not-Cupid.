@@ -205,16 +205,16 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
         <div style={{ flex: 1, minWidth: 220 }}>
           <div className={s.sideHd}>your social signal</div>
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.65rem', lineHeight: 1, margin: '0.2rem 0 0' }}>what are you down for?</h2>
-          <p style={{ margin: '0.35rem 0 0', color: 'var(--h-text-dim)', fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.86rem', lineHeight: 1.45 }}>
+          <p style={{ margin: '0.35rem 0 0', color: 'var(--h-text-dim)', fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.86rem', lineHeight: 1.45 }}>
             Say one thing. We&apos;ll route it to a plan, recurring group, trusted community, or people who want the same thing.
           </p>
         </div>
         {data?.myIntent && (
           <div style={{ border: '1px solid rgba(244,197,66,0.35)', background: 'rgba(244,197,66,0.08)', borderRadius: 14, padding: '0.65rem 0.75rem', minWidth: 180 }}>
-            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#765600' }}>live signal</div>
+            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#765600' }}>live signal</div>
             <div style={{ fontWeight: 750, marginTop: '0.15rem' }}>{data.myIntent.activity.emoji} {data.myIntent.activity.label}</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--h-text-dim)', marginTop: '0.15rem' }}>{String(data.myIntent.timeWindow).replaceAll('_', ' ')} · {data.myIntent.interestedCount} down too</div>
-            <button onClick={closeIntent} disabled={busy} style={{ marginTop: '0.35rem', padding: 0, border: 0, background: 'none', color: '#a74712', cursor: 'pointer', fontFamily: "'DM Sans',monospace", fontSize: '0.53rem', textDecoration: 'underline' }}>close signal</button>
+            <div style={{ fontSize: '0.75rem', color: 'var(--h-text-dim)', marginTop: '0.15rem' }}>{String(data.myIntent.timeWindow).replaceAll('_', ' ')} · {data.myIntent.interestedCount} down too</div>
+            <button onClick={closeIntent} disabled={busy} style={{ marginTop: '0.35rem', padding: 0, border: 0, background: 'none', color: '#a74712', cursor: 'pointer', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', textDecoration: 'underline' }}>close signal</button>
           </div>
         )}
       </div>
@@ -222,7 +222,7 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       <div className={s.travelPanel} data-friend-travel>
         <div className={s.travelSummary}>
           <div style={{ flex: 1, minWidth: 210 }}>
-            <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.52rem', letterSpacing: '0.11em', textTransform: 'uppercase', color: '#a74712' }}>
+            <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', letterSpacing: '0.11em', textTransform: 'uppercase', color: '#a74712' }}>
               {data?.location?.trip ? (data.location.isTraveling ? '✈ travel friend line active' : '✈ upcoming trip saved') : '✈ going somewhere?'}
             </div>
             {data?.location?.trip ? (
@@ -303,10 +303,10 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.55rem' }}>
           <div className={s.sideHd}>best ways in right now</div>
           <a href="/hub?discover=1" className={s.pulseBtn}>Find something to do</a>
-          {data?.counts && <span style={{ marginLeft: 'auto', color: 'var(--h-text-faint)', fontSize: '0.68rem' }}>{data.counts.plans} plans · {data.counts.clubs + data.counts.communities} groups · {data.counts.people} people</span>}
+          {data?.counts && <span style={{ marginLeft: 'auto', color: 'var(--h-text-faint)', fontSize: '0.75rem' }}>{data.counts.plans} plans · {data.counts.clubs + data.counts.communities} groups · {data.counts.people} people</span>}
         </div>
         {loading ? (
-          <div style={{ color: 'var(--h-text-dim)', fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.84rem' }}>routing what&apos;s nearby…</div>
+          <div style={{ color: 'var(--h-text-dim)', fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.84rem' }}>routing what&apos;s nearby…</div>
         ) : routes.length === 0 ? (
           <div style={{ border: '1px dashed var(--h-border)', borderRadius: 14, padding: '0.8rem' }}>
             <div style={{ fontSize: '0.86rem', color: 'var(--h-text-dim)' }}>Nothing concrete is live for this yet. Your signal seeds demand so the right plan or group can form.</div>
@@ -325,10 +325,10 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
                   <span style={{ width: 36, height: 36, display: 'grid', placeItems: 'center', borderRadius: 11, background: index === 0 ? 'rgba(244,197,66,0.13)' : 'var(--h-surface-3)', fontSize: '1.15rem', flexShrink: 0 }}>{activity.emoji}</span>
                   <span style={{ minWidth: 0, flex: 1 }}>
                     <span style={{ display: 'block', fontWeight: 760, lineHeight: 1.2 }}>{route.title}</span>
-                    <span style={{ display: 'block', marginTop: '0.16rem', color: 'var(--h-text-dim)', fontSize: '0.72rem' }}>{KIND_LABEL[route.kind]} · {whenLabel(route)}{route.memberCount ? ` · ${route.memberCount} in` : ''}</span>
-                    {route.reasons?.length > 0 && <span style={{ display: 'block', marginTop: '0.13rem', color: '#a74712', fontFamily: "'DM Sans',monospace", fontSize: '0.5rem' }}>{route.reasons.join(' · ')}</span>}
+                    <span style={{ display: 'block', marginTop: '0.16rem', color: 'var(--h-text-dim)', fontSize: '0.75rem' }}>{KIND_LABEL[route.kind]} · {whenLabel(route)}{route.memberCount ? ` · ${route.memberCount} in` : ''}</span>
+                    {route.reasons?.length > 0 && <span style={{ display: 'block', marginTop: '0.13rem', color: '#a74712', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem' }}>{route.reasons.join(' · ')}</span>}
                   </span>
-                  <span style={{ flexShrink: 0, fontFamily: "'DM Sans',monospace", fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#765600' }}>{action} →</span>
+                  <span style={{ flexShrink: 0, fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#765600' }}>{action} →</span>
                 </>
               );
               const style = { width: '100%', display: 'flex', alignItems: 'center', gap: '0.65rem', textAlign: 'left' as const, border: `1px solid ${index === 0 ? 'rgba(244,197,66,0.38)' : 'var(--h-border)'}`, borderRadius: 14, background: index === 0 ? 'rgba(255,255,255,0.58)' : 'var(--h-surface-2)', padding: '0.62rem 0.7rem', color: 'var(--h-text)', textDecoration: 'none', cursor: 'pointer' };

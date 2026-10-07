@@ -21,10 +21,10 @@ import s from './friend-hub.module.css';
 const buzz = () => { try { navigator.vibrate?.(15); } catch { /* unsupported */ } };
 const promptForPush = () => { try { window.dispatchEvent(new Event('nc:show-push-prompt')); } catch { /* browser-only enhancement */ } };
 
-// ── Friend Line theme (warm MBTA transit) ──
+// ── Shared Tide palette with saffron Friend accents ──
 const INK = '#0b0b0b';           // brand ink (signage) — aligned to the app ink
-const LINE = '#8a6500';          // the Friend Line — BRAND orange (was off-brand #e8842b)
-const LINE_DEEP = '#765600';     // brand orange-deep for shadows/hover
+const LINE = '#064c48';          // solid teal for controls with white labels
+const LINE_DEEP = 'var(--h-accent)'; // readable accent in both themes
 // (CREAM — the warm station-tile surface — now lives in friend-hub.module.css as var(--h-surface))
 // Activity-rich categories — what people actually do together (fitness/sports
 // lead, then social/culture). Drives the Scene filter chips + the post composer.
@@ -110,114 +110,13 @@ function SceneCats({ main, setMain, sub, setSub }: { main: string; setMain: (m: 
   );
 }
 
-// The backdrop IS the conversation — rising comic speech bubbles (the city's group
-// chat). Canvas; reduced-motion still-frame; pauses when the tab's hidden.
-function ConnectionBackdrop() {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const cv = ref.current; if (!cv) return;
-    const ctx = cv.getContext('2d'); if (!ctx) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const dpr = Math.min(1.4, window.devicePixelRatio || 1);
-    let w = 1, h = 1;
-    // The backdrop IS the conversation — catchy, real things people say to make
-    // plans, rising like the whole city's group chat. (Dropped the tech node-
-    // network — it read "crypto dashboard," not a warm social app. This is human.)
-    const SAYS = [
-      'who’s down for pickleball? 🎾', 'coffee this week? ☕', 'new in town — say hi 👋',
-      'sat morning run? 🏃', 'movie night, who’s in? 🎬', 'starting a book club 📚',
-      'let’s actually hang irl', 'friends > swiping', 'gym buddy wanted 💪',
-      'concert friday? 🎶', 'ball game tuesday? ⚾', 'beach day this weekend? 🌊',
-      'looking for a hiking crew 🌲', 'board game night? 🎲', 'ramen run, anyone? 🍜',
-      'tennis at the park? 🎾', 'pottery class — join me 🎨', 'find your people 🧡',
-      'who wants to grab a drink?', 'farmers market sunday? 🥕', 'climbing gym buddy?',
-    ];
-    const PAL = ['#8a6500', '#064c48', '#e0457f', '#1f9e6e', '#8b46d6']; // vibey bubble colors
-    const EMOJI = /[\uD800-\uDBFF☀-➿⬀-⯿]/; // emoji surrogates + symbol ranges (no /u flag — ES5 target)
-    type Bub = { x: number; y: number; text: string; emoji: boolean; c: number; rot: number; speed: number };
-    let bubs: Bub[] = [];
-    let nextSpawn = 0;
-    const spawn = (seed = false) => {
-      const text = SAYS[(Math.random() * SAYS.length) | 0];
-      bubs.push({
-        x: 0.08 + Math.random() * 0.84,
-        y: seed ? 0.12 + Math.random() * 0.8 : 1.08,
-        text, emoji: EMOJI.test(text),
-        c: (Math.random() * 5) | 0, rot: (Math.random() - 0.5) * 0.1,
-        speed: 0.0016 + Math.random() * 0.0013,
-      });
-    };
-    const size = () => { w = cv.clientWidth || window.innerWidth; h = cv.clientHeight || window.innerHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
-    size();
-    const ro = new ResizeObserver(size); ro.observe(cv);
-    for (let i = 0; i < 5; i++) spawn(true); // seed always → reduced-motion still shows a frame
-    let raf = 0, last = 0, on = true;
-    const draw = (ts: number) => {
-      if (!on) return;
-      raf = requestAnimationFrame(draw);
-      if (ts - last < 34) return; last = ts; // ~30fps
-      ctx.clearRect(0, 0, w, h);
-      if (!reduce) { nextSpawn -= 1; if (nextSpawn <= 0 && bubs.length < 9) { spawn(); nextSpawn = 22 + ((Math.random() * 30) | 0); } }
-      ctx.font = "600 12px ui-sans-serif, system-ui, -apple-system, sans-serif";
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      for (let k = bubs.length - 1; k >= 0; k--) {
-        const bb = bubs[k];
-        if (!reduce) bb.y -= bb.speed; // rise
-        if (bb.y < -0.08) { bubs.splice(k, 1); continue; }
-        const alpha = Math.max(0, Math.min(1, bb.y > 0.96 ? (1.08 - bb.y) / 0.12 : bb.y < 0.12 ? bb.y / 0.12 : 0.95));
-        // canvas measureText under-reports emoji advance width → pad extra when the
-        // line has one, cap to the viewport, and keep the whole bubble on-screen.
-        const bw = Math.max(64, Math.min(w - 18, ctx.measureText(bb.text).width + (bb.emoji ? 44 : 26)));
-        const bh = 32, r = Math.min(15, bw / 2 - 1), tx = -bw / 2 + 24;
-        const cx = Math.max(bw / 2 + 8, Math.min(w - bw / 2 - 8, bb.x * w));
-        // one continuous path: rounded body + an integrated pointer tail (a real
-        // speech bubble, not a colored nub stuck on the bottom).
-        const path = () => {
-          ctx.beginPath();
-          ctx.moveTo(-bw / 2 + r, -bh - 9);
-          ctx.arcTo(bw / 2, -bh - 9, bw / 2, -9, r);
-          ctx.arcTo(bw / 2, -9, -bw / 2, -9, r);
-          ctx.lineTo(tx + 8, -9); ctx.lineTo(tx, -1); ctx.lineTo(tx - 8, -9);
-          ctx.lineTo(-bw / 2 + r, -9);
-          ctx.arcTo(-bw / 2, -9, -bw / 2, -bh - 9, r);
-          ctx.arcTo(-bw / 2, -bh - 9, bw / 2, -bh - 9, r);
-          ctx.closePath();
-        };
-        ctx.save();
-        ctx.translate(Math.round(cx), Math.round(bb.y * h)); ctx.rotate(bb.rot); ctx.globalAlpha = alpha * 0.55;
-        const col = PAL[bb.c];
-        ctx.shadowColor = 'rgba(120,70,30,0.20)'; ctx.shadowBlur = 11; ctx.shadowOffsetY = 4;
-        path(); ctx.fillStyle = '#fffaf3'; ctx.fill();
-        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-        path(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
-        ctx.fillStyle = col; ctx.fillText(bb.text, 0, -bh / 2 - 9);
-        ctx.restore();
-      }
-      ctx.globalAlpha = 1;
-    };
-    raf = requestAnimationFrame(draw);
-    const onVis = () => { on = !document.hidden; if (on) { last = 0; raf = requestAnimationFrame(draw); } };
-    document.addEventListener('visibilitychange', onVis);
-    return () => { on = false; cancelAnimationFrame(raf); ro.disconnect(); document.removeEventListener('visibilitychange', onVis); };
-  }, []);
-  return (
-    <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(100% 55% at 50% -10%, rgba(255,150,70,0.10), transparent 60%), radial-gradient(85% 50% at 100% 110%, rgba(6,76,72,0.06), transparent 55%)' }} />
-      {/* faint warm dot-grid + grain so the field has texture, not a plain wash */}
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(150,110,60,0.13) 1px, transparent 1.5px)', backgroundSize: '23px 23px', WebkitMaskImage: 'radial-gradient(135% 110% at 50% -8%, #000 50%, transparent 92%)', maskImage: 'radial-gradient(135% 110% at 50% -8%, #000 50%, transparent 92%)' }} />
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.5, mixBlendMode: 'multiply', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")", backgroundSize: '160px 160px' }} />
-      <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.55 }} />
-    </div>
-  );
-}
-
 // ── old-school-FB shell pieces (warm transit palette) ──
 type NavKey = 'home' | 'scene' | 'crew' | 'pulse';
 const NAV: Array<{ key: NavKey; icon: string; label: string }> = [
   { key: 'home', icon: '✨', label: 'overview' },
   { key: 'scene', icon: '🎟️', label: 'do something' },
   { key: 'crew', icon: '🧡', label: 'people & chats' },
-  { key: 'pulse', icon: '🌆', label: 'communities' },
+  { key: 'pulse', icon: '🌆', label: 'clubs & communities' },
 ];
 
 type Person = { id: string; name: string; photo_url: string | null; tag?: string };
@@ -268,15 +167,15 @@ function VibeCard({ a, onRsvp, onAuthor }: { a: any; onRsvp: (id: string, r?: 'y
     <div className={s.card} style={{ padding: '0.95rem 1.05rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 230 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
         <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.35rem', lineHeight: 1.05, letterSpacing: '0.01em' }}>{a.title || 'a plan'}</div>
-        <span style={{ flexShrink: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.2rem 0.5rem', fontWeight: 700 }}>{st.label}</span>
+        <span style={{ flexShrink: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.2rem 0.5rem', fontWeight: 700 }}>{st.label}</span>
       </div>
-      <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.03em', color: 'var(--h-text)' }}>
+      <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.03em', color: 'var(--h-text)' }}>
         {a.happens_at ? friendlyWhen(a.happens_at) : (a.area || 'your city')}{a.area && a.happens_at ? ` · ${a.area}` : ''}{yes ? ` · ${yes} interested` : ''}
       </div>
-      <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>for: {vibeFor(a)}</div>
+      <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>for: {vibeFor(a)}</div>
       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.1rem' }}>
         <button onClick={() => onRsvp(a.id, joined ? 'no' : 'yes')} className={s.poppyBtn} style={{ fontSize: '0.95rem', padding: '0.4rem 0.95rem', background: joined ? 'var(--h-surface-3)' : LINE, color: joined ? LINE_DEEP : '#fff', boxShadow: joined ? 'none' : undefined }}>{joined ? '✓ you’re in' : `${st.cta} →`}</button>
-        {onAuthor && a.authorName && <button onClick={() => onAuthor(a)} title="who's organizing" style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 2 }}>by {(a.authorName).split(' ')[0]}</button>}
+        {onAuthor && a.authorName && <button onClick={() => onAuthor(a)} title="who's organizing" style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 2 }}>by {(a.authorName).split(' ')[0]}</button>}
       </div>
     </div>
   );
@@ -363,7 +262,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
   const railHd = (emoji: string, text: string, sub?: string) => (
     <div style={{ margin: '1.6rem 0 0.7rem' }}>
       <h2 className={s.sectionLabel} style={{ margin: 0 }}><StationDot />{emoji} {text}</h2>
-      {sub && <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{sub}</div>}
+      {sub && <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.8rem', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{sub}</div>}
     </div>
   );
 
@@ -400,8 +299,8 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
               <p>{aiMove.body}</p>
               <button onClick={() => onAiAct?.(aiMove)}>{aiMove.cta} →</button>
               <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>one move · decided by your algorithm</span>
-                <button onClick={() => onAiRefresh?.()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', padding: 0 }}>↻ something else</button>
+                <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>Optional AI suggestion · you decide</span>
+                <button onClick={() => onAiRefresh?.()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', padding: 0 }}>↻ something else</button>
               </div>
             </>
           ) : aiMoveLoading ? (
@@ -485,7 +384,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
           {railHd('✨', 'plans that fit', 'pulled from the Scene, ranked by your interests and momentum')}
           {recs.length === 0 ? (
             <div className={`${s.card} ${s.cardEmpty}`}>
-              quiet right now — <button onClick={onStart} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'italic' }}>start something →</button> and others will join.
+              quiet right now — <button onClick={onStart} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, textDecoration: 'underline', font: 'inherit', fontStyle: 'normal' }}>start something →</button> and others will join.
             </div>
           ) : (
             <div className={s.friendPlanStack}>{recs.map((a) => <VibeCard key={a.id} a={a} onRsvp={onRsvp} onAuthor={onAuthor} />)}</div>
@@ -511,7 +410,7 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
             ) : (
               <>
                 <h2>next drop in {untilNextDrop()}.</h2>
-                <p>every {DROP.label}, a fresh pack of people lands — curated by the algo, sealed until you open it. can&apos;t wait? open one now ($0.99, included with Pro).</p>
+                <p>every {DROP.label}, a fresh pack of people lands — suggested from your preferences, ready when you open it. can&apos;t wait? open one now ($0.99, included with Pro).</p>
                 <a href="/friends/pack" className={s.friendTextCta} style={{ textDecoration: 'none' }}>open one early →</a>
               </>
             )}
@@ -758,7 +657,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
             ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
             : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}{onAuthor && !a.isMine && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', color: LINE_DEEP, marginLeft: '0.4rem', verticalAlign: 'middle' }}>view ›</span>}</div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}{onAuthor && !a.isMine && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', color: LINE_DEEP, marginLeft: '0.4rem', verticalAlign: 'middle' }}>view ›</span>}</div>
             <div className={s.activityAuthorMeta} style={{ color: isEvent ? LINE_DEEP : 'var(--h-text-dim)' }}>
               {isEvent ? '📅 organizing this' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
             </div>
@@ -778,9 +677,9 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           const st = planStatus(a);
           return (
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}` }}>{st.label}</span>
-              {a.location && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#2d7a4f', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.3)' }}>✓ host confirmed</span>}
-              {a.datingFriendly && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#c2185b', background: 'rgba(194,24,91,0.1)', border: '1px solid rgba(194,24,91,0.3)' }}>💘 dating-friendly</span>}
+              <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}` }}>{st.label}</span>
+              {a.location && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#2d7a4f', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.3)' }}>✓ host confirmed</span>}
+              {a.datingFriendly && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#c2185b', background: 'rgba(194,24,91,0.1)', border: '1px solid rgba(194,24,91,0.3)' }}>💘 dating-friendly</span>}
             </div>
           );
         })()}
@@ -789,7 +688,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
             <span className={s.chip} style={{ background: 'var(--h-surface-3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
               🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric' })}
             </span>
-            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.04em' }}><Countdown to={a.happens_at} /></span>
+            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em' }}><Countdown to={a.happens_at} /></span>
           </div>
         )}
         {isEvent && a.location && (
@@ -798,21 +697,21 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           </div>
         )}
         {isEvent && aud && (
-          <div style={{ marginTop: '0.5rem', fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: LINE_DEEP }}>
+          <div style={{ marginTop: '0.5rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: LINE_DEEP }}>
             👥 open to {aud}
           </div>
         )}
         {/* SOCIAL PROOF — your connections who are in. The strongest "it's safe
             + it'll be fun" signal a plan can carry. */}
         {isEvent && Array.isArray(a.friendsGoing) && a.friendsGoing.length > 0 && (
-          <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(244,197,66,0.1)', border: '1px solid rgba(244,197,66,0.3)', borderRadius: 999, padding: '0.3rem 0.75rem', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.04em', color: '#765600', fontWeight: 700 }}>
+          <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(244,197,66,0.1)', border: '1px solid rgba(244,197,66,0.3)', borderRadius: 999, padding: '0.3rem 0.75rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em', color: '#765600', fontWeight: 700 }}>
             🧡 {a.friendsGoing.slice(0, 2).join(' + ')}{a.friendsGoing.length > 2 ? ` + ${a.friendsGoing.length - 2} more` : ''} {a.friendsGoing.length === 1 ? 'you know is' : 'you know are'} going
           </div>
         )}
         {isEvent && !a.isMine && (
           <div className={s.activitySafety}>
             <span style={{ flexShrink: 0 }}>🛡</span>
-            <span>before you go — <button onClick={() => onAuthor && onAuthor(a)} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', fontStyle: 'italic', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>see who&apos;s organizing</button>, and keep the first hang somewhere public.</span>
+            <span>before you go — <button onClick={() => onAuthor && onAuthor(a)} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', fontStyle: 'normal', color: LINE_DEEP, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>see who&apos;s organizing</button>, and keep the first hang somewhere public.</span>
           </div>
         )}
       </div>
@@ -822,15 +721,15 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
               {(a.rsvpCount || 0) >= 3
-                ? <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#765600', background: 'rgba(244,197,66,0.12)', border: '1px solid rgba(244,197,66,0.32)', borderRadius: 999, padding: '0.18rem 0.55rem' }}>🔥 popular</span>
-                : <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)' }}>{a.rsvpCount ? `${a.rsvpCount} into this` : 'be the first'}</span>}
+                ? <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#765600', background: 'rgba(244,197,66,0.12)', border: '1px solid rgba(244,197,66,0.32)', borderRadius: 999, padding: '0.18rem 0.55rem' }}>🔥 popular</span>
+                : <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)' }}>{a.rsvpCount ? `${a.rsvpCount} into this` : 'be the first'}</span>}
               <button onClick={toggleComments} title="comments"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: showC ? 'var(--h-surface-3)' : 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.2rem 0.6rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', fontWeight: 700 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: showC ? 'var(--h-surface-3)' : 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.2rem 0.6rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700 }}>
                 💬 {cCount > 0 ? cCount : 'comment'}
               </button>
             </div>
             <button onClick={() => onRsvp(a.id)} title={a.iRsvped ? 'you’re into this' : 'i’m into this'}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: a.iRsvped ? 'var(--h-accent)' : 'var(--h-surface-2)', color: a.iRsvped ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${a.iRsvped ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 999, padding: '0.3rem 0.75rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.64rem', fontWeight: 700 }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: a.iRsvped ? 'var(--h-accent)' : 'var(--h-surface-2)', color: a.iRsvped ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${a.iRsvped ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 999, padding: '0.3rem 0.75rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700 }}>
               {a.iRsvped ? '♥' : '♡'} {a.rsvpCount || 0}
             </button>
           </div>
@@ -855,7 +754,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
               })}
             </div>
             {(r.yes > 0 || r.maybe > 0 || cap) && (
-              <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.06em', color: full ? '#c0392b' : 'var(--h-text-dim)' }}>
+              <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', color: full ? '#c0392b' : 'var(--h-text-dim)' }}>
                 {cap ? `${r.yes}/${cap} spots filled` : `${r.yes} going`}{full ? ' · full' : ''}{r.maybe ? ` · ${r.maybe} maybe` : ''}
               </div>
             )}
@@ -873,7 +772,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           );
         })()
         : (
-          <div style={{ textAlign: 'center', padding: '0.4rem', fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.82rem', color: 'var(--h-text-dim)' }}>
+          <div style={{ textAlign: 'center', padding: '0.4rem', fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.82rem', color: 'var(--h-text-dim)' }}>
             🔒 {a.capacity && (a.responses?.yes ?? 0) >= a.capacity ? 'this plan is full' : `open to ${aud || 'a specific group'}`}{r.yes ? ` · ${r.yes} going` : ''}
           </div>
         )}
@@ -1026,6 +925,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   // ── City Pulse communities: user-run clubs + submitted community links ──
   const [clubs, setClubs] = useState<any[]>([]);
   const [comLinks, setComLinks] = useState<any[]>([]);
+  const [clubsLoaded, setClubsLoaded] = useState(false);
+  const [linksLoaded, setLinksLoaded] = useState(false);
   const [clubBusy, setClubBusy] = useState(false);
   const [showNewClub, setShowNewClub] = useState(false);
   const [newClub, setNewClub] = useState({ name: '', category: 'books', activityKey: 'books', description: '', area: '', cadence: 'monthly', joinMode: 'open', nextMeetAt: '' });
@@ -1040,8 +941,14 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const clubEndRef = useRef<HTMLDivElement>(null);
   const [clubManage, setClubManage] = useState<{ id: string; name: string } | null>(null);
   const [clubReqs, setClubReqs] = useState<any[]>([]);
-  const loadClubs = useCallback(async () => { try { const r = await fetch('/api/friend/clubs'); if (r.ok) setClubs((await r.json()).clubs || []); } catch { /* ignore */ } }, []);
-  const loadComLinks = useCallback(async () => { try { const r = await fetch('/api/friend/community-links'); if (r.ok) setComLinks((await r.json()).links || []); } catch { /* ignore */ } }, []);
+  const loadClubs = useCallback(async () => {
+    try { const r = await fetch('/api/friend/clubs'); if (!r.ok) throw new Error('clubs unavailable'); setClubs((await r.json()).clubs || []); setSourceError('clubs', false); }
+    catch { setSourceError('clubs', true); } finally { setClubsLoaded(true); }
+  }, [setSourceError]);
+  const loadComLinks = useCallback(async () => {
+    try { const r = await fetch('/api/friend/community-links'); if (!r.ok) throw new Error('communities unavailable'); setComLinks((await r.json()).links || []); setSourceError('communities', false); }
+    catch { setSourceError('communities', true); } finally { setLinksLoaded(true); }
+  }, [setSourceError]);
   const loadClubChat = useCallback(async (id: string) => {
     try {
       const r = await fetchWithTimeout(`/api/friend/clubs/${id}/messages`);
@@ -1355,7 +1262,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   async function leaveCrew() {
     const ok = await confirmDialog({
       title: 'opt out of this crew?',
-      body: "You'll leave the group for everyone in it, and the algo will route you to a fresh one.",
+      body: "You'll leave the group for everyone in it, and you can explore a new pack.",
       confirmLabel: 'leave crew', danger: true,
     });
     if (!ok) return;
@@ -1632,19 +1539,18 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const unreviewedFriendChoices = matches.filter((match) => !match.connected && !match.iAccepted).length;
 
   return (
-    <div className={`friendDark ${s.friendPage}`} style={{ background: 'radial-gradient(95% 65% at 4% 0%, #f6d4b4 0%, transparent 46%), radial-gradient(90% 60% at 99% 5%, #f4cadd 0%, transparent 44%), radial-gradient(120% 80% at 50% 116%, #c9d9f5 0%, transparent 54%), #f0e4d0', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif', position: 'relative' }}>
-      <ConnectionBackdrop />
+    <div className={s.friendPage}>
 
       {/* T&C GATE — a blocking pop-up; you agree once before you can use the friend line */}
       {termsChecked && !termsOk && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(24,14,6,0.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
           <div style={{ background: 'var(--h-surface)', borderRadius: 20, maxWidth: 440, width: '100%', padding: '1.7rem 1.6rem', boxShadow: '0 34px 90px -22px rgba(0,0,0,0.55)', border: '1px solid var(--h-border)' }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '2.1rem', color: 'var(--h-text)', lineHeight: 1 }}>before you dive in 🧡</div>
-            <p style={{ fontFamily: 'Space Grotesk,serif', fontSize: '0.95rem', color: 'var(--h-text-dim)', lineHeight: 1.6, margin: '0.7rem 0 1.2rem' }}>
+            <p style={{ fontFamily: 'var(--font-ui)', fontSize: '0.95rem', color: 'var(--h-text-dim)', lineHeight: 1.6, margin: '0.7rem 0 1.2rem' }}>
               the friend line is about meeting real people. by continuing you agree to NotCupid&apos;s <a href="/terms" style={{ color: LINE_DEEP }}>terms</a> &amp; <a href="/safety" style={{ color: LINE_DEEP }}>community guidelines</a> — be kind, be real, and meet new people safely.
             </p>
             <button onClick={agreeTerms} className={s.poppyBtn} style={{ width: '100%', fontSize: '1.25rem' }}>I agree — let me in →</button>
-            <a href="/hub" style={{ display: 'block', textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'none' }}>not now — back to hub</a>
+            <a href="/hub" style={{ display: 'block', textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'none' }}>not now — back to hub</a>
           </div>
         </div>
       )}
@@ -1667,7 +1573,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
             {/* keyed by step → each wizard step slides in instead of hard-cutting */}
             <div key={composerStep} onClick={(e) => e.stopPropagation()} className={s.stepBox}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{isPost ? 'say something' : `step ${composerStep > 4 ? 4 : composerStep} of 4`}</span>
+                <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{isPost ? 'say something' : `step ${composerStep > 4 ? 4 : composerStep} of 4`}</span>
                 <button onClick={close} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--h-text-dim)' }}>✕</button>
               </div>
 
@@ -1696,9 +1602,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                     📅 pick a date
                     <input type="datetime-local" value={newAct.happens_at} onChange={(e) => setNewAct({ ...newAct, happens_at: e.target.value })}
                       min={localDT(new Date())} max={localDT(new Date(Date.now() + 60 * 24 * 3600 * 1000))}
-                      style={{ flex: 1, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.3rem 0.5rem', fontFamily: "'DM Sans',monospace", fontSize: '0.66rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                      style={{ flex: 1, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.3rem 0.5rem', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                   </div>
-                  {newAct.happens_at && <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.82rem', color: LINE_DEEP }}>✓ {friendlyWhen(newAct.happens_at)}</div>}
+                  {newAct.happens_at && <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.82rem', color: LINE_DEEP }}>✓ {friendlyWhen(newAct.happens_at)}</div>}
                 </div>
                 <div className={s.stepFooter}>{back(1)}<button onClick={() => setComposerStep(3)} disabled={!newAct.happens_at} className={s.navBtn} style={{ opacity: newAct.happens_at ? 1 : 0.5 }}>next →</button></div>
               </>)}
@@ -1720,11 +1626,11 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 </div>
                 <div className={s.wizLabel}>age range (optional)</div>
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                  <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Sans',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                  <input type="number" min={18} max={120} placeholder="any" value={newAct.audMin} onChange={(e) => setNewAct({ ...newAct, audMin: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                   <span style={{ color: 'var(--h-text-dim)' }}>–</span>
-                  <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Sans',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                  <input type="number" min={18} max={120} placeholder="any" value={newAct.audMax} onChange={(e) => setNewAct({ ...newAct, audMax: e.target.value })} style={{ width: 64, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                 </div>
-                {newAct.audGenders.length > 0 && <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.74rem', color: 'var(--h-text-dim)', marginTop: '0.7rem' }}>a same-gender plan stays {newAct.audGenders.includes('f') ? 'women' : newAct.audGenders.includes('m') ? 'men' : 'group'}-run — you can only open it to a group you’re part of.</div>}
+                {newAct.audGenders.length > 0 && <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.75rem', color: 'var(--h-text-dim)', marginTop: '0.7rem' }}>a same-gender plan stays {newAct.audGenders.includes('f') ? 'women' : newAct.audGenders.includes('m') ? 'men' : 'group'}-run — you can only open it to a group you’re part of.</div>}
                 <div className={s.stepFooter}>{back(2)}<button onClick={() => setComposerStep(4)} className={s.navBtn}>next →</button></div>
               </>)}
 
@@ -1735,11 +1641,11 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   <button onClick={() => { setNewAct((s) => ({ ...s, area: '', location: '' })); setComposerStep(5); }} style={opt(false)}>📍 My area{myArea ? ` (${myArea})` : ''}</button>
                   <div style={{ ...opt(false) }}>
                     <div style={{ marginBottom: '0.4rem' }}>🗺 Pick a neighborhood</div>
-                    <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Sans',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }}>
+                    <select value={newAct.area} onChange={(e) => setNewAct({ ...newAct, area: e.target.value })} style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', background: 'var(--h-surface)', color: 'var(--h-text)' }}>
                       <option value="">— choose —</option>
                       {NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
                     </select>
-                    <input type="text" value={newAct.location} onChange={(e) => setNewAct({ ...newAct, location: e.target.value })} maxLength={120} placeholder="exact spot? (e.g. Tatte, Charles River loop)" style={{ width: '100%', marginTop: '0.4rem', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.55rem', fontFamily: "'DM Sans',monospace", fontSize: '0.66rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
+                    <input type="text" value={newAct.location} onChange={(e) => setNewAct({ ...newAct, location: e.target.value })} maxLength={120} placeholder="exact spot? (e.g. Tatte, Charles River loop)" style={{ width: '100%', marginTop: '0.4rem', border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.4rem 0.55rem', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                   </div>
                   <button onClick={() => { setNewAct((s) => ({ ...s, area: '', location: '' })); setComposerStep(5); }} style={opt(false)}>🤷 Decide later</button>
                 </div>
@@ -1753,12 +1659,12 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   placeholder={isPost ? `what's on your mind, ${firstName.toLowerCase()}?` : (WHAT_CARDS.find((c) => c.category === newAct.category)?.ph || 'what’s the move?')}
                   style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.75rem 1rem', fontSize: '1rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} />
                 {!isPost && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.8rem', fontFamily: "'DM Sans',monospace", fontSize: '0.66rem', color: 'var(--h-text-dim)' }}>
-                    👥 cap <input type="number" min={2} max={10} placeholder="4" value={newAct.capacity} onChange={(e) => setNewAct({ ...newAct, capacity: e.target.value })} style={{ width: 70, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.35rem', fontFamily: "'DM Sans',monospace", fontSize: '0.7rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} /> <span>people including you (default 4)</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.8rem', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', color: 'var(--h-text-dim)' }}>
+                    👥 cap <input type="number" min={2} max={10} placeholder="4" value={newAct.capacity} onChange={(e) => setNewAct({ ...newAct, capacity: e.target.value })} style={{ width: 70, border: '1px solid var(--h-border)', borderRadius: 8, padding: '0.35rem', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', background: 'var(--h-surface)', color: 'var(--h-text)' }} /> <span>people including you (default 4)</span>
                   </div>
                 )}
                 {!isPost && (
-                  <div style={{ marginTop: '1rem', padding: '0.7rem 0.85rem', background: 'var(--h-surface-2)', borderRadius: 10, fontFamily: "'DM Sans',monospace", fontSize: '0.62rem', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
+                  <div style={{ marginTop: '1rem', padding: '0.7rem 0.85rem', background: 'var(--h-surface-2)', borderRadius: 10, fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', color: 'var(--h-text-dim)', lineHeight: 1.6 }}>
                     {newAct.happens_at ? `🕒 ${friendlyWhen(newAct.happens_at)}` : '🕒 anytime'} · {newAct.audGenders.length ? `👥 ${newAct.audGenders.includes('f') ? 'women' : newAct.audGenders.includes('m') ? 'men' : newAct.audGenders[0]} only` : '👥 everyone'}{newAct.datingFriendly ? ' · 💘 dating-friendly' : ''} · 📍 {newAct.location || newAct.area || 'TBD'}
                   </div>
                 )}
@@ -1781,37 +1687,37 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1.25', objectFit: 'cover', display: 'block' }} />
                 : <div style={{ width: '100%', aspectRatio: '1.25', background: 'var(--h-surface-3)' }} />}
               <button onClick={close} aria-label="close" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(10,8,12,0.55)', color: '#fff', fontSize: '0.95rem' }}>✕</button>
-              {typeof m.score === 'number' && <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(10,8,12,0.72)', backdropFilter: 'blur(4px)', color: '#fff', borderRadius: 999, padding: '0.15rem 0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem' }}>{m.score}% match</span>}
+              {typeof m.score === 'number' && <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(10,8,12,0.72)', backdropFilter: 'blur(4px)', color: '#fff', borderRadius: 999, padding: '0.15rem 0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem' }}>{m.score}% match</span>}
             </div>
             <div style={{ padding: '1rem 1.2rem 1.25rem' }}>
               <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.9rem', lineHeight: 1 }}>{m.name}{m.age ? <span style={{ color: 'var(--h-text-dim)', fontSize: '1rem' }}> · {m.age}</span> : null}</div>
-              {m.archetype && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.2rem' }}>{m.archetype}</div>}
-              {(m.gender === 'm' || m.gender === 'f' || m.gender === 'nb') && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.25rem' }}>{m.gender === 'f' ? '♀ woman' : m.gender === 'm' ? '♂ man' : '⚧ non-binary'}</div>}
-              {m.metro && <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.2rem' }}>📍 {m.visiting ? `visiting ${m.metro}` : m.metro}</div>}
+              {m.archetype && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.2rem' }}>{m.archetype}</div>}
+              {(m.gender === 'm' || m.gender === 'f' || m.gender === 'nb') && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.25rem' }}>{m.gender === 'f' ? '♀ woman' : m.gender === 'm' ? '♂ man' : '⚧ non-binary'}</div>}
+              {m.metro && <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.2rem' }}>📍 {m.visiting ? `visiting ${m.metro}` : m.metro}</div>}
               {(m.sharedActivities || []).length > 0 && (
                 <div style={{ marginTop: '0.75rem' }}>
-                  <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>you both like</div>
+                  <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>you both like</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{m.sharedActivities.map((a: string) => <span key={a} className={s.chip}>{a}</span>)}</div>
                 </div>
               )}
               <div style={{ marginTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                 {m.connected ? (confirmDrop ? (
                   <>
-                    <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>drop your connection with {first}? you&apos;ll leave the shared chat if they were your last tie there.</div>
+                    <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>drop your connection with {first}? you&apos;ll leave the shared chat if they were your last tie there.</div>
                     <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: '#c0392b', color: '#fff', border: 'none', borderRadius: 12, padding: '0.7rem', cursor: busy ? 'wait' : 'pointer', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', letterSpacing: '0.02em' }}>{busy ? '…' : 'yes, drop the connection'}</button>
-                    <button onClick={() => setConfirmDrop(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>keep {first}</button>
+                    <button onClick={() => setConfirmDrop(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>keep {first}</button>
                   </>
                 ) : (
                   <>
                     <button onClick={() => openDm(m)} className={s.poppyBtn} style={{ width: '100%' }}>💬 message {first} →</button>
-                    <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
+                    <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
                   </>
                 )) : m.theyAccepted ? (
                   <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} style={{ background: '#ff2d8e', color: '#fff', border: 'none', borderRadius: 12, padding: '0.75rem', cursor: termsOk && !busy ? 'pointer' : 'not-allowed', opacity: termsOk ? 1 : 0.5, fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em' }}>{busy ? '…' : `🤝 accept — connect with ${first} →`}</button>
                 ) : m.iAccepted ? (
                   <>
-                    <div style={{ textAlign: 'center', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 10, padding: '0.6rem' }}>⏳ waiting on {first} to accept</div>
-                    <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>cancel request</button>
+                    <div style={{ textAlign: 'center', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 10, padding: '0.6rem' }}>⏳ waiting on {first} to accept</div>
+                    <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>cancel request</button>
                   </>
                 ) : (
                   <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} className={s.poppyBtn} style={{ width: '100%', opacity: termsOk ? 1 : 0.5, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>{busy ? '…' : `🤝 connect with ${first}`}</button>
@@ -1821,12 +1727,12 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                     {m.theyAccepted ? 'Pass on this request' : 'Pass on this suggestion'}
                   </button>
                 )}
-                {!termsOk && !m.connected && <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.74rem', textAlign: 'center' }}>agree to the terms (on the page) before you connect.</div>}
+                {!termsOk && !m.connected && <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-faint)', fontSize: '0.75rem', textAlign: 'center' }}>agree to the terms (on the page) before you connect.</div>}
               </div>
               {/* safety: vet + report. Connecting is opt-in; they can't DM you unless you connect. */}
               <div style={{ marginTop: '0.9rem', paddingTop: '0.7rem', borderTop: '1px solid var(--h-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>they can only message you if you connect.</span>
-                <button onClick={() => reportUser(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', flexShrink: 0 }}>⚑ report</button>
+                <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-faint)', fontSize: '0.75rem' }}>they can only message you if you connect.</span>
+                <button onClick={() => reportUser(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', flexShrink: 0 }}>⚑ report</button>
               </div>
             </div>
           </div>
@@ -1844,7 +1750,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               <div className={s.chatHeaderText}>
                 <div className={s.chatTitle}>{m.name}</div>
                 <FriendReportButton reportedId={m.otherId} contextType="dm" contextId={m.otherId} onReported={() => setDmWith(null)} />
-                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>🔒 private message · just you two</div>
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>🔒 private message · just you two</div>
               </div>
               <button onClick={() => setDmWith(null)} aria-label="close private chat" className={s.chatClose}>✕</button>
             </header>
@@ -1878,7 +1784,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               <span style={{ fontSize: '1.4rem' }}>🤝</span>
               <div className={s.chatHeaderText}>
                 <div className={s.chatTitle}>{clubChat.name}</div>
-                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>club chat · members only</div>
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>club chat · members only</div>
               </div>
               <button onClick={closeClubChat} aria-label="close club chat" className={s.chatClose}>✕</button>
             </header>
@@ -1886,7 +1792,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               {clubMsgs.length === 0 && <div className={s.chatEmpty}>say hi to the club 👋</div>}
               {clubMsgs.map((msg: any) => (
                 <div key={msg.id} className={`${s.chatMessage} ${msg.isMe ? s.chatMessageMine : s.chatMessageTheirs}`}>
-                  {!msg.isMe && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.04em', color: LINE_DEEP, margin: '0 0 0.1rem 0.5rem' }}>{(msg.name || 'someone').split(' ')[0]}</div>}
+                  {!msg.isMe && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em', color: LINE_DEEP, margin: '0 0 0.1rem 0.5rem' }}>{(msg.name || 'someone').split(' ')[0]}</div>}
                   <div className={`${s.chatBubble} ${msg.failed ? s.chatBubbleFailed : msg.isMe ? s.chatBubbleMine : s.chatBubbleTheirs}`} style={{ opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
                   {msg.pending && <span className={s.chatFailed}>sending…</span>}
                   {msg.failed && <button type="button" className={s.chatRetry} disabled={clubSending} onClick={() => void sendClubMsg(msg)}>Not confirmed · retry</button>}
@@ -1912,9 +1818,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.6rem' }}>{clubManage.name}</div>
               <button onClick={() => setClubManage(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--h-text-faint)' }}>✕</button>
             </div>
-            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.9rem' }}>join requests</div>
+            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.9rem' }}>join requests</div>
             {clubReqs.length === 0 ? (
-              <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>no pending requests right now.</div>
+              <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>no pending requests right now.</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {clubReqs.map((r: any) => (
@@ -1938,12 +1844,12 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
           className={s.evToast}>
           <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔔</span>
           <span style={{ minWidth: 0 }}>
-            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
+            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
               {(evToast.author || 'someone').split(' ')[0]}: {evToast.title}
             </span>
           </span>
-          <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>see →</span>
+          <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>see →</span>
         </button>
       )}
 
@@ -1951,40 +1857,34 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
         {Object.values(loadErrors).some(Boolean) && (
           <div role="alert" style={{ marginBottom: '1rem', padding: '0.8rem 0.9rem', borderRadius: 14, border: '1px solid rgba(180,35,24,0.3)', background: 'rgba(180,35,24,0.06)', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.5 }}>
             <b style={{ color: 'var(--h-text)' }}>Some Friend Line updates did not load.</b> We kept your last good view so an outage never looks like an empty roster.{' '}
-            <button type="button" onClick={() => { loadMatches(); loadActs(); loadPulse(); loadClubs(); }} style={{ border: 0, background: 'transparent', color: LINE_DEEP, font: 'inherit', fontWeight: 700, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>retry</button>
+            <button type="button" onClick={() => { loadMatches(); loadActs(); loadPulse(); loadClubs(); loadComLinks(); }} style={{ border: 0, background: 'transparent', color: LINE_DEEP, font: 'inherit', fontWeight: 700, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>retry</button>
           </div>
         )}
-        {/* Transit header bar — the Friend Line */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: `1px solid var(--h-border)`, textDecoration: 'none' }}>FRIEND LINE</a>
-            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{city ? `all of ${city.split(',')[0].toLowerCase()}` : 'your metro'}</span>
+        <header className={s.workspaceHeader}>
+          <div><span className={s.workspaceKicker}>Friendship · {city || 'your city'}</span>
+            <h1>Your people, your pace.</h1>
+            <p>Meet people, return to your conversations, or find a group around something you enjoy.</p>
           </div>
-          {/* friends: change your city (metro-wide; no radius) */}
           <LocationControls city={city} currentMetro={metro} accent={LINE} />
-        </div>
-
-        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2rem,6vw,3rem)', lineHeight: 0.96, color: 'var(--h-text)', margin: '0.6rem 0 1.2rem' }}>
-          your people are <span style={{ color: 'var(--h-accent)' }}>out there.</span>
-        </h1>
+        </header>
 
         {/* the nav — a floating pill bar across the top */}
-        <div className={s.fbTopNav}>
+        <nav className={s.fbTopNav} aria-label="Friendship sections">
           {NAV.map((n) => {
             const active = view === n.key;
             const unread = n.key === 'pulse' ? clubUnreadTotal : n.key === 'crew' ? crewUnreadTotal : 0;
             return (
-              <button key={n.key} onClick={() => goView(n.key)}
+              <button key={n.key} aria-pressed={active} onClick={() => goView(n.key)}
                 style={{ flexShrink: 0, position: 'relative', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em', padding: '0.45rem 1.1rem', borderRadius: 999, border: `1px solid ${active ? LINE : 'var(--h-border)'}`, cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text-dim)', boxShadow: active ? '0 8px 20px -10px rgba(232,132,43,0.7)' : 'none' }}>
                 {n.icon} {n.label}
                 {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{newScene}</span>}
-                {unread > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{unread > 99 ? '99+' : unread}</span>}
+                {unread > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{unread > 99 ? '99+' : unread}</span>}
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        <div className={`${s.fbShell} ${view === 'home' ? s.fbShellHome : ''}`}>
+        <div className={`${s.fbShell} ${view === 'home' ? s.fbShellHome : ''} ${view === 'crew' ? s.fbShellPeople : ''} ${view === 'pulse' ? s.fbShellWide : ''}`}>
           <main className={s.fbMain}>
         {view === 'home' && (!actsLoaded ? (
           <div>
@@ -2019,33 +1919,35 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
         {view === 'crew' && (
         <div>
-          {/* YOUR FRIEND CARD — on top, so the page leads with you */}
+          <div className={s.sectionIntro}><h2>People & chats</h2><p>Your pack is a group. A private conversation needs an explicit connection with that person.</p></div>
+          <details className={s.profileTools}><summary>Your Friend profile & preferences</summary>
+          {/* Existing profile and reset controls remain explicit. */}
           {profileSet && me ? (
             <div className={s.card} style={{ padding: '0.85rem 1rem', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
               {me.photo_url
                 ? <img src={me.photo_url} alt="" style={{ width: 66, height: 66, borderRadius: 14, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                 : <div style={{ width: 66, height: 66, borderRadius: 14, border: '1px solid var(--h-border)', background: 'var(--h-surface-3)', flexShrink: 0 }} />}
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>your friend card</div>
-                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.75rem', lineHeight: 1.05 }}>{me.name}{me.archetype && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, marginLeft: '0.5rem' }}>{me.archetype}</span>}</div>
+                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>your friend card</div>
+                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.75rem', lineHeight: 1.05 }}>{me.name}{me.archetype && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, marginLeft: '0.5rem' }}>{me.archetype}</span>}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.35rem' }}>
                   {[...me.hobbies, ...me.music, ...me.food].slice(0, 5).map((t) => <span key={t} className={s.chip}>{t}</span>)}
                 </div>
               </div>
-              <a href="/friends/profile" style={{ flexShrink: 0, alignSelf: 'flex-start', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>edit →</a>
+              <a href="/friends/profile" style={{ flexShrink: 0, alignSelf: 'flex-start', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>edit →</a>
             </div>
           ) : (
             <a href="/friends/profile" className={s.card} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.9rem 1rem', marginBottom: '1.2rem', textDecoration: 'none', color: 'var(--h-text)' }}>
               <span style={{ fontSize: '1.6rem' }}>📸</span>
-              <span style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic' }}>set up your friend card so crews know it&apos;s you.</span>
-              <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
+              <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal' }}>set up your friend card so crews know it&apos;s you.</span>
+              <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
             </a>
           )}
 
           <div className={s.card} style={{ padding: '0.9rem 1rem', marginBottom: '1.1rem', display: 'grid', gap: '0.65rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff3e8)' }}>
             <div>
               <div className={s.sideHd}>tune your friend line</div>
-              <p style={{ margin: '0.25rem 0 0', fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.84rem', lineHeight: 1.45 }}>
+              <p style={{ margin: '0.25rem 0 0', fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.84rem', lineHeight: 1.45 }}>
                 Retake the friend quiz when your season changes, or use a limited rewipe when the current friend scene is not it.
               </p>
             </div>
@@ -2055,22 +1957,24 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
             </div>
           </div>
 
+          </details>
+
           {/* PAUSED / EMPTY / CHOOSE-PACK — your pack itself lives in the right rail */}
           {ghosted ? (
             <div className={s.card} style={{ padding: '1.25rem' }}>
               <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.6rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ your matching is paused</div>
               {hardLocked ? (
                 <>
-                  <p style={{ fontFamily: 'Space Grotesk,serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
+                  <p style={{ fontFamily: 'var(--font-ui)', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
                     this has happened a few times now, so we&apos;ve paused your account on both lines. if you think that&apos;s a mistake, email us and we&apos;ll take a look.
                   </p>
-                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: '0 10px 24px -12px rgba(0,0,0,0.45)', textDecoration: 'none' }}>
+                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: '0 10px 24px -12px rgba(0,0,0,0.45)', textDecoration: 'none' }}>
                     email match@notcupid.com →
                   </a>
                 </>
               ) : (
                 <>
-                  <p style={{ fontFamily: 'Space Grotesk,serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
+                  <p style={{ fontFamily: 'var(--font-ui)', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
                     a few of your matches went quiet, so we paused you on both lines to keep things fair. no harm done — your crew &amp; profile stay put. pick back up whenever you&apos;re ready.
                   </p>
                   <ReactivateButton accent={LINE} />
@@ -2080,16 +1984,16 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
           ) : cooledUntil !== null ? (
             <div className={s.card} style={{ padding: '1.4rem 1.25rem', textAlign: 'center' }}>
               <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.7rem', color: LINE_DEEP, marginBottom: '0.3rem' }}>⏸ taking a little break</div>
-              <p style={{ fontFamily: 'Space Grotesk,serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.55, margin: 0 }}>
+              <p style={{ fontFamily: 'var(--font-ui)', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.55, margin: 0 }}>
                 you got a few packs and didn&apos;t open up to anyone, so we&apos;ve paused new packs to keep things fresh for everyone.{cooledUntil ? ` you're back on ${new Date(cooledUntil).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}.` : ''} your existing chats &amp; connections stay put — and turn on notifications so you don&apos;t miss the next pack.
               </p>
             </div>
           ) : matches.length === 0 ? (
-            <div className={`${s.card} ${s.cardEmpty}`}>the algo is still finding your people — check back soon.</div>
+            <div className={`${s.card} ${s.cardEmpty}`}>No people are loaded in your current pack. Check back later or explore member plans.</div>
           ) : (!chat.circleId && matches.some((m) => !m.connected && !m.iAccepted)) ? (
             <div className={s.card} style={{ padding: '1rem 1.2rem', marginBottom: '1.1rem' }}>
-              <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', marginBottom: '0.6rem', color: 'var(--h-text-dim)', fontSize: '0.92rem' }}>
-                a <b style={{ color: 'var(--h-text)' }}>pack</b> is a batch of people to meet. <b>choose your pack</b> to open one group chat with everyone — then tap <b>connect</b> on anyone in <b>your pack</b> (over on the right) for a private 1:1.
+              <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', marginBottom: '0.6rem', color: 'var(--h-text-dim)', fontSize: '0.92rem' }}>
+                a <b style={{ color: 'var(--h-text)' }}>pack</b> is a batch of people to meet. <b>choose your pack</b> to open one group chat with everyone — then tap <b>connect</b> on anyone in <b>your pack</b> in the people panel for a private 1:1.
               </div>
               <button onClick={choosePack} disabled={busy || !termsOk}
                 className={s.poppyBtn} style={{ width: '100%', opacity: termsOk ? 1 : 0.45, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>
@@ -2106,7 +2010,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 <>
                   <div className={s.card} style={{ padding: '0.9rem 1rem', marginBottom: '0.75rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--h-surface) 92%, #fff0e5), var(--h-surface))' }}>
                     <div className={s.sideHd}>bonding room</div>
-                    <p style={{ margin: '0.25rem 0 0.75rem', fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
+                    <p style={{ margin: '0.25rem 0 0.75rem', fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
                       Pack Chat should make the first move easy. Pick a tiny game, vote on a plan, or drop a prompt so the group has somewhere to start.
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -2130,7 +2034,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       <div style={{ background: LINE, color: '#fff', padding: '0.6rem 0.85rem 0.7rem', borderBottom: "1px solid var(--h-border)" }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem' }}>
                           💬 your pack · {crewRoster.length}
-                          <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: chatLive ? '#3f7d57' : 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, padding: '0.18rem 0.55rem' }}>
+                          <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: chatLive ? '#3f7d57' : 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, padding: '0.18rem 0.55rem' }}>
                             {chatLive ? '● live' : '○ forming'}
                           </span>
                         </div>
@@ -2141,8 +2045,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                               {u.photo_url
                                 ? <img src={u.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: `1px solid var(--h-border)` }} />
                                 : <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, display: 'inline-block' }} />}
-                              <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
-                              {!u.you && matches.find((x) => x.otherId === u.id)?.connected && <span title="your connection — message them" style={{ fontSize: '0.7rem', flexShrink: 0 }}>🧡</span>}
+                              <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
+                              {!u.you && matches.find((x) => x.otherId === u.id)?.connected && <span title="your connection — message them" style={{ fontSize: '0.75rem', flexShrink: 0 }}>🧡</span>}
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: u.here ? '#3f7d57' : '#c9a06a', flexShrink: 0 }} />
                             </button>
                           ))}
@@ -2152,7 +2056,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                         <div style={{ padding: '1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', minHeight: 240, maxHeight: 460, overflowY: 'auto' }}>
                           {chat.messages.length === 0 && (
                             <div style={{ border: '1px solid var(--h-border)', borderRadius: 16, padding: '0.85rem', background: 'var(--h-surface-2)' }}>
-                              <div style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.9rem', marginBottom: '0.65rem' }}>say hi to the crew, or start with one of these.</div>
+                              <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.9rem', marginBottom: '0.65rem' }}>say hi to the crew, or start with one of these.</div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                                 {PACK_PROMPTS.map((p) => (
                                   <button key={p} onClick={() => setMsg(p)} className={s.chip} style={{ cursor: 'pointer', background: 'var(--h-surface)' }}>{p}</button>
@@ -2165,7 +2069,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                             return (
                               <div key={mm.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
                                 {sender?.photo_url ? <img src={sender.photo_url} alt="" style={{ width: 26, height: 26, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover' }} /> : <div style={{ width: 26, height: 26, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)' }} />}
-                                <div><span style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.5rem', color: 'var(--h-text-dim)' }}>{sender?.name?.split(' ')[0] || '—'}</span>
+                                <div><span style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', color: 'var(--h-text-dim)' }}>{sender?.name?.split(' ')[0] || '—'}</span>
                                   <div style={{ background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, borderRadius: 12, padding: '0.45rem 0.75rem', fontSize: '0.9rem', maxWidth: 520 }}>{mm.body}</div>
                                   {sender && !sender.isMe && <FriendReportButton reportedId={mm.sender_id} contextType="circle" contextId={chat.circleId} onReported={() => void loadChat(true)} />}
                                 </div>
@@ -2181,7 +2085,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                         <div style={{ padding: '2rem 1.5rem', textAlign: 'center' }}>
                           <div style={{ fontSize: '2rem' }}>🚥</div>
                           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.6rem', margin: '0.3rem 0 0.5rem' }}>chat opens when your crew locks in</div>
-                          <p style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: LINE_DEEP, fontSize: '0.92rem', margin: '0 auto', maxWidth: 420, lineHeight: 1.5 }}>
+                          <p style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: LINE_DEEP, fontSize: '0.92rem', margin: '0 auto', maxWidth: 420, lineHeight: 1.5 }}>
                             {matches.some((m) => m.iAccepted)
                               ? <>you&apos;re in 🎒 — waiting on the others to say they&apos;re in too. the second they do, this becomes your group thread.</>
                               : <>say <b>“I&apos;m in”</b> above to lock in your crew — then this opens up as your group thread.</>}
@@ -2199,8 +2103,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
 
         {view === 'pulse' && (
         <div>
-          <h2 className={s.sectionLabel}><StationDot />🌆 communities</h2>
-          <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
+          <div className={s.sectionIntro}><h2>Clubs & communities</h2><p>Clubs meet and chat here. Community links take you to an external group.</p></div>
+          <p style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', margin: '-0.3rem 0 1.3rem', fontSize: '0.98rem' }}>
             Find a recurring group or trusted community without digging through Reddit threads and dead invite links around {city ? city.split(',')[0].toLowerCase() : 'your city'}.
           </p>
 
@@ -2228,22 +2132,22 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   </div>
                   <textarea value={newLink.description} onChange={(e) => setNewLink({ ...newLink, description: e.target.value })} maxLength={240} placeholder="what actually happens in this community?" rows={2} className={s.inputStyle} style={{ resize: 'vertical', borderRadius: 12 }} />
                   <button onClick={submitLink} disabled={clubBusy || !newLink.title.trim() || !newLink.url.trim()} className={s.poppyBtn} style={{ alignSelf: 'flex-start', opacity: newLink.title.trim() && newLink.url.trim() ? 1 : 0.5 }}>{clubBusy ? '…' : 'submit for review →'}</button>
-                  <span style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.76rem', color: 'var(--h-text-faint)' }}>reviewed before it goes live.</span>
+                  <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.76rem', color: 'var(--h-text-faint)' }}>reviewed before it goes live.</span>
                 </div>
               )}
               {comLinks.length === 0 ? (
-                <div className={s.sideEmpty}>no community hubs yet — submit a Discord or group-chat link.</div>
+                <div className={s.sideEmpty} role="status">{!linksLoaded ? "Loading community links…" : loadErrors.communities ? "Community links could not be loaded. Use retry above." : "No community links yet. Submit an external group for review."}</div>
               ) : (
                 <div style={{ display: 'grid', gap: '0.55rem' }}>
                   {comLinks.map((l) => (
-                    <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" onClick={() => trackCommunityOpen(l.id)} style={{ border: '1px solid var(--h-border)', borderRadius: 14, background: 'var(--h-surface-2)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', color: 'var(--h-text)' }}>
+                    <a key={l.id} className={s.communityLink} href={l.url} target="_blank" rel="noopener noreferrer" onClick={() => trackCommunityOpen(l.id)} style={{ border: '1px solid var(--h-border)', borderRadius: 14, background: 'var(--h-surface-2)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', color: 'var(--h-text)' }}>
                       <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>{KIND_EMOJI[l.kind] || '🔗'}</span>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.18rem', lineHeight: 1 }}>{l.title}</div>
                         {l.description && <div style={{ fontSize: '0.78rem', color: 'var(--h-text-dim)', marginTop: '0.1rem', lineHeight: 1.35 }}>{l.description}</div>}
-                        <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.5rem', color: 'var(--h-text-faint)', marginTop: '0.2rem' }}>{[l.cadence !== 'ongoing' ? l.cadence : '', l.area, l.audience, l.last_verified_at ? 'checked recently' : ''].filter(Boolean).join(' · ')}</div>
+                        <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', color: 'var(--h-text-faint)', marginTop: '0.2rem' }}>{[l.cadence !== 'ongoing' ? l.cadence : '', l.area, l.audience, l.last_verified_at ? 'checked recently' : ''].filter(Boolean).join(' · ')}</div>
                       </div>
-                      <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, flexShrink: 0 }}>join →</span>
+                      <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, flexShrink: 0 }}>join →</span>
                     </a>
                   ))}
                 </div>
@@ -2262,7 +2166,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 <div style={{ border: '1px solid var(--h-border)', borderRadius: 14, padding: '0.75rem', marginBottom: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', background: 'var(--h-surface-2)' }}>
                   <input value={newClub.name} onChange={(e) => setNewClub({ ...newClub, name: e.target.value })} maxLength={80} placeholder="club name (e.g. sunday run club)" className={s.inputStyle} style={{ borderColor: newClub.name.trim().length > 0 && newClub.name.trim().length < 3 ? '#d94f3d' : undefined }} />
                   {newClub.name.trim().length > 0 && newClub.name.trim().length < 3 && (
-                    <span style={{ fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', fontSize: '0.75rem', color: '#c0392b', marginTop: '-0.3rem' }}>give it at least 3 characters — people search by name</span>
+                    <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.75rem', color: '#c0392b', marginTop: '-0.3rem' }}>give it at least 3 characters — people search by name</span>
                   )}
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <select value={newClub.category} onChange={(e) => setNewClub({ ...newClub, category: e.target.value, activityKey: e.target.value })} className={s.inputStyle} style={{ flex: '0 0 auto' }}>{CLUB_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
@@ -2278,21 +2182,21 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 </div>
               )}
               {clubs.length === 0 ? (
-                <div className={s.sideEmpty}>no clubs in your city yet — start the first one.</div>
+                <div className={s.sideEmpty} role="status">{!clubsLoaded ? "Loading clubs…" : loadErrors.clubs ? "Clubs could not be loaded. Use retry above." : "No clubs in your city yet. Start one around something you enjoy."}</div>
               ) : (
                 <div style={{ display: 'grid', gap: '0.65rem' }}>
                   {clubs.map((c) => (
-                    <div key={c.id} style={{ border: '1px solid var(--h-border)', borderRadius: 16, background: 'var(--h-surface-2)', padding: '0.85rem' }}>
+                    <div key={c.id} className={s.clubCard}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
                         <span style={{ fontSize: '1.45rem', flexShrink: 0 }}>{CAT_EMOJI[c.category] || '✨'}</span>
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.28rem', lineHeight: 1 }}>{c.name}</div>
-                          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{c.category} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}{c.area ? ` · 📍 ${c.area}` : ''}</div>
+                          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{c.category} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}{c.area ? ` · 📍 ${c.area}` : ''}</div>
                         </div>
                         <button onClick={async () => { if (await confirmDialog({ title: `report "${c.name}"?`, body: 'The team reviews every report. Clubs with repeat reports are hidden automatically.', confirmLabel: 'report it', danger: true })) { await clubAct(c.id, 'report'); await loadClubs(); toast('thanks — the team will take a look', 'success'); } }} title="report this club" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontSize: '0.85rem', flexShrink: 0 }}>⚑</button>
                       </div>
                       {c.description && <p style={{ margin: '0.5rem 0 0', fontSize: '0.86rem', lineHeight: 1.45, color: 'var(--h-text-dim)' }}>{c.description}</p>}
-                      <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.52rem', color: 'var(--h-text-faint)', marginTop: '0.35rem' }}>{[c.cadence && c.cadence !== 'ongoing' ? c.cadence : 'forming now', c.nextMeetAt ? `next: ${friendlyWhen(c.nextMeetAt)}` : '', c.joinMode === 'open' ? 'open join' : 'organizer approval'].filter(Boolean).join(' · ')}</div>
+                      <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', color: 'var(--h-text-faint)', marginTop: '0.35rem' }}>{[c.cadence && c.cadence !== 'ongoing' ? c.cadence : 'forming now', c.nextMeetAt ? `next: ${friendlyWhen(c.nextMeetAt)}` : '', c.joinMode === 'open' ? 'open join' : 'organizer approval'].filter(Boolean).join(' · ')}</div>
                       <div style={{ display: 'flex', gap: '0.45rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
                         {c.myStatus === 'owner' ? (<>
                           <button onClick={() => openClubManage(c)} className={s.pulseBtn}>requests{c.pendingCount ? ` (${c.pendingCount})` : ''}</button>
@@ -2353,17 +2257,17 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
         <div className={s.sceneFilterDock}>
           {([['all', 'All'], ['event', 'Plans'], ['post', 'Talk']] as const).map(([k, label]) => {
             const on = kindFilter === k;
-            return <button key={k} onClick={() => setKindFilter(k)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? LINE : 'var(--h-surface-3)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? LINE : 'var(--h-border)'}` }}>{label}</button>;
+            return <button key={k} onClick={() => setKindFilter(k)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.75rem', padding: '0.4rem 0.85rem', background: on ? LINE : 'var(--h-surface-3)', color: on ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${on ? LINE : 'var(--h-border)'}` }}>{label}</button>;
           })}
           <span style={{ width: 1, height: 18, background: 'var(--h-border)', margin: '0 0.2rem' }} />
           {([['tonight', '🌙 Tonight'], ['weekend', '🗓 This Weekend']] as const).map(([k, label]) => {
             const on = sceneTime === k;
-            return <button key={k} onClick={() => setSceneTime(on ? 'all' : k)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: on ? '#ffd23d' : 'var(--h-surface-3)', color: on ? INK : 'var(--h-text-dim)', border: `1px solid ${on ? '#ffd23d' : 'var(--h-border)'}` }}>{label}</button>;
+            return <button key={k} onClick={() => setSceneTime(on ? 'all' : k)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.75rem', padding: '0.4rem 0.85rem', background: on ? '#ffd23d' : 'var(--h-surface-3)', color: on ? INK : 'var(--h-text-dim)', border: `1px solid ${on ? '#ffd23d' : 'var(--h-border)'}` }}>{label}</button>;
           })}
-          <button onClick={() => setNearMe((v) => !v)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.85rem', background: nearMe ? '#ffd23d' : 'var(--h-surface-3)', color: nearMe ? INK : 'var(--h-text-dim)', border: `1px solid ${nearMe ? '#ffd23d' : 'var(--h-border)'}` }}>📍 Near me</button>
+          <button onClick={() => setNearMe((v) => !v)} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.75rem', padding: '0.4rem 0.85rem', background: nearMe ? '#ffd23d' : 'var(--h-surface-3)', color: nearMe ? INK : 'var(--h-text-dim)', border: `1px solid ${nearMe ? '#ffd23d' : 'var(--h-border)'}` }}>📍 Near me</button>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem' }}>
             {([['new', '🆕'], ['popular', '🔥']] as const).map(([k, label]) => (
-              <button key={k} onClick={() => setSceneSort(k)} title={k} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.66rem', padding: '0.4rem 0.7rem', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${sceneSort === k ? 'var(--h-accent)' : 'var(--h-border)'}` }}>{label} {k}</button>
+              <button key={k} onClick={() => setSceneSort(k)} title={k} className={s.chip} style={{ cursor: 'pointer', fontSize: '0.75rem', padding: '0.4rem 0.7rem', background: sceneSort === k ? 'var(--h-accent)' : 'var(--h-surface-3)', color: sceneSort === k ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${sceneSort === k ? 'var(--h-accent)' : 'var(--h-border)'}` }}>{label} {k}</button>
             ))}
           </div>
         </div>
@@ -2400,7 +2304,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
             {areaFilter && (
               <div className={s.card} style={{ padding: '0.9rem 1rem', marginBottom: '0.9rem', background: 'color-mix(in srgb, var(--h-surface) 94%, #fff4ea)' }}>
                 <div className={s.sideHd}>📍 {areaFilter}</div>
-                <p style={{ margin: '0.3rem 0 0.75rem', fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
+                <p style={{ margin: '0.3rem 0 0.75rem', fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.45 }}>
                   This is the neighborhood board: plans, posts, and people trying to make something happen here.
                 </p>
                 <button onClick={() => { setNewAct((s) => ({ ...s, area: areaFilter })); setComposerStep(1); setComposerOpen(true); }} className={s.poppyBtn} style={{ fontSize: '0.95rem', padding: '0.45rem 0.95rem' }}>start something in {areaFilter} →</button>
@@ -2444,7 +2348,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
           <aside className={s.fbRail}>
             {view === 'crew' && (
             <div className={s.card} style={{ padding: '0.9rem 1rem' }}>
-              <div className={s.sideHd}>🧡 your connections</div>
+              <h2 className={s.sideHd}>Your connections</h2>
               {matches.filter((m) => m.connected).length === 0 ? (
                 <div className={s.sideEmpty}>no connections yet — pick someone in your circle to connect.</div>
               ) : (
@@ -2454,9 +2358,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       {m.photo_url
                         ? <img src={m.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                         : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
-                      <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]}</span>
+                      <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]}</span>
                       {(dmUnread[m.otherId] || 0) > 0 && (
-                        <span style={{ marginLeft: 'auto', flexShrink: 0, minWidth: 18, height: 18, borderRadius: 999, background: LINE, color: '#fff', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{dmUnread[m.otherId]}</span>
+                        <span style={{ marginLeft: 'auto', flexShrink: 0, minWidth: 18, height: 18, borderRadius: 999, background: LINE, color: '#fff', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{dmUnread[m.otherId]}</span>
                       )}
                     </button>
                   ))}
@@ -2469,21 +2373,21 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                     {matches.filter((m) => !m.connected && m.theyAccepted && !m.iAccepted).map((m) => (
                       <button key={m.otherId} onClick={() => setCardMember(m)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 12, cursor: 'pointer', font: 'inherit', padding: '0.45rem', color: 'var(--h-text)', textAlign: 'left' }}>
                         {m.photo_url ? <img src={m.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} /> : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
-                        <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.68rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]} wants to connect</span>
-                        <b style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', color: '#ff2d8e' }}>view</b>
+                        <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]} wants to connect</span>
+                        <b style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', color: '#ff2d8e' }}>view</b>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-              <button onClick={() => goView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.56rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
+              <button onClick={() => goView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>open my circle →</button>
             </div>
             )}
 
             {/* CREW VIEW — your pack lives here on the right */}
             {view === 'crew' && !ghosted && cooledUntil === null && matches.length > 0 && (
             <div className={s.card} style={{ padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
-              <div className={s.sideHd}>🎒 your pack</div>
+              <h2 className={s.sideHd}>Your pack</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.6rem' }}>
                 {matches.map((m) => (
                   <div key={m.otherId} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
@@ -2492,8 +2396,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                         ? <img src={m.photo_url} alt="" style={{ width: 42, height: 42, borderRadius: 12, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                         : <span style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.7rem' }}>· {m.age}</span></div>
-                        <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? LINE_DEEP : m.theyAccepted ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? '🧡 connection' : m.theyAccepted ? 'wants to connect' : m.iAccepted ? 'pending' : 'new'}</div>
+                        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.75rem' }}>· {m.age}</span></div>
+                        <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? LINE_DEEP : m.theyAccepted ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? '🧡 connection' : m.theyAccepted ? 'wants to connect' : m.iAccepted ? 'pending' : 'new'}</div>
                       </div>
                     </button>
                     {m.connected ? (
@@ -2502,15 +2406,15 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       <span style={{ flexShrink: 0, fontSize: '0.85rem' }} title="waiting on them">⏳</span>
                     ) : (
                       <button onClick={() => connectOne(m.otherId)} disabled={busy || !termsOk}
-                        style={{ flexShrink: 0, cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: 'none', borderRadius: 8, padding: '0.32rem 0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
+                        style={{ flexShrink: 0, cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: 'none', borderRadius: 8, padding: '0.32rem 0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
                         {m.theyAccepted ? 'accept' : 'connect'}
                       </button>
                     )}
                   </div>
                 ))}
               </div>
-              {sealedCount > 0 && <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', color: LINE_DEEP, fontFamily: "'DM Sans', monospace", fontSize: '0.56rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>reveal next pack · {sealedCount} new →</a>}
-              <button onClick={leaveCrew} disabled={busy} style={{ display: 'block', width: '100%', marginTop: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>{busy ? '…' : 'opt out of the group →'}</button>
+              {sealedCount > 0 && <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', color: LINE_DEEP, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>reveal next pack · {sealedCount} new →</a>}
+              <button onClick={leaveCrew} disabled={busy} style={{ display: 'block', width: '100%', marginTop: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>{busy ? '…' : 'opt out of the group →'}</button>
             </div>
             )}
 
@@ -2521,7 +2425,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
             {view === 'scene' && (
             <div className={s.card} style={{ padding: '0.9rem 1rem', marginTop: '0.85rem' }}>
               <div className={s.sideHd}>scene guide</div>
-              <p style={{ margin: '0.45rem 0 0', fontFamily: 'Space Grotesk,serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.45 }}>
+              <p style={{ margin: '0.45rem 0 0', fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.82rem', lineHeight: 1.45 }}>
                 Tap an organizer&apos;s name on any plan to see their card before you join. First hangs should stay public and easy to leave.
               </p>
             </div>
