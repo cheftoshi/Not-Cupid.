@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ROSTER_PHASES } from '@/lib/roster-timing';
+import { getDiagnosticRealm } from '@/lib/auth';
 import { recordAppEvent } from '@/lib/app-events';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
@@ -18,7 +20,7 @@ export async function POST(req: NextRequest) {
   const limit = await rateLimit({ key: `performance:${getClientIp(req)}`, windowSec: 60, maxAttempts: 240, blockSec: 60 });
   if (!limit.ok) return NextResponse.json({ ok: false }, { status: 429 });
   const body = await req.json().catch(() => ({}));
-  if (!EVENTS.has(body.eventName)) return NextResponse.json({ ok: false }, { status: 400 });
+  if (!body || typeof body !== 'object' || !EVENTS.has(body.eventName)) return NextResponse.json({ ok: false }, { status: 400 });
   const metricName = typeof body.metricName === 'string' && METRICS.has(body.metricName) ? body.metricName : null;
   const path = typeof body.path === 'string' && body.path.startsWith('/') ? body.path.split('?')[0].slice(0, 200) : null;
   const sessionId = typeof body.sessionId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(body.sessionId) ? body.sessionId : null;
@@ -33,6 +35,18 @@ export async function POST(req: NextRequest) {
   if (body.eventName === 'web_vital' && metricName === 'CLS' && Array.isArray(body.layoutRegions)) {
     const allowed = new Set(['navigation', 'hub', 'hub-brief', 'hub-composer', 'love-roster', 'love-connections', 'friend', 'chat']);
     metadata.layoutRegions = [...new Set(body.layoutRegions.filter((region: unknown) => typeof region === 'string' && allowed.has(region)))].slice(0, 8).join(',');
+  }
+  if (body.eventName === 'client_error' || body.eventName === 'api_timing') {
+    metadata.accountRealm = await getDiagnosticRealm().catch(() => 'unattributed');
+    // Browser automation is a hint, never sufficient to exclude a production error.
+    metadata.automationHint = body.automationHint === true;
+    metadata.sourceContext = ['app_bundle', 'app_stack', 'document', 'external', 'extension'].includes(body.sourceContext) ? body.sourceContext : 'unknown';
+  }
+  if (body.eventName === 'api_timing' && metricName === 'roster_api') {
+    for (const phase of ROSTER_PHASES) {
+      const value = body.rosterTiming?.[phase];
+      if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 600000) metadata[`roster_${phase}_ms`] = value;
+    }
   }
   if (body.eventName === 'client_error') {
     metadata.errorKind = ERROR_KINDS.has(body.errorKind) ? body.errorKind : 'runtime';

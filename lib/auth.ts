@@ -109,3 +109,14 @@ export async function requireUser() {
   if (!user) throw new Error('UNAUTHORIZED');
   return user;
 }
+
+export async function getDiagnosticRealm(): Promise<'test' | 'member' | 'unattributed'> {
+  const token = (await cookies()).get(COOKIE_NAME)?.value;
+  if (!token) return 'unattributed';
+  const { data: session, error } = await supabaseAdmin.from('sessions')
+    .select('user_id, expires_at').eq('token', hashSessionToken(token)).eq('token_hash_version', 1).maybeSingle();
+  if (error || !session || !(Date.parse(session.expires_at) > Date.now())) return 'unattributed';
+  const { data: user, error: userError } = await supabaseAdmin.from('users')
+    .select('is_test').eq('id', session.user_id).is('deleted_at', null).neq('is_blocked', true).maybeSingle();
+  return userError || !user ? 'unattributed' : user.is_test === true ? 'test' : 'member';
+}

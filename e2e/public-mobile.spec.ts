@@ -158,3 +158,32 @@ test('public trust surfaces have no serious automated accessibility violations',
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
   expect(results.violations.filter((violation) => ['critical', 'serious'].includes(violation.impact || ''))).toEqual([]);
 });
+
+test.describe('OTP validation and navigation diagnostics', () => {
+  test.use({ serviceWorkers: 'block' });
+  test('reserved and rejected email errors remain actionable through repeated navigation', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.name));
+    await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'Synthetic fixture only' } }));
+    await page.goto('/');
+    await page.goto('/hub');
+    await expect(page).toHaveURL(/\/login/);
+    // Wait for the streamed redirect to finish before interacting with its form.
+    await page.waitForLoadState('networkidle');
+    for (const [status, code, message] of [
+      [400, 'invalid_email', 'Enter a valid email address'],
+      [503, 'delivery_unavailable', 'We could not deliver a code'],
+    ] as const) {
+      let calls = 0;
+      await page.route('**/api/send-otp', route => { calls++; return route.fulfill({ status, json: { code, error: 'private provider detail' } }); });
+      await page.getByLabel('Email', { exact: true }).fill('qa@example.com');
+      await page.getByRole('button', { name: /send code/ }).click();
+      await expect(page.getByRole('alert').filter({ hasText: message })).toBeVisible();
+      await expect(page.getByLabel('Email', { exact: true })).toHaveValue('qa@example.com');
+      expect(calls).toBe(1);
+      await page.goto('/');
+      await page.goto('/login');
+    }
+    expect(errors).toEqual([]);
+  });
+});

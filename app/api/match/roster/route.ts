@@ -59,11 +59,17 @@ const ROSTER_TTL_MS = ROSTER_RETURN_ROTATION_HOURS * 60 * 60 * 1000;
 
 export async function composeLoveRosterForUser(
   user: any,
-  options: { recordNotificationChange?: boolean; interactive?: boolean } = {},
+  options: { recordNotificationChange?: boolean; interactive?: boolean; timings?: Record<string, number> } = {},
 ) {
   // Capacity model: you can run up to MAX_CONNECTIONS live conversations. The
   // roster keeps showing until you're maxed out (it no longer disappears the
   // moment you have one match). We also exclude anyone you're already talking to.
+  let checkpoint = performance.now();
+  const mark = (phase: string) => {
+    const end = performance.now();
+    if (options.timings) options.timings[phase] = end - checkpoint;
+    checkpoint = end;
+  };
   const now = Date.now();
   // Expiry cleanup returns the current live rows from its own database read.
   // Load independent matching features beside it, removing the duplicate live
@@ -72,6 +78,7 @@ export async function composeLoveRosterForUser(
     releaseTimedOutMatches(user.id),
     loadMatchingFeatures(user.id),
   ]);
+  mark('cleanup_features');
   const treatmentVersion = matchingTreatmentVersion(MATCHING_ALGORITHM_VERSION, features);
   // A scheduled verification does not request pick access, so it cannot start
   // a person's 24-hour included-pick clock before they actually return. Keep
@@ -148,6 +155,7 @@ export async function composeLoveRosterForUser(
     // independent. Never cache balances or skip eligibility to save latency.
     options.interactive === false ? Promise.resolve(null) : lovePickAccessFor(user),
   ]);
+  mark('pool_history_access');
   const { data: poolRows, error: poolErr } = initialPool;
   if (poolErr) throw new Error(`love_roster_pool_${poolErr.code || 'query_failed'}`);
   if (historyResult.error || priorMatchesResult.error) throw new Error('love_roster_history_unavailable');
@@ -263,6 +271,7 @@ export async function composeLoveRosterForUser(
     }
   }
 
+  mark('operational_inputs');
   // Matching V3.1 adjustment: compatibility still leads, while spare capacity,
   // richer mutual signal confidence, and reciprocal momentum break near-ties.
   const candidateAdjustments = new Map<string, number>();
@@ -390,6 +399,7 @@ export async function composeLoveRosterForUser(
   const addedCandidateIds = addedRosterCandidateIds(priorIds, currentIds);
   const rosterChanged = priorIds.length > 0 && addedCandidateIds.length > 0;
 
+  mark('ranking');
   if (persist) {
     // Fresh recompute resets the 24-hour clock; a backfill-only change keeps the
     // existing clock so the rotation cadence stays honest.
@@ -426,6 +436,7 @@ export async function composeLoveRosterForUser(
     }
   }
 
+  mark('snapshot_exposures');
   const rotationStart = snapshotFresh ? refreshedAt : Date.now();
   const rosterIds = roster.map((candidate) => candidate.id);
   const { data: readRows } = rosterIds.length > 0 && options.interactive !== false
@@ -468,6 +479,7 @@ export async function composeLoveRosterForUser(
     });
   }
 
+  mark('entitlements_shadow');
   return {
     roster,
     atCapacity,
@@ -510,10 +522,11 @@ export async function GET() {
 
   try {
     const composeStartedAt = performance.now();
-    const roster = await composeLoveRosterForUser(user);
+    const timings: Record<string, number> = {};
+    const roster = await composeLoveRosterForUser(user, { timings });
     const composeMs = performance.now() - composeStartedAt;
     return NextResponse.json(roster, { headers: {
-      'Server-Timing': `auth;dur=${authMs.toFixed(1)}, compose;dur=${composeMs.toFixed(1)}, total;dur=${(performance.now() - startedAt).toFixed(1)}`,
+      'Server-Timing': `auth;dur=${authMs.toFixed(1)}, compose;dur=${composeMs.toFixed(1)}, total;dur=${(performance.now() - startedAt).toFixed(1)}, ${Object.entries(timings).map(([name, ms]) => `${name};dur=${ms.toFixed(1)}`).join(', ')}`,
       'Cache-Control': 'private, no-store',
     } });
   } catch (error) {

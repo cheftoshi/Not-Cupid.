@@ -68,3 +68,13 @@ export function clientErrorFingerprint(parts: Array<string | number | null | und
   }
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
+
+export function clientErrorContext(source: unknown, stack: unknown, origin: string) {
+  const text = typeof stack === 'string' ? stack : '';
+  if (/(?:chrome|moz|safari-web)-extension:\/\//i.test(text)) return 'extension';
+  const safe = safeClientErrorSource(source, origin);
+  if (safe.startsWith('/_next/static/')) return 'app_bundle';
+  if (safe === 'cross-origin') return 'external';
+  if (/\/_next\/static\//.test(text)) return 'app_stack';
+  return safe === 'unknown' ? 'unknown' : 'document';
+}

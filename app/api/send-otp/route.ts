@@ -7,22 +7,18 @@ import { hashOtp } from '@/lib/otp'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-
-    // Normalize email
-    const email = (body.email || '').trim().toLowerCase()
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email required' }, { status: 400 })
-    }
-
-    // Basic format check - catches obvious typos before we waste a Resend send
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+    const body = await req.json().catch(() => null)
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
+    // Reserved documentation domains cannot receive a real sign-in code.
+    const domain = email.split('@')[1] || ''
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      || /^(?:.*\.)?example\.(?:com|net|org)$/.test(domain)
+      || /(?:^|\.)(?:invalid|test|localhost)$/.test(domain)) {
+      return NextResponse.json({ error: 'Enter a valid email address that can receive mail.', code: 'invalid_email' }, { status: 400 })
     }
 
     // Rate limit by email and IP to prevent email-bombing.
-    // 3 sends per email per 10 min, 10 sends per IP per 10 min.
+    // 3 sends per email per 10 min, 40 sends per IP per 10 min.
     const ip = getClientIp(req)
     const emailLimit = await rateLimit({ key: `otp_send_email:${email}`, windowSec: 600, maxAttempts: 3, blockSec: 600 })
     if (!emailLimit.ok) {
@@ -55,10 +51,9 @@ export async function POST(req: NextRequest) {
       )
 
     if (dbError) {
-      console.error('Supabase insert error:', JSON.stringify(dbError))
+      console.error('send-otp: storage unavailable')
       return NextResponse.json({ error: 'Could not issue a verification code' }, { status: 500 })
     }
-    console.log('OTP saved to DB successfully')
 
     const html = renderEmail({
       preheader: `Your NotCupid verification code is ${otp}. Expires in 15 minutes.`,
@@ -74,12 +69,12 @@ export async function POST(req: NextRequest) {
 
     const sent = await sendEmail({ to: email, subject: 'Your NotCupid code', html })
     if (!sent.ok) {
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
+      return NextResponse.json({ error: 'We could not deliver a code. Check your email address and try again shortly.', code: 'delivery_unavailable' }, { status: 503 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('Send OTP error:', err)
+    console.error('send-otp: request failed')
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

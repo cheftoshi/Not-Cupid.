@@ -1,5 +1,6 @@
 import {
   classifyClientError,
+  clientErrorContext,
   clientErrorFingerprint,
   safeClientErrorName,
   safeClientErrorSource,
@@ -13,6 +14,7 @@ type ClientErrorDetail = {
   line: number | null;
   column: number | null;
   fingerprint: string;
+  sourceContext: string;
 };
 
 function performanceSessionId(): string {
@@ -42,6 +44,7 @@ function sendClientSignal(
       path: window.location.pathname,
       sessionId,
       ...(errorDetail || {}),
+      automationHint: navigator.webdriver === true,
       dedupeKey: errorDetail && sessionId
         ? `client-error:${sessionId || 'private'}:${errorDetail.fingerprint}:${Math.floor(Date.now() / 300000)}`
         : undefined,
@@ -74,6 +77,7 @@ window.addEventListener('error', (event) => {
   const column = Number.isInteger(event.colno) && event.colno > 0 ? event.colno : null;
   const errorKind = error || event.message ? 'runtime' : 'resource';
   sendClientSignal('client_error', undefined, {
+    sourceContext: clientErrorContext(event.filename, error?.stack, window.location.origin),
     errorKind,
     errorCode,
     errorName,
@@ -90,6 +94,7 @@ window.addEventListener('unhandledrejection', (event) => {
   const errorCode = classifyClientError(reason instanceof Error ? reason.name : null, reason instanceof Error ? reason.message : reason);
   const errorKind = 'promise';
   sendClientSignal('client_error', undefined, {
+    sourceContext: clientErrorContext(null, reason instanceof Error ? reason.stack : null, window.location.origin),
     errorKind,
     errorCode,
     errorName,

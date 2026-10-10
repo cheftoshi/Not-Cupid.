@@ -27,6 +27,8 @@ export async function requestLogin(
     if (controller.signal.aborted) throw new Error('cancelled');
     if (!response.ok) {
       return { ok: false, code: 'http', error: response.status === 429 ? 'Too many attempts. Wait a few minutes before trying again.'
+        : action === 'send' && response.status === 400 && data?.code === 'invalid_email' ? 'Enter a valid email address that can receive mail.'
+        : action === 'send' && response.status === 503 && data?.code === 'delivery_unavailable' ? 'We could not deliver a code. Check your email address and try again shortly.'
         : action === 'verify' && [400, 401, 404].includes(response.status) ? 'That code is invalid or expired. Check the latest code or request a new one.'
           : 'Sign-in is temporarily unavailable. Please try again.' };
     }

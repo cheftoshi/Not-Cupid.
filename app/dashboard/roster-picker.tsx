@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchWithTimeout, fetchJsonWithTimeout, parseResponse } from '@/lib/fetch-helpers';
+import { parseRosterTiming } from '@/lib/roster-timing';
 import { trackLoveEvent } from '@/lib/love-events-client';
 import { SkeletonStyles, SkeletonCard } from '@/components/skeleton';
 import { relationshipStyleLabel } from '@/lib/quiz-data';
@@ -174,6 +175,7 @@ export default function RosterPicker({
       trackLoveEvent('roster_view', { durationMs, metadata: { candidate_count: nextRoster.length } });
       const timingPayload = JSON.stringify({
         eventName: 'api_timing', metricName: 'roster_api', durationMs,
+        rosterTiming: parseRosterTiming(res.headers.get('Server-Timing')),
         path: window.location.pathname,
         deviceClass: window.innerWidth < 600 ? 'phone' : window.innerWidth < 1024 ? 'tablet' : 'desktop',
         displayMode: (navigator as Navigator & { standalone?: boolean }).standalone === true || window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',

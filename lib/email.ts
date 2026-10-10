@@ -285,7 +285,7 @@ export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; id?: str
     const data = await res.json().catch(() => ({}));
     return { ok: true, id: typeof data?.id === 'string' ? data.id : undefined };
   } catch (err: any) {
-    console.error('sendEmail: throw', { recipientId, err: err?.message });
-    return { ok: false, error: err?.message || 'send failed' };
+    console.error('sendEmail: transport failed', { recipientId });
+    return { ok: false, error: 'Email transport unavailable' };
   }
 }
