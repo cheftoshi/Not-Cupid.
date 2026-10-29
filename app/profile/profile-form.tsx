@@ -286,14 +286,14 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
   }
 
   return (
-    <form onSubmit={handleSave} className={styles.profileForm}>
+    <form data-pwa-suspend onSubmit={handleSave} className={styles.profileForm}>
       <div className={styles.editTop}>
         <div>
           <div className={styles.editEyebrow}>edit profile</div>
-          <div className={styles.editTitle}>tune your <em>vibe.</em></div>
+          <h1 className={styles.editTitle}>Edit profile</h1>
         </div>
         {onCancel && (
-          <button type="button" onClick={onCancel} className={styles.editClose} aria-label="back to dashboard">
+          <button type="button" onClick={onCancel} className={styles.editClose} aria-label="Back to profile">
             ← back
           </button>
         )}
@@ -338,8 +338,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           <div className={styles.qualityIntro}>
             <ConnectionSigil tone="profile" />
             <div>
-            <div className={styles.qualityEyebrow}>connection readiness</div>
-            <h2 className={styles.qualityTitle}>make it easy to start with something real.</h2>
+            <div className={styles.qualityEyebrow}>Profile completeness</div>
+            <h2 className={styles.qualityTitle}>Complete your profile</h2>
             </div>
           </div>
           {nextQualityItem && <div className={styles.qualityNext}>next: {nextQualityItem.label}</div>}
@@ -358,7 +358,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       {needsQuiz && (
         <div className={styles.quizBanner}>
           <div className={styles.quizBannerText}>
-            Take the personality quiz to find your match — it's how the algo decides.
+            Complete your profile questions to use matching.
           </div>
           <a href="/quiz?retake=1" className={styles.quizBannerButton}>Take the quiz</a>
         </div>
@@ -429,17 +429,17 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       <div className={styles.section}>
         <div className={styles.sectionLabel}>02 — The basics</div>
         <div className={styles.field}>
-          <label className={styles.label}>Name</label>
-          <input className={styles.input} type="text" value={user.name || ''} onChange={e => updateUser({ name: e.target.value })} placeholder="what to call you" />
+          <label className={styles.label} htmlFor="profile-field-1">Name</label>
+          <input id="profile-field-1" className={styles.input} type="text" value={user.name || ''} onChange={e => updateUser({ name: e.target.value })} placeholder="what to call you" />
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Email</label>
-          <input className={styles.input} type="email" value={user.email || ''} disabled />
+          <label className={styles.label} htmlFor="profile-field-2">Email</label>
+          <input id="profile-field-2" className={styles.input} type="email" value={user.email || ''} disabled />
         </div>
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Age</label>
-            <input className={styles.input} type="number" min={18} max={100} value={user.age || ''} onChange={e => updateUser({ age: parseInt(e.target.value) || null })} />
+            <label className={styles.label} htmlFor="profile-field-3">Age</label>
+            <input id="profile-field-3" className={styles.input} type="number" min={18} max={100} value={user.age || ''} onChange={e => updateUser({ age: parseInt(e.target.value) || null })} />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Height</label>
@@ -450,7 +450,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
                   type="number"
                   min={3}
                   max={8}
-                  placeholder="ft"
+                  aria-label="Height in feet" placeholder="ft"
                   value={user.height_cm ? Math.floor(user.height_cm / 30.48) : ''}
                   onChange={(e) => {
                     const ft = parseInt(e.target.value) || 0;
@@ -466,7 +466,7 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
                   type="number"
                   min={0}
                   max={11}
-                  placeholder="in"
+                  aria-label="Height in inches" placeholder="in"
                   value={user.height_cm ? Math.round((user.height_cm / 2.54) % 12) : ''}
                   onChange={(e) => {
                     let inches = parseInt(e.target.value) || 0;
@@ -483,8 +483,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         </div>
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Gender</label>
-            <select className={styles.select} value={user.gender || ''} onChange={e => updateUser({ gender: e.target.value })}>
+            <label className={styles.label} htmlFor="profile-field-4">Gender</label>
+            <select id="profile-field-4" className={styles.select} value={user.gender || ''} onChange={e => updateUser({ gender: e.target.value })}>
               <option value="">—</option>
               <option value="m">Man</option>
               <option value="f">Woman</option>
@@ -493,8 +493,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
             </select>
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Seeking</label>
-            <select className={styles.select} value={user.seeking === 'both' ? 'b' : (user.seeking || '')} onChange={e => updateUser({ seeking: e.target.value })}>
+            <label className={styles.label} htmlFor="profile-field-5">Seeking</label>
+            <select id="profile-field-5" className={styles.select} value={user.seeking === 'both' ? 'b' : (user.seeking || '')} onChange={e => updateUser({ seeking: e.target.value })}>
               <option value="">—</option>
               <option value="m">Men</option>
               <option value="f">Women</option>
@@ -503,12 +503,12 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           </div>
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>ZIP code</label>
-          <input className={styles.input} type="text" value={user.zip || ''} onChange={e => updateUser({ zip: e.target.value })} />
+          <label className={styles.label} htmlFor="profile-field-6">ZIP code</label>
+          <input id="profile-field-6" className={styles.input} type="text" value={user.zip || ''} onChange={e => updateUser({ zip: e.target.value })} />
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Relationship style · <span className={styles.labelHint}>what you're looking for</span></label>
-          <select
+          <label className={styles.label} htmlFor="profile-field-7">Relationship style · <span className={styles.labelHint}>what you're looking for</span></label>
+          <select id="profile-field-7"
             className={styles.select}
             value={user.relationship_style || ''}
             onChange={e => updateUser({ relationship_style: e.target.value || null })}
@@ -520,8 +520,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           </select>
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Love Line availability · <span className={styles.labelHint}>shown on your roster card</span></label>
-          <select
+          <label className={styles.label} htmlFor="profile-field-8">Love Line availability · <span className={styles.labelHint}>shown on your roster card</span></label>
+          <select id="profile-field-8"
             className={styles.select}
             value={user.love_availability || 'open_to_meeting'}
             onChange={e => updateUser({ love_availability: e.target.value })}
@@ -531,8 +531,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           </select>
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Sun sign · <span className={styles.labelHint}>just for fun — not used in matching</span></label>
-          <select
+          <label className={styles.label} htmlFor="profile-field-9">Sun sign · <span className={styles.labelHint}>just for fun — not used in matching</span></label>
+          <select id="profile-field-9"
             className={styles.select}
             value={user.sun_sign || ''}
             onChange={e => updateUser({ sun_sign: e.target.value || null })}
@@ -549,8 +549,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
       <div className={styles.section}>
         <div className={styles.sectionLabel}>03 — About you</div>
         <div className={styles.field}>
-          <label className={styles.label}>Bio · <span className={styles.labelHint}>the interesting stuff</span></label>
-          <textarea
+          <label className={styles.label} htmlFor="profile-field-10">Bio · <span className={styles.labelHint}>the interesting stuff</span></label>
+          <textarea id="profile-field-10"
             className={`${styles.textarea} ${styles.textareaArt}`}
             value={user.bio || ''}
             onChange={e => updateUser({ bio: e.target.value })}
@@ -570,13 +570,13 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           </div>
           {prompts.map((prompt, index) => (
             <div className={styles.promptEditor} key={`${prompt.question}-${index}`}>
-              <select className={styles.select} value={prompt.question}
+              <select aria-label={`Conversation prompt ${index + 1}`} className={styles.select} value={prompt.question}
                 onChange={(event) => updatePrompt(index, { question: event.target.value })}>
                 {PROFILE_PROMPT_OPTIONS.map((option) => (
                   <option key={option} value={option} disabled={prompts.some((item, itemIndex) => itemIndex !== index && item.question === option)}>{option}</option>
                 ))}
               </select>
-              <textarea className={styles.textarea} rows={2} maxLength={180}
+              <textarea aria-label={`Answer to prompt ${index + 1}`} className={styles.textarea} rows={2} maxLength={180}
                 value={prompt.answer}
                 onChange={(event) => updatePrompt(index, { answer: event.target.value })}
                 placeholder="Make it concrete—one real detail beats a perfect paragraph." />
@@ -592,29 +592,29 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         </div>
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Career</label>
-            <input className={styles.input} type="text" value={user.occupation || ''} onChange={e => updateUser({ occupation: e.target.value })} placeholder="what you do — e.g. nurse, engineer, teacher" />
+            <label className={styles.label} htmlFor="profile-field-11">Career</label>
+            <input id="profile-field-11" className={styles.input} type="text" value={user.occupation || ''} onChange={e => updateUser({ occupation: e.target.value })} placeholder="what you do — e.g. nurse, engineer, teacher" />
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Education</label>
-            <input className={styles.input} type="text" value={user.education || ''} onChange={e => updateUser({ education: e.target.value })} placeholder="where you studied" />
+            <label className={styles.label} htmlFor="profile-field-12">Education</label>
+            <input id="profile-field-12" className={styles.input} type="text" value={user.education || ''} onChange={e => updateUser({ education: e.target.value })} placeholder="where you studied" />
           </div>
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Music you love · <span className={styles.labelHint}>press enter or comma to add</span></label>
-          <ChipInput ref={musicInput} value={user.music || []} onChange={(arr) => updateUser({ music: arr })} placeholder="indie rock, jazz, taylor swift" variant="lav" />
+          <label className={styles.label} htmlFor="profile-music">Music you love · <span className={styles.labelHint}>press enter or comma to add</span></label>
+          <ChipInput id="profile-music" ref={musicInput} value={user.music || []} onChange={(arr) => updateUser({ music: arr })} placeholder="indie rock, jazz, taylor swift" variant="lav" />
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Food you crave · <span className={styles.labelHint}>press enter or comma to add</span></label>
-          <ChipInput ref={foodInput} value={user.food || []} onChange={(arr) => updateUser({ food: arr })} placeholder="thai, pizza, sushi" variant="accent" />
+          <label className={styles.label} htmlFor="profile-food">Food you crave · <span className={styles.labelHint}>press enter or comma to add</span></label>
+          <ChipInput id="profile-food" ref={foodInput} value={user.food || []} onChange={(arr) => updateUser({ food: arr })} placeholder="thai, pizza, sushi" variant="accent" />
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Hobbies & obsessions · <span className={styles.labelHint}>press enter or comma to add</span></label>
-          <ChipInput ref={hobbiesInput} value={user.hobbies || []} onChange={(arr) => updateUser({ hobbies: arr })} placeholder="hiking, pottery, conspiracy theories" variant="mix" />
+          <label className={styles.label} htmlFor="profile-hobbies">Hobbies & obsessions · <span className={styles.labelHint}>press enter or comma to add</span></label>
+          <ChipInput id="profile-hobbies" ref={hobbiesInput} value={user.hobbies || []} onChange={(arr) => updateUser({ hobbies: arr })} placeholder="hiking, pottery, conspiracy theories" variant="mix" />
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Sports & fitness · <span className={styles.labelHint}>what gets you moving</span></label>
-          <ChipInput ref={sportsInput} value={user.sports || []} onChange={(arr) => updateUser({ sports: arr })} placeholder="climbing, soccer, run club, yoga" variant="lav" />
+          <label className={styles.label} htmlFor="profile-sports">Sports & fitness · <span className={styles.labelHint}>what gets you moving</span></label>
+          <ChipInput id="profile-sports" ref={sportsInput} value={user.sports || []} onChange={(arr) => updateUser({ sports: arr })} placeholder="climbing, soccer, run club, yoga" variant="lav" />
         </div>
       </div>
 
@@ -631,12 +631,12 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
         <div className={styles.sectionLabel}>04 — Match preferences</div>
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Min age</label>
-            <input className={styles.input} type="number" min={18} max={100} value={user.age_min || ''} onChange={e => updateUser({ age_min: parseInt(e.target.value) || null })} />
+            <label className={styles.label} htmlFor="profile-field-13">Min age</label>
+            <input id="profile-field-13" className={styles.input} type="number" min={18} max={100} value={user.age_min || ''} onChange={e => updateUser({ age_min: parseInt(e.target.value) || null })} />
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Max age</label>
-            <input className={styles.input} type="number" min={18} max={100} value={user.age_max || ''} onChange={e => updateUser({ age_max: parseInt(e.target.value) || null })} />
+            <label className={styles.label} htmlFor="profile-field-14">Max age</label>
+            <input id="profile-field-14" className={styles.input} type="number" min={18} max={100} value={user.age_max || ''} onChange={e => updateUser({ age_max: parseInt(e.target.value) || null })} />
           </div>
         </div>
       </div>

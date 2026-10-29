@@ -142,11 +142,11 @@ export default function TopNav() {
     { href: '/hub', label: 'Home', key: 'hub', icon: '⌂' },
     { href: '/dashboard', label: 'Dating', key: 'love', icon: '♡' },
     { href: '/friends', label: 'Friendship', key: 'friend', icon: '☺' },
-    { href: '/profile', label: 'You', key: 'profile', icon: '○' },
+    { href: '/profile', label: 'Profile', key: 'profile', icon: '○' },
   ];
   return (
     <header ref={navRef} data-perf-region="navigation" className="appTopNav appNavigation">
-      <div className="appNavBrand"><Wordmark size={1.25} href="/hub" /><span>A place for your people.</span></div>
+      <div className="appNavBrand"><Wordmark size={1.25} href="/hub" /></div>
       <nav className="appPrimaryNav" aria-label="Main navigation">
         {items.map(item => <Link key={item.key} href={item.href} aria-current={active === item.key ? 'page' : undefined}>
           <span aria-hidden="true">{item.icon}</span>{item.label}

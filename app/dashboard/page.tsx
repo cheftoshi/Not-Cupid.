@@ -143,15 +143,15 @@ export default async function DashboardPage({
   const readiness = profileReadiness(user);
 
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <div className={styles.container}>
         <div className={styles.head}>
           <div className={styles.eyebrow}>the love line</div>
-          <h1 className={styles.title}>your matches, your move.</h1>
+          <h1 className={styles.title}>Dating</h1>
           <p className={styles.subtitle}>
             {connections.length > 0
               ? `${activeCards.length} ${activeCards.length === 1 ? 'connection' : 'connections'} going · ${LOVE_INCLUDED_PICKS} picks included in each roster · you set the pace`
-              : 'pick who you connect with · you set the pace'}
+              : 'Choose who you’d like to meet.'}
           </p>
           <details className={styles.lovePolicyDetails}>
             <summary>how Love Line works</summary>
@@ -216,7 +216,7 @@ export default async function DashboardPage({
               <section className={styles.loveCompletionCard}>
                 <div className={styles.panelKicker}>{readiness.coreReady ? 'your profile is live' : 'matching setup'}</div>
                 <h2>Complete your profile</h2>
-                <p>Better context gives each person a clearer reason to choose you.</p>
+                <p>Add a photo and a few interests to complete your profile.</p>
                 <div>
                   {readiness.missing.map((item) => <span key={item.key}>+ {item.label}</span>)}
                 </div>
@@ -228,7 +228,7 @@ export default async function DashboardPage({
               <section className={styles.loveHistoryPanel}>
                 <div>
                   <div className={styles.panelKicker}>past conversations</div>
-                  <p>Revisit who you met, then come back to what is live now.</p>
+                  <p>Read your past conversations.</p>
                 </div>
                 <details className={styles.historyDetails}>
                   <summary>look at past conversations</summary>
@@ -249,7 +249,7 @@ export default async function DashboardPage({
             )}
           </aside>
 
-          <main className={styles.loveMain}>
+          <section className={styles.loveMain}>
             <DatingWorkspace needsAction={yourMoveCount}
               initialView={focusMatchId ? 'inbox' : paidCandidateId || !activeCards.length ? 'discover' : 'inbox'}
               inbox={<>            <LoveConnections
@@ -288,9 +288,9 @@ export default async function DashboardPage({
             </div></>}
             />
 
-          </main>
+          </section>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

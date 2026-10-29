@@ -276,11 +276,11 @@ export function CreateInvitation({
         setError(""); setStep(step + 1);
         requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>(`[data-step="${step + 1}"] input, [data-step="${step + 1}"] select`)?.focus());
       }}
-      aria-label="Create an invitation"
+      data-pwa-suspend aria-label="Create an invitation"
     >
       <div className={s.sectionHead}>
         <div>
-          <span className={s.eyebrow}>Start something</span>
+
           <h2>What would you like to do?</h2>
         </div>
         <button type="button" disabled={busy} onClick={onClose}>
@@ -294,7 +294,7 @@ export function CreateInvitation({
       </div>}
       <ol className={s.steps} aria-label="Invitation progress">{['Connection', 'Your idea', 'Meeting place', 'Review'].map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined}>{index + 1}. {label}</li>)}</ol>
       <p role="status">Step {step + 1} of 4 · {['Choose the kind of connection', 'Describe your plan', 'Choose what to share', 'Check before publishing'][step]}</p>
-      <fieldset hidden={step !== 0} data-step="0" className={s.stepFields}><legend>Connection & audience</legend>
+      <fieldset hidden={step !== 0} data-step="0" className={s.stepFields}><legend>Who’s invited?</legend>
       <label>
         What kind of connection?
         <select value={intent} onChange={(e) => setIntent(e.target.value)}>
@@ -370,7 +370,7 @@ export function CreateInvitation({
         />
       </label>
       <details open>
-        <summary>Optional details · when, a little more</summary>
+        <summary>Time and details (optional)</summary>
         <div className={s.formDetails}>
           <label>
             When · Eastern time · optional

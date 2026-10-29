@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useRef, useState, KeyboardEvent } from
 import styles from './profile.module.css';
 
 type Props = {
+  id?: string;
   value: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
@@ -22,7 +23,7 @@ const variants = {
 };
 
 const ChipInput = forwardRef<ChipInputHandle, Props>(function ChipInput(
-  { value, onChange, placeholder, variant = 'mix', maxItems = 12 },
+  { id, value, onChange, placeholder, variant = 'mix', maxItems = 12 },
   ref,
 ) {
   const [draft, setDraft] = useState('');
@@ -79,6 +80,8 @@ const ChipInput = forwardRef<ChipInputHandle, Props>(function ChipInput(
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={onKey}
         onBlur={() => commit(draft)}
+        id={id}
+        aria-label={id ? undefined : placeholder || "Interests"}
         placeholder={value.length === 0 ? placeholder : ''}
       />
       {draft.trim() && value.length < maxItems ? (

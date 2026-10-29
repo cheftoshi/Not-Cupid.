@@ -26,13 +26,13 @@ export default async function ProfilePage({
   }).format(new Date()).toLowerCase();
 
   return (
-    <div className={styles.page}>
+    <main className={styles.page}>
       <div className={styles.container}>
         <nav className={styles.nav}>
           <div className={styles.navLinks}>
             <a href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>Profile</a>
             <a href="/profile/preview" className={styles.navLink}>Preview</a>
-            <a href="/dashboard" className={styles.navLink}>Matches</a>
+            <a href="/dashboard" className={styles.navLink}>Dating</a>
             <a href="/quiz?retake=1" className={styles.navLink}>Retake quiz</a>
           </div>
         </nav>
@@ -44,6 +44,6 @@ export default async function ProfilePage({
           experimentMode={params.from === 'dating-experiment-comeback'}
         />
       </div>
-    </div>
+    </main>
   );
 }

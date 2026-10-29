@@ -66,3 +66,6 @@
 
 .steps{list-style:none;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:12px}.steps li{padding:10px 6px;border-bottom:3px solid var(--h-border)}.steps [aria-current]{border-color:var(--brand-teal);font-weight:700}.stepFields{border:0;padding:0;margin:0;min-width:0;display:grid;gap:18px}.stepFields[hidden]{display:none}.stepFields>legend{font:600 20px var(--font-display);padding:12px 0}.invitationReview{padding:22px;background:var(--h-surface-2);border:1px solid var(--h-border);border-radius:14px;overflow-wrap:anywhere}.invitationReview p{line-height:1.6}.invitationReview h3{font:600 26px var(--font-display)}
 .steps li{font-size:11px;padding:10px 2px;overflow-wrap:normal}
+
+/* Task-focused header: keep brand, prioritize plans and recovery. */
+.header{min-height:0;padding:20px 24px;margin-bottom:16px;align-items:center}.header>div{max-width:100%}.header h1{font-size:clamp(28px,4vw,36px);letter-spacing:-.035em;margin:8px 0}.header p{margin:0}.header .secondaryInvite{align-self:center;margin-right:0}.nextAction{min-height:0;padding:18px;margin-bottom:16px}.nextAction h2{font-size:24px;margin:0 0 8px}.nextAction p{margin:0 0 12px}.discoveryEntry{margin-bottom:16px}

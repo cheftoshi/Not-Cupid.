@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { isNativeShell } from "@/lib/native-platform";
 import { trackLoveEvent } from "@/lib/love-events-client";
 import { subscribeToPush } from "@/lib/push-client";
@@ -49,6 +50,8 @@ function getInstallMode(): false | "native" | "ios" | "fallback" {
 }
 
 export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
+  const pathname = usePathname();
+  const setupRoute = pathname === "/quiz" || pathname === "/login" || pathname === "/friends/quiz" || pathname === "/friends/profile";
   const [showPush, setShowPush] = useState(false);
   const [showInstall, setShowInstall] = useState<
     false | "native" | "ios" | "fallback"
@@ -143,7 +146,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
 
   useEffect(() => {
     // Temporarily suspend during composition, never dismiss because someone scrolls.
-    const selector = '[role="dialog"], dialog[open]';
+    const selector = '[role="dialog"], dialog[open], [data-pwa-suspend]';
     let frame = 0;
     function scheduleCheck() {
       cancelAnimationFrame(frame);
@@ -187,7 +190,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
     };
   }, []);
 
-  const visible = !suspended && !!(showPush || showInstall);
+  const visible = !setupRoute && !suspended && !!(showPush || showInstall);
   useEffect(() => {
     const root = document.documentElement;
     const measure = () =>
@@ -274,7 +277,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
   return (
     <div
       ref={promptRef}
-      data-pwa-prompt
+      role="complementary" aria-label="Install and notifications" data-pwa-prompt
       style={{
         position: "fixed",
         left: "50%",
@@ -327,7 +330,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
                   color: "var(--h-text)",
                 }}
               >
-                Keep your connection experiment in your pocket.
+                Install NotCupid
               </div>
               <div
                 style={{
@@ -339,7 +342,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
                 }}
               >
                 Install NotCupid for faster access to Love Line, Friend Line,
-                chats, and real-plan pings.
+                chats, and plan notifications.
               </div>
             </div>
           </div>

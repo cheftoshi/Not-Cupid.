@@ -20,14 +20,6 @@ interface FormData {
   zip: string; email: string; ageMin: string; ageMax: string
 }
 
-const LOADING_MSGS = [
-  'Reading the patterns...',
-  'Balancing personality and pace...',
-  'Finding what feels natural...',
-  'Turning answers into your baseline...',
-  'Checking your local pool...',
-  'Your profile is almost ready...',
-]
 
 const INTENT_OPTIONS = [
   {
@@ -187,8 +179,6 @@ function QuizInner() {
   const [partnerMulti, setPartnerMulti] = useState<number[]>([]) // multi-select picks for the current Q
   const [loveSaveError, setLoveSaveError] = useState('')
   const [loveSaveBusy, setLoveSaveBusy] = useState(false)
-  const [loadingStep, setLoadingStep] = useState(0)
-  const [loadingPct, setLoadingPct] = useState(0)
   const [archetype, setArchetype] = useState<ReturnType<typeof pickArchetype>|null>(null)
   const [scores, setScores] = useState<Record<string,number>>({})
   const [barsVisible, setBarsVisible] = useState(false)
@@ -361,8 +351,6 @@ function QuizInner() {
           ) {
             setCoreSaveError(false)
             setScreen('loading')
-            setLoadingStep(0)
-            setLoadingPct(0)
             void submitCore(scores, archetype, vibeAnswers, rapidAnswers)
           } else {
             setScreen('quiz-intro')
@@ -439,7 +427,7 @@ function QuizInner() {
         window.location.href = '/login?next=' + encodeURIComponent(afterCorePath)
         return
       }
-      if (!res.ok) throw new Error(data.error || 'Could not save your baseline')
+      if (!res.ok || !data.userId) throw new Error(data.error || 'Could not save your profile')
       if (data.userId) {
         if (data.sessionCreated === false) {
           window.location.href = '/login?next=' + encodeURIComponent(afterCorePath)
@@ -458,6 +446,8 @@ function QuizInner() {
           : intent === 'love' ? '/quiz?line=love'
           : afterCorePath)
         )
+        setScreen('result')
+        setBarsVisible(true)
       }
     } catch (err) {
       console.error('Failed to submit:', err)
@@ -575,8 +565,6 @@ function QuizInner() {
     setValuesSelected(null)
     if (currentValuesQ + 1 >= VALUES_QUESTIONS.length) {
       setScreen('loading')
-      setLoadingStep(0)
-      setLoadingPct(0)
       submitLoveDeep(attachAnswers, newAnswers, partnerAnswers)
     } else { setCurrentValuesQ(q => q + 1) }
   }, [valuesAnswers, currentValuesQ, submitLoveDeep, attachAnswers, partnerAnswers])
@@ -590,8 +578,6 @@ function QuizInner() {
     setRapidSelected(null)
     if (currentRapidQ + 1 >= RAPID_FIRE.length) {
       setScreen('loading')
-      setLoadingStep(0)
-      setLoadingPct(0)
       submitCore(scores, archetype!, vibeAnswers, newAnswers)
     } else { setCurrentRapidQ(q => q + 1) }
   }, [rapidAnswers, currentRapidQ, submitCore, scores, archetype, vibeAnswers])
@@ -619,27 +605,6 @@ function QuizInner() {
     return () => window.removeEventListener('keydown', onKey)
   }, [screen, vibeSelected, nextVibe])
 
-  useEffect(() => {
-    if (screen !== 'loading') return
-    let step = 0
-    const interval = setInterval(() => {
-      step++
-      setLoadingStep(step)
-      setLoadingPct(Math.min(Math.round((step / LOADING_MSGS.length) * 100), 100))
-      if (step >= LOADING_MSGS.length) {
-        clearInterval(interval)
-        setTimeout(() => {
-          // Fresh signups now ALWAYS land on the result (the payoff + share
-          // moment) — the continue button routes onward. Retakes/errors redirect
-          // before this fires, in which case navigation has already left.
-          setScreen('result')
-          setTimeout(() => setBarsVisible(true), 400)
-        }, 2000)
-      }
-    }, 800)
-    return () => clearInterval(interval)
-  }, [screen])
-
   const q = QUESTIONS[currentQ]
   const progress = (currentQ / QUESTIONS.length) * 100
   const MAX_SCORE = 8 // HEXACO trimmed to 2 questions/dim × 4 pts
@@ -647,7 +612,7 @@ function QuizInner() {
   if (profileLoadState !== 'ready') {
     return (
       <>
-        <Nav />
+        <Nav /><main>
         <div className={styles.screen}>
           <div className={styles.introWrap}>
             {profileLoadState === 'loading' ? (
@@ -662,18 +627,18 @@ function QuizInner() {
                   setProfileLoadState('loading')
                   setProfileLoadAttempt((attempt) => attempt + 1)
                 }}>Retry loading quiz</button>
-                <a className="btn-ghost" href="/hub">Back to Hub</a>
+                <a className="btn-ghost" href="/hub">Back to Home</a>
               </>
             )}
           </div>
         </div>
-      </>
+      </main></>
     )
   }
 
   return (
     <>
-      <Nav />
+      <Nav /><main>
 
       {screen === 'intro' && (
         <div className={styles.screen}>
@@ -681,7 +646,7 @@ function QuizInner() {
             <div className={styles.introHero}>
               <div className={styles.stickerRow}>
                 <span className={styles.sticker}>no swiping</span>
-                <span className={styles.stickerGold}>step 1 of 2</span>
+                <span className={styles.stickerGold}>Choose your path</span>
               </div>
               <h1 className={styles.introH1}>
                 what are you<br />here to <em>find?</em>
@@ -731,12 +696,12 @@ function QuizInner() {
           <div className={styles.introWrap}>
             <div className={styles.detailsHeader}>
               <div className={styles.stickerRow}>
-                <span className={styles.stickerGold}>step 2 of 2</span>
+                <span className={styles.stickerGold}>Account details</span>
                 <span className={styles.pathPill}>{intent === 'friends' ? '🧡 Friend Line' : intent === 'love' ? '💘 Love Line' : '✨ both lines'}</span>
               </div>
-              <h1 className={styles.detailsTitle}>the basics.<br /><em>nothing weird.</em></h1>
+              <h1 className={styles.detailsTitle}>About you</h1>
               <p className={styles.detailsLede}>
-                Start your profile and keep recommendations local.
+                Next: verify your email, then answer your profile questions.
                 {friendOnly
                   ? ' Dating preferences stay out of your Friend-first signup.'
                   : ' Love preferences help us avoid showing you people outside your range.'}
@@ -747,18 +712,18 @@ function QuizInner() {
             <div className={styles.formBlock}>
               <div className={styles.fieldGrid}>
                 <div className={styles.field}>
-                  <label className={styles.label}>first name</label>
-                  <input className={styles.input} placeholder="your name" value={form.name}
+                  <label className={styles.label} htmlFor="setup-field-1">first name</label>
+                  <input id="setup-field-1" className={styles.input} placeholder="your name" value={form.name}
                     onChange={e => setForm(f=>({...f,name:e.target.value}))} />
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label}>age</label>
-                  <input className={styles.input} type="number" placeholder="27" min={18} max={99}
+                  <label className={styles.label} htmlFor="setup-field-2">age</label>
+                  <input id="setup-field-2" className={styles.input} type="number" placeholder="27" min={18} max={99}
                     value={form.age} onChange={e => setForm(f=>({...f,age:e.target.value}))} />
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label}>how do you describe yourself?</label>
-                  <select className={styles.input} value={form.gender}
+                  <label className={styles.label} htmlFor="setup-field-3">how do you describe yourself?</label>
+                  <select id="setup-field-3" className={styles.input} value={form.gender}
                     onChange={e => setForm(f=>({...f,gender:e.target.value}))}>
                     <option value="">—</option>
                     <option value="m">man</option>
@@ -771,8 +736,8 @@ function QuizInner() {
                 {!friendOnly && (
                   <>
                     <div className={styles.field}>
-                      <label className={styles.label}>who should Love Line show you?</label>
-                      <select className={styles.input} value={form.seek}
+                      <label className={styles.label} htmlFor="setup-field-4">who should Love Line show you?</label>
+                      <select id="setup-field-4" className={styles.input} value={form.seek}
                         onChange={e => setForm(f=>({...f,seek:e.target.value}))}>
                         <option value="">—</option>
                         <option value="f">women</option>
@@ -785,10 +750,10 @@ function QuizInner() {
                       <label className={styles.label}>Love match age range</label>
                       <div className={styles.ageRangeWrap}>
                         <input className={styles.input} type="number" placeholder="22" min={18} max={99}
-                          value={form.ageMin} onChange={e => setForm(f=>({...f,ageMin:e.target.value}))} style={{flex:1}} />
+                          aria-label="Minimum match age" value={form.ageMin} onChange={e => setForm(f=>({...f,ageMin:e.target.value}))} style={{flex:1}} />
                         <span className={styles.ageSep}>—</span>
                         <input className={styles.input} type="number" placeholder="35" min={18} max={99}
-                          value={form.ageMax} onChange={e => setForm(f=>({...f,ageMax:e.target.value}))} style={{flex:1}} />
+                          aria-label="Maximum match age" value={form.ageMax} onChange={e => setForm(f=>({...f,ageMax:e.target.value}))} style={{flex:1}} />
                       </div>
                     </div>
                   </>
@@ -796,15 +761,15 @@ function QuizInner() {
 
                 {friendOnly && (
                   <div className={`${styles.friendFirstNote} ${styles.fieldFull}`}>
-                    <strong>Friend-first means friend-first.</strong>
-                    <span>We&apos;ll ask who you want to meet and what you like doing in the short Friend setup after your baseline.</span>
+
+                    <span>Choose your friendship preferences after your profile.</span>
                   </div>
                 )}
 
                 <div className={`${styles.field} ${styles.fieldFull}`}>
-                  <label className={styles.label}>zip code</label>
+                  <label className={styles.label} htmlFor="setup-zip">zip code</label>
                   <div className={styles.zipWrap}>
-                    <input className={styles.input} placeholder="02116" maxLength={5}
+                    <input id="setup-zip" className={styles.input} placeholder="02116" maxLength={5}
                       value={form.zip} onChange={e => handleZip(e.target.value)} />
                     {zipStatus === 'valid' && <span className={styles.zipOk}>✓ you're in</span>}
                     {zipStatus === 'outofrange' && <span className={styles.zipBad}>outside range — <a href="/out-of-range" style={{color:'var(--lav)'}}>join waitlist</a></span>}
@@ -818,8 +783,8 @@ function QuizInner() {
                 </div>
 
                 <div className={`${styles.field} ${styles.fieldFull}`}>
-                  <label className={styles.label}>email</label>
-                  <input className={styles.input} type="email" placeholder="you@email.com"
+                  <label className={styles.label} htmlFor="setup-field-5">email</label>
+                  <input id="setup-field-5" className={styles.input} type="email" placeholder="you@email.com"
                     value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} />
                   {form.email && !emailValid && (
                     <span className={styles.fieldError}>that doesn't look like an email</span>
@@ -968,8 +933,8 @@ function QuizInner() {
             <div className={styles.formBlock}>
               <div className={styles.fieldGrid}>
                 <div className={`${styles.field} ${styles.fieldFull}`}>
-                  <label className={styles.label}>show me</label>
-                  <select className={styles.input} value={form.seek}
+                  <label className={styles.label} htmlFor="setup-field-6">show me</label>
+                  <select id="setup-field-6" className={styles.input} value={form.seek}
                     onChange={e => setForm(f => ({ ...f, seek: e.target.value }))}>
                     <option value="">—</option>
                     <option value="f">women</option>
@@ -981,10 +946,10 @@ function QuizInner() {
                   <label className={styles.label}>match age range</label>
                   <div className={styles.ageRangeWrap}>
                     <input className={styles.input} type="number" min={18} max={99}
-                      value={form.ageMin} onChange={e => setForm(f => ({ ...f, ageMin: e.target.value }))} style={{flex:1}} />
+                      aria-label="Minimum match age" value={form.ageMin} onChange={e => setForm(f => ({ ...f, ageMin: e.target.value }))} style={{flex:1}} />
                     <span className={styles.ageSep}>—</span>
                     <input className={styles.input} type="number" min={18} max={99}
-                      value={form.ageMax} onChange={e => setForm(f => ({ ...f, ageMax: e.target.value }))} style={{flex:1}} />
+                      aria-label="Maximum match age" value={form.ageMax} onChange={e => setForm(f => ({ ...f, ageMax: e.target.value }))} style={{flex:1}} />
                   </div>
                 </div>
               </div>
@@ -1256,12 +1221,8 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.loadingWrap}>
             <div className={styles.loadingGlyph}>⧖</div>
-            <h2 className={styles.loadingH2}>hold on.</h2>
-            <p className={styles.loadingSub}>turning your answers into one baseline for the path you chose.</p>
-            <div className={styles.loadingBarWrap}>
-              <div className={styles.loadingBar} style={{width:`${loadingPct}%`}} />
-            </div>
-            <p className={styles.loadingStatus}>{LOADING_MSGS[Math.min(loadingStep, LOADING_MSGS.length-1)]}</p>
+            <h2 className={styles.loadingH2}>Saving your profile…</h2>
+            <p role="status" className={styles.loadingStatus}>Keep this page open. Your answers are being saved.</p>
           </div>
         </div>
       )}
@@ -1421,6 +1382,6 @@ function QuizInner() {
         </div>
       )}
 
-    </>
+    </main></>
   )
 }

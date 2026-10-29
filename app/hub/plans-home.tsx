@@ -1,6 +1,5 @@
 "use client";
 
-import ConnectionSketch from '@/components/connection-sketch';
 import LocationControls from '@/components/location-controls';
 import { planWhen, planTimeMatches } from '@/lib/plan-discovery';
 import { METRO_CENTERS } from '@/lib/quiz-data';
@@ -579,33 +578,33 @@ export default function PlansHome({
             <span className={s.eyebrow}>
               Your home · {city || "Your local community"}
             </span>
-            <h1>Good company<br />starts with <em>you.</em></h1>
+            <h1>Plans near you</h1>
             <p>
-              Real invitations from people nearby. A conversation, a plan, a place to start.
+              Meet through a plan.
             </p>
           </div>
           <button className={s.secondaryInvite} onClick={() => { setSelectedEvent(null); setCreating(!creating); }}>
             ＋ Invite someone
           </button>
-          <ConnectionSketch className={s.headerSketch} />
+
         </header>
-        <section className={s.nextAction} aria-label="Your next step" aria-busy={loading}>
-          {loading ? <div role="status"><span className={s.eyebrow}>Your next step</span><h2>Finding where you left off…</h2><p>Loading your invitations and conversations.</p></div>
-          : error ? <div><h2>Your plans could not be refreshed.</h2><p>Use Retry plans below. Your invitations have not been changed.</p></div>
-          : requests > 0 ? <><div><span className={s.eyebrow}>Your decision comes first</span><h2>{requests} date {requests === 1 ? "request" : "requests"} to review</h2><p>You choose who joins. Review each profile before accepting.</p></div><button className={s.primary} onClick={() => { setFilter("mine"); document.getElementById("home-invitations")?.scrollIntoView({ block: "start" }); }}>Review requests</button></>
+        {(loading || error || requests > 0 || upcoming || rooms.length > 0) && <section className={s.nextAction} aria-label="Your next step" aria-busy={loading}>
+          {loading ? <div role="status"><h2>Loading plans and conversations…</h2></div>
+          : error ? <div role="alert"><h2>Couldn’t refresh plans</h2><p>Your plans haven’t changed.</p><button onClick={() => void load()}>Retry plans</button></div>
+          : requests > 0 ? <><div><h2>{requests} date {requests === 1 ? "request" : "requests"} to review</h2><p>You choose who joins. Review each profile before accepting.</p></div><button className={s.primary} onClick={() => { setFilter("mine"); document.getElementById("home-invitations")?.scrollIntoView({ block: "start" }); }}>Review requests</button></>
           : upcoming ? <><div><span className={s.eyebrow}>Your next get-together</span><h2>{upcoming.title}</h2><p>{planWhen(upcoming.happens_at)} · Confirm the details together.</p></div><button className={s.primary} onClick={() => open(upcoming)}>Open conversation</button></>
-          : rooms.length > 0 ? <><div><span className={s.eyebrow}>Pick up where you left off</span><h2>Your conversations are here.</h2><p>{rooms.length} plan {rooms.length === 1 ? "conversation" : "conversations"} to return to.</p></div><button className={s.primary} onClick={() => open(rooms[0])}>View conversations</button></>
-          : <><div><span className={s.eyebrow}>Make a little room for company</span><h2>{plans.length ? "Find an invitation that fits." : "Start with your own invitation."}</h2><p>{plans.length ? "Explore member plans below. You decide what to join." : "There are no invitations loaded for your current area yet. Suggest something you would enjoy."}</p></div><button className={s.primary} onClick={() => plans.length ? document.getElementById("home-invitations")?.scrollIntoView({ block: "start" }) : setCreating(true)}>{plans.length ? "Explore invitations" : "Create an invitation"}</button></>}
-        </section>
+          : rooms.length > 0 ? <><div><h2>Your conversations are here.</h2><p>{rooms.length} plan {rooms.length === 1 ? "conversation" : "conversations"} to return to.</p></div><button className={s.primary} onClick={() => open(rooms[0])}>View conversations</button></>
+          : null}
+        </section>}
         {reboot && <nav className={s.filters} aria-label="Connection navigation">
-          <button aria-pressed={filter !== "mine"} onClick={() => setFilter(friendMode ? "friends" : initialFilter)}>Do something</button>
-          <Link className={s.button} href="/friends?view=crew">Meet people</Link>
-          <button onClick={() => { if (rooms[0]) open(rooms[0]); else setSheet(true); }}>Your chats</button>
+          <button aria-pressed={filter !== "mine"} onClick={() => setFilter(friendMode ? "friends" : initialFilter)}>Plans</button>
+          <Link className={s.button} href="/friends?view=crew">People & chats</Link>
+          <button onClick={() => { if (rooms[0]) open(rooms[0]); else setSheet(true); }}>Plan chats</button>
           <Link href="/friends?view=pulse">Clubs & communities</Link>
         </nav>}
         {suggestedCity && suggestedCity !== metro && <p className={s.notice}>You came to explore {METRO_CENTERS[suggestedCity]?.city}. Use Change city below to choose it; your home location stays the same.</p>}
         <div className={s.discoveryEntry}>
-          <div><strong>Have the time, need an idea?</strong><p>Find a local event and invite people to go with you.</p></div>
+          <div><strong>Local events</strong></div>
           <button type="button" aria-expanded={discovering} onClick={() => setDiscovering(!discovering)}>Find something to do</button>
         </div>
         {discovering && <CityEventsPanel city={city} plans={plans} onClose={() => setDiscovering(false)} onOpen={open}
@@ -629,11 +628,7 @@ export default function PlansHome({
             }}
           />
         )}
-        {error && (
-          <div role="alert" className={s.error}>
-            {error} <button onClick={() => void load()}>Retry plans</button>
-          </div>
-        )}
+
         {notice && (
           <div role="status" className={s.notice}>
             {notice}
@@ -762,9 +757,9 @@ export default function PlansHome({
             </div>
             {!loading && !error && !visiblePlans.length && (
               <section className={s.empty}>
-                <h2>Be the start of something.</h2>
+                <h2>{plans.length ? "No plans match these filters" : "No plans nearby yet"}</h2>
                 <p>
-                  No member plans match this view yet. Try another time or area, or start with a walk, coffee, or lunch.
+                  Create a plan or change your filters.
                 </p>
                 <button onClick={() => setCreating(true)}>
                   Create an invitation
@@ -788,8 +783,8 @@ export default function PlansHome({
           >
             <div className={s.sectionHead}>
               <div>
-                <span className={s.eyebrow}>Keep the connection going</span>
-                <h2>Your conversations</h2>
+
+                <h2>Plan conversations</h2>
               </div>
               {narrow && (
                 <button

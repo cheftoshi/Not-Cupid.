@@ -339,3 +339,8 @@
 .sideHd,.friendPanelKicker,.friendHeroKicker,.pulseAreaCta,.friendTextCta{color:var(--h-accent)}
 
 .profileEditor{font-family:var(--font-ui)!important}.profileEditor input,.profileEditor textarea{box-sizing:border-box;min-width:0;min-height:44px;font:400 16px/1.5 var(--font-ui)!important;color:var(--h-text);background:var(--h-surface)}.profileEditor button,.profileEditor a{min-height:44px}.profileEditor h1{font-weight:650}.profileEditor :focus-visible{outline:3px solid var(--h-accent);outline-offset:3px}
+
+/* Batch 2: readable metadata on the existing tinted surface. */
+.pulseAreaCount{color:var(--h-text)}
+.workspaceHeader{padding:18px 22px;gap:14px}
+.workspaceHeader h1{font-size:clamp(28px,3vw,36px);margin:6px 0}

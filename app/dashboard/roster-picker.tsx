@@ -409,9 +409,9 @@ export default function RosterPicker({
     return (
       <div style={emptyWrap} role="alert">
         <div style={{ fontSize: '2.2rem', marginBottom: '0.65rem' }}>↻</div>
-        <h2 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.65rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>your roster hit a connection snag.</h2>
-        <p style={{ color: 'var(--h-text-dim)', lineHeight: 1.5, marginBottom: '1rem' }}>Your picks are safe. Reconnect and try loading the same roster again.</p>
-        <button type="button" className="btn-primary" onClick={() => { setRoster(null); void load(); }}>retry roster</button>
+        <h2 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.65rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>Couldn’t load people</h2>
+        <p style={{ color: 'var(--h-text-dim)', lineHeight: 1.5, marginBottom: '1rem' }}>Your picks haven’t changed. Try loading people again.</p>
+        <button type="button" className="btn-primary" onClick={() => { setRoster(null); void load(); }}>Retry</button>
       </div>
     );
   }
@@ -455,9 +455,9 @@ export default function RosterPicker({
     return (
       <div style={emptyWrap}>
         <div style={{ fontSize: '2.4rem', marginBottom: '0.75rem' }}>✦</div>
-        <h2 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>in the queue.</h2>
+        <h2 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'normal', fontSize: '1.75rem', color: 'var(--h-text)', margin: '0 0 0.5rem' }}>No new people to show right now</h2>
         <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: '0.95rem', lineHeight: 1.55, maxWidth: 440, margin: '0 auto' }}>
-          recently active people rotate through first. Love Line checks again after 24 hours when you return; in a smaller pool, some compatible people may stay.
+          Try a wider distance or check back later.
         </p>
         <ExpandRadiusButton radius={radius} maxRadius={maxRadius} />
       </div>
@@ -744,7 +744,7 @@ export default function RosterPicker({
                     <small>Not a diagnosis or promise of chemistry. Raw answers and exact scores stay private. No subscription.</small>
                   </div>
                 ) : compatibilityLoading === candidate.id && !compatibilityRead ? (
-                  <div className={styles.loveCompatibilityLoading}>AI Connect Coach is reading the six signals…</div>
+                  <div className={styles.loveCompatibilityLoading}>Preparing your optional compatibility summary…</div>
                 ) : compatibilityError && !compatibilityRead ? (
                   <div className={styles.loveCompatibilityError} role="alert">
                     <p>{compatibilityError}</p>

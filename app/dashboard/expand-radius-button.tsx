@@ -69,7 +69,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
         })}
       </div>
       <div style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.78rem', color: 'var(--h-text-faint)', marginTop: '0.7rem', lineHeight: 1.45 }}>
-        closer = fewer but nearer matches · wider = a bigger pool. the algo re-runs every 20 min.
+        A wider distance may show more people.
       </div>
     </div>
   );

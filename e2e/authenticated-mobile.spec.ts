@@ -170,9 +170,11 @@ test.describe('authenticated test-realm mobile path', () => {
       Object.defineProperty(window, 'PushManager', { configurable:true, value:function(){} });
     });
     await page.goto('/hub');
+    await expect(page.getByRole('button',{name:'Refresh invitations',exact:true})).toBeEnabled();
+    await page.waitForTimeout(500); // Allow the client-only prompt event listener to mount on WebKit.
     await page.evaluate(() => window.dispatchEvent(new Event('nc:show-push-prompt')));
     const prompt = page.locator('[data-pwa-prompt]');
-    await expect(prompt.getByRole('button',{name:'notify me about this connection'})).toBeVisible();
+    await expect(prompt.getByRole('button',{name:/notify me about this connection/i})).toBeVisible();
     await page.getByRole('button',{name:'Dates',exact:true}).click();
     await page.getByRole('button',{name:'Refresh invitations',exact:true}).click();
     await expect(prompt).toBeVisible();

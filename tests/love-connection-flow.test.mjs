@@ -309,7 +309,8 @@ test('phone match room separates chat, plan, and profile below the measured PWA 
   const nav = readFileSync(new URL('../components/top-nav.tsx', import.meta.url), 'utf8');
   assert.match(room, /'chat' \| 'plan' \| 'profile'/);
   assert.match(room, /data-mobile-panel=\{mobilePanel\}/);
-  assert.match(room, /role="tablist"/);
+  assert.match(room, /role="group"/);
+  assert.match(room, /aria-pressed=\{mobilePanel === panel\}/);
   assert.match(room, /mutual=\{!!\(liveMatch\?\.user_1_accepted/);
   assert.match(room, /plan together after the mutual yes/);
   assert.match(room, /if \(pendingAccept\)/);

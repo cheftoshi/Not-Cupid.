@@ -104,7 +104,7 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
                   ? <><strong>{stats.matched}</strong> new match — say hi →</>
                   : stats.pending > 0
                     ? <><strong>{stats.pending}</strong> waiting on you</>
-                    : <>in the queue · <em>searching</em> →</>}
+                    : <>Browse people →</>}
             </div>
           ) : <div className={styles.dashStatHint}>view →</div>}
         </Link>
@@ -126,7 +126,7 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
           <article><h3>Identity & preferences</h3><p>Your photos, story and dating preferences.</p><a href="/profile?mode=edit#identity">Edit profile</a><a href="/profile?mode=edit#preferences">Dating preferences</a></article>
           <article><h3>Discovery city</h3><p>Choose where to explore friendship and plans. Your Love home location stays separate.</p><LocationControls currentMetro={user.discovery_metro || metroOf(user.zip)} city={METRO_CENTERS[user.discovery_metro || metroOf(user.zip) || '']?.city || null} /></article>
           <article><h3>Notifications</h3><p>Email, device push and matching are separate choices.</p><a href="/profile?mode=edit#notifications">Email preferences</a><a href="/faq#notifications">Push & installation help</a></article>
-          <article><h3>Privacy & optional AI</h3><p>Review permission, saved memories and optional AI evaluation.</p><a href="/hub?view=coach#ai-controls">AI controls & memories</a><a href="/privacy">Privacy policy</a></article>
+          <article><h3>Privacy & optional AI</h3><p>Manage AI permissions and saved memories.</p><a href="/hub?view=coach#ai-controls">AI controls & memories</a><a href="/privacy">Privacy policy</a></article>
           <article><h3>Account & membership</h3><p>Subscription management and account controls.</p><a href="/profile?mode=edit#account">Manage account</a><a href="/pro">Optional Pro benefits</a></article>
         </div>
       </section>
@@ -197,7 +197,7 @@ export default function ProfileDashboard({ user, profileDateLabel, onEdit, onLog
         <div className={styles.dashEmpty} onClick={() => (window.location.href = '/quiz?retake=1')}>
           <div className={styles.dashSectionLabel}>your rhythm</div>
           <p className={styles.dashEmptyText}>
-            we upgraded the algo — <em>take the new 6-question vibes round</em> to get re-matched.
+            Complete your six profile questions.
           </p>
         </div>
       )}

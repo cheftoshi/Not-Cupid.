@@ -47,6 +47,6 @@ test('Plan-first Home does not pull external event listings or mount AI as its f
   assert.match(page, /params.view !== 'coach'/);
   assert.match(home, /surface=home/);
   assert.doesNotMatch(home, /ticketmaster|eventbrite|boston-calendar|api\/live-events|ConnectionConcierge/);
-  assert.match(controls, /Optional details/);
+  assert.match(controls, /Time and details \(optional\)/);
   assert.match(controls, /client_id: retry.current.id/);
 });

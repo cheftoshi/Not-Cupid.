@@ -458,10 +458,10 @@ export default function ChatRoom({
   }
 
   return (
-    <div className={styles.page} data-mobile-panel={mobilePanel}>
+    <main className={styles.page} data-mobile-panel={mobilePanel}>
       <div className={styles.chatCol}>
       <header className={styles.header}>
-        <a href="/dashboard" className={styles.back}>←</a>
+        <a href="/dashboard" aria-label="Back to Dating" className={styles.back}>←</a>
         <div className={styles.headerInfo}>
           <h1 className={styles.headerName}>{otherUser?.name || 'Match'}</h1>
           <div className={styles.headerMeta}>
@@ -504,13 +504,12 @@ export default function ChatRoom({
         </div>
       </header>
 
-      <div className={styles.mobileMatchTabs} role="tablist" aria-label={`${firstName} connection views`}>
+      <div className={styles.mobileMatchTabs} role="group" aria-label={`${firstName} connection views`}>
         {(['chat', 'plan', 'profile'] as const).map((panel) => (
           <button
             key={panel}
             type="button"
-            role="tab"
-            aria-selected={mobilePanel === panel}
+            aria-pressed={mobilePanel === panel}
             onClick={() => setMobilePanel(panel)}
           >
             {panel}
@@ -534,7 +533,7 @@ export default function ChatRoom({
             {loadingOlder ? 'loading…' : 'load earlier messages'}
           </button>
         )}
-        {messages.length === 0 && <p className={styles.narrator}>You and {firstName}. Start small, stay curious, and see what feels easy.</p>}
+
 
         {needsDecision && (
           <div className={styles.decisionCard} role="region" aria-label={`Choose whether to connect with ${firstName}`}>
@@ -571,11 +570,11 @@ export default function ChatRoom({
 
         {messages.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>{readOnly ? 'this one is closed.' : needsDecision ? `${firstName} chose you.` : pendingAccept ? `Waiting for ${firstName} to connect` : 'Start with hello.'}</div>
+            <div className={styles.emptyTitle}>{readOnly ? 'Conversation ended' : needsDecision ? `${firstName} chose you.` : pendingAccept ? `Waiting for ${firstName} to connect` : 'Start with hello.'}</div>
             <div className={styles.emptySub}>{readOnly ? 'no messages were sent before it ended.' : needsDecision ? 'review their profile · choose below' : pendingAccept ? 'Chat opens when you both say yes. In the meantime, get to know their profile.' : 'A small question is a good place to start.'}</div>
             {!readOnly && !pendingAccept && !coach && (
               <button type="button" className={styles.coachTrigger} onClick={loadCoach} disabled={coachBusy}>
-                {coachBusy ? 'curating your angle…' : '✦ ask the AI match coach'}
+                {coachBusy ? 'Preparing a suggestion…' : '✦ ask the AI match coach'}
               </button>
             )}
             {!readOnly && !pendingAccept && (
@@ -798,7 +797,7 @@ export default function ChatRoom({
             </div>
           ) : (
           <>
-          <div style={{ fontFamily: "'DM Sans', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#064c48', margin: '1.1rem 0 0.6rem' }}>✓ you both want this</div>
+          <div style={{ fontFamily: "'DM Sans', ui-monospace, monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#064c48', margin: '1.1rem 0 0.6rem' }}>Shared date ideas</div>
           {vibesError ? (
             <div style={{ color: 'var(--h-text-dim)', fontFamily: 'Space Grotesk,serif', fontStyle: 'normal', fontSize: '0.85rem' }}>
               date vibes couldn’t load — <button onClick={loadVibes} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', fontStyle: 'normal', color: '#064c48', textDecoration: 'underline', cursor: 'pointer' }}>try again</button>
@@ -900,6 +899,6 @@ export default function ChatRoom({
           onClose={() => setFeedbackOpen(false)}
         />
       )}
-    </div>
+    </main>
   );
 }
