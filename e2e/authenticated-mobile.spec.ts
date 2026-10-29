@@ -239,9 +239,11 @@ test.describe('authenticated test-realm mobile path', () => {
 
   test('Hub restores an interrupted request and can retry without an install overlay', async ({ page }) => {
     await page.route('**/api/concierge', route => route.fulfill({ json: route.request().method() === 'GET'
-      ? { consented: true, memories: [] }
+      ? { consented: true, memories: [], brief: { headline: 'QA brief loaded', message: 'Synthetic ready state', signals: [] } }
       : { recommendation: { message: 'Test-only suggestion', actions: [], reasons: [] } } }));
     await page.goto('/hub?view=coach');
+    // Wait for the initial consent response before interrupting the POST route.
+    await expect(page.getByText('QA brief loaded', { exact: true })).toBeVisible();
     const input = page.getByPlaceholder('What do you want to do?');
     await input.fill('Find a quiet plan');
     // Abort the request like an interrupted connection, without contacting AI.

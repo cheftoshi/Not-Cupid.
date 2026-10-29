@@ -9,7 +9,7 @@ export default function LandingClient() {
     <header className={styles.landTop}>
       <Wordmark size={1.7} />
       <nav aria-label="Main navigation" className={styles.landNav}>
-        <Link href="/friend-line">Friendship</Link><Link href="/how-it-works">How it works</Link><Link href="/login">Log in ↗</Link>
+        <Link prefetch={false} href="/friend-line">Friendship</Link><Link prefetch={false} href="/how-it-works">How it works</Link><Link prefetch={false} href="/login">Log in ↗</Link>
       </nav>
     </header>
     <section className={styles.landHero}>
@@ -17,7 +17,7 @@ export default function LandingClient() {
 
         <h1 className={styles.landH1}>A place to find<br/><em>your people.</em></h1>
         <p className={styles.landLede}>Dating and friendship,<br/>with more in common.</p>
-        <Link href="/quiz" className={styles.landAuthPrimary}>Start connecting <span aria-hidden>↗</span></Link>
+        <Link prefetch={false} href="/quiz" className={styles.landAuthPrimary}>Start connecting <span aria-hidden>↗</span></Link>
         <div className={styles.lineLabels}><span>♡ Dating</span><span>☺ Friendship</span></div>
       </div>
       <div className={styles.heroArt}><ConnectionSketch /></div>
@@ -25,7 +25,7 @@ export default function LandingClient() {
     <section className={styles.landBottom} aria-label="You choose how to connect">
 
       <p>Find people, start conversations, and make plans.{' '}<br/>You choose who to meet.</p>
-      <Link href="/how-it-works">See how it works ↗</Link>
+      <Link prefetch={false} href="/how-it-works">See how it works ↗</Link>
     </section>
   </main>
 }
