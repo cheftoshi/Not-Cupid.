@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import Wordmark from '@/components/wordmark';
 import ThemeToggle from '@/components/theme-toggle';
 import NavExtras from '@/components/nav-extras';
+import { appViewport } from '@/lib/app-viewport';
 
 // One persistent top bar across the logged-in app: Hub · Love · Friend tabs +
 // theme toggle + log out. Mounted once in the root layout; it hides itself on
@@ -61,13 +62,18 @@ export default function TopNav() {
         const navHeight = window.innerWidth >= 1024 ? 0 : Math.ceil(nav.getBoundingClientRect().height);
         // Hide the mobile bar only for an actually reduced keyboard viewport.
         // Focus alone must not move a submit button between pointerdown and click.
-        root.dataset.appEditing = (viewport?.height || window.innerHeight) < window.innerHeight - 120 ? 'true' : 'false';
+        const measured = appViewport({
+          layoutWidth: window.innerWidth, layoutHeight: window.innerHeight,
+          visualWidth: viewport?.width, visualHeight: viewport?.height, scale: viewport?.scale,
+          editableFocus: hasEditableFocus(), wasEditing: root.dataset.appEditing === 'true',
+        });
+        root.dataset.appEditing = String(measured.editing);
         if (navHeight !== lastNavHeight) {
           root.style.setProperty('--app-top-nav-height', `${navHeight}px`);
           lastNavHeight = navHeight;
         }
-        const viewportHeight = Math.round(viewport?.height || window.innerHeight);
-        const viewportWidth = Math.round(viewport?.width || window.innerWidth);
+        const viewportHeight = measured.height;
+        const viewportWidth = measured.width;
         const heightDelta = Math.abs(viewportHeight - lastViewportHeight);
         const widthChanged = Math.abs(viewportWidth - lastViewportWidth) > 1;
 
