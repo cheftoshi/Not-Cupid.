@@ -1,0 +1,25 @@
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+test('curated mobile discovery has no 25-event cap and retains exact event return links',async({page},info)=>{
+ const writes:string[]=[]; page.on('request',r=>{if(r.method()==='POST'&&r.url().includes('/api/friend'))writes.push(r.url());});
+ await page.addInitScript(()=>{localStorage.setItem('nc_pwa_install_dismissed',String(Date.now()));localStorage.setItem('nc_pwa_push_dismissed',String(Date.now()));});
+ if(info.project.name==='iphone-webkit')await page.route('**/review/friend-events*',async route=>{const response=await route.fetch();const headers=response.headers();if(headers['content-security-policy'])headers['content-security-policy']=headers['content-security-policy'].replace('upgrade-insecure-requests','');await route.fulfill({response,headers});});
+ const url='/review/friend-events?curated=1&event=live%3Acurated%3Asynthetic-33&from=friday-digest';
+ await page.goto(url);await expect(page.locator('main')).toHaveAttribute('data-preview-ready','true',{timeout:20000});
+ await expect(page.getByRole('status').filter({hasText:'40 ideas'})).toBeVisible();
+ await expect(page.getByRole('article').first()).toHaveAttribute('data-event-id','live:curated:synthetic-33');
+ await expect(page.getByRole('article').first()).toContainText('Synthetic local organizer');
+ await expect(page.getByRole('article').first().getByRole('link',{name:/Current details/})).toHaveAttribute('href','https://example.test/events/33');
+ while(await page.getByRole('button',{name:/Show more ideas/}).count())await page.getByRole('button',{name:/Show more ideas/}).click();
+ await expect(page.getByRole('article')).toHaveCount(40);
+ await page.getByLabel('What',{exact:true}).selectOption('outdoors');await expect(page.getByRole('article')).toHaveCount(6);
+ await page.getByRole('article').first().getByRole('button',{name:/Find people/}).click();await expect(page.getByRole('dialog')).toBeVisible();
+ await page.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();
+ await page.getByRole('button',{name:'Reset filters'}).click();
+ expect((await new AxeBuilder({page}).include('main').analyze()).violations).toEqual([]);
+ await page.setViewportSize({width:320,height:800});await page.evaluate(()=>document.documentElement.style.fontSize='200%');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ const spacing=await page.getByRole('article').first().evaluate(el=>{const date=el.querySelector('time')!.getBoundingClientRect();const category=el.querySelector('[class*=category]')!.getBoundingClientRect();return {dateBottom:date.bottom,categoryTop:category.top};});expect(spacing.categoryTop).toBeGreaterThanOrEqual(spacing.dateBottom);
+ await page.screenshot({path:`artifacts/friend-events/curated-${info.project.name}.png`,fullPage:true});
+ await page.goto('/review/friend-events?curated=1&event=live%3Acurated%3Asynthetic-39');await expect(page.getByRole('article').first()).toHaveAttribute('data-event-id','live:curated:synthetic-39');await page.goBack();await expect(page.locator('main')).toHaveAttribute('data-preview-ready','true');await expect(page.getByRole('article').first()).toHaveAttribute('data-event-id','live:curated:synthetic-33');
+ expect(writes).toEqual([]);
+});

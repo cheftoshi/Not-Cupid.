@@ -24,7 +24,7 @@ test.describe('authenticated test-realm mobile path', () => {
     await page.goto('/hub');
     await page.getByRole('button', { name: 'Find something to do', exact: true }).click();
     await expect(page.getByRole('heading', { name: event.title })).toBeVisible();
-    await expect(page.getByText('Check ticket price', { exact: true })).toBeVisible();
+    await expect(page.getByText('Check admission details', { exact: true })).toBeVisible();
     expect(posted).toBeNull();
     await page.getByRole('button', { name: 'Find people to go with', exact: true }).click();
     await expect(page.getByRole('form', { name: 'Create an invitation' })).toContainText('not a ticket or reservation');

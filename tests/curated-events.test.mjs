@@ -1,0 +1,15 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {draftCuratedEvent,reviewCuratedEvent,publishCuratedEvent,activeCuratedEvents,curatedSourceUrl,CURATED_REFRESH_MS} from '../lib/curated-events.ts';
+const now=Date.parse('2026-11-13T00:00:00Z');
+const facts=()=>({id:'synthetic-walk',city:'boston',title:'Synthetic walk',venue:'Synthetic public park',startsAt:'2026-11-15T12:00:00-05:00',category:'outdoors',sourceUrl:'https://example.test/event',sourceLabel:'Synthetic source',sourceCheckedAt:new Date(now).toISOString(),price:null,publicAdmissionConfirmed:true,timeConfirmed:true});
+test('draft review publish is explicit and only published records become active',()=>{const d=draftCuratedEvent(facts());assert.deepEqual(activeCuratedEvents([d],now),[]);assert.throws(()=>publishCuratedEvent(d,now),/Review/);const r=reviewCuratedEvent(d,now);assert.deepEqual(activeCuratedEvents([r],now),[]);const p=publishCuratedEvent(r,now);assert.equal(activeCuratedEvents([p],now).length,1);assert.equal(activeCuratedEvents([p,p],now).length,1);assert.equal(p.expiresAt,'2026-11-15T17:00:00.000Z');});
+test('editing reviewed or published facts invalidates review; expiry is fail-closed',()=>{const r=reviewCuratedEvent(draftCuratedEvent(facts()),now);r.facts.title='Changed';assert.throws(()=>publishCuratedEvent(r,now),/Review/);const p=publishCuratedEvent(reviewCuratedEvent(draftCuratedEvent(facts()),now),now);p.facts.venue='Changed';assert.deepEqual(activeCuratedEvents([p],now),[]);const future={...facts(),startsAt:'2026-11-20T12:00:00-05:00'};const q=publishCuratedEvent(reviewCuratedEvent(draftCuratedEvent(future),now),now);assert.equal(Date.parse(q.expiresAt),now+CURATED_REFRESH_MS);assert.deepEqual(activeCuratedEvents([q],now+CURATED_REFRESH_MS),[]);});
+test('uncertain time/admission, stale checks, unsafe links and inferred prices cannot pass review',()=>{for(const patch of [{publicAdmissionConfirmed:false},{timeConfirmed:false},{sourceCheckedAt:new Date(now-CURATED_REFRESH_MS).toISOString()},{startsAt:'2026-11-15T12:00:00'},{price:{min:-1,max:0,currency:'USD'}},{sourceUrl:'javascript:alert(1)'}])assert.throws(()=>reviewCuratedEvent(draftCuratedEvent({...facts(),...patch}),now));for(const url of ['http://example.test','https://user@example.test','https://127.0.0.1/x','https://192.168.1.2/x'])assert.equal(curatedSourceUrl(url),null);});
+
+test('draft canonicalizes source links so reviewed links match the database constraint',()=>{
+ const d=draftCuratedEvent({...facts(),sourceUrl:'HTTPS://EXAMPLE.TEST?event=walk'});assert.equal(d.facts.sourceUrl,'https://example.test/?event=walk');
+ const p=publishCuratedEvent(reviewCuratedEvent(d,now),now);assert.equal(activeCuratedEvents([p],now)[0].url,d.facts.sourceUrl);
+});
+test('runtime JSON types cannot impersonate editorial confirmation or event IDs',()=>{
+ for(const patch of [{sourceUrl:null},{sourceUrl:undefined},{id:undefined},{id:123},{publicAdmissionConfirmed:'false'},{timeConfirmed:'no'}])assert.throws(()=>reviewCuratedEvent(draftCuratedEvent({...facts(),...patch}),now));
+});

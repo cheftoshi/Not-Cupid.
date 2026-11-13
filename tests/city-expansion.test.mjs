@@ -97,3 +97,8 @@ test('outcome feedback rejects strangers and future dates, accepts only a confir
   current=null;
   assert.equal((await route.POST(request())).status,401);
 });
+
+test('curated event destination survives signup without allowing open redirects', () => {
+ for (const path of ['/hub?create=1','/hub?discover=1','/hub?discover=1&event=live%3Acurated%3Awalk','/hub?discover=1&event=live%3Atm%3Aabc&from=friday-digest']) assert.equal(planReturnPath(path),path);
+ for (const path of ['/hub?discover=1&event=https://evil.test','/hub?discover=1&next=//evil.test','/hub?discover=1&event=live%253Acurated%253Awalk','/hub?discover=1&discover=1','/hub?discover=1&from=unknown','/hub?discover=1#evil']) assert.equal(planReturnPath(path),null);
+});

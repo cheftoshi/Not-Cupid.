@@ -39,6 +39,15 @@ export function validateSocialPlan(happensAt: Date | null, rawCapacity: unknown,
 }
 export function planReturnPath(value: unknown): string | null {
   if (typeof value !== 'string') return null;
+  if (value === '/hub?create=1') return value;
   // Acquisition links never accept arbitrary URLs or unrelated privileged routes.
+  if (value.startsWith('/hub?') && !value.includes('#')) {
+    const q = new URLSearchParams(value.slice(5));
+    const keys = [...q.keys()];
+    if (q.get('discover') === '1' && new Set(keys).size === keys.length &&
+        keys.every(k => ['discover','event','from'].includes(k)) &&
+        (!q.has('event') || /^(?:live:tm:[A-Za-z0-9_-]{1,100}|live:curated:[a-z0-9][a-z0-9_-]{0,79})$/.test(q.get('event')!)) &&
+        (!q.has('from') || q.get('from') === 'friday-digest')) return value;
+  }
   return /^\/hub\?(?:plan|date)=[0-9a-f-]{36}$/i.test(value) || /^\/hub\?city=[a-z_]{2,30}$/.test(value) ? value : null;
 }

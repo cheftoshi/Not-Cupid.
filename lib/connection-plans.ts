@@ -4,6 +4,7 @@ export type ConnectionPlan = {
   body?: string | null;
   externalEventId?: string | null;
   externalEventUrl?: string | null;
+  externalEventStatus?: 'current'|'unverified'|'time_changed'|null;
   kind: string;
   category: string;
   area?: string | null;

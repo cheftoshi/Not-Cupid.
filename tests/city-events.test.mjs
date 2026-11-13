@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadTs, nextMock } from './helpers/load-ts.mjs';
-import { normalizeCityEvent, eventInWindow, ticketmasterUrl, eventPrice } from '../lib/city-events.ts';
+import { normalizeCityEvent, eventInWindow, ticketmasterUrl, outsideEventUrl, curatedReferenceState, eventPrice } from '../lib/city-events.ts';
 const now = Date.parse('2026-10-02T17:00:00Z');
 const raw = () => ({ id: 'event_1', name: 'Local music', url: 'https://www.ticketmaster.com/event/1',
   dates: { status: { code: 'onsale' }, start: { dateTime: '2026-10-03T23:00:00Z' } },
@@ -9,7 +9,7 @@ const raw = () => ({ id: 'event_1', name: 'Local music', url: 'https://www.ticke
 test('outside event policy excludes unavailable, unknown-time, stale and unsafe links', () => {
   const event = normalizeCityEvent(raw(), now);
   assert.equal(event.id, 'live:tm:event_1');
-  assert.equal(eventPrice(event), 'Check ticket price');
+  assert.equal(eventPrice(event), 'Check admission details');
   for (const code of ['cancelled', 'postponed', 'rescheduled', 'offsale', undefined]) {
     const r = raw(); r.dates.status.code = code; assert.equal(normalizeCityEvent(r, now), null);
   }
@@ -29,12 +29,12 @@ test('weekend is Friday through Sunday in Eastern time, including DST weekends',
 });
 test('roundup previews are bounded, escaped, deduplicated and never send-ready', async () => {
   const escapeHtml = x => String(x).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
-  const policy = { eventInWindow, eventPrice, ticketmasterUrl };
+  const policy = { eventInWindow, eventPrice, outsideEventUrl };
   const { fridayRoundup } = await loadTs('lib/friday-digest.ts', {
     '@/lib/email': { escapeHtml }, '@/lib/city-events': policy, '@/lib/plan-discovery': { planWhen: s => s },
   });
   const e = { ...normalizeCityEvent(raw(), now), title: '<script>alert(1)</script>' };
-  const preview = fridayRoundup('Boston', [e, e, ...[2, 3, 4].map(n => ({ ...e, id: String(n) }))], now);
+  const preview = fridayRoundup('Boston', [e, e, ...[2, 3, 4].map(n => ({ ...e, id: `live:tm:${n}` }))], now);
   assert.equal(preview.events.length, 3); assert.equal(preview.authorizedRecipients, 0);
   assert.equal(preview.enabled, false); assert.equal(preview.sendReady, false);
   assert.equal(preview.html.includes('<script>'), false);
@@ -67,6 +67,7 @@ test('provider rejects credentials clearly, caches public listings, and always r
     const { cityEvents } = await loadTs('lib/city-events-server.ts', {
       '@/lib/quiz-data': { METRO_CENTERS: { boston: { lat: 42, lng: -71 } } },
       '@/lib/city-events': { normalizeCityEvent },
+      '@/lib/curated-events-server': { curatedCityEvents: () => [] },
       '@/lib/supabase': { supabaseAdmin: { from: () => ({ select: async () => ({ data: hidden, error: dbError }) }) } },
     });
     assert.equal((await cityEvents('boston')).status, 'credentials_rejected');
@@ -96,7 +97,8 @@ test('publishing an outside event revalidates city/time and stores only provider
     '@/lib/plan-discovery': { validateSocialPlan: () => 4 }, '@/lib/neighborhoods': { planAreasForMetro: () => ['Boston'], planAreaDistance: () => null },
     '@/lib/plan-location': { validatePlanLocation: () => ({ area: 'Boston', location: null, visibility: 'participants' }), visiblePlanVenue: () => ({}) },
     '@/lib/city-events-server': { cityEvents: async (metro, recheck) => { assert.equal(metro, 'boston'); fresh = recheck; return catalog; } },
-    '@/lib/city-events': { ticketmasterUrl },
+    '@/lib/city-events': { outsideEventUrl, curatedReferenceState },
+    '@/lib/curated-events-server': { curatedCityEvents:()=>[] },
   });
   const payload = { client_id: '00000000-0000-4000-8000-000000000001', title: 'Come with me', kind: 'event', external_event_id: 'live:tm:event_1', external_event_url: 'https://evil.test', happens_at: '2026-10-03T23:00:00Z' };
   const request = p => new Request('http://localhost/api/friend/activities', { method: 'POST', body: JSON.stringify(p) });
@@ -104,8 +106,66 @@ test('publishing an outside event revalidates city/time and stores only provider
   assert.equal(saved, undefined);
   assert.equal((await POST(request(payload))).status, 200); assert.equal(fresh, true);
   assert.equal(saved.external_event_url, 'https://www.ticketmaster.com/event/1');
+  catalog = { status:'ready',events:[{...catalog.events[0],id:'live:curated:walk',url:'https://example.test/event'}] };
+  assert.equal((await POST(request({...payload,external_event_id:'live:curated:walk'}))).status,200);
+  assert.equal(saved.external_event_url,'https://example.test/event');
   catalog = { status: 'unavailable', events: [] }; saved = undefined;
   assert.equal((await POST(request(payload))).status, 503); assert.equal(saved, undefined);
   catalog = { status: 'ready', events: [] };
   assert.equal((await POST(request(payload))).status, 409); assert.equal(saved, undefined);
+});
+test('preview stays development-only and production discovery never imports fixtures', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const gate = await readFile('app/review/friend-events/page.tsx','utf8');
+  assert.match(gate,/process\.env\.NODE_ENV !== 'development'/);
+  assert.match(gate,/process\.env\.FRIEND_EVENTS_PREVIEW !== '1'/);
+  assert.ok(gate.indexOf('notFound();') < gate.indexOf("import('./preview')"));
+  const adapter = await readFile('app/hub/city-events-panel.tsx','utf8');
+  assert.doesNotMatch(adapter,/synthetic|review\/friend-events/);
+  assert.match(adapter,/fetchJsonWithTimeout\('\/api\/friend\/events'/);
+  const preview = await readFile('app/review/friend-events/preview.tsx','utf8');
+  assert.doesNotMatch(preview,/fetch\(|fetchJsonWithTimeout|localStorage|supabase/);
+});
+test('curated links require trusted server catalogue IDs and reject unsafe URL shapes', () => {
+ assert.equal(outsideEventUrl('https://example.test/event','live:curated:walk'),'https://example.test/event');
+ assert.equal(outsideEventUrl('https://example.test/event','live:tm:walk'),null);
+ assert.equal(outsideEventUrl('https://user@example.test/event','live:curated:walk'),null);
+ assert.equal(outsideEventUrl('https://127.0.0.1/event','live:curated:walk'),null);
+ assert.equal(outsideEventUrl('https://example.test/event','live:unknown:walk'),null);
+});
+test('curated events survive provider failure but remain subject to moderation', async () => {
+ const key=process.env.TICKETMASTER_API_KEY; delete process.env.TICKETMASTER_API_KEY;
+ let hidden=[],error=null;
+ const event={id:'live:curated:walk',title:'Synthetic walk',venue:'Park',startsAt:new Date(Date.now()+86400000).toISOString(),url:'https://example.test/event',category:'outdoors',price:null};
+ try {
+  const {cityEvents}=await loadTs('lib/city-events-server.ts',{
+   '@/lib/quiz-data':{METRO_CENTERS:{boston:{lat:42,lng:-71}}},'@/lib/city-events':{normalizeCityEvent},
+   '@/lib/curated-events-server':{curatedCityEvents:city=>city==='boston'?[event]:[]},
+   '@/lib/supabase':{supabaseAdmin:{from:()=>({select:async()=>({data:hidden,error})})}},
+  });
+  assert.equal((await cityEvents('boston')).status,'ready');assert.equal((await cityEvents('boston')).events[0].id,event.id);
+  hidden=[{activity_id:event.id}];assert.equal((await cityEvents('boston')).events.length,0);
+  error={message:'offline'};assert.equal((await cityEvents('boston')).status,'unavailable');
+ }finally{if(key!==undefined)process.env.TICKETMASTER_API_KEY=key;}
+});
+test('curated email preview links back to exact event but stays unsent and excludes stale checks',async()=>{
+ const escapeHtml=x=>String(x).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+ const {fridayRoundup}=await loadTs('lib/friday-digest.ts',{'@/lib/email':{escapeHtml},'@/lib/city-events':{eventInWindow,eventPrice,outsideEventUrl},'@/lib/plan-discovery':{planWhen:x=>x}});
+ const e={...normalizeCityEvent(raw(),now),id:'live:curated:walk',url:'https://example.test/event',curated:true,sourceLabel:'Original source',sourceCheckedAt:new Date(now).toISOString()};
+ const p=fridayRoundup('Boston',[e],now);assert.equal(p.events.length,1);assert.equal(p.enabled,false);assert.equal(p.sendReady,false);assert.equal(p.authorizedRecipients,0);assert.ok(p.html.includes('event=live%3Acurated%3Awalk'));assert.ok(p.html.includes('Original source'));assert.ok(p.html.includes('signed unsubscribe'));
+ assert.equal(fridayRoundup('Boston',[{...e,sourceCheckedAt:new Date(now-3*86400000).toISOString()}],now).events.length,0);
+});
+
+test('upcoming filter includes eligible events beyond seven days without hiding exact links',()=>{
+ const e={...normalizeCityEvent(raw(),now),startsAt:new Date(now+40*86400000).toISOString()};
+ assert.equal(eventInWindow(e,'upcoming',now),true);assert.equal(eventInWindow(e,'week',now),false);
+ assert.equal(eventInWindow({...e,startsAt:new Date(now+61*86400000).toISOString()},'upcoming',now),false);
+});
+
+test('existing curated plans expose a non-destructive source warning',()=>{
+ const events=[{id:'live:curated:walk',startsAt:'2026-11-15T17:00:00Z'}];
+ assert.equal(curatedReferenceState('live:curated:walk','2026-11-15T12:00:00-05:00',events),'current');
+ assert.equal(curatedReferenceState('live:curated:walk','2026-11-15T18:00:00Z',events),'time_changed');
+ assert.equal(curatedReferenceState('live:curated:gone','2026-11-15T17:00:00Z',events),'unverified');
+ assert.equal(curatedReferenceState('live:tm:abc','2026-11-15T17:00:00Z',events),null);
 });

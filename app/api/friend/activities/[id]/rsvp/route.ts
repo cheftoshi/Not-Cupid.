@@ -8,6 +8,7 @@ import { recordFriendAction } from '@/lib/friend-events';
 import { friendActivityInCurrentMetro, friendActivityAuthorAvailable } from '@/lib/friend-activity-access';
 import { planHasEnded } from '@/lib/connection-plans';
 import { sameRealm } from '@/lib/realm';
+import { cityEvents } from '@/lib/city-events-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { data: activity } = await supabaseAdmin
     .from('friend_activities')
-    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max, capacity, metro, is_test, happens_at, expires_at')
+    .select('id, kind, title, author_id, audience_gender, audience_age_min, audience_age_max, capacity, metro, is_test, happens_at, expires_at, external_event_id')
     .eq('id', activityId)
     .maybeSingle();
   if (!activity) return NextResponse.json({ error: 'That post is no longer available.' }, { status: 404 });
@@ -61,6 +62,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!inGender || !inAgeMin || !inAgeMax) {
       return NextResponse.json({ error: 'This event is open to a specific group.' }, { status: 403 });
     }
+  }
+
+  // Recheck new commitments to curated events. Leaving or retaining an existing
+  // response and participant chat remain available if a listing is withdrawn.
+  if (activity.external_event_id?.startsWith('live:curated:') &&
+      (desired === 'yes' || desired === 'maybe') && desired !== existing?.response) {
+    const catalog = await cityEvents(activity.metro, true);
+    if (catalog.status !== 'ready') return NextResponse.json({ error: 'We could not verify this event. Your RSVP was not changed; please retry.' }, { status: 503 });
+    const current = catalog.events.find(event => event.id === activity.external_event_id);
+    if (!current || Date.parse(current.startsAt) !== Date.parse(activity.happens_at))
+      return NextResponse.json({ error: 'This event is no longer verified at this time. Check the source and ask the host before joining.' }, { status: 409 });
   }
 
   const rsvpArgs = {

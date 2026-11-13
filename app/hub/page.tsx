@@ -18,7 +18,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
   const user = await getCurrentUser();
   const params = await searchParams;
   if (!user && params.discover === '1') {
-    const event = params.event && /^live:tm:[A-Za-z0-9_-]{1,100}$/.test(params.event) ? `&event=${encodeURIComponent(params.event)}` : '';
+    const event = params.event && /^(?:live:tm:[A-Za-z0-9_-]{1,100}|live:curated:[a-z0-9][a-z0-9_-]{0,79})$/.test(params.event) ? `&event=${encodeURIComponent(params.event)}` : '';
     redirect(`/login?next=${encodeURIComponent('/hub?discover=1' + event)}`);
   }
   if (!user && params.create === '1') redirect('/login?next=%2Fhub%3Fcreate%3D1');

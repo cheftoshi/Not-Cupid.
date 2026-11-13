@@ -10,7 +10,8 @@ import { validateSocialPlan } from '@/lib/plan-discovery';
 import { planAreasForMetro, planAreaDistance } from '@/lib/neighborhoods';
 import { validatePlanLocation, visiblePlanVenue } from '@/lib/plan-location';
 import { cityEvents } from '@/lib/city-events-server';
-import { ticketmasterUrl } from '@/lib/city-events';
+import { curatedCityEvents } from '@/lib/curated-events-server';
+import { outsideEventUrl, curatedReferenceState } from '@/lib/city-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -175,12 +176,22 @@ export async function GET(req: NextRequest) {
   const locations = ids.length ? await supabaseAdmin.from('friend_plan_locations').select('activity_id,venue,visibility').in('activity_id', ids) : { data: [], error: null };
   if (locations.error) return NextResponse.json({ error: 'Could not verify meeting-place visibility. Please retry.' }, { status: 503 });
   const venueById = new Map((locations.data || []).map(v => [v.activity_id, v]));
+  let currentCuratedEvents = curatedCityEvents('boston');
+  // Existing cards must not imply a blocked or uncheckable source is current.
+  if (currentCuratedEvents.length) {
+    try {
+      const blocked = await supabaseAdmin.from('live_activity_blacklist').select('activity_id');
+      const blockedIds = new Set((blocked.data || []).map(row => row.activity_id));
+      currentCuratedEvents = blocked.error ? [] : currentCuratedEvents.filter(event => !blockedIds.has(event.id));
+    } catch { currentCuratedEvents = []; }
+  }
   const activities = (acts ?? []).map((a) => {
     const author: any = aById.get(a.author_id) || {};
     return {
       id: a.id, title: a.title, body: a.body, category: a.category, area: a.area,
       externalEventId: a.external_event_id || null,
-      externalEventUrl: ticketmasterUrl(a.external_event_url),
+      externalEventStatus: curatedReferenceState(a.external_event_id, a.happens_at, currentCuratedEvents),
+      externalEventUrl: outsideEventUrl(a.external_event_url, a.external_event_id),
       ...visiblePlanVenue(venueById.get(a.id), a.location ?? null, a.author_id === user.id, myRespByAct.get(a.id) || null),
       distanceMiles: a.metro && a.metro !== myMetro ? null : planAreaDistance(myMetro, origin, a.area),
       locationAreas: a.author_id === user.id ? planAreasForMetro(a.metro || myMetro) : undefined,
@@ -225,7 +236,7 @@ export async function POST(req: NextRequest) {
   // Revalidate on deliberate publication; browsing itself never posts a plan.
   let externalEvent: Awaited<ReturnType<typeof cityEvents>>['events'][number] | undefined;
   if (body.external_event_id != null) {
-    if (typeof body.external_event_id !== 'string' || !/^live:tm:[A-Za-z0-9_-]{1,100}$/.test(body.external_event_id) || body.kind !== 'event' || !locationContext.metro)
+    if (typeof body.external_event_id !== 'string' || !(/^(?:live:tm:[A-Za-z0-9_-]{1,100}|live:curated:[a-z0-9][a-z0-9_-]{0,79})$/.test(body.external_event_id)) || body.kind !== 'event' || !locationContext.metro)
       return NextResponse.json({ error: 'Invalid outside event.' }, { status: 400 });
     const catalog = await cityEvents(locationContext.metro, true);
     if (catalog.status !== 'ready') return NextResponse.json({ error: 'We could not verify this event. Your invitation is not published; please retry.' }, { status: 503 });

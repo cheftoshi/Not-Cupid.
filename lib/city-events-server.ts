@@ -1,4 +1,5 @@
 import 'server-only';
+import { curatedCityEvents } from '@/lib/curated-events-server';
 import { METRO_CENTERS } from '@/lib/quiz-data';
 import { normalizeCityEvent, type CityEvent } from '@/lib/city-events';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -42,7 +43,9 @@ async function fetchCatalog(metro: string, fresh: boolean): Promise<Result> {
 }
 
 export async function cityEvents(metro: string, fresh = false): Promise<Result> {
-  const result = await fetchCatalog(metro, fresh);
+  const remote = await fetchCatalog(metro, fresh);
+  const curated = curatedCityEvents(metro);
+  const result: Result = curated.length ? { ...remote, status: 'ready', events: [...curated, ...remote.events] } : remote;
   if (result.status !== 'ready') return result;
   try {
     const blocked = await supabaseAdmin.from('live_activity_blacklist').select('activity_id');

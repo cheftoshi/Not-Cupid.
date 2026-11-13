@@ -290,7 +290,7 @@ export function CreateInvitation({
       {event && <div className={s.notice}>
         <strong>{event.title}</strong><p>{planWhen(event.startsAt)} · {event.venue}</p>
         <p>This is your invitation to go together, not a ticket or reservation. The event venue is public; choose where your group will meet below.</p>
-        <a href={event.url} target="_blank" rel="noopener noreferrer">Event details & tickets on Ticketmaster ↗</a>
+        <a href={event.url} target="_blank" rel="noopener noreferrer">Event details & admission at {event.sourceLabel || 'Ticketmaster'} ↗</a>
       </div>}
       <ol className={s.steps} aria-label="Invitation progress">{['Connection', 'Your idea', 'Meeting place', 'Review'].map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined}>{index + 1}. {label}</li>)}</ol>
       <p role="status">Step {step + 1} of 4 · {['Choose the kind of connection', 'Describe your plan', 'Choose what to share', 'Check before publishing'][step]}</p>

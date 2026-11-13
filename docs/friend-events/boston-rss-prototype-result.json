@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-11-13T02:56:15.126Z",
+  "inputItems": 25,
+  "uniqueReviewItems": 20,
+  "unverifiedTimes": 20,
+  "explicitTimes": 0,
+  "missingTimes": 0,
+  "publishable": 0,
+  "samples": [
+    {
+      "id": "boston-preview:https%3A%2F%2Fwww.boston.gov%2F16633101%7C2026-11-13T09%3A00%3A00Z%7CFri%2C%2011%2F13%2F2026%20-%209%3A00am",
+      "title": "North End, West End, Wharf District Liaison Office Hours",
+      "url": "https://www.boston.gov/calendar/north-end-west-end-wharf-district-liaison-office-hours",
+      "venue": "West End Community Center",
+      "source": {
+        "label": "City of Boston",
+        "checkedAt": "2026-11-13T02:56:15.126Z"
+      },
+      "displayTime": "Fri, 11/13/2026 - 9:00am",
+      "startsAt": null,
+      "timeStatus": "unverified_local_time",
+      "price": null,
+      "cancellationStatus": "unknown",
+      "publicationEligible": false
+    },
+    {
+      "id": "boston-preview:https%3A%2F%2Fwww.boston.gov%2F16608281%7C2026-11-13T09%3A00%3A00Z%7CFri%2C%2011%2F13%2F2026%20-%209%3A00am",
+      "title": "Charlestown Liaison Office Hours",
+      "url": "https://www.boston.gov/calendar/charlestown-liaison-office-hours",
+      "venue": "Emmi Bakery & Cafe",
+      "source": {
+        "label": "City of Boston",
+        "checkedAt": "2026-11-13T02:56:15.126Z"
+      },
+      "displayTime": "Fri, 11/13/2026 - 9:00am",
+      "startsAt": null,
+      "timeStatus": "unverified_local_time",
+      "price": null,
+      "cancellationStatus": "unknown",
+      "publicationEligible": false
+    },
+    {
+      "id": "boston-preview:https%3A%2F%2Fwww.boston.gov%2F16626956%7C2026-11-13T10%3A00%3A00Z%7CFri%2C%2011%2F13%2F2026%20-%2010%3A00am",
+      "title": "Hyde Park Liaison Office Hours",
+      "url": "https://www.boston.gov/calendar/hyde-park-liaison-office-hours",
+      "venue": "Hyde Park Branch of the Boston Public Library",
+      "source": {
+        "label": "City of Boston",
+        "checkedAt": "2026-11-13T02:56:15.126Z"
+      },
+      "displayTime": "Fri, 11/13/2026 - 10:00am",
+      "startsAt": null,
+      "timeStatus": "unverified_local_time",
+      "price": null,
+      "cancellationStatus": "unknown",
+      "publicationEligible": false
+    }
+  ]
+}

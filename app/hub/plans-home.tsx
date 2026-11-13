@@ -298,9 +298,10 @@ function PlanCard({
       </span>
       <h2>{plan.title}</h2>
       {plan.body && <p>{plan.body}</p>}
+      {(plan.externalEventStatus === 'unverified' || plan.externalEventStatus === 'time_changed') && <p className={s.notice} role="status">{plan.externalEventStatus === 'time_changed' ? 'The source event time has changed.' : 'This event listing needs a fresh check.'} Confirm current details with the source before attending. Your existing chat remains available.</p>}
       {plan.externalEventUrl && <p className={s.notice}>
         Member invitation to an outside event. Admission is separate.{' '}
-        <a href={plan.externalEventUrl} target="_blank" rel="noopener noreferrer">Check current details & tickets on Ticketmaster ↗</a>
+        <a href={plan.externalEventUrl} target="_blank" rel="noopener noreferrer">Check current details & admission at the source ↗</a>
       </p>}
       <div className={s.details}>
         <div>
@@ -400,7 +401,7 @@ export default function PlansHome({
     [editing, setEditing] = useState(false),
     [opened, setOpened] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
-  const [discovering, setDiscovering] = useState(false);
+  const [discovering, setDiscovering] = useState(friendMode && metro === "boston");
   const [selectedEvent, setSelectedEvent] = useState<CityEvent | null>(null);
   useEffect(() => {
     const search = new URLSearchParams(window.location.search);
@@ -573,7 +574,8 @@ export default function PlansHome({
   return (
     <main className={s.home} data-perf-region="hub">
       <div className={s.wrap}>
-        <header className={s.header}>
+        {friendMode && discovering && <h1 className={s.screenReaderTitle}>Friend Line · Discover events and member plans</h1>}
+        <header className={s.header} hidden={friendMode && discovering}>
           <div>
             <span className={s.eyebrow}>
               Your home · {city || "Your local community"}
@@ -597,20 +599,22 @@ export default function PlansHome({
           : null}
         </section>}
         {reboot && <nav className={s.filters} aria-label="Connection navigation">
-          <button aria-pressed={filter !== "mine"} onClick={() => setFilter(friendMode ? "friends" : initialFilter)}>Plans</button>
+          {friendMode && <button aria-pressed={discovering} onClick={() => { setDiscovering(true); setCreating(false); }}>Discover events</button>}
+          <button aria-pressed={friendMode ? !discovering : filter !== "mine"} onClick={() => { setFilter(friendMode ? "friends" : initialFilter); if (friendMode) { setDiscovering(false); setCreating(false); requestAnimationFrame(() => document.getElementById("home-invitations")?.scrollIntoView({ block: "start" })); } }}>{friendMode ? "Member plans" : "Plans"}</button>
+          {friendMode && <button onClick={() => {setSelectedEvent(null); setCreating(true); requestAnimationFrame(() => document.getElementById("event-invitation-review")?.scrollIntoView({ block: "start" }));}}>＋ New invitation</button>}
           <Link className={s.button} href="/friends?view=crew">People & chats</Link>
           <button onClick={() => { if (rooms[0]) open(rooms[0]); else setSheet(true); }}>Plan chats</button>
           <Link href="/friends?view=pulse">Clubs & communities</Link>
         </nav>}
         {suggestedCity && suggestedCity !== metro && <p className={s.notice}>You came to explore {METRO_CENTERS[suggestedCity]?.city}. Use Change city below to choose it; your home location stays the same.</p>}
-        <div className={s.discoveryEntry}>
+        <div className={s.discoveryEntry} hidden={friendMode && discovering}>
           <div><strong>Local events</strong></div>
           <button type="button" aria-expanded={discovering} onClick={() => setDiscovering(!discovering)}>Find something to do</button>
         </div>
-        {discovering && <CityEventsPanel city={city} plans={plans} onClose={() => setDiscovering(false)} onOpen={open}
-          onChoose={event => { setSelectedEvent(event); setCreating(true); setDiscovering(false); }} />}
+        {discovering && <div hidden={creating}><CityEventsPanel city={city} plans={plans} onClose={() => setDiscovering(false)} onOpen={open}
+          onChoose={event => { setSelectedEvent(event); setCreating(true); requestAnimationFrame(() => document.getElementById("event-invitation-review")?.scrollIntoView({ block: "start" })); }} /></div>}
         {creating && (
-          <CreateInvitation
+          <div id="event-invitation-review"><CreateInvitation
             key={selectedEvent?.id || 'original'}
             event={selectedEvent}
             areas={areas}
@@ -626,7 +630,7 @@ export default function PlansHome({
               deepLinked.current = false;
               void load();
             }}
-          />
+          /></div>
         )}
 
         {notice && (

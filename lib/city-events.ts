@@ -5,10 +5,13 @@ export type CityEvent = {
   venue: string;
   startsAt: string;
   url: string;
-  category: 'music' | 'arts' | 'sports';
+  category: 'music' | 'arts' | 'sports' | 'food' | 'outdoors' | 'community';
+  sourceLabel?: string;
+  sourceCheckedAt?: string;
+  curated?: boolean;
   price: { min: number; max: number; currency: string } | null;
 };
-export type EventWindow = 'today' | 'weekend' | 'week';
+export type EventWindow = 'today' | 'weekend' | 'week' | 'upcoming';
 
 export function ticketmasterUrl(value: unknown): string | null {
   if (typeof value !== 'string' || value.length > 2000) return null;
@@ -44,6 +47,7 @@ const easternDay = (time: number) => new Intl.DateTimeFormat('en-CA', {
 export function eventInWindow(event: CityEvent, window: EventWindow, now = Date.now()) {
   const at = Date.parse(event.startsAt);
   if (!Number.isFinite(at) || at <= now) return false;
+  if (window === 'upcoming') return at <= now + 60 * 86400000;
   if (window === 'today') return easternDay(at) === easternDay(now);
   if (window === 'week') return at < now + 7 * 86400000;
   // This Friday–Sunday (including today on a weekend), in the city's timezone.
@@ -57,7 +61,29 @@ export function eventInWindow(event: CityEvent, window: EventWindow, now = Date.
 }
 
 export function eventPrice(event: CityEvent) {
-  if (!event.price) return 'Check ticket price';
+  if (!event.price) return 'Check admission details';
   const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: event.price.currency, maximumFractionDigits: 0 });
   return event.price.max === 0 ? 'Listed as free · verify availability' : `From ${money.format(event.price.min)} · fees may apply`;
+}
+
+// Only canonical public HTTPS URLs from the server-owned reviewed catalogue.
+export function curatedPublicUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > 2000) return null;
+  try {
+    const u = new URL(value);
+    return u.protocol === 'https:' && !u.username && !u.password && !u.port &&
+      /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(u.hostname) ? u.href : null;
+  } catch { return null; }
+}
+export function outsideEventUrl(value: unknown, id: unknown): string | null {
+  if (typeof id !== 'string') return null;
+  if (/^live:tm:[A-Za-z0-9_-]{1,100}$/.test(id)) return ticketmasterUrl(value);
+  return /^live:curated:[a-z0-9][a-z0-9_-]{0,79}$/.test(id) ? curatedPublicUrl(value) : null;
+}
+
+export function curatedReferenceState(id: unknown, startsAt: unknown, events: readonly Pick<CityEvent,'id'|'startsAt'>[]): 'current'|'unverified'|'time_changed'|null {
+  if (typeof id !== 'string' || !id.startsWith('live:curated:')) return null;
+  const event = events.find(e=>e.id===id);
+  if (!event) return 'unverified';
+  return typeof startsAt === 'string' && Date.parse(event.startsAt) === Date.parse(startsAt) ? 'current' : 'time_changed';
 }
