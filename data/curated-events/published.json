@@ -640,22 +640,22 @@
       "venue": "Boston Public Market, HUB",
       "startsAt": "2026-11-22T11:00:00-05:00",
       "category": "food",
-      "sourceUrl": "https://bostonpublicmarket.org/events/",
-      "sourceLabel": "Boston Public Market",
-      "sourceCheckedAt": "2026-11-13T04:15:33Z",
+      "sourceUrl": "https://www.eventbrite.com/e/community-thanksgiving-brunch-at-boston-public-market-tickets-2003683787145/",
+      "sourceLabel": "Boston Public Market Association / Eventbrite",
+      "sourceCheckedAt": "2026-11-13T13:30:22.482387Z",
       "price": {
-        "min": 0,
-        "max": 0,
+        "min": 10,
+        "max": 10,
         "currency": "USD"
       },
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-13T04:16:27.315Z",
-    "reviewDigest": "72d676e0844993ea529bbbe0434d59abb5a5630062fbcd649eb21926442de5e8",
-    "publishedAt": "2026-11-13T04:16:27.384Z",
-    "expiresAt": "2026-11-16T04:15:33.000Z"
+    "reviewedAt": "2026-11-13T13:30:22.899Z",
+    "reviewDigest": "815e033e9b1fe64a56df9df24606171192eb372edf2e73c85691134b1afec795",
+    "publishedAt": "2026-11-13T13:30:22.975Z",
+    "expiresAt": "2026-11-16T13:30:22.482Z"
   },
   {
     "facts": {
