@@ -4,7 +4,7 @@
  * Subject/body reflect supplied copy. Footer and exact URLs remain proposed
  * until separately reviewed; rendering is not content or send authorization.
  */
-export const FRIEND_ANNOUNCEMENT_SUBJECT = 'Got plans for tonight?';
+export const FRIEND_ANNOUNCEMENT_SUBJECT = 'Got plans this weekend?';
 export const FRIEND_ANNOUNCEMENT_CTA = 'Find your next plan';
 export const FRIEND_ANNOUNCEMENT_BODY = `Hey,
 
@@ -14,7 +14,7 @@ There’s music, comedy, food, workshops and more. If something catches your eye
 
 Find your next plan
 
-Take a look for tonight or the weekend. We’d love to know what you want to see more of.
+Take a look for this weekend. We’d love to know what you want to see more of.
 
 NotCupid
 

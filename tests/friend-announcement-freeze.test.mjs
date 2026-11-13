@@ -13,7 +13,7 @@ const deps={now,signAttribution:p=>signFriendEventToken(p,key),signUnsubscribe:(
 test('freeze signs personalized attribution and existing global unsubscribe without sending',()=>{
  const previous=process.env.MATCH_LINK_SECRET;process.env.MATCH_LINK_SECRET='synthetic-global-unsubscribe-key-only';
  try{
- const m=freezeFriendAnnouncement(input(),deps);assert.equal(m.purpose,'friend_line_announcement');assert.equal(m.entries.length,1);const e=m.entries[0];assert.equal(e.channel,'email');assert.equal(e.email.subject,'Got plans for tonight?');assert.equal(e.email.to,'synthetic@example.test');
+ const m=freezeFriendAnnouncement(input(),deps);assert.equal(m.purpose,'friend_line_announcement');assert.equal(m.entries.length,1);const e=m.entries[0];assert.equal(e.channel,'email');assert.equal(e.email.subject,'Got plans this weekend?');assert.equal(e.email.to,'synthetic@example.test');
  const cta=new URL(e.email.text.match(/https:\/\/notcupid\.com\/go\/friend-events\?token=\S+/)[0]);
  assert.deepEqual(verifyFriendEventToken(cta.searchParams.get('token'),'attribution',now,key),{purpose:'attribution',userId:user,deliveryId:delivery,channel:'email',expires:m.expires+30*86400000});
  assert(verifyFriendEventToken(cta.searchParams.get('token'),'attribution',m.expires+86400000,key),'CTA survives send window');

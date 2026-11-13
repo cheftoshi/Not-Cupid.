@@ -11,7 +11,7 @@ There’s music, comedy, food, workshops and more. If something catches your eye
 
 Find your next plan
 
-Take a look for tonight or the weekend. We’d love to know what you want to see more of.
+Take a look for this weekend. We’d love to know what you want to see more of.
 
 NotCupid
 
@@ -20,7 +20,7 @@ Tickets and registration are separate from joining a NotCupid plan. Check the or
 test('one-time announcement preserves exact supplied subject, body, sender and CTA', () => {
   assert.equal(FRIEND_ANNOUNCEMENT_BODY, exactBody);
   const message = renderFriendAnnouncementMessage({ unsubscribeUrl });
-  assert.equal(message.subject, 'Got plans for tonight?');
+  assert.equal(message.subject, 'Got plans this weekend?');
   assert.equal(message.from, 'NotCupid <match@notcupid.com>');
   assert.equal(message.replyTo, 'match@notcupid.com');
   assert(message.text.startsWith(exactBody.replace('Find your next plan', 'Find your next plan\nhttps://notcupid.com/hub?discover=1')));
