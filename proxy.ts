@@ -64,6 +64,11 @@ export function proxy(req: NextRequest) {
 
   const res = NextResponse.next()
   applySecurityHeaders(res)
+  // Signed campaign links must not leak bearer tokens through same-origin referrers.
+  if (['/go/friend-events', '/api/friend-events/unsubscribe'].includes(req.nextUrl.pathname)) {
+    res.headers.set('Referrer-Policy', 'no-referrer')
+    res.headers.set('Cache-Control', 'no-store')
+  }
   return res
 }
 

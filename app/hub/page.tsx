@@ -1,3 +1,4 @@
+import { recordFriendEventConversion } from '@/lib/friend-event-attribution';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { metroOf, METRO_CENTERS } from '@/lib/quiz-data';
@@ -23,6 +24,8 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
   }
   if (!user && params.create === '1') redirect('/login?next=%2Fhub%3Fcreate%3D1');
   if (!user) redirect(`/login?next=${encodeURIComponent(params.date ? `/hub?date=${params.date}` : params.plan ? `/hub?plan=${params.plan}` : params.city && METRO_CENTERS[params.city] ? `/hub?city=${params.city}` : params.view === 'coach' ? '/hub?view=coach' : '/hub')}`);
+
+  await recordFriendEventConversion(user.id, 'authenticated_return');
 
   if (params.view !== 'coach') {
     const location = await friendLocationContext(user);

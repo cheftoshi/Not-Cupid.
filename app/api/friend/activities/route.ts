@@ -1,3 +1,4 @@
+import { recordFriendEventConversion } from '@/lib/friend-event-attribution';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -321,6 +322,7 @@ export async function POST(req: NextRequest) {
 
   const ins = (row: any) => supabaseAdmin.from('friend_activities').insert(row).select('id').single();
   let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity, dating_friendly: datingFriendly });
+  const createdNow = !error && !!act;
   if (error?.code === '23505' && externalEvent) {
     const existing = await supabaseAdmin.from('friend_activities').select('id').eq('author_id', user.id).eq('external_event_id', externalEvent.id).maybeSingle();
     if (existing.error) return NextResponse.json({ error: 'Could not verify your existing event invitation. Please retry.' }, { status: 503 });
@@ -348,5 +350,6 @@ export async function POST(req: NextRequest) {
     activity_id: act.id, user_id: user.id, read_at: new Date().toISOString(),
   }, { onConflict: 'activity_id,user_id' }).then(undefined, () => {});
 
+  if (createdNow && kind === 'event') await recordFriendEventConversion(user.id, 'plan_create');
   return NextResponse.json({ ok: true, id: act.id });
 }

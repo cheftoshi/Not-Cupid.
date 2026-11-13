@@ -5,6 +5,7 @@ test('curated RSVP rechecks current source/time while preserving withdrawal and 
  let catalog={status:'ready',events:[{id:'live:curated:walk',startsAt:'2026-11-15T17:00:00.000Z'}]};
  const db={from:table=>({select:fields=>{if(table==='friend_activities')assert.match(fields,/external_event_id/);const q={eq:()=>q,maybeSingle:async()=>({data:table==='friend_activities'?activity:existing})};return q;},upsert:async()=>({})}),rpc:async()=>{writes++;return {data:[{my_response:response,yes_count:1}],error:null};}};
  const {POST}=await loadTs('app/api/friend/activities/[id]/rsvp/route.ts',{
+ '@/lib/friend-event-attribution': { recordFriendEventConversion: async () => {} },
   'next/server':nextMock,'@/lib/auth':{getCurrentUser:async()=>({id:'guest',age:30,is_test:true})},'@/lib/supabase':{supabaseAdmin:db},
   '@/lib/friend-matching':{isLgbtqIdentity:()=>false},'@/lib/push':{sendPushToUser:async()=>{}},'@/lib/rate-limit':{rateLimit:async()=>({ok:true})},
   '@/lib/friend-events':{recordFriendAction:async()=>{}},'@/lib/friend-activity-access':{friendActivityInCurrentMetro:async()=>true,friendActivityAuthorAvailable:async()=>true},

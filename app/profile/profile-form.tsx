@@ -1,5 +1,7 @@
 'use client';
 
+import FriendEventPreferences from '@/components/friend-event-preferences';
+
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
@@ -656,6 +658,8 @@ export default function ProfileForm({ initialUser, relaunchMode = false, experim
           </span>
         </label>
       </div>
+
+      <FriendEventPreferences />
 
       {/* SAVE BAR */}
       <div className={styles.saveBar}>

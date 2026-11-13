@@ -1,3 +1,4 @@
+import { recordFriendEventConversion } from '@/lib/friend-event-attribution';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -134,6 +135,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       subjectId: activityId,
       metadata: { response: myResponse },
     });
+  }
+
+  if ((activity.kind || 'event') === 'event' && myResponse === 'yes' && existing?.response !== 'yes' && activity.author_id !== user.id) {
+    await recordFriendEventConversion(user.id, 'plan_join');
   }
 
   return NextResponse.json({ ok: true, joined: myResponse !== null, myResponse, responses, count });

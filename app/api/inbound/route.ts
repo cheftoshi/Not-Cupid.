@@ -1,3 +1,4 @@
+import { recordFriendEventProviderEvent } from '@/lib/friend-event-provider';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -211,11 +212,12 @@ export async function POST(req: NextRequest) {
 
   if (event.type !== 'email.received') {
     try {
-      const [campaignTracked, loveTracked] = await Promise.all([
+      const [campaignTracked, loveTracked, friendEventsTracked] = await Promise.all([
         recordCampaignEvent(event),
         recordLoveNotificationEvent(event),
+        recordFriendEventProviderEvent(event, req.headers.get('svix-id') || ''),
       ]);
-      return NextResponse.json({ ok: true, tracked: campaignTracked || loveTracked, campaignTracked, loveTracked });
+      return NextResponse.json({ ok: true, tracked: campaignTracked || loveTracked || friendEventsTracked, campaignTracked, loveTracked, friendEventsTracked });
     } catch {
       return NextResponse.json({ error: 'Could not store email lifecycle event' }, { status: 500 });
     }

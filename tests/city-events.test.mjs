@@ -90,6 +90,7 @@ test('publishing an outside event revalidates city/time and stores only provider
     upsert: () => Promise.resolve({ error: null }),
   }), rpc: async () => ({ error: null }) };
   const { POST } = await loadTs('app/api/friend/activities/route.ts', {
+ '@/lib/friend-event-attribution': { recordFriendEventConversion: async () => {} },
     'next/server': nextMock, '@/lib/auth': { getCurrentUser: async () => ({ id: 'host', age: 30, gender: 'f' }) },
     '@/lib/supabase': { supabaseAdmin: db }, '@/lib/friend-matching': { isLgbtqIdentity: () => false },
     '@/lib/quiz-data': { metroOf: () => 'boston' }, '@/lib/friend-location': { friendLocationContext: async () => ({ metro: 'boston', area: 'Boston' }) },
