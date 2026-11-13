@@ -56,3 +56,14 @@ test('real adapter is disabled by default; enabled fake adapter verifies provide
  assert.equal(calls.length,1);assert.equal(calls[0].options.idempotencyKey,`friend-events:${delivery}`);assert.equal(calls[0].payload.headers['List-Unsubscribe-Post'],'List-Unsubscribe=One-Click');assert.equal(calls[0].payload.to,'synthetic@example.test');
  }finally{if(old===undefined)delete process.env.FRIEND_EVENT_SEND_ENABLED;else process.env.FRIEND_EVENT_SEND_ENABLED=old;if(oldKey===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=oldKey;}
 });
+test('one-time frozen announcement accepts global unsubscribe, rejects weekly topic-only opt-out and push',async()=>{
+ const x=setup();x.manifest.purpose='friend_line_announcement';x.manifest.campaign='friend_events_announcement_synthetic';
+ x.manifest.entries[0].email.unsubscribeUrl=`https://notcupid.com/unsubscribe?u=${user}&t=synthetic-signed-token`;
+ x.manifest.entries[0].email.unsubscribePostUrl=`https://notcupid.com/api/unsubscribe?u=${user}&t=synthetic-signed-token`;
+ x.approval.manifestHash=friendCampaignHash(x.manifest);
+ assert.equal((await executeFrozenFriendCampaign(x.manifest,x.deps)).stopped,'exact_approval_required');
+ x.approval.audiencePolicy='friend_line_announcement';
+ assert.equal((await executeFrozenFriendCampaign(x.manifest,x.deps)).stopped,'complete');
+ const y=setup();y.manifest.purpose='friend_line_announcement';y.manifest.campaign='friend_events_announcement_synthetic';y.approval.manifestHash=friendCampaignHash(y.manifest);
+ assert.equal((await executeFrozenFriendCampaign(y.manifest,y.deps)).stopped,'invalid_or_expired_manifest');assert.deepEqual(y.calls,[]);
+});

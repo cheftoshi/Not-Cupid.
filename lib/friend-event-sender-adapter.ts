@@ -9,22 +9,34 @@ import type { FriendSenderDependencies, FrozenFriendDelivery } from '@/lib/frien
 
 // Deliberately unreferenced by all routes/cron. Constructing does not send.
 // Production execution needs a future explicit operator handoff after exact review.
-export function friendEventSenderDependencies(): FriendSenderDependencies {
+export function friendEventSenderDependencies(purpose: 'weekly_discovery' | 'friend_line_announcement' = 'weekly_discovery'): FriendSenderDependencies {
+  const announcement=purpose==='friend_line_announcement';
+  const enabled=()=> announcement ? process.env.FRIEND_ANNOUNCEMENT_SEND_ENABLED==='true' : process.env.FRIEND_EVENT_SEND_ENABLED==='true';
   const provider = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
   return {
     async approval(campaign) {
-      if(process.env.FRIEND_EVENT_SEND_ENABLED!=='true') return null;
+      if(!enabled()) return null;
       const {data,error}=await supabaseAdmin.from('friend_event_campaigns').select('*').eq('id',campaign).maybeSingle();
-      if(error||!data) return null;
-      return {manifestHash:data.manifest_hash,recipientCount:data.recipient_count,contentApprovedAt:Date.parse(data.content_approved_at||''),sendApprovedAt:Date.parse(data.send_approved_at||''),expires:Date.parse(data.expires_at),enabled:data.send_enabled && Number.isFinite(Date.parse(data.approved_at || '')) && Date.parse(data.approved_at) <= Date.now()};
+      if(error||!data||(data.audience_policy||'weekly_discovery')!==purpose) return null;
+      if(announcement && (!campaign.startsWith('friend_events_announcement_') || !Number.isFinite(Date.parse(data.provider_permission_reviewed_at||'')) || Date.parse(data.provider_permission_reviewed_at)>Date.now() || (data.provider_permission_basis||'').trim().length<20)) return null;
+      return {audiencePolicy:purpose,manifestHash:data.manifest_hash,recipientCount:data.recipient_count,contentApprovedAt:Date.parse(data.content_approved_at||''),sendApprovedAt:Date.parse(data.send_approved_at||''),expires:Date.parse(data.expires_at),enabled:data.send_enabled && Number.isFinite(Date.parse(data.approved_at || '')) && Date.parse(data.approved_at) <= Date.now()};
     },
     async eligible(entry) {
       const admins=getAdminEmails(); if(!admins.length) return false;
       const {data:user,error}=await supabaseAdmin.from('users').select('*').eq('id',entry.userId).maybeSingle();
       if(error||!user||user.is_test||user.is_blocked||user.deleted_at||!user.friend_opted_in_at||admins.includes((user.email||'').trim().toLowerCase())) return false;
-      if((await friendLocationContext(user)).metro!=='boston') return false;
+      if(announcement && (entry.channel!=='email'||user.email_notifications!==true||user.notifications_paused_at||user.email!==entry.email?.to)) return false;
+      if(!announcement && (await friendLocationContext(user)).metro!=='boston') return false;
       const {data:p,error:pe}=await supabaseAdmin.from('friend_event_preferences').select('*').eq('user_id',entry.userId).maybeSingle();
-      if(pe||!p||p.consent_version!=='friend-events-v1') return false;
+      if(pe) return false;
+      if(announcement) {
+        if(p?.email_enabled===false) {
+          const {data:optouts,error:oe}=await supabaseAdmin.from('friend_event_preference_audit').select('id').eq('user_id',entry.userId).eq('channel','email').eq('enabled',false).limit(1);
+          if(oe||optouts?.length) return false;
+        }
+        return true;
+      }
+      if(!p||p.consent_version!=='friend-events-v1') return false;
       if(entry.channel==='email') return !!p.email_enabled&&user.email_notifications===true&&!user.notifications_paused_at&&user.email===entry.email?.to;
       if(!p.push_enabled) return false;
       const {data:sub,error:se}=await supabaseAdmin.from('push_subscriptions').select('id').eq('user_id',entry.userId).limit(1);
@@ -40,18 +52,20 @@ export function friendEventSenderDependencies(): FriendSenderDependencies {
       return result==='clear'?'clear':result==='unknown'?'unknown':'blocked';
     },
     async claim(entry,campaign,hash) {
-      const {data,error}=await supabaseAdmin.rpc('claim_frozen_friend_event_delivery',{p_user:entry.userId,p_campaign:campaign,p_channel:entry.channel,p_admin_emails:getAdminEmails(),p_delivery:entry.deliveryId,p_manifest_hash:hash});
+      const args={p_user:entry.userId,p_campaign:campaign,p_admin_emails:getAdminEmails(),p_delivery:entry.deliveryId,p_manifest_hash:hash};
+      const {data,error}=announcement ? await supabaseAdmin.rpc('claim_friend_line_announcement',args) : await supabaseAdmin.rpc('claim_frozen_friend_event_delivery',{...args,p_channel:entry.channel});
       if(error) throw new Error('Delivery claim failed'); return data===entry.deliveryId;
     },
     async submit(entry,campaign) {
-      if(process.env.FRIEND_EVENT_SEND_ENABLED!=='true') throw new Error('Sending is disabled');
+      if(!enabled()) throw new Error('Sending is disabled');
+      if(announcement && entry.channel!=='email') throw new Error('Announcement is email-only');
       if(entry.channel==='push'&&entry.push) {
         const result=await sendPushToUserDetailed(entry.userId,entry.push);
         return {accepted:result.delivered}; // provider acceptance, never device display
       }
       if(!provider||!entry.email) throw new Error('Email provider unavailable');
       const e=entry.email;
-      const {data,error}=await provider.emails.send({from:e.from,to:e.to,replyTo:e.replyTo,subject:e.subject,html:e.html,text:e.text,headers:{'List-Unsubscribe':`<${e.unsubscribeUrl}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'},tags:[{name:'campaign',value:campaign},{name:'friend_event_delivery_id',value:entry.deliveryId}]},{idempotencyKey:`friend-events:${entry.deliveryId}`});
+      const {data,error}=await provider.emails.send({from:e.from,to:e.to,replyTo:e.replyTo,subject:e.subject,html:e.html,text:e.text,headers:{'List-Unsubscribe':`<${e.unsubscribePostUrl||e.unsubscribeUrl}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'},tags:[{name:'campaign',value:campaign},{name:'friend_event_delivery_id',value:entry.deliveryId}]},{idempotencyKey:`friend-events:${entry.deliveryId}`});
       if(error||!data?.id) throw new Error('Provider result requires reconciliation');
       return {accepted:true,providerId:data.id};
     },

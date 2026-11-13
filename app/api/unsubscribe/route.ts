@@ -12,7 +12,10 @@ export const dynamic = 'force-dynamic';
 // separate user choice.
 export async function POST(req: NextRequest) {
   try {
-    const { u, t } = await req.json();
+    // Preserve the existing JSON flow; RFC8058 sends a form POST to a signed URL.
+    const body = await req.json().catch(() => ({}));
+    const u = body.u ?? req.nextUrl.searchParams.get('u');
+    const t = body.t ?? req.nextUrl.searchParams.get('t');
     if (!u || !t || typeof u !== 'string' || typeof t !== 'string') {
       return NextResponse.json({ error: 'Missing token' }, { status: 400 });
     }
