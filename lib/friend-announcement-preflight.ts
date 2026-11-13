@@ -5,7 +5,7 @@ import { Resend } from 'resend';
 import { checkFriendEventSuppression } from '@/lib/friend-event-suppression';
 
 // Read-only diagnostics. No sender imports, writes, consent changes or activation.
-export async function friendAnnouncementPreflight() {
+export async function collectFriendAnnouncementAudience() {
  const at=new Date().toISOString();const admins=getAdminEmails();
  if(!admins.length) return {at,complete:false,blocked:'admin_configuration_unavailable'};
  async function all(table:string,fields:string,order='id') {
@@ -45,7 +45,14 @@ export async function friendAnnouncementPreflight() {
   if(status==='clear')clear.push(u);else providerExcluded++;
  }
  const audienceHash=createHash('sha256').update(JSON.stringify(clear.map(u=>[u.id,u.email]).sort(([a],[b])=>a.localeCompare(b)))).digest('hex');
- return {at,counts,complete:true,sendReady:false,finalTechnicalCount:clear.length,providerExcluded,sendingDomainVerified,audienceHash,
+ return {recipients:clear.map(u=>({userId:u.id,email:u.email})),at,counts,complete:true,sendReady:false,finalTechnicalCount:clear.length,providerExcluded,sendingDomainVerified,audienceHash,
   remainingGates:['One-time communication/provider permission review','Exact rendered content, footer, links, audience/count approval','Separate execution approval'],
   flags:{announcementSending:process.env.FRIEND_ANNOUNCEMENT_SEND_ENABLED==='true',recurringSending:process.env.FRIEND_EVENT_SEND_ENABLED==='true'}};
+}
+
+// Public diagnostic deliberately strips all identifiers and recipient addresses.
+export async function friendAnnouncementPreflight() {
+ const result=await collectFriendAnnouncementAudience();
+ const {recipients:_privateRecipients,...summary}=result as typeof result & {recipients?:unknown};
+ return summary;
 }
