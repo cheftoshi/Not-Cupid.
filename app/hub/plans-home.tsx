@@ -1,5 +1,6 @@
 "use client";
 
+import { outsideEventSession } from '@/lib/outside-event-tracking-client';
 import LocationControls from '@/components/location-controls';
 import { planWhen, planTimeMatches } from '@/lib/plan-discovery';
 import { METRO_CENTERS } from '@/lib/quiz-data';
@@ -245,6 +246,7 @@ function PlanCard({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             mode: "set",
+            event_session_id: plan.externalEventId ? outsideEventSession() : undefined,
             response: plan.myResponse === response ? null : response,
           }),
         },

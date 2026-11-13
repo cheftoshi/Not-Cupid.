@@ -138,7 +138,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   if ((activity.kind || 'event') === 'event' && myResponse === 'yes' && existing?.response !== 'yes' && activity.author_id !== user.id) {
-    await recordFriendEventConversion(user.id, 'plan_join');
+    await recordFriendEventConversion(user.id, 'plan_join', activity.external_event_id ? {eventId:activity.external_event_id,planId:activityId,sessionId:body.event_session_id} : undefined);
   }
 
   return NextResponse.json({ ok: true, joined: myResponse !== null, myResponse, responses, count });

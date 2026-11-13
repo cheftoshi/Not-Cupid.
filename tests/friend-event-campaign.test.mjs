@@ -99,6 +99,9 @@ test('authenticated attribution refuses forwarded links, stale/unknown deliverie
  let owner=user, token='signed', found=true, writes=0, queries=0;
  const q={select:()=>q,eq:()=>q,in:()=>q,gte:()=>q,maybeSingle:async()=>({data:found?{id:delivery}:null,error:null}),upsert:async()=>{writes++;return {error:null};}};
  const {recordFriendEventConversion}=await loadTs('lib/friend-event-attribution.ts',{
+  'node:crypto': await import('node:crypto'),
+  '@/lib/app-events':{recordAppEvent:async()=>{}},
+  '@/lib/outside-event-tracking':await import('../lib/outside-event-tracking.ts'),
   'next/headers':{cookies:async()=>({get:()=>token?{value:token}:undefined})},
   '@/lib/friend-event-campaign':{FRIEND_EVENT_COOKIE:'test',verifyFriendEventToken:t=>t?{...payload,userId:owner}:null},
   '@/lib/supabase':{supabaseAdmin:{from:()=>{queries++;return q;}}},

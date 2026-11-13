@@ -1,4 +1,5 @@
 "use client";
+import { outsideEventSession } from '@/lib/outside-event-tracking-client';
 import { planWhen, planLocalTime, validateSocialPlan } from "@/lib/plan-discovery";
 import { useRef, useState } from "react";
 import {
@@ -247,7 +248,7 @@ export function CreateInvitation({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, client_id: retry.current.id }),
+          body: JSON.stringify({ ...payload, client_id: retry.current.id, event_session_id: event ? outsideEventSession() : undefined }),
         },
       );
       if (!response.ok || !data?.id)
@@ -287,7 +288,7 @@ export function CreateInvitation({
           Close
         </button>
       </div>
-      {event && <div className={s.notice}>
+      {event && <div className={`${s.notice} ${s.eventSummary}`}>
         <strong>{event.title}</strong><p>{planWhen(event.startsAt)} · {event.venue}</p>
         <p>This is your invitation to go together, not a ticket or reservation. The event venue is public; choose where your group will meet below.</p>
         <a href={event.url} target="_blank" rel="noopener noreferrer">Event details & admission at {event.sourceLabel || 'Ticketmaster'} ↗</a>

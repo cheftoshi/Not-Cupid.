@@ -22,7 +22,7 @@ export type AppEventInput = {
 const finite = (value: number | null | undefined) =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
 
-export async function recordAppEvent(event: AppEventInput): Promise<void> {
+export async function recordAppEvent(event: AppEventInput): Promise<boolean> {
   const row = {
     user_id: event.userId || null,
     event_name: event.eventName.slice(0, 64),
@@ -43,4 +43,5 @@ export async function recordAppEvent(event: AppEventInput): Promise<void> {
   const { error } = await supabaseAdmin.from('app_client_events').insert(row);
   // A repeated beacon is expected after reconnect/navigation restoration.
   if (error && error.code !== '23505') console.error('recordAppEvent failed:', error.message);
+  return !error || error.code === '23505';
 }

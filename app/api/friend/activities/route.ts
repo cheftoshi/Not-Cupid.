@@ -323,6 +323,7 @@ export async function POST(req: NextRequest) {
   const ins = (row: any) => supabaseAdmin.from('friend_activities').insert(row).select('id').single();
   let { data: act, error } = await ins({ ...baseRow, ...audienceRow, location, capacity, dating_friendly: datingFriendly });
   const createdNow = !error && !!act;
+  let verifiedOutsideEvent = createdNow ? externalEvent : undefined;
   if (error?.code === '23505' && externalEvent) {
     const existing = await supabaseAdmin.from('friend_activities').select('id').eq('author_id', user.id).eq('external_event_id', externalEvent.id).maybeSingle();
     if (existing.error) return NextResponse.json({ error: 'Could not verify your existing event invitation. Please retry.' }, { status: 503 });
@@ -330,8 +331,11 @@ export async function POST(req: NextRequest) {
     if (existing.data && existing.data.id !== clientId) return NextResponse.json({ ok: true, id: existing.data.id, existing: true });
   }
   if (error?.code === '23505' && clientId) {
-    const existing = await supabaseAdmin.from('friend_activities').select('id').eq('id', clientId).eq('author_id', user.id).maybeSingle();
-    if (existing.data && !existing.error) { act = existing.data; error = null; }
+    const existing = await supabaseAdmin.from('friend_activities').select('id, kind, external_event_id').eq('id', clientId).eq('author_id', user.id).maybeSingle();
+    if (existing.data && !existing.error) {
+      act = existing.data; error = null;
+      if (existing.data.kind === 'event' && existing.data.external_event_id === externalEvent?.id) verifiedOutsideEvent = externalEvent;
+    }
   }
   // Never silently publish without the chosen audience, intent or capacity.
   if (error) return NextResponse.json({ error: 'Could not create activity' }, { status: 500 });
@@ -350,6 +354,8 @@ export async function POST(req: NextRequest) {
     activity_id: act.id, user_id: user.id, read_at: new Date().toISOString(),
   }, { onConflict: 'activity_id,user_id' }).then(undefined, () => {});
 
-  if (createdNow && kind === 'event') await recordFriendEventConversion(user.id, 'plan_create');
+  // A same-ID retry may finish location/host registration after the insert succeeded.
+  // The outside outcome's server dedupe key prevents double-counting that recovery.
+  if ((createdNow || verifiedOutsideEvent) && kind === 'event') await recordFriendEventConversion(user.id, 'plan_create', verifiedOutsideEvent ? {eventId:verifiedOutsideEvent.id,planId:act.id,sessionId:body.event_session_id} : undefined);
   return NextResponse.json({ ok: true, id: act.id });
 }

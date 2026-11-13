@@ -170,3 +170,30 @@ test('existing curated plans expose a non-destructive source warning',()=>{
  assert.equal(curatedReferenceState('live:curated:gone','2026-11-15T17:00:00Z',events),'unverified');
  assert.equal(curatedReferenceState('live:tm:abc','2026-11-15T17:00:00Z',events),null);
 });
+
+test('outside create outcome recovers partial registration but rejects forged retry event reference',async()=>{
+ let saved, fresh, failHost=true;const outcomes=[];
+ let catalog={status:'ready',events:[{...normalizeCityEvent(raw(),now),startsAt:'2026-10-03T23:00:00Z'}]};
+ const db={from:table=>{
+  const q={select:()=>q,eq:()=>q,maybeSingle:async()=>({data:saved,error:null}),
+   insert:row=>({select:()=>({single:async()=>{if(saved)return {data:null,error:{code:'23505'}};saved=row;return {data:{id:row.id},error:null}}})}),
+   upsert:async()=>({error:table==='friend_activity_rsvps'&&failHost?{message:'synthetic failure'}:null})};return q;
+ },rpc:async()=>({error:null})};
+  const { POST } = await loadTs('app/api/friend/activities/route.ts', {
+ '@/lib/friend-event-attribution': { recordFriendEventConversion: async (...args) => outcomes.push(args) },
+    'next/server': nextMock, '@/lib/auth': { getCurrentUser: async () => ({ id: 'host', age: 30, gender: 'f' }) },
+    '@/lib/supabase': { supabaseAdmin: db }, '@/lib/friend-matching': { isLgbtqIdentity: () => false },
+    '@/lib/quiz-data': { metroOf: () => 'boston' }, '@/lib/friend-location': { friendLocationContext: async () => ({ metro: 'boston', area: 'Boston' }) },
+    '@/lib/friend-activity-access': { hasFriendActivityHistory: () => false }, '@/lib/rate-limit': { rateLimit: async () => ({ ok: true }) },
+    '@/lib/plan-discovery': { validateSocialPlan: () => 4 }, '@/lib/neighborhoods': { planAreasForMetro: () => ['Boston'], planAreaDistance: () => null },
+    '@/lib/plan-location': { validatePlanLocation: () => ({ area: 'Boston', location: null, visibility: 'participants' }), visiblePlanVenue: () => ({}) },
+    '@/lib/city-events-server': { cityEvents: async (metro, recheck) => { assert.equal(metro, 'boston'); fresh = recheck; return catalog; } },
+    '@/lib/city-events': { outsideEventUrl, curatedReferenceState },
+    '@/lib/curated-events-server': { curatedCityEvents:()=>[] },
+  });
+ const payload={client_id:'00000000-0000-4000-8000-000000000001',title:'Come with me',kind:'event',external_event_id:'live:tm:event_1',happens_at:'2026-10-03T23:00:00Z'};
+ const request=()=>new Request('http://localhost/api/friend/activities',{method:'POST',body:JSON.stringify(payload)});
+ assert.equal((await POST(request())).status,503);assert.equal(outcomes.length,0);
+ failHost=false;assert.equal((await POST(request())).status,200);assert.equal(outcomes.length,1);assert.equal(outcomes[0][2].eventId,payload.external_event_id);
+ saved.external_event_id='live:curated:other';assert.equal((await POST(request())).status,200);assert.equal(outcomes.length,1);
+});
