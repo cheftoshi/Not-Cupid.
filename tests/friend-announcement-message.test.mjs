@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { renderFriendAnnouncementMessage, FRIEND_ANNOUNCEMENT_BODY, FRIEND_ANNOUNCEMENT_PROPOSED_FOOTER } from '../lib/friend-announcement-message.ts';
+import { renderFriendAnnouncementMessage, FRIEND_ANNOUNCEMENT_BODY } from '../lib/friend-announcement-message.ts';
 const unsubscribeUrl = 'https://notcupid.com/unsubscribe?u=synthetic-user&t=synthetic-signed-token';
 const exactBody = `Hey,
 
-We’ve added something new to Friend: events happening around Boston, with a way to find people to go with.
+A quick Friend Line update: you can now find Boston events and people to go with.
 
 There’s music, comedy, food, workshops and more. If something catches your eye, see whether there’s a plan to join or start one yourself.
 
@@ -15,7 +15,7 @@ Take a look for this weekend. We’d love to know what you want to see more of.
 
 NotCupid
 
-Tickets and registration are separate from joining a NotCupid plan. Check the organizer’s listing before heading out.`;
+Check the organizer’s listing for tickets or registration.`;
 
 test('one-time announcement preserves exact supplied subject, body, sender and CTA', () => {
   assert.equal(FRIEND_ANNOUNCEMENT_BODY, exactBody);
@@ -38,9 +38,9 @@ test('caller-supplied links remain explicit and HTML escaped, with proposed glob
   assert.equal(message.unsubscribePostUrl, 'https://notcupid.com/api/unsubscribe?u=synthetic-user&t=synthetic-signed-token');
   assert.equal(new URL(message.unsubscribePostUrl).search, new URL(unsubscribeUrl).search);
   assert(message.html.includes('u=synthetic-user&amp;t=synthetic-signed-token'));
-  assert(message.text.includes(FRIEND_ANNOUNCEMENT_PROPOSED_FOOTER));
-  assert(message.text.includes('Unsubscribe from product emails'));
-  assert(message.text.includes('109 California Ave, Quincy, MA 02169.'));
+  assert.doesNotMatch(message.text, /You’re receiving this/);
+  assert(message.text.includes('Unsubscribe from marketing emails'));
+  assert(message.text.includes('109 California Ave, Quincy, MA 02169'));
   assert.doesNotMatch(message.text, /You chose Friend event emails|once a week/);
 });
 

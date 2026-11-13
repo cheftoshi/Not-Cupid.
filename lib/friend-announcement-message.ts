@@ -8,7 +8,7 @@ export const FRIEND_ANNOUNCEMENT_SUBJECT = 'Got plans this weekend?';
 export const FRIEND_ANNOUNCEMENT_CTA = 'Find your next plan';
 export const FRIEND_ANNOUNCEMENT_BODY = `Hey,
 
-We’ve added something new to Friend: events happening around Boston, with a way to find people to go with.
+A quick Friend Line update: you can now find Boston events and people to go with.
 
 There’s music, comedy, food, workshops and more. If something catches your eye, see whether there’s a plan to join or start one yourself.
 
@@ -18,9 +18,8 @@ Take a look for this weekend. We’d love to know what you want to see more of.
 
 NotCupid
 
-Tickets and registration are separate from joining a NotCupid plan. Check the organizer’s listing before heading out.`;
-export const FRIEND_ANNOUNCEMENT_PROPOSED_FOOTER = 'You’re receiving this product update because you’re part of NotCupid’s Friend Line.';
-const address = 'NotCupid by Lemon Labs, 109 California Ave, Quincy, MA 02169.';
+Check the organizer’s listing for tickets or registration.`;
+const address = 'NotCupid by Lemon Labs · 109 California Ave, Quincy, MA 02169';
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 function notCupidUrl(value: string): URL {
@@ -57,8 +56,8 @@ export function renderFriendAnnouncementMessage(input: {
     from: 'NotCupid <match@notcupid.com>',
     replyTo: 'match@notcupid.com',
     subject: FRIEND_ANNOUNCEMENT_SUBJECT,
-    text: `${FRIEND_ANNOUNCEMENT_BODY.replace(FRIEND_ANNOUNCEMENT_CTA, `${FRIEND_ANNOUNCEMENT_CTA}\n${ctaUrl}`)}\n\n${FRIEND_ANNOUNCEMENT_PROPOSED_FOOTER}\nUnsubscribe from product emails: ${input.unsubscribeUrl}\n${address}`,
-    html: `${html}<hr><p>${escape(FRIEND_ANNOUNCEMENT_PROPOSED_FOOTER)}</p><p><a href="${escape(input.unsubscribeUrl)}">Unsubscribe from product emails</a></p><p>${escape(address)}</p>`,
+    text: `${FRIEND_ANNOUNCEMENT_BODY.replace(FRIEND_ANNOUNCEMENT_CTA, `${FRIEND_ANNOUNCEMENT_CTA}\n${ctaUrl}`)}\n\nUnsubscribe from marketing emails: ${input.unsubscribeUrl}\n${address}`,
+    html: `${html}<hr><p><a href="${escape(input.unsubscribeUrl)}">Unsubscribe from marketing emails</a></p><p>${escape(address)}</p>`,
     unsubscribeUrl: input.unsubscribeUrl,
     unsubscribePostUrl: unsubscribePost.toString(),
   };

@@ -47,7 +47,7 @@ function validManifest(m: FrozenFriendCampaign): boolean {
     return !announcement && e.channel==='push' && !!e.push && !e.email && !!e.push.title && !!e.push.body && e.push.url.startsWith('https://notcupid.com/go/friend-events?token=');
   });
 }
-// No route, cron or implicit activation calls this worker. Every exact rendered
+// Only explicitly guarded operator execution may call this worker; never cron. Every exact rendered
 // message, signed link, address, channel and count is frozen in the approved hash.
 // Unknown outcomes remain claimed and halt the batch. Never blindly retry.
 export async function executeFrozenFriendCampaign(input: FrozenFriendCampaign, deps: FriendSenderDependencies, now=Date.now()) {

@@ -24,7 +24,7 @@ export async function prepareFriendAnnouncement(campaign:string,expires:number) 
  if(existing.data){if(Date.parse(existing.data.expires_at)!==expires)throw new Error('Use a new draft id for changed expiry');return review(existing.data);}
  const audience=await collectFriendAnnouncementAudience();
  if(!audience.complete||!('recipients'in audience)||!audience.recipients?.length)return {prepared:false,sendReady:false,blocked:('blocked'in audience?audience.blocked:'No eligible audience')};
- const manifest=freezeFriendAnnouncement({campaign,version:'friend-announcement-weekend-2026-11-13-v2',expires,recipients:audience.recipients});
+ const manifest=freezeFriendAnnouncement({campaign,version:'friend-announcement-weekend-2026-11-13-v3-clean',expires,recipients:audience.recipients});
  const row={id:campaign,manifest,manifest_hash:friendCampaignHash(manifest),audience_hash:audience.audienceHash,recipient_count:manifest.entries.length,expires_at:new Date(expires).toISOString()};
  const result=await supabaseAdmin.from('friend_announcement_drafts').insert(row);
  if(result.error){

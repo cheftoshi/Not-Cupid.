@@ -7,7 +7,7 @@ import { checkFriendEventSuppression } from '@/lib/friend-event-suppression';
 import { recordFriendEventProviderEvent } from '@/lib/friend-event-provider';
 import type { FriendSenderDependencies, FrozenFriendDelivery } from '@/lib/friend-event-sender';
 
-// Deliberately unreferenced by all routes/cron. Constructing does not send.
+// Constructing does not send. Only guarded operator execution may use this adapter.
 // Production execution needs a future explicit operator handoff after exact review.
 export function friendEventSenderDependencies(purpose: 'weekly_discovery' | 'friend_line_announcement' = 'weekly_discovery'): FriendSenderDependencies {
   const announcement=purpose==='friend_line_announcement';
