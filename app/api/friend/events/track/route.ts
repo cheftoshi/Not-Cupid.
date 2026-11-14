@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     }
     const campaign = await friendEventCampaignContext(user.id);
     const key = createHash('sha256').update(JSON.stringify([user.id,input.sessionId,location.metro,input.action,input.eventId,input.filter,input.value,campaign?.deliveryId || null])).digest('hex');
-    const recorded = await recordAppEvent({userId:user.id,eventName:`outside_event_${input.action}`,surface:'outside_events',path:'/hub',sessionId:input.sessionId,dedupeKey:`outside:${key}`,metadata:{event_id:input.eventId || null,category,filter:input.filter || null,value:input.value || null,campaign_delivery_id:campaign?.deliveryId || null,campaign_channel:campaign?.channel || null}});
+    const recorded = await recordAppEvent({userId:user.id,eventName:`outside_event_${input.action}`,surface:'outside_events',path:'/hub',sessionId:input.sessionId,dedupeKey:`outside:${key}`,metadata:{event_id:input.eventId || null,source:input.eventId ? (input.eventId.startsWith('live:tm:') ? 'ticketmaster' : 'curated') : null,category,filter:input.filter || null,value:input.value || null,campaign_delivery_id:campaign?.deliveryId || null,campaign_channel:campaign?.channel || null}});
     return NextResponse.json({ok:recorded},{status:recorded ? 200 : 503});
   } catch { return NextResponse.json({ok:false},{status:503}); }
 }
