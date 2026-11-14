@@ -15,9 +15,9 @@ test('preflight uses real runtime permission paths but returns only aggregates, 
 test('diagnostic requires correct expiring token before accessing production data',async()=>{
  const old=process.env.FRIEND_ANNOUNCEMENT_PREFLIGHT_TOKEN,oldExp=process.env.FRIEND_ANNOUNCEMENT_PREFLIGHT_EXPIRES;let calls=0;
  try{process.env.FRIEND_ANNOUNCEMENT_PREFLIGHT_TOKEN='x'.repeat(40);process.env.FRIEND_ANNOUNCEMENT_PREFLIGHT_EXPIRES=new Date(Date.now()+60000).toISOString();
- const {POST}=await loadTs('app/api/admin/friend-announcement-preflight/route.ts',{'@/lib/friend-owner-diagnostic':{diagnoseOwnerAnnouncementExclusion:async()=>({reason:'admin_excluded'})},'next/server':nextMock,'@/lib/request-security':{timingSafeStringEqual:(a,b)=>a===b},'@/lib/friend-announcement-preflight':{friendAnnouncementPreflight:async()=>{calls++;return {complete:true,sendReady:false};}}});
+ const {POST}=await loadTs('app/api/admin/friend-announcement-preflight/route.ts',{'next/server':nextMock,'@/lib/request-security':{timingSafeStringEqual:(a,b)=>a===b},'@/lib/friend-announcement-preflight':{friendAnnouncementPreflight:async()=>{calls++;return {complete:true,sendReady:false};}}});
  assert.equal((await POST({headers:new Headers()})).status,403);assert.equal(calls,0);
- const req={nextUrl:new URL('https://notcupid.com/api/admin/friend-announcement-preflight'),headers:new Headers({authorization:'Bearer '+'x'.repeat(40)})};assert.equal((await POST(req)).status,200);assert.equal(calls,1);
+ const req={headers:new Headers({authorization:'Bearer '+'x'.repeat(40)})};assert.equal((await POST(req)).status,200);assert.equal(calls,1);
  process.env.FRIEND_ANNOUNCEMENT_PREFLIGHT_EXPIRES=new Date(Date.now()-1000).toISOString();assert.equal((await POST(req)).status,403);assert.equal(calls,1);
  }finally{for(const[k,v]of[['FRIEND_ANNOUNCEMENT_PREFLIGHT_TOKEN',old],['FRIEND_ANNOUNCEMENT_PREFLIGHT_EXPIRES',oldExp]])if(v===undefined)delete process.env[k];else process.env[k]=v;}
 });
