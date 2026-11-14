@@ -356,6 +356,6 @@ export async function POST(req: NextRequest) {
 
   // A same-ID retry may finish location/host registration after the insert succeeded.
   // The outside outcome's server dedupe key prevents double-counting that recovery.
-  if ((createdNow || verifiedOutsideEvent) && kind === 'event') await recordFriendEventConversion(user.id, 'plan_create', verifiedOutsideEvent ? {eventId:verifiedOutsideEvent.id,planId:act.id,sessionId:body.event_session_id} : undefined);
+  if ((createdNow || verifiedOutsideEvent) && kind === 'event') await recordFriendEventConversion(user.id, 'plan_create', verifiedOutsideEvent ? {eventId:verifiedOutsideEvent.id,category:verifiedOutsideEvent.category,planId:act.id,sessionId:body.event_session_id} : undefined);
   return NextResponse.json({ ok: true, id: act.id });
 }

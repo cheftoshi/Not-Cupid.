@@ -27,7 +27,7 @@ test('authenticated endpoint validates city catalogue, limits, origin, owner and
  assert.equal((await POST(req({...body,eventId:'live:curated:unknown'}))).status,400);
  catalog.status='unavailable';assert.equal((await POST(req())).status,503);catalog.status='ready';
  assert.equal((await POST(req({...body,query:'private',userId:'other',category:'forged',campaign_delivery_id:'fake'}))).status,200);
- assert.equal(rows[0].userId,user.id);assert.equal(rows[0].metadata.category,'music');assert.equal(rows[0].metadata.campaign_delivery_id,null);assert.equal('query' in rows[0].metadata,false);
+ assert.equal(rows[0].userId,user.id);assert.equal(rows[0].metadata.category,'music');assert.equal(rows[0].metadata.source,'curated');assert.equal(rows[0].metadata.campaign_delivery_id,null);assert.equal('query' in rows[0].metadata,false);
  await POST(req());assert.equal(rows[0].dedupeKey,rows[1].dedupeKey);
  await POST(req({...body,sessionId:randomUUID()}));assert.notEqual(rows[0].dedupeKey,rows[2].dedupeKey);
  campaign={deliveryId:randomUUID(),channel:'email'};await POST(req());assert.equal(rows[3].metadata.campaign_delivery_id,campaign.deliveryId);assert.notEqual(rows[3].dedupeKey,rows[0].dedupeKey);
@@ -44,7 +44,8 @@ test('server outcomes distinguish catalogue plans, dedupe retry/toggles and do n
  });
  const user=randomUUID(),planId=randomUUID();
  await recordFriendEventConversion(user,'plan_create');assert.equal(rows.length,0);
- await recordFriendEventConversion(user,'plan_create',{eventId,planId,sessionId});
+ await recordFriendEventConversion(user,'plan_create',{eventId,planId,sessionId,category:'music'});
+ assert.equal(rows[0].metadata.category,'music');assert.equal(rows[0].metadata.source,'curated');
  await recordFriendEventConversion(user,'plan_create',{eventId,planId,sessionId:randomUUID()});
  assert.equal(rows.length,2);assert.equal(rows[0].dedupeKey,rows[1].dedupeKey);assert.equal(attribution,0);assert.equal(rows[0].metadata.campaign_delivery_id,null);
  claim={userId:user,deliveryId:randomUUID(),channel:'email'};

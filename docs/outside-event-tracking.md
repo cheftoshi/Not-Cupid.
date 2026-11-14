@@ -51,3 +51,48 @@ Later-day return is the same member with an observed panel/card on a later Easte
 No new migration is needed: uses the existing RLS-protected ledger and unique dedupe key. Unit tests cover input allowlists, private-input stripping, origin/auth/rate gates, catalogue validation, trusted campaign metadata, durable-write acknowledgment, partial-creation recovery and forged retry exclusion. Isolated staging tests use only local synthetic accounts/catalogue and no provider credentials, asserting real persisted rows and iPhone WebKit/Pixel Chromium interaction paths.
 
 Before production: review commit, integrate campaign branch separately, run combined checks, deploy exact approved SHA, verify production deployment and signed-in discovery appearance, then confirm real telemetry writes without creating fake member plans. Campaign rendering/content and send gates remain separate. This patch does not send email or push, enable a cron, rank events by interests, or backfill past behavior.
+
+
+## Daily measurement integration (November 14, 2026)
+
+The supplemental collector is `scripts/collect-friend-measurement.mjs`; its pure
+aggregation contract is `scripts/friend-measurement.mjs`. It requires the existing
+server-only reporting environment plus `NOTCUPID_REPORT_BASELINE` and
+`NOTCUPID_REPORT_END`. It issues GETs only, follows no redirects, paginates in stable
+primary-key order, and fails on read errors or the 100,000-row safety ceiling.
+It does not write a baseline or contact email/push providers.
+
+`reporting/run.py` in the operator's October 5 task now runs
+`friend-measurement-report.mjs` as a required ancillary collector and includes its
+result as `summary.friendMeasurement`. The reporting templates contain exact copies
+of both repository modules; synchronize these copies when changing the contract.
+The GET-only guard adds only `friend_event_deliveries`, `friend_event_attribution`,
+`friend_push_announcement_receipts`, and `campaign_owner_reviews`. The owner table
+selects only campaign identity and acceptance timestamp, never its manifest.
+The existing interval/error/truncation validations run before baseline advancement.
+Installing and validating this integration does not advance `state.json`.
+
+Reports distinguish the interval `[start,end)` from cumulative campaign and plan
+follow-through before `end`. `deliveryAccounting` retains all provider ledger rows
+and reports how many are excluded from currently eligible member metrics. Campaign
+conversion groups exclude test, blocked, deleted and configured admin accounts.
+Email delivery history can therefore exceed the current member cohort. Push device
+acceptance and accepted members are separate, and channels overlap.
+
+The outside-event funnel reports observations, distinct members, member/session
+pairs, and distinct plans separately, grouped by original event ID, source and
+category. Plan creation now snapshots the server-validated original event category;
+source is derived from the verified event ID. Join reports can recover category
+from that plan's creation snapshot. Older/missing snapshots remain `unknown`; plan
+copy is never used to guess an event category. No migration or historical backfill
+is needed.
+
+Existing `friend_activity_comments` contribute only IDs and timestamps to counts of
+chat messages, distinct contributors and plans with two real contributors. Existing
+`plan_outcome_feedback` contributes only member/plan identity, boolean self-report
+and update timestamp. Neither message text nor new psychological or location data
+is collected. Feedback is mutable self-report; two contributors do not prove a
+meetup. Retention groups members by first observed Eastern discovery date and counts
+later-day discovery observations; it is not a fixed-window or causal retention rate.
+No message/RSVP action changes, campaign gates, recipient policies or schedules are
+part of this patch.

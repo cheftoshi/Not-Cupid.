@@ -17,14 +17,14 @@ export async function friendEventCampaignContext(userId: string) {
   } catch { return null; }
 }
 
-export async function recordFriendEventConversion(userId: string, event: 'authenticated_return' | 'plan_join' | 'plan_create', outside?: { eventId: string; planId: string; sessionId?: unknown }) {
+export async function recordFriendEventConversion(userId: string, event: 'authenticated_return' | 'plan_join' | 'plan_create', outside?: { eventId: string; planId: string; sessionId?: unknown; category?: string }) {
   try {
     const claim = await friendEventCampaignContext(userId);
     // These outcomes are called only after the existing server action succeeds.
     // Count unique member/plan outcomes, never attempts or repeated RSVP toggles.
     if (outside && OUTSIDE_ID_RE.test(outside.eventId) && SESSION_RE.test(outside.planId) && event !== 'authenticated_return') {
       const key = createHash('sha256').update(JSON.stringify([userId,event,outside.planId])).digest('hex');
-      await recordAppEvent({userId,eventName:`outside_event_${event}`,surface:'outside_events',path:'/hub',sessionId:typeof outside.sessionId === 'string' && SESSION_RE.test(outside.sessionId) ? outside.sessionId : null,dedupeKey:`outside-outcome:${key}`,metadata:{event_id:outside.eventId,plan_id:outside.planId,campaign_delivery_id:claim?.deliveryId || null,campaign_channel:claim?.channel || null}});
+      await recordAppEvent({userId,eventName:`outside_event_${event}`,surface:'outside_events',path:'/hub',sessionId:typeof outside.sessionId === 'string' && SESSION_RE.test(outside.sessionId) ? outside.sessionId : null,dedupeKey:`outside-outcome:${key}`,metadata:{event_id:outside.eventId,plan_id:outside.planId,source:outside.eventId.startsWith('live:tm:') ? 'ticketmaster' : 'curated',category:outside.category && ['music','arts','sports','food','outdoors','community'].includes(outside.category) ? outside.category : null,campaign_delivery_id:claim?.deliveryId || null,campaign_channel:claim?.channel || null}});
     }
     if (!claim?.deliveryId) return;
     await supabaseAdmin.from('friend_event_attribution').upsert({ delivery_id: claim.deliveryId, event }, { onConflict: 'delivery_id,event', ignoreDuplicates: true });
