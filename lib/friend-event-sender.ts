@@ -20,7 +20,7 @@ function canonical(value: unknown): string {
   if (value && typeof value === 'object') return '{' + Object.entries(value).filter(([, v]) => v !== undefined).sort(([a], [b]) => a.localeCompare(b)).map(([k,v]) => JSON.stringify(k)+':'+canonical(v)).join(',') + '}';
   return JSON.stringify(value);
 }
-export function friendCampaignHash(manifest: FrozenFriendCampaign): string {
+export function friendCampaignHash(manifest: unknown): string {
   return createHash('sha256').update(canonical(manifest)).digest('hex');
 }
 export function reviewFrozenFriendCampaign(manifest: FrozenFriendCampaign) {
