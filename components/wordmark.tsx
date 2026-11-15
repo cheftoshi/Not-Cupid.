@@ -47,9 +47,11 @@ export default function Wordmark({
     mark
   );
 
+  // Brand navigation is on demand. A speculative Home fetch can outlive a
+  // quick login/page transition and surface as a cancelled-fetch error in WebKit.
   if (href) {
     return (
-      <Link href={href} className={className} style={{ textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>
+      <Link href={href} prefetch={false} className={className} style={{ textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>
         {inner}
       </Link>
     );

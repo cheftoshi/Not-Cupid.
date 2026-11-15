@@ -161,6 +161,29 @@ test('public trust surfaces have no serious automated accessibility violations',
 
 test.describe('OTP validation and navigation diagnostics', () => {
   test.use({ serviceWorkers: 'block' });
+  test('brand navigation loads on click without speculative Home requests', async ({ page }) => {
+    const errors: string[] = [];
+    const homePrefetches: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    page.on('request', request => {
+      if (new URL(request.url()).pathname === '/' && request.headers()['next-router-prefetch'] === '1') {
+        homePrefetches.push(request.url());
+      }
+    });
+    await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'Synthetic fixture only' } }));
+    await page.goto('/login', { waitUntil: 'networkidle' });
+    const brand = page.getByRole('link', { name: 'notcupid.', exact: true }).first();
+    await brand.focus();
+    await brand.click();
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('link', { name: 'Start connecting' })).toBeVisible();
+    await page.getByRole('link', { name: 'Log in ↗', exact: true }).click();
+    await expect(page).toHaveURL('/login');
+    await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
+    expect(homePrefetches).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+
   test('reserved and rejected email errors remain actionable through repeated navigation', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.name));
