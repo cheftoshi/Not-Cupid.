@@ -39,7 +39,7 @@ export default async function TypePage({ params }: { params: Promise<{ slug: str
           <p style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '0.98rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem' }}>{t.desc}</p>
           <a href="/quiz" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>find your type →</a>
           <div style={{ marginTop: '1rem', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
-            a 4-minute quiz built on actual psychology · notcupid.com
+            personality questions inspired by HEXACO · notcupid.com
           </div>
         </div>
       </div>

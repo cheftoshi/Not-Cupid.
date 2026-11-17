@@ -235,3 +235,92 @@ test('shared public header keeps login beside the wordmark on narrow phones', as
   await expect(page.getByText('Free quiz', {exact:true})).toBeVisible();
   await expect(page.getByText(/questions inspired by the six HEXACO/)).toBeVisible();
 });
+
+test.describe('quiz drafts and export without live accounts', () => {
+  test.use({ serviceWorkers: 'block' });
+
+test('core quiz advances, goes back and resumes only matching device drafts', async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'No external calls' } }));
+  await page.route('**/api/profile', route => route.fulfill({ json: { user: { id: '00000000-0000-4000-8000-000000000321', name: 'QA', email: 'draft@example.test', age: 30, archetype: 'QA baseline' } } }));
+  await page.goto('/quiz?retake=1');
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name: /Leave it. I'm an adult/}).click();
+  await expect(page.getByText('2/12', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'Back',exact:true}).click();
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await expect(page.locator('[data-core-answer]').first()).toHaveAttribute('aria-pressed', 'true');
+  await page.waitForTimeout(500); // Restored answers must not trigger the 350ms advance timer.
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await page.getByLabel('Advance after choosing').uncheck();
+  await page.getByRole('button', {name: /Leave it. I'm an adult/}).click();
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await page.keyboard.press('b');
+  await expect(page.locator('[data-core-answer]').nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('2/12', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'Back',exact:true}).click();
+  await expect(page.locator('[data-core-answer]').nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', {name:'next →',exact:true}).click();
+  await page.locator('[data-core-answer]').nth(2).click();
+  await page.getByRole('button', {name:'Save core answers for later'}).click();
+  await expect(page.getByRole('status').filter({hasText:'Core answers saved'})).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', {name:'Resume saved answers'}).click();
+  await expect(page.locator('[data-core-answer]').nth(2)).toHaveAttribute('aria-pressed','true');
+  await page.waitForTimeout(500); // Restored pending selection must not auto-submit.
+  await expect(page.getByText('2/12', {exact:true})).toBeVisible();
+  await page.route('**/api/profile', route => route.fulfill({ json: { user: { id: '00000000-0000-4000-8000-000000000322', name: 'Other', email: 'other@example.test', age: 30, archetype: 'QA baseline' } } }));
+  await page.reload();
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await expect(page.getByRole('button', {name:'Resume saved answers'})).toHaveCount(0);
+});
+
+test('type story export is a local PNG with story dimensions', async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'No external calls' } }));
+  await page.goto('/type/curious-realist');
+  await expect(page.getByRole('button', {name:'Save story image'})).toHaveCount(0);
+  await expect(page.getByRole('link', {name:'find your type →'})).toBeVisible();
+  await page.route('**/api/profile', route => route.fulfill({status:401,json:{error:'Not signed in'}}));
+  await page.route('**/api/send-otp', route => route.fulfill({json:{success:true}}));
+  await page.route('**/api/verify-otp', route => route.fulfill({json:{success:true,needsQuiz:true}}));
+  let submitted: Record<string, unknown> | undefined;
+  await page.route('**/api/submit', route => {
+    submitted = route.request().postDataJSON();
+    return route.fulfill({json:{userId:'00000000-0000-4000-8000-000000000321',sessionCreated:true}});
+  });
+  await page.goto('/quiz');
+  await page.getByRole('radio', {name:/I want more people around me/}).click();
+  await page.getByRole('button', {name:'continue with Friend Line →'}).click();
+  await page.getByLabel('first name', {exact:true}).fill('QA');
+  await page.getByLabel('age', {exact:true}).fill('30');
+  await page.getByLabel('how do you describe yourself?').selectOption('nb');
+  await page.getByLabel('zip code').fill('02116');
+  await page.getByLabel('email', {exact:true}).fill('story@example.test');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', {name:'verify my email →'}).click();
+  for (let i=1;i<=6;i++) await page.getByLabel(`Verification code digit ${i}`).fill('1');
+  await page.getByRole('button', {name:'confirm code →'}).click();
+  await page.getByRole('button', {name:'start →',exact:true}).click();
+  await page.locator('[data-core-answer]').first().click();
+  await expect(page.getByText('2/12', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'Back',exact:true}).click();
+  for (let i=0;i<12;i++) await page.getByRole('button', {name:'skip this one',exact:true}).click();
+  await page.getByRole('button', {name:'start →',exact:true}).click();
+  for (let i=0;i<6;i++) await page.getByRole('button', {name:'skip this one',exact:true}).click();
+  await page.getByRole('button', {name:"let's go ⚡",exact:true}).click();
+  for (let i=0;i<8;i++) await page.getByRole('button', {name:'no preference',exact:true}).click();
+  await expect(page.getByRole('button', {name:'Save story image'})).toBeVisible();
+  expect(submitted).toMatchObject({archetype:'The Honest Eccentric',score_honesty:4,score_emotionality:4,score_extraversion:4,score_agreeableness:4,score_conscientiousness:4,score_openness:4});
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', {name:'Save story image'}).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('notcupid-honest-eccentric.png');
+  const path = await download.path();
+  const {readFile} = await import('node:fs/promises');
+  const bytes = await readFile(path!);
+  expect(bytes.subarray(1,4).toString()).toBe('PNG');
+  expect(bytes.readUInt32BE(16)).toBe(1080);
+  expect(bytes.readUInt32BE(20)).toBe(1920);
+});
+
+});
