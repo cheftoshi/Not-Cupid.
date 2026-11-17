@@ -224,6 +224,16 @@ test('shared public header keeps login beside the wordmark on narrow phones', as
   expect(login!.x + login!.width).toBeLessThanOrEqual(320);
   await page.goto('/quiz');
   await expect(page.locator('header').getByText('Take the quiz')).toHaveCount(0);
+  await expect(page.locator('header').getByRole('link')).toHaveCount(0);
+});
+
+ test('landing previews are named examples with consistent quiz claims', async ({ page }) => {
+  await page.goto('/');
+  const preview = page.getByRole('complementary', {name:'Illustrative product previews'});
+  await expect(preview).toBeVisible();
+  await expect(preview.getByRole('heading')).toHaveCount(0);
+  await expect(page.getByText('Free quiz', {exact:true})).toBeVisible();
+  await expect(page.getByText(/questions inspired by the six HEXACO/)).toBeVisible();
 });
 
 test.describe('quiz drafts and export without live accounts', () => {

@@ -16,8 +16,8 @@
   --brand-radius:18px;
 
   /* ── NotCupid Brand Kit v1 ──────────────────────────────
-     Blue = primary / love side. Orange = friend / social side.
-     Black #0B0B0B ink, #F6F6F6 paper. Lemon Labs property. */
+     Legacy variable names below support existing app themes. Public brand
+     tokens above define the green, cream and yellow palette. Lemon Labs property. */
   --bg:#f8f7f3;
 
   --blue:#064c48;
