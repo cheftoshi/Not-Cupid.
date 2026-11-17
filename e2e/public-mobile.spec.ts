@@ -210,3 +210,19 @@ test.describe('OTP validation and navigation diagnostics', () => {
     expect(errors).toEqual([]);
   });
 });
+
+test('shared public header keeps login beside the wordmark on narrow phones', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'No live calls' } }));
+  await page.goto('/');
+  const header = page.locator('header').first();
+  const logo = await header.getByRole('link', { name: 'notcupid.', exact: true }).boundingBox();
+  const login = await header.getByRole('link', { name: 'Log in ↗', exact: true }).boundingBox();
+  expect(logo).not.toBeNull(); expect(login).not.toBeNull();
+  expect(Math.abs((logo!.y + logo!.height / 2) - (login!.y + login!.height / 2))).toBeLessThan(4);
+  expect(login!.height).toBeGreaterThanOrEqual(44);
+  expect(login!.x + login!.width).toBeLessThanOrEqual(320);
+  await page.goto('/quiz');
+  await expect(page.locator('header').getByText('Take the quiz')).toHaveCount(0);
+  await expect(page.locator('header').getByRole('link')).toHaveCount(0);
+});

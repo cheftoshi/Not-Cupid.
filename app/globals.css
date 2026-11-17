@@ -4,9 +4,20 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
+  /* Shared public brand tokens; authenticated theme overrides remain intact. */
+  --brand-green:#0d4a42;
+  --brand-cream:#f7f3ea;
+  --brand-paper:#fffdf8;
+  --brand-yellow:#f3c64a;
+  --brand-ink:#18211f;
+  --brand-muted:#5f6b67;
+  --brand-line:#e6dfd0;
+  --brand-mint:#d8ece5;
+  --brand-radius:18px;
+
   /* ── NotCupid Brand Kit v1 ──────────────────────────────
-     Blue = primary / love side. Orange = friend / social side.
-     Black #0B0B0B ink, #F6F6F6 paper. Lemon Labs property. */
+     Legacy variable names below support existing app themes. Public brand
+     tokens above define the green, cream and yellow palette. Lemon Labs property. */
   --bg:#f8f7f3;
 
   --blue:#064c48;
