@@ -16,17 +16,7 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   }
   // Trim incoming email too in case it has stray whitespace from the DB.
   const normalized = email.trim().toLowerCase();
-  const match = list.includes(normalized);
-  if (!match) {
-    console.warn('[admin] email not in allowlist', {
-      providedLen: normalized.length,
-      providedPrefix: normalized.slice(0, 3),
-      providedSuffix: normalized.slice(-6),
-      allowlistSize: list.length,
-      allowlistFirstLen: list[0]?.length,
-    });
-  }
-  return match;
+  return list.includes(normalized);
 }
 
 export async function getCurrentAdmin() {
