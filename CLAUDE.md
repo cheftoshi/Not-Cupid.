@@ -2,7 +2,7 @@
 
 Read `AGENTS.md` completely before working in this repository. It is the single
 canonical current-state handoff for all coding assistants and was reconciled
-with the application and linked production state on August 19, 2026.
+with the application and linked production state on September 27, 2026.
 
 Do not infer current Dating Experiment dates or rules from older commits,
 `supabase/legacy-migrations/`, `supabase/apply-all.sql`, or an earlier applied

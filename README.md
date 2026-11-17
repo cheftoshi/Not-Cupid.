@@ -1,88 +1,66 @@
 # NotCupid
 
-Boston's smartest dating experiment. Not a swipe app.
+NotCupid is an AI connection concierge for love, friendship, and real-life plans.
+The production app is a PWA. Read [AGENTS.md](AGENTS.md) before changing product
+behavior; it describes current rules, privacy requirements and release safeguards.
 
 ## Stack
 
-- **Next.js 14** (App Router)
-- **TypeScript**
-- **CSS Modules**
-- **Supabase** (coming next — database + auth)
-- **Twilio** (coming next — SMS matching)
-- **Stripe** (coming next — $0.99 HEXACO unlock)
-- **Vercel** (deploy)
+- Next.js 16 App Router, React and TypeScript
+- Supabase/Postgres with server-side session authentication and email OTP
+- Resend email, web push and Stripe payments
+- Vercel hosting; Capacitor projects for the future native wrapper
+- CSS Modules, DM Sans and Space Grotesk
 
-## Getting Started
+Exact package versions are in `package.json` and `package-lock.json`.
 
-```bash
-npm install
+## Local development
+
+Use Node.js 24 and install the locked dependencies:
+
+```sh
+npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open http://localhost:3000. Configure an isolated local/test environment before
+exercising account, payment, notification or database flows. Do not copy production
+credentials into tests. Local configuration belongs in gitignored `.env.local`;
+never commit secrets or print them in logs.
 
-## Project Structure
+## Validation
 
-```
-notcupid/
-├── app/
-│   ├── layout.tsx          # Root layout + metadata
-│   ├── page.tsx            # Landing page
-│   ├── page.module.css     # Landing page styles
-│   ├── globals.css         # Global CSS + design tokens
-│   └── quiz/
-│       ├── page.tsx        # Full quiz flow (intro → quiz → loading → result)
-│       └── quiz.module.css # Quiz styles
-├── components/
-│   ├── Nav.tsx             # Fixed nav bar
-│   └── Nav.module.css
-└── lib/
-    └── quiz-data.ts        # All 24 questions, HEXACO scoring, archetypes, zip validation
+```sh
+npm run ci:check
+npm run test:e2e:https
 ```
 
-## Design Tokens
+`ci:check` runs TypeScript validation, unit/policy tests, a production build and
+client bundle budgets. The HTTPS mobile suite runs public flows in Chromium and
+WebKit. Authenticated integration tests require a separately configured synthetic
+test realm; see the test scripts and [AGENTS.md](AGENTS.md).
 
-All colors live in `globals.css` as CSS variables:
+## Main application areas
 
-```css
---bg          #f8f6f1   /* warm off-white */
---ink         #1a1814   /* near-black */
---ink-muted   #6b6760   /* secondary text */
---accent      #d94f3d   /* coral red — CTAs, highlights */
-```
+- `app/`: public pages, quiz, connection Home, Love/Friend surfaces and server APIs
+- `components/`: shared UI
+- `lib/`: authentication, matching, privacy policies and service integrations
+- `data/curated-events/`: reviewed, expiring outside-event catalogue
+- `supabase/migrations/`: forward database migrations
+- `tests/` and `e2e/`: policy, integration and browser checks
+- `docs/`: product and operating references
 
-## Quiz Architecture
+## Product and release rules
 
-24 questions across 6 HEXACO dimensions (4 per dimension):
-- **H** Honesty-Humility
-- **E** Emotionality  
-- **X** Extraversion
-- **A** Agreeableness
-- **C** Conscientiousness
-- **O** Openness
+Love discovery uses reciprocal roster matching; Friend supports member plans,
+connections and conversations. Outside events are attributed discovery suggestions,
+not automatically published member plans or ticket purchases. The August Dating
+Experiment is closed and must not be reopened.
 
-Each answer scores 1–4 points. Max score per dimension: 16.
+Email and campaign delivery require the exact approvals documented in AGENTS.md.
+A successful build or access to credentials never authorizes sending notifications.
 
-Matching uses H, O, and A as primary dimensions (within ±15pts).
-
-## Zip Validation
-
-Built-in zip → coordinate lookup, validated against 50-mile radius from 02116 (Back Bay, Boston).
-
-## Next Steps
-
-1. `npm install @supabase/supabase-js` — wire up database
-2. Add Supabase schema (users, quiz_results, matches tables)
-3. API route for form submission → Supabase insert
-4. Twilio SMS on match
-5. Stripe $0.99 HEXACO unlock
-
-## Deploy to Vercel
-
-```bash
-# Connect GitHub repo to Vercel
-# Set env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_KEY, OPENAI_API_KEY, STRIPE_*
-# Optional model override: AI_CONCIERGE_MODEL (defaults to gpt-5.6-luna)
-vercel --prod
-Last updated: May 24 2026
-```
+GitHub `main` auto-deploys through Vercel. Prepare changes on a separate branch,
+review the diff, pass local checks and obtain the required review before merging.
+Database changes use new forward migrations and the linked dry-run workflow in
+AGENTS.md; historical migrations are immutable. Never deploy an unverified build.
