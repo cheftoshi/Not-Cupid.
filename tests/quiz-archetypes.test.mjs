@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ARCHETYPES, DIMS, QUESTIONS, computeScores, pickArchetype, typeSlug } from '../lib/quiz-data.ts';
 import { loadTs } from './helpers/load-ts.mjs';
+import * as React from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -70,8 +71,9 @@ test('all six public archetype slugs remain stable and unique', () => {
 
 test('each public type page and OG card renders its matching archetype', async () => {
   const shared = { '@/lib/quiz-data': { ARCHETYPES, typeSlug }, 'react/jsx-runtime': jsxRuntime };
+  const story = await loadTs('components/type-story-card.tsx', { ...shared, react: React });
   const page = await loadTs('app/type/[slug]/page.tsx', {
-    ...shared, 'next/navigation': { redirect: () => { throw Error('Unexpected redirect'); } },
+    ...shared, '@/components/type-story-card': story, 'next/navigation': { redirect: () => { throw Error('Unexpected redirect'); } },
   });
   const og = await loadTs('app/type/[slug]/opengraph-image.tsx', {
     ...shared, 'next/og': { ImageResponse: class { constructor(element, size) { this.element = element; this.size = size; } } },

@@ -225,3 +225,47 @@ test('shared public header keeps login beside the wordmark on narrow phones', as
   await page.goto('/quiz');
   await expect(page.locator('header').getByText('Take the quiz')).toHaveCount(0);
 });
+
+test.describe('quiz drafts and export without live accounts', () => {
+  test.use({ serviceWorkers: 'block' });
+
+test('core quiz advances, goes back and resumes only matching device drafts', async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'No external calls' } }));
+  await page.route('**/api/profile', route => route.fulfill({ json: { user: { id: '00000000-0000-4000-8000-000000000321', name: 'QA', email: 'draft@example.test', age: 30, archetype: 'QA baseline' } } }));
+  await page.goto('/quiz?retake=1');
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name: /Leave it. I'm an adult/}).click();
+  await expect(page.getByText('2/12', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'Back',exact:true}).click();
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await page.getByLabel('Advance after choosing').uncheck();
+  await page.getByRole('button', {name: /Leave it. I'm an adult/}).click();
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'next →',exact:true}).click();
+  await page.getByRole('button', {name:'Save core answers for later'}).click();
+  await expect(page.getByRole('status').filter({hasText:'Core answers saved'})).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', {name:'Resume saved answers'}).click();
+  await expect(page.getByText('2/12', {exact:true})).toBeVisible();
+  await page.route('**/api/profile', route => route.fulfill({ json: { user: { id: '00000000-0000-4000-8000-000000000322', name: 'Other', email: 'other@example.test', age: 30, archetype: 'QA baseline' } } }));
+  await page.reload();
+  await expect(page.getByText('1/12', {exact:true})).toBeVisible();
+  await expect(page.getByRole('button', {name:'Resume saved answers'})).toHaveCount(0);
+});
+
+test('type story export is a local PNG with story dimensions', async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({ status: 503, json: { error: 'No external calls' } }));
+  await page.goto('/type/curious-realist');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', {name:'Save story image'}).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('notcupid-curious-realist.png');
+  const path = await download.path();
+  const {readFile} = await import('node:fs/promises');
+  const bytes = await readFile(path!);
+  expect(bytes.subarray(1,4).toString()).toBe('PNG');
+  expect(bytes.readUInt32BE(16)).toBe(1080);
+  expect(bytes.readUInt32BE(20)).toBe(1920);
+});
+
+});

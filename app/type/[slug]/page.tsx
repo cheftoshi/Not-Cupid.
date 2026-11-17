@@ -1,3 +1,4 @@
+import TypeStoryCard from '@/components/type-story-card';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ARCHETYPES, typeSlug } from '@/lib/quiz-data';
@@ -37,9 +38,10 @@ export default async function TypePage({ params }: { params: Promise<{ slug: str
           <h1 style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'italic', fontSize: 'clamp(1.9rem, 7vw, 2.6rem)', lineHeight: 1.05, margin: '0 0 0.7rem' }}>{t.name}</h1>
           <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-accent)', marginBottom: '1rem' }}>{t.tag}</div>
           <p style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '0.98rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem' }}>{t.desc}</p>
+          <TypeStoryCard name={t.name} tag={t.tag} />
           <a href="/quiz" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>find your type →</a>
           <div style={{ marginTop: '1rem', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>
-            a 4-minute quiz built on actual psychology · notcupid.com
+            personality questions inspired by HEXACO · notcupid.com
           </div>
         </div>
       </div>

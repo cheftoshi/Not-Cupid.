@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { planReturnPath } from '@/lib/plan-discovery'
 import Nav from '@/components/Nav'
+import Wordmark from '@/components/wordmark'
+import TypeStoryCard from '@/components/type-story-card'
+import { readQuizDraft, quizDraftKey, type QuizDraft } from '@/lib/quiz-draft'
 import { suggestEmailCorrection } from '@/lib/email-typos'
 import { QUESTIONS, DIMS, DIM_SHORT, VIBE_QUESTIONS, VIBE_HEADS, vibesFromAnswers, vibeLabel, validateZip, computeScores, pickArchetype, ATTACHMENT_QUESTIONS, computeAttachment, VALUES_QUESTIONS, valuesFromAnswers, RAPID_FIRE, rapidFromAnswers, PARTNER_QUESTIONS, partnerFromAnswers, typeSlug } from '@/lib/quiz-data'
 import type { VibeKey } from '@/lib/quiz-data'
@@ -99,7 +102,7 @@ function ChapterCard({ k, onStart, onSkip, styles }: { k: string; onStart: () =>
 
 export default function QuizPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div role="status" style={{ padding: '6rem 2rem' }}>Preparing your quiz…</div>}>
       <QuizInner />
     </Suspense>
   )
@@ -155,6 +158,11 @@ function QuizInner() {
   const [otpVerifying, setOtpVerifying] = useState(false)
   const [coreSaveError, setCoreSaveError] = useState(false)
   const [resendTimer, setResendTimer] = useState(0)
+  const [autoAdvance, setAutoAdvance] = useState(true)
+  const [savedDraft, setSavedDraft] = useState<QuizDraft | null>(null)
+  const [draftStatus, setDraftStatus] = useState('')
+  const draftKeyRef = useRef('')
+  const questionRef = useRef<HTMLParagraphElement>(null)
   const [currentQ, setCurrentQ] = useState(0)
   const [selectedOpt, setSelectedOpt] = useState<number|null>(null)
   const [answers, setAnswers] = useState<number[]>([])
@@ -247,6 +255,35 @@ function QuizInner() {
     })()
     return () => controller.abort()
   }, [isRetake, isLoveDeep, profileLoadAttempt, searchParams])
+
+  // Only offer a draft after the existing profile/OTP gates reach the core quiz.
+  useEffect(() => {
+    if (screen !== 'quiz' || !form.email || profileLoadState !== 'ready') return;
+    let cancelled = false;
+    void quizDraftKey(form.email).then(key => {
+      if (cancelled) return;
+      draftKeyRef.current = key;
+      try {
+        const raw = localStorage.getItem(key);
+        const draft = readQuizDraft(raw);
+        if (raw && !draft) localStorage.removeItem(key);
+        setSavedDraft(draft);
+      } catch { setDraftStatus('Device storage is unavailable. Keep this tab open to retain your answers.'); }
+    }).catch(() => { if (!cancelled) setDraftStatus('Device saving is unavailable in this browser.'); });
+    return () => { cancelled = true; };
+  }, [screen, form.email, profileLoadState]);
+
+  function saveCoreDraft() {
+    try {
+      if (!draftKeyRef.current) throw new Error('No draft identity');
+      localStorage.setItem(draftKeyRef.current, JSON.stringify({ version: 1, savedAt: Date.now(), answers }));
+      setDraftStatus('Core answers saved on this device for 24 hours. Sign in or verify the same email to resume. Later quiz sections are not saved here.');
+    } catch { setDraftStatus('Could not save on this device. Keep this tab open to retain your answers.'); }
+  }
+  function clearCoreDraft() {
+    try { if (draftKeyRef.current) localStorage.removeItem(draftKeyRef.current); } catch { /* storage may be unavailable */ }
+    setSavedDraft(null);
+  }
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
   const friendOnly = intent === 'friends'
@@ -501,6 +538,7 @@ function QuizInner() {
     setAnswers(newAnswers)
     setSelectedOpt(null)
     if (currentQ + 1 >= QUESTIONS.length) {
+      clearCoreDraft()
       // HEXACO is done — move to the vibes mini-quiz.
       const finalScores = computeScores(newAnswers)
       const arch = pickArchetype(finalScores, newAnswers)
@@ -509,6 +547,16 @@ function QuizInner() {
       setScreen('vibes-intro')
     } else { setCurrentQ(q => q + 1) }
   }, [answers, currentQ])
+
+  useEffect(() => {
+    if (screen !== 'quiz' || !autoAdvance || selectedOpt === null) return;
+    const timer = window.setTimeout(() => advance(selectedOpt), 350);
+    return () => window.clearTimeout(timer);
+  }, [screen, autoAdvance, selectedOpt, advance]);
+
+  useEffect(() => {
+    if (screen === 'quiz') questionRef.current?.focus({ preventScroll: true });
+  }, [currentQ, screen]);
 
   function nextQ() { if (selectedOpt !== null) advance(selectedOpt) }
   function skipQ() { advance(-1) }
@@ -586,6 +634,7 @@ function QuizInner() {
   useEffect(() => {
     if (screen !== 'quiz') return
     function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, a, [contenteditable=true]')) return;
       const map: Record<string, number> = {a:0,b:1,c:2,d:3}
       if (map[e.key.toLowerCase()] !== undefined) setSelectedOpt(map[e.key.toLowerCase()])
       if (e.key === 'Enter' && selectedOpt !== null) nextQ()
@@ -616,7 +665,12 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.introWrap}>
             {profileLoadState === 'loading' ? (
-              <p role="status" className={styles.introLede}>Loading your quiz…</p>
+              <div aria-busy="true">
+                <p role="status" className={styles.introLede}>Loading your quiz…</p>
+                <h1 className={styles.introH1}>A little more about you.</h1>
+                <p className={styles.introLede}>One question at a time. We’re checking your session so you start in the right place.</p>
+                <div className={styles.quizSkeleton} aria-hidden="true"><span /><span /><span /></div>
+              </div>
             ) : (
               <>
                 <div role="alert">
@@ -972,25 +1026,36 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
             <div className={styles.quizTop}>
-              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <Wordmark size={1.1} />
               <div className={styles.qMeta}>
                 <span className={styles.qDim}>{q.short}</span>
                 <span className={styles.qCount}>{currentQ + 1}/{QUESTIONS.length}</span>
               </div>
             </div>
 
-            <div className={styles.progressBar}>
+            <div className={styles.progressBar} role="progressbar" aria-label="Core personality quiz" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={currentQ}>
               <div className={styles.progressFill} style={{width:`${progress}%`}} />
             </div>
 
+            <div className={styles.quizTools}>
+              <span>{QUESTIONS.length - currentQ} questions left in this section</span>
+              <label><input type="checkbox" checked={autoAdvance} onChange={e => setAutoAdvance(e.target.checked)} /> Advance after choosing</label>
+            </div>
+            {savedDraft && currentQ === 0 && <div className={styles.draftNotice}>
+              <p>Saved core answers are available on this device.</p>
+              <button type="button" className="btn-ghost" onClick={() => { setAnswers(savedDraft.answers); setCurrentQ(savedDraft.answers.length); setSelectedOpt(null); setSavedDraft(null); }}>Resume saved answers</button>
+              <button type="button" className="btn-ghost" onClick={clearCoreDraft}>Delete saved answers</button>
+            </div>}
+            {currentQ === Math.floor(QUESTIONS.length / 2) && <p className={styles.draftNotice}>Halfway through the personality questions. Your type is based on the full set of dimensions.</p>}
             {/* keyed by question index so each step slides in instead of hard-cutting */}
             <div key={currentQ} className={styles.qStep}>
-              <p className={styles.qText}>{q.q}</p>
+              <p className={styles.qText} tabIndex={-1} ref={questionRef}>{q.q}</p>
 
               <div className={styles.qOptions}>
                 {q.opts.map((opt, i) => (
                   <button key={i}
                     className={`${styles.qOpt} ${selectedOpt === i ? styles.qOptSelected : ''}`}
+                    aria-pressed={selectedOpt === i}
                     onClick={() => setSelectedOpt(i)}>
                     <span className={styles.qKey}>{String.fromCharCode(65+i)}</span>
                     <span className={styles.qOptText}>{opt}</span>
@@ -1000,11 +1065,14 @@ function QuizInner() {
             </div>
 
             <div className={styles.qNav}>
+              <button className={styles.qSkip} disabled={currentQ === 0} onClick={() => { setCurrentQ(q => q - 1); setAnswers(a => a.slice(0, -1)); setSelectedOpt(null); }}>Back</button>
               <button className={styles.qSkip} onClick={skipQ}>skip this one</button>
               <button className="btn-primary" onClick={nextQ} disabled={selectedOpt === null}>
                 {currentQ + 1 === QUESTIONS.length ? 'finish →' : 'next →'}
               </button>
             </div>
+            <button type="button" className="btn-ghost" onClick={saveCoreDraft}>Save core answers for later</button>
+            <p role="status" className={styles.draftStatus}>{draftStatus}</p>
           </div>
         </div>
       )}
@@ -1017,7 +1085,7 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
             <div className={styles.quizTop}>
-              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <Wordmark size={1.1} />
               <div className={styles.qMeta}>
                 <span className={styles.qDim}>{VIBE_QUESTIONS[currentVibeQ].short}</span>
                 <span className={styles.qCount}>{currentVibeQ + 1}/{VIBE_QUESTIONS.length}</span>
@@ -1064,7 +1132,7 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
             <div className={styles.quizTop}>
-              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <Wordmark size={1.1} />
               <div className={styles.qMeta}>
                 <span className={styles.qDim}>{PARTNER_QUESTIONS[currentPartnerQ].short}</span>
                 <span className={styles.qCount}>{currentPartnerQ + 1}/{PARTNER_QUESTIONS.length}</span>
@@ -1111,7 +1179,7 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
             <div className={styles.quizTop}>
-              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <Wordmark size={1.1} />
               <div className={styles.qMeta}>
                 <span className={styles.qDim}>how you connect</span>
                 <span className={styles.qCount}>{currentAttachQ + 1}/{ATTACHMENT_QUESTIONS.length}</span>
@@ -1152,7 +1220,7 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
             <div className={styles.quizTop}>
-              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <Wordmark size={1.1} />
               <div className={styles.qMeta}>
                 <span className={styles.qDim}>{VALUES_QUESTIONS[currentValuesQ].short}</span>
                 <span className={styles.qCount}>{currentValuesQ + 1}/{VALUES_QUESTIONS.length}</span>
@@ -1190,7 +1258,7 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.quizWrap}>
             <div className={styles.quizTop}>
-              <div className={styles.quizLogo}>Not<span>Cupid</span></div>
+              <Wordmark size={1.1} />
               <div className={styles.qMeta}>
                 <span className={styles.qDim}>rapid fire ⚡</span>
                 <span className={styles.qCount}>{currentRapidQ + 1}/{RAPID_FIRE.length}</span>
@@ -1263,7 +1331,7 @@ function QuizInner() {
         <div className={styles.screen}>
           <div className={styles.resultWrap}>
             <div className={styles.resultHero}>
-              <p className={styles.resultEyebrow}>the algorithm has spoken</p>
+              <p className={styles.resultEyebrow}>your personality snapshot</p>
               <h1 className={styles.resultH1}>you are<br /><em>{archetype.name}.</em></h1>
               <p className={styles.resultTag}>{archetype.tag}</p>
             </div>
@@ -1281,6 +1349,8 @@ function QuizInner() {
                   : 'continue → your hub'}
               </button>
             )}
+
+            <TypeStoryCard name={archetype.name} tag={archetype.tag} />
 
             {/* share your type — the viral surface (unfurls the OG card) */}
             <button
