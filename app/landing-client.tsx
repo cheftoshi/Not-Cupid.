@@ -1,17 +1,12 @@
 import Link from 'next/link'
-import Wordmark from '@/components/wordmark'
+import PublicHeader from '@/components/public-header'
 import ConnectionSketch from '@/components/connection-sketch'
 import styles from './page.module.css'
 
 // Static introduction: no fabricated activity, client polling, or animation loop.
 export default function LandingClient() {
   return <main className={styles.land}>
-    <header className={styles.landTop}>
-      <Wordmark size={1.7} />
-      <nav aria-label="Main navigation" className={styles.landNav}>
-        <Link prefetch={false} href="/friend-line">Friendship</Link><Link prefetch={false} href="/how-it-works">How it works</Link><Link prefetch={false} href="/login">Log in ↗</Link>
-      </nav>
-    </header>
+    <PublicHeader />
     <section className={styles.landHero}>
       <div className={styles.heroCopy}>
 

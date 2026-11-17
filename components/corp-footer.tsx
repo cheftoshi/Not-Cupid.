@@ -57,7 +57,7 @@ export default function CorpFooter() {
             href={l.href}
             style={{
               fontFamily: "'DM Sans', ui-monospace, monospace",
-              fontSize: '0.58rem',
+              fontSize: '0.75rem',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               color: 'var(--h-text-dim)',
@@ -74,7 +74,7 @@ export default function CorpFooter() {
       </div>
       <div
         style={{
-          fontSize: '0.5rem',
+          fontSize: '0.7rem',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
           color: 'var(--h-text-dim)',
