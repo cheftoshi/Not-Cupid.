@@ -224,4 +224,5 @@ test('shared public header keeps login beside the wordmark on narrow phones', as
   expect(login!.x + login!.width).toBeLessThanOrEqual(320);
   await page.goto('/quiz');
   await expect(page.locator('header').getByText('Take the quiz')).toHaveCount(0);
+  await expect(page.locator('header').getByRole('link')).toHaveCount(0);
 });
