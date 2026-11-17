@@ -165,6 +165,7 @@ function QuizInner() {
   const questionRef = useRef<HTMLParagraphElement>(null)
   const [currentQ, setCurrentQ] = useState(0)
   const [selectedOpt, setSelectedOpt] = useState<number|null>(null)
+  const [restoredSelection, setRestoredSelection] = useState(false)
   const [answers, setAnswers] = useState<number[]>([])
   const [currentVibeQ, setCurrentVibeQ] = useState(0)
   const [vibeAnswers, setVibeAnswers] = useState<number[]>([])
@@ -534,9 +535,12 @@ function QuizInner() {
   }, [form.seek, form.ageMin, form.ageMax])
 
   const advance = useCallback((ans: number) => {
-    const newAnswers = [...answers, ans]
+    const newAnswers = [...answers]
+    newAnswers[currentQ] = ans
     setAnswers(newAnswers)
-    setSelectedOpt(null)
+    const followingAnswer = newAnswers[currentQ + 1]
+    setSelectedOpt(followingAnswer >= 0 ? followingAnswer : null)
+    setRestoredSelection(followingAnswer !== undefined)
     if (currentQ + 1 >= QUESTIONS.length) {
       clearCoreDraft()
       // HEXACO is done — move to the vibes mini-quiz.
@@ -549,14 +553,16 @@ function QuizInner() {
   }, [answers, currentQ])
 
   useEffect(() => {
-    if (screen !== 'quiz' || !autoAdvance || selectedOpt === null) return;
+    if (screen !== 'quiz' || !autoAdvance || restoredSelection || selectedOpt === null) return;
     const timer = window.setTimeout(() => advance(selectedOpt), 350);
     return () => window.clearTimeout(timer);
-  }, [screen, autoAdvance, selectedOpt, advance]);
+  }, [screen, autoAdvance, restoredSelection, selectedOpt, advance]);
 
   useEffect(() => {
     if (screen === 'quiz') questionRef.current?.focus({ preventScroll: true });
   }, [currentQ, screen]);
+
+  function chooseCoreOption(index: number) { setRestoredSelection(false); setSelectedOpt(index) }
 
   function nextQ() { if (selectedOpt !== null) advance(selectedOpt) }
   function skipQ() { advance(-1) }
@@ -634,10 +640,15 @@ function QuizInner() {
   useEffect(() => {
     if (screen !== 'quiz') return
     function onKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, a, [contenteditable=true]')) return;
+      if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.target instanceof HTMLElement) {
+        if (e.target.closest('input, select, textarea, a, [contenteditable=true]')) return;
+        const button = e.target.closest('button');
+        if (button && !button.hasAttribute('data-core-answer')) return;
+      }
       const map: Record<string, number> = {a:0,b:1,c:2,d:3}
-      if (map[e.key.toLowerCase()] !== undefined) setSelectedOpt(map[e.key.toLowerCase()])
-      if (e.key === 'Enter' && selectedOpt !== null) nextQ()
+      if (map[e.key.toLowerCase()] !== undefined) { e.preventDefault(); chooseCoreOption(map[e.key.toLowerCase()]) }
+      if (e.key === 'Enter' && selectedOpt !== null) { e.preventDefault(); nextQ() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -1056,7 +1067,7 @@ function QuizInner() {
                   <button key={i}
                     className={`${styles.qOpt} ${selectedOpt === i ? styles.qOptSelected : ''}`}
                     aria-pressed={selectedOpt === i}
-                    onClick={() => setSelectedOpt(i)}>
+                    data-core-answer onClick={() => chooseCoreOption(i)}>
                     <span className={styles.qKey}>{String.fromCharCode(65+i)}</span>
                     <span className={styles.qOptText}>{opt}</span>
                   </button>
@@ -1065,7 +1076,7 @@ function QuizInner() {
             </div>
 
             <div className={styles.qNav}>
-              <button className={styles.qSkip} disabled={currentQ === 0} onClick={() => { setCurrentQ(q => q - 1); setAnswers(a => a.slice(0, -1)); setSelectedOpt(null); }}>Back</button>
+              <button className={styles.qSkip} disabled={currentQ === 0} onClick={() => { const previousAnswer = answers[currentQ - 1]; setCurrentQ(q => q - 1); setSelectedOpt(previousAnswer >= 0 ? previousAnswer : null); setRestoredSelection(true); }}>Back</button>
               <button className={styles.qSkip} onClick={skipQ}>skip this one</button>
               <button className="btn-primary" onClick={nextQ} disabled={selectedOpt === null}>
                 {currentQ + 1 === QUESTIONS.length ? 'finish →' : 'next →'}
