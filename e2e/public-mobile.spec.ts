@@ -261,10 +261,13 @@ test('core quiz advances, goes back and resumes only matching device drafts', as
   await page.getByRole('button', {name:'Back',exact:true}).click();
   await expect(page.locator('[data-core-answer]').nth(1)).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', {name:'next →',exact:true}).click();
+  await page.locator('[data-core-answer]').nth(2).click();
   await page.getByRole('button', {name:'Save core answers for later'}).click();
   await expect(page.getByRole('status').filter({hasText:'Core answers saved'})).toBeVisible();
   await page.reload();
   await page.getByRole('button', {name:'Resume saved answers'}).click();
+  await expect(page.locator('[data-core-answer]').nth(2)).toHaveAttribute('aria-pressed','true');
+  await page.waitForTimeout(500); // Restored pending selection must not auto-submit.
   await expect(page.getByText('2/12', {exact:true})).toBeVisible();
   await page.route('**/api/profile', route => route.fulfill({ json: { user: { id: '00000000-0000-4000-8000-000000000322', name: 'Other', email: 'other@example.test', age: 30, archetype: 'QA baseline' } } }));
   await page.reload();

@@ -17,3 +17,14 @@ test('draft keys normalize the verified email without storing it in plaintext', 
  assert.notEqual(key,await quizDraftKey('other@example.test'));
  assert.equal(key.includes('person'),false);
 });
+
+test('drafts preserve an in-progress selection and cursor, including the last question', () => {
+ const now = 1000000000;
+ for (const [answers, currentQ] of [[[], 0], [[0,1,2], 1], [Array(11).fill(-1), 11]]) {
+  const draft = {version:1,savedAt:now,answers,currentQ,selectedOpt:2};
+  assert.deepEqual(readQuizDraft(JSON.stringify(draft),now),draft);
+ }
+ for (const position of [{currentQ:1,selectedOpt:0},{currentQ:-1,selectedOpt:0},{currentQ:0,selectedOpt:4},{currentQ:0,selectedOpt:'1'},{selectedOpt:1}]) {
+  assert.equal(readQuizDraft(JSON.stringify({version:1,savedAt:now,answers:[],...position}),now),null);
+ }
+});

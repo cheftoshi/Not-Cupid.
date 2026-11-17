@@ -1,7 +1,7 @@
 import { QUESTIONS } from './quiz-data.ts';
 
 export const QUIZ_DRAFT_TTL = 24 * 60 * 60 * 1000;
-export type QuizDraft = { version: 1; savedAt: number; answers: number[] };
+export type QuizDraft = { version: 1; savedAt: number; answers: number[]; currentQ?: number; selectedOpt?: number | null };
 // Drafts contain core answer indexes only: never OTPs, sessions or profile fields.
 export function readQuizDraft(raw: string | null, now = Date.now()): QuizDraft | null {
   if (!raw) return null;
@@ -11,7 +11,18 @@ export function readQuizDraft(raw: string | null, now = Date.now()): QuizDraft |
       now - draft.savedAt >= QUIZ_DRAFT_TTL || !Array.isArray(draft.answers) ||
       draft.answers.length >= QUESTIONS.length || !draft.answers.every((answer: unknown, index: number) =>
         Number.isInteger(answer) && Number(answer) >= -1 && Number(answer) < QUESTIONS[index].opts.length)) return null;
-    return { version: 1, savedAt: draft.savedAt, answers: [...draft.answers] };
+    const result: QuizDraft = { version: 1, savedAt: draft.savedAt, answers: [...draft.answers] };
+    // Earlier drafts only contain completed answers. New drafts also retain the
+    // visible selection, even before Next, without committing it to scoring.
+    if (draft.currentQ !== undefined || draft.selectedOpt !== undefined) {
+      if (!Number.isInteger(draft.currentQ) || draft.currentQ < 0 ||
+        draft.currentQ > draft.answers.length || draft.currentQ >= QUESTIONS.length ||
+        (draft.selectedOpt !== null && (!Number.isInteger(draft.selectedOpt) ||
+          draft.selectedOpt < 0 || draft.selectedOpt >= QUESTIONS[draft.currentQ].opts.length))) return null;
+      result.currentQ = draft.currentQ;
+      result.selectedOpt = draft.selectedOpt;
+    }
+    return result;
   } catch { return null; }
 }
 

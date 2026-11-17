@@ -277,7 +277,7 @@ function QuizInner() {
   function saveCoreDraft() {
     try {
       if (!draftKeyRef.current) throw new Error('No draft identity');
-      localStorage.setItem(draftKeyRef.current, JSON.stringify({ version: 1, savedAt: Date.now(), answers }));
+      localStorage.setItem(draftKeyRef.current, JSON.stringify({ version: 1, savedAt: Date.now(), answers, currentQ, selectedOpt }));
       setDraftStatus('Core answers saved on this device for 24 hours. Sign in or verify the same email to resume. Later quiz sections are not saved here.');
     } catch { setDraftStatus('Could not save on this device. Keep this tab open to retain your answers.'); }
   }
@@ -1054,7 +1054,7 @@ function QuizInner() {
             </div>
             {savedDraft && currentQ === 0 && <div className={styles.draftNotice}>
               <p>Saved core answers are available on this device.</p>
-              <button type="button" className="btn-ghost" onClick={() => { setAnswers(savedDraft.answers); setCurrentQ(savedDraft.answers.length); setSelectedOpt(null); setSavedDraft(null); }}>Resume saved answers</button>
+              <button type="button" className="btn-ghost" onClick={() => { setAnswers(savedDraft.answers); setCurrentQ(savedDraft.currentQ ?? savedDraft.answers.length); setSelectedOpt(savedDraft.selectedOpt ?? null); setRestoredSelection(true); setSavedDraft(null); }}>Resume saved answers</button>
               <button type="button" className="btn-ghost" onClick={clearCoreDraft}>Delete saved answers</button>
             </div>}
             {currentQ === Math.floor(QUESTIONS.length / 2) && <p className={styles.draftNotice}>Halfway through the personality questions. Your type is based on the full set of dimensions.</p>}
