@@ -1,71 +1,33 @@
 [
   {
     "facts": {
+      "id": "bpm-coffee-20261117",
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:44.881802+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "trident-kit-20261115",
-      "title": "Kit Keenan: Author Event",
-      "startsAt": "2026-11-15T14:00:00-05:00",
+      "title": "Coffee Triangulation with George Howell Coffee",
+      "venue": "Boston Public Market, George Howell Coffee",
+      "startsAt": "2026-11-17T12:00:00-05:00",
       "category": "food",
-      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
-      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-15/kit-keenan-author-event",
-      "sourceLabel": "Trident Booksellers & Cafe"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.471Z",
-    "reviewDigest": "10dc891235d834e7a38d308442c0e36fb4ff1519db187b3aef21b4bf6f4d15b1",
-    "publishedAt": "2026-11-15T13:57:36.542Z",
-    "expiresAt": "2026-11-15T19:00:00.000Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:47.615089+00:00",
-      "price": null,
+      "sourceUrl": "https://bostonpublicmarket.org/events/",
+      "sourceLabel": "Boston Public Market",
+      "sourceCheckedAt": "2026-11-17T13:25:45.488102+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
       "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "trident-poetry-20261115",
-      "title": "Poetry Open Mic",
-      "startsAt": "2026-11-15T19:00:00-05:00",
-      "category": "arts",
-      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
-      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-15/poetry-open-mic",
-      "sourceLabel": "Trident Booksellers & Cafe"
+      "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "4cfc2221afdca4a011ab5fae86dc119f2263147aaa082552503b2572be8501e9",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-16T00:00:00.000Z"
+    "reviewedAt": "2026-11-17T13:31:15.079Z",
+    "reviewDigest": "95c5788c29a43772f05316cb4a533469803769aab8e413838a29aef2c7e6931b",
+    "publishedAt": "2026-11-17T13:31:15.146Z",
+    "expiresAt": "2026-11-17T17:00:00.000Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:47.615264+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "trident-dnd-20261116",
-      "title": "Dungeons and Dragons",
-      "startsAt": "2026-11-16T18:00:00-05:00",
-      "category": "community",
-      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
-      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-16/dungeons-and-dragons",
-      "sourceLabel": "Trident Booksellers & Cafe"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "f3e97aa0815d6e1549246f9d8fc3e52e9bc9bc17b56c46a053ed9df12baeae03",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-16T23:00:00.000Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:47.802629+00:00",
+      "sourceCheckedAt": "2026-11-17T13:26:01.229322+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true,
@@ -78,15 +40,36 @@
       "sourceLabel": "Trident Booksellers & Cafe"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "e58f99d6c02b41a8519203d95716a4d919f99a6f36b4251fcc4d34114f03599b",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
+    "reviewedAt": "2026-11-17T13:31:15.086Z",
+    "reviewDigest": "317bc44d488341df80bd6ea67ad09e5fae3ad5a0547eeff4c1f5e192cd16b28d",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
     "expiresAt": "2026-11-17T23:00:00.000Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:46.057936+00:00",
+      "sourceCheckedAt": "2026-11-17T13:26:02.089622+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "bow-thinking-20261117",
+      "title": "Binge Thinking (21+)",
+      "startsAt": "2026-11-17T19:00:00-05:00",
+      "category": "community",
+      "venue": "Upstairs at Bow, Bow Market, Somerville",
+      "sourceUrl": "https://www.bowmarketsomerville.com/email-newsletters/nov2026",
+      "sourceLabel": "Bow Market"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.086Z",
+    "reviewDigest": "8209f8d69de2b27611b53eb8a5fb0f6520a317d40b3b99b6864afa5d7c34d007",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-18T00:00:00.000Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:01.337628+00:00",
       "price": {
         "min": 5,
         "max": 5,
@@ -103,99 +86,15 @@
       "sourceLabel": "Trident Booksellers & Cafe"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "19197f756d80686ba7ad31ea4aa20e7755b65440359499c3cf234c0b033f9452",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
+    "reviewedAt": "2026-11-17T13:31:15.086Z",
+    "reviewDigest": "d0d599370fc55a487b423f8c3155464515e41b56d7ab26401aa125192b6042d9",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
     "expiresAt": "2026-11-18T00:00:00.000Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:46.965248+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "trident-trivia-20261120",
-      "title": "Friday Night Trivia",
-      "startsAt": "2026-11-20T19:00:00-05:00",
-      "category": "community",
-      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
-      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-20/friday-night-trivia",
-      "sourceLabel": "Trident Booksellers & Cafe"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "1e7c78cffd2989f976066a0add5be014e42ce2f20e6368e93db00632a4d85f18",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:46.965Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.013528+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "trident-silent-20261123",
-      "title": "Silent Book Club & Write Night",
-      "startsAt": "2026-11-23T19:00:00-05:00",
-      "category": "community",
-      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
-      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-23/silent-book-club-write-night",
-      "sourceLabel": "Trident Booksellers & Cafe"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "49202f9d1ea00ad151c2c576fe1c9f5ae0b87447e4d6ad7585b5acf4e1998970",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.013Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.143724+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "trident-friendsgiving-20261125",
-      "title": "FRIENDSgiving",
-      "startsAt": "2026-11-25T18:00:00-05:00",
-      "category": "community",
-      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
-      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-25/friendsgiving",
-      "sourceLabel": "Trident Booksellers & Cafe"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "a25be3d27f9ae9a399974ae17c219daa09579fa44e476a18efabdaa9ac5628bf",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.143Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.469233+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "somerville-stoic-20261116",
-      "title": "Daily Stoic Live",
-      "startsAt": "2026-11-16T19:00:00-05:00",
-      "category": "community",
-      "venue": "Somerville Theatre, 55 Davis Square",
-      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
-      "sourceLabel": "Somerville Theatre"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "4707af4d6987f7421326ce6090503be2a3fc0ca1a25630e61cd369c9340d6e06",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-17T00:00:00.000Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.469233+00:00",
+      "sourceCheckedAt": "2026-11-17T13:26:02.667427+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true,
@@ -208,166 +107,15 @@
       "sourceLabel": "Somerville Theatre"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "dc8109197798cd149e8989bda6ae365c4e41bf528b8c1dbff7b8cb9db0572ba2",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
+    "reviewedAt": "2026-11-17T13:31:15.086Z",
+    "reviewDigest": "45528ebd6efabe3d64fef5f9f55025babdece2875c5c9b6fb4b516b7316e58e3",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
     "expiresAt": "2026-11-18T00:30:00.000Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.469233+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "somerville-aliens-20261118",
-      "title": "Aliens in 70mm",
-      "startsAt": "2026-11-18T19:00:00-05:00",
-      "category": "arts",
-      "venue": "Somerville Theatre, 55 Davis Square",
-      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
-      "sourceLabel": "Somerville Theatre"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "046123ef7ec79267cc308fca89334cd1c68396974943a5d142b0105594eb8ae0",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.469Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.469233+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "somerville-scofield-20261119",
-      "title": "John Scofield: Electrospective",
-      "startsAt": "2026-11-19T19:30:00-05:00",
-      "category": "music",
-      "venue": "Somerville Theatre, 55 Davis Square",
-      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
-      "sourceLabel": "Somerville Theatre"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "86cbdce64da171ac066210504fdc5cf3b9c80d7dc50c218cdaa4973211b31f12",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.469Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.469233+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "somerville-pineapple-20261121",
-      "title": "The Pineapple Thief",
-      "startsAt": "2026-11-21T20:00:00-05:00",
-      "category": "music",
-      "venue": "Somerville Theatre, 55 Davis Square",
-      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
-      "sourceLabel": "Somerville Theatre"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "407060287ac9ee2aba9139d7329b04c6063eda95c46a812add9c2d301d6f9800",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.469Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.469233+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "somerville-heumann-20261122",
-      "title": "Being Heumann",
-      "startsAt": "2026-11-22T18:00:00-05:00",
-      "category": "arts",
-      "venue": "Somerville Theatre, 55 Davis Square",
-      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
-      "sourceLabel": "Somerville Theatre"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "7ff123d3901ee4f3146f34836964c0f65a6f2e492457b1da1fa0a5a1ba0a1f31",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.469Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.133129+00:00",
-      "price": {
-        "min": 10,
-        "max": 10,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "bow-criolla-20261115",
-      "title": "El Día de Canción Criolla Celebration",
-      "startsAt": "2026-11-15T13:00:00-05:00",
-      "category": "food",
-      "venue": "Upstairs at Bow, Bow Market, Somerville",
-      "sourceUrl": "https://www.bowmarketsomerville.com/email-newsletters/nov2026",
-      "sourceLabel": "Bow Market"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "64bdfb71e47a6608f6ffda82b6e2f819f7653c21241b127a983e58167daeef4b",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-15T18:00:00.000Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.133129+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "bow-thinking-20261117",
-      "title": "Binge Thinking (21+)",
-      "startsAt": "2026-11-17T19:00:00-05:00",
-      "category": "community",
-      "venue": "Upstairs at Bow, Bow Market, Somerville",
-      "sourceUrl": "https://www.bowmarketsomerville.com/email-newsletters/nov2026",
-      "sourceLabel": "Bow Market"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "835f3be7fe22bcbc77e7d968fff76d80bd214721b2ed8310a4cbf65276ed3adf",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T00:00:00.000Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:48.133129+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "bow-mingle-20261118",
-      "title": "Mingle Mayhem Singles Bash",
-      "startsAt": "2026-11-18T19:00:00-05:00",
-      "category": "community",
-      "venue": "Upstairs at Bow, Bow Market, Somerville",
-      "sourceUrl": "https://www.bowmarketsomerville.com/email-newsletters/nov2026",
-      "sourceLabel": "Bow Market"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "1dead871a9cadc42f3ae1798e0631a24ba6b19db6e5749b1a5960be833e338c8",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.133Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:47.899509+00:00",
+      "sourceCheckedAt": "2026-11-17T13:26:01.710853+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true,
@@ -380,15 +128,162 @@
       "sourceLabel": "Berklee Performance Center"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "e3486b96343a6d7ab5b1a95f5f4295c17bbcdc9f6340e90bde272f7ede5c45e8",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
+    "reviewedAt": "2026-11-17T13:31:15.086Z",
+    "reviewDigest": "9542e481ea5ba7d6168e1404e52d11d3a397440e5404f9c65e88e399823e97aa",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
     "expiresAt": "2026-11-18T01:00:00.000Z"
   },
   {
     "facts": {
+      "id": "bpm-yoga-20261118",
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:47.625518+00:00",
+      "title": "SOMA Yoga Flow & Sound Bath",
+      "startsAt": "2026-11-18T17:30:00-05:00",
+      "category": "community",
+      "venue": "Boston Public Market, Nook, 100 Hanover Street",
+      "sourceUrl": "https://bostonpublicmarket.org/bpm-events/bpm-x-soma-yoga-flow-sound-bath-smoothie-2/",
+      "sourceLabel": "Boston Public Market",
+      "sourceCheckedAt": "2026-11-17T13:25:46.159086+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.086Z",
+    "reviewDigest": "32fab7d15611eae0c0f86c5babd7f60f926f55165393154974169062d8c29192",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-18T22:30:00.000Z"
+  },
+  {
+    "facts": {
+      "id": "bpl-stitch-20261118",
+      "city": "boston",
+      "title": "Sip 'n' Stitch",
+      "startsAt": "2026-11-18T18:00:00-05:00",
+      "category": "arts",
+      "venue": "Honan-Allston Library, 300 North Harvard Street",
+      "sourceUrl": "https://bpl.bibliocommons.com/v2/events/6abe6152e06996003a8072ca",
+      "sourceLabel": "Boston Public Library",
+      "sourceCheckedAt": "2026-11-17T13:25:46.398499+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.086Z",
+    "reviewDigest": "2d7dad971c807e64388f68491da2b586c7a49b7dd4dff7c597ea8a4fc27a276a",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-18T23:00:00.000Z"
+  },
+  {
+    "facts": {
+      "id": "bpm-pitch-20261118",
+      "city": "boston",
+      "title": "Pitch-A-Friend (pitch spots waitlisted)",
+      "startsAt": "2026-11-18T18:00:00-05:00",
+      "category": "community",
+      "venue": "Boston Public Market, HUB, 100 Hanover Street",
+      "sourceUrl": "https://bostonpublicmarket.org/bpm-events/pitch-a-friend-4/",
+      "sourceLabel": "Boston Public Market",
+      "sourceCheckedAt": "2026-11-17T13:25:45.984789+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "c4aa811b6d95e3563acd1fb321374687e90ca0bc93491dc60c4aeb2ba912b804",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-18T23:00:00.000Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:02.089622+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "bow-mingle-20261118",
+      "title": "Mingle Mayhem Singles Bash",
+      "startsAt": "2026-11-18T19:00:00-05:00",
+      "category": "community",
+      "venue": "Upstairs at Bow, Bow Market, Somerville",
+      "sourceUrl": "https://www.bowmarketsomerville.com/email-newsletters/nov2026",
+      "sourceLabel": "Bow Market"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "75892d8cb1418df6f2bcd2325f95e54415084aa1ef4be3addfc4e6bd6a370c0a",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-19T00:00:00.000Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:02.667427+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "somerville-aliens-20261118",
+      "title": "Aliens in 70mm",
+      "startsAt": "2026-11-18T19:00:00-05:00",
+      "category": "arts",
+      "venue": "Somerville Theatre, 55 Davis Square",
+      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
+      "sourceLabel": "Somerville Theatre"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "d17d457746b021b38b13d0c8ef7f13413123f2dcfd6988fcf64c01fbfd957bf3",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-19T00:00:00.000Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:25:48.037889+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "fenway-stamps-20261119",
+      "title": "Offline Hours: Stamp Making",
+      "startsAt": "2026-11-19T16:00:00-05:00",
+      "category": "arts",
+      "venue": "Fenway Community Center, 1282 Boylston St #123 (entrance on Jersey St.)",
+      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/offline-hours-stamp-making-2/",
+      "sourceLabel": "Fenway Community Center"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "d2bf576e965328cfccd63df8bc2736ac802dabf945ea7063a7f1563793aef748",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-19T21:00:00.000Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:02.667427+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "somerville-scofield-20261119",
+      "title": "John Scofield: Electrospective",
+      "startsAt": "2026-11-19T19:30:00-05:00",
+      "category": "music",
+      "venue": "Somerville Theatre, 55 Davis Square",
+      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
+      "sourceLabel": "Somerville Theatre"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "9145a4d62c33b08b9e779e05943a446a1ae45edab86e5c3e061968b4a5a5efb6",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T00:30:00.000Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:01.524032+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true,
@@ -401,15 +296,103 @@
       "sourceLabel": "Berklee Performance Center"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "4469e385e86f66cf16b8132e8e614ff89b4465ea0aaabba541c77aa94a36bc6a",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:47.625Z"
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "f9e16a260ea471dd055f4917fcd6f1b39b4c105e06fafda412899765a7b65d56",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T01:00:00.000Z"
+  },
+  {
+    "facts": {
+      "id": "bpm-tour-20261120",
+      "city": "boston",
+      "title": "Boston Public Market Tour",
+      "venue": "Boston Public Market, Info Desk",
+      "startsAt": "2026-11-20T11:00:00-05:00",
+      "category": "food",
+      "sourceUrl": "https://bostonpublicmarket.org/events/",
+      "sourceLabel": "Boston Public Market",
+      "sourceCheckedAt": "2026-11-17T13:25:45.488102+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "cb9aaaa5626af52ce453e38ef08d0b5c1a820252ddfcf985f3f02c69742f3cfc",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:25:45.488Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:47.923032+00:00",
+      "sourceCheckedAt": "2026-11-17T13:25:48.021103+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "fenway-walk-20261120",
+      "title": "Community Walk",
+      "startsAt": "2026-11-20T12:00:00-05:00",
+      "category": "outdoors",
+      "venue": "Fenway Community Center, 1282 Boylston St #123 (entrance on Jersey St.)",
+      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/community-walk/2026-11-20/",
+      "sourceLabel": "Fenway Community Center"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "3eac887a7a9f27b9c2ec57eb3d2b8f20f3f96c0d5a917aab01fa4955a94e2fc1",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:25:48.021Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:01.236701+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "trident-trivia-20261120",
+      "title": "Friday Night Trivia",
+      "startsAt": "2026-11-20T19:00:00-05:00",
+      "category": "community",
+      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
+      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-20/friday-night-trivia",
+      "sourceLabel": "Trident Booksellers & Cafe"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "e379e836e9e352b93f92447e9d52c7051a19206acba176289d252931843a7964",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:26:01.236Z"
+  },
+  {
+    "facts": {
+      "id": "brickbottom-studios-20261121",
+      "city": "boston",
+      "title": "Brickbottom Arts District Open Studios",
+      "startsAt": "2026-11-21T12:00:00-05:00",
+      "category": "arts",
+      "venue": "Brickbottom, 1 Fitchburg St; Joy Street studios, Somerville",
+      "sourceUrl": "https://brickbottom.org/openstudios",
+      "sourceLabel": "Brickbottom Artists Association",
+      "sourceCheckedAt": "2026-11-17T13:25:46.579486+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "956b89fabb76121fdfcfad94447ff6fafe23f0ba5dcce0836ac9fb44fc6a0083",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:25:46.579Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:01.678931+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true,
@@ -422,15 +405,145 @@
       "sourceLabel": "Berklee Performance Center"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "f206737ef0e5fa4325360022ca38e586c88e3ceec0c865b7ef3236385d6d3865",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:47.923Z"
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "9daec8c1705de3eb02d77d0a7544403dc53a2a6c3cea6270ab52784ddf868c69",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:26:01.678Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:47.897265+00:00",
+      "sourceCheckedAt": "2026-11-17T13:26:02.667427+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "somerville-pineapple-20261121",
+      "title": "The Pineapple Thief",
+      "startsAt": "2026-11-21T20:00:00-05:00",
+      "category": "music",
+      "venue": "Somerville Theatre, 55 Davis Square",
+      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
+      "sourceLabel": "Somerville Theatre"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "597d790b173744cd857c986294522c6e1e9633b3703a06bc156a65d26870c2ee",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:26:02.667Z"
+  },
+  {
+    "facts": {
+      "id": "bpm-brunch-20261122",
+      "city": "boston",
+      "title": "Community Thanksgiving Brunch",
+      "venue": "Boston Public Market, HUB",
+      "startsAt": "2026-11-22T11:00:00-05:00",
+      "category": "food",
+      "sourceUrl": "https://www.eventbrite.com/e/community-thanksgiving-brunch-at-boston-public-market-tickets-2003683787145/",
+      "sourceLabel": "Boston Public Market Association / Eventbrite",
+      "sourceCheckedAt": "2026-11-17T13:26:02.418594+00:00",
+      "price": {
+        "min": 10,
+        "max": 10,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "fa1fae53134fde78aba1c06fe7f7961557b3c8f7e5df92ae4462d02105046e06",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:26:02.418Z"
+  },
+  {
+    "facts": {
+      "id": "brickbottom-studios-20261122",
+      "city": "boston",
+      "title": "Brickbottom Arts District Open Studios",
+      "startsAt": "2026-11-22T12:00:00-05:00",
+      "category": "arts",
+      "venue": "Brickbottom, 1 Fitchburg St; Joy Street studios, Somerville",
+      "sourceUrl": "https://brickbottom.org/openstudios",
+      "sourceLabel": "Brickbottom Artists Association",
+      "sourceCheckedAt": "2026-11-17T13:25:46.579486+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "23fd89d6a6be593405abea80afd0b02266855c4832a44bed04a2c5d54de00e18",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:25:46.579Z"
+  },
+  {
+    "facts": {
+      "id": "bpm-maker-20261122",
+      "city": "boston",
+      "title": "Holiday Maker Market",
+      "venue": "Boston Public Market, Marzae Cellar + Provisions",
+      "startsAt": "2026-11-22T14:00:00-05:00",
+      "category": "community",
+      "sourceUrl": "https://bostonpublicmarket.org/events/",
+      "sourceLabel": "Boston Public Market",
+      "sourceCheckedAt": "2026-11-17T13:25:45.488102+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "3d38c8459b200a7115da5e5e554438fd3922d4adb36b406677b6f6096089c44c",
+    "publishedAt": "2026-11-17T13:31:15.147Z",
+    "expiresAt": "2026-11-20T13:25:45.488Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:02.667427+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "somerville-heumann-20261122",
+      "title": "Being Heumann",
+      "startsAt": "2026-11-22T18:00:00-05:00",
+      "category": "arts",
+      "venue": "Somerville Theatre, 55 Davis Square",
+      "sourceUrl": "https://www.somervilletheatre.com/calendar/",
+      "sourceLabel": "Somerville Theatre"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "15481e9398eb39ea114831de0e8773184966125be74110ab3846bff9f6a10c30",
+    "publishedAt": "2026-11-17T13:31:15.148Z",
+    "expiresAt": "2026-11-20T13:26:02.667Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:03.931857+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true,
+      "id": "trident-silent-20261123",
+      "title": "Silent Book Club & Write Night",
+      "startsAt": "2026-11-23T19:00:00-05:00",
+      "category": "community",
+      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
+      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-23/silent-book-club-write-night",
+      "sourceLabel": "Trident Booksellers & Cafe"
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "ed03eaf43f5f098786c30925f498f7db76724e640de0baf35363c69db399ae22",
+    "publishedAt": "2026-11-17T13:31:15.148Z",
+    "expiresAt": "2026-11-20T13:26:03.931Z"
+  },
+  {
+    "facts": {
+      "city": "boston",
+      "sourceCheckedAt": "2026-11-17T13:26:01.546166+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -447,147 +560,51 @@
       "sourceLabel": "Berklee Performance Center"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "4661b6f1fb4d104351d55ef47bb5d63dc408225ad972a0b77b9977175384079e",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:47.897Z"
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "626c99f6136e793a273e771f4c6563298c69094d0600925b8fcb2335762b4a32",
+    "publishedAt": "2026-11-17T13:31:15.148Z",
+    "expiresAt": "2026-11-20T13:26:01.546Z"
   },
   {
     "facts": {
-      "id": "bpm-coffee-20261117",
+      "id": "bpm-craft-20261125",
       "city": "boston",
-      "title": "Coffee Triangulation with George Howell Coffee",
-      "venue": "Boston Public Market, George Howell Coffee",
-      "startsAt": "2026-11-17T12:00:00-05:00",
-      "category": "food",
-      "sourceUrl": "https://bostonpublicmarket.org/events/",
-      "sourceLabel": "Boston Public Market",
-      "sourceCheckedAt": "2026-11-15T13:55:45.888735+00:00",
-      "price": {
-        "min": 0,
-        "max": 0,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "0de9e1e79345eaeca41b183b65a4e53cbe263a8c4def9308c461dfc71a9e816b",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-17T17:00:00.000Z"
-  },
-  {
-    "facts": {
-      "id": "bpm-tour-20261120",
-      "city": "boston",
-      "title": "Boston Public Market Tour",
-      "venue": "Boston Public Market, Info Desk",
-      "startsAt": "2026-11-20T11:00:00-05:00",
-      "category": "food",
-      "sourceUrl": "https://bostonpublicmarket.org/events/",
-      "sourceLabel": "Boston Public Market",
-      "sourceCheckedAt": "2026-11-15T13:55:45.888735+00:00",
-      "price": {
-        "min": 0,
-        "max": 0,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "af66217b6ddd5c579220568d0d00e3878404247a7d3f9858b22c174ad3492d53",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:45.888Z"
-  },
-  {
-    "facts": {
-      "id": "bpm-brunch-20261122",
-      "city": "boston",
-      "title": "Community Thanksgiving Brunch",
-      "venue": "Boston Public Market, HUB",
-      "startsAt": "2026-11-22T11:00:00-05:00",
-      "category": "food",
-      "sourceUrl": "https://www.eventbrite.com/e/community-thanksgiving-brunch-at-boston-public-market-tickets-2003683787145/",
-      "sourceLabel": "Boston Public Market Association / Eventbrite",
-      "sourceCheckedAt": "2026-11-15T13:55:48.616314+00:00",
-      "price": {
-        "min": 10,
-        "max": 10,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "b571328af8588d1fb34cad03ec8b79ec452e5a4b37d65a15ce20d7367e255dfd",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:48.616Z"
-  },
-  {
-    "facts": {
-      "id": "bpm-maker-20261122",
-      "city": "boston",
-      "title": "Holiday Maker Market",
-      "venue": "Boston Public Market, Marzae Cellar + Provisions",
-      "startsAt": "2026-11-22T14:00:00-05:00",
-      "category": "community",
-      "sourceUrl": "https://bostonpublicmarket.org/events/",
-      "sourceLabel": "Boston Public Market",
-      "sourceCheckedAt": "2026-11-15T13:55:45.888735+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "50822ce01d47fc9e7c2c8c9d11188288899db74a5a85f414ca9aadfabf3fae57",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:45.888Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:46.870464+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "fenway-stamps-20261119",
-      "title": "Offline Hours: Stamp Making",
-      "startsAt": "2026-11-19T16:00:00-05:00",
+      "title": "Craft Club: Seasonal Centerpiece",
+      "startsAt": "2026-11-25T18:00:00-05:00",
       "category": "arts",
-      "venue": "Fenway Community Center, 1282 Boylston St #123 (entrance on Jersey St.)",
-      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/offline-hours-stamp-making-2/",
-      "sourceLabel": "Fenway Community Center"
+      "venue": "Boston Public Market, HUB, 100 Hanover Street",
+      "sourceUrl": "https://www.eventbrite.com/e/craft-club-at-boston-public-market-tickets-2003682568500",
+      "sourceLabel": "Boston Public Market / Eventbrite",
+      "sourceCheckedAt": "2026-11-17T13:26:02.418946+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "eed9d236808ffa3875ad21816b3f79284023c17257f23f21c86fa2a09d577fb5",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:46.870Z"
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "86c99a846e920367c35490c9ad9e27daed87954c9bf1385145034f72ad735b17",
+    "publishedAt": "2026-11-17T13:31:15.148Z",
+    "expiresAt": "2026-11-20T13:26:02.418Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-15T13:55:46.819563+00:00",
+      "sourceCheckedAt": "2026-11-17T13:26:03.681585+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true,
-      "id": "fenway-walk-20261120",
-      "title": "Community Walk",
-      "startsAt": "2026-11-20T12:00:00-05:00",
-      "category": "outdoors",
-      "venue": "Fenway Community Center, 1282 Boylston St #123 (entrance on Jersey St.)",
-      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/community-walk/2026-11-20/",
-      "sourceLabel": "Fenway Community Center"
+      "id": "trident-friendsgiving-20261125",
+      "title": "FRIENDSgiving",
+      "startsAt": "2026-11-25T18:00:00-05:00",
+      "category": "community",
+      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
+      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-25/friendsgiving",
+      "sourceLabel": "Trident Booksellers & Cafe"
     },
     "state": "published",
-    "reviewedAt": "2026-11-15T13:57:36.479Z",
-    "reviewDigest": "1d3b11030508ac14af8d0e454ce962d992c8fa48aa2b401d15142e7358e284b8",
-    "publishedAt": "2026-11-15T13:57:36.543Z",
-    "expiresAt": "2026-11-18T13:55:46.819Z"
+    "reviewedAt": "2026-11-17T13:31:15.087Z",
+    "reviewDigest": "fc7ff33ece5edf5c08e8d4f332bafe38163ba18c2a6789f2210e186ff246cdb9",
+    "publishedAt": "2026-11-17T13:31:15.148Z",
+    "expiresAt": "2026-11-20T13:26:03.681Z"
   }
 ]
