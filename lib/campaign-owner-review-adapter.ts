@@ -1,3 +1,4 @@
+import { verifyFriendEventToken, friendEventDestination } from '@/lib/friend-event-campaign';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getAdminEmails } from '@/lib/admin';
 import { Resend } from 'resend';
@@ -34,14 +35,14 @@ export async function prepareOwnerReview(campaign:string,expires:number) {
  if(existing.data)return review(existing.data); // never replace or silently reissue
  const u=await eligible();if(!u||await suppression(u.id,u.email)!=='clear')throw Error('Owner unavailable or suppressed');
  const {data:source,error}=await supabaseAdmin.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle();
- if(error||!source||friendCampaignHash(source.manifest)!==source.manifest_hash||source.manifest.purpose!=='friend_line_announcement'||source.manifest.campaign!==campaign||source.manifest.entries.length!==source.recipient_count)throw Error('Source draft unavailable');
+ if(error||!source||friendCampaignHash(source.manifest)!==source.manifest_hash||!['friend_line_announcement','friend_discovery_review'].includes(source.manifest.purpose)||source.manifest.campaign!==campaign||source.manifest.entries.length!==source.recipient_count)throw Error('Source draft unavailable');
  const email=source.manifest.entries[0]?.email;if(!email)throw Error('Missing source email');
  // Copy the exact frozen campaign, not a renderer that may have since changed.
  const unsubscribeUrl=`https://notcupid.com/unsubscribe?u=${encodeURIComponent(u.id)}&t=${encodeURIComponent(signUnsubToken(u.id,expires+90*86400000))}`;
  const unsubscribePostUrl=unsubscribeUrl.replace('/unsubscribe?','/api/unsubscribe?');
  const htmlEscape=(s:string)=>s.replace(/&/g,'&amp;');
- const replace=(s:string)=>s.split(htmlEscape(email.unsubscribeUrl)).join(htmlEscape(unsubscribeUrl)).split(email.unsubscribeUrl).join(unsubscribeUrl).replace(/https:\/\/notcupid\.com\/go\/friend-events\?token=[^\s"<]+/g,'https://notcupid.com/hub?discover=1');
- const manifest:OwnerReviewManifest={purpose:'owner_campaign_review',sourceCampaign:campaign,sourceHash:source.manifest_hash,userId:u.id,expires,email:{...email,to:u.email,text:replace(email.text),html:replace(email.html),unsubscribeUrl,unsubscribePostUrl}};
+ const replace=(s:string,html=false)=>s.split(htmlEscape(email.unsubscribeUrl)).join(htmlEscape(unsubscribeUrl)).split(email.unsubscribeUrl).join(unsubscribeUrl).replace(/https:\/\/notcupid\.com\/go\/friend-events\?token=([^\s"<]+)/g,(_match,token)=>{const url='https://notcupid.com'+friendEventDestination(verifyFriendEventToken(decodeURIComponent(token),'attribution'));return html?htmlEscape(url):url;});
+ const manifest:OwnerReviewManifest={purpose:'owner_campaign_review',sourceCampaign:campaign,sourceHash:source.manifest_hash,userId:u.id,expires,email:{...email,to:u.email,text:replace(email.text),html:replace(email.html,true),unsubscribeUrl,unsubscribePostUrl}};
  if(!validOwnerReview(manifest))throw Error('Invalid owner copy');
  const row={source_campaign:campaign,user_id:u.id,manifest,manifest_hash:ownerReviewHash(manifest),expires_at:new Date(expires).toISOString()};
  const inserted=await supabaseAdmin.from('campaign_owner_reviews').insert(row);if(inserted.error)throw Error('Review storage failed; inspect before retry');

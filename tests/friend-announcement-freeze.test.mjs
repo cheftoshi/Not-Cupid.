@@ -20,7 +20,7 @@ test('freeze signs personalized attribution and existing global unsubscribe with
  const unsub=new URL(e.email.unsubscribeUrl);assert.equal(unsub.pathname,'/unsubscribe');assert.equal(unsub.searchParams.get('u'),user);assert(verifyUnsubToken(user,unsub.searchParams.get('t')));assert(!verifyUnsubToken(randomUUID(),unsub.searchParams.get('t')));
  const post=new URL(e.email.unsubscribePostUrl);assert.equal(post.pathname,'/api/unsubscribe');assert.equal(post.search,unsub.search);
  assert.equal(e.email.html.split('<hr>')[0].replace(/<[^>]*>/g,'\n').split('\n').filter(Boolean).join('\n\n'),FRIEND_ANNOUNCEMENT_BODY);
- const route=readFileSync(new URL('../app/go/friend-events/route.ts',import.meta.url),'utf8');assert.match(route,/new URL\('\/hub\?discover=1', req.url\)/);
+ const route=readFileSync(new URL('../app/go/friend-events/route.ts',import.meta.url),'utf8');assert.match(route,/new URL\(friendEventDestination\(claim\), req.url\)/);
  }finally{if(previous===undefined)delete process.env.MATCH_LINK_SECRET;else process.env.MATCH_LINK_SECRET=previous;}
 });
 test('injected IDs and signers produce deterministic deeply frozen manifest detached from caller',()=>{
