@@ -1,8 +1,22 @@
+import { planReturnPath } from './plan-discovery.ts';
+
 // OTP requests are never automatically replayed: a lost response can still
 // mean the server sent a code or established a session.
 export function safeLoginPath(raw: unknown): string | null {
   if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//') || /[\\\x00-\x20]/.test(raw)) return null;
   return raw;
+}
+
+const FRIEND_SIGNUP_PATHS = new Set(['/friends', '/friends/quiz', '/friends/profile', '/friends/pack']);
+
+export function quizPathForNewAccount(raw: unknown, fallback = '/quiz'): string {
+  const next = safeLoginPath(raw);
+  const returnTo = planReturnPath(next);
+  if (returnTo) return '/quiz?returnTo=' + encodeURIComponent(returnTo);
+  if (next === '/dating-experiment') return '/quiz?next=experiment';
+  // Preserve the explicit Friend entry point, not arbitrary query parameters.
+  if (next && FRIEND_SIGNUP_PATHS.has(next.split(/[?#]/, 1)[0])) return '/quiz?next=friends';
+  return fallback;
 }
 
 export async function requestLogin(
