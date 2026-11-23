@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { quizPathForNewAccount } from '../lib/login-request.ts';
 import {
   buildCoverageFirstShortlist,
   buildReciprocalQualityShortlist,
@@ -593,7 +594,9 @@ test('the public promotion funnel preserves Dating Experiment intent through log
   assert.match(pageSource, /alternates: \{ canonical: '\/dating-experiment' \}/);
   assert.match(pageSource, /card: 'summary_large_image'/);
   assert.match(loginSource, /experimentNext = nextPath === '\/dating-experiment'/);
-  assert.match(loginSource, /router\.push\('\/quiz\?next=experiment'\)/);
+  assert.match(loginSource, /router\.push\(quizPathForNewAccount\(nextPath, welcomePath\(data\.redirect\)\)\)/);
+  assert.match(loginSource, /href=\{quizPathForNewAccount\(nextPath\)\}/);
+  assert.equal(quizPathForNewAccount('/dating-experiment'), '/quiz?next=experiment');
   assert.match(quizSource, /requestedNext === 'experiment'/);
   assert.match(quizSource, /nextIntent === 'experiment' \? '\/quiz\?line=love&next=experiment'/);
   assert.match(quizSource, /nextIntent === 'experiment' \? '\/dating-experiment'/);

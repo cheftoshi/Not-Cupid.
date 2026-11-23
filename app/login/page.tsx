@@ -6,9 +6,8 @@ import Link from 'next/link';
 import styles from './login.module.css';
 import Wordmark from '@/components/wordmark';
 import { suggestEmailCorrection } from '@/lib/email-typos';
-import { requestLogin, safeLoginPath, recordLoginRecovery } from '@/lib/login-request';
+import { requestLogin, safeLoginPath, recordLoginRecovery, quizPathForNewAccount } from '@/lib/login-request';
 import { withReturningUserWelcome } from '@/lib/returning-user';
-import { planReturnPath } from '@/lib/plan-discovery';
 
 export default function LoginPage() {
   return <LoginInner />;
@@ -80,12 +79,8 @@ function LoginInner() {
         // Prefer ?next= if the user came from a gated page (e.g. /admin) and has an account
         if (nextPath && !data.needsQuiz) {
           router.push(welcomePath(nextPath));
-        } else if (data.needsQuiz && planReturnPath(nextPath)) {
-          router.push('/quiz?returnTo=' + encodeURIComponent(nextPath!));
-        } else if (data.needsQuiz && experimentNext) {
-          router.push('/quiz?next=experiment');
-        } else if (data.needsQuiz && nextPath?.startsWith('/friends')) {
-          router.push('/quiz?next=friends');
+        } else if (data.needsQuiz) {
+          router.push(quizPathForNewAccount(nextPath, welcomePath(data.redirect)));
         } else {
           router.push(welcomePath(data.redirect));
         }
@@ -194,7 +189,7 @@ function LoginInner() {
           <span>or</span>
         </div>
 
-        <Link href={planReturnPath(nextPath) ? '/quiz?returnTo=' + encodeURIComponent(nextPath!) : experimentNext ? '/quiz?next=experiment' : '/quiz'} className={styles.signupLink}>
+        <Link href={quizPathForNewAccount(nextPath)} className={styles.signupLink}>
           new here? take the quiz to sign up →
         </Link>
       </div>

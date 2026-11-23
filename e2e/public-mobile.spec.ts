@@ -33,6 +33,27 @@ test.describe('login recovery without delivering email', () => {
       expect(errors).toEqual([]);
     });
   }
+  test('Friend signup link and verified new-account login preserve the same intent', async ({ page }) => {
+    let verified = 0;
+    await page.route('**/api/verify-otp', route => {
+      verified++;
+      return route.fulfill({ json: { redirect: '/quiz', needsQuiz: true } });
+    });
+    await page.goto('/login?next=%2Ffriends');
+    const cta = page.getByRole('link', { name: /new here.*sign up/ });
+    await expect(cta).toHaveAttribute('href', '/quiz?next=friends');
+    await cta.click();
+    await expect(page).toHaveURL(/\/quiz\?next=friends$/);
+    expect(verified).toBe(0);
+    await page.goto('/login?next=%2Ffriends%2Fquiz');
+    await expect(cta).toHaveAttribute('href', '/quiz?next=friends');
+    await page.getByLabel('Email', { exact: true }).fill('qa@example.com');
+    await page.getByRole('button', { name: /Already have a code/ }).click();
+    await page.getByLabel('Code for qa@example.com').fill('123456');
+    await page.getByRole('button', { name: /verify/ }).click();
+    await expect(page).toHaveURL(/\/quiz\?next=friends$/);
+    expect(verified).toBe(1);
+  });
   test('verification recovers without losing the code or destination', async ({ page }) => {
     let calls = 0;
     await page.route('**/api/verify-otp', route => {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { requestLogin, safeLoginPath } from '../lib/login-request.ts';
+import { requestLogin, safeLoginPath, quizPathForNewAccount } from '../lib/login-request.ts';
 import { fetchJsonWithTimeout } from '../lib/fetch-helpers.ts';
 import { summarizeShadowHealth } from '../lib/shadow-health.ts';
 import { summarizeFriendPlanConversations } from '../lib/friend-plan-funnel.ts';
@@ -8,6 +8,21 @@ import { summarizeFriendPlanConversations } from '../lib/friend-plan-funnel.ts';
 test('login redirects stay on the app and preserve a deep link', () => {
   for (const path of ['https://evil.example', '//evil.example', '/\\evil.example', '/\nevil', null, 4]) assert.equal(safeLoginPath(path), null);
   assert.equal(safeLoginPath('/match/123?hello=1'), '/match/123?hello=1');
+});
+test('new-account destinations share the same Friend, plan, and experiment intent rules', () => {
+  for (const path of ['/friends', '/friends/quiz', '/friends/profile', '/friends/pack',
+    '/friends?view=scene&plan=00000000-0000-4000-8000-000000000901']) {
+    assert.equal(quizPathForNewAccount(path), '/quiz?next=friends');
+  }
+  for (const path of ['/hub?create=1', '/hub?discover=1&event=live%3Acurated%3Awalk&from=friday-digest']) {
+    assert.equal(quizPathForNewAccount(path), '/quiz?returnTo=' + encodeURIComponent(path));
+  }
+  assert.equal(quizPathForNewAccount('/dating-experiment'), '/quiz?next=experiment');
+  for (const path of [null, '//example.com/friends', 'https://example.com/friends',
+    '/friendsX', '/friends/unknown', '/hub?discover=1&next=//example.com']) {
+    assert.equal(quizPathForNewAccount(path), '/quiz');
+    assert.equal(quizPathForNewAccount(path, '/quiz?retake=1'), '/quiz?retake=1');
+  }
 });
 test('OTP success and returning-user flags are explicit', async () => {
   assert.deepEqual(await requestLogin('send', { email: 'qa@example.com' }, { request: async () => Response.json({ success: true }) }), { ok: true });
