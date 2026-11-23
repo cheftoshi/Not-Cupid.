@@ -28,8 +28,8 @@ test('Plan-chat replies notify the organizer and interested participants with an
   assert.match(rsvp, /url: `\/hub\?plan=\$\{encodeURIComponent\(activityId\)\}`/);
   // Visiting a Scene plan must not open or mark its chat read. The existing
   // notification URLs to the Hub, and explicit in-Scene chat action, stay intact.
-  assert.match(client, /api\/friend\/activities\?surface=home&plan=/);
-  assert.match(client, /aria-label="Linked plan"[\s\S]*?autoOpenChat=\{false\}/);
+  assert.match(client, /sceneLinkedActivityPath\(id, digestPlanOnly\)/);
+  assert.match(client, /'Linked post' : 'Linked plan'[\s\S]*?autoOpenChat=\{false\}/);
   assert.match(client, /if \(id !== selectedPlanId\) setChatPlanAfterRsvp\(id\)/);
 });
 

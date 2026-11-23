@@ -41,3 +41,16 @@ export function friendPlanCoreQuiz(plan: FriendPlanSelection, options: { retake?
 export function friendPlanSetup(plan: FriendPlanSelection): string {
   return '/friends/quiz?friendPlan=' + plan.id + (plan.from ? '&from=' + plan.from : '');
 }
+
+// Old Scene notifications use the same untagged path for posts. The signed-in
+// by-ID endpoint still owns visibility and returns nothing when access fails.
+export function sceneLinkedActivityPath(id: string, digestOnly: boolean): string {
+  return '/api/friend/activities?' + (digestOnly ? 'surface=home&' : '') + 'plan=' + encodeURIComponent(id);
+}
+
+export function sceneLinkedActivity<T extends { id?: string; kind?: string }>(
+  activities: T[], id: string, digestOnly: boolean,
+): T | undefined {
+  return activities.find(item => item?.id === id &&
+    (item.kind === 'event' || (!digestOnly && item.kind === 'post')));
+}

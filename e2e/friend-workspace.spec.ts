@@ -34,6 +34,42 @@ test.describe('Friend workspace presentation and retained actions',()=>{
   expect(chatReads).toBe(0);
   expect(writes).toBe(0);
  });
+ for (const scenario of ['authorized', 'unavailable', 'digest'] as const) {
+  test(`an ordinary Scene post notification is handled safely: ${scenario}`, async ({ page }) => {
+    const id = '00000000-0000-4000-8000-000000000902';
+    const post = { id, kind: 'post', title: 'QA linked discussion', authorName: 'QA Host', isMine: false,
+      category: 'hang', commentCount: 1, body: 'An older discussion outside the default feed' };
+    let commentReads = 0;
+    await page.route(url => url.pathname === '/api/friend/activities', route => {
+      const search = new URL(route.request().url()).searchParams;
+      if (!search.has('plan')) return route.fulfill({ json: { activities: [] } });
+      expect(search.get('plan')).toBe(id);
+      expect(search.get('surface')).toBe(scenario === 'digest' ? 'home' : null);
+      return scenario === 'unavailable'
+        ? route.fulfill({ json: { activities: [] } })
+        : route.fulfill({ json: { activities: [post] } });
+    });
+    await page.route(`**/api/friend/activities/${id}/comments`, route => {
+      expect(route.request().method()).toBe('GET');
+      commentReads++;
+      return route.fulfill({ json: { comments: [{ id: 'qa-comment', body: 'QA reply', name: 'QA Host' }] } });
+    });
+    await page.goto('/friends?view=scene&plan=' + id + (scenario === 'digest' ? '&from=daily-activity-drop' : ''));
+    await page.getByRole('button', { name: 'I agree — let me in →' }).click();
+    if (scenario === 'authorized') {
+      const item = page.getByRole('region', { name: 'Linked post' });
+      await expect(item.getByText(post.title)).toBeVisible();
+      expect(commentReads).toBe(0);
+      await item.getByTitle('comments', { exact: true }).click();
+      await expect(item.getByText('QA reply', { exact: true })).toBeVisible();
+      expect(commentReads).toBe(1);
+    } else {
+      await expect(page.getByText('This link is not available to you.')).toBeVisible();
+      await expect(page.getByText(post.title)).toHaveCount(0);
+      expect(commentReads).toBe(0);
+    }
+  });
+ }
  test('clubs remain distinct from external communities and club chat retains its draft',async({page})=>{
   await page.route(`**/api/friend/clubs/${clubId}/messages`,r=>r.fulfill({json:{messages:[]}}));
   await page.goto('/friends?view=pulse');await page.getByRole('button',{name:'I agree — let me in →'}).click();

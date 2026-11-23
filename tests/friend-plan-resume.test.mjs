@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { friendPlanFromDestination, friendPlanFromQuiz, friendPlanSelection, friendPlanDestination, friendPlanCoreQuiz, friendPlanSetup, friendPlanLogin } from '../lib/friend-plan-resume.ts';
+import { friendPlanFromDestination, friendPlanFromQuiz, friendPlanSelection, friendPlanDestination, friendPlanCoreQuiz, friendPlanSetup, friendPlanLogin, sceneLinkedActivityPath, sceneLinkedActivity } from '../lib/friend-plan-resume.ts';
 import { quizPathForNewAccount } from '../lib/login-request.ts';
 
 const id = '00000000-0000-4000-8000-000000000901';
@@ -37,4 +37,20 @@ test('the verified returning-user welcome preserves selection without trusting a
   assert.deepEqual(friendPlanFromDestination(target + '&welcome=love-refresh-2026-08'),
     { id, from: 'daily-activity-drop' });
   assert.equal(friendPlanFromDestination(target + '&welcome=wrong'), null);
+});
+
+test('an untagged legacy Scene notification supports an authorized ordinary post, but digests remain event-only', () => {
+  const post = { id, kind: 'post', title: 'Authorized test post' };
+  assert.equal(sceneLinkedActivityPath(id, false), '/api/friend/activities?plan=' + id);
+  assert.equal(sceneLinkedActivityPath(id, true), '/api/friend/activities?surface=home&plan=' + id);
+  assert.equal(sceneLinkedActivity([post], id, false), post);
+  assert.equal(sceneLinkedActivity([post], id, true), undefined);
+  const event = { id, kind: 'event' };
+  assert.equal(sceneLinkedActivity([event], id, true), event);
+});
+
+test('a failed or unrelated by-ID result never falls back to another item or unsupported kind', () => {
+  assert.equal(sceneLinkedActivity([], id, false), undefined);
+  assert.equal(sceneLinkedActivity([{ id: 'unrelated', kind: 'post', title: 'Never preview this' }], id, false), undefined);
+  assert.equal(sceneLinkedActivity([{ id, kind: 'other' }], id, false), undefined);
 });

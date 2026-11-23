@@ -15,7 +15,7 @@ import FriendDiscoveryCard from './friend-discovery-card';
 import { useChatRealtime } from '@/lib/use-chat-realtime';
 import { reconcileMessages } from '@/lib/chat-recovery';
 import { fetchWithTimeout, fetchJsonWithTimeout } from '@/lib/fetch-helpers';
-import { friendPlanFromDestination, friendPlanLogin } from '@/lib/friend-plan-resume';
+import { friendPlanFromDestination, friendPlanLogin, sceneLinkedActivity, sceneLinkedActivityPath } from '@/lib/friend-plan-resume';
 import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
@@ -820,7 +820,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [chatPlanAfterRsvp, setChatPlanAfterRsvp] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState(initialSelectedPlan);
   const selectedPlanId = selectedPlan?.id;
-  const [linkedPlan, setLinkedPlan] = useState<{ id: string; status: 'loading' | 'ready' | 'unavailable' | 'sign-in' | 'retry'; activity?: any } | null>(null);
+  const digestPlanOnly = selectedPlan?.from === 'daily-activity-drop';
+  const [linkedPlan, setLinkedPlan] = useState<{ id: string; digestOnly: boolean; status: 'loading' | 'ready' | 'unavailable' | 'sign-in' | 'retry'; activity?: any } | null>(null);
+  const currentLinkedPlan = linkedPlan?.id === selectedPlanId && linkedPlan?.digestOnly === digestPlanOnly ? linkedPlan : null;
   const [linkedPlanAttempt, setLinkedPlanAttempt] = useState(0);
   const rsvpPending = useRef(new Set<string>());
   useEffect(() => { setSelectedPlan(initialSelectedPlan); }, [initialSelectedPlan]);
@@ -1069,22 +1071,23 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     if (!selectedPlanId || view !== 'scene') return;
     const controller = new AbortController();
     const id = selectedPlanId;
-    setLinkedPlan({ id, status: 'loading' });
+    const key = { id, digestOnly: digestPlanOnly };
+    setLinkedPlan({ ...key, status: 'loading' });
     void (async () => {
       try {
-        const { response, data } = await fetchJsonWithTimeout('/api/friend/activities?surface=home&plan=' + id, { cache: 'no-store', signal: controller.signal });
+        const { response, data } = await fetchJsonWithTimeout(sceneLinkedActivityPath(id, digestPlanOnly), { cache: 'no-store', signal: controller.signal });
         if (controller.signal.aborted) return;
-        if (response.status === 401) return setLinkedPlan({ id, status: 'sign-in' });
-        if (response.status === 403 || response.status === 404) return setLinkedPlan({ id, status: 'unavailable' });
-        if (!response.ok || !Array.isArray(data?.activities)) return setLinkedPlan({ id, status: 'retry' });
-        const activity = data.activities.find((item: any) => item?.id === id && item.kind === 'event');
-        setLinkedPlan(activity ? { id, status: 'ready', activity } : { id, status: 'unavailable' });
+        if (response.status === 401) return setLinkedPlan({ ...key, status: 'sign-in' });
+        if (response.status === 403 || response.status === 404) return setLinkedPlan({ ...key, status: 'unavailable' });
+        if (!response.ok || !Array.isArray(data?.activities)) return setLinkedPlan({ ...key, status: 'retry' });
+        const activity = sceneLinkedActivity(data.activities, id, digestPlanOnly);
+        setLinkedPlan(activity ? { ...key, status: 'ready', activity } : { ...key, status: 'unavailable' });
       } catch {
-        if (!controller.signal.aborted) setLinkedPlan({ id, status: 'retry' });
+        if (!controller.signal.aborted) setLinkedPlan({ ...key, status: 'retry' });
       }
     })();
     return () => controller.abort();
-  }, [selectedPlanId, linkedPlanAttempt, view]);
+  }, [selectedPlanId, digestPlanOnly, linkedPlanAttempt, view]);
   // Changing a Scene filter jumps back to the top of the feed — new results
   // shouldn't appear under your old scroll position. (Skips the mount run.)
   const filterRanOnce = useRef(false);
@@ -1557,7 +1560,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     if (!ok) return;
     try {
       const r = await fetch(`/api/friend/activities/${id}`, { method: 'DELETE' });
-      if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); setLinkedPlan(current => current?.id === id ? { id, status: 'unavailable' } : current); toast('post deleted', 'success'); }
+      if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); setLinkedPlan(current => current?.id === id ? { id, digestOnly: current.digestOnly, status: 'unavailable' } : current); toast('post deleted', 'success'); }
       else toast('could not delete that post — try again', 'error');
     } catch { toast('could not delete that post — check your connection', 'error'); }
   }
@@ -2364,12 +2367,12 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   : String(b.created_at || '').localeCompare(String(a.created_at || '')));
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  {selectedPlan && <section aria-label="Linked plan">
-                    {linkedPlan?.id !== selectedPlan.id || linkedPlan.status === 'loading' ? <p role="status">Finding your plan…</p>
-                      : linkedPlan.status === 'sign-in' ? <p role="status">Your session ended. <a href={friendPlanLogin(selectedPlan)}>Sign in to return to this plan</a>.</p>
-                      : linkedPlan.status === 'retry' ? <p role="status">Could not load this plan. <button type="button" onClick={() => setLinkedPlanAttempt(n => n + 1)}>Retry linked plan</button></p>
-                      : linkedPlan.status === 'unavailable' ? <p role="status">This plan is not available to you.</p>
-                      : <ActivityPost key={linkedPlan.id} a={linkedPlan.activity} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} autoOpenChat={false} />}
+                  {selectedPlan && <section aria-label={currentLinkedPlan?.activity?.kind === 'post' ? 'Linked post' : 'Linked plan'}>
+                    {!currentLinkedPlan || currentLinkedPlan.status === 'loading' ? <p role="status">Finding your plan…</p>
+                      : currentLinkedPlan.status === 'sign-in' ? <p role="status">Your session ended. <a href={friendPlanLogin(selectedPlan)}>Sign in to return to this plan</a>.</p>
+                      : currentLinkedPlan.status === 'retry' ? <p role="status">Could not load this plan. <button type="button" onClick={() => setLinkedPlanAttempt(n => n + 1)}>Retry linked plan</button></p>
+                      : currentLinkedPlan.status === 'unavailable' ? <p role="status">This link is not available to you.</p>
+                      : <ActivityPost key={currentLinkedPlan.id} a={currentLinkedPlan.activity} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} autoOpenChat={false} />}
                   </section>}
                   {!actsLoaded && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
