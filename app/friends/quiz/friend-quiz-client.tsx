@@ -33,7 +33,7 @@ const GENDERS = [
   { v: 'all', label: 'all of them' },
 ];
 
-export default function FriendQuizClient() {
+export default function FriendQuizClient({ destination, resumeLogin }: { destination: string; resumeLogin?: string }) {
   const router = useRouter();
   const total = FRIEND_QUESTIONS.length + 2; // + gender step + age step
   const [started, setStarted] = useState(false);
@@ -45,6 +45,7 @@ export default function FriendQuizClient() {
   const [ageMax, setAgeMax] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [signInNeeded, setSignInNeeded] = useState(false);
 
   const onGender = step === FRIEND_QUESTIONS.length;
   const onAge = step === FRIEND_QUESTIONS.length + 1;
@@ -71,7 +72,7 @@ export default function FriendQuizClient() {
   }
 
   async function submit() {
-    setBusy(true); setErr('');
+    setBusy(true); setErr(''); setSignInNeeded(false);
     try {
       const res = await fetch('/api/friend/quiz', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -83,9 +84,13 @@ export default function FriendQuizClient() {
           friend_age_max: ageMax || null,
         }),
       });
+      if (res.status === 401 && resumeLogin) {
+        setSignInNeeded(true);
+        throw new Error('Your session ended. Sign in again to return to this plan.');
+      }
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Something went wrong');
-      router.push('/friends');
+      router.push(destination);
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
 
@@ -233,6 +238,7 @@ export default function FriendQuizClient() {
             <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
               leave blank for no limit. friends near your vibe, your age.
             </p>
+            {signInNeeded && resumeLogin && <a className="btn-ghost" href={resumeLogin}>Sign in again</a>}
             {err && <p style={{ color: 'var(--h-accent-2)', fontSize: '0.82rem', marginBottom: '1rem' }}>{err}</p>}
             <div className={styles.qNav}>
               <button className={styles.qSkip} onClick={() => setStep((s) => s - 1)}>← back</button>

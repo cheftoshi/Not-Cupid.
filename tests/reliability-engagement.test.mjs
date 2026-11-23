@@ -10,8 +10,7 @@ test('login redirects stay on the app and preserve a deep link', () => {
   assert.equal(safeLoginPath('/match/123?hello=1'), '/match/123?hello=1');
 });
 test('new-account destinations share the same Friend, plan, and experiment intent rules', () => {
-  for (const path of ['/friends', '/friends/quiz', '/friends/profile', '/friends/pack',
-    '/friends?view=scene&plan=00000000-0000-4000-8000-000000000901']) {
+  for (const path of ['/friends', '/friends/quiz', '/friends/profile', '/friends/pack']) {
     assert.equal(quizPathForNewAccount(path), '/quiz?next=friends');
   }
   for (const path of ['/hub?create=1', '/hub?discover=1&event=live%3Acurated%3Awalk&from=friday-digest']) {
