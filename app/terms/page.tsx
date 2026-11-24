@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" subtitle="Your rights and responsibilities when using NotCupid." updated="September 27, 2026">
+    <LegalPage title="Terms of Service" subtitle="Your rights and responsibilities when using NotCupid." updated="November 24, 2026">
       <p>These terms are an agreement between you and <strong>Lemon Labs</strong> (&quot;NotCupid,&quot; &quot;we,&quot; &quot;us&quot;) for use of the NotCupid app and site. By using NotCupid, you agree to them.</p>
       <p>NotCupid helps adults connect through dating, friendship, and member-created plans. Our <a href="/privacy">Privacy Policy</a> explains how we handle personal information, and our <a href="/safety">Safety &amp; Community Guidelines</a> explain our community standards.</p>
       <p><a href="#payments">Pricing and digital delivery</a> · <a href="#cancellation">Cancel a subscription</a> · <a href="#refunds">Refunds and credits</a> · <a href="#contact">Contact us</a></p>
@@ -23,6 +23,7 @@ export default function TermsPage() {
         <li>Impersonate someone else or post fake, misleading, or stolen photos/info.</li>
         <li>Solicit, spam, advertise, scam, or use NotCupid for any commercial purpose.</li>
         <li>Share sexually explicit, hateful, or illegal content.</li>
+        <li>Use NotCupid for human trafficking, including sex trafficking or sexual exploitation, or to aid, abet, or encourage abuse.</li>
         <li>Collect or misuse other people&apos;s information, or try to break, probe, or abuse the service.</li>
       </ul>
       <p>These standards apply to profiles, private conversations, group chats, and plans. See our <a href="/safety">Safety &amp; Community Guidelines</a> for reporting and meeting-safety guidance.</p>

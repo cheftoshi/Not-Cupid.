@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function SafetyPage() {
   return (
-    <LegalPage title="Safety First" subtitle="Meeting new people should feel good. Here's how we keep it that way." updated="June 2026">
+    <LegalPage title="Safety First" subtitle="Meeting new people should feel good. Here's how we keep it that way." updated="November 24, 2026">
       <p>NotCupid connects real people in real life. That only works if everyone looks out for each other. Here&apos;s our part and yours.</p>
 
       <h2>Meeting someone for the first time</h2>
@@ -31,6 +31,17 @@ export default function SafetyPage() {
         <li>Take &quot;no&quot; gracefully — a pass or an unmatch is always okay.</li>
         <li>Keep it human — no spam, soliciting, scams, or selling.</li>
         <li>Be 18 or older. NotCupid is adults only.</li>
+      </ul>
+
+      <h2>Prohibited conduct and content</h2>
+      <p>These rules apply to profiles, messages, group chats, and plans. NotCupid prohibits:</p>
+      <ul>
+        <li>Child sexual exploitation or abuse, including child sexual abuse material (CSAM).</li>
+        <li>Sexual violence or threats of sexual violence.</li>
+        <li>Non-consensual content, including sharing or threatening to share intimate images or recordings without consent.</li>
+        <li>Human trafficking, sex trafficking, or sexual exploitation, including using NotCupid to facilitate any of them.</li>
+        <li>Sexually explicit profile content, including profile text, photos, and videos.</li>
+        <li>Scams or fraudulent activity intended to defraud users.</li>
       </ul>
 
       <h2>Report &amp; block</h2>
