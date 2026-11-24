@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function LawEnforcementPage() {
   return (
-    <LegalPage title="Law Enforcement Requests" subtitle="Our process for reviewing requests and protecting member information." updated="September 27, 2026">
+    <LegalPage title="Law Enforcement Requests" subtitle="Our process for reviewing requests and protecting member information." updated="November 24, 2026">
       <p>NotCupid is operated by <strong>Lemon Labs</strong>. Requests are reviewed manually by the operator through the support inbox. We verify the requesting authority and legal basis before disclosing member information. A request alone does not authorize disclosure.</p>
 
       <h2>Where to send a request</h2>
@@ -29,7 +29,12 @@ export default function LawEnforcementPage() {
       <p>Disclosure requires valid legal process appropriate to the information sought, or another applicable lawful basis, including a legally permitted emergency disclosure. We limit disclosure to the information appropriate to that basis and scope. We do not provide unrestricted account or database access. We document requests and our response decisions and arrange an appropriate secure delivery method for any disclosure.</p>
 
       <h2>Preservation requests</h2>
-      <p>Identify a preservation request explicitly and include the accounts, records, date range, and legal authority. We review valid requests to preserve existing records in our possession as required by applicable law, pending appropriate legal process. Preservation is separate from disclosure and does not itself authorize release of records. We cannot guarantee recovery of deleted information or provide records we do not hold.</p>
+      <p>Identify a written preservation request explicitly and include the accounts, records, date range, and legal authority. Under 18 U.S.C. § 2703(f), on receipt of a valid written preservation request from a U.S. governmental entity, we preserve relevant records already in our possession for 90 days, pending appropriate legal process. We extend preservation for another 90 days on a valid renewed request.</p>
+      <p>Our procedure is to document the scope and retention deadline in a restricted case record and limit preservation to relevant existing records. We review retention when the preservation period ends, subject to applicable legal obligations. Preservation is separate from disclosure and does not authorize release of records. We cannot guarantee recovery of deleted information or provide records we do not hold.</p>
+
+      <h2>Child safety and reporting</h2>
+      <p>NotCupid has zero tolerance for child sexual exploitation or abuse, including child sexual abuse material (CSAM), and for human trafficking, sex trafficking, and sexual exploitation. See our <a href="/safety">Safety &amp; Community Guidelines</a>.</p>
+      <p>Under applicable U.S. law, when we obtain actual knowledge of facts or circumstances indicating an apparent reportable violation involving child sexual exploitation, including CSAM, we are required to report it to the National Center for Missing &amp; Exploited Children (NCMEC) CyberTipline as soon as reasonably possible under 18 U.S.C. § 2258A. The law separately requires preservation of reported material and related records as applicable. These duties do not depend on a law enforcement preservation request.</p>
 
       <h2>Emergency requests</h2>
       <p><strong>If someone is in immediate danger, call 911 or the appropriate local emergency service. This inbox is not monitored continuously and is not an emergency-response service.</strong></p>
