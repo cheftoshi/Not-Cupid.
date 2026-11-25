@@ -1,173 +1,6 @@
 [
   {
     "facts": {
-      "id": "boston-trellis-20261123",
-      "city": "boston",
-      "title": "Christopher Columbus Park Trellis Lighting",
-      "startsAt": "2026-11-23T17:00:00-05:00",
-      "category": "outdoors",
-      "venue": "Christopher Columbus Park, 110 Atlantic Avenue, Boston",
-      "sourceUrl": "https://www.boston.gov/calendar/2026-trellis-lighting-christopher-columbus-park",
-      "sourceLabel": "City of Boston",
-      "sourceCheckedAt": "2026-11-23T14:31:02.450346+00:00",
-      "price": {
-        "min": 0,
-        "max": 0,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.654Z",
-    "reviewDigest": "6c42cefed3d2348603e55a9e3f53048429c386ed5a8e07f9ae7d2de9da2a45cd",
-    "publishedAt": "2026-11-23T14:33:21.722Z",
-    "expiresAt": "2026-11-23T22:00:00.000Z"
-  },
-  {
-    "facts": {
-      "id": "beantown-games-20261123",
-      "city": "boston",
-      "title": "Light Game Night",
-      "startsAt": "2026-11-23T19:00:00-05:00",
-      "category": "community",
-      "venue": "Public lobby, 325 Main Street, Cambridge",
-      "sourceUrl": "https://www.meetup.com/boardgames-boston/events/315167941/",
-      "sourceLabel": "Beantown Gamers / Meetup",
-      "sourceCheckedAt": "2026-11-23T14:31:03.746220+00:00",
-      "price": {
-        "min": 0,
-        "max": 0,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "1005df655f58b95902382313851d49db5d3e3ce2fc497392f2f7dc434dfe033c",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-24T00:00:00.000Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-23T14:31:03.361738+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "trident-silent-20261123",
-      "title": "Silent Book Club & Write Night",
-      "startsAt": "2026-11-23T19:00:00-05:00",
-      "category": "community",
-      "venue": "Trident Booksellers & Cafe, 338 Newbury Street",
-      "sourceUrl": "https://tridentbookscafe.com/event/2026-11-23/silent-book-club-write-night",
-      "sourceLabel": "Trident Booksellers & Cafe"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "0ba5076fece8fa6e61d84d845d4533620c198070fd58ab9be0ecac5f27489464",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-24T00:00:00.000Z"
-  },
-  {
-    "facts": {
-      "city": "boston",
-      "sourceCheckedAt": "2026-11-23T14:31:01.645573+00:00",
-      "price": {
-        "min": 0,
-        "max": 0,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true,
-      "id": "berklee-winds-20261123",
-      "title": "Berklee Symphonic Winds: Together, We Can",
-      "startsAt": "2026-11-23T20:00:00-05:00",
-      "category": "music",
-      "venue": "Berklee Performance Center, 136 Massachusetts Avenue",
-      "sourceUrl": "https://www.berklee.edu/BPC/events/berklee-symphonic-winds-fall-concert-together-we-can",
-      "sourceLabel": "Berklee Performance Center"
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "420f29cc9ed5eb568cb97a256ab9b82fb8e1f8b833fe79a2563077c9b8e0cba8",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-24T01:00:00.000Z"
-  },
-  {
-    "facts": {
-      "id": "cambridge-knit-20261124",
-      "city": "boston",
-      "title": "Sit ’n’ Knit: bring your fiber project",
-      "venue": "Cambridge Main Library, 449 Broadway",
-      "startsAt": "2026-11-24T14:30:00-05:00",
-      "category": "arts",
-      "sourceUrl": "https://www.cambridgema.gov/departments/cambridgepubliclibrary/calendar/2026/11/24/sitnknitmain",
-      "sourceLabel": "Cambridge Public Library",
-      "sourceCheckedAt": "2026-11-23T14:31:02.522304+00:00",
-      "price": {
-        "min": 0,
-        "max": 0,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "ab7b304338b40d1953aab398a1ffcf79d9bb13ae585bc4964ec5fc0801298c94",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-24T19:30:00.000Z"
-  },
-  {
-    "facts": {
-      "id": "gmg-games-20261124",
-      "city": "boston",
-      "title": "Board Game Night with Designers",
-      "startsAt": "2026-11-24T18:00:00-05:00",
-      "category": "community",
-      "venue": "Church on the Hill, 140 Bowdoin Street, Boston",
-      "sourceUrl": "https://www.meetup.com/game-makers-guild/events/317023814/",
-      "sourceLabel": "Game Makers Guild / Meetup",
-      "sourceCheckedAt": "2026-11-23T14:31:04.046245+00:00",
-      "price": null,
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "79960f6245601a32111c63065ece523bf10bfacf4a17c3172ed86ce7fe898d55",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-24T23:00:00.000Z"
-  },
-  {
-    "facts": {
-      "id": "mit-jazz-20261124",
-      "city": "boston",
-      "title": "MIT Jazz Combos: fall concert",
-      "venue": "Killian Hall, MIT Building 14, 160 Memorial Drive, Cambridge",
-      "startsAt": "2026-11-24T19:30:00-05:00",
-      "category": "music",
-      "sourceUrl": "https://calendar.mit.edu/event/jazz-combos-fall-concert-1",
-      "sourceLabel": "MIT Music and Theater Arts",
-      "sourceCheckedAt": "2026-11-23T14:31:00.931598+00:00",
-      "price": {
-        "min": 0,
-        "max": 0,
-        "currency": "USD"
-      },
-      "publicAdmissionConfirmed": true,
-      "timeConfirmed": true
-    },
-    "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "0f521cf4c2d27ad3d977cca8ef64a8c126f2839ea3f04f115f9a9598ef3b369d",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-25T00:30:00.000Z"
-  },
-  {
-    "facts": {
       "id": "bpm-craft-20261125",
       "city": "boston",
       "title": "Craft Club: Seasonal Centerpiece",
@@ -176,21 +9,21 @@
       "venue": "Boston Public Market, HUB, 100 Hanover Street",
       "sourceUrl": "https://www.eventbrite.com/e/craft-club-at-boston-public-market-tickets-2003682568500",
       "sourceLabel": "Boston Public Market / Eventbrite",
-      "sourceCheckedAt": "2026-11-23T14:31:03.277732+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:25.315812+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "0dec87769fb431e6df1808013084317552bd35bdaa314ec1de46b8b4332a7b61",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
+    "reviewedAt": "2026-11-25T13:23:23.345Z",
+    "reviewDigest": "e27b20644a2cf83f67ecb0d48bc9734c3b4308a4830d7268a21bb69d5bf57746",
+    "publishedAt": "2026-11-25T13:23:23.416Z",
     "expiresAt": "2026-11-25T23:00:00.000Z"
   },
   {
     "facts": {
       "city": "boston",
-      "sourceCheckedAt": "2026-11-23T14:31:03.372318+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:26.641738+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true,
@@ -203,9 +36,9 @@
       "sourceLabel": "Trident Booksellers & Cafe"
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.661Z",
-    "reviewDigest": "80bacc4e8f81cd78221346199f5ea70d37b0b7bf5bbdebdf6bb2e733246022a8",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
+    "reviewedAt": "2026-11-25T13:23:23.353Z",
+    "reviewDigest": "593a3312f654e616ccb8bf1170fccadd170945c915e705734bad6aae6859b3ae",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
     "expiresAt": "2026-11-25T23:00:00.000Z"
   },
   {
@@ -218,7 +51,7 @@
       "category": "community",
       "sourceUrl": "https://www.breadoflifemalden.org/events/2023/10/25/h73ce3y5o4pdbfy3ekw1uiadpkssqa-xlx2f",
       "sourceLabel": "Bread of Life / Malden Mayor’s Office",
-      "sourceCheckedAt": "2026-11-23T14:31:02.707891+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:24.803806+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -228,31 +61,31 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "939b76ce131f9055077bfa685954cf52b650b9c7e410a6734c519f7b2aa5a41a",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:02.707Z"
+    "reviewedAt": "2026-11-25T13:23:23.353Z",
+    "reviewDigest": "587c404ee8cb829f9154a17398019ab29cd0123c3fba9dccd2e895982d5bc158",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-26T17:00:00.000Z"
   },
   {
     "facts": {
       "id": "wompatuck-walk-20261127",
       "city": "boston",
-      "title": "Black Friday Wompatuck Walk (alcohol-free)",
+      "title": "Black Friday Wompatuck Walk (alcohol-free; check organizer weather updates)",
       "venue": "Wompatuck State Park visitor-center lot, 204 Union St, Hingham",
       "startsAt": "2026-11-27T10:00:00-05:00",
       "category": "outdoors",
       "sourceUrl": "https://www.meetup.com/sober-curious-circle-boston-south-shore/events/316976197/",
       "sourceLabel": "Sober & Curious Boston / Meetup",
-      "sourceCheckedAt": "2026-11-23T14:31:04.456461+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:26.681190+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "86386d9fe0ecd16eb303f519bb5eadec2c89e5dd1423225f5b769b729b0e4fd0",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:04.456Z"
+    "reviewedAt": "2026-11-25T13:23:23.353Z",
+    "reviewDigest": "6e68899a716ebd0b12c1b709af908b715a4b5843078648bce8ae4797ac102a6b",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-27T15:00:00.000Z"
   },
   {
     "facts": {
@@ -264,7 +97,7 @@
       "venue": "Middle East Upstairs, 472–480 Massachusetts Avenue, Cambridge",
       "sourceUrl": "https://www.mideastclub.com/tm-event/synapse-11/",
       "sourceLabel": "The Middle East",
-      "sourceCheckedAt": "2026-11-23T14:31:07.597018+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:29.038858+00:00",
       "price": {
         "min": 15,
         "max": 15,
@@ -274,10 +107,10 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "496bcc9941bd3bd5b01cfe41bb50a982b63665cd7df944907a1ba2f3d1be87d5",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:07.597Z"
+    "reviewedAt": "2026-11-25T13:23:23.353Z",
+    "reviewDigest": "ea0af673827e06e3969ab8eaf060eb859db2a5b428931f16c1db7be53828879d",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T03:00:00.000Z"
   },
   {
     "facts": {
@@ -289,7 +122,7 @@
       "category": "arts",
       "sourceUrl": "https://www.charlesrivermuseum.org/events-list/2025/2/8/manufacturingthemodernworld-tejdr-j5f44-fpnf8-5ttcg-xdb85-fyk3l-ys9n3-726nw",
       "sourceLabel": "Charles River Museum",
-      "sourceCheckedAt": "2026-11-23T14:31:03.042278+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:25.200956+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -299,10 +132,10 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "0b65cc005f28e3a66d9221dcde8db8112b9b0e438b2f7a0543704b6caa3a6e2d",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:03.042Z"
+    "reviewedAt": "2026-11-25T13:23:23.353Z",
+    "reviewDigest": "c0d7dff2647f49bc20cbfa2d7675046a98adcad3a963be933f69a6d83f6b358d",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:25.200Z"
   },
   {
     "facts": {
@@ -314,7 +147,7 @@
       "venue": "Arts at the Armory, 191 Highland Avenue, Somerville",
       "sourceUrl": "https://www.bostonwomensmarket.com/events-calendar/boston-womens-holiday-market-at-the-armory-nov29",
       "sourceLabel": "Boston Women's Market",
-      "sourceCheckedAt": "2026-11-23T14:31:02.036084+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:24.594052+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -324,10 +157,10 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "7e47a7e779c28d00760b917372c8428dd9b6fa85eb6dd50c75c85c0f85f2f21f",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:02.036Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "b829abdb8d14694d62493496020b0564abad0ba513d1c03932ea3cc916aa3b8e",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:24.594Z"
   },
   {
     "facts": {
@@ -339,16 +172,16 @@
       "venue": "Roots & Roasts, 1545 Hancock Street, Quincy",
       "sourceUrl": "https://www.meetup.com/quincy-board-game-group/events/316845808/",
       "sourceLabel": "Quincy Board Game Group / Meetup",
-      "sourceCheckedAt": "2026-11-23T14:31:04.058464+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:26.785329+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "d57b313100287745f250e2b9dfb2ea4b1a09ae37abd94c1ab8a5f992af98263f",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:04.058Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "56c8da4ee159493fca37e900cf38ae51eaf3eacb9acba20db7f411096f4f67cb",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:26.785Z"
   },
   {
     "facts": {
@@ -360,16 +193,37 @@
       "category": "arts",
       "sourceUrl": "https://www.longnowboston.org/events/we-are-as-gods-2026",
       "sourceLabel": "Long Now Boston",
-      "sourceCheckedAt": "2026-11-23T14:31:03.604078+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:26.078183+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "7fdcf626d33b3127e45b2b6c857d6eb6deeb1c7fd8e5e0bb8e31093396ed0e43",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:03.604Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "28c684f97d12436648052b90e62f30d81afa2633d0f0f60057c6caa50ff2c39a",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:26.078Z"
+  },
+  {
+    "facts": {
+      "id": "fenway-yoga-20261130",
+      "city": "boston",
+      "title": "Slow Flow Yoga (walk-ins welcome; mats provided)",
+      "venue": "Fenway Community Center, 1282 Boylston St #123, Boston (Jersey St entrance)",
+      "startsAt": "2026-11-30T12:30:00-05:00",
+      "category": "sports",
+      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/slow-flow-yoga-11/2026-11-30/",
+      "sourceLabel": "Fenway Community Center",
+      "sourceCheckedAt": "2026-11-25T13:20:01.388763+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "866da98a28b38a33cfb9eba295d1652d85a10a23539e2e29d29a9d59197b1992",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:20:01.388Z"
   },
   {
     "facts": {
@@ -381,7 +235,7 @@
       "category": "outdoors",
       "sourceUrl": "https://www.boston.gov/calendar/2026-copley-square-tree-lighting",
       "sourceLabel": "Boston Parks and Recreation",
-      "sourceCheckedAt": "2026-11-23T14:31:02.201046+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:24.771312+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -391,10 +245,10 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "70296ae354593194e48219ae4776f3b0fa57987afbaaddba0c7be7feca0517ec",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:02.201Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "851976f6f4161d6e60a1d73eb360b63321f2fbb6d6bbda9ca62d10f7caa98648",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:24.771Z"
   },
   {
     "facts": {
@@ -406,7 +260,7 @@
       "category": "community",
       "sourceUrl": "https://historycambridge.org/events/dec-1-dinner-valente/",
       "sourceLabel": "History Cambridge",
-      "sourceCheckedAt": "2026-11-23T14:31:01.423791+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:24.350015+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -416,10 +270,10 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "0a76ce0b4bef09b736162dddd8c85e83d670826944f4d5af2ffad0524658a997",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:01.423Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "abf286f6540b0c486b411998af0c2abaf882e19dae233f331f1b3735f78a1eb8",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:24.350Z"
   },
   {
     "facts": {
@@ -431,16 +285,41 @@
       "category": "food",
       "sourceUrl": "https://www.meetup.com/arlington-30-somethings-meetup/events/317473121/",
       "sourceLabel": "Arlington 30- and 40-somethings / Meetup",
-      "sourceCheckedAt": "2026-11-23T14:31:03.814450+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:26.407633+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "9296504606c99c3b21412f94a5e9f63b2ae53b2256935d3ce63b19dcca22b2f2",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:03.814Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "96e3ab1e8e2f55703d9c7416235f8a4499f394d55cb0b54e49f0bf5fcf4fa13b",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:26.407Z"
+  },
+  {
+    "facts": {
+      "id": "waltham-milltalk-20261202",
+      "city": "boston",
+      "title": "Mill Talk: The Disposable Workforce (free; registration required)",
+      "venue": "Charles River Museum, 154 Moody St, Waltham",
+      "startsAt": "2026-12-02T19:00:00-05:00",
+      "category": "arts",
+      "sourceUrl": "https://www.charlesrivermuseum.org/events-list/2026/8/31/mill-talk-the-disposable-workforce-why-how-much-and-consequences-for-workers-and-for-employers",
+      "sourceLabel": "Charles River Museum",
+      "sourceCheckedAt": "2026-11-25T13:22:17.501453+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "c856b4a3e0a211d42d67b8b2e0ab17f66b1253dff187cb0313853048c3694954",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:22:17.501Z"
   },
   {
     "facts": {
@@ -452,16 +331,16 @@
       "category": "outdoors",
       "sourceUrl": "https://partiful.com/e/TbtDCDRNEh8PVgwvCFUc?source=discover",
       "sourceLabel": "Allston-Brighton Food Tours / Partiful",
-      "sourceCheckedAt": "2026-11-23T14:31:01.133709+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:23.516349+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "0ae281a1d5f963cb881ee54f90e4ba2840a4f7cff930d56183c7f0c15a94d802",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:01.133Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "6b45f5380ff86dcfa2025b5c64ccd99dfc3eed78108a2cf765d3f6b948130024",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:23.516Z"
   },
   {
     "facts": {
@@ -473,7 +352,7 @@
       "category": "community",
       "sourceUrl": "https://www.cambridgema.gov/departments/housingdepartment/calendar/view?guid=c477ec5cedf44c41974c1064d1a3783d",
       "sourceLabel": "Cambridge Public Library",
-      "sourceCheckedAt": "2026-11-23T14:31:02.724831+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:24.752500+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -483,10 +362,77 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "54732a76d003bc8a1891ac2bbc687fa996a29ad01798f98e0d580dfe51ed0504",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:02.724Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "e930b1c03baeae2ec0eeba69da5d0ab7f2c7936b6fae2ce572224feb5f275776",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:24.752Z"
+  },
+  {
+    "facts": {
+      "id": "fenway-books-20261203",
+      "city": "boston",
+      "title": "Boston Baked Books: Hidden History of Boston discussion",
+      "venue": "Fenway Community Center, 1282 Boylston St #123, Boston (Jersey St entrance)",
+      "startsAt": "2026-12-03T17:30:00-05:00",
+      "category": "arts",
+      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/boston-baked-books-hidden-history-of-boston/",
+      "sourceLabel": "Fenway Community Center",
+      "sourceCheckedAt": "2026-11-25T13:20:27.237639+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "e4b6278c3ba83bede8c85a1f7f0037d2396c0423ddd85fdf814e5297a5da95be",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:20:27.237Z"
+  },
+  {
+    "facts": {
+      "id": "common-lighting-20261203",
+      "city": "boston",
+      "title": "Boston Common Tree Lighting (free outdoor gathering)",
+      "venue": "Boston Common, 139 Tremont Street, Boston",
+      "startsAt": "2026-12-03T18:00:00-05:00",
+      "category": "outdoors",
+      "sourceUrl": "https://www.boston.gov/calendar/boston-common-tree-lighting",
+      "sourceLabel": "City of Boston",
+      "sourceCheckedAt": "2026-11-25T13:20:00.006927+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "eb7745fb900d613ded4885592203f4406401f2a401e2b944d04b6afca8e685dd",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:20:00.006Z"
+  },
+  {
+    "facts": {
+      "id": "dewitt-supper-20261203",
+      "city": "boston",
+      "title": "First Thursdays Supper Club (reserve; $4 suggested contribution)",
+      "venue": "Dewitt Center, 122 Dewitt Drive, Roxbury",
+      "startsAt": "2026-12-03T18:00:00-05:00",
+      "category": "food",
+      "sourceUrl": "https://www.eventbrite.com/e/december-supper-club-at-dewitt-center-tickets-2004830256265",
+      "sourceLabel": "Madison Park Development Corporation / Eventbrite",
+      "sourceCheckedAt": "2026-11-25T13:18:25.585872+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "8625f58227f64f8885d60de59471c76d547734731a742fbb99bfdd84f4ddf4e1",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:25.585Z"
   },
   {
     "facts": {
@@ -498,16 +444,108 @@
       "category": "music",
       "sourceUrl": "https://www.eventbrite.com/e/london-elektricity-fast-soul-music-uk-agent-137-driven-am-nyc-tickets-2004940939321",
       "sourceLabel": "elements / Eventbrite",
-      "sourceCheckedAt": "2026-11-23T14:31:03.259081+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:25.928281+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "b529266ff88f0095e2c230407649e533294f249ee0cb9148b0cf8aa1c56b5e81",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:03.259Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "1250fa1357366b743e0cc3d0f2dd682534a24b7a72642fda4320fd5ebc681261",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:25.928Z"
+  },
+  {
+    "facts": {
+      "id": "bpm-tour-20261204",
+      "city": "boston",
+      "title": "Boston Public Market tour (free; limited capacity)",
+      "venue": "Info Desk by main entrance, Boston Public Market, 100 Hanover St",
+      "startsAt": "2026-12-04T11:00:00-05:00",
+      "category": "food",
+      "sourceUrl": "https://bostonpublicmarket.org/bpm-events/boston-public-market-tour/2026-12-04/",
+      "sourceLabel": "Boston Public Market",
+      "sourceCheckedAt": "2026-11-25T13:18:24.324449+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "6060e20eb9e65024c8b152ad5ee7fbdfb31bc92ddf19bd7d62da4b4d5d82abba",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:24.324Z"
+  },
+  {
+    "facts": {
+      "id": "fenway-walk-20261204",
+      "city": "boston",
+      "title": "Fenway community walk (check organizer weather updates)",
+      "venue": "Fenway Community Center, 1282 Boylston St #123, Boston (Jersey St entrance)",
+      "startsAt": "2026-12-04T12:00:00-05:00",
+      "category": "outdoors",
+      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/community-walk/2026-12-04/",
+      "sourceLabel": "Fenway Community Center",
+      "sourceCheckedAt": "2026-11-25T13:20:27.102461+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "c7c88923e4e16f57c46f6fd21af7ec1f63373ffff06f62f65e2b485ae6452db1",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:20:27.102Z"
+  },
+  {
+    "facts": {
+      "id": "fenway-bingo-20261204",
+      "city": "boston",
+      "title": "Community Bingo (all ages)",
+      "venue": "Fenway Community Center, 1282 Boylston St #123, Boston (Jersey St entrance)",
+      "startsAt": "2026-12-04T12:30:00-05:00",
+      "category": "community",
+      "sourceUrl": "https://fenwaycommunitycenter.org/calendar/bingo-16/2026-12-04/",
+      "sourceLabel": "Fenway Community Center",
+      "sourceCheckedAt": "2026-11-25T13:20:27.433871+00:00",
+      "price": null,
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "8d9386e94058c5c13739eeb19a5e219ac993f844bccbf40fe27547c6974b13dc",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:20:27.433Z"
+  },
+  {
+    "facts": {
+      "id": "bpm-trivia-20261204",
+      "city": "boston",
+      "title": "Holiday Movie Trivia (first-come seating; purchases separate)",
+      "venue": "The HUB, Boston Public Market, 100 Hanover St, Boston",
+      "startsAt": "2026-12-04T18:00:00-05:00",
+      "category": "community",
+      "sourceUrl": "https://www.eventbrite.com/e/holiday-movie-trivia-at-boston-public-market-tickets-2003739058463",
+      "sourceLabel": "Boston Public Market / Eventbrite",
+      "sourceCheckedAt": "2026-11-25T13:18:25.454699+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "1fec52d1aa6d3784197afa5ebffb00772f2b7100b1eead3e5c2904350f47c579",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:25.454Z"
   },
   {
     "facts": {
@@ -519,7 +557,7 @@
       "category": "music",
       "sourceUrl": "https://partiful.com/e/8Glun2PCKbYVblQuOdsO",
       "sourceLabel": "Siren / Partiful",
-      "sourceCheckedAt": "2026-11-23T14:31:00.819692+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:23.280519+00:00",
       "price": {
         "min": 5,
         "max": 5,
@@ -529,10 +567,35 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "0878149e88cd2e37372a93d0ef4f438bd3040acb1771e3ab7a9198fb12433200",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:00.819Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "a38270193a88468d142c67e567b3b637cf38c0efda5e2ee7ca241e4a3770a6f7",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:23.280Z"
+  },
+  {
+    "facts": {
+      "id": "roslindale-chess-20261205",
+      "city": "boston",
+      "title": "Chess Club: learn and play (all ages)",
+      "venue": "Roslindale Branch Library, 4246 Washington St, Boston",
+      "startsAt": "2026-12-05T10:00:00-05:00",
+      "category": "community",
+      "sourceUrl": "https://bpl.bibliocommons.com/v2/events/6a207db24407827f8aa26709",
+      "sourceLabel": "Boston Public Library",
+      "sourceCheckedAt": "2026-11-25T13:21:44.688479+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "609390b9883349c806d4b2e2f16ec0217a0b9cee62f28cb3d89d1a5565b22f5b",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:21:44.688Z"
   },
   {
     "facts": {
@@ -544,7 +607,7 @@
       "category": "arts",
       "sourceUrl": "https://www.eventbrite.com/e/hong-kong-night-tickets-2004692228420",
       "sourceLabel": "New England Hong Kong Festival / Eventbrite",
-      "sourceCheckedAt": "2026-11-23T14:31:02.977390+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:25.885484+00:00",
       "price": {
         "min": 0,
         "max": 0,
@@ -554,10 +617,10 @@
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "8f3118ef05278ff82a97b18d9e563eb9d0871e70259a20d2ab6a326a1d737018",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:02.977Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "b924b64e4b27a401e4c4e29668fd3932275163feff84e12e248b7017cd6fb2b1",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:25.885Z"
   },
   {
     "facts": {
@@ -569,15 +632,40 @@
       "category": "community",
       "sourceUrl": "https://www.meetup.com/boston-random-acts-of-connection/events/316641224/",
       "sourceLabel": "Boston Random Acts of Connection / Meetup",
-      "sourceCheckedAt": "2026-11-23T14:31:03.855688+00:00",
+      "sourceCheckedAt": "2026-11-25T13:18:26.455866+00:00",
       "price": null,
       "publicAdmissionConfirmed": true,
       "timeConfirmed": true
     },
     "state": "published",
-    "reviewedAt": "2026-11-23T14:33:21.662Z",
-    "reviewDigest": "faf62b8c3cb45838a3ec5c3ee5e89edf6cc52f794e5e19c69d067c260c99d5fb",
-    "publishedAt": "2026-11-23T14:33:21.723Z",
-    "expiresAt": "2026-11-26T14:31:03.855Z"
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "da8f9f427cf0111450bf10ff520ab55359b2c6f64817e39b29ea9cfd554ded0f",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:18:26.455Z"
+  },
+  {
+    "facts": {
+      "id": "cambridge-knit-20261208",
+      "city": "boston",
+      "title": "Sit 'n' Knit: bring your fiber project",
+      "venue": "Cambridge Main Library, 449 Broadway",
+      "startsAt": "2026-12-08T14:30:00-05:00",
+      "category": "arts",
+      "sourceUrl": "https://www.cambridgema.gov/departments/cambridgepubliclibrary/calendar/2026/12/08/sitnknitmain",
+      "sourceLabel": "Cambridge Public Library",
+      "sourceCheckedAt": "2026-11-25T13:19:59.107080+00:00",
+      "price": {
+        "min": 0,
+        "max": 0,
+        "currency": "USD"
+      },
+      "publicAdmissionConfirmed": true,
+      "timeConfirmed": true
+    },
+    "state": "published",
+    "reviewedAt": "2026-11-25T13:23:23.354Z",
+    "reviewDigest": "f5e93c83650144256e837676df18796878f76697ecec2283510ba99865705221",
+    "publishedAt": "2026-11-25T13:23:23.417Z",
+    "expiresAt": "2026-11-28T13:19:59.107Z"
   }
 ]
