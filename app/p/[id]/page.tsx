@@ -1,7 +1,7 @@
-import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { publicPlans } from '@/lib/public-plans';
 import { planWhen } from '@/lib/plan-discovery';
+import { friendPlanSelection, friendPlanDestination } from '@/lib/friend-plan-resume';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +33,8 @@ const CAT_EMOJI: Record<string, string> = {
 export default async function PublicPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const plan = await loadPlan(id);
-  if (!plan) return <main style={{ maxWidth: 600, margin: '3rem auto', padding: 24 }}><h1>This invitation isn’t available.</h1><p>It may have ended, been removed, or be limited to eligible members. No response has been sent.</p><a href="/hub">Explore current plans</a></main>;
+  const selection = friendPlanSelection(plan?.id);
+  if (!plan || !selection) return <main style={{ maxWidth: 600, margin: '3rem auto', padding: 24 }}><h1>This invitation isn’t available.</h1><p>It may have ended, been removed, or be limited to eligible members. No response has been sent.</p><a href="/hub">Explore current plans</a></main>;
 
   const when = planWhen(plan.happens_at);
 
@@ -52,7 +53,7 @@ export default async function PublicPlanPage({ params }: { params: Promise<{ id:
           <p style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '0.9rem', lineHeight: 1.55, color: 'var(--h-text-dim)', margin: '0 0 1.4rem' }}>
             NotCupid is a connection experiment — real plans with real people, no swiping. Join to RSVP and see who&apos;s going.
           </p>
-          <a href={`/login?next=${encodeURIComponent(`/hub?plan=${plan.id}`)}`} className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>join this plan →</a>
+          <a href={friendPlanDestination(selection)} className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>join this plan →</a>
           <div style={{ marginTop: '0.9rem', fontFamily: "'DM Sans', monospace", fontSize: '0.52rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>free to join · notcupid.com</div>
         </div>
       </div>

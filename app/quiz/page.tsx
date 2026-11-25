@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { planReturnPath } from '@/lib/plan-discovery'
+import { friendPlanFromQuiz, friendPlanCoreQuiz, friendPlanLogin, friendPlanSetup } from '@/lib/friend-plan-resume'
 import Nav from '@/components/Nav'
 import Wordmark from '@/components/wordmark'
 import TypeStoryCard from '@/components/type-story-card'
@@ -114,7 +115,12 @@ function QuizInner() {
   const requestedNext = searchParams.get('next')
   const returnTo = planReturnPath(searchParams.get('returnTo'))
   const nextIntent = requestedNext === 'friends' ? 'friends' : requestedNext === 'experiment' ? 'experiment' : null
-  const afterCorePath = returnTo || (nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/hub')
+  const selectedPlan = nextIntent === 'friends' ? friendPlanFromQuiz(searchParams) : null
+  const selectedPlanSetup = selectedPlan ? friendPlanSetup(selectedPlan) : null
+  const selectedPlanLogin = selectedPlan ? friendPlanLogin(selectedPlan) : null
+  const selectedPlanLoveQuiz = selectedPlan ? friendPlanCoreQuiz(selectedPlan, { love: true }) : null
+  const selectedPlanRetake = selectedPlan ? friendPlanCoreQuiz(selectedPlan, { retake: true }) : null
+  const afterCorePath = selectedPlanSetup || returnTo || (nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/hub')
   // Love-line deep quiz: /quiz?line=love (logged-in users, after the core quiz).
   const isLoveDeep = searchParams.get('line') === 'love'
   // Invite attribution: /quiz?ref=<code> (from a /join/<code> link). Kept in
@@ -210,7 +216,7 @@ function QuizInner() {
         if (result.status === 'signed-out') {
           if (isLoveDeep || isRetake) {
             const destination = isLoveDeep ? '/quiz?line=love' : '/quiz?retake=1'
-            window.location.replace('/login?next=' + encodeURIComponent(destination))
+            window.location.replace(selectedPlanLogin || '/login?next=' + encodeURIComponent(destination))
           } else {
             setProfileLoadState('ready')
           }
@@ -220,7 +226,7 @@ function QuizInner() {
         const user = result.user
         if (isLoveDeep) {
           if (!user.archetype) {
-            window.location.replace('/quiz?retake=1')
+            window.location.replace(selectedPlanRetake || '/quiz?retake=1')
             return
           }
           const seeking = user.seeking || ''
@@ -255,7 +261,7 @@ function QuizInner() {
       }
     })()
     return () => controller.abort()
-  }, [isRetake, isLoveDeep, profileLoadAttempt, searchParams])
+  }, [isRetake, isLoveDeep, profileLoadAttempt, searchParams, selectedPlanLogin, selectedPlanRetake])
 
   // Only offer a draft after the existing profile/OTP gates reach the core quiz.
   useEffect(() => {
@@ -437,6 +443,10 @@ function QuizInner() {
           window.location.href = afterCorePath
           return
         }
+        if (res.status === 401 && selectedPlanLogin) {
+          window.location.href = selectedPlanLogin
+          return
+        }
         // IMPORTANT: do NOT fall through to /api/submit — their email already
         // has an account, so submit 409s → login → verify-otp sees no archetype
         // → back to retake → loop ("it keeps telling me to retake the quiz").
@@ -462,13 +472,13 @@ function QuizInner() {
       if (res.status === 409) {
         // Email already has an account — send them to log in (they own the email,
         // so they can OTP in). We never expose user ids to the browser.
-        window.location.href = '/login?next=' + encodeURIComponent(afterCorePath)
+        window.location.href = selectedPlanLogin || '/login?next=' + encodeURIComponent(afterCorePath)
         return
       }
       if (!res.ok || !data.userId) throw new Error(data.error || 'Could not save your profile')
       if (data.userId) {
         if (data.sessionCreated === false) {
-          window.location.href = '/login?next=' + encodeURIComponent(afterCorePath)
+          window.location.href = selectedPlanLogin || '/login?next=' + encodeURIComponent(afterCorePath)
           return
         }
         userIdRef.current = data.userId
@@ -478,7 +488,9 @@ function QuizInner() {
         // intent they picked at signup: straight into the right deep quiz, no
         // hub fork mid-flow.
         setPostQuizPath(
-          returnTo || (nextIntent === 'experiment' ? '/quiz?line=love&next=experiment'
+          (selectedPlanSetup && intent === 'friends' ? selectedPlanSetup : null) ||
+          (selectedPlanLoveQuiz && intent === 'both' ? selectedPlanLoveQuiz : null) ||
+          (!selectedPlanSetup ? returnTo : null) || (nextIntent === 'experiment' ? '/quiz?line=love&next=experiment'
           : intent === 'friends' ? '/friends/quiz'
           : intent === 'both' ? '/quiz?line=love&next=friends'
           : intent === 'love' ? '/quiz?line=love'
@@ -494,7 +506,7 @@ function QuizInner() {
       setOtpError('')
       setScreen('save-error')
     }
-  }, [form, isRetake, afterCorePath, intent, nextIntent])
+  }, [form, isRetake, afterCorePath, intent, nextIntent, returnTo, selectedPlanSetup, selectedPlanLogin, selectedPlanLoveQuiz])
 
   // LOVE-DEEP submit — partner prefs + attachment + values. Enriches the love
   // profile (best-effort) and lands on the love dashboard.
@@ -1134,7 +1146,7 @@ function QuizInner() {
         <ChapterCard
           k="partner"
           onStart={() => setScreen('partner')}
-          onSkip={() => { window.location.href = nextIntent === 'friends' ? '/friends/quiz' : '/dashboard' }}
+          onSkip={() => { window.location.href = selectedPlanSetup || (nextIntent === 'friends' ? '/friends/quiz' : '/dashboard') }}
           styles={styles}
         />
       )}
@@ -1329,7 +1341,7 @@ function QuizInner() {
                 <p style={{ fontFamily: 'system-ui, sans-serif', fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--h-text-dim)', margin: '0 0 1.6rem', animation: 'fadeUp 0.45s ease 0.36s both' }}>
                   How you connect and what you value now shape your roster. You can tune these preferences anytime.
                 </p>
-                <button className="btn-primary" onClick={() => { window.location.href = nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/dashboard' }} style={{ width: '100%', justifyContent: 'center', animation: 'fadeUp 0.45s ease 0.5s both' }}>
+                <button className="btn-primary" onClick={() => { window.location.href = selectedPlanSetup || (nextIntent === 'friends' ? '/friends/quiz' : nextIntent === 'experiment' ? '/dating-experiment' : '/dashboard') }} style={{ width: '100%', justifyContent: 'center', animation: 'fadeUp 0.45s ease 0.5s both' }}>
                   {nextIntent === 'friends' ? 'continue → Friend setup' : nextIntent === 'experiment' ? 'join the Dating Experiment →' : 'see your Love Line →'}
                 </button>
               </>
@@ -1355,11 +1367,13 @@ function QuizInner() {
               <button className="btn-primary"
                 onClick={() => { window.location.href = postQuizPath }}
                 style={{margin:'0 0 1rem',width:'100%',justifyContent:'center'}}>
-                {postQuizPath === '/friends/quiz' ? 'continue → Friend setup'
+                {postQuizPath.startsWith('/friends/quiz') ? 'continue → Friend setup'
                   : postQuizPath.includes('line=love') ? 'continue → Love setup'
                   : 'continue → your hub'}
               </button>
             )}
+
+            {selectedPlanSetup && intent === 'love' && <a className="btn-ghost" href={selectedPlanSetup}>Return to your Friend plan instead</a>}
 
             <TypeStoryCard name={archetype.name} tag={archetype.tag} />
 

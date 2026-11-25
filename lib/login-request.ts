@@ -1,3 +1,4 @@
+import { friendPlanFromDestination, friendPlanCoreQuiz } from './friend-plan-resume.ts';
 import { planReturnPath } from './plan-discovery.ts';
 
 // OTP requests are never automatically replayed: a lost response can still
@@ -14,6 +15,8 @@ export function quizPathForNewAccount(raw: unknown, fallback = '/quiz'): string 
   const returnTo = planReturnPath(next);
   if (returnTo) return '/quiz?returnTo=' + encodeURIComponent(returnTo);
   if (next === '/dating-experiment') return '/quiz?next=experiment';
+  const plan = friendPlanFromDestination(next);
+  if (plan) return friendPlanCoreQuiz(plan);
   // Preserve the explicit Friend entry point, not arbitrary query parameters.
   if (next && FRIEND_SIGNUP_PATHS.has(next.split(/[?#]/, 1)[0])) return '/quiz?next=friends';
   return fallback;

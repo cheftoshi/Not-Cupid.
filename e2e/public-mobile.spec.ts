@@ -54,6 +54,43 @@ test.describe('login recovery without delivering email', () => {
     await expect(page).toHaveURL(/\/quiz\?next=friends$/);
     expect(verified).toBe(1);
   });
+  test('a logged-out digest plan carries through login, new-account signup, and interrupted retake', async ({ page }) => {
+    const id = '00000000-0000-4000-8000-000000000901';
+    const plan = '/friends?view=scene&plan=' + id + '&from=daily-activity-drop';
+    const core = '/quiz?next=friends&friendPlan=' + id + '&from=daily-activity-drop';
+    await page.route('**/api/profile', route => route.fulfill({ status: 401, json: { error: 'Not signed in' } }));
+    await page.route('**/api/verify-otp', route => route.fulfill({ json: { redirect: '/quiz', needsQuiz: true } }));
+    await page.goto(plan);
+    await expect.poll(() => new URL(page.url()).searchParams.get('next')).toBe(plan);
+    const cta = page.getByRole('link', { name: /new here.*sign up/ });
+    await expect(cta).toHaveAttribute('href', core);
+    await page.getByLabel('Email', { exact: true }).fill('qa@example.com');
+    await page.getByRole('button', { name: /Already have a code/ }).click();
+    await page.getByLabel('Code for qa@example.com').fill('123456');
+    await page.getByRole('button', { name: /verify/ }).click();
+    await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe(core);
+    await page.goto(core + '&retake=1');
+    await expect.poll(() => new URL(page.url()).searchParams.get('next')).toBe(plan);
+    await expect(cta).toHaveAttribute('href', core);
+  });
+  test('existing-account login requests the exact plan rather than restarting signup', async ({ page }) => {
+    const plan = '/friends?view=scene&plan=00000000-0000-4000-8000-000000000901&from=daily-activity-drop';
+    await page.route('**/api/verify-otp', route => route.fulfill({ json: { redirect: '/profile', needsQuiz: false, returning: true } }));
+    // Record the attempted destination without inventing a production account
+    // or pretending to exercise the signed-in server gate in this test.
+    let requested = '';
+    await page.route(url => url.pathname === '/friends' && url.searchParams.has('plan'), route => {
+      const url = new URL(route.request().url());
+      requested = url.pathname + url.search;
+      return route.fulfill({ contentType: 'text/html', body: '<title>Synthetic Friend plan return</title>' });
+    });
+    await page.goto('/login?next=' + encodeURIComponent(plan));
+    await page.getByLabel('Email', { exact: true }).fill('qa@example.com');
+    await page.getByRole('button', { name: /Already have a code/ }).click();
+    await page.getByLabel('Code for qa@example.com').fill('123456');
+    await page.getByRole('button', { name: /verify/ }).click();
+    await expect.poll(() => requested).toBe(plan + '&welcome=love-refresh-2026-08');
+  });
   test('verification recovers without losing the code or destination', async ({ page }) => {
     let calls = 0;
     await page.route('**/api/verify-otp', route => {
@@ -71,6 +108,15 @@ test.describe('login recovery without delivering email', () => {
     await page.getByRole('button', { name: /verify/ }).click();
     await expect(page).toHaveURL(/\/about/);
     expect(calls).toBe(2);
+  });
+});
+
+test.describe('pre-hydration login has no misleading signup link', () => {
+  test.use({ javaScriptEnabled: false, serviceWorkers: 'block' });
+  test('Friend login never serves a clickable generic signup destination', async ({ page }) => {
+    await page.goto('/login?next=%2Ffriends');
+    await expect(page.getByRole('link', { name: /new here.*sign up/ })).toHaveCount(0);
+    await expect(page.getByRole('status', { name: '' }).filter({ hasText: 'Loading sign-in' })).toBeVisible();
   });
 });
 

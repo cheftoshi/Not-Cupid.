@@ -15,6 +15,7 @@ import FriendDiscoveryCard from './friend-discovery-card';
 import { useChatRealtime } from '@/lib/use-chat-realtime';
 import { reconcileMessages } from '@/lib/chat-recovery';
 import { fetchWithTimeout, fetchJsonWithTimeout } from '@/lib/fetch-helpers';
+import { friendPlanFromDestination, friendPlanLogin, sceneLinkedActivity, sceneLinkedActivityPath } from '@/lib/friend-plan-resume';
 import s from './friend-hub.module.css';
 
 // Tiny haptic tap on meaningful actions (mobile only; safely no-ops elsewhere).
@@ -782,7 +783,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
 }
 
 type Me = { name: string; photo_url: string | null; archetype: string | null; bio: string; music: string[]; food: string[]; hobbies: string[]; galleryCount: number; friendSeeking?: string[]; friendAgeMin?: number | null; friendAgeMax?: number | null; gender?: string | null; isLgbtq?: boolean };
-export default function FriendHubClient({ firstName, me, city, metro, homeCity, homeMetro, myArea, refreshCount = 0 }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; homeCity?: string | null; homeMetro?: string | null; myArea?: string | null; refreshCount?: number; accessTier?: string; daysLeft?: number }) {
+export default function FriendHubClient({ firstName, me, city, metro, homeCity, homeMetro, myArea, refreshCount = 0, selectedPlan: initialSelectedPlan = null }: { firstName: string; me?: Me; city?: string | null; metro?: string | null; homeCity?: string | null; homeMetro?: string | null; myArea?: string | null; refreshCount?: number; selectedPlan?: ReturnType<typeof friendPlanFromDestination>; accessTier?: string; daysLeft?: number }) {
   const profileSet = !!(me && (me.photo_url || me.bio || (me.hobbies?.length || 0) > 0));
   // Events default to EVERYONE. You CAN make a same-gender space (some people want
   // same-gender friendships) — but only for a group you're part of, so a woman can
@@ -816,7 +817,15 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   const [kindFilter, setKindFilter] = useState<'all' | 'post' | 'event'>('all');
   const [sceneSort, setSceneSort] = useState<'new' | 'popular'>('new');
   const [sceneTime, setSceneTime] = useState<'all' | 'tonight' | 'weekend'>('all'); // quick time filter
-  const [deepLinkedPlan, setDeepLinkedPlan] = useState<string | null>(null);
+  const [chatPlanAfterRsvp, setChatPlanAfterRsvp] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState(initialSelectedPlan);
+  const selectedPlanId = selectedPlan?.id;
+  const digestPlanOnly = selectedPlan?.from === 'daily-activity-drop';
+  const [linkedPlan, setLinkedPlan] = useState<{ id: string; digestOnly: boolean; status: 'loading' | 'ready' | 'unavailable' | 'sign-in' | 'retry'; activity?: any } | null>(null);
+  const currentLinkedPlan = linkedPlan?.id === selectedPlanId && linkedPlan?.digestOnly === digestPlanOnly ? linkedPlan : null;
+  const [linkedPlanAttempt, setLinkedPlanAttempt] = useState(0);
+  const rsvpPending = useRef(new Set<string>());
+  useEffect(() => { setSelectedPlan(initialSelectedPlan); }, [initialSelectedPlan]);
   const [nearMe, setNearMe] = useState(false); // only plans in my neighborhood
   const [areaFilter, setAreaFilter] = useState<string>('');
   const feedRef = useRef<HTMLDivElement>(null);
@@ -1048,6 +1057,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   useEffect(() => {
     const syncViewFromLocation = () => {
       const v = new URLSearchParams(window.location.search).get('view');
+      setSelectedPlan(friendPlanFromDestination(window.location.pathname + window.location.search));
       setView((['home', 'scene', 'crew', 'pulse'] as string[]).includes(v || '') ? (v as NavKey) : 'home');
     };
     syncViewFromLocation();
@@ -1058,12 +1068,26 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
   useEffect(() => { loadMatches(); loadPulse(); loadClubs(); }, [loadMatches, loadPulse, loadClubs]);
   useEffect(() => { loadActs(); }, [loadActs]);
   useEffect(() => {
-    if (!actsLoaded || typeof window === 'undefined') return;
-    const planId = new URLSearchParams(window.location.search).get('plan');
-    if (!planId) return;
-    setDeepLinkedPlan(planId);
-    window.requestAnimationFrame(() => document.getElementById(`scene-plan-${planId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-  }, [actsLoaded]);
+    if (!selectedPlanId || view !== 'scene') return;
+    const controller = new AbortController();
+    const id = selectedPlanId;
+    const key = { id, digestOnly: digestPlanOnly };
+    setLinkedPlan({ ...key, status: 'loading' });
+    void (async () => {
+      try {
+        const { response, data } = await fetchJsonWithTimeout(sceneLinkedActivityPath(id, digestPlanOnly), { cache: 'no-store', signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (response.status === 401) return setLinkedPlan({ ...key, status: 'sign-in' });
+        if (response.status === 403 || response.status === 404) return setLinkedPlan({ ...key, status: 'unavailable' });
+        if (!response.ok || !Array.isArray(data?.activities)) return setLinkedPlan({ ...key, status: 'retry' });
+        const activity = sceneLinkedActivity(data.activities, id, digestPlanOnly);
+        setLinkedPlan(activity ? { ...key, status: 'ready', activity } : { ...key, status: 'unavailable' });
+      } catch {
+        if (!controller.signal.aborted) setLinkedPlan({ ...key, status: 'retry' });
+      }
+    })();
+    return () => controller.abort();
+  }, [selectedPlanId, digestPlanOnly, linkedPlanAttempt, view]);
   // Changing a Scene filter jumps back to the top of the feed — new results
   // shouldn't appear under your old scroll position. (Skips the mount run.)
   const filterRanOnce = useRef(false);
@@ -1501,6 +1525,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
     finally { setBusy(false); }
   }
   async function rsvp(id: string, response?: 'yes' | 'maybe' | 'no') {
+    if (rsvpPending.current.has(id)) return;
+    rsvpPending.current.add(id);
     buzz();
     try {
       const { response: r, data: d } = await fetchJsonWithTimeout(`/api/friend/activities/${id}/rsvp`, {
@@ -1509,25 +1535,32 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
       });
       if (r.ok) {
         if (!d || typeof d.joined !== 'boolean') throw new Error('Missing interest confirmation');
-        setActs((a) => a.map((x) => x.id === id ? { ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses } : x));
+        const update = (x: any) => ({ ...x, iRsvped: d.joined, rsvpCount: d.count, myResponse: d.myResponse, responses: d.responses });
+        setActs((a) => a.map((x) => x.id === id ? update(x) : x));
+        setLinkedPlan(current => current?.id === id && current.activity ? { ...current, activity: update(current.activity) } : current);
         if (d.myResponse === 'yes') {
           setView('scene');
-          setDeepLinkedPlan(id);
+          if (id !== selectedPlanId) setChatPlanAfterRsvp(id);
           toast('Interest saved. Say hello in the plan chat.', 'success');
           promptForPush();
         }
       } else {
-        if (d?.full) { toast('this plan is full — say “maybe” in case a spot opens', 'error'); await loadActs(); }
+        if (d?.full) {
+          toast('this plan is full — say “maybe” in case a spot opens', 'error');
+          if (id === selectedPlanId) setLinkedPlanAttempt(n => n + 1);
+          await loadActs();
+        }
         else toast(d?.error || 'could not update that plan — try again', 'error');
       }
     } catch { toast('could not update that plan — check your connection', 'error'); }
+    finally { rsvpPending.current.delete(id); }
   }
   async function deleteAct(id: string) {
     const ok = await confirmDialog({ title: 'delete this post?', body: 'It disappears for everyone — RSVPs and comments go with it.', confirmLabel: 'delete', danger: true });
     if (!ok) return;
     try {
       const r = await fetch(`/api/friend/activities/${id}`, { method: 'DELETE' });
-      if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); toast('post deleted', 'success'); }
+      if (r.ok) { setActs((a) => a.filter((x) => x.id !== id)); setLinkedPlan(current => current?.id === id ? { id, digestOnly: current.digestOnly, status: 'unavailable' } : current); toast('post deleted', 'success'); }
       else toast('could not delete that post — try again', 'error');
     } catch { toast('could not delete that post — check your connection', 'error'); }
   }
@@ -2334,6 +2367,13 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   : String(b.created_at || '').localeCompare(String(a.created_at || '')));
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {selectedPlan && <section aria-label={currentLinkedPlan?.activity?.kind === 'post' ? 'Linked post' : 'Linked plan'}>
+                    {!currentLinkedPlan || currentLinkedPlan.status === 'loading' ? <p role="status">Finding your plan…</p>
+                      : currentLinkedPlan.status === 'sign-in' ? <p role="status">Your session ended. <a href={friendPlanLogin(selectedPlan)}>Sign in to return to this plan</a>.</p>
+                      : currentLinkedPlan.status === 'retry' ? <p role="status">Could not load this plan. <button type="button" onClick={() => setLinkedPlanAttempt(n => n + 1)}>Retry linked plan</button></p>
+                      : currentLinkedPlan.status === 'unavailable' ? <p role="status">This link is not available to you.</p>
+                      : <ActivityPost key={currentLinkedPlan.id} a={currentLinkedPlan.activity} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} autoOpenChat={false} />}
+                  </section>}
                   {!actsLoaded && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                       <SkeletonStyles />
@@ -2342,8 +2382,8 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       ))}
                     </div>
                   )}
-                  {actsLoaded && shown.length === 0 && <div className={`${s.card} ${s.cardEmpty}`}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
-                  {shown.map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} autoOpenChat={deepLinkedPlan === a.id} />)}
+                  {actsLoaded && !selectedPlan && shown.length === 0 && <div className={`${s.card} ${s.cardEmpty}`}>{kindFilter === 'event' ? 'no plans here yet — start one above!' : 'nothing here yet — be the one to start something.'}</div>}
+                  {shown.filter(a => a.id !== selectedPlanId).map((a) => <ActivityPost key={a.id} a={a} onRsvp={rsvp} onDelete={deleteAct} onAuthor={openAuthorCard} autoOpenChat={chatPlanAfterRsvp === a.id} />)}
                 </div>
               );
             })()}

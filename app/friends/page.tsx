@@ -9,14 +9,22 @@ import PlansHome from '@/app/hub/plans-home';
 import { connectionHomeEnabled } from '@/lib/connection-home-rollout';
 import { after } from 'next/server';
 import { recordAppEvent } from '@/lib/app-events';
+import { friendPlanFromDestination, friendPlanCoreQuiz, friendPlanLogin, friendPlanSetup } from '@/lib/friend-plan-resume';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FriendsHubPage({ searchParams }: { searchParams: Promise<{ more_matches?: string; view?: string; plan?: string; dm?: string; club?: string }> }) {
-  const { more_matches: moreMatches, view, plan, dm, club } = await searchParams;
+export default async function FriendsHubPage({ searchParams }: { searchParams: Promise<{ more_matches?: string; view?: string; plan?: string | string[]; dm?: string; club?: string; from?: string | string[] }> }) {
+  const query = await searchParams;
+  const { more_matches: moreMatches, view, plan, dm, club } = query;
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    for (const entry of Array.isArray(value) ? value : value === undefined ? [] : [value]) params.append(key, entry);
+  }
+  const selectedPlan = friendPlanFromDestination('/friends?' + params);
   const user = await getCurrentUser();
-  if (!user) redirect('/login?next=/friends');
-  if (!user.friend_opted_in_at || !hasFriendVibes(user.friend_vibes)) redirect('/friends/quiz');
+  if (!user) redirect(selectedPlan ? friendPlanLogin(selectedPlan) : '/login?next=/friends');
+  if (selectedPlan && typeof user.score_honesty !== 'number') redirect(friendPlanCoreQuiz(selectedPlan, { retake: true }));
+  if (!user.friend_opted_in_at || !hasFriendVibes(user.friend_vibes)) redirect(selectedPlan ? friendPlanSetup(selectedPlan) : '/friends/quiz');
 
   // Returning from a $0.99 "another round of matches" checkout → grant it inline
   // so the new matches show instantly (the webhook is the durable path). Keyed on
@@ -79,5 +87,6 @@ export default async function FriendsHubPage({ searchParams }: { searchParams: P
     homeMetro={location.homeMetro}
     myArea={location.area}
     refreshCount={user.profile_refresh_count ?? 0}
+    selectedPlan={selectedPlan}
   />;
 }

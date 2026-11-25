@@ -26,8 +26,11 @@ test('Plan-chat replies notify the organizer and interested participants with an
   assert.match(comments, /url: `\/hub\?plan=\$\{encodeURIComponent\(id\)\}`/);
   assert.match(comments, /tag: `friend-plan-chat-\$\{id\}`/);
   assert.match(rsvp, /url: `\/hub\?plan=\$\{encodeURIComponent\(activityId\)\}`/);
-  assert.match(client, /scene-plan-\$\{planId\}/);
-  assert.match(client, /autoOpenChat=\{deepLinkedPlan === a\.id\}/);
+  // Visiting a Scene plan must not open or mark its chat read. The existing
+  // notification URLs to the Hub, and explicit in-Scene chat action, stay intact.
+  assert.match(client, /sceneLinkedActivityPath\(id, digestPlanOnly\)/);
+  assert.match(client, /'Linked post' : 'Linked plan'[\s\S]*?autoOpenChat=\{false\}/);
+  assert.match(client, /if \(id !== selectedPlanId\) setChatPlanAfterRsvp\(id\)/);
 });
 
 test('Friend picks, circles, and RSVP capacity transition atomically in Postgres', () => {
