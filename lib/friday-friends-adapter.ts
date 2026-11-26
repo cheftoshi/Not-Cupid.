@@ -7,20 +7,21 @@ import { checkFriendEventSuppression } from '@/lib/friend-event-suppression';
 import { ownerReviewEmail, ownerReviewHash, validOwnerReview } from '@/lib/campaign-owner-review';
 import { neutralFriendDiscoveryReview } from '@/lib/friend-discovery-privacy';
 import { currentFridayEntry } from '@/lib/friday-friends-current';
-import { FRIDAY_FRIENDS_VERSION, isFridaySendWindow } from '@/lib/friday-friends-policy';
-import { executeFridayFriends, type FridayManifest, type FridayEntry } from '@/lib/friday-friends-executor';
+import { FRIDAY_FRIENDS_VERSION, isFridaySendWindow, FRIDAY_RUNTIME_BUDGET_MS } from '@/lib/friday-friends-policy';
+import { executeFridayFriends, boundedFridayIO, type FridayManifest, type FridayEntry } from '@/lib/friday-friends-executor';
 export async function runFridayFriends(campaign:string, expectedHash:string, deadline:number) {
+ deadline=Math.min(deadline,Date.now()+FRIDAY_RUNTIME_BUDGET_MS);
  const enabled=()=>process.env.FRIDAY_FRIENDS_SEND_VERSION===FRIDAY_FRIENDS_VERSION&&Number.isFinite(deadline)&&Date.now()<deadline;
  if(!enabled()||!process.env.RESEND_API_KEY)return {attempted:0,accepted:0,stopped:'disabled'};
  const provider=new Resend(process.env.RESEND_API_KEY);
- const {data:row,error}=await db.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle();
+ const {data:row,error}=await boundedFridayIO(async()=>await db.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle());
  if(error||!row||row.manifest_hash!==expectedHash||friendCampaignHash(row.manifest)!==expectedHash||row.recipient_count!==row.manifest.entries?.length||Date.parse(row.expires_at)!==row.manifest.expires)return {attempted:0,accepted:0,stopped:'frozen_draft_unavailable'};
  const manifest=row.manifest as FridayManifest;
  const suppression=async(email:string)=>{
   await new Promise(resolve=>setTimeout(resolve,700));
   return await checkFriendEventSuppression(email,address=>provider.suppressions.get(address))==='clear';
  };
- const approved=async(m:FridayManifest,hash:string)=>{
+ const approvedRaw=async(m:FridayManifest,hash:string)=>{
   if(!enabled()||!isFridaySendWindow(m.fridayDay)||m.expires<=Date.now())return false;
   const [{data:c,error:ce},{data:o,error:oe}]=await Promise.all([db.from('friend_event_campaigns').select('*').eq('id',campaign).maybeSingle(),db.from('campaign_owner_reviews').select('*').eq('source_campaign',campaign).maybeSingle()]);
   const now=Date.now(),date=(v:string)=>Date.parse(v||'');
@@ -41,9 +42,10 @@ export async function runFridayFriends(campaign:string, expectedHash:string, dea
   const delivery=await provider.emails.get(o.provider_id);
   return !delivery.error&&delivery.data?.id===o.provider_id&&['delivered','opened','clicked'].includes(delivery.data.last_event)&&enabled()&&isFridaySendWindow(m.fridayDay);
  };
- const validate=async(e:FridayEntry)=>await currentFridayEntry(e,campaign)&&!!e.email&&await suppression(e.email.to);
+ const approved=(m:FridayManifest,hash:string)=>boundedFridayIO(()=>approvedRaw(m,hash));
+ const validate=(e:FridayEntry)=>boundedFridayIO(async()=>await currentFridayEntry(e,campaign)&&!!e.email&&await suppression(e.email.to));
  return executeFridayFriends(manifest,expectedHash,{
-  now:Date.now,approved,validEntry:validate,pace:async()=>{},
+  now:Date.now,deadline,approved,validEntry:validate,pace:async()=>{},
   state:async e=>{const {data:d,error:de}=await db.from('friend_event_deliveries').select('campaign_id,user_id,channel,status,provider_id').eq('id',e.deliveryId).maybeSingle();if(de)throw Error('Receipt unavailable');if(!d)return 'new';return d.campaign_id===campaign&&d.user_id===e.userId&&d.channel==='email'&&['accepted','delivered'].includes(d.status)&&d.provider_id?'accepted':'uncertain';},
   claim:async(e,m,hash)=>{const {data,error:ce}=await db.rpc('claim_friday_friend_delivery',{p_user:e.userId,p_campaign:m.campaign,p_admin_emails:getAdminEmails(),p_delivery:e.deliveryId,p_manifest_hash:hash});if(ce)throw Error('Friday claim unavailable');return data===e.deliveryId;},
   submit:async(e,m)=>{
@@ -51,7 +53,7 @@ export async function runFridayFriends(campaign:string, expectedHash:string, dea
    // submit this claim; a crash here retains it for reconciliation.
    if(!await validate(e)||!await approved(m,expectedHash)||!enabled()||!isFridaySendWindow(m.fridayDay)||m.expires<=Date.now())throw Error('Changed after claim');
    const mail=e.email!;
-   const {data,error:se}=await provider.emails.send({from:mail.from,to:mail.to,replyTo:mail.replyTo,subject:mail.subject,html:mail.html,text:mail.text,headers:{'List-Unsubscribe':`<${mail.unsubscribePostUrl}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'},tags:[{name:'campaign',value:campaign},{name:'friend_event_delivery_id',value:e.deliveryId}]},{idempotencyKey:`friend-events:${e.deliveryId}`});
+   const {data,error:se}=await boundedFridayIO(()=>provider.emails.send({from:mail.from,to:mail.to,replyTo:mail.replyTo,subject:mail.subject,html:mail.html,text:mail.text,headers:{'List-Unsubscribe':`<${mail.unsubscribePostUrl}>`,'List-Unsubscribe-Post':'List-Unsubscribe=One-Click'},tags:[{name:'campaign',value:campaign},{name:'friend_event_delivery_id',value:e.deliveryId}]},{idempotencyKey:`friend-events:${e.deliveryId}`}));
    if(se||!data?.id)throw Error('Unknown provider outcome');return data.id;
   },
   receipt:async(e,id)=>{const ok=await recordFriendEventProviderEvent({type:'email.sent',created_at:new Date().toISOString(),data:{email_id:id,tags:{campaign,friend_event_delivery_id:e.deliveryId}}},`submission:${e.deliveryId}`);if(!ok)throw Error('Receipt reconciliation required');}

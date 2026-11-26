@@ -253,3 +253,33 @@ neither accepts production connection details. Production transaction duration,
 lock queues, table size and enabled-mode daily latency remain unmeasured. Before
 an authorized migration/activation, inspect those aggregate operational measures
 and confirm a quiet window; synthetic timings are not a production SLA.
+
+
+### First-send execution capacity
+
+The first Friday pilot is capped at **one exact approved recipient**, including
+already-accepted entries. This is a technical maximum, not a verified audience
+count or send approval. Oversize frozen manifests are rejected in full before
+approval/provider checks, claims or submissions; no truncation or substitution.
+Increasing the cap requires new runtime evidence and review.
+
+The 300-second route reserves 60 seconds of platform headroom: its execution
+budget is 240 seconds from route entry, also bounded by credential/window expiry.
+Immediately before a new claim it requires at least 90 seconds remaining. Reads,
+claims, receipt persistence and each provider submission have a 10-second timeout.
+Post-claim eligibility/approval checks inside the adapter are separately bounded;
+a timed-out check cannot later continue into a send. A timed-out write or provider
+request may still settle externally, so the claim is retained for reconciliation,
+not automatically retried. Accepted receipts still skip without another claim/send.
+
+A synthetic near-timeout run allocates 9.9 seconds to each bounded stage, including
+the draft read and all submission checks: **128.7 seconds** for one recipient.
+The production-equivalent stub test also counts 7.7 seconds of fixed pacing on
+a fresh successful execution. The modeled limit approaches 130 seconds; pacing is inside the
+bounded checks, not added outside them. This is simulated elapsed time under the
+specified I/O contract, not measured provider latency or a promise under event-loop
+stall/platform termination. The final pre-claim reserve is independently enforced.
+
+Before go/no-go, verify provider quota/rate capacity, required suppression scope,
+and receipt-read access separately. A verified sender/domain alone proves none
+of those, and the preliminary internal one-member count is not a final audience.

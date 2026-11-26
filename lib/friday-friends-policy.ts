@@ -1,5 +1,10 @@
 // Scheduling proposal only: no cron registration, provider calls or activation.
 export const FRIDAY_FRIENDS_VERSION = 'friday-friends-once-weekly-v1-2026-11-26';
+// First-send pilot only. Raising this cap requires new measured runtime evidence.
+export const FRIDAY_PILOT_MAX_RECIPIENTS = 1;
+export const FRIDAY_RUNTIME_BUDGET_MS = 240_000;
+export const FRIDAY_IO_TIMEOUT_MS = 10_000;
+export const FRIDAY_CLAIM_RESERVE_MS = 90_000;
 export const FRIDAY_TIME_ZONE = 'America/New_York';
 export function fridayWindow(now = Date.now()) {
   if (!Number.isFinite(now)) throw Error('Invalid time');
