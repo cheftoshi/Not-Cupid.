@@ -12,6 +12,7 @@ import { friendCampaignHash } from '@/lib/friend-event-sender';
 import { discoveryEditionId, easternDate, selectDiscoveryItems, FRIEND_DISCOVERY_VERSION, type DiscoveryEdition } from '@/lib/friend-discovery-edition';
 import { renderFriendDiscoveryMessage } from '@/lib/friend-discovery-message';
 
+import { neutralFriendDiscoveryReview } from '@/lib/friend-discovery-privacy';
 import { FRIDAY_FRIENDS_VERSION, fridayPreparationWindow } from '@/lib/friday-friends-policy';
 
 // Review artifacts only. No campaign/approval/delivery insert, sender or scheduler.
@@ -30,8 +31,9 @@ export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision
     const redact=(value:string)=>value.replace(/https:\/\/notcupid\.com\/go\/friend-events\?token=[^\s"<]+/g,'https://notcupid.com/go/friend-events?token=[signed-recipient-and-destination-token]').replace(/https:\/\/notcupid\.com\/unsubscribe\?[^\s"<]+/g,'https://notcupid.com/unsubscribe?u=[recipient]&t=[signed-token]');
     let ownerReview:unknown;
     try{ownerReview=await prepareOwnerReview(campaign,m.expires);}catch{ownerReview={prepared:false,required:true,memberMetricsIncluded:false,blocked:'Existing owner eligibility/suppression/configuration checks must pass; no substitute recipient'};}
+    const sample=neutralFriendDiscoveryReview(m.entries[0].email);
     return {prepared:true,sendReady:false,recurringEnabled:false,authorizedRecipients:0,campaign,manifestHash:row.manifest_hash,candidateRecipients:row.recipient_count,edition,expires:row.expires_at,expired:m.expires<=now,preparedAt:m.preparedAt,counts:m.counts,
-      sample:{...m.entries[0].email,to:undefined,text:redact(m.entries[0].email.text),html:redact(m.entries[0].email.html),unsubscribeUrl:'[recipient-specific global unsubscribe]',unsubscribePostUrl:'[recipient-specific one-click global unsubscribe]'},
+      sample:{...sample,to:undefined,text:redact(sample.text),html:redact(sample.html),unsubscribeUrl:'[recipient-specific global unsubscribe]',unsubscribePostUrl:'[recipient-specific one-click global unsubscribe]'},
       sampleItems:m.entries[0].recommendations,ownerReview,remainingGates:[...(friday ? ['Friday-only; existing once-weekly consent and seven-day cross-campaign email limit', 'Persisted atomic Friend/daily overlap and execution validation required'] : ['Existing consent promises at most once weekly; explicit twice-weekly consent/audience policy required']), 'Exact weekdays, ET times and delivery windows','Provider permission and recipient suppression recheck','Fresh inventory, capacity, safety and daily-overlap recheck immediately before execution','Exact rendered messages, audience and count content approval, then separate send approval','Separate approved recurring executor with atomic cadence/overlap claims and bounded retry/reconciliation policy'],noSendOrApprovalCreated:true};
   };
   if(existing.data)return review(existing.data);

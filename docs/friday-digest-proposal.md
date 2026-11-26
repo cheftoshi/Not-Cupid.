@@ -148,29 +148,55 @@ in the prior seven days count, including uncertain/failed ones. Daily overlap an
 recommendation exclusions remain. Frozen artifacts expire at 14:15. The older
 ideas preparation remains review-only, with no additional authorization.
 
-The unapplied migration `20261126013135_friday_friend_atomic_claim.sql` proposes
-shared user-row locking for Friday and daily claims, exact approved draft checks,
-Friday timing, seven-day cross-campaign limits and 24-hour daily exclusion. It
-creates no campaign, approval or schedule. Persisted two-connection tests must
-verify both claim orders, concurrent other Friend campaigns, rollbacks, duplicate
-revisions, all delivery statuses and window boundaries before release. Docker
-staging was stopped; it was not restarted. Docker reserves 4 GB on this 8 GB Mac,
-roughly the currently free memory. Unit tests do not prove SQL locking.
+The unapplied production migration `20261126013135_friday_friend_atomic_claim.sql`
+adds an exact owner-test hash/timestamp requirement and a Friday-specific claim
+wrapper around the existing weekly claim. Shared user-row locking prevents
+Friday/daily races in both directions, while all Friend email claim statuses
+consume the seven-day limit. Local persisted tests run real migration routines
+with synthetic fixture tables in a separate database; the pure clock predicate
+is tested at actual boundaries, then substituted only in that test database for
+positive races on weekdays. No production migration has been applied.
 
-Execution remains blocked. Existing executors reject the review-only manifest;
-the old weekly sender also does not accept its global-unsubscribe format. A
-Friday adapter must validate exact approved hash/count, fresh selected inventory,
-Boston eligibility, provider suppression and the window immediately before each
-submission, use shared atomic claims and the existing idempotency/receipt ledger,
-and stop on uncertain outcomes. Do not relabel the draft as an announcement or
-weaken existing gates. Only proven no-submission work can retry within the window.
+`POST /api/admin/friday-friends-execute` accepts only a campaign and manifest hash.
+It has separate short-lived `FRIDAY_FRIENDS_EXECUTION_TOKEN` and
+`FRIDAY_FRIENDS_EXECUTION_EXPIRES`, plus the exact `FRIDAY_FRIENDS_SEND_VERSION`.
+No cron or schedule is installed. It validates the full remaining audience before
+claiming and each entry again immediately before submission. Freshness, current
+Boston location, explicit consent, provider/local suppression, capacity, safety,
+repeats, daily overlap, signed links and exact approved copy all fail closed.
+The worker reuses provider idempotency keys and the existing receipt ledger.
+Accepted receipts are skipped on resume; claimed/failed/unknown submissions stop
+for reconciliation, never automatic resend. A post-claim deadline/approval change
+retains the claim conservatively. Missing migration/approval data blocks execution.
 
-Existing owner-only path: POST `/api/admin/campaign-owner-review`, distinct prepare
-and execute actions, pinned Yahoo recipient, direct links, own unsubscribe and
-separate ledger. Production-target project configuration-name inspection found provider/signing,
-admin, cron and pinned-owner configuration present; presence is not validity.
-Owner preparation expiry is November 14 (expired), and owner/announcement send
-flags are false. Discovery prepare and owner execution credentials were absent.
-Fresh preparation credentials and separately approved exact owner execution are
-needed. No configuration was changed, no provider suppression was queried and
-no current eligible audience count was obtained. This candidate is not send-ready.
+The pinned owner-only path remains `/api/admin/campaign-owner-review`. Friday
+execution requires its exact source hash, accepted receipt, current verified
+provider-delivery status, current owner eligibility/suppression, and an explicit
+operator `friday_owner_test_verified_at` with `friday_owner_review_hash` before
+content/send approval. Provider acceptance alone is not owner-test verification.
+No owner email has been sent in this work.
+
+Production-target configuration inspection found preparation/owner execution
+credentials missing or expired; existing owner/announcement send flags are off.
+A narrower GET-only aggregate check on November 26 found one member passing
+explicit Boston consent, safety, local suppression, seven-day claims and historical
+daily exclusion. This is not a final send count: current qualifying daily activity,
+fresh inventory and recipient-specific provider suppression still need verification.
+The available established local Resend credential returned 401 on a domain read;
+that does not establish the status of the deployed credential. Automatic approval
+review rejected recipient-specific external suppression lookups, which did not
+run. No credential, flag, schedule, production data or reporting baseline changed.
+
+Before activation: review/merge/deploy the exact tested candidate and apply its
+migration through the normal workflow; supply valid scoped preparation/execution
+credentials; verify sender/provider permission and fresh exact audience; separately
+approve and verify the pinned owner delivery; record exact content/count/send
+approvals and owner hash; then enable only the approved Friday window. These are
+remaining release/operator steps, not actions performed by this candidate.
+
+Privacy correction: the sampled member's greeting is retained only in their own
+frozen email. Exported samples and owner copies use “Hey there,” in both HTML
+and plain text. Owner derivatives preserve the frozen public ideas but replace
+member attribution/unsubscribe links with the owner's safe links. Old personalized
+owner artifacts fail closed and require a new source revision/test. Synthetic
+fixtures use different owner/member names and verify no recipient identity leaks.

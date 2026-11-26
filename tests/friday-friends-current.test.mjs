@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID,createHash} from 'node:crypto';
+import {loadTs} from './helpers/load-ts.mjs';
+import {friendCampaignHash} from '../lib/friend-event-sender.ts';
+import {eventInWindow,outsideEventUrl} from '../lib/city-events.ts';
+import {signFriendEventToken,verifyFriendEventToken,friendEventDestination} from '../lib/friend-event-campaign.ts';
+const now=Date.parse('2026-11-27T19:02:00Z'),key='synthetic-signing-secret-only-1234567890';
+const escapeHtml=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const policy=await loadTs('lib/friend-discovery-edition.ts',{'node:crypto':{createHash},'@/lib/friend-matching':{isLgbtqIdentity:()=>false},'@/lib/city-events':{eventInWindow,outsideEventUrl}});
+const renderer=await loadTs('lib/friend-discovery-message.ts',{'@/lib/email':{escapeHtml}});
+test('Current Friday entry validates real selection/rendering and fails closed on consent, read errors and changed inventory',async()=>{
+ const user={id:randomUUID(),email:'synthetic@example.test',name:'Sam Example',age:30,friend_opted_in_at:'2026-01-01',email_notifications:true,discovery_metro:'boston'},host={id:randomUUID(),email:'host@example.test'};
+ const plan={id:randomUUID(),author_id:host.id,kind:'event',metro:'boston',title:'Synthetic coffee',category:'food',area:'Back Bay',capacity:3,expires_at:'2026-11-29T20:00:00Z',happens_at:'2026-11-28T17:00:00Z'};
+ const event={id:'live:curated:synthetic',title:'Synthetic arts',category:'arts',startsAt:'2026-11-28T18:00:00Z',url:'https://example.test/arts',curated:true,sourceCheckedAt:new Date(now-3600000).toISOString(),sourceLabel:'Synthetic organizer',venue:'Public venue',price:null};
+ const rows={users:[user,host],friend_trips:[],friend_event_preferences:[{email_enabled:true,consent_version:'friend-events-v1'}],friend_event_suppressions:[],friend_activities:[plan],friend_activity_rsvps:[],user_reports:[],activity_digest_deliveries:[],friend_event_deliveries:[],friend_announcement_drafts:[]};let fail=null,daily=[],events=[event];
+ const db={from(table){let equals={};const q={select:()=>q,eq:(k,v)=>(equals[k]=v,q),gte:()=>q,order:()=>q,limit:()=>q,range:async()=>({data:rows[table],error:fail===table?{}:null}),maybeSingle:async()=>({data:table==='users'?rows.users.find(u=>u.id===equals.id):rows[table][0]||null,error:fail===table?{}:null})};return q;}};
+ const {currentFridayEntry}=await loadTs('lib/friday-friends-current.ts',{'@/lib/supabase':{supabaseAdmin:db},'@/lib/admin':{getAdminEmails:()=>['admin@example.test']},'@/lib/quiz-data':{metroOf:()=> 'boston',METRO_CENTERS:{boston:{},nyc:{}}},'@/lib/supabase-pagination':{fetchAllSupabaseRows:async f=>{const r=await f(0,999);if(r.error)throw Error('read');return r.data;}},'@/lib/daily-activity-digest':{collectDailyActivityCandidates:async()=>daily},'@/lib/city-events-server':{cityEvents:async()=>({status:'ready',events})},'@/lib/friend-discovery-edition':policy,'@/lib/friend-event-sender':{friendCampaignHash},'@/lib/friend-event-campaign':{verifyFriendEventToken:(t,p,n)=>verifyFriendEventToken(t,p,n,key),friendEventDestination},'@/lib/email':{verifyUnsubToken:(id,t)=>id===user.id&&t==='synthetic-valid-unsub'},'@/lib/friend-discovery-message':renderer});
+ const recommendations=policy.selectDiscoveryItems(user,{users:rows.users,plans:[plan],rsvps:[],reports:[],events,admins:['admin@example.test'],seen:new Set()},'weekend',now),deliveryId=randomUUID();
+ const token=signFriendEventToken({purpose:'attribution',userId:user.id,deliveryId,channel:'email',expires:now+86400000},key);
+ const email={to:user.email,...renderer.renderFriendDiscoveryMessage('weekend',recommendations,{item:()=>{throw Error('item CTA');},browse:'https://notcupid.com/go/friend-events?token='+encodeURIComponent(token),unsubscribe:'https://notcupid.com/unsubscribe?u='+user.id+'&t=synthetic-valid-unsub'},user.name)};
+ const e={userId:user.id,deliveryId,channel:'email',email,recommendations};assert.equal(await currentFridayEntry(e,'current',now),true);
+ fail='friend_trips';assert.equal(await currentFridayEntry(e,'current',now),false);fail=null;
+ for(const [field,value] of [['is_test',true],['email_notifications',false],['age',17],['discovery_metro','nyc'],['name','Changed Name']]){const old=user[field];user[field]=value;assert.equal(await currentFridayEntry(e,'current',now),false);user[field]=old;}
+ rows.friend_event_preferences[0].email_enabled=false;assert.equal(await currentFridayEntry(e,'current',now),false);rows.friend_event_preferences[0].email_enabled=true;
+ rows.friend_event_suppressions=[{reason:'complaint'}];assert.equal(await currentFridayEntry(e,'current',now),false);rows.friend_event_suppressions=[];
+ plan.capacity=2;rows.friend_activity_rsvps=[{activity_id:plan.id,user_id:randomUUID(),response:'yes'}];assert.equal(await currentFridayEntry(e,'current',now),false);rows.friend_activity_rsvps=[];plan.capacity=3;
+ event.sourceCheckedAt=new Date(now-4*86400000).toISOString();assert.equal(await currentFridayEntry(e,'current',now),false);event.sourceCheckedAt=new Date(now-3600000).toISOString();
+ daily=[{user}];assert.equal(await currentFridayEntry(e,'current',now),false);daily=[];
+ rows.activity_digest_deliveries=[{created_at:new Date(now-1000).toISOString()}];assert.equal(await currentFridayEntry(e,'current',now),false);rows.activity_digest_deliveries=[];
+ rows.friend_event_deliveries=[{campaign_id:'other',claimed_at:new Date(now-86400000).toISOString()}];assert.equal(await currentFridayEntry(e,'current',now),false);rows.friend_event_deliveries=[];
+ const bad=structuredClone(e);bad.email.unsubscribeUrl=bad.email.unsubscribeUrl.replace('synthetic-valid-unsub','invalid');assert.equal(await currentFridayEntry(bad,'current',now),false);
+ assert.equal(await currentFridayEntry(e,'current',now),true);
+});

@@ -30,6 +30,6 @@ export function isFridaySendWindow(day: string, now = Date.now()) {
 export function fridayReadinessPlan(now = Date.now()) {
   return {version: FRIDAY_FRIENDS_VERSION, edition:'weekend', audience:'Existing explicitly opted-in eligible adult Boston Friend email members only',
     window: fridayWindow(now), scheduled:false, sendReady:false, authorizedRecipients:0,
-    blockers:['Exact fresh Friday manifest, count and provider permission review', 'Atomic shared Friend/daily claim migration requires persisted concurrency verification', 'Friday execution adapter and exact approval contract require validation before activation', 'Pinned owner eligibility, suppression and separately approved owner-copy delivery must be verified'],
+    blockers:['Exact fresh Friday manifest, count and provider permission review', 'Friday claim migration must be reviewed and applied through the release workflow', 'Exact Friday execution credentials and version gate remain disabled', 'Pinned owner eligibility, suppression and separately approved owner-copy delivery must be verified'],
     retryPolicy:'No late catch-up. Claimed or uncertain submissions require reconciliation; a new revision never authorizes a resend.'};
 }
