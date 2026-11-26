@@ -56,18 +56,46 @@ test('draft API refuses execute/audience/approval overrides and expired preparat
 });
 
 test('edition preparation persists immutable draft, retries safely and excludes overlap/repeated inventory',async()=>{
- const candidate={...user,friend_opted_in_at:'2026-01-01',email_notifications:true,discovery_metro:'boston'};
+ const {renderFriendDiscoveryMessage:renderPrepared}=await loadTs('lib/friend-discovery-message.ts',{'@/lib/email':{escapeHtml:s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}});
+ const candidate={...user,name:'Sam Example',friend_opted_in_at:'2026-01-01',email_notifications:true,discovery_metro:'boston'};
  const rows={users:[candidate,host],friend_event_preferences:[{user_id:user.id,email_enabled:true,consent_version:'friend-events-v1'}],friend_event_suppressions:[],friend_activities:[plan],friend_activity_rsvps:[],user_reports:[],friend_trips:[],friend_event_deliveries:[],activity_digest_deliveries:[],friend_announcement_drafts:[]};
- let daily=[],storageError=null;const writes=[];
+ let daily=[],storageError=null,renderedName;const writes=[];
  const db={from(table){let equal={};const q={select:()=>q,eq:(k,v)=>(equal[k]=v,q),order:()=>q,range:async()=>({data:rows[table],error:null}),maybeSingle:async()=>({data:rows[table].find(r=>Object.entries(equal).every(([k,v])=>r[k]===v))||null,error:null}),insert:async row=>{if(storageError)return {error:storageError};writes.push({table,row});rows[table].push(row);return {error:null};}};return q;}};
  const {prepareFriendDiscovery}=await loadTs('lib/friend-discovery-prepare.ts',{
-  'node:crypto':{randomUUID,createHash},'@/lib/supabase':{supabaseAdmin:db},'@/lib/admin':{getAdminEmails:()=>['admin@example.test']},'@/lib/quiz-data':{metroOf:()=> 'boston',METRO_CENTERS:{boston:{}}},'@/lib/city-events-server':{cityEvents:async()=>({status:'ready',fetchedAt:new Date(now).toISOString(),events:inventory().events})},'@/lib/supabase-pagination':{fetchAllSupabaseRows:async fn=>{const r=await fn(0,999);if(r.error)throw Error('failed');return r.data;}},'@/lib/daily-activity-digest':{collectDailyActivityCandidates:async()=>daily},'@/lib/campaign-owner-review-adapter':{prepareOwnerReview:async()=>({prepared:true,recipientCount:1,memberMetricsIncluded:false})},'@/lib/email':{signUnsubToken:()=> 'synthetic'},'@/lib/friend-event-campaign':{signFriendEventToken:()=> 'synthetic-signed-token'},'@/lib/friend-event-sender':{friendCampaignHash},'@/lib/friend-discovery-edition':policy,'@/lib/friend-discovery-message':{renderFriendDiscoveryMessage:(_e,items,links)=>({from:'NotCupid <match@notcupid.com>',replyTo:'match@notcupid.com',subject:'Draft',html:links.item(items[0]),text:links.item(items[0]),unsubscribeUrl:links.unsubscribe})},
+  'node:crypto':{randomUUID,createHash},'@/lib/supabase':{supabaseAdmin:db},'@/lib/admin':{getAdminEmails:()=>['admin@example.test']},'@/lib/quiz-data':{metroOf:()=> 'boston',METRO_CENTERS:{boston:{}}},'@/lib/city-events-server':{cityEvents:async()=>({status:'ready',fetchedAt:new Date(now).toISOString(),events:inventory().events})},'@/lib/supabase-pagination':{fetchAllSupabaseRows:async fn=>{const r=await fn(0,999);if(r.error)throw Error('failed');return r.data;}},'@/lib/daily-activity-digest':{collectDailyActivityCandidates:async()=>daily},'@/lib/campaign-owner-review-adapter':{prepareOwnerReview:async()=>({prepared:true,recipientCount:1,memberMetricsIncluded:false})},'@/lib/email':{signUnsubToken:()=> 'synthetic'},'@/lib/friend-event-campaign':{signFriendEventToken:()=> 'synthetic-signed-token'},'@/lib/friend-event-sender':{friendCampaignHash},'@/lib/friend-discovery-edition':policy,'@/lib/friend-discovery-message':{renderFriendDiscoveryMessage:(_e,items,links,name)=>(renderedName=name,renderPrepared(_e,items,links,name))},
  });
- const first=await prepareFriendDiscovery('weekend',1,now);assert.equal(first.sendReady,false);assert.equal(first.authorizedRecipients,0);assert.equal(first.candidateRecipients,1);assert.equal(writes.length,1);assert.equal(writes[0].table,'friend_announcement_drafts');assert.equal(writes[0].row.manifest.purpose,'friend_discovery_review');assert.doesNotMatch(JSON.stringify(first.sample),/recipient@example|synthetic-signed-token/);
+ const first=await prepareFriendDiscovery('weekend',1,now);assert.equal(renderedName,'Sam Example');assert.equal(writes[0].row.manifest.version,'friend-discovery-friday-copy-v2-2026-11-26');assert.equal(first.sendReady,false);assert.equal(first.authorizedRecipients,0);assert.equal(first.candidateRecipients,1);assert.equal(writes.length,1);assert.equal(writes[0].table,'friend_announcement_drafts');assert.equal(writes[0].row.manifest.purpose,'friend_discovery_review');assert.doesNotMatch(JSON.stringify(first.sample),/recipient@example|synthetic-signed-token/);
+ assert.match(writes[0].row.manifest.entries[0].email.text,/^Hey Sam,/);
  const again=await prepareFriendDiscovery('weekend',1,now);assert.equal(again.manifestHash,first.manifestHash);assert.equal(writes.length,1);
+ const frozen=rows.friend_announcement_drafts[0];const currentVersion=frozen.manifest.version;frozen.manifest.version='old-friday-copy';frozen.manifest_hash=friendCampaignHash(frozen.manifest);await assert.rejects(()=>prepareFriendDiscovery('weekend',1,now),/integrity mismatch/);frozen.manifest.version=currentVersion;frozen.manifest_hash=friendCampaignHash(frozen.manifest);
  daily=[{user:candidate}];const overlap=await prepareFriendDiscovery('weekend',2,now);assert.equal(overlap.prepared,false);assert.equal(overlap.counts.dailyOverlapExcluded,1);daily=[];
  rows.friend_event_deliveries.push({id:'prior',user_id:user.id,campaign_id:first.campaign,channel:'email',status:'accepted',claimed_at:new Date(now-4*86400000).toISOString()});
  const fresh=await prepareFriendDiscovery('weekend',2,now);assert.equal(fresh.sampleItems.some(i=>i.key===first.sampleItems[0].key),false);
  rows.friend_event_deliveries[0].claimed_at=new Date(now-3600000).toISOString();const cooldown=await prepareFriendDiscovery('ideas',1,now);assert.equal(cooldown.prepared,false);assert.equal(cooldown.counts.recentCampaignExcluded,1);
  rows.friend_event_deliveries=[];storageError={code:'failed'};await assert.rejects(()=>prepareFriendDiscovery('ideas',3,now),/storage failed/);storageError=null;assert.equal((await prepareFriendDiscovery('ideas',3,now)).prepared,true);
+});
+
+test('approved Friday copy personalizes safely, uses one signed primary CTA and preserves ideas copy',async()=>{
+ const escapeHtml=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+ const {renderFriendDiscoveryMessage:render}=await loadTs('lib/friend-discovery-message.ts',{'@/lib/email':{escapeHtml}});
+ const key='synthetic-signing-secret-only-1234567890';
+ const token=signFriendEventToken({purpose:'attribution',userId:user.id,deliveryId:randomUUID(),channel:'email',expires:Date.now()+60000},key);
+ let itemCalls=0;const links={item:()=>{itemCalls++;return 'https://notcupid.com/hub';},browse:'https://notcupid.com/go/friend-events?token='+encodeURIComponent(token),unsubscribe:'https://notcupid.com/unsubscribe?u='+user.id+'&t=synthetic'};
+ const events=policy.selectDiscoveryItems(user,{...inventory(),plans:[]},'weekend',now);
+ assert.equal(events[0].area,'Public event venue');
+ const named=render('weekend',events,links,'  Sam Example  ');
+ assert.equal(named.subject,'What’s happening near you this weekend?');
+ assert.match(named.text,/^Hey Sam,\n\nCurious what’s happening near you this weekend\? Here are a couple of things worth stepping out for:/);
+ assert.match(named.text,/Pick your vibe\. Find a plan nearby or someone to go with\./);
+ assert.equal((named.html.match(/See what’s happening on NotCupid →/g)||[]).length,1);
+ assert.equal((named.html.match(/https:\/\/notcupid.com\/go\/friend-events/g)||[]).length,1);
+ assert.equal(itemCalls,0);assert.match(named.text,/Sat, Nov 21, 1:00 PM ET · Public event venue/);
+ assert.equal(friendEventDestination(verifyFriendEventToken(token,'attribution',Date.now(),key)),'/hub?discover=1');
+ assert.match(named.text,/An outside event/);assert.doesNotMatch(named.text,/A member-created plan/);
+ assert.match(render('weekend',events,links,null).text,/^Hey there,/);
+ assert.match(render('weekend',events,links,'  ').html,/>Hey there,</);
+ const mixed=render('weekend',policy.selectDiscoveryItems(user,inventory(),'weekend',now),links,'<img src=x>');
+ assert.doesNotMatch(mixed.html,/<img/);assert.match(mixed.html,/&lt;img/);assert.match(mixed.text,/A member-created plan/);assert.match(mixed.text,/Back Bay/);
+ assert.equal(mixed.from,'NotCupid <match@notcupid.com>');assert.equal(mixed.replyTo,'match@notcupid.com');assert.equal(mixed.unsubscribeUrl,links.unsubscribe);assert.match(mixed.text,/109 California Ave, Quincy, MA 02169/);
+ const ideas=render('ideas',events,links,'Sam Example');assert.equal(ideas.subject,'A few ideas for your week in Boston');assert.doesNotMatch(ideas.text,/Hey Sam|Pick your vibe/);
 });
