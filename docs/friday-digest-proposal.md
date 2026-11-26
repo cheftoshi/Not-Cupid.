@@ -131,3 +131,46 @@ Loopback-only staging persists real draft rows and exercises API authorization,
 idempotency, suppression and HTML links. iPhone WebKit and Pixel Chromium render
 checks use no external resources. All provider credentials are blank in staging.
 Actual provider delivery rendering remains untested because no test send is authorized.
+
+## Friday-only readiness candidate — November 26
+
+This isolated candidate starts from main c19e264 plus PR18's exact approved copy.
+It does not activate either edition. GET `/api/admin/friday-friends-prepare`
+returns a no-database schedule proposal. POST accepts only `deliveryDay` and
+`revision` with the existing expiring preparation credential. It freezes Friday
+review artifacts from 13:15 to 14:15 Eastern, after the daily digest window.
+Proposed execution is Friday 14:00–14:15, with potential attempts at 14:00, 14:05
+and 14:10. No cron is installed and late Fridays cannot silently carry forward.
+
+Friday mode preserves the approved copy and existing opted-in Boston audience.
+Its version is `friday-friends-once-weekly-v1-2026-11-26`; all Friend email claims
+in the prior seven days count, including uncertain/failed ones. Daily overlap and
+recommendation exclusions remain. Frozen artifacts expire at 14:15. The older
+ideas preparation remains review-only, with no additional authorization.
+
+The unapplied migration `20261126013135_friday_friend_atomic_claim.sql` proposes
+shared user-row locking for Friday and daily claims, exact approved draft checks,
+Friday timing, seven-day cross-campaign limits and 24-hour daily exclusion. It
+creates no campaign, approval or schedule. Persisted two-connection tests must
+verify both claim orders, concurrent other Friend campaigns, rollbacks, duplicate
+revisions, all delivery statuses and window boundaries before release. Docker
+staging was stopped; it was not restarted. Docker reserves 4 GB on this 8 GB Mac,
+roughly the currently free memory. Unit tests do not prove SQL locking.
+
+Execution remains blocked. Existing executors reject the review-only manifest;
+the old weekly sender also does not accept its global-unsubscribe format. A
+Friday adapter must validate exact approved hash/count, fresh selected inventory,
+Boston eligibility, provider suppression and the window immediately before each
+submission, use shared atomic claims and the existing idempotency/receipt ledger,
+and stop on uncertain outcomes. Do not relabel the draft as an announcement or
+weaken existing gates. Only proven no-submission work can retry within the window.
+
+Existing owner-only path: POST `/api/admin/campaign-owner-review`, distinct prepare
+and execute actions, pinned Yahoo recipient, direct links, own unsubscribe and
+separate ledger. Production-target project configuration-name inspection found provider/signing,
+admin, cron and pinned-owner configuration present; presence is not validity.
+Owner preparation expiry is November 14 (expired), and owner/announcement send
+flags are false. Discovery prepare and owner execution credentials were absent.
+Fresh preparation credentials and separately approved exact owner execution are
+needed. No configuration was changed, no provider suppression was queried and
+no current eligible audience count was obtained. This candidate is not send-ready.

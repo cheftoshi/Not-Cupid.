@@ -6,6 +6,7 @@ import {loadTs,nextMock} from './helpers/load-ts.mjs';
 import {eventInWindow,outsideEventUrl} from '../lib/city-events.ts';
 import {signFriendEventToken,verifyFriendEventToken,friendEventDestination} from '../lib/friend-event-campaign.ts';
 import {friendCampaignHash,executeFrozenFriendCampaign} from '../lib/friend-event-sender.ts';
+const fridayPolicy=await import('../lib/friday-friends-policy.ts');
 const policy=await loadTs('lib/friend-discovery-edition.ts',{'node:crypto':{createHash},'@/lib/friend-matching':{isLgbtqIdentity:u=>u.is_lgbtq===true},'@/lib/city-events':{eventInWindow,outsideEventUrl}});
 const now=Date.parse('2026-11-20T15:00:00Z'),user={id:randomUUID(),email:'recipient@example.test',age:28,gender:'woman'},host={id:randomUUID(),email:'host@example.test'};
 const plan={id:randomUUID(),author_id:host.id,kind:'event',metro:'boston',title:'Synthetic coffee plan',category:'food',area:'Back Bay',capacity:4,expires_at:'2026-11-23T15:00:00Z',happens_at:'2026-11-21T15:00:00Z'};
@@ -62,7 +63,7 @@ test('edition preparation persists immutable draft, retries safely and excludes 
  let daily=[],storageError=null,renderedName;const writes=[];
  const db={from(table){let equal={};const q={select:()=>q,eq:(k,v)=>(equal[k]=v,q),order:()=>q,range:async()=>({data:rows[table],error:null}),maybeSingle:async()=>({data:rows[table].find(r=>Object.entries(equal).every(([k,v])=>r[k]===v))||null,error:null}),insert:async row=>{if(storageError)return {error:storageError};writes.push({table,row});rows[table].push(row);return {error:null};}};return q;}};
  const {prepareFriendDiscovery}=await loadTs('lib/friend-discovery-prepare.ts',{
-  'node:crypto':{randomUUID,createHash},'@/lib/supabase':{supabaseAdmin:db},'@/lib/admin':{getAdminEmails:()=>['admin@example.test']},'@/lib/quiz-data':{metroOf:()=> 'boston',METRO_CENTERS:{boston:{}}},'@/lib/city-events-server':{cityEvents:async()=>({status:'ready',fetchedAt:new Date(now).toISOString(),events:inventory().events})},'@/lib/supabase-pagination':{fetchAllSupabaseRows:async fn=>{const r=await fn(0,999);if(r.error)throw Error('failed');return r.data;}},'@/lib/daily-activity-digest':{collectDailyActivityCandidates:async()=>daily},'@/lib/campaign-owner-review-adapter':{prepareOwnerReview:async()=>({prepared:true,recipientCount:1,memberMetricsIncluded:false})},'@/lib/email':{signUnsubToken:()=> 'synthetic'},'@/lib/friend-event-campaign':{signFriendEventToken:()=> 'synthetic-signed-token'},'@/lib/friend-event-sender':{friendCampaignHash},'@/lib/friend-discovery-edition':policy,'@/lib/friend-discovery-message':{renderFriendDiscoveryMessage:(_e,items,links,name)=>(renderedName=name,renderPrepared(_e,items,links,name))},
+  'node:crypto':{randomUUID,createHash},'@/lib/supabase':{supabaseAdmin:db},'@/lib/admin':{getAdminEmails:()=>['admin@example.test']},'@/lib/quiz-data':{metroOf:()=> 'boston',METRO_CENTERS:{boston:{}}},'@/lib/city-events-server':{cityEvents:async()=>({status:'ready',fetchedAt:new Date(now).toISOString(),events:inventory().events})},'@/lib/supabase-pagination':{fetchAllSupabaseRows:async fn=>{const r=await fn(0,999);if(r.error)throw Error('failed');return r.data;}},'@/lib/daily-activity-digest':{collectDailyActivityCandidates:async()=>daily},'@/lib/campaign-owner-review-adapter':{prepareOwnerReview:async()=>({prepared:true,recipientCount:1,memberMetricsIncluded:false})},'@/lib/email':{signUnsubToken:()=> 'synthetic'},'@/lib/friend-event-campaign':{signFriendEventToken:()=> 'synthetic-signed-token'},'@/lib/friend-event-sender':{friendCampaignHash},'@/lib/friday-friends-policy':fridayPolicy,'@/lib/friend-discovery-edition':policy,'@/lib/friend-discovery-message':{renderFriendDiscoveryMessage:(_e,items,links,name)=>(renderedName=name,renderPrepared(_e,items,links,name))},
  });
  const first=await prepareFriendDiscovery('weekend',1,now);assert.equal(renderedName,'Sam Example');assert.equal(writes[0].row.manifest.version,'friend-discovery-friday-copy-v2-2026-11-26');assert.equal(first.sendReady,false);assert.equal(first.authorizedRecipients,0);assert.equal(first.candidateRecipients,1);assert.equal(writes.length,1);assert.equal(writes[0].table,'friend_announcement_drafts');assert.equal(writes[0].row.manifest.purpose,'friend_discovery_review');assert.doesNotMatch(JSON.stringify(first.sample),/recipient@example|synthetic-signed-token/);
  assert.match(writes[0].row.manifest.entries[0].email.text,/^Hey Sam,/);
@@ -72,6 +73,16 @@ test('edition preparation persists immutable draft, retries safely and excludes 
  rows.friend_event_deliveries.push({id:'prior',user_id:user.id,campaign_id:first.campaign,channel:'email',status:'accepted',claimed_at:new Date(now-4*86400000).toISOString()});
  const fresh=await prepareFriendDiscovery('weekend',2,now);assert.equal(fresh.sampleItems.some(i=>i.key===first.sampleItems[0].key),false);
  rows.friend_event_deliveries[0].claimed_at=new Date(now-3600000).toISOString();const cooldown=await prepareFriendDiscovery('ideas',1,now);assert.equal(cooldown.prepared,false);assert.equal(cooldown.counts.recentCampaignExcluded,1);
+ rows.friend_event_deliveries=[];
+ const fridayNow=Date.parse('2026-11-20T18:30:00Z');
+ const friday=await prepareFriendDiscovery('weekend',4,fridayNow,'2026-11-20');
+ const fridayRow=rows.friend_announcement_drafts.find(r=>r.id===friday.campaign);
+ assert.equal(fridayRow.manifest.cadence,'once-weekly');assert.equal(fridayRow.manifest.expires,Date.parse('2026-11-20T19:15:00Z'));
+ assert.equal(fridayRow.manifest.version,fridayPolicy.FRIDAY_FRIENDS_VERSION);assert.equal(friday.sendReady,false);
+ rows.friend_event_deliveries=[{id:'uncertain',user_id:user.id,campaign_id:'other-friend-campaign',channel:'email',status:'claimed',claimed_at:new Date(fridayNow-4*86400000).toISOString()}];
+ const fridayCooldown=await prepareFriendDiscovery('weekend',5,fridayNow,'2026-11-20');assert.equal(fridayCooldown.counts.recentCampaignExcluded,1);assert.equal(fridayCooldown.prepared,false);
+ await assert.rejects(()=>prepareFriendDiscovery('ideas',1,fridayNow,'2026-11-20'),/weekend-only/);
+ await assert.rejects(()=>prepareFriendDiscovery('weekend',1,Date.parse('2026-11-20T19:15:00Z'),'2026-11-20'),/preparation window/);
  rows.friend_event_deliveries=[];storageError={code:'failed'};await assert.rejects(()=>prepareFriendDiscovery('ideas',3,now),/storage failed/);storageError=null;assert.equal((await prepareFriendDiscovery('ideas',3,now)).prepared,true);
 });
 

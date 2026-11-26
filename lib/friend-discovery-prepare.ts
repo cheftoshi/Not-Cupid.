@@ -12,12 +12,16 @@ import { friendCampaignHash } from '@/lib/friend-event-sender';
 import { discoveryEditionId, easternDate, selectDiscoveryItems, FRIEND_DISCOVERY_VERSION, type DiscoveryEdition } from '@/lib/friend-discovery-edition';
 import { renderFriendDiscoveryMessage } from '@/lib/friend-discovery-message';
 
+import { FRIDAY_FRIENDS_VERSION, fridayPreparationWindow } from '@/lib/friday-friends-policy';
+
 // Review artifacts only. No campaign/approval/delivery insert, sender or scheduler.
 // The distinct purpose is deliberately rejected by all existing member executors.
-export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision=1, now=Date.now()) {
+export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision=1, now=Date.now(), fridayDay?: string) {
   if (!Number.isInteger(revision)||revision<1||revision>20) throw Error('Invalid revision');
-  const version = edition === 'weekend' ? 'friend-discovery-friday-copy-v2-2026-11-26' : FRIEND_DISCOVERY_VERSION;
-  const campaign=discoveryEditionId(edition,now)+`_r${revision}`;
+  if (fridayDay && edition !== 'weekend') throw Error('Friday is weekend-only');
+  const friday = fridayDay ? fridayPreparationWindow(fridayDay, now) : null;
+  const version = friday ? FRIDAY_FRIENDS_VERSION : edition === 'weekend' ? 'friend-discovery-friday-copy-v2-2026-11-26' : FRIEND_DISCOVERY_VERSION;
+  const campaign=discoveryEditionId(edition,now)+`${friday ? '_friday' : ''}_r${revision}`;
   const existing=await supabaseAdmin.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle();
   if(existing.error)throw Error('Draft lookup failed');
   const review=async(row:any)=>{
@@ -28,7 +32,7 @@ export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision
     try{ownerReview=await prepareOwnerReview(campaign,m.expires);}catch{ownerReview={prepared:false,required:true,memberMetricsIncluded:false,blocked:'Existing owner eligibility/suppression/configuration checks must pass; no substitute recipient'};}
     return {prepared:true,sendReady:false,recurringEnabled:false,authorizedRecipients:0,campaign,manifestHash:row.manifest_hash,candidateRecipients:row.recipient_count,edition,expires:row.expires_at,expired:m.expires<=now,preparedAt:m.preparedAt,counts:m.counts,
       sample:{...m.entries[0].email,to:undefined,text:redact(m.entries[0].email.text),html:redact(m.entries[0].email.html),unsubscribeUrl:'[recipient-specific global unsubscribe]',unsubscribePostUrl:'[recipient-specific one-click global unsubscribe]'},
-      sampleItems:m.entries[0].recommendations,ownerReview,remainingGates:['Existing consent promises at most once weekly; explicit twice-weekly consent/audience policy required','Exact weekdays, ET times and delivery windows','Provider permission and recipient suppression recheck','Fresh inventory, capacity, safety and daily-overlap recheck immediately before execution','Exact rendered messages, audience and count content approval, then separate send approval','Separate approved recurring executor with atomic cadence/overlap claims and bounded retry/reconciliation policy'],noSendOrApprovalCreated:true};
+      sampleItems:m.entries[0].recommendations,ownerReview,remainingGates:[...(friday ? ['Friday-only; existing once-weekly consent and seven-day cross-campaign email limit', 'Persisted atomic Friend/daily overlap and execution validation required'] : ['Existing consent promises at most once weekly; explicit twice-weekly consent/audience policy required']), 'Exact weekdays, ET times and delivery windows','Provider permission and recipient suppression recheck','Fresh inventory, capacity, safety and daily-overlap recheck immediately before execution','Exact rendered messages, audience and count content approval, then separate send approval','Separate approved recurring executor with atomic cadence/overlap claims and bounded retry/reconciliation policy'],noSendOrApprovalCreated:true};
   };
   if(existing.data)return review(existing.data);
   const admins=getAdminEmails();if(!admins.length)throw Error('Admin exclusions unavailable');
@@ -53,9 +57,9 @@ export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision
   // member-plan recommendation to a recipient with a recent daily plan section.
   const dailyPlans=new Set(digests.filter(d=>['queued','sent'].includes(d.status)&&Date.parse(d.created_at)>now-7*86400000&&Number(d.item_counts?.plans)>0).map(d=>d.user_id));
   const recentDeliveries=deliveries.filter(d=>d.channel==='email'&&Date.parse(d.claimed_at)>now-30*86400000);
-  const cooldown=new Set(recentDeliveries.filter(d=>Date.parse(d.claimed_at)>now-72*3600000).map(d=>d.user_id));
+  const cooldown=new Set(recentDeliveries.filter(d=>Date.parse(d.claimed_at)>now-(friday ? 7*86400000 : 72*3600000)).map(d=>d.user_id));
   const counts={preferenceAndSafetyEligible:0,dailyOverlapExcluded:0,recentCampaignExcluded:0,noFreshItems:0};
-  const entries:any[]=[];const expires=now+6*3600000;
+  const entries:any[]=[];const expires=friday ? friday.end : now+6*3600000;
   for(const u of users.sort((a,b)=>a.id.localeCompare(b.id))){
     if(u.is_test||u.is_blocked||u.deleted_at||admins.includes((u.email||'').trim().toLowerCase())||!u.friend_opted_in_at||u.email_notifications!==true||u.notifications_paused_at||!u.age||u.age<18||!opted.has(u.id)||blocked.has(u.id)||metro(u)!=='boston'||!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(u.email||''))continue;
     counts.preferenceAndSafetyEligible++;
@@ -72,7 +76,7 @@ export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision
   }
   if(!entries.length)return {prepared:false,sendReady:false,recurringEnabled:false,authorizedRecipients:0,edition,counts,blocked:'No eligible recipients with fresh non-overlapping items; no draft or campaign created'};
   if(new Set(entries.map(e=>e.email.to.toLowerCase())).size!==entries.length)throw Error('Duplicate recipient mailbox');
-  const manifest={purpose:'friend_discovery_review',campaign,version,edition,revision,preparedAt:new Date(now).toISOString(),catalogFetchedAt:catalog.fetchedAt,expires,counts,entries};
+  const manifest={...(friday ? {fridayDay, cadence:'once-weekly', windowStart:friday.start, windowEnd:friday.end} : {}),purpose:'friend_discovery_review',campaign,version,edition,revision,preparedAt:new Date(now).toISOString(),catalogFetchedAt:catalog.fetchedAt,expires,counts,entries};
   const row={id:campaign,manifest,manifest_hash:friendCampaignHash(manifest),audience_hash:createHash('sha256').update(JSON.stringify(entries.map(e=>[e.userId,e.email.to]))).digest('hex'),recipient_count:entries.length,expires_at:new Date(expires).toISOString()};
   const inserted=await supabaseAdmin.from('friend_announcement_drafts').insert(row);
   if(inserted.error){if(inserted.error.code!=='23505')throw Error('Draft storage failed');const raced=await supabaseAdmin.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle();if(raced.error||!raced.data)throw Error('Concurrent draft unavailable');return review(raced.data);}
