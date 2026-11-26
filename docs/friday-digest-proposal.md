@@ -1,6 +1,7 @@
 # Friend discovery editions — review only
 
-Current implementation: `friend-discovery-review-v1-2026-11-15`.
+Current review versions: ideas `friend-discovery-review-v1-2026-11-15`;
+Friday `friend-discovery-friday-copy-v2-2026-11-26`.
 This replaces the earlier single-Friday proposal. There is no scheduler, recurring
 sender, campaign activation, consent migration, or change to existing send gates.
 
@@ -43,10 +44,27 @@ owner path, which may make its existing read-only suppression check.
   psychological profiling or a claim of personal taste ranking.
 - Outside events are clearly labeled as ideas around which members can start a
   plan, never existing joinable NotCupid plans. Admission remains separate.
-- Per-card signed links bind a bounded plan/event destination. Old campaign links
+- Ideas retain per-card signed links binding bounded plan/event destinations.
+  Friday uses one signed main discovery link (`/hub?discover=1`), with organizer
+  details as secondary source links. Old campaign links
   still open discovery. Only accepted-delivery links create attribution cookies;
   forwarded links still cannot attribute another member. Scanner requests are
   not authenticated returns or meaningful actions.
+
+### Approved Friday structure
+
+The November 26 copy approval covers the Friday template only, not activation,
+scheduling, a second email or audience changes. Subject: “What’s happening near
+you this weekend?” Greeting uses the first name (“Hey Sam,”), or “Hey there,”
+when absent. Opening: “Curious what’s happening near you this weekend? Here are
+a couple of things worth stepping out for:” A compact list shows verified time,
+public area/venue and a plan-or-outside-event one-liner. Outside events have no
+separate neighborhood field, so use their public venue without guessing one.
+Closing: “Pick your vibe. Find a plan nearby or someone to go with.” The sole
+main CTA is “See what’s happening on NotCupid →”. Organizer/admission notes,
+sender, business address and unsubscribe remain. HTML escapes dynamic text.
+Existing frozen Friday drafts with an older copy version are rejected; prepare a
+new revision for review instead of mutating them. Ideas copy is unchanged.
 
 ## Audience, overlap and repetition
 

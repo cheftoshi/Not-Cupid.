@@ -40,6 +40,6 @@ export function selectDiscoveryItems(user: any, input: { plans: any[]; users: an
   const represented=new Set(plans.slice(0,2).map(p=>p.external_event_id).filter(Boolean));
   const remaining=[...new Map(fresh.filter(e=>!input.seen.has(`event:${e.id}`)&&!represented.has(e.id)).map(e=>[e.id,e])).values()].sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt)||a.id.localeCompare(b.id));
   const categories=new Set(chosen.map(p=>p.category));
-  while(chosen.length<3&&remaining.length){const index=Math.max(0,remaining.findIndex(e=>!categories.has(e.category)));const [e]=remaining.splice(index,1);categories.add(e.category);chosen.push({key:`event:${e.id}`,kind:'event',id:e.id,title:e.title,category:e.category,startsAt:e.startsAt,sourceLabel:e.sourceLabel||'Ticketmaster',sourceUrl:e.url});}
+  while(chosen.length<3&&remaining.length){const index=Math.max(0,remaining.findIndex(e=>!categories.has(e.category)));const [e]=remaining.splice(index,1);categories.add(e.category);chosen.push({key:`event:${e.id}`,kind:'event',id:e.id,title:e.title,category:e.category,startsAt:e.startsAt,...(edition==='weekend'?{area:e.venue||undefined}:{}),sourceLabel:e.sourceLabel||'Ticketmaster',sourceUrl:e.url});}
   return chosen;
 }

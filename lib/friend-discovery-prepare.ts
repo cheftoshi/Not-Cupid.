@@ -16,12 +16,13 @@ import { renderFriendDiscoveryMessage } from '@/lib/friend-discovery-message';
 // The distinct purpose is deliberately rejected by all existing member executors.
 export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision=1, now=Date.now()) {
   if (!Number.isInteger(revision)||revision<1||revision>20) throw Error('Invalid revision');
+  const version = edition === 'weekend' ? 'friend-discovery-friday-copy-v2-2026-11-26' : FRIEND_DISCOVERY_VERSION;
   const campaign=discoveryEditionId(edition,now)+`_r${revision}`;
   const existing=await supabaseAdmin.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle();
   if(existing.error)throw Error('Draft lookup failed');
   const review=async(row:any)=>{
     const m=row.manifest;
-    if(m.purpose!=='friend_discovery_review'||m.campaign!==campaign||m.version!==FRIEND_DISCOVERY_VERSION||friendCampaignHash(m)!==row.manifest_hash||m.entries.length!==row.recipient_count||m.expires!==Date.parse(row.expires_at))throw Error('Draft integrity mismatch');
+    if(m.purpose!=='friend_discovery_review'||m.campaign!==campaign||m.version!==version||friendCampaignHash(m)!==row.manifest_hash||m.entries.length!==row.recipient_count||m.expires!==Date.parse(row.expires_at))throw Error('Draft integrity mismatch');
     const redact=(value:string)=>value.replace(/https:\/\/notcupid\.com\/go\/friend-events\?token=[^\s"<]+/g,'https://notcupid.com/go/friend-events?token=[signed-recipient-and-destination-token]').replace(/https:\/\/notcupid\.com\/unsubscribe\?[^\s"<]+/g,'https://notcupid.com/unsubscribe?u=[recipient]&t=[signed-token]');
     let ownerReview:unknown;
     try{ownerReview=await prepareOwnerReview(campaign,m.expires);}catch{ownerReview={prepared:false,required:true,memberMetricsIncluded:false,blocked:'Existing owner eligibility/suppression/configuration checks must pass; no substitute recipient'};}
@@ -33,7 +34,7 @@ export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision
   const admins=getAdminEmails();if(!admins.length)throw Error('Admin exclusions unavailable');
   const all=(table:string,fields:string,order='id')=>fetchAllSupabaseRows<any>((from,to)=>supabaseAdmin.from(table).select(fields).order(order).range(from,to));
   const [users,prefs,suppressed,plans,rsvps,reports,trips,deliveries,digests,drafts,daily,catalog]=await Promise.all([
-    all('users','id,email,zip,discovery_metro,age,gender,is_lgbtq,is_test,is_blocked,deleted_at,friend_opted_in_at,email_notifications,notifications_paused_at,activity_digest_sent_at'),
+    all('users','id,email,name,zip,discovery_metro,age,gender,is_lgbtq,is_test,is_blocked,deleted_at,friend_opted_in_at,email_notifications,notifications_paused_at,activity_digest_sent_at'),
     all('friend_event_preferences','user_id,email_enabled,consent_version','user_id'),fetchAllSupabaseRows<any>((from,to)=>supabaseAdmin.from('friend_event_suppressions').select('user_id,channel').order('user_id').order('channel').range(from,to)),
     all('friend_activities','id,author_id,title,category,area,metro,kind,is_test,capacity,happens_at,expires_at,external_event_id,audience_gender,audience_age_min,audience_age_max'),
     fetchAllSupabaseRows<any>((from,to)=>supabaseAdmin.from('friend_activity_rsvps').select('activity_id,user_id,response').order('activity_id').order('user_id').range(from,to)),
@@ -67,11 +68,11 @@ export async function prepareFriendDiscovery(edition: DiscoveryEdition, revision
     const deliveryId=randomUUID();
     const url=(target:Record<string,string>={})=>'https://notcupid.com/go/friend-events?token='+encodeURIComponent(signFriendEventToken({purpose:'attribution',userId:u.id,deliveryId,channel:'email',expires:expires+30*86400000,...target}));
     const unsubscribe=`https://notcupid.com/unsubscribe?u=${encodeURIComponent(u.id)}&t=${encodeURIComponent(signUnsubToken(u.id,expires+90*86400000))}`;
-    entries.push({deliveryId,userId:u.id,channel:'email',recommendations:selected,email:{to:u.email,...renderFriendDiscoveryMessage(edition,selected,{item:i=>url(i.kind==='plan'?{planId:i.id}:{eventId:i.id}),browse:url(),unsubscribe})}});
+    entries.push({deliveryId,userId:u.id,channel:'email',recommendations:selected,email:{to:u.email,...renderFriendDiscoveryMessage(edition,selected,{item:i=>url(i.kind==='plan'?{planId:i.id}:{eventId:i.id}),browse:url(),unsubscribe},u.name)}});
   }
   if(!entries.length)return {prepared:false,sendReady:false,recurringEnabled:false,authorizedRecipients:0,edition,counts,blocked:'No eligible recipients with fresh non-overlapping items; no draft or campaign created'};
   if(new Set(entries.map(e=>e.email.to.toLowerCase())).size!==entries.length)throw Error('Duplicate recipient mailbox');
-  const manifest={purpose:'friend_discovery_review',campaign,version:FRIEND_DISCOVERY_VERSION,edition,revision,preparedAt:new Date(now).toISOString(),catalogFetchedAt:catalog.fetchedAt,expires,counts,entries};
+  const manifest={purpose:'friend_discovery_review',campaign,version,edition,revision,preparedAt:new Date(now).toISOString(),catalogFetchedAt:catalog.fetchedAt,expires,counts,entries};
   const row={id:campaign,manifest,manifest_hash:friendCampaignHash(manifest),audience_hash:createHash('sha256').update(JSON.stringify(entries.map(e=>[e.userId,e.email.to]))).digest('hex'),recipient_count:entries.length,expires_at:new Date(expires).toISOString()};
   const inserted=await supabaseAdmin.from('friend_announcement_drafts').insert(row);
   if(inserted.error){if(inserted.error.code!=='23505')throw Error('Draft storage failed');const raced=await supabaseAdmin.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle();if(raced.error||!raced.data)throw Error('Concurrent draft unavailable');return review(raced.data);}
