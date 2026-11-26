@@ -1,9 +1,11 @@
+import { verifyFriendEventToken, friendEventDestination } from '@/lib/friend-event-campaign';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getAdminEmails } from '@/lib/admin';
 import { Resend } from 'resend';
 import { signUnsubToken } from '@/lib/email';
 import { friendCampaignHash } from '@/lib/friend-event-sender';
 import { checkFriendEventSuppression } from '@/lib/friend-event-suppression';
+import { neutralFriendDiscoveryReview } from '@/lib/friend-discovery-privacy';
 import { ownerReviewEmail, ownerReviewHash, validOwnerReview, executeOwnerReview } from '@/lib/campaign-owner-review';
 import type { OwnerReviewManifest } from '@/lib/campaign-owner-review';
 
@@ -25,6 +27,8 @@ async function suppression(userId:string,email:string) {
 }
 function review(row:any) {
  const m=row.manifest as OwnerReviewManifest;
+ const neutral=neutralFriendDiscoveryReview(m.email);
+ if(neutral.text!==m.email.text||neutral.html!==m.email.html)throw Error('Old personalized owner artifact requires a new source revision');
  if(ownerReviewHash(m)!==row.manifest_hash||!validOwnerReview(m)||m.sourceCampaign!==row.source_campaign||m.userId!==row.user_id||m.expires!==Date.parse(row.expires_at))throw Error('Review integrity mismatch');
  return {prepared:true,sendReady:false,sourceCampaign:m.sourceCampaign,manifestHash:row.manifest_hash,recipientCount:1,recipientClass:'owner_review',memberMetricsIncluded:false,email:m.email,expires:row.expires_at,claimed:!!row.claimed_at,accepted:!!row.accepted_at,remainingGates:['Exact owner copy/links/recipient content approval','Separate execution approval']};
 }
@@ -34,14 +38,15 @@ export async function prepareOwnerReview(campaign:string,expires:number) {
  if(existing.data)return review(existing.data); // never replace or silently reissue
  const u=await eligible();if(!u||await suppression(u.id,u.email)!=='clear')throw Error('Owner unavailable or suppressed');
  const {data:source,error}=await supabaseAdmin.from('friend_announcement_drafts').select('*').eq('id',campaign).maybeSingle();
- if(error||!source||friendCampaignHash(source.manifest)!==source.manifest_hash||source.manifest.purpose!=='friend_line_announcement'||source.manifest.campaign!==campaign||source.manifest.entries.length!==source.recipient_count)throw Error('Source draft unavailable');
- const email=source.manifest.entries[0]?.email;if(!email)throw Error('Missing source email');
+ if(error||!source||friendCampaignHash(source.manifest)!==source.manifest_hash||!['friend_line_announcement','friend_discovery_review'].includes(source.manifest.purpose)||source.manifest.campaign!==campaign||source.manifest.entries.length!==source.recipient_count)throw Error('Source draft unavailable');
+ const sourceEmail=source.manifest.entries[0]?.email;if(!sourceEmail)throw Error('Missing source email');
+ const email=neutralFriendDiscoveryReview(sourceEmail);
  // Copy the exact frozen campaign, not a renderer that may have since changed.
  const unsubscribeUrl=`https://notcupid.com/unsubscribe?u=${encodeURIComponent(u.id)}&t=${encodeURIComponent(signUnsubToken(u.id,expires+90*86400000))}`;
  const unsubscribePostUrl=unsubscribeUrl.replace('/unsubscribe?','/api/unsubscribe?');
  const htmlEscape=(s:string)=>s.replace(/&/g,'&amp;');
- const replace=(s:string)=>s.split(htmlEscape(email.unsubscribeUrl)).join(htmlEscape(unsubscribeUrl)).split(email.unsubscribeUrl).join(unsubscribeUrl).replace(/https:\/\/notcupid\.com\/go\/friend-events\?token=[^\s"<]+/g,'https://notcupid.com/hub?discover=1');
- const manifest:OwnerReviewManifest={purpose:'owner_campaign_review',sourceCampaign:campaign,sourceHash:source.manifest_hash,userId:u.id,expires,email:{...email,to:u.email,text:replace(email.text),html:replace(email.html),unsubscribeUrl,unsubscribePostUrl}};
+ const replace=(s:string,html=false)=>s.split(htmlEscape(email.unsubscribeUrl)).join(htmlEscape(unsubscribeUrl)).split(email.unsubscribeUrl).join(unsubscribeUrl).replace(/https:\/\/notcupid\.com\/go\/friend-events\?token=([^\s"<]+)/g,(_match,token)=>{const url='https://notcupid.com'+friendEventDestination(verifyFriendEventToken(decodeURIComponent(token),'attribution'));return html?htmlEscape(url):url;});
+ const manifest:OwnerReviewManifest={purpose:'owner_campaign_review',sourceCampaign:campaign,sourceHash:source.manifest_hash,userId:u.id,expires,email:{...email,to:u.email,text:replace(email.text),html:replace(email.html,true),unsubscribeUrl,unsubscribePostUrl}};
  if(!validOwnerReview(manifest))throw Error('Invalid owner copy');
  const row={source_campaign:campaign,user_id:u.id,manifest,manifest_hash:ownerReviewHash(manifest),expires_at:new Date(expires).toISOString()};
  const inserted=await supabaseAdmin.from('campaign_owner_reviews').insert(row);if(inserted.error)throw Error('Review storage failed; inspect before retry');

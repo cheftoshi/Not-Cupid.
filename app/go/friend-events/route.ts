@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FRIEND_EVENT_COOKIE, verifyFriendEventToken, signFriendEventToken } from '@/lib/friend-event-campaign';
+import { FRIEND_EVENT_COOKIE, verifyFriendEventToken, signFriendEventToken, friendEventDestination } from '@/lib/friend-event-campaign';
 import { supabaseAdmin } from '@/lib/supabase';
 export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const claim = verifyFriendEventToken(req.nextUrl.searchParams.get('token'), 'attribution');
-  const response = NextResponse.redirect(new URL('/hub?discover=1', req.url));
+  const response = NextResponse.redirect(new URL(friendEventDestination(claim), req.url));
   response.headers.set('Referrer-Policy', 'no-referrer');
   response.headers.set('Cache-Control', 'no-store');
   if (!claim || !claim.deliveryId) return response;

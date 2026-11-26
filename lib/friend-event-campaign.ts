@@ -8,10 +8,15 @@ export type FriendEventToken = {
   channel: 'email' | 'push';
   deliveryId?: string;
   expires: number;
+  planId?: string;
+  eventId?: string;
 };
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 function valid(p: FriendEventToken): boolean {
-  return !!p && uuid.test(p.userId) && ['email', 'push'].includes(p.channel)
+  return !!p && !(p.planId && p.eventId)
+    && (p.planId === undefined || (typeof p.planId === 'string' && uuid.test(p.planId)))
+    && (p.eventId === undefined || (typeof p.eventId === 'string' && /^(?:live:tm:[A-Za-z0-9_-]{1,100}|live:curated:[a-z0-9][a-z0-9_-]{0,79})$/.test(p.eventId)))
+    && uuid.test(p.userId) && ['email', 'push'].includes(p.channel)
     && ['unsubscribe', 'attribution'].includes(p.purpose)
     && Number.isSafeInteger(p.expires)
     && (p.purpose !== 'attribution' || (typeof p.deliveryId === 'string' && uuid.test(p.deliveryId)));
@@ -38,3 +43,9 @@ export function verifyFriendEventToken(token: unknown, purpose: FriendEventToken
   } catch { return null; }
 }
 // There is deliberately no sender, scheduler or activation toggle in this module.
+
+// Only signed, bounded in-app destinations; never a caller-supplied redirect URL.
+export function friendEventDestination(claim: FriendEventToken | null): string {
+  if (!claim || !valid(claim) || claim.purpose !== 'attribution') return '/hub?discover=1';
+  return claim.planId ? '/hub?plan='+encodeURIComponent(claim.planId) : '/hub?discover=1'+(claim.eventId?'&event='+encodeURIComponent(claim.eventId):'');
+}
