@@ -150,8 +150,11 @@ ideas preparation remains review-only, with no additional authorization.
 
 The unapplied production migration `20261126013135_friday_friend_atomic_claim.sql`
 adds an exact owner-test hash/timestamp requirement and a Friday-specific claim
-wrapper around the existing weekly claim. Shared user-row locking prevents
-Friday/daily races in both directions, while all Friend email claim statuses
+wrapper around the existing weekly claim. The daily overlap trigger is installed disabled, so the existing daily path
+executes no Friday code and takes no additional user lock. Friday claims fail
+closed until the separate service-only overlap prerequisite is enabled. Once
+enabled, shared user-row locking prevents Friday/daily races in both directions,
+while all Friend email claim statuses
 consume the seven-day limit. Local persisted tests run real migration routines
 with synthetic fixture tables in a separate database; the pure clock predicate
 is tested at actual boundaries, then substituted only in that test database for
@@ -200,3 +203,53 @@ and plain text. Owner derivatives preserve the frozen public ideas but replace
 member attribution/unsubscribe links with the owner's safe links. Old personalized
 owner artifacts fail closed and require a new source revision/test. Synthetic
 fixtures use different owner/member names and verify no recipient identity leaks.
+
+
+### Release-safety procedure (draft; no production actions performed)
+
+The unapplied draft migration now sets transaction-local `lock_timeout = '2s'`
+and `statement_timeout = '15s'`. Apply through the normal transactional Supabase
+migration runner, after checking the exact pending migration set and dry run.
+Do not pipe the file through an autocommit SQL console: transaction-local limits
+and all-or-nothing DDL require one transaction. A lock timeout is a release stop,
+not permission to increase limits, terminate other sessions or skip checks.
+Inspect blockers and choose a quiet window before a fresh approved attempt.
+DDL still needs an exclusive campaign-table lock and delivery-table locks; these
+limits bound waits, not eliminate locks or prove production throughput.
+
+1. Keep Friday application credentials/version gates and schedules disabled.
+   Apply the migration first. It changes no campaign approvals or existing rows,
+   and leaves `friday_daily_delivery_overlap` physically disabled. Confirm that
+   state and verify the existing daily path before releasing the app.
+2. Release the app still disabled. The service-only
+   `set_friday_friend_overlap_enabled(true)` is a separate operator prerequisite
+   before any future approved activation, never a send or content approval.
+   Run it in a short transaction with an outer statement timeout of 15 seconds.
+   Its built-in two-second lock timeout bounds waiting for existing transactions.
+   It drains daily inserts before enabling protection; Friday claims hold a
+   compatible table lock until commit and require the trigger to be enabled.
+   Do not enable/disable the trigger directly with `ALTER TABLE`.
+3. Only after exact owner/provider/audience/content/send checks may the separately
+   approved Friday execution gates be enabled. This work enables none of them.
+   Existing frozen approval, consent, suppression and weekly gates remain required.
+4. For rollback, turn off Friday execution and stop/drain any executor first.
+   Keep schema, claims and receipts. Restore the prior app if needed. Then call
+   `set_friday_friend_overlap_enabled(false)` in a bounded short transaction.
+   It refuses while any Friday claim is less than 24 hours old, or while any
+   `claimed`/`failed` outcome remains unresolved regardless of age. Reconcile
+   uncertain outcomes through the existing receipt process; never delete claims,
+   change timestamps or force trigger disable to make the check pass.
+5. If disable refuses, keep overlap protection until the drain criteria pass.
+   Daily inserts still take the enabled-mode user lock during this safety tail.
+   Successful disable restores the original daily path, blocks future Friday
+   claims and preserves all receipts/seven-day dedupe for a later re-enable.
+
+`python3 tests/friday-friends-postgres.py` covers real PostgreSQL activation,
+disable and delivery races with synthetic fixtures only.
+`python3 tests/friday-friends-migration.py` covers the migration's own lock timeout,
+transaction rollback, 50,000 unchanged legacy rows/no heap rewrite, and legacy
+claim/daily compatibility. Both require the existing loopback local container;
+neither accepts production connection details. Production transaction duration,
+lock queues, table size and enabled-mode daily latency remain unmeasured. Before
+an authorized migration/activation, inspect those aggregate operational measures
+and confirm a quiet window; synthetic timings are not a production SLA.

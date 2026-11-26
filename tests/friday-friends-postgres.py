@@ -18,7 +18,7 @@ sql('''create table users(id uuid primary key,email text,age integer,is_test boo
 create table push_subscriptions(id uuid default gen_random_uuid(),user_id uuid);
 create table activity_digest_deliveries(id uuid primary key default gen_random_uuid(),user_id uuid references users(id),created_at timestamptz default now(),status text default 'queued');''')
 for name in ['20261113162841_friend_event_campaign_foundation.sql','20261113164351_friend_event_frozen_sender_gate.sql','20261113185150_friend_line_announcement_policy.sql','20261113190613_friend_announcement_drafts.sql','20261114021921_campaign_owner_review.sql','20261126013135_friday_friend_atomic_claim.sql']:
- sql((ROOT/'supabase/migrations'/name).read_text())
+ sql('begin;'+(ROOT/'supabase/migrations'/name).read_text()+'commit;')
 checks=[]
 def passed(name): checks.append(name)
 for stamp,expected in [('2026-11-27 18:59:59+00','f'),('2026-11-27 19:00:00+00','t'),('2026-11-27 19:14:59+00','t'),('2026-11-27 19:15:00+00','f'),('2026-11-28 19:00:00+00','f')]:
@@ -45,6 +45,41 @@ def claim(f):
  u,c,d=f;return f"select claim_friday_friend_delivery('{u}','{c}',array['admin@example.test'],'{d}','{'a'*64}');"
 def daily(f): return f"insert into activity_digest_deliveries(user_id) values('{f[0]}');"
 def count(f):return int(sql(f"select (select count(*) from friend_event_deliveries where user_id='{f[0]}')+(select count(*) from activity_digest_deliveries where user_id='{f[0]}');").stdout.strip())
+def hold(query,seconds=1.2):
+ tag='transition_'+uuid.uuid4().hex[:10]
+ p=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ p.stdin.write(f"set application_name='{tag}';begin;"+query+f"select pg_sleep({seconds});commit;");p.stdin.close()
+ for _ in range(100):
+  if sql(f"select count(*) from pg_stat_activity where application_name='{tag}' and wait_event='PgSleep';").stdout.strip()=='1': return p
+  time.sleep(.02)
+ raise AssertionError('Transaction did not reach lock hold')
+def no_daily_user_contention():
+ f=fixture();p=hold(f"select id from users where id='{f[0]}' for no key update;")
+ r=sql("begin;set local lock_timeout='200ms';"+daily(f)+"commit;",ok=False)
+ p.wait(timeout=10);assert p.returncode==0 and r.returncode==0,r.stderr
+no_daily_user_contention();passed('Disabled daily insert unaffected by non-key user-row update')
+f=fixture();r=sql(f"insert into friend_event_deliveries(campaign_id,user_id,channel) values('{f[1]}','{f[0]}','email');",ok=False)
+assert r.returncode and 'overlap protection disabled' in r.stderr
+passed('Disabled trigger also blocks direct Friday inserts')
+sql('begin;select set_friday_friend_overlap_enabled(true);rollback;')
+assert sql("select tgenabled from pg_trigger where tgname='friday_daily_delivery_overlap';").stdout.strip()=='D'
+passed('Rolled-back activation leaves daily trigger disabled')
+f=fixture();p=hold(daily(f));t=time.monotonic()
+sql('select set_friday_friend_overlap_enabled(true);');elapsed=time.monotonic()-t;p.wait(timeout=10)
+assert elapsed>.5 and p.returncode==0
+r=sql(claim(f),ok=False);assert count(f)==1 and (r.returncode or not r.stdout.strip())
+passed('Activation drains an existing disabled-mode daily transaction; Friday sees its claim')
+sql('select set_friday_friend_overlap_enabled(false);')
+no_daily_user_contention();passed('Disable before Friday claims restores ordinary daily path')
+p=hold('lock table activity_digest_deliveries in row exclusive mode;',3)
+r=sql('select set_friday_friend_overlap_enabled(true);',ok=False);p.wait(timeout=10)
+assert r.returncode and 'lock timeout' in r.stderr
+assert sql("select tgenabled from pg_trigger where tgname='friday_daily_delivery_overlap';").stdout.strip()=='D'
+passed('Busy activation times out at built-in two-second lock bound without changing state')
+f=fixture();assert sql(claim(f)).stdout.strip()==''
+assert sql("select tgenabled from pg_trigger where tgname='friday_daily_delivery_overlap';").stdout.strip()=='D'
+passed('Installed disabled: Friday claims fail closed')
+sql('select set_friday_friend_overlap_enabled(true);')
 f=fixture();assert sql(claim(f)).stdout.strip()==f[2];assert sql(claim(f)).stdout.strip()=='';assert count(f)==1;passed('Exact frozen claim once, duplicate cannot retry')
 f=fixture();sql(f"update friend_event_preferences set email_enabled=false where user_id='{f[0]}';");assert sql(claim(f)).stdout.strip()=='';passed('Current opt-out blocks')
 f=fixture();sql(f"insert into friend_event_suppressions(user_id,channel,reason) values('{f[0]}','email','complaint');");assert sql(claim(f)).stdout.strip()=='';passed('Current local suppression blocks')
@@ -72,5 +107,33 @@ r=sql(f"select claim_friend_line_announcement('{f[0]}','{other}',array['admin@ex
 assert sql("select has_function_privilege('anon','public.claim_friday_friend_delivery(uuid,text,text[],uuid,text)','execute');").stdout.strip()=='f'
 assert sql("select has_function_privilege('service_role','public.claim_friday_friend_delivery(uuid,text,text[],uuid,text)','execute');").stdout.strip()=='t'
 passed('Service-only claim privileges')
+# Disable must wait for an in-flight claim, then refuse to remove protection.
+f=fixture();p=hold(claim(f));t=time.monotonic()
+r=sql('select set_friday_friend_overlap_enabled(false);',ok=False);elapsed=time.monotonic()-t;p.wait(timeout=10)
+assert elapsed>.5 and p.returncode==0 and r.returncode and 'require overlap protection' in r.stderr
+assert sql("select tgenabled from pg_trigger where tgname='friday_daily_delivery_overlap';").stdout.strip()=='O'
+passed('Concurrent disable drains Friday claim then refuses; committed claim stays protected')
+sql("update friend_event_deliveries set claimed_at=now()-interval '25 hours' where campaign_id in (select id from friend_event_campaigns where content_version='friday-friends-once-weekly-v1-2026-11-26');")
+for status in ['claimed','failed']:
+ sql(f"update friend_event_deliveries set status='{status}' where id='{f[2]}';")
+ r=sql('select set_friday_friend_overlap_enabled(false);',ok=False)
+ assert r.returncode and 'require overlap protection' in r.stderr
+passed('Old unresolved claimed and failed outcomes both block disable')
+sql("update friend_event_deliveries set status='accepted' where campaign_id in (select id from friend_event_campaigns where content_version='friday-friends-once-weekly-v1-2026-11-26');")
+prior_count=sql('select count(*) from friend_event_deliveries;').stdout.strip()
+waiting=fixture();p=hold('select set_friday_friend_overlap_enabled(false);');t=time.monotonic()
+assert sql(claim(waiting)).stdout.strip()==''
+p.wait(timeout=10);assert p.returncode==0 and time.monotonic()-t>.5 and count(waiting)==0
+passed('Friday claim waiting behind disable sees committed disabled state and cannot insert')
+no_daily_user_contention()
+assert sql('select count(*) from friend_event_deliveries;').stdout.strip()==prior_count
+assert sql(claim(f)).stdout.strip()==''
+passed('After resolved 24-hour drain, disable restores daily behavior and retains claims')
+sql('select set_friday_friend_overlap_enabled(true);')
+assert sql(claim(f)).stdout.strip()==''
+passed('Re-enable cannot bypass existing seven-day claims')
+assert sql("select has_function_privilege('anon','public.set_friday_friend_overlap_enabled(boolean)','execute');").stdout.strip()=='f'
+assert sql("select has_function_privilege('authenticated','public.friday_friend_overlap_ready()','execute');").stdout.strip()=='f'
+passed('Operator transition and readiness lock are service-only')
 result={'database':DB,'checks':len(checks),'passed':checks,'failures':0,'isolation':'Existing local loopback PostgreSQL; synthetic example.test fixtures only','clockLimit':'Real SQL clock predicate tested at boundaries; positive races replace only that predicate inside this test database','productionChanges':False}
 print(json.dumps(result,indent=2))

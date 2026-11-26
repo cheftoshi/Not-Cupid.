@@ -1,3 +1,8 @@
+-- Unreleased draft migration. Apply in one transaction (Supabase migration runner).
+-- Fail closed on busy tables; never wait indefinitely or leave partial DDL.
+set local lock_timeout = '2s';
+set local statement_timeout = '15s';
+
 alter table public.friend_event_campaigns
  add column friday_owner_review_hash text check(friday_owner_review_hash ~ '^[a-f0-9]{64}$'),
  add column friday_owner_test_verified_at timestamptz;
@@ -11,6 +16,21 @@ returns boolean language sql immutable set search_path=public as $$
 $$;
 revoke all on function public.friday_friend_window_open(text,timestamptz) from public,anon,authenticated;
 grant execute on function public.friday_friend_window_open(text,timestamptz) to service_role;
+
+-- The physical daily trigger is disabled on installation. The daily path then
+-- executes no Friday code and acquires no additional user lock. A Friday claim
+-- must hold this table lock until commit and observe the trigger enabled. This
+-- serializes with the operator transition without serializing ordinary claims.
+create function public.friday_friend_overlap_ready() returns boolean
+language plpgsql security definer set search_path=public set lock_timeout='2s' as $$
+begin
+ lock table public.activity_digest_deliveries in row exclusive mode;
+ return exists(select 1 from pg_trigger
+  where tgrelid='public.activity_digest_deliveries'::regclass
+  and tgname='friday_daily_delivery_overlap' and tgenabled='O');
+end $$;
+revoke all on function public.friday_friend_overlap_ready() from public,anon,authenticated;
+grant execute on function public.friday_friend_overlap_ready() to service_role;
 
 -- Inert preparation prerequisite: creates no campaign, approval or schedule.
 -- Must pass persisted concurrency tests before release. Application execution must
@@ -31,6 +51,9 @@ begin
  select content_version='friday-friends-once-weekly-v1-2026-11-26' into friday
  from friend_event_campaigns where id=new.campaign_id;
  if not coalesce(friday,false) then return new; end if;
+ if not friday_friend_overlap_ready() then
+  raise exception 'Friday overlap protection disabled' using errcode='23514';
+ end if;
  perform 1 from users where id=new.user_id for update;
  local_now=clock_timestamp() at time zone 'America/New_York';
  if new.channel<>'email' then
@@ -65,6 +88,31 @@ create trigger friday_friend_delivery_overlap before insert on public.friend_eve
  for each row execute function public.guard_friday_friend_overlap();
 create trigger friday_daily_delivery_overlap before insert on public.activity_digest_deliveries
  for each row execute function public.guard_friday_friend_overlap();
+alter table public.activity_digest_deliveries disable trigger friday_daily_delivery_overlap;
+
+-- Separate operator prerequisite, not send authorization. The table lock drains
+-- both daily writes and Friday transactions holding overlap_ready's lock. Once
+-- disabled, waiting/new Friday claims fail closed. Do not bypass this routine
+-- with ALTER TABLE: recent or unresolved claims must retain overlap protection.
+create function public.set_friday_friend_overlap_enabled(p_enabled boolean) returns boolean
+language plpgsql security definer set search_path=public set lock_timeout='2s' as $$
+begin
+ if p_enabled is null then raise exception 'Explicit overlap state required'; end if;
+ lock table public.activity_digest_deliveries in share row exclusive mode;
+ if p_enabled then
+  alter table public.activity_digest_deliveries enable trigger friday_daily_delivery_overlap;
+ else
+  if exists(select 1 from friend_event_deliveries d join friend_event_campaigns c on c.id=d.campaign_id
+   where c.content_version='friday-friends-once-weekly-v1-2026-11-26' and d.channel='email'
+   and (d.claimed_at>clock_timestamp()-interval '24 hours' or d.status in ('claimed','failed'))) then
+   raise exception 'Friday claims require overlap protection' using errcode='23514';
+  end if;
+  alter table public.activity_digest_deliveries disable trigger friday_daily_delivery_overlap;
+ end if;
+ return p_enabled;
+end $$;
+revoke all on function public.set_friday_friend_overlap_enabled(boolean) from public,anon,authenticated;
+grant execute on function public.set_friday_friend_overlap_enabled(boolean) to service_role;
 
 -- Only this wrapper is used by the Friday adapter. Reuse the existing frozen
 -- weekly claim and its user lock, consent, suppression, seven-day and unique gates.
@@ -72,6 +120,7 @@ create function public.claim_friday_friend_delivery(p_user uuid,p_campaign text,
 returns uuid language plpgsql security definer set search_path=public as $$
 begin
  if p_admin_emails is null or cardinality(p_admin_emails)=0 then return null; end if;
+ if not friday_friend_overlap_ready() then return null; end if;
  if not exists(select 1 from friend_event_campaigns c
   join friend_announcement_drafts d on d.id=c.id
   join campaign_owner_reviews o on o.source_campaign=c.id
