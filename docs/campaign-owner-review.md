@@ -14,7 +14,7 @@ summary. A failed owner preparation is reported as a blocker; the operator
 must resolve it before campaign execution. Do this alongside, not as part of,
 the real member audience. Other campaign families must adopt this same review
 process before they claim owner coverage; this release supports Friend
-announcement drafts only, not every transactional email.
+announcement drafts and review-only Friend discovery editions, not every transactional email.
 
 The mailbox comes from server-only `CAMPAIGN_OWNER_REVIEW_EMAIL`; code pins the
 hash of the single address the owner confirmed. Any other address fails closed.
@@ -56,3 +56,9 @@ No scheduler, recurring enrollment, automatic email or push delivery is added.
 A copy is prepared with every future Friend announcement,
 but each send remains separately approved. If the owner unsubscribes or becomes
 suppressed, report the missing review copy rather than bypassing that choice.
+
+Discovery edition preparation also uses this same owner path. Member signed links
+are replaced with their bounded direct plan/event destinations, not attribution
+links. The new review-only member purpose cannot execute through the announcement
+sender. No owner approval, execution flag or send behavior is changed. See
+`docs/friday-digest-proposal.md` for the separate cadence/consent review.
