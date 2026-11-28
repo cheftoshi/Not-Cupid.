@@ -147,7 +147,7 @@ export default function DateVibesClient({ matchId, currentUserId, partnerName }:
         )}
 
         {error && state && (
-          <p style={{ marginTop: 18, color: '#d94f3d', fontFamily: 'DM Sans, monospace', fontSize: 12, textAlign: 'center' }}>{error}</p>
+          <p style={{ marginTop: 18, color: '#d94f3d', fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 12, textAlign: 'center' }}>{error}</p>
         )}
       </div>
 
@@ -181,7 +181,7 @@ function DateMeter({ dateNumber }: { dateNumber: number }) {
               <div style={{
                 width: 30, height: 30, borderRadius: '50%', background: dotBg, color: dotColor,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: "'DM Sans', monospace", fontSize: 13, fontWeight: 600,
+                fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 13, fontWeight: 600,
                 flexShrink: 0,
                 boxShadow: active ? '0 0 0 4px rgba(6,76,72,0.15)' : 'none',
                 transition: 'all 0.2s',
@@ -193,10 +193,10 @@ function DateMeter({ dateNumber }: { dateNumber: number }) {
           );
         })}
       </div>
-      <div style={{ fontFamily: "'DM Sans', monospace", fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#064c48', marginBottom: 4 }}>
+      <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#064c48', marginBottom: 4 }}>
         date {dateNumber} · {copy.label}
       </div>
-      <div style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'normal', fontSize: 14, color: 'var(--h-text-dim)', lineHeight: 1.45 }}>
+      <div style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: 14, color: 'var(--h-text-dim)', lineHeight: 1.45 }}>
         {copy.tagline}
       </div>
     </div>
@@ -208,10 +208,10 @@ function Header({ partnerName, matchId }: { partnerName: string; matchId: string
   const first = partnerName.split(' ')[0];
   return (
     <div style={{ marginBottom: 24 }}>
-      <a href={`/match/${matchId}`} style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>
+      <a href={`/match/${matchId}`} style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 11, color: '#064c48', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}>
         ← back to chat with {first}
       </a>
-      <h1 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 36, color: 'var(--h-text)', margin: '14px 0 6px 0', lineHeight: 1.1 }}>
+      <h1 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 36, color: 'var(--h-text)', margin: '14px 0 6px 0', lineHeight: 1.1 }}>
         Date vibes <span style={{ color: '#064c48' }}>·</span> you &amp; {first}
       </h1>
       <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
@@ -226,27 +226,27 @@ function MutualMatches({ matches, partnerName }: { matches: Activity[]; partnerN
   const first = partnerName.split(' ')[0];
   return (
     <div style={{ background: 'var(--h-surface-2)', border: '1px solid rgba(6,76,72,0.4)', borderRadius: 14, padding: 18, marginBottom: 24 }}>
-      <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>
+      <div style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 11, color: '#064c48', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10 }}>
         ✦ you both want this {matches.length > 1 ? `(${matches.length})` : ''}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {matches.map((a) => (
           <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '10px 12px', background: 'var(--h-surface)', borderRadius: 8, border: '1px solid var(--h-border)' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'Space Grotesk, serif', fontSize: 16, color: 'var(--h-text)', fontWeight: 500, lineHeight: 1.3 }}>{a.title}</div>
+              <div style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 16, color: 'var(--h-text)', fontWeight: 500, lineHeight: 1.3 }}>{a.title}</div>
               <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'var(--h-text-dim)', marginTop: 4 }}>
                 {[a.venue, a.whenLabel].filter(Boolean).join(' · ')}
               </div>
             </div>
             {a.url && (
-              <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'DM Sans, monospace', fontSize: 10, color: '#064c48', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 10, color: '#064c48', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                 tickets →
               </a>
             )}
           </div>
         ))}
       </div>
-      <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'normal', fontSize: 13, color: 'var(--h-text-dim)', margin: '12px 0 0 0' }}>
+      <p style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: 13, color: 'var(--h-text-dim)', margin: '12px 0 0 0' }}>
         send {first} a message and lock in the time →
       </p>
     </div>
@@ -268,10 +268,10 @@ function Picker({
   const partnerHas = new Set(partnerInterests);
   return (
     <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 14, padding: 24 }}>
-      <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
+      <div style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
         let's set your date vibes
       </div>
-      <h2 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 22, color: 'var(--h-text)', margin: '0 0 8px 0', lineHeight: 1.2 }}>
+      <h2 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 22, color: 'var(--h-text)', margin: '0 0 8px 0', lineHeight: 1.2 }}>
         What's the first vibe date?
       </h2>
       <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: 13, marginTop: 0, marginBottom: 18, lineHeight: 1.5 }}>
@@ -317,7 +317,7 @@ function Picker({
           color: '#f6f6f6',
           border: 'none',
           padding: '14px 28px',
-          fontFamily: 'DM Sans, monospace',
+          fontFamily: 'DM Sans, system-ui, sans-serif',
           fontSize: 12,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
@@ -349,7 +349,7 @@ function Deck({
     return (
       <div style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 14, padding: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
-        <h2 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 10px 0' }}>You're through the deck.</h2>
+        <h2 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 24, color: 'var(--h-text)', margin: '0 0 10px 0' }}>You're through the deck.</h2>
         <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 18px 0' }}>
           Want more options? Add some interests, or refresh later — new live events drop in regularly.
         </p>
@@ -361,10 +361,10 @@ function Deck({
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 10, color: 'var(--h-text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 10, color: 'var(--h-text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           {remaining} left in deck
         </div>
-        <button type="button" onClick={onChangeInterests} style={{ background: 'transparent', border: 'none', fontFamily: 'DM Sans, monospace', fontSize: 10, color: '#064c48', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+        <button type="button" onClick={onChangeInterests} style={{ background: 'transparent', border: 'none', fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 10, color: '#064c48', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
           edit interests
         </button>
       </div>
@@ -392,14 +392,14 @@ function ActivityCard({ card }: { card: Activity }) {
       )}
       <div style={{ padding: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'DM Sans, monospace', fontSize: 10, color: '#064c48', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 10, color: '#064c48', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
             {card.category}{sourceBadge(card.source)}
           </span>
           {card.whenLabel && (
-            <span style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: 'var(--h-text)', fontWeight: 600 }}>{card.whenLabel}</span>
+            <span style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 11, color: 'var(--h-text)', fontWeight: 600 }}>{card.whenLabel}</span>
           )}
         </div>
-        <h3 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 22, color: 'var(--h-text)', margin: '0 0 10px 0', lineHeight: 1.25 }}>
+        <h3 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 22, color: 'var(--h-text)', margin: '0 0 10px 0', lineHeight: 1.25 }}>
           {card.title}
         </h3>
         <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.55, margin: '0 0 14px 0' }}>
@@ -407,12 +407,12 @@ function ActivityCard({ card }: { card: Activity }) {
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {card.venue && (
-            <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-accent)', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Sans, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
+            <span style={{ background: 'var(--h-surface-2)', color: 'var(--h-accent)', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 10, letterSpacing: '0.08em' }}>
               📍 {card.venue}
             </span>
           )}
           {card.tags.map((t) => (
-            <span key={t} style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Sans, monospace', fontSize: 10, letterSpacing: '0.08em' }}>
+            <span key={t} style={{ background: 'var(--h-surface-2)', color: 'var(--h-text-dim)', padding: '4px 10px', borderRadius: 999, fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 10, letterSpacing: '0.08em' }}>
               {t}
             </span>
           ))}
@@ -428,10 +428,10 @@ function CelebrateModal({ activity, partnerName, onClose }: { activity: Activity
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,12,26,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }} onClick={onClose}>
       <div style={{ background: 'var(--h-surface)', borderRadius: 14, maxWidth: 440, width: '100%', padding: 28, textAlign: 'center', border: '2px solid #064c48' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 44, marginBottom: 8 }}>✦</div>
-        <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
+        <div style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
           you both said yes
         </div>
-        <h2 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 26, color: 'var(--h-text)', margin: '0 0 12px 0', lineHeight: 1.2 }}>
+        <h2 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 26, color: 'var(--h-text)', margin: '0 0 12px 0', lineHeight: 1.2 }}>
           {activity.title}
         </h2>
         <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--h-text-dim)', fontSize: 14, lineHeight: 1.6, margin: '0 0 22px 0' }}>
@@ -455,7 +455,7 @@ function sourceBadge(source: Activity['source']): string {
 function CenteredMsg({ text, tone }: { text: string; tone?: 'error' }) {
   return (
     <main style={{ minHeight: '100vh', background: 'var(--h-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <p style={{ fontFamily: 'DM Sans, monospace', fontSize: 12, color: tone === 'error' ? '#d94f3d' : 'var(--h-text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{text}</p>
+      <p style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 12, color: tone === 'error' ? '#d94f3d' : 'var(--h-text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{text}</p>
     </main>
   );
 }
@@ -466,7 +466,7 @@ const btnPrimary: React.CSSProperties = {
   color: '#f6f6f6',
   border: 'none',
   padding: '16px 24px',
-  fontFamily: 'DM Sans, monospace',
+  fontFamily: 'DM Sans, system-ui, sans-serif',
   fontSize: 12,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
@@ -478,7 +478,7 @@ const btnSecondary: React.CSSProperties = {
   color: 'var(--h-text-dim)',
   border: '1px solid var(--h-border)',
   padding: '16px 24px',
-  fontFamily: 'DM Sans, monospace',
+  fontFamily: 'DM Sans, system-ui, sans-serif',
   fontSize: 12,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',

@@ -244,7 +244,7 @@ test.describe('OTP validation and navigation diagnostics', () => {
     await brand.click();
     await expect(page).toHaveURL('/');
     await expect(page.getByRole('link', { name: 'Start connecting' })).toBeVisible();
-    await page.getByRole('link', { name: 'Log in ↗', exact: true }).click();
+    await page.getByRole('link', { name: 'Log in', exact: true }).click();
     await expect(page).toHaveURL('/login');
     await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
     expect(homePrefetches).toEqual([]);
@@ -284,7 +284,7 @@ test('shared public header keeps login beside the wordmark on narrow phones', as
   await page.goto('/');
   const header = page.locator('header').first();
   const logo = await header.getByRole('link', { name: 'notcupid.', exact: true }).boundingBox();
-  const login = await header.getByRole('link', { name: 'Log in ↗', exact: true }).boundingBox();
+  const login = await header.getByRole('link', { name: 'Log in', exact: true }).boundingBox();
   expect(logo).not.toBeNull(); expect(login).not.toBeNull();
   expect(Math.abs((logo!.y + logo!.height / 2) - (login!.y + login!.height / 2))).toBeLessThan(4);
   expect(login!.height).toBeGreaterThanOrEqual(44);

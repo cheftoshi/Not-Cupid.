@@ -93,17 +93,17 @@ export default function FAQ() {
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontFamily: "'Space Grotesk', Georgia, ui-serif, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.15rem', color: BLUE }}>not<span style={{ color: ORANGE }}>cupid</span></span>
-            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>faq</span>
+            <span style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif", fontStyle: 'normal', fontWeight: 700, fontSize: '1.15rem', color: BLUE }}>not<span style={{ color: ORANGE }}>cupid</span></span>
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.55rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-accent)' }}>faq</span>
           </div>
-          <Link href="/" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none' }}>← back</Link>
+          <Link href="/" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.6rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none' }}>← back</Link>
         </div>
 
-        <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.6rem' }}>a connection experiment</div>
-        <h1 style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.6rem,9vw,3.8rem)', lineHeight: 1, color: 'var(--h-text)', margin: '0 0 0.5rem' }}>
+        <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.6rem' }}>a connection experiment</div>
+        <h1 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: 'clamp(2.6rem,9vw,3.8rem)', lineHeight: 1, color: 'var(--h-text)', margin: '0 0 0.5rem' }}>
           questions? <span style={{ color: BLUE }}>answers.</span>
         </h1>
-        <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 2rem' }}>
+        <p style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '1.05rem', margin: '0 0 2rem' }}>
           everything you’d want to know before you sign up.
         </p>
 
@@ -117,7 +117,7 @@ export default function FAQ() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-          <Link href="/how-it-works" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none', borderBottom: `1px dashed ${BLUE}`, paddingBottom: '0.15rem' }}>
+          <Link href="/how-it-works" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'none', borderBottom: `1px dashed ${BLUE}`, paddingBottom: '0.15rem' }}>
             still curious? see how it works →
           </Link>
           <Link href="/quiz" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', letterSpacing: '0.05em', color: '#fff', background: INK, border: 'none', borderRadius: 14, padding: '0.8rem 2rem', boxShadow: '0 14px 30px -12px rgba(0,0,0,0.5)', textDecoration: 'none', display: 'inline-block' }}>

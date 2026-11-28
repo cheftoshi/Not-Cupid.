@@ -32,7 +32,7 @@ export default function ReactivateButton({ accent = '#064c48' }: { accent?: stri
       disabled={busy}
       style={{
         background: accent, color: '#fff', border: 'none', borderRadius: 999,
-        padding: '0.8rem 1.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.66rem',
+        padding: '0.8rem 1.6rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.66rem',
         letterSpacing: '0.14em', textTransform: 'uppercase', cursor: busy ? 'wait' : 'pointer',
         opacity: busy ? 0.7 : 1,
       }}

@@ -37,7 +37,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
 
   return (
     <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-      <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.7rem' }}>
+      <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginBottom: '0.7rem' }}>
         match distance — searching within <strong style={{ color: '#064c48' }}>{r} mi</strong>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
@@ -54,7 +54,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
                 border: `1.5px solid ${active ? '#064c48' : 'var(--h-border)'}`,
                 borderRadius: 999,
                 padding: '0.5rem 1rem',
-                fontFamily: "'DM Sans', monospace",
+                fontFamily: "'DM Sans', system-ui, sans-serif",
                 fontSize: '0.62rem',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
@@ -68,7 +68,7 @@ export default function ExpandRadiusButton({ radius, maxRadius }: { radius: numb
           );
         })}
       </div>
-      <div style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'normal', fontSize: '0.78rem', color: 'var(--h-text-faint)', marginTop: '0.7rem', lineHeight: 1.45 }}>
+      <div style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: '0.78rem', color: 'var(--h-text-faint)', marginTop: '0.7rem', lineHeight: 1.45 }}>
         A wider distance may show more people.
       </div>
     </div>
