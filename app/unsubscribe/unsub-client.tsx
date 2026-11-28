@@ -44,10 +44,10 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
 
         {!done ? (
           <>
-            <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
               unsubscribe
             </div>
-            <h1 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
               Hold on, {first}. Read this first.
             </h1>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15 }}>
@@ -67,7 +67,7 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
                   color: '#f6f6f6',
                   border: 'none',
                   padding: '14px 24px',
-                  fontFamily: 'DM Sans, monospace',
+                  fontFamily: 'DM Sans, system-ui, sans-serif',
                   fontSize: 11,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
@@ -86,7 +86,7 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
                   color: 'var(--h-text-dim)',
                   border: '1px solid var(--h-border)',
                   padding: '14px 24px',
-                  fontFamily: 'DM Sans, monospace',
+                  fontFamily: 'DM Sans, system-ui, sans-serif',
                   fontSize: 11,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
@@ -100,15 +100,15 @@ export default function UnsubClient({ user, token, alreadyOff: alreadyOffProp }:
             </div>
 
             {error && (
-              <p style={{ marginTop: 18, color: '#d94f3d', fontFamily: 'DM Sans, monospace', fontSize: 12 }}>{error}</p>
+              <p style={{ marginTop: 18, color: '#d94f3d', fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 12 }}>{error}</p>
             )}
           </>
         ) : (
           <>
-            <div style={{ fontFamily: 'DM Sans, monospace', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'DM Sans, system-ui, sans-serif', fontSize: 11, color: '#064c48', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
               paused.
             </div>
-            <h1 style={{ fontFamily: 'Space Grotesk, serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: 30, color: 'var(--h-text)', margin: '0 0 18px 0', lineHeight: 1.15 }}>
               You're out of the pool, {first}.
             </h1>
             <p style={{ fontFamily: 'system-ui, sans-serif', color: 'var(--h-text-dim)', lineHeight: 1.65, fontSize: 15 }}>

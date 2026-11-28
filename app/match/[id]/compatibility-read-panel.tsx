@@ -41,7 +41,7 @@ export default function CompatibilityReadPanel({ candidateId, firstName }: { can
     return (
       <div style={{ display: 'grid', gap: '0.55rem', padding: '0.8rem', border: '1px solid rgba(6,76,72,0.24)', borderRadius: 12, background: 'rgba(6,76,72,0.05)' }}>
         <span style={kicker}>AI + HEXACO · yours to keep</span>
-        <strong style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'normal', fontSize: '0.96rem' }}>your private compatibility read with {firstName}</strong>
+        <strong style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: '0.96rem' }}>your private compatibility read with {firstName}</strong>
         <p style={{ margin: 0, color: 'var(--h-text-dim)', fontSize: '0.76rem', lineHeight: 1.5 }}>Six broad personality signals, pair dynamics, and a first-date angle. Raw answers and exact scores stay private.</p>
         {error && <p role="alert" style={{ margin: 0, color: '#b42318', fontSize: '0.74rem' }}>{error}</p>}
         <button type="button" onClick={openRead} disabled={loading} style={button}>
@@ -54,7 +54,7 @@ export default function CompatibilityReadPanel({ candidateId, firstName }: { can
   return (
     <div style={{ display: 'grid', gap: '0.7rem', padding: '0.8rem', border: '1px solid rgba(6,76,72,0.24)', borderRadius: 12, background: 'rgba(6,76,72,0.05)' }}>
       <span style={kicker}>{read.source === 'ai' ? 'AI-personalized compatibility read' : 'curated compatibility read'}</span>
-      <strong style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'normal', fontSize: '1rem' }}>{read.headline}</strong>
+      <strong style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: '1rem' }}>{read.headline}</strong>
       <p style={copy}>{read.overview}</p>
       <div style={{ display: 'grid', gap: '0.4rem' }}>
         {read.traits.map((trait) => (
@@ -83,13 +83,13 @@ export default function CompatibilityReadPanel({ candidateId, firstName }: { can
 }
 
 const kicker: React.CSSProperties = {
-  color: '#064c48', fontFamily: "'DM Sans', monospace", fontSize: '0.48rem',
+  color: '#064c48', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.48rem',
   fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
 };
 const copy: React.CSSProperties = { margin: 0, color: 'var(--h-text-dim)', fontSize: '0.74rem', lineHeight: 1.48 };
 const button: React.CSSProperties = {
   minHeight: 44, border: 0, borderRadius: 10, background: '#0b0b0b', color: '#fff',
-  fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', fontWeight: 700,
+  fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.54rem', fontWeight: 700,
   letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer',
 };
 

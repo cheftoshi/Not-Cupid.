@@ -56,18 +56,18 @@ export default function LocationControls({
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.6rem' }}>
       <button type="button" onClick={() => setPicker(true)}
-        style={{ background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.08em', color: 'var(--h-text-dim)' }}>
+        style={{ background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.35rem 0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.58rem', letterSpacing: '0.08em', color: 'var(--h-text-dim)' }}>
         📍 {city || 'set your city'} <span style={{ color: 'var(--h-accent)', fontWeight: 700 }}>· change</span>
       </button>
 
       {showRadius && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>within</span>
+          <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>within</span>
           {RADIUS_LADDER.map((v) => (
             <button key={v} type="button" onClick={() => changeRadius(v)} disabled={rBusy}
-              style={{ background: v === r ? accent : 'var(--h-surface-2)', color: v === r ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${v === r ? accent : 'var(--h-border)'}`, borderRadius: 8, padding: '0.25rem 0.5rem', cursor: rBusy ? 'wait' : 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.54rem' }}>{v}</button>
+              style={{ background: v === r ? accent : 'var(--h-surface-2)', color: v === r ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${v === r ? accent : 'var(--h-border)'}`, borderRadius: 8, padding: '0.25rem 0.5rem', cursor: rBusy ? 'wait' : 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.54rem' }}>{v}</button>
           ))}
-          <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.5rem', color: 'var(--h-text-faint)' }}>mi</span>
+          <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.5rem', color: 'var(--h-text-faint)' }}>mi</span>
         </div>
       )}
 
@@ -78,14 +78,14 @@ export default function LocationControls({
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.6rem', color: 'var(--h-text)' }}>where are you?</span>
               <button onClick={() => setPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44, fontSize: '1.1rem', color: 'var(--h-text-faint)' }} aria-label="close city picker">✕</button>
             </div>
-            <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1.1rem' }}>
+            <p style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.85rem', margin: '0 0 1.1rem' }}>
               {showRadius ? 'This updates your home matching location. Existing connections stay put.' : 'Explore plans in another city without changing your home location or existing chats. This choice takes priority over travel discovery.'} Availability depends on local members.
             </p>
             {error && <p role="alert">{error}</p>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.05rem' }}>
               {BY_STATE.map(({ st, cities }) => (
                 <div key={st}>
-                  <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.5rem' }}>{STATE_NAME[st] || st}</div>
+                  <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.54rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.5rem' }}>{STATE_NAME[st] || st}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {cities.map((c) => {
                       const isCurrent = c.key === currentMetro;

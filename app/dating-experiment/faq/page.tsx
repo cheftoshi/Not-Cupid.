@@ -100,15 +100,15 @@ export default function DatingExperimentFaqPage() {
         padding: 'calc(1.5rem + env(safe-area-inset-top, 0px)) calc(1.25rem + env(safe-area-inset-right, 0px)) calc(4rem + env(safe-area-inset-bottom, 0px)) calc(1.25rem + env(safe-area-inset-left, 0px))',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/dating-experiment" style={{ fontFamily: "'Space Grotesk', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.2rem', textDecoration: 'none' }}>
+          <Link href="/dating-experiment" style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif", fontStyle: 'normal', fontWeight: 700, fontSize: '1.2rem', textDecoration: 'none' }}>
             <span style={{ color: BLUE }}>Not</span><span style={{ color: ORANGE }}>Cupid</span>
           </Link>
-          <Link href="/dating-experiment" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← experiment</Link>
+          <Link href="/dating-experiment" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← experiment</Link>
         </div>
 
-        <div style={{ marginTop: '2rem', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>Dinner on Us · Boston</div>
-        <h1 style={{ margin: '0.45rem 0 0.65rem', fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: 'clamp(2.45rem, 9vw, 4rem)', lineHeight: 1 }}>the simple plan.</h1>
-        <p style={{ margin: 0, maxWidth: 620, color: 'var(--h-text-dim)', fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', fontSize: '1.05rem', lineHeight: 1.55 }}>
+        <div style={{ marginTop: '2rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.58rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: ORANGE_DEEP, fontWeight: 700 }}>Dinner on Us · Boston</div>
+        <h1 style={{ margin: '0.45rem 0 0.65rem', fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: 'clamp(2.45rem, 9vw, 4rem)', lineHeight: 1 }}>the simple plan.</h1>
+        <p style={{ margin: 0, maxWidth: 620, color: 'var(--h-text-dim)', fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: '1.05rem', lineHeight: 1.55 }}>
           Four steps, two private decisions, and up to two compatibility-led Boston dinner pairs. Here’s exactly how the experiment is intended to work.
         </p>
 
@@ -124,12 +124,12 @@ export default function DatingExperimentFaqPage() {
         )}
 
         <section aria-labelledby="plan-heading" style={{ marginTop: '2rem' }}>
-          <h2 id="plan-heading" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.17em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>how it works</h2>
+          <h2 id="plan-heading" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.6rem', letterSpacing: '0.17em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>how it works</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0.75rem' }}>
             {STEPS.map(([number, title, body]) => (
               <article key={number} style={{ padding: '1rem', background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 15 }}>
-                <div style={{ width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 999, background: ORANGE, color: '#fff', fontFamily: "'DM Sans', monospace", fontSize: '0.65rem', fontWeight: 700 }}>{number}</div>
-                <h3 style={{ margin: '0.65rem 0 0.3rem', fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', fontSize: '1.15rem' }}>{title}</h3>
+                <div style={{ width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 999, background: ORANGE, color: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.65rem', fontWeight: 700 }}>{number}</div>
+                <h3 style={{ margin: '0.65rem 0 0.3rem', fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: '1.15rem' }}>{title}</h3>
                 <p style={{ margin: 0, color: 'var(--h-text-dim)', fontSize: '0.86rem', lineHeight: 1.55 }}>{body}</p>
               </article>
             ))}
@@ -137,11 +137,11 @@ export default function DatingExperimentFaqPage() {
         </section>
 
         <section aria-labelledby="faq-heading" style={{ marginTop: '2.4rem' }}>
-          <h2 id="faq-heading" style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', fontSize: '1.8rem', margin: '0 0 0.8rem' }}>questions, answered.</h2>
+          <h2 id="faq-heading" style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: '1.8rem', margin: '0 0 0.8rem' }}>questions, answered.</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {FAQS.map((item, index) => (
               <details key={item.q} open={index === 0} style={{ background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 14, padding: '0.9rem 1rem' }}>
-                <summary style={{ cursor: 'pointer', fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', fontWeight: 700, fontSize: '1.03rem', color: 'var(--h-text)' }}>{item.q}</summary>
+                <summary style={{ cursor: 'pointer', fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontWeight: 700, fontSize: '1.03rem', color: 'var(--h-text)' }}>{item.q}</summary>
                 <p style={{ margin: '0.65rem 0 0', color: 'var(--h-text-dim)', fontSize: '0.89rem', lineHeight: 1.6 }}>{item.a}</p>
               </details>
             ))}

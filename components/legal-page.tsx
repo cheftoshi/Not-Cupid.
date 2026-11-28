@@ -8,17 +8,17 @@ export default function LegalPage({ title, subtitle, updated, children }: {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--h-bg)', color: 'var(--h-text)' }}>
       <header style={{ borderBottom: '1px solid var(--h-border)', padding: 'calc(1.1rem + env(safe-area-inset-top, 0px)) calc(1.25rem + env(safe-area-inset-right, 0px)) 1.1rem calc(1.25rem + env(safe-area-inset-left, 0px))' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-          <a href="/" style={{ textDecoration: 'none', fontFamily: "'Space Grotesk', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.4rem' }}>
+          <a href="/" style={{ textDecoration: 'none', fontFamily: "'Space Grotesk', system-ui, sans-serif", fontStyle: 'normal', fontWeight: 700, fontSize: '1.4rem' }}>
             <span style={{ color: '#064c48' }}>Not</span><span style={{ color: '#c94f12' }}>Cupid</span>
           </a>
-          <a href="/" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← back home</a>
+          <a href="/" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.6rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'none' }}>← back home</a>
         </div>
       </header>
 
       <main style={{ boxSizing: 'border-box', flex: 1, minWidth: 0, maxWidth: 760, margin: '0 auto', padding: '2.5rem calc(1.25rem + env(safe-area-inset-right, 0px)) calc(1rem + env(safe-area-inset-bottom, 0px)) calc(1.25rem + env(safe-area-inset-left, 0px))', width: '100%' }}>
         <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2.2rem, 7vw, 3.2rem)', lineHeight: 1, margin: 0 }}>{title}</h1>
-        {subtitle && <p style={{ fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', color: 'var(--h-text-dim)', margin: '0.5rem 0 0', fontSize: '1.05rem' }}>{subtitle}</p>}
-        {updated && <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', margin: '0.9rem 0 0' }}>last updated · {updated}</p>}
+        {subtitle && <p style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', color: 'var(--h-text-dim)', margin: '0.5rem 0 0', fontSize: '1.05rem' }}>{subtitle}</p>}
+        {updated && <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', margin: '0.9rem 0 0' }}>last updated · {updated}</p>}
         <div className="legalBody" style={{ marginTop: '2rem', fontFamily: 'DM Sans, sans-serif', fontSize: '0.98rem', lineHeight: 1.65, color: 'var(--h-text)' }}>
           {children}
         </div>

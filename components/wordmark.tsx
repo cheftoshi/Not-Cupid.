@@ -15,7 +15,7 @@ export default function Wordmark({
   const mark = (
     <span
       style={{
-        fontFamily: "'Space Grotesk', Georgia, ui-serif, serif",
+        fontFamily: "'Space Grotesk', system-ui, sans-serif",
         fontStyle: 'normal',
         fontWeight: 700,
         fontSize: `${size}rem`,
@@ -33,7 +33,7 @@ export default function Wordmark({
       {mark}
       <span
         style={{
-          fontFamily: "'DM Sans', ui-monospace, monospace",
+          fontFamily: "'DM Sans', system-ui, sans-serif",
           fontSize: `${size * 0.34}rem`,
           letterSpacing: '0.18em',
           textTransform: 'uppercase',

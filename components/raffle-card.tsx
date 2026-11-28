@@ -55,8 +55,8 @@ export default function RaffleCard() {
 
   return (
     <div style={{ background: 'linear-gradient(135deg, rgba(244,197,66,0.12), var(--h-surface))', border: `2px solid ${border}`, borderRadius: 18, padding: '1.2rem 1.35rem', boxShadow: '0 18px 50px -30px rgba(244,197,66,0.5)' }}>
-      <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#765600', marginBottom: '0.4rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.statusLabel || ev.city}</div>
-      <h3 style={{ fontFamily: 'Space Grotesk, ui-serif, serif', fontStyle: 'italic', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.3rem' }}>{head}</h3>
+      <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.54rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#765600', marginBottom: '0.4rem', fontWeight: 700 }}>🎟️ {ev.series} · {ev.statusLabel || ev.city}</div>
+      <h3 style={{ fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: '1.4rem', color: 'var(--h-text)', margin: '0 0 0.3rem' }}>{head}</h3>
       <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: 0 }}>{sub}</p>
       {label && (
         <Link href={href} style={{ display: 'inline-block', marginTop: '0.9rem', background: accent, color: '#fff', borderRadius: 999, padding: '0.6rem 1.5rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', letterSpacing: '0.04em', textDecoration: 'none' }}>{label}</Link>
@@ -66,7 +66,7 @@ export default function RaffleCard() {
           * No purchase necessary · 21+ · compatibility-weighted selection
         </div>
       )}
-      <div style={{ marginTop: fine ? '0.3rem' : '0.7rem', fontSize: '0.56rem', letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: "'DM Sans', monospace" }}>
+      <div style={{ marginTop: fine ? '0.3rem' : '0.7rem', fontSize: '0.56rem', letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
         <Link href="/dating-experiment/faq" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>how it works + FAQ</Link>
         <span style={{ color: 'var(--h-text-faint)' }}> · </span>
         <Link href="/dating-experiment/terms" style={{ color: 'var(--h-text-faint)', textDecoration: 'underline' }}>official rules</Link>

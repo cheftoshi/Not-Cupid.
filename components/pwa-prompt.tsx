@@ -433,7 +433,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
             border: "none",
             cursor: "pointer",
             color: "var(--h-text-dim)",
-            fontFamily: "'DM Sans', monospace",
+            fontFamily: "'DM Sans', system-ui, sans-serif",
             fontSize: "0.8rem",
             padding: "0.3rem 0.7rem",
           }}

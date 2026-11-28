@@ -8,7 +8,7 @@ import { compressImage } from '@/lib/compress-image';
 
 const INK = 'var(--h-border)', LINE = '#064c48', LINE_DEEP = 'var(--h-accent)', CREAM = 'var(--h-surface)';
 const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 16, boxShadow: 'none', padding: '1.25rem' };
-const chip: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.25rem 0.6rem' };
+const chip: React.CSSProperties = { fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.25rem 0.6rem' };
 const label: React.CSSProperties = { fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', margin: '1.5rem 0 0.6rem' };
 
 type Init = { name: string; photo_url: string | null; gallery: string[]; bio: string; occupation: string; music: string[]; food: string[]; hobbies: string[] };
@@ -104,7 +104,7 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: '1px solid var(--h-border)', textDecoration: 'none' }}>FRIEND LINE</a>
-          <a href="/friends" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>← back to hub</a>
+          <a href="/friends" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>← back to hub</a>
         </div>
 
         <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.4rem)', lineHeight: 1.1, letterSpacing: '-.04em', color: 'var(--h-text)', WebkitTextStroke: '0', textShadow: 'none', margin: 0 }}>
@@ -159,11 +159,11 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
         {/* INTERESTS */}
         <div style={label}>what you&apos;re into</div>
         <div style={card}>
-          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.4rem' }}>music</div>
+          <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.4rem' }}>music</div>
           <TagField value={music} onChange={setMusic} placeholder="add a genre / artist…" />
-          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>food</div>
+          <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>food</div>
           <TagField value={food} onChange={setFood} placeholder="add a cuisine / spot…" />
-          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>hobbies &amp; obsessions</div>
+          <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>hobbies &amp; obsessions</div>
           <TagField value={hobbies} onChange={setHobbies} placeholder="add a hobby…" />
         </div>
 
@@ -173,7 +173,7 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
           </button>
           {msg && <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: LINE_DEEP }}>{msg}</span>}
         </div>
-        <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.6rem' }}>
+        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.6rem' }}>
           photos save instantly · bio &amp; interests save when you hit the button
         </p>
 

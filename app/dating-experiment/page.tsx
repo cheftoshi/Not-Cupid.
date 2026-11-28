@@ -51,20 +51,20 @@ function PublicExperimentLanding({ experiment }: { experiment: Awaited<ReturnTyp
         padding: 'calc(1.4rem + env(safe-area-inset-top, 0px)) calc(1.15rem + env(safe-area-inset-right, 0px)) calc(4rem + env(safe-area-inset-bottom, 0px)) calc(1.15rem + env(safe-area-inset-left, 0px))',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-          <Link href="/" style={{ fontFamily: "'Space Grotesk', Georgia, serif", fontStyle: 'italic', fontWeight: 700, fontSize: '1.25rem', textDecoration: 'none' }}>
+          <Link href="/" style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif", fontStyle: 'normal', fontWeight: 700, fontSize: '1.25rem', textDecoration: 'none' }}>
             <span style={{ color: '#064c48' }}>Not</span><span style={{ color: '#8a6500' }}>Cupid</span>
           </Link>
-          <Link href="/login?next=/dating-experiment" style={{ color: 'var(--h-text-dim)', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none' }}>log in →</Link>
+          <Link href="/login?next=/dating-experiment" style={{ color: 'var(--h-text-dim)', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none' }}>log in →</Link>
         </div>
 
         <section style={{ marginTop: 'clamp(2.4rem, 8vw, 4.5rem)' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.42rem 0.65rem', borderRadius: 999, background: entriesOpen ? 'rgba(45,122,79,0.1)' : 'var(--h-surface-2)', color: entriesOpen ? '#2d7a4f' : 'var(--h-text-dim)', fontFamily: "'DM Sans', monospace", fontSize: '0.58rem', letterSpacing: '0.11em', textTransform: 'uppercase', fontWeight: 700 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.42rem 0.65rem', borderRadius: 999, background: entriesOpen ? 'rgba(45,122,79,0.1)' : 'var(--h-surface-2)', color: entriesOpen ? '#2d7a4f' : 'var(--h-text-dim)', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.58rem', letterSpacing: '0.11em', textTransform: 'uppercase', fontWeight: 700 }}>
             <span aria-hidden>{entriesOpen ? '●' : '○'}</span> {entriesOpen ? 'entries open' : 'entries unavailable'}
           </div>
-          <h1 style={{ margin: '0.75rem 0 0', fontFamily: "'Space Grotesk', Georgia, serif", fontStyle: 'italic', fontSize: 'clamp(3rem, 13vw, 5.4rem)', lineHeight: 0.92, letterSpacing: '-0.045em' }}>
+          <h1 style={{ margin: '0.75rem 0 0', fontFamily: "'Space Grotesk', system-ui, sans-serif", fontStyle: 'normal', fontSize: 'clamp(3rem, 13vw, 5.4rem)', lineHeight: 0.92, letterSpacing: '-0.045em' }}>
             the Dating<br /><span style={{ color: '#8a6500' }}>Experiment.</span>
           </h1>
-          <p style={{ margin: '1.1rem 0 0', maxWidth: 610, color: 'var(--h-text-dim)', fontFamily: 'Space Grotesk, serif', fontStyle: 'italic', fontSize: 'clamp(1.02rem, 4vw, 1.25rem)', lineHeight: 1.55 }}>
+          <p style={{ margin: '1.1rem 0 0', maxWidth: 610, color: 'var(--h-text-dim)', fontFamily: 'Space Grotesk, system-ui, sans-serif', fontStyle: 'normal', fontSize: 'clamp(1.02rem, 4vw, 1.25rem)', lineHeight: 1.55 }}>
             {name}. Set your preferences, meet up to two compatibility-led options privately, and choose who you would actually meet. They choose privately too.
           </p>
         </section>
@@ -77,14 +77,14 @@ function PublicExperimentLanding({ experiment }: { experiment: Awaited<ReturnTyp
             ['the entry window', `${entryCap} spots · closes ${RAFFLE.entryCloseLabel}`],
           ].map(([label, value]) => (
             <div key={label} style={{ padding: '0.95rem', borderRadius: 14, border: '1px solid var(--h-border)', background: 'var(--h-surface)' }}>
-              <div style={{ color: '#765600', fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>{label}</div>
+              <div style={{ color: '#765600', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.54rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>{label}</div>
               <div style={{ marginTop: '0.35rem', color: 'var(--h-text)', fontSize: '0.88rem', lineHeight: 1.5 }}>{value}</div>
             </div>
           ))}
         </section>
 
         <div style={{ marginTop: '1.35rem', display: 'grid', gap: '0.65rem' }}>
-          <Link href="/login?next=/dating-experiment" style={{ display: 'block', padding: '0.95rem 1rem', borderRadius: 14, background: entriesOpen ? '#8a6500' : 'var(--h-surface-2)', color: entriesOpen ? '#fff' : 'var(--h-text-dim)', textAlign: 'center', textDecoration: 'none', fontFamily: "'DM Sans', monospace", fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, pointerEvents: entriesOpen ? 'auto' : 'none' }}>
+          <Link href="/login?next=/dating-experiment" style={{ display: 'block', padding: '0.95rem 1rem', borderRadius: 14, background: entriesOpen ? '#8a6500' : 'var(--h-surface-2)', color: entriesOpen ? '#fff' : 'var(--h-text-dim)', textAlign: 'center', textDecoration: 'none', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, pointerEvents: entriesOpen ? 'auto' : 'none' }}>
             {entriesOpen ? 'join free →' : 'entries are not open'}
           </Link>
           {entriesOpen && <Link href="/quiz?next=experiment" style={{ display: 'block', padding: '0.85rem 1rem', borderRadius: 14, border: '1px solid var(--h-border)', color: 'var(--h-text)', textAlign: 'center', textDecoration: 'none', fontSize: '0.84rem', fontWeight: 650 }}>new to NotCupid? build your profile →</Link>}

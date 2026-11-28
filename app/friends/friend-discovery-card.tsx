@@ -211,10 +211,10 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
         </div>
         {data?.myIntent && (
           <div style={{ border: '1px solid rgba(244,197,66,0.35)', background: 'rgba(244,197,66,0.08)', borderRadius: 14, padding: '0.65rem 0.75rem', minWidth: 180 }}>
-            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#765600' }}>live signal</div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#765600' }}>live signal</div>
             <div style={{ fontWeight: 750, marginTop: '0.15rem' }}>{data.myIntent.activity.emoji} {data.myIntent.activity.label}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--h-text-dim)', marginTop: '0.15rem' }}>{String(data.myIntent.timeWindow).replaceAll('_', ' ')} · {data.myIntent.interestedCount} down too</div>
-            <button onClick={closeIntent} disabled={busy} style={{ marginTop: '0.35rem', padding: 0, border: 0, background: 'none', color: '#a74712', cursor: 'pointer', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', textDecoration: 'underline' }}>close signal</button>
+            <button onClick={closeIntent} disabled={busy} style={{ marginTop: '0.35rem', padding: 0, border: 0, background: 'none', color: '#a74712', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', textDecoration: 'underline' }}>close signal</button>
           </div>
         )}
       </div>
@@ -222,7 +222,7 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
       <div className={s.travelPanel} data-friend-travel>
         <div className={s.travelSummary}>
           <div style={{ flex: 1, minWidth: 210 }}>
-            <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', letterSpacing: '0.11em', textTransform: 'uppercase', color: '#a74712' }}>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.11em', textTransform: 'uppercase', color: '#a74712' }}>
               {data?.location?.trip ? (data.location.isTraveling ? '✈ travel friend line active' : '✈ upcoming trip saved') : '✈ going somewhere?'}
             </div>
             {data?.location?.trip ? (
@@ -326,9 +326,9 @@ export default function FriendDiscoveryCard({ onOpenScene, onOpenCommunities, on
                   <span style={{ minWidth: 0, flex: 1 }}>
                     <span style={{ display: 'block', fontWeight: 760, lineHeight: 1.2 }}>{route.title}</span>
                     <span style={{ display: 'block', marginTop: '0.16rem', color: 'var(--h-text-dim)', fontSize: '0.75rem' }}>{KIND_LABEL[route.kind]} · {whenLabel(route)}{route.memberCount ? ` · ${route.memberCount} in` : ''}</span>
-                    {route.reasons?.length > 0 && <span style={{ display: 'block', marginTop: '0.13rem', color: '#a74712', fontFamily: "'DM Sans',monospace", fontSize: '0.75rem' }}>{route.reasons.join(' · ')}</span>}
+                    {route.reasons?.length > 0 && <span style={{ display: 'block', marginTop: '0.13rem', color: '#a74712', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem' }}>{route.reasons.join(' · ')}</span>}
                   </span>
-                  <span style={{ flexShrink: 0, fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#765600' }}>{action} →</span>
+                  <span style={{ flexShrink: 0, fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#765600' }}>{action} →</span>
                 </>
               );
               const style = { width: '100%', display: 'flex', alignItems: 'center', gap: '0.65rem', textAlign: 'left' as const, border: `1px solid ${index === 0 ? 'rgba(244,197,66,0.38)' : 'var(--h-border)'}`, borderRadius: 14, background: index === 0 ? 'rgba(255,255,255,0.58)' : 'var(--h-surface-2)', padding: '0.62rem 0.7rem', color: 'var(--h-text)', textDecoration: 'none', cursor: 'pointer' };

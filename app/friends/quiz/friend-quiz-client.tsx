@@ -199,12 +199,12 @@ export default function FriendQuizClient({ destination, resumeLogin }: { destina
                 </button>
               ))}
             </div>
-            <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
               pick any. leave all unchecked = open to everyone.
             </p>
 
             <p className={styles.qText} style={{ fontSize: '1.1rem' }}>do you identify as LGBTQ+?</p>
-            <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 0.85rem' }}>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 0.85rem' }}>
               optional — so LGBTQ+ folks &amp; events can find you.
             </p>
             <div className={styles.qOptions}>
@@ -231,11 +231,11 @@ export default function FriendQuizClient({ destination, resumeLogin }: { destina
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', margin: '0 0 0.75rem' }}>
               <input type="number" inputMode="numeric" min={18} max={100} placeholder="18"
                 value={ageMin} onChange={(e) => setAgeMin(e.target.value)} style={inputStyle} />
-              <span style={{ fontFamily: "'DM Sans', monospace", color: 'var(--h-text-faint)' }}>to</span>
+              <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", color: 'var(--h-text-faint)' }}>to</span>
               <input type="number" inputMode="numeric" min={18} max={100} placeholder="99"
                 value={ageMax} onChange={(e) => setAgeMax(e.target.value)} style={inputStyle} />
             </div>
-            <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.62rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)', margin: '0 0 1.5rem' }}>
               leave blank for no limit. friends near your vibe, your age.
             </p>
             {signInNeeded && resumeLogin && <a className="btn-ghost" href={resumeLogin}>Sign in again</a>}
