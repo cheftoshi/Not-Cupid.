@@ -10,7 +10,7 @@ export default function LandingClient() {
         <p className={styles.landEyebrow}>Dating · Friendship · Real-life plans</p>
         <h1 className={styles.landH1}>Matched on<br/>who you <em>are.</em></h1>
         <p className={styles.landLede}>Your personality, interests and preferences help shape who you meet. A little more in common. A better place to start.</p>
-        <Link prefetch={false} href="/quiz" className={styles.landAuthPrimary}>Start connecting <span aria-hidden>↗</span></Link>
+        <Link prefetch={false} href="/quiz" className={styles.landAuthPrimary}>Start connecting <span aria-hidden>→</span></Link>
         <p className={styles.quizNote}>12 personality questions, then your interests and preferences. Go at your own pace. Optional paid extras are available.</p>
         <div className={styles.lineLabels}><span>Free quiz</span><span>No swiping</span><span>You choose</span></div>
       </div>
@@ -26,7 +26,7 @@ export default function LandingClient() {
           <span className={styles.cardLabel}>A connection worth exploring</span>
           <p className={styles.previewTitle}>Start with something in common.</p>
           <p>Explore a profile, choose whether to connect, and start a conversation when the interest is mutual.</p>
-          <span className={styles.exampleAction}>Your choice, every time ↗</span>
+          <span className={styles.exampleAction}>Your choice, every time</span>
         </article>
       </aside>
     </section>
@@ -38,7 +38,7 @@ export default function LandingClient() {
         <li><span aria-hidden>2</span><div><h3>Explore your connections</h3><p>Find dating introductions or discover friends and local plans. Your choices and mutual preferences guide the experience.</p></div></li>
         <li><span aria-hidden>3</span><div><h3>Choose your next move</h3><p>Say hello, join a member’s plan or start one of your own. Nothing gets sent, joined or booked on your behalf.</p></div></li>
       </ol>
-      <Link prefetch={false} href="/how-it-works" className={styles.learnLink}>See how it works ↗</Link>
+      <Link prefetch={false} href="/how-it-works" className={styles.learnLink}>See how it works →</Link>
     </section>
   </main>
 }

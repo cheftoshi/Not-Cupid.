@@ -52,6 +52,10 @@ function getInstallMode(): false | "native" | "ios" | "fallback" {
 export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
   const pathname = usePathname();
   const setupRoute = pathname === "/quiz" || pathname === "/login" || pathname === "/friends/quiz" || pathname === "/friends/profile";
+  // Public marketing pages are where people meet NotCupid for the first time
+  // from a shared link. Asking them to install before they know what it is
+  // reads as spam, so the install card only appears inside the app.
+  const marketingRoute = ["/", "/how-it-works", "/friend-line", "/faq", "/about", "/safety", "/privacy", "/terms", "/law-enforcement"].includes(pathname || "");
   const [showPush, setShowPush] = useState(false);
   const [showInstall, setShowInstall] = useState<
     false | "native" | "ios" | "fallback"
@@ -190,7 +194,8 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
     };
   }, []);
 
-  const visible = !setupRoute && !suspended && !!(showPush || showInstall);
+  const installCard = marketingRoute ? false : showInstall;
+  const visible = !setupRoute && !suspended && !!(showPush || installCard);
   useEffect(() => {
     const root = document.documentElement;
     const measure = () =>
@@ -251,7 +256,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
   function dismiss() {
     try {
       if (showPush) localStorage.setItem(PUSH_DISMISS_KEY, String(Date.now()));
-      if (showInstall)
+      if (installCard)
         localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
     } catch {
       /* Dismiss still works when browser storage is unavailable. */
@@ -267,10 +272,9 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
     color: accent,
     borderRadius: 999,
     padding: "0.64rem 1rem",
-    fontFamily: "'Space Grotesk', system-ui, sans-serif",
-    fontSize: "1rem",
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontWeight: 500,
+    fontSize: "0.95rem",
     cursor: "pointer",
   };
 
@@ -293,14 +297,14 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
           gap: "0.65rem",
           background: "color-mix(in srgb, var(--h-surface) 96%, transparent)",
           border: "1px solid var(--h-border)",
-          borderRadius: 24,
-          padding: "0.8rem",
-          boxShadow: "0 20px 60px -22px rgba(0,0,0,0.55)",
+          borderRadius: 16,
+          padding: "0.9rem",
+          boxShadow: "var(--shadow-lg)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
         }}
       >
-        {showInstall && (
+        {installCard && (
           <div
             style={{
               display: "flex",
@@ -323,10 +327,10 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
             <div style={{ minWidth: 0, flex: 1 }}>
               <div
                 style={{
-                  fontFamily: "Georgia, ui-serif, serif",
-                  fontStyle: "italic",
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  fontWeight: 600,
                   fontSize: "1.06rem",
-                  lineHeight: 1.08,
+                  lineHeight: 1.15,
                   color: "var(--h-text)",
                 }}
               >
@@ -334,8 +338,8 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
               </div>
               <div
                 style={{
-                  fontFamily: "system-ui, sans-serif",
-                  fontSize: "0.76rem",
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontSize: "0.82rem",
                   lineHeight: 1.35,
                   color: "var(--h-text-dim)",
                   marginTop: 4,
@@ -347,41 +351,11 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
             </div>
           </div>
         )}
-        {showInstall && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3,minmax(0,1fr))",
-              gap: "0.35rem",
-            }}
-          >
-            {["love line", "friend line", "pings"].map((x) => (
-              <span
-                key={x}
-                style={{
-                  textAlign: "center",
-                  border: "1px solid var(--h-border)",
-                  borderRadius: 999,
-                  padding: "0.3rem 0.35rem",
-                  background: "var(--h-surface-2)",
-                  color: "var(--h-text-dim)",
-                  fontFamily: "'DM Sans', monospace",
-                  fontSize: "0.5rem",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {x}
-              </span>
-            ))}
-          </div>
-        )}
         {showPush && (
           <div style={{ display: "grid", gap: "0.55rem" }}>
             <div
               style={{
-                fontFamily: "Georgia, ui-serif, serif",
-                fontStyle: "italic",
+                fontFamily: "'DM Sans', system-ui, sans-serif",
                 fontSize: "0.9rem",
                 lineHeight: 1.4,
                 color: "var(--h-text)",
@@ -413,12 +387,12 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
             )}
           </div>
         )}
-        {showInstall === "native" && (
+        {installCard === "native" && (
           <button onClick={install} style={{ ...pill, width: "100%" }}>
-            install NotCupid
+            Install NotCupid
           </button>
         )}
-        {showInstall === "ios" && (
+        {installCard === "ios" && (
           <div
             style={{
               border: "1px dashed var(--h-border)",
@@ -434,7 +408,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
             . It will open from your home screen like an app.
           </div>
         )}
-        {showInstall === "fallback" && (
+        {installCard === "fallback" && (
           <div
             style={{
               border: "1px dashed var(--h-border)",
@@ -464,7 +438,7 @@ export default function PwaPrompt({ accent = "#064c48" }: { accent?: string }) {
             padding: "0.3rem 0.7rem",
           }}
         >
-          not now
+          Not now
         </button>
       </div>
     </div>

@@ -10,15 +10,15 @@ export default function CorpFooter() {
         padding: '2.4rem 1rem 2.6rem',
         borderTop: '1px solid var(--h-border)',
         background: 'var(--h-surface)',
-        fontFamily: "'DM Sans', ui-monospace, monospace",
+        fontFamily: "'DM Sans', system-ui, sans-serif",
       }}
     >
       <div style={{ marginBottom: '1rem' }}><Wordmark size={1.5} href="/" /></div>
       <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1.1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         {[
-          { label: 'instagram', handle: '@notcupidapp', href: 'https://instagram.com/notcupidapp' },
-          { label: 'tiktok', handle: '@notcupid11', href: 'https://tiktok.com/@notcupid11' },
-          { label: 'x', handle: '@notcupidapp', href: 'https://x.com/notcupidapp' },
+          { label: 'Instagram', handle: '@notcupidapp', href: 'https://instagram.com/notcupidapp' },
+          { label: 'TikTok', handle: '@notcupid11', href: 'https://tiktok.com/@notcupid11' },
+          { label: 'X', handle: '@notcupidapp', href: 'https://x.com/notcupidapp' },
         ].map((s) => (
           <a
             key={s.label}
@@ -26,10 +26,8 @@ export default function CorpFooter() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              fontFamily: "'DM Sans', ui-monospace, monospace",
-              fontSize: '0.75rem',
-              letterSpacing: '0.14em',
-              textTransform: 'lowercase',
+              fontSize: '0.875rem',
+              fontWeight: 500,
               color: 'var(--h-accent)',
               textDecoration: 'none',
               // 44px-min tap target (Apple HIG) without changing the visual size
@@ -38,28 +36,25 @@ export default function CorpFooter() {
               display: 'inline-block',
             }}
           >
-            ↗ {s.label}
+            {s.label} <span aria-hidden>↗</span>
           </a>
         ))}
       </div>
       <div style={{ marginBottom: '0.7rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         {[
-          { label: 'about', href: '/about' },
-          { label: 'how it works', href: '/how-it-works' },
-          { label: 'faq', href: '/faq' },
-          { label: 'safety', href: '/safety' },
-          { label: 'privacy', href: '/privacy' },
-          { label: 'terms', href: '/terms' },
-          { label: 'contact', href: 'mailto:match@notcupid.com' },
+          { label: 'About', href: '/about' },
+          { label: 'How it works', href: '/how-it-works' },
+          { label: 'FAQ', href: '/faq' },
+          { label: 'Safety', href: '/safety' },
+          { label: 'Privacy', href: '/privacy' },
+          { label: 'Terms', href: '/terms' },
+          { label: 'Contact', href: 'mailto:match@notcupid.com' },
         ].map((l) => (
           <a
             key={l.label}
             href={l.href}
             style={{
-              fontFamily: "'DM Sans', ui-monospace, monospace",
-              fontSize: '0.75rem',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
+              fontSize: '0.875rem',
               color: 'var(--h-text-dim)',
               textDecoration: 'none',
               // 44px-min tap target (Apple HIG) without changing the visual size
@@ -74,13 +69,11 @@ export default function CorpFooter() {
       </div>
       <div
         style={{
-          fontSize: '0.7rem',
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          color: 'var(--h-text-dim)',
+          fontSize: '0.8125rem',
+          color: 'var(--h-text-faint)',
         }}
       >
-        © {year} notcupid · a lemon labs property
+        © {year} NotCupid · A Lemon Labs property
       </div>
     </footer>
   )

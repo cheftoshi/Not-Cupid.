@@ -1,153 +1,94 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import Wordmark from '@/components/wordmark';
+import PublicHeader from '@/components/public-header';
+import styles from './friend-line.module.css';
 
 export const metadata: Metadata = {
   title: 'Friend Line | NotCupid',
   description: 'A city-first way to make friends through curated packs, real plans, and low-pressure group chat.',
 };
 
+// Example ideas only. Never present these as live availability or real members.
 const plans = [
-  { tag: 'tonight', title: 'coffee walk in the neighborhood', meta: 'Example idea · low-pressure' },
-  { tag: 'weekend', title: 'beginner tennis + smoothies', meta: 'Example idea · active afternoon' },
-  { tag: 'talk', title: 'new here, who wants to grab food?', meta: 'Example idea · new faces' },
+  { tag: 'Tonight', title: 'Coffee walk in the neighborhood', meta: 'Example idea · low-pressure' },
+  { tag: 'Weekend', title: 'Beginner tennis and smoothies', meta: 'Example idea · active afternoon' },
+  { tag: 'Talk', title: 'New here, who wants to grab food?', meta: 'Example idea · new faces' },
 ];
 
-const prompts = ['two truths', 'plan vote', 'city recs', 'weekend check'];
+const prompts = ['Two truths', 'Plan vote', 'City recs', 'Weekend check'];
 
 export default function FriendLinePreviewPage() {
   return (
-    <main className="friendPreview">
-      <header className="friendPreviewTop">
-        <Wordmark size={1.35} />
-        <nav>
-          <Link href="/how-it-works">how it works</Link>
-          <Link href="/login">log in</Link>
-        </nav>
-      </header>
+    <main className={styles.page}>
+      <div className={styles.wrap}>
+        <PublicHeader />
 
-      <section className="friendPreviewHero">
-        <div className="friendPreviewCopy">
-          <div className="friendPreviewKicker"><span /> friend line</div>
-          <h1>Explore friendship plans near you.</h1>
-          <p>
-            Friend Line gives you a small, curated way into your city: people you might vibe with,
-            member-created invitations, and a pack chat that makes the first message easier.
-          </p>
-          <div className="friendPreviewActions">
-            <Link href="/quiz?next=friends" className="primary">join the Friend Line</Link>
-            <Link href="/login?next=/friends" className="ghost">open my account</Link>
+        <section className={styles.hero}>
+          <div>
+            <p className={styles.eyebrow}>Friend Line</p>
+            <h1 className={styles.h1}>Make friends in your city, <em>for real.</em></h1>
+            <p className={styles.lede}>
+              A small, curated way into your city: people you might get along with,
+              member-created plans, and a pack chat that makes the first message easier.
+            </p>
+            <div className={styles.actions}>
+              <Link href="/quiz?next=friends" className={styles.primary}>Join Friend Line <span aria-hidden>→</span></Link>
+              <Link href="/login?next=/friends" className={styles.secondary}>Log in</Link>
+            </div>
           </div>
-        </div>
 
-        <div className="friendPreviewBoard" aria-label="Friend Line preview">
-          <p>Illustrative preview. These examples are ideas, not live availability.</p>
-          <div className="moveCard">
-            <small>an example invitation</small>
-            <h2>Start with something you enjoy.</h2>
-            <p>Example · a neighborhood coffee walk</p>
-            <Link href="/login?next=/friends">explore Friend Line</Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="friendPreviewColumns">
-        <article>
-          <small>example plans</small>
-          <h2>Plans that fit your vibe.</h2>
-          <div className="planStack">
+          <div className={styles.preview} aria-label="Friend Line preview">
+            <p className={styles.previewLabel}>Illustrative preview. These examples are ideas, not live availability.</p>
             {plans.map((p) => (
-              <div key={p.title} className="planCard">
-                <span>{p.tag}</span>
-                <h3>{p.title}</h3>
-                <p>{p.meta}</p>
+              <div key={p.title} className={styles.card}>
+                <div className={styles.cardTag}>{p.tag}</div>
+                <div className={styles.cardTitle}>{p.title}</div>
+                <div className={styles.cardMeta}>{p.meta}</div>
               </div>
             ))}
           </div>
-        </article>
+        </section>
 
-        <article>
-          <small>example pack chat</small>
-          <h2>A warmer way to start talking.</h2>
-          <div className="chatBox">
-            <div className="bubble other">plan vote: coffee, food, or something active?</div>
-            <div className="bubble me">coffee walk feels easy</div>
-            <div className="promptRow">
-              {prompts.map((p) => <span key={p}>{p}</span>)}
+        <section className={styles.columns}>
+          <article className={styles.column}>
+            <p className={styles.eyebrow}>Packs</p>
+            <h2 className={styles.h2}>A few people, picked for you.</h2>
+            <p className={styles.body}>
+              Each pack is up to five people matched on personality and what you like to do.
+              Connect with anyone in it, as many as you like.
+            </p>
+          </article>
+
+          <article className={styles.column}>
+            <p className={styles.eyebrow}>Pack chat</p>
+            <h2 className={styles.h2}>A warmer way to start talking.</h2>
+            <div className={styles.chat} aria-label="Example pack chat">
+              <div className={styles.bubble}>Plan vote: coffee, food, or something active?</div>
+              <div className={`${styles.bubble} ${styles.bubbleMe}`}>Coffee walk feels easy</div>
+              <div className={styles.chips}>
+                {prompts.map((p) => <span key={p}>{p}</span>)}
+              </div>
             </div>
+          </article>
+
+          <article className={styles.column}>
+            <p className={styles.eyebrow}>Your city, your pace</p>
+            <h2 className={styles.h2}>Find people through shared plans.</h2>
+            <p className={styles.body}>
+              Explore member invitations, meet people, or find a community. Availability depends on your city and the people taking part.
+            </p>
+            <Link href="/quiz?next=friends" className={styles.textLink}>Set up friendship preferences</Link>
+          </article>
+        </section>
+
+        <section className={styles.close}>
+          <div>
+            <h2 className={styles.h2}>Not a follower feed. Not cold browsing.</h2>
+            <p className={styles.body}>Curated packs, small plans and gentle prompts, so friendship has somewhere to begin.</p>
           </div>
-        </article>
-
-        <article><small>Your city, your pace</small><h2>Find people through shared plans.</h2><p>Explore member invitations, meet people, or find a community. Availability depends on your city and the people taking part.</p><Link href="/quiz?next=friends">Set up friendship preferences →</Link></article>
-      </section>
-
-      <section className="friendPreviewClose">
-        <h2>Not a follower feed. Not cold browsing.</h2>
-        <p>Curated packs, small plans, and gentle prompts so friendship has somewhere to begin.</p>
-        <Link href="/quiz?next=friends">start with the friend quiz →</Link>
-      </section>
-
-      <style>{`
-        .friendPreview { min-height: 100vh; color: var(--h-text); background:
-          radial-gradient(circle at 82% 8%, rgba(244,197,66,0.14), transparent 30%),
-          radial-gradient(circle at 6% 72%, rgba(6,76,72,0.09), transparent 30%),
-          var(--h-bg); padding: 1rem; }
-        .friendPreviewTop { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-        .friendPreviewTop nav { display: flex; gap: 0.55rem; flex-wrap: wrap; justify-content: flex-end; }
-        .friendPreviewTop a { color: var(--h-text); text-decoration: none; border: 1px solid var(--h-border); border-radius: 999px; padding: 0.48rem 0.85rem; font-family: 'DM Sans', monospace; font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; background: color-mix(in srgb, var(--h-surface) 86%, transparent); }
-        .friendPreviewHero { max-width: 1120px; margin: 4.5rem auto 1.3rem; display: grid; grid-template-columns: minmax(0,1fr) minmax(310px,420px); gap: 1.2rem; align-items: stretch; }
-        .friendPreviewCopy, .friendPreviewBoard, .friendPreviewColumns article, .friendPreviewClose { border: 1px solid var(--h-border); border-radius: 28px; background: color-mix(in srgb, var(--h-surface) 94%, transparent); box-shadow: var(--shadow-md); }
-        .friendPreviewCopy { padding: clamp(1.25rem, 4vw, 2.4rem); }
-        .friendPreviewKicker { display: flex; align-items: center; gap: 0.55rem; font-family: 'DM Sans', monospace; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: #765600; font-weight: 700; }
-        .friendPreviewKicker span { width: 8px; height: 8px; border-radius: 50%; background: #8a6500; }
-        .friendPreview h1 { margin: 0.75rem 0 0; max-width: 10ch; font-family: 'Space Grotesk', serif; font-style: italic; font-weight: 400; letter-spacing: 0; font-size: clamp(2.25rem, 8vw, 5.1rem); line-height: 0.95; }
-        .friendPreview p { color: var(--h-text-dim); font-family: 'Space Grotesk', serif; font-style: italic; line-height: 1.55; }
-        .friendPreviewCopy p { max-width: 58ch; font-size: 1.03rem; }
-        .friendPreviewActions { display: flex; gap: 0.65rem; flex-wrap: wrap; margin-top: 1.3rem; }
-        .friendPreviewActions a, .friendPreviewClose a { border-radius: 999px; padding: 0.72rem 1.1rem; text-decoration: none; font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.04em; font-size: 1.08rem; border: 1px solid var(--h-border); }
-        .friendPreviewActions .primary, .friendPreviewClose a { color: #fff; background: #8a6500; }
-        .friendPreviewActions .ghost { color: var(--h-text); background: var(--h-surface); }
-        .friendPreviewBoard { padding: 1rem; display: grid; gap: 0.85rem; align-content: end; background: linear-gradient(145deg, #101010, #201712); color: #fff; }
-        .moveCard { border: 1px solid rgba(255,255,255,0.12); border-radius: 22px; padding: 1rem; background: rgba(255,255,255,0.06); }
-        .friendPreview small, .moveCard small { font-family: 'DM Sans', monospace; font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: #765600; font-weight: 700; }
-        .moveCard small { color: rgba(255,255,255,0.68); }
-        .friendPreview h2 { font-family: 'Space Grotesk', serif; font-style: italic; font-weight: 400; letter-spacing: 0; font-size: 1.55rem; line-height: 1.05; margin: 0.45rem 0 0.65rem; }
-        .moveCard > a { display: inline-block; text-decoration: none; border: 0; border-radius: 999px; background: #8a6500; color: #fff; padding: 0.62rem 1rem; font-family: 'Space Grotesk', sans-serif; font-size: 1rem; letter-spacing: 0.05em; }
-        .miniGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.55rem; }
-        .miniGrid div { border: 1px solid rgba(255,255,255,0.11); border-radius: 16px; padding: 0.8rem; background: rgba(255,255,255,0.05); }
-        .miniGrid b { display: block; font-family: 'DM Sans', monospace; font-size: 0.52rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.66); }
-        .miniGrid strong { display: block; margin-top: 0.45rem; font-family: 'Space Grotesk', sans-serif; font-size: 2rem; line-height: 0.9; color: #ffb27e; }
-        .friendPreviewColumns { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; }
-        .friendPreviewColumns article { padding: 1rem; border-radius: 24px; }
-        .planStack, .pulseList { display: grid; gap: 0.55rem; }
-        .planCard, .pulseList div { border: 1px solid var(--h-border); border-radius: 16px; background: var(--h-surface-2); padding: 0.75rem; }
-        .planCard span { font-family: 'DM Sans', monospace; font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase; color: #765600; }
-        .planCard h3 { margin: 0.32rem 0 0.2rem; font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; line-height: 1; letter-spacing: 0.02em; }
-        .planCard p { margin: 0; font-size: 0.82rem; }
-        .chatBox { display: grid; gap: 0.55rem; }
-        .bubble { max-width: 86%; border: 1px solid var(--h-border); border-radius: 18px; padding: 0.65rem 0.8rem; font-size: 0.9rem; line-height: 1.35; background: var(--h-surface-2); }
-        .bubble.me { margin-left: auto; background: #8a6500; color: #fff; border-color: #8a6500; }
-        .promptRow { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
-        .promptRow span { border: 1px solid var(--h-border); border-radius: 999px; padding: 0.28rem 0.55rem; background: var(--h-surface); font-family: 'DM Sans', monospace; font-size: 0.54rem; letter-spacing: 0.06em; color: var(--h-text-dim); }
-        .pulseList b { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.28rem; letter-spacing: 0.02em; }
-        .pulseList span { color: var(--h-text-dim); font-family: 'DM Sans', monospace; font-size: 0.58rem; letter-spacing: 0.04em; }
-        .friendPreviewClose { max-width: 1120px; margin: 1rem auto 0; padding: 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-        .friendPreviewClose h2 { margin: 0; }
-        .friendPreviewClose p { margin: 0; flex: 1; }
-        @media (max-width: 860px) {
-          .friendPreviewHero, .friendPreviewColumns { grid-template-columns: 1fr; }
-          .friendPreviewHero { margin-top: 2rem; }
-          .friendPreviewClose { align-items: flex-start; flex-direction: column; }
-        }
-        @media (max-width: 520px) {
-          .friendPreview { padding: 0.75rem; }
-          .friendPreviewTop { align-items: flex-start; }
-          .friendPreviewTop nav a { padding: 0.4rem 0.65rem; }
-          .friendPreviewActions { flex-direction: column; }
-          .friendPreviewActions a, .friendPreviewClose a { width: 100%; text-align: center; }
-          .miniGrid { grid-template-columns: 1fr 1fr; }
-        }
-      `}</style>
+          <Link href="/quiz?next=friends" className={styles.closeAction}>Start with the friend quiz <span aria-hidden>→</span></Link>
+        </section>
+      </div>
     </main>
   );
 }
