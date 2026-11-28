@@ -109,7 +109,7 @@ test.describe('Friend workspace presentation and retained actions',()=>{
   let saves=0;await page.route('**/api/profile',r=>{if(r.request().method()==='PUT'){saves++;return r.fulfill({status:503,json:{error:'QA save unavailable'}});}return r.continue();});
   await page.goto('/friends/profile');const bio=page.getByPlaceholder("who are you when you're not working? what's your ideal weekend?");
   await bio.fill('Keep my Friend profile draft');expect(saves).toBe(0);
-  await page.getByRole('button',{name:'save my card →'}).click();
+  await page.getByRole('button',{name:'Save my card'}).click();
   await expect(page.getByText('QA save unavailable',{exact:true})).toBeVisible();await expect(bio).toHaveValue('Keep my Friend profile draft');expect(saves).toBe(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  });
@@ -125,9 +125,9 @@ test.describe('Friend workspace presentation and retained actions',()=>{
   await page.route('**/api/friend/pack',r=>{if(r.request().method()==='POST'){opens++;return r.fulfill({json:{ok:true}});}return r.fulfill({json:{sealed:[{otherId:'qa-pack-person',name:'QA Person',age:30,sharedActivities:['Coffee'],score:75}],openedCount:0}});});
   await page.goto('/friends/pack');const pack=page.getByRole('button',{name:'Open your friendship pack'});await pack.focus();
   expect(await pack.evaluate(e=>getComputedStyle(e).animationName)).toBe('none');await pack.press('Enter');
-  await expect(page.getByRole('heading',{name:'meet your people'})).toBeVisible();expect(opens).toBe(1);
-  await expect(page.getByRole('button',{name:'🤝 connect'})).toBeDisabled();
-  await page.getByRole('checkbox').click();await expect(page.getByRole('button',{name:'🤝 connect'})).toBeEnabled();
+  await expect(page.getByRole('heading',{name:'Meet your people'})).toBeVisible();expect(opens).toBe(1);
+  await expect(page.getByRole('button',{name:'Connect'})).toBeDisabled();
+  await page.getByRole('checkbox').click();await expect(page.getByRole('button',{name:'Connect'})).toBeEnabled();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  });
 });

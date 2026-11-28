@@ -337,13 +337,14 @@ test.describe('authenticated test-realm mobile path', () => {
     expect(errors).toEqual([]);
   });
 
-  test('confirmed plan interest opens chat, retries loading, and keeps starter text unsent', async ({ page }) => {
+  test('linked plan interest enables explicit chat, retries loading, and keeps starter text unsent', async ({ page }) => {
     const id = '00000000-0000-4000-8000-000000000141';
     const plan = { id, title: 'QA walk', kind: 'event', authorName: 'QA Host', eligible: true,
       created_at: new Date().toISOString(), happens_at: new Date(Date.now() + 86400000).toISOString(),
       isMine: false, myResponse: null, responses: { yes: 0, maybe: 0, no: 0 } };
     let joined = false, recovered = false, sends = 0;
-    await page.route('**/api/friend/activities', route => route.fulfill({ json: { activities: [{ ...plan, myResponse: joined ? 'yes' : null }] } }));
+    // Selected-plan resume revalidates with ?plan= as well as the feed read.
+    await page.route('**/api/friend/activities{,?*}', route => route.fulfill({ json: { activities: [{ ...plan, myResponse: joined ? 'yes' : null }] } }));
     await page.route(`**/api/friend/activities/${id}/rsvp`, route => {
       const response = route.request().postDataJSON().response;
       joined = response === 'yes';
@@ -360,6 +361,8 @@ test.describe('authenticated test-realm mobile path', () => {
     await card.getByRole('button', { name: /save/ }).click();
     await expect(card.getByPlaceholder('message the plan…')).toHaveCount(0);
     await card.getByRole('button', { name: /i’m interested/ }).click();
+    // A resumed selected plan keeps opening chat explicit after confirmed interest.
+    await card.getByRole('button', { name: /open plan chat/ }).click();
     await expect(card.getByRole('alert')).toBeVisible();
     await expect(card.getByText('no messages yet — ask the organizer anything.')).toHaveCount(0);
     recovered = true;

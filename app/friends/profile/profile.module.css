@@ -1,0 +1,12 @@
+.profile { composes: surface from '../../../components/signedin-surface.module.css'; min-height: 100dvh; background: var(--h-bg, #f8f7ef); color: var(--app-ink); }
+.wrap { max-width: 720px; margin: auto; padding: 32px 24px 64px; }
+.nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+.navLink { composes: secondary from '../../../components/signedin-surface.module.css'; font-size: .875rem; }
+.title { font: 600 clamp(2rem, 5vw, 3rem)/1.15 var(--font-display); letter-spacing: -.035em; margin: 0; }
+.card { composes: card from '../../../components/signedin-surface.module.css'; }
+.section { font: 600 1.375rem/1.4 var(--font-display); margin: 24px 0 16px; }
+.photoEmpty { width: 96px; height: 96px; flex: none; border: 1px solid var(--app-line); border-radius: 12px; background: var(--h-surface-2); display: grid; place-items: center; font-size: .875rem; }
+.save { composes: primary from '../../../components/signedin-surface.module.css'; }
+.profile label:focus-within { outline: 3px solid var(--h-accent, #064c48); outline-offset: 3px; }
+.profile input[type=file] { position: absolute; width: 1px; height: 1px; min-height: 1px !important; padding: 0; overflow: hidden; clip-path: inset(50%); }
+@media(max-width:600px) { .wrap { padding: 24px 16px 48px; } .card { padding: 16px; } }

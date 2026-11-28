@@ -3,3 +3,42 @@
 
 /* Keep date and category separate when browser text is enlarged. */
 .poster{min-height:8rem}
+
+/* Quiet editorial hierarchy; event provenance and actions stay separate. */
+.discovery { composes: surface from '../../components/signedin-surface.module.css'; border-radius: 16px; margin: 24px 0; }
+.hero { padding: 24px 32px; }
+.kicker { font: 500 .875rem/1.5 var(--font-ui); text-transform: none; letter-spacing: .02em; }
+.hero h2 { font: 600 clamp(1.75rem, 4vw, 2.25rem)/1.2 var(--font-display); letter-spacing: -.03em; margin: 16px 0; max-width: none; }
+.hero h2 span { color: var(--app-saffron); }
+.hero > p { font-size: 1rem; line-height: 1.5; margin: 0 0 16px; }
+.heroFoot { font-size: .875rem; gap: 16px; padding-top: 16px; }
+.hero .topline button { font-size: .875rem; border-radius: 8px; }
+.hero :focus-visible { outline-color: var(--app-saffron); }
+.content { padding: 24px; }
+.attribution { font-size: .875rem; margin-bottom: 24px; }
+.filters { gap: 16px; }
+.filters label { font-size: .875rem; font-weight: 500; gap: 8px; }
+.filters input[type=search], .filters select { font-size: 1rem; min-height: 48px; border-radius: 8px; padding: 8px 12px; }
+.results { margin: 24px 0 16px; }
+.results p { font: 600 1.125rem/1.5 var(--font-display); }
+.results button { font-size: .875rem; }
+.poster { height: 128px; min-height: 8rem; background: #e7eee6; color: #064c48; }
+.card[data-category=arts] .poster { background: #f8edbd; color: #5c491d; }
+.card[data-category=sports] .poster { background: #dcebe6; color: #064c48; }
+.art { opacity: .65; }
+.date { top: 16px; left: 16px; border-radius: 8px; box-shadow: none; }
+.date span, .category { font-size: .75rem; letter-spacing: .02em; }
+.category { text-transform: none; }
+.cardBody { padding: 24px; gap: 8px; }
+.cardBody .kicker { font-size: .75rem; line-height: 1.5; }
+.card h3 { font: 600 1.375rem/1.3 var(--font-display); letter-spacing: -.02em; margin: 0 0 8px; }
+.card p, .card .price, .card a, .actions .memberLabel { font-size: .875rem; line-height: 1.5; }
+.card .when { font-weight: 500; }
+.card a { min-height: 44px; display: inline-flex; align-items: center; }
+.actions { padding-top: 16px; }
+.actions button { font-size: 1rem; font-weight: 500; border-radius: 8px; padding: 12px 16px; }
+.discovery .primary { background: var(--app-saffron); border-color: var(--app-saffron); color: var(--app-on-saffron); }
+.footer { margin-top: 24px; padding-top: 16px; font-size: .875rem; }
+.state { padding: 32px 24px; border-style: solid; background: var(--h-surface-2, #f5f4eb); }
+.state h3 { font: 600 1.375rem/1.3 var(--font-display); }
+@media(max-width:600px) { .hero, .content { padding: 24px 16px; } .hero h2 { font-size: 1.75rem; } .hero > p { font-size: 1rem; } .cardBody { padding: 16px; } .heroFoot { gap: 8px; } }

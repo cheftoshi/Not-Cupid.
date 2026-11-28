@@ -1,0 +1,33 @@
+/* Local contract for the signed-in Friend slice. No public/global selectors. */
+.surface {
+  --font-ui: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --app-tide: #064c48;
+  --app-saffron: #f4c542;
+  --app-on-saffron: #173c37;
+  --app-paper: var(--h-surface, #fffdf5);
+  --app-line: var(--h-border, #d3ddd4);
+  --app-ink: var(--h-text, #173c37);
+  --app-muted: var(--h-text-dim, #526863);
+  font: 400 1rem/1.5 var(--font-ui);
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--app-line, #d3ddd4);
+  border-radius: 8px;
+  font: 500 1rem/1.5 var(--font-ui, 'DM Sans', system-ui, sans-serif);
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+}
+.button:focus-visible { outline: 3px solid var(--h-accent, #064c48); outline-offset: 3px; }
+.button:disabled { opacity: .55; cursor: not-allowed; }
+.primary { composes: button; background: var(--app-saffron, #f4c542); color: var(--app-on-saffron, #173c37); border-color: var(--app-saffron, #f4c542); }
+.secondary { composes: button; background: var(--app-paper, #fffdf5); color: var(--app-ink, #173c37); }
+.card { background: var(--app-paper, #fffdf5); border: 1px solid var(--app-line, #d3ddd4); border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px #064c4805; }
+.eyebrow { font: 500 .875rem/1.5 var(--font-ui, 'DM Sans', system-ui, sans-serif); letter-spacing: .02em; text-transform: none; }

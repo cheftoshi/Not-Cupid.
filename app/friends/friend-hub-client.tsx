@@ -168,15 +168,15 @@ function VibeCard({ a, onRsvp, onAuthor }: { a: any; onRsvp: (id: string, r?: 'y
     <div className={s.card} style={{ padding: '0.95rem 1.05rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 230 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
         <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.35rem', lineHeight: 1.05, letterSpacing: '0.01em' }}>{a.title || 'a plan'}</div>
-        <span style={{ flexShrink: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.2rem 0.5rem', fontWeight: 700 }}>{st.label}</span>
+        <span style={{ flexShrink: 0, fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}`, borderRadius: 999, padding: '0.2rem 0.5rem', fontWeight: 700 }}>{st.label}</span>
       </div>
-      <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.03em', color: 'var(--h-text)' }}>
+      <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.03em', color: 'var(--h-text)' }}>
         {a.happens_at ? friendlyWhen(a.happens_at) : (a.area || 'your city')}{a.area && a.happens_at ? ` · ${a.area}` : ''}{yes ? ` · ${yes} interested` : ''}
       </div>
       <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', fontSize: '0.78rem', color: 'var(--h-text-dim)' }}>for: {vibeFor(a)}</div>
       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.1rem' }}>
         <button onClick={() => onRsvp(a.id, joined ? 'no' : 'yes')} className={s.poppyBtn} style={{ fontSize: '0.95rem', padding: '0.4rem 0.95rem', background: joined ? 'var(--h-surface-3)' : LINE, color: joined ? LINE_DEEP : '#fff', boxShadow: joined ? 'none' : undefined }}>{joined ? '✓ you’re in' : `${st.cta} →`}</button>
-        {onAuthor && a.authorName && <button onClick={() => onAuthor(a)} title="who's organizing" style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 2 }}>by {(a.authorName).split(' ')[0]}</button>}
+        {onAuthor && a.authorName && <button onClick={() => onAuthor(a)} title="who's organizing" style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.06em', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 2 }}>by {(a.authorName).split(' ')[0]}</button>}
       </div>
     </div>
   );
@@ -300,8 +300,8 @@ function HomeFeed({ me, firstName, acts, people, myEvents, hasCrew, sealedCount 
               <p>{aiMove.body}</p>
               <button onClick={() => onAiAct?.(aiMove)}>{aiMove.cta} →</button>
               <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>Optional AI suggestion · you decide</span>
-                <button onClick={() => onAiRefresh?.()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', padding: 0 }}>↻ something else</button>
+                <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)' }}>Optional AI suggestion · you decide</span>
+                <button onClick={() => onAiRefresh?.()} style={{ background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', padding: 0 }}>↻ something else</button>
               </div>
             </>
           ) : aiMoveLoading ? (
@@ -658,7 +658,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
             ? <img src={a.authorPhoto} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, objectFit: 'cover', flexShrink: 0 }} />
             : <div style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid var(--h-border)`, background: 'var(--h-surface-3)', flexShrink: 0 }} />}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}{onAuthor && !a.isMine && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', color: LINE_DEEP, marginLeft: '0.4rem', verticalAlign: 'middle' }}>view ›</span>}</div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', lineHeight: 1 }}>{a.authorName?.split(' ')[0] || 'someone'}{onAuthor && !a.isMine && <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.08em', color: LINE_DEEP, marginLeft: '0.4rem', verticalAlign: 'middle' }}>view ›</span>}</div>
             <div className={s.activityAuthorMeta} style={{ color: isEvent ? LINE_DEEP : 'var(--h-text-dim)' }}>
               {isEvent ? '📅 organizing this' : '💬 post'} · 📍 {a.area || 'greater boston'}{a.created_at ? ` · ${timeAgo(a.created_at)}` : ''}
             </div>
@@ -678,9 +678,9 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           const st = planStatus(a);
           return (
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}` }}>{st.label}</span>
-              {a.location && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#2d7a4f', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.3)' }}>✓ host confirmed</span>}
-              {a.datingFriendly && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#c2185b', background: 'rgba(194,24,91,0.1)', border: '1px solid rgba(194,24,91,0.3)' }}>💘 dating-friendly</span>}
+              <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: st.hot ? '#fff' : LINE_DEEP, background: st.hot ? LINE : 'var(--h-surface-3)', border: `1px solid ${st.hot ? LINE : 'var(--h-border)'}` }}>{st.label}</span>
+              {a.location && <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#2d7a4f', background: 'rgba(45,122,79,0.1)', border: '1px solid rgba(45,122,79,0.3)' }}>✓ host confirmed</span>}
+              {a.datingFriendly && <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, borderRadius: 999, padding: '0.22rem 0.55rem', color: '#c2185b', background: 'rgba(194,24,91,0.1)', border: '1px solid rgba(194,24,91,0.3)' }}>💘 dating-friendly</span>}
             </div>
           );
         })()}
@@ -689,7 +689,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
             <span className={s.chip} style={{ background: 'var(--h-surface-3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
               🕒 {new Date(a.happens_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric' })}
             </span>
-            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em' }}><Countdown to={a.happens_at} /></span>
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.04em' }}><Countdown to={a.happens_at} /></span>
           </div>
         )}
         {isEvent && a.location && (
@@ -698,14 +698,14 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           </div>
         )}
         {isEvent && aud && (
-          <div style={{ marginTop: '0.5rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: LINE_DEEP }}>
+          <div style={{ marginTop: '0.5rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: LINE_DEEP }}>
             👥 open to {aud}
           </div>
         )}
         {/* SOCIAL PROOF — your connections who are in. The strongest "it's safe
             + it'll be fun" signal a plan can carry. */}
         {isEvent && Array.isArray(a.friendsGoing) && a.friendsGoing.length > 0 && (
-          <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(244,197,66,0.1)', border: '1px solid rgba(244,197,66,0.3)', borderRadius: 999, padding: '0.3rem 0.75rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em', color: '#765600', fontWeight: 700 }}>
+          <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(244,197,66,0.1)', border: '1px solid rgba(244,197,66,0.3)', borderRadius: 999, padding: '0.3rem 0.75rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.04em', color: '#765600', fontWeight: 700 }}>
             🧡 {a.friendsGoing.slice(0, 2).join(' + ')}{a.friendsGoing.length > 2 ? ` + ${a.friendsGoing.length - 2} more` : ''} {a.friendsGoing.length === 1 ? 'you know is' : 'you know are'} going
           </div>
         )}
@@ -722,15 +722,15 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
               {(a.rsvpCount || 0) >= 3
-                ? <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#765600', background: 'rgba(244,197,66,0.12)', border: '1px solid rgba(244,197,66,0.32)', borderRadius: 999, padding: '0.18rem 0.55rem' }}>🔥 popular</span>
-                : <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)' }}>{a.rsvpCount ? `${a.rsvpCount} into this` : 'be the first'}</span>}
+                ? <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#765600', background: 'rgba(244,197,66,0.12)', border: '1px solid rgba(244,197,66,0.32)', borderRadius: 999, padding: '0.18rem 0.55rem' }}>🔥 popular</span>
+                : <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.04em', color: 'var(--h-text-faint)' }}>{a.rsvpCount ? `${a.rsvpCount} into this` : 'be the first'}</span>}
               <button onClick={toggleComments} title="comments"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: showC ? 'var(--h-surface-3)' : 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.2rem 0.6rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: showC ? 'var(--h-surface-3)' : 'transparent', color: 'var(--h-text-dim)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.2rem 0.6rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', fontWeight: 700 }}>
                 💬 {cCount > 0 ? cCount : 'comment'}
               </button>
             </div>
             <button onClick={() => onRsvp(a.id)} title={a.iRsvped ? 'you’re into this' : 'i’m into this'}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: a.iRsvped ? 'var(--h-accent)' : 'var(--h-surface-2)', color: a.iRsvped ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${a.iRsvped ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 999, padding: '0.3rem 0.75rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700 }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: a.iRsvped ? 'var(--h-accent)' : 'var(--h-surface-2)', color: a.iRsvped ? '#fff' : 'var(--h-text-dim)', border: `1px solid ${a.iRsvped ? 'var(--h-accent)' : 'var(--h-border)'}`, borderRadius: 999, padding: '0.3rem 0.75rem', cursor: 'pointer', font: 'inherit', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', fontWeight: 700 }}>
               {a.iRsvped ? '♥' : '♡'} {a.rsvpCount || 0}
             </button>
           </div>
@@ -755,7 +755,7 @@ function ActivityPost({ a, onRsvp, onDelete, onAuthor, autoOpenChat = false }: {
               })}
             </div>
             {(r.yes > 0 || r.maybe > 0 || cap) && (
-              <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', color: full ? '#c0392b' : 'var(--h-text-dim)' }}>
+              <div style={{ textAlign: 'center', marginTop: '0.35rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.06em', color: full ? '#c0392b' : 'var(--h-text-dim)' }}>
                 {cap ? `${r.yes}/${cap} spots filled` : `${r.yes} going`}{full ? ' · full' : ''}{r.maybe ? ` · ${r.maybe} maybe` : ''}
               </div>
             )}
@@ -1590,7 +1590,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               the friend line is about meeting real people. by continuing you agree to NotCupid&apos;s <a href="/terms" style={{ color: LINE_DEEP }}>terms</a> &amp; <a href="/safety" style={{ color: LINE_DEEP }}>community guidelines</a> — be kind, be real, and meet new people safely.
             </p>
             <button onClick={agreeTerms} className={s.poppyBtn} style={{ width: '100%', fontSize: '1.25rem' }}>I agree — let me in →</button>
-            <a href="/hub" style={{ display: 'block', textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'none' }}>not now — back to Home</a>
+            <a href="/hub" style={{ display: 'block', textAlign: 'center', marginTop: '0.75rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', textDecoration: 'none' }}>not now — back to Home</a>
           </div>
         </div>
       )}
@@ -1606,14 +1606,14 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
           else { const toSat = (6 - d.getDay() + 7) % 7; d.setDate(d.getDate() + toSat); d.setHours(12, 0, 0, 0); }
           setNewAct((s) => ({ ...s, happens_at: localDT(d) }));
         };
-        const opt = (active: boolean): React.CSSProperties => ({ cursor: 'pointer', textAlign: 'left', borderRadius: 12, padding: '0.8rem 1rem', border: `2px solid ${active ? LINE : 'var(--h-border)'}`, background: active ? 'rgba(244,197,66,0.08)' : 'var(--h-surface-2)', color: 'var(--h-text)', fontFamily: "'DM Sans', monospace", fontSize: '0.78rem' });
+        const opt = (active: boolean): React.CSSProperties => ({ cursor: 'pointer', textAlign: 'left', borderRadius: 12, padding: '0.8rem 1rem', border: `2px solid ${active ? LINE : 'var(--h-border)'}`, background: active ? 'rgba(244,197,66,0.08)' : 'var(--h-surface-2)', color: 'var(--h-text)', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.78rem' });
         const back = (to: number) => <button onClick={() => setComposerStep(to)} className={s.backBtn}>← back</button>;
         return (
           <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 130 }}>
             {/* keyed by step → each wizard step slides in instead of hard-cutting */}
             <div key={composerStep} onClick={(e) => e.stopPropagation()} className={s.stepBox}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{isPost ? 'say something' : `step ${composerStep > 4 ? 4 : composerStep} of 4`}</span>
+                <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: LINE_DEEP }}>{isPost ? 'say something' : `step ${composerStep > 4 ? 4 : composerStep} of 4`}</span>
                 <button onClick={close} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--h-text-dim)' }}>✕</button>
               </div>
 
@@ -1727,16 +1727,16 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 ? <img src={m.photo_url} alt="" style={{ width: '100%', aspectRatio: '1.25', objectFit: 'cover', display: 'block' }} />
                 : <div style={{ width: '100%', aspectRatio: '1.25', background: 'var(--h-surface-3)' }} />}
               <button onClick={close} aria-label="close" style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(10,8,12,0.55)', color: '#fff', fontSize: '0.95rem' }}>✕</button>
-              {typeof m.score === 'number' && <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(10,8,12,0.72)', backdropFilter: 'blur(4px)', color: '#fff', borderRadius: 999, padding: '0.15rem 0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem' }}>{m.score}% match</span>}
+              {typeof m.score === 'number' && <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(10,8,12,0.72)', backdropFilter: 'blur(4px)', color: '#fff', borderRadius: 999, padding: '0.15rem 0.6rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem' }}>{m.score}% match</span>}
             </div>
             <div style={{ padding: '1rem 1.2rem 1.25rem' }}>
               <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.9rem', lineHeight: 1 }}>{m.name}{m.age ? <span style={{ color: 'var(--h-text-dim)', fontSize: '1rem' }}> · {m.age}</span> : null}</div>
-              {m.archetype && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.2rem' }}>{m.archetype}</div>}
-              {(m.gender === 'm' || m.gender === 'f' || m.gender === 'nb') && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.25rem' }}>{m.gender === 'f' ? '♀ woman' : m.gender === 'm' ? '♂ man' : '⚧ non-binary'}</div>}
+              {m.archetype && <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginTop: '0.2rem' }}>{m.archetype}</div>}
+              {(m.gender === 'm' || m.gender === 'f' || m.gender === 'nb') && <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.25rem' }}>{m.gender === 'f' ? '♀ woman' : m.gender === 'm' ? '♂ man' : '⚧ non-binary'}</div>}
               {m.metro && <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.82rem', marginTop: '0.2rem' }}>📍 {m.visiting ? `visiting ${m.metro}` : m.metro}</div>}
               {(m.sharedActivities || []).length > 0 && (
                 <div style={{ marginTop: '0.75rem' }}>
-                  <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>you both like</div>
+                  <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-text-faint)', marginBottom: '0.35rem' }}>you both like</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{m.sharedActivities.map((a: string) => <span key={a} className={s.chip}>{a}</span>)}</div>
                 </div>
               )}
@@ -1745,19 +1745,19 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   <>
                     <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5 }}>drop your connection with {first}? you&apos;ll leave the shared chat if they were your last tie there.</div>
                     <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: '#c0392b', color: '#fff', border: 'none', borderRadius: 12, padding: '0.7rem', cursor: busy ? 'wait' : 'pointer', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', letterSpacing: '0.02em' }}>{busy ? '…' : 'yes, drop the connection'}</button>
-                    <button onClick={() => setConfirmDrop(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>keep {first}</button>
+                    <button onClick={() => setConfirmDrop(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)' }}>keep {first}</button>
                   </>
                 ) : (
                   <>
                     <button onClick={() => openDm(m)} className={s.poppyBtn} style={{ width: '100%' }}>💬 message {first} →</button>
-                    <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
+                    <button onClick={() => setConfirmDrop(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>drop connection</button>
                   </>
                 )) : m.theyAccepted ? (
                   <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} style={{ background: '#ff2d8e', color: '#fff', border: 'none', borderRadius: 12, padding: '0.75rem', cursor: termsOk && !busy ? 'pointer' : 'not-allowed', opacity: termsOk ? 1 : 0.5, fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem', letterSpacing: '0.02em' }}>{busy ? '…' : `🤝 accept — connect with ${first} →`}</button>
                 ) : m.iAccepted ? (
                   <>
-                    <div style={{ textAlign: 'center', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 10, padding: '0.6rem' }}>⏳ waiting on {first} to accept</div>
-                    <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>cancel request</button>
+                    <div style={{ textAlign: 'center', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', border: `2px dashed ${LINE_DEEP}`, borderRadius: 10, padding: '0.6rem' }}>⏳ waiting on {first} to accept</div>
+                    <button onClick={() => dropConnection(m.otherId)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>cancel request</button>
                   </>
                 ) : (
                   <button onClick={() => { setCardMember(null); connectOne(m.otherId); }} disabled={busy || !termsOk} className={s.poppyBtn} style={{ width: '100%', opacity: termsOk ? 1 : 0.5, cursor: termsOk && !busy ? 'pointer' : 'not-allowed' }}>{busy ? '…' : `🤝 connect with ${first}`}</button>
@@ -1772,7 +1772,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               {/* safety: vet + report. Connecting is opt-in; they can't DM you unless you connect. */}
               <div style={{ marginTop: '0.9rem', paddingTop: '0.7rem', borderTop: '1px solid var(--h-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-faint)', fontSize: '0.75rem' }}>they can only message you if you connect.</span>
-                <button onClick={() => reportUser(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', flexShrink: 0 }}>⚑ report</button>
+                <button onClick={() => reportUser(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', flexShrink: 0 }}>⚑ report</button>
               </div>
             </div>
           </div>
@@ -1790,7 +1790,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               <div className={s.chatHeaderText}>
                 <div className={s.chatTitle}>{m.name}</div>
                 <FriendReportButton reportedId={m.otherId} contextType="dm" contextId={m.otherId} onReported={() => setDmWith(null)} />
-                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>🔒 private message · just you two</div>
+                <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>🔒 private message · just you two</div>
               </div>
               <button onClick={() => setDmWith(null)} aria-label="close private chat" className={s.chatClose}>✕</button>
             </header>
@@ -1824,7 +1824,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               <span style={{ fontSize: '1.4rem' }}>🤝</span>
               <div className={s.chatHeaderText}>
                 <div className={s.chatTitle}>{clubChat.name}</div>
-                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>club chat · members only</div>
+                <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP }}>club chat · members only</div>
               </div>
               <button onClick={closeClubChat} aria-label="close club chat" className={s.chatClose}>✕</button>
             </header>
@@ -1832,7 +1832,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               {clubMsgs.length === 0 && <div className={s.chatEmpty}>say hi to the club 👋</div>}
               {clubMsgs.map((msg: any) => (
                 <div key={msg.id} className={`${s.chatMessage} ${msg.isMe ? s.chatMessageMine : s.chatMessageTheirs}`}>
-                  {!msg.isMe && <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.04em', color: LINE_DEEP, margin: '0 0 0.1rem 0.5rem' }}>{(msg.name || 'someone').split(' ')[0]}</div>}
+                  {!msg.isMe && <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.04em', color: LINE_DEEP, margin: '0 0 0.1rem 0.5rem' }}>{(msg.name || 'someone').split(' ')[0]}</div>}
                   <div className={`${s.chatBubble} ${msg.failed ? s.chatBubbleFailed : msg.isMe ? s.chatBubbleMine : s.chatBubbleTheirs}`} style={{ opacity: msg.pending ? 0.6 : 1 }}>{msg.body}</div>
                   {msg.pending && <span className={s.chatFailed}>sending…</span>}
                   {msg.failed && <button type="button" className={s.chatRetry} disabled={clubSending} onClick={() => void sendClubMsg(msg)}>Not confirmed · retry</button>}
@@ -1858,7 +1858,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
               <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.6rem' }}>{clubManage.name}</div>
               <button onClick={() => setClubManage(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--h-text-faint)' }}>✕</button>
             </div>
-            <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.9rem' }}>join requests</div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.9rem' }}>join requests</div>
             {clubReqs.length === 0 ? (
               <div style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: 'var(--h-text-dim)', fontSize: '0.9rem' }}>no pending requests right now.</div>
             ) : (
@@ -1866,7 +1866,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 {clubReqs.map((r: any) => (
                   <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     {r.photo_url ? <img src={r.photo_url} alt="" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)' }} /> : <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', display: 'inline-block' }} />}
-                    <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name || 'someone'}</span>
+                    <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name || 'someone'}</span>
                     <button onClick={() => reqAction(clubManage.id, r.id, 'approve')} className={s.poppyBtn} style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}>approve</button>
                     <button onClick={() => reqAction(clubManage.id, r.id, 'decline')} className={s.pulseBtnGhost}>decline</button>
                   </div>
@@ -1884,12 +1884,12 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
           className={s.evToast}>
           <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔔</span>
           <span style={{ minWidth: 0 }}>
-            <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
+            <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.85, display: 'block' }}>new hang on the scene</span>
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
               {(evToast.author || 'someone').split(' ')[0]}: {evToast.title}
             </span>
           </span>
-          <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>see →</span>
+          <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>see →</span>
         </button>
       )}
 
@@ -1918,7 +1918,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 style={{ flexShrink: 0, position: 'relative', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em', padding: '0.45rem 1.1rem', borderRadius: 999, border: `1px solid ${active ? LINE : 'var(--h-border)'}`, cursor: 'pointer', background: active ? LINE : 'var(--h-surface)', color: active ? '#fff' : 'var(--h-text-dim)', boxShadow: active ? '0 8px 20px -10px rgba(232,132,43,0.7)' : 'none' }}>
                 {n.icon} {n.label}
                 {n.key === 'scene' && newScene > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{newScene}</span>}
-                {unread > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{unread > 99 ? '99+' : unread}</span>}
+                {unread > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#da291c', color: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid var(--h-border)` }}>{unread > 99 ? '99+' : unread}</span>}
               </button>
             );
           })}
@@ -1968,19 +1968,19 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                 ? <img src={me.photo_url} alt="" style={{ width: 66, height: 66, borderRadius: 14, objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                 : <div style={{ width: 66, height: 66, borderRadius: 14, border: '1px solid var(--h-border)', background: 'var(--h-surface-3)', flexShrink: 0 }} />}
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>Your friendship profile</div>
-                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.75rem', lineHeight: 1.05 }}>{me.name}{me.archetype && <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, marginLeft: '0.5rem' }}>{me.archetype}</span>}</div>
+                <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: LINE_DEEP }}>Your friendship profile</div>
+                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.75rem', lineHeight: 1.05 }}>{me.name}{me.archetype && <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: LINE_DEEP, marginLeft: '0.5rem' }}>{me.archetype}</span>}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.35rem' }}>
                   {[...me.hobbies, ...me.music, ...me.food].slice(0, 5).map((t) => <span key={t} className={s.chip}>{t}</span>)}
                 </div>
               </div>
-              <a href="/friends/profile" style={{ flexShrink: 0, alignSelf: 'flex-start', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>edit →</a>
+              <a href="/friends/profile" style={{ flexShrink: 0, alignSelf: 'flex-start', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>edit →</a>
             </div>
           ) : (
             <a href="/friends/profile" className={s.card} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.9rem 1rem', marginBottom: '1.2rem', textDecoration: 'none', color: 'var(--h-text)' }}>
               <span style={{ fontSize: '1.6rem' }}>📸</span>
               <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal' }}>Complete your friendship profile.</span>
-              <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
+              <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LINE_DEEP }}>set up →</span>
             </a>
           )}
 
@@ -2008,7 +2008,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                   <p style={{ fontFamily: 'var(--font-ui)', fontSize: '0.9rem', color: 'var(--h-text-dim)', lineHeight: 1.5, margin: '0 0 0.8rem' }}>
                     this has happened a few times now, so we&apos;ve paused your account on both lines. if you think that&apos;s a mistake, email us and we&apos;ll take a look.
                   </p>
-                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: '0 10px 24px -12px rgba(0,0,0,0.45)', textDecoration: 'none' }}>
+                  <a href="mailto:match@notcupid.com" style={{ display: 'inline-block', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: INK, border: `1px solid var(--h-border)`, borderRadius: 10, padding: '0.55rem 1rem', boxShadow: '0 10px 24px -12px rgba(0,0,0,0.45)', textDecoration: 'none' }}>
                     email match@notcupid.com →
                   </a>
                 </>
@@ -2074,7 +2074,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       <div style={{ background: LINE, color: '#fff', padding: '0.6rem 0.85rem 0.7rem', borderBottom: "1px solid var(--h-border)" }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem' }}>
                           💬 Group chat · {crewRoster.length}
-                          <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: chatLive ? '#3f7d57' : 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, padding: '0.18rem 0.55rem' }}>
+                          <span style={{ marginLeft: 'auto', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', background: chatLive ? '#3f7d57' : 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 999, padding: '0.18rem 0.55rem' }}>
                             {chatLive ? '● live' : '○ forming'}
                           </span>
                         </div>
@@ -2085,7 +2085,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                               {u.photo_url
                                 ? <img src={u.photo_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: `1px solid var(--h-border)` }} />
                                 : <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface-3)', border: `1px solid var(--h-border)`, display: 'inline-block' }} />}
-                              <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
+                              <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', whiteSpace: 'nowrap', fontWeight: u.you ? 700 : 400 }}>{u.you ? 'you' : (u.name?.split(' ')[0] || '—')}</span>
                               {!u.you && matches.find((x) => x.otherId === u.id)?.connected && <span title="your connection — message them" style={{ fontSize: '0.75rem', flexShrink: 0 }}>🧡</span>}
                               <span style={{ width: 7, height: 7, borderRadius: '50%', background: u.here ? '#3f7d57' : '#c9a06a', flexShrink: 0 }} />
                             </button>
@@ -2187,7 +2187,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                         {l.description && <div style={{ fontSize: '0.78rem', color: 'var(--h-text-dim)', marginTop: '0.1rem', lineHeight: 1.35 }}>{l.description}</div>}
                         <div style={{ fontFamily: "'DM Sans',monospace", fontSize: '0.75rem', color: 'var(--h-text-faint)', marginTop: '0.2rem' }}>{[l.cadence !== 'ongoing' ? l.cadence : '', l.area, l.audience, l.last_verified_at ? 'checked recently' : ''].filter(Boolean).join(' · ')}</div>
                       </div>
-                      <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, flexShrink: 0 }}>join →</span>
+                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, flexShrink: 0 }}>join →</span>
                     </a>
                   ))}
                 </div>
@@ -2231,7 +2231,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                         <span style={{ fontSize: '1.45rem', flexShrink: 0 }}>{CAT_EMOJI[c.category] || '✨'}</span>
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.28rem', lineHeight: 1 }}>{c.name}</div>
-                          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{c.category} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}{c.area ? ` · 📍 ${c.area}` : ''}</div>
+                          <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.2rem' }}>{c.category} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}{c.area ? ` · 📍 ${c.area}` : ''}</div>
                         </div>
                         <button onClick={async () => { if (await confirmDialog({ title: `report "${c.name}"?`, body: 'The team reviews every report. Clubs with repeat reports are hidden automatically.', confirmLabel: 'report it', danger: true })) { await clubAct(c.id, 'report'); await loadClubs(); toast('thanks — the team will take a look', 'success'); } }} title="report this club" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--h-text-faint)', fontSize: '0.85rem', flexShrink: 0 }}>⚑</button>
                       </div>
@@ -2405,9 +2405,9 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       {m.photo_url
                         ? <img src={m.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} />
                         : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
-                      <span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]}</span>
+                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]}</span>
                       {(dmUnread[m.otherId] || 0) > 0 && (
-                        <span style={{ marginLeft: 'auto', flexShrink: 0, minWidth: 18, height: 18, borderRadius: 999, background: LINE, color: '#fff', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{dmUnread[m.otherId]}</span>
+                        <span style={{ marginLeft: 'auto', flexShrink: 0, minWidth: 18, height: 18, borderRadius: 999, background: LINE, color: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{dmUnread[m.otherId]}</span>
                       )}
                     </button>
                   ))}
@@ -2420,14 +2420,14 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                     {matches.filter((m) => !m.connected && m.theyAccepted && !m.iAccepted).map((m) => (
                       <button key={m.otherId} onClick={() => setCardMember(m)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--h-surface-2)', border: '1px solid var(--h-border)', borderRadius: 12, cursor: 'pointer', font: 'inherit', padding: '0.45rem', color: 'var(--h-text)', textAlign: 'left' }}>
                         {m.photo_url ? <img src={m.photo_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--h-border)', flexShrink: 0 }} /> : <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
-                        <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]} wants to connect</span>
-                        <b style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', color: '#ff2d8e' }}>view</b>
+                        <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(m.name || '').split(' ')[0]} wants to connect</span>
+                        <b style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', color: '#ff2d8e' }}>view</b>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-              <button onClick={() => goView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Browse people →</button>
+              <button onClick={() => goView('crew')} style={{ marginTop: '0.7rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--h-accent)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Browse people →</button>
             </div>
             )}
 
@@ -2444,7 +2444,7 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                         : <span style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', flexShrink: 0, display: 'inline-block' }} />}
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.05rem', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name} <span style={{ color: 'var(--h-text-faint)', fontSize: '0.75rem' }}>· {m.age}</span></div>
-                        <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? LINE_DEEP : m.theyAccepted ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? '🧡 connection' : m.theyAccepted ? 'wants to connect' : m.iAccepted ? 'pending' : 'new'}</div>
+                        <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: m.connected ? LINE_DEEP : m.theyAccepted ? '#ff2d8e' : 'var(--h-text-faint)' }}>{m.score}% · {m.connected ? '🧡 connection' : m.theyAccepted ? 'wants to connect' : m.iAccepted ? 'pending' : 'new'}</div>
                       </div>
                     </button>
                     {m.connected ? (
@@ -2453,15 +2453,15 @@ export default function FriendHubClient({ firstName, me, city, metro, homeCity, 
                       <span style={{ flexShrink: 0, fontSize: '0.85rem' }} title="waiting on them">⏳</span>
                     ) : (
                       <button onClick={() => connectOne(m.otherId)} disabled={busy || !termsOk}
-                        style={{ flexShrink: 0, cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: 'none', borderRadius: 8, padding: '0.32rem 0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
+                        style={{ flexShrink: 0, cursor: !termsOk ? 'not-allowed' : busy ? 'wait' : 'pointer', opacity: termsOk ? 1 : 0.5, background: m.theyAccepted ? '#ff2d8e' : LINE, color: '#fff', border: 'none', borderRadius: 8, padding: '0.32rem 0.6rem', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
                         {m.theyAccepted ? 'accept' : 'connect'}
                       </button>
                     )}
                   </div>
                 ))}
               </div>
-              {sealedCount > 0 && <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', color: LINE_DEEP, fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>reveal next pack · {sealedCount} new →</a>}
-              <button onClick={leaveCrew} disabled={busy} style={{ display: 'block', width: '100%', marginTop: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>{busy ? '…' : 'opt out of the group →'}</button>
+              {sealedCount > 0 && <a href="/friends/pack" style={{ display: 'block', marginTop: '0.8rem', textAlign: 'center', textDecoration: 'none', color: LINE_DEEP, fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>reveal next pack · {sealedCount} new →</a>}
+              <button onClick={leaveCrew} disabled={busy} style={{ display: 'block', width: '100%', marginTop: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: 3 }}>{busy ? '…' : 'opt out of the group →'}</button>
             </div>
             )}
 
