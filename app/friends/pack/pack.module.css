@@ -108,3 +108,27 @@
 .fcard{opacity:1;background:#ffffff10;box-shadow:none;border:1px solid #ffffff55;backdrop-filter:none;padding:20px;box-sizing:border-box;width:210px}.fname{font-family:var(--font-display);font-size:22px}.farch,.fshared,.rarity{font-family:var(--font-ui);font-size:12px;letter-spacing:0;line-height:1.5}.farch{color:#e2eee6}.rLegendary{background:#f4c542;color:#493b05}.rCommon{background:#ffffff14;color:#e2eee6;border-color:#ffffff55}
 .cta{background:#f4c542;color:#493b05;font:600 15px/1.5 var(--font-ui);box-shadow:none;letter-spacing:0;border-radius:10px;min-height:44px}.ctaGhost{background:transparent;color:#fff;border-color:#ffffff88}.subtle{font:400 15px/1.6 var(--font-ui);color:#e2eee6}.back{font:500 14px/1.5 var(--font-ui);min-height:44px;display:flex;align-items:center;letter-spacing:0;text-transform:none;border-radius:10px}.stage :focus-visible{outline:3px solid #f4c542;outline-offset:4px}.pack:focus-visible{outline-color:#fff}
 @media(max-width:560px){.cardGrid{display:grid;grid-template-columns:1fr;width:100%}.fcard{width:100%}.reveal{padding:0;box-sizing:border-box}.headline{font-size:36px}.cta{text-align:center}.stage button{min-height:44px}}
+
+/* Pack states use the same calm surface as the rest of Friendship. */
+.stage { composes: surface from '../../../components/signedin-surface.module.css'; background: var(--h-bg, #f8f7ef); color: var(--app-ink); padding: 88px 24px 48px; }
+.headline { font: 600 clamp(2rem, 5vw, 3rem)/1.15 var(--font-display); letter-spacing: -.03em; }
+.kicker, .subtle, .tapHint { color: var(--app-muted); text-transform: none; letter-spacing: 0; font-family: var(--font-ui); }
+.kicker, .tapHint { font-size: .875rem; }
+.pack { border-radius: 16px; border: 1px solid #d4b23e; }
+.packLogo { font-family: var(--font-display); font-weight: 600; }
+.fcard { background: var(--app-paper); color: var(--app-ink); border: 1px solid var(--app-line); padding: 24px; }
+.fname { font-weight: 600; }
+.fphotoEmpty { font: 600 1.75rem/1.2 var(--font-display); background: var(--h-surface-2); color: var(--app-ink); }
+.farch, .fshared { color: var(--app-muted); font-size: .875rem; }
+.rCommon, .rRare { background: var(--h-surface-2); color: var(--app-ink); border-color: var(--app-line); }
+.rarity { font-size: .75rem; text-transform: none; padding: 4px 8px; }
+.back, .ctaGhost { background: var(--app-paper); border-color: var(--app-line); color: var(--app-ink); }
+.cta { font-weight: 500; border-radius: 8px; }
+.stage :focus-visible, .pack:focus-visible { outline-color: var(--h-accent, #064c48); }
+.terms { display: flex; align-items: flex-start; gap: 8px; max-width: 520px; margin: 0 auto 16px; padding: 16px; background: var(--app-paper); border: 1px solid var(--app-line); border-radius: 12px; cursor: pointer; text-align: left; }
+.terms span { font-size: .875rem; color: var(--app-ink); }
+.terms a { color: var(--h-accent); }
+.connect { composes: primary from '../../../components/signedin-surface.module.css'; width: 100%; margin-top: 16px; }
+.requestSent { color: var(--h-accent); font-size: .875rem; margin-top: 16px; }
+
+.error { background: #fff0ed; color: #8f2a19; border: 1px solid #bc6b5b; border-radius: 8px; padding: 12px 16px; font: 400 1rem/1.5 var(--font-ui); }

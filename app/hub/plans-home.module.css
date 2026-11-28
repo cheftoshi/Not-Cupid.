@@ -78,3 +78,46 @@
 .eventSummary { display:grid; grid-template-columns:minmax(0,1fr); align-items:start; gap:10px; }
 .eventSummary > * { min-width:0; margin:0; overflow-wrap:break-word; }
 .eventSummary a { justify-self:start; line-height:1.5; }
+
+/* Signed-in Friend/Home visual pass. Keep sheet, keyboard and hidden geometry above. */
+.home { composes: surface from '../../components/signedin-surface.module.css'; padding-top: 24px; }
+.header { min-height: 0; padding: 24px 32px; border-radius: 16px; margin: 0 0 24px; gap: 24px; align-items: center; }
+.header h1 { font: 600 clamp(2rem, 4vw, 3rem)/1.15 var(--font-display); letter-spacing: -.035em; margin: 8px 0; }
+.header p { font-size: 1rem; line-height: 1.5; margin: 8px 0 0; }
+.header > div { max-width: 100%; }
+.header .secondaryInvite { min-height: 44px; padding: 8px 16px; font: 500 1rem/1.5 var(--font-ui); border-radius: 8px; background: var(--app-saffron); border-color: var(--app-saffron); color: var(--app-on-saffron); }
+.eyebrow { font: 500 .875rem/1.5 var(--font-ui); text-transform: none; letter-spacing: .02em; }
+.home button, .button { font-family: var(--font-ui); font-weight: 500; letter-spacing: 0; border-radius: 8px; }
+.home .primary { background: var(--app-saffron); border-color: var(--app-saffron); color: var(--app-on-saffron); }
+.home .primary:focus-visible, .header .secondaryInvite:focus-visible { outline-color: var(--h-accent); }
+.header .secondaryInvite:focus-visible { outline-color: white; }
+.filters { margin: 24px 0; gap: 8px; padding: 8px; }
+.filters button, .filters .button, .filters > a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 12px; font-size: .875rem; text-decoration: none; border-radius: 8px; }
+.home .filters button[aria-pressed=true] { background: var(--app-tide); border-color: var(--app-tide); color: white; }
+.card, .form, .empty, .sidebar, .nextAction { border-radius: 16px; box-shadow: 0 2px 8px #064c4805; }
+.card, .form, .empty { padding: 24px; }
+.card h2, .sectionHead h2, .nextAction h2 { font: 600 1.75rem/1.25 var(--font-display); letter-spacing: -.025em; }
+.cardStrip { font: 500 .875rem/1.5 var(--font-ui); text-transform: none; padding: 8px 12px; margin-bottom: 16px; }
+.details, .place, .host small, .profile p, .profile small, .message p { font-size: .875rem; line-height: 1.5; }
+.host { gap: 16px; }
+.host img, .profile img { border-radius: 12px; }
+.discoveryEntry { padding: 24px; margin: 24px 0; border-left: 1px solid var(--app-line); }
+.discoveryEntry strong { font: 600 1.125rem/1.4 var(--font-display); }
+.nextAction { padding: 24px; margin-bottom: 24px; }
+.roomList { gap: 8px; }
+.roomList button, .roomTitle h3 { font-size: 1rem; }
+.roomList small, .sidebar .eyebrow { font-size: .875rem; }
+.roomTitle { border-radius: 8px; }
+.message { padding: 16px; border: 1px solid var(--app-line); background: var(--app-paper); border-radius: 12px; }
+.message p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.form label, .composer label { gap: 8px; }
+.form { gap: 16px; }
+.empty h2, .form h2 { font: 600 1.5rem/1.3 var(--font-display); }
+@media(max-width:700px) {
+  .header { padding: 24px; gap: 16px; }
+  .header h1 { font-size: 2rem; }
+  .header p { font-size: 1rem; max-width: none; }
+  .header .secondaryInvite { margin-right: 0; }
+  .card, .form, .empty, .nextAction, .discoveryEntry { padding: 16px; }
+  .card h2, .sectionHead h2, .nextAction h2 { font-size: 1.5rem; }
+}

@@ -353,7 +353,7 @@ function PlanCard({
           </>
         )}
         {canChat && (
-          <button className={s.primary} onClick={() => onOpen(plan)}>Open chat ↗</button>
+          <button className={s.primary} onClick={() => onOpen(plan)}>Open chat →</button>
         )}
         {plan.isMine && !ended && (
           <button disabled={busy} onClick={() => void cancel()}>
@@ -606,7 +606,7 @@ export default function PlansHome({
           {friendMode && <button onClick={() => {setSelectedEvent(null); setCreating(true); requestAnimationFrame(() => document.getElementById("event-invitation-review")?.scrollIntoView({ block: "start" }));}}>＋ New invitation</button>}
           <Link className={s.button} href="/friends?view=crew">People & chats</Link>
           <button onClick={() => { if (rooms[0]) open(rooms[0]); else setSheet(true); }}>Plan chats</button>
-          <Link href="/friends?view=pulse">Clubs & communities</Link>
+          <Link className={s.button} href="/friends?view=pulse">Clubs & communities</Link>
         </nav>}
         {suggestedCity && suggestedCity !== metro && <p className={s.notice}>You came to explore {METRO_CENTERS[suggestedCity]?.city}. Use Change city below to choose it; your home location stays the same.</p>}
         <div className={s.discoveryEntry} hidden={friendMode && discovering}>

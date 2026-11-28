@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import s from '../friend-hub.module.css';
+import p from './profile.module.css';
 import RefreshProfileButton from '@/components/refresh-profile-button';
 import { compressImage } from '@/lib/compress-image';
 
 const INK = 'var(--h-border)', LINE = '#064c48', LINE_DEEP = 'var(--h-accent)', CREAM = 'var(--h-surface)';
-const card: React.CSSProperties = { background: 'var(--h-surface)', border: '1px solid var(--h-border)', borderRadius: 16, boxShadow: 'none', padding: '1.25rem' };
-const chip: React.CSSProperties = { fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.25rem 0.6rem' };
+const chip: React.CSSProperties = { fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', background: 'var(--h-surface-3)', border: '1px solid var(--h-border)', borderRadius: 999, padding: '0.25rem 0.6rem' };
 const label: React.CSSProperties = { fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem', letterSpacing: '0.04em', margin: '1.5rem 0 0.6rem' };
 
 type Init = { name: string; photo_url: string | null; gallery: string[]; bio: string; occupation: string; music: string[]; food: string[]; hobbies: string[] };
@@ -22,14 +22,14 @@ function TagField({ value, onChange, placeholder }: { value: string[]; onChange:
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
         {value.map((t) => (
           <span key={t} style={{ ...chip, display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
-            {t}<button onClick={() => onChange(value.filter((x) => x !== t))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, fontWeight: 800 }}>×</button>
+            {t}<button aria-label={`Remove ${t}`} onClick={() => onChange(value.filter((x) => x !== t))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: LINE_DEEP, fontWeight: 800 }}>×</button>
           </span>
         ))}
       </div>
       <div style={{ display: 'flex', gap: '0.4rem' }}>
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())}
+        <input aria-label={placeholder} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())}
           placeholder={placeholder} style={{ flex: 1, border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.45rem 0.7rem', fontSize: '0.85rem' }} />
-        <button onClick={add} style={{ ...chip, cursor: 'pointer' }}>add</button>
+        <button onClick={add} style={{ ...chip, cursor: 'pointer' }}>Add</button>
       </div>
     </div>
   );
@@ -100,95 +100,92 @@ export default function FriendProfileClient({ initial, refreshCount }: { initial
   }
 
   return (
-    <div className={s.profileEditor} style={{ minHeight: '100vh', background: 'var(--h-bg)', color: 'var(--h-text)', fontFamily: 'ui-sans-serif,system-ui,sans-serif' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '1.5rem 1.25rem 4rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <a href="/hub" style={{ background: LINE, color: '#fff', fontFamily: "'Space Grotesk', sans-serif", fontSize: '0.95rem', letterSpacing: '0.1em', padding: '0.15rem 0.6rem', borderRadius: 6, border: '1px solid var(--h-border)', textDecoration: 'none' }}>FRIEND LINE</a>
-          <a href="/friends" style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: LINE_DEEP, textDecoration: 'none' }}>← back to hub</a>
-        </div>
-
-        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(2.4rem,8vw,3.4rem)', lineHeight: 1.1, letterSpacing: '-.04em', color: 'var(--h-text)', WebkitTextStroke: '0', textShadow: 'none', margin: 0 }}>
-          your friend card.
-        </h1>
+    <div className={`${s.profileEditor} ${p.profile}`}>
+      <div className={p.wrap}>
+        <nav className={p.nav} aria-label="Friend profile navigation">
+          <a className={p.navLink} href="/hub">Friend Line</a>
+          <a className={p.navLink} href="/friends">Back to Friends</a>
+        </nav>
+        <h1 className={p.title}>Your Friend card</h1>
         <p style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: LINE_DEEP, margin: '0.4rem 0 1.5rem' }}>
           Your Friend card uses your shared photos, bio and interests. Friendship preferences stay separate.
         </p>
 
         {/* PHOTO */}
-        <div style={card}>
+        <div className={p.card}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             {photo ? <img src={photo} alt="" style={{ width: 96, height: 96, borderRadius: 14, objectFit: 'cover', border: '1px solid var(--h-border)' }} />
-              : <div style={{ width: 96, height: 96, borderRadius: 14, border: `3px dashed ${LINE}`, background: 'var(--h-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>📸</div>}
+              : <div className={p.photoEmpty}>No photo</div>}
             <div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem' }}>main photo</div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem' }}>Main photo</div>
               <label style={{ ...chip, cursor: 'pointer', display: 'inline-block', marginTop: '0.4rem' }}>
-                {photo ? 'change' : 'upload'} <input type="file" accept="image/*" onChange={uploadPhoto} disabled={busy} style={{ display: 'none' }} />
+                {photo ? 'Change' : 'Upload'} <input type="file" accept="image/*" onChange={uploadPhoto} aria-label="Main photo" disabled={busy}  />
               </label>
             </div>
           </div>
         </div>
 
         {/* GALLERY */}
-        <div style={label}>more photos</div>
-        <div style={card}>
+        <div className={p.section}>More photos</div>
+        <div className={p.card}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
             {gallery.map((g) => (
               <div key={g} style={{ position: 'relative' }}>
                 <img src={g} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', border: '1px solid var(--h-border)' }} />
-                <button onClick={() => removeGallery(g)} disabled={busy} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface)', border: '1px solid var(--h-border)', cursor: busy ? 'wait' : 'pointer', fontWeight: 800 }}>×</button>
+                <button aria-label="Remove gallery photo" onClick={() => removeGallery(g)} disabled={busy} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: 'var(--h-surface)', border: '1px solid var(--h-border)', cursor: busy ? 'wait' : 'pointer', fontWeight: 800 }}>×</button>
               </div>
             ))}
             {gallery.length < 3 && (
               <label style={{ width: 80, height: 80, borderRadius: 10, border: `2px dashed ${LINE}`, background: 'var(--h-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.4rem' }}>
-                +<input type="file" accept="image/*" onChange={uploadGallery} disabled={busy} style={{ display: 'none' }} />
+                +<input type="file" accept="image/*" onChange={uploadGallery} aria-label="Add gallery photo" disabled={busy}  />
               </label>
             )}
           </div>
         </div>
 
         {/* BIO + WORK */}
-        <div style={label}>about you</div>
-        <div style={card}>
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} rows={3}
+        <div className={p.section}>About you</div>
+        <div className={p.card}>
+          <textarea aria-label="About you" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} rows={3}
             placeholder="who are you when you're not working? what's your ideal weekend?"
             style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.6rem 0.8rem', fontSize: '0.9rem', fontFamily: 'var(--font-ui)', marginBottom: '0.6rem' }} />
-          <input value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="what do you do?"
+          <input aria-label="Occupation" value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="what do you do?"
             style={{ width: '100%', border: '1px solid var(--h-border)', borderRadius: 10, padding: '0.5rem 0.8rem', fontSize: '0.9rem' }} />
         </div>
 
         {/* INTERESTS */}
-        <div style={label}>what you&apos;re into</div>
-        <div style={card}>
-          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.4rem' }}>music</div>
+        <div className={p.section}>Your interests</div>
+        <div className={p.card}>
+          <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, marginBottom: '0.4rem' }}>music</div>
           <TagField value={music} onChange={setMusic} placeholder="add a genre / artist…" />
-          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>food</div>
+          <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>food</div>
           <TagField value={food} onChange={setFood} placeholder="add a cuisine / spot…" />
-          <div style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>hobbies &amp; obsessions</div>
+          <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: LINE_DEEP, margin: '1rem 0 0.4rem' }}>hobbies &amp; obsessions</div>
           <TagField value={hobbies} onChange={setHobbies} placeholder="add a hobby…" />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
-          <button onClick={save} disabled={busy} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.3rem', letterSpacing: '0.05em', color: '#fff', background: LINE, border: '1px solid var(--h-border)', borderRadius: 12, padding: '0.6rem 1.75rem', boxShadow: 'none', cursor: 'pointer' }}>
-            {busy ? 'saving…' : 'save my card →'}
+          <button onClick={save} disabled={busy} className={p.save}>
+            {busy ? 'Saving…' : 'Save my card'}
           </button>
           {msg && <span style={{ fontFamily: 'var(--font-ui)', fontStyle: 'normal', color: LINE_DEEP }}>{msg}</span>}
         </div>
-        <p style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.6rem' }}>
+        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--h-text-dim)', marginTop: '0.6rem' }}>
           photos save instantly · bio &amp; interests save when you hit the button
         </p>
 
         {/* START FRESH — wipe & re-take quiz, capped at 3 per account */}
-        <div style={{ ...label, color: LINE_DEEP }}>start over</div>
-        <div style={card}>
+        <div style={{ ...label, color: LINE_DEEP }}>Start over</div>
+        <div className={p.card}>
           <p style={{ fontFamily: 'var(--font-ui)', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.6rem' }}>
             Vibes changed? Re-take the friend quiz to update your activities, who you&apos;re open to, and your age range. Your crews stay put.
           </p>
           <a href="/friends/quiz?retake=1" style={{ display: 'inline-block', background: 'var(--h-surface)', color: LINE_DEEP, fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', letterSpacing: '0.06em', padding: '0.55rem 1.2rem', borderRadius: 10, border: '1px solid var(--h-border)', boxShadow: 'none', textDecoration: 'none' }}>
-            retake friend quiz →
+            Retake Friend quiz →
           </a>
         </div>
 
-        <div style={card}>
+        <div className={p.card}>
           <p style={{ fontFamily: 'var(--font-ui)', fontSize: '0.85rem', color: 'var(--h-text)', margin: '0 0 0.4rem' }}>
             Want a clean slate? This wipes your quiz answers, profile, and current matches on <strong>both</strong> the Friend and Love lines, then you re-take the quiz. Your account stays. Limited to 3 times.
           </p>

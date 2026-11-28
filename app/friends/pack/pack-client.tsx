@@ -129,13 +129,13 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
       <div className={styles.aura} />
       {sparks.map((s, i) => <span key={i} className={styles.spark} style={{ left: s.left, top: s.top, animationDelay: s.delay }} />)}
       {flash && <div className={styles.flash} />}
-      <Link href="/friends?view=crew" className={styles.back}>← my pack</Link>
+      <Link href="/friends?view=crew" className={styles.back}>← My pack</Link>
 
       {phase === 'loading' && <div className={styles.kicker}>shuffling the deck…</div>}
 
       {phase === 'ghosted' && (
         <div className={styles.center}>
-          <div className={styles.headline}>paused for now</div>
+          <div className={styles.headline}>Paused for now</div>
           <p className={styles.subtle}>a few matches went quiet, so we paused you to keep things fair. pick back up from the Friend Line whenever you’re ready.</p>
           <Link href="/friends" className={styles.cta} style={{ marginTop: '1.4rem' }}>back to friend line →</Link>
         </div>
@@ -144,7 +144,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
       {(phase === 'ready' || phase === 'opening') && (
         <div className={styles.center}>
           <div className={styles.kicker}>a friendship pack appeared</div>
-          <h1 className={styles.headline}>open it, {firstName.toLowerCase()}</h1>
+          <h1 className={styles.headline}>Open your pack, {firstName}</h1>
           <div
             className={`${styles.pack} ${phase === 'opening' ? styles.packBurst : ''}`}
             onClick={openPack}
@@ -158,7 +158,7 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
             tabIndex={0}
             aria-label="Open your friendship pack"
           >
-            <div className={styles.packEmoji}>🎒</div>
+
             <div className={styles.packLogo}>not<span style={{ opacity: 0.85 }}>cupid</span></div>
             <div className={styles.packTag}>friendship pack · {friends.length} inside</div>
             {/* blurred faces peeking through — you can't quite make them out yet */}
@@ -171,19 +171,19 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
               ))}
             </div>
           </div>
-          {phase === 'ready' && <div className={styles.tapHint}>tap to rip it open</div>}
+          {phase === 'ready' && <div className={styles.tapHint}>Open your friendship pack</div>}
         </div>
       )}
 
       {phase === 'revealed' && (
         <div className={styles.reveal}>
           <div className={styles.kicker} style={{ marginBottom: '0.2rem' }}>your pack · {friends.length} new {friends.length === 1 ? 'friend' : 'friends'}</div>
-          <h1 className={styles.headline} style={{ marginBottom: '1rem' }}>meet your people</h1>
+          <h1 className={styles.headline} style={{ marginBottom: '1rem' }}>Meet your people</h1>
           {!termsOk && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem', maxWidth: 520, margin: '0 auto 1rem', padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 12, cursor: 'pointer', textAlign: 'left' }}>
+            <label className={styles.terms}>
               <input type="checkbox" checked={termsOk} onChange={agreeTerms} style={{ width: 17, height: 17, marginTop: '0.1rem', flexShrink: 0 }} />
-              <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.45 }}>
-                before connecting — I agree to the <a href="/terms" style={{ color: '#fff', textDecoration: 'underline' }}>terms</a> &amp; <a href="/safety" style={{ color: '#fff', textDecoration: 'underline' }}>community guidelines</a>: be kind &amp; meet new people safely.
+              <span>
+                before connecting — I agree to the <a href="/terms" >terms</a> &amp; <a href="/safety" >community guidelines</a>: be kind &amp; meet new people safely.
               </span>
             </label>
           )}
@@ -198,15 +198,15 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
                     : <div className={styles.fphotoEmpty}>{(f.name || '?').charAt(0)}</div>}
                   <div className={styles.fname}>{(f.name || 'friend').split(' ')[0]}{f.age ? `, ${f.age}` : ''}</div>
                   {f.archetype && <div className={styles.farch}>{f.archetype}</div>}
-                  {f.sunSign && <div className={styles.farch} style={{ color: 'rgba(255,255,255,0.8)' }}>{signLabel(f.sunSign)}</div>}
-                  {f.metro && <div className={styles.farch} style={{ color: 'rgba(255,255,255,0.78)' }}>📍 {f.visiting ? `visiting ${f.metro}` : f.metro}</div>}
+                  {f.sunSign && <div className={styles.farch}>{signLabel(f.sunSign)}</div>}
+                  {f.metro && <div className={styles.farch}>{f.visiting ? `visiting ${f.metro}` : f.metro}</div>}
                   <div className={`${styles.rarity} ${r.cls}`}>{r.label}</div>
                   {f.sharedActivities.length > 0 && (
                     <div className={styles.fshared}>both into {f.sharedActivities.slice(0, 2).join(' · ')}</div>
                   )}
                   {requested.has(f.otherId)
-                    ? <div style={{ marginTop: '0.6rem', fontFamily: "'DM Sans', monospace", fontSize: '0.54rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9fe0b0' }}>✓ request sent</div>
-                    : <button onClick={() => connectFriend(f.otherId)} disabled={!termsOk} style={{ marginTop: '0.6rem', width: '100%', cursor: termsOk ? 'pointer' : 'not-allowed', opacity: termsOk ? 1 : 0.5, background: 'rgba(255,255,255,0.95)', color: '#1a1030', border: 'none', borderRadius: 999, padding: '0.45rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', letterSpacing: '0.03em' }}>🤝 connect</button>}
+                    ? <div className={styles.requestSent}>Request sent</div>
+                    : <button onClick={() => connectFriend(f.otherId)} disabled={!termsOk} className={styles.connect}>Connect</button>}
                 </div>
               );
             })}
@@ -215,9 +215,9 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
             <div className={styles.subtle} style={{ marginBottom: '0.5rem' }}>tap <b>connect</b> on anyone — they’ll get a ping, and once they accept you’re friends.</div>
             <Link href="/friends?view=crew" className={styles.cta}>see them on the friend line →</Link>
             <button onClick={anotherPack} disabled={busy} className={`${styles.cta} ${styles.ctaGhost}`} style={{ marginTop: '0.8rem' }}>
-              {busy ? '…' : pro ? '✦ open another pack · free' : '🎁 open another weekly pack · $0.99'}
+              {busy ? '…' : pro ? 'Open another pack · free' : 'Open another weekly pack · $0.99'}
             </button>
-            {err && <p className={styles.subtle} style={{ color: '#ffb3b3' }}>{err}</p>}
+            {err && <p role="alert" className={styles.error}>{err}</p>}
           </div>
         </div>
       )}
@@ -225,17 +225,17 @@ export default function PackClient({ firstName, pro }: { firstName: string; pro:
       {phase === 'empty' && (
         <div className={styles.center}>
           <div className={styles.kicker}>{openedCount > 0 ? `you've opened ${openedCount} ${openedCount === 1 ? 'friend' : 'friends'}` : 'the deck is warming up'}</div>
-          <h1 className={styles.headline}>no sealed packs</h1>
+          <h1 className={styles.headline}>No sealed packs</h1>
           <p className={styles.subtle}>
             {openedCount > 0
               ? 'your current pack is already open. grab a fresh one when you’re ready for new people.'
               : 'we’re lining up your first batch of friends. check back in a bit, or pull a fresh pack now.'}
           </p>
           <button onClick={anotherPack} disabled={busy} className={styles.cta} style={{ marginTop: '1.4rem' }}>
-            {busy ? '…' : pro ? '✦ open a pack · free' : '🎁 open a weekly pack · $0.99'}
+            {busy ? '…' : pro ? 'Open a pack · free' : 'Open a weekly pack · $0.99'}
           </button>
           {!pro && <Link href="/pro" className={styles.subtle} style={{ textDecoration: 'underline', marginTop: '0.7rem' }}>or go Pro — unlimited packs, $3.99/mo →</Link>}
-          {err && <p className={styles.subtle} style={{ color: '#ffb3b3' }}>{err}</p>}
+          {err && <p role="alert" className={styles.error}>{err}</p>}
         </div>
       )}
     </div>
